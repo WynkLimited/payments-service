@@ -1,0 +1,32 @@
+spring:
+    profiles:
+      active: ${env:local}
+    main:
+      banner-mode: off
+    devtools:
+      add-properties: false
+
+debug: false
+server:
+  port: 8081
+
+  ########## Management Config ##########
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,info,health,mappings,metrics,caches
+    jmx:
+      exposure:
+        exclude: '*'
+    health:
+      mongo:
+        enabled: false
+      cassandra:
+        enabled: false
+      diskspace:
+        enabled: false
+
+###### log props ######
+logging:
+  path: /data

@@ -13,5 +13,7 @@ public class ChargingStatusRequest {
 
     private String sessionId;
     private String transactionId;
+    private String uid;
+    private String receipt;
 
 }

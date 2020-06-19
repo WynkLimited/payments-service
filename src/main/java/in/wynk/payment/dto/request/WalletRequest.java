@@ -6,12 +6,12 @@ import in.wynk.payment.constant.PaymentOption;
 import lombok.Getter;
 
 @JsonTypeInfo(
-        use = JsonTypeInfo.Id.CLASS,
-        property = "@class"
+        use = JsonTypeInfo.Id.NAME,
+        property = "type"
 )
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = PaytmWalletLinkRequest.class, name = "PaytmWalletLinkRequest"),
-        @JsonSubTypes.Type(value = PaytmWalletValidateLinkRequest.class, name = "PaytmWalletValidateLinkRequest")
+        @JsonSubTypes.Type(value = PaytmWalletLinkRequest.class, name = "PaytmWalletLink"),
+        @JsonSubTypes.Type(value = PaytmWalletValidateLinkRequest.class, name = "PaytmWalletValidateLink")
 })
 @Getter
 public class WalletRequest {

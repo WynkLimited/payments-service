@@ -40,6 +40,11 @@
             <artifactId>lib-exception</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>lib-logging</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

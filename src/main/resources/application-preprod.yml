@@ -10,3 +10,12 @@ session:
     jmxPrefix: session-store:preprod
     cluster:
       nodes: 127.0.0.1,127.0.0.1
+
+app:
+  mongo:
+    sources:
+      se:
+        nodes: 10.80.0.68:27017,10.80.0.73:27017
+        username: # None
+        password: # None
+        database: sedb

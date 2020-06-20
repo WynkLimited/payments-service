@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.Itunes;
+package in.wynk.payment.dao.entity;
 
 import in.wynk.payment.enums.ItunesReceiptType;
 import lombok.Getter;
@@ -16,7 +16,7 @@ public class ItunesIdUidMapping {
     @Id
     private Key         key;
     private String      itunesId;
-    private String secret;
+    private String receipt;
     private ItunesReceiptType type;
 
     @Setter

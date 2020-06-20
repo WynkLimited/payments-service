@@ -1,9 +1,11 @@
 package in.wynk.payment.service.impl;
-import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.constant.BeanConstant;
-import in.wynk.payment.dto.Itunes.ItunesIdUidMapping;
+import in.wynk.payment.constant.ItunesConstant;
+import in.wynk.payment.constant.PaymentErrorType;
+import in.wynk.payment.dao.entity.ItunesIdUidMapping;
+import in.wynk.payment.dao.receipts.ItunesIdUidDao;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ItunesResponse;
@@ -18,9 +20,6 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -35,7 +34,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     private RestTemplate iTunesRestTemplate;
 
     @Autowired
-    private MongoOperations iTunesMongoTemplate;
+    private ItunesIdUidDao itunesIdUidDao;
 
     private Logger logger = LoggerFactory.getLogger(ITunesMerchantPaymentService.class.getCanonicalName());
 
@@ -74,9 +73,9 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
                 return itunesResponse;
             }
 
-            String productId = (String) receiptObject.get("product_id");
-            String originalITunesTrxnId = (String) receiptObject.get("original_transaction_id");
-            String itunesTrxnId = (String) receiptObject.get("transaction_id");
+            String productId = (String) receiptObject.get(ItunesConstant.PRODUCT_ID);
+            String originalITunesTrxnId = (String) receiptObject.get(ItunesConstant.ORIGINAL_TRANSACTION_ID);
+            String itunesTrxnId = (String) receiptObject.get(ItunesConstant.TRANSACTION_ID);
 
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
             ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(originalITunesTrxnId, 12001);
@@ -117,8 +116,8 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
 
     private ResponseEntity<String> getItunesStatus(String encodedValue, String password, String url){
         Map<String, String> requestJson = new HashMap<>();
-        requestJson.put("receipt-data", encodedValue);
-        requestJson.put("password", password);
+        requestJson.put(ItunesConstant.RECEIPT_DATA, encodedValue);
+        requestJson.put(ItunesConstant.PASSWORD, password);
         ResponseEntity<String> responseEntity = null;
         try {
             RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toString(), HttpMethod.POST, URI.create(url));
@@ -179,22 +178,21 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             }
             logger.error(" Failed to subscribe to itunes: response {} request!! status : {} error {}", appStoreResponse, status, errorMessage);
             //createErrorTransactionLog(null, TransactionEvent.SUBSCRIBE, uid, service, receipt, StringUtils.EMPTY, errorMessage, response, Integer.toString(status));
-            throw new WynkRuntimeException(WynkErrorType.UT011, errorMessage);
+            throw new WynkRuntimeException(PaymentErrorType.PAY001, errorMessage);
         }
     }
 
 
     private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String trxnId, int productid) {
-        Query query = new Query(Criteria.where("_id.productId").is(productid).and("itunesId").is(trxnId));
-        return iTunesMongoTemplate.findOne(query, ItunesIdUidMapping.class);
+        return itunesIdUidDao.findByProductandiTunesId(productid, trxnId);
     }
-    private void saveItunesIdUidMapping(String itunesId, int productid, String uid, String secret, ItunesReceiptType type) {
+    private void saveItunesIdUidMapping(String itunesId, int productid, String uid, String receipt, ItunesReceiptType type) {
         ItunesIdUidMapping mapping = new ItunesIdUidMapping();
         mapping.setKey(new ItunesIdUidMapping.Key(uid, productid));
-        mapping.setSecret(secret);
+        mapping.setReceipt(receipt);
         mapping.setItunesId(itunesId);
         mapping.setType(type);
-        iTunesMongoTemplate.save(mapping);
+        itunesIdUidDao.save(mapping);
     }
 
 }

@@ -13,3 +13,12 @@ session:
         maxTotal: 200
         minIdle: 50
         maxIdle: 100
+
+app:
+  mongo:
+    sources:
+      se:
+        nodes: localhost:27017
+        username: # None
+        password: # None
+        database: sedb

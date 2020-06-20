@@ -183,15 +183,11 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     }
 
 
-    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String trxnId, int productid) {
-        return itunesIdUidDao.findByProductandiTunesId(productid, trxnId);
+    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String originalItunesId, int productid) {
+        return itunesIdUidDao.findByProductAndItunesId(productid, originalItunesId);
     }
     private void saveItunesIdUidMapping(String itunesId, int productid, String uid, String receipt, ItunesReceiptType type) {
-        ItunesIdUidMapping mapping = new ItunesIdUidMapping();
-        mapping.setKey(new ItunesIdUidMapping.Key(uid, productid));
-        mapping.setReceipt(receipt);
-        mapping.setItunesId(itunesId);
-        mapping.setType(type);
+        ItunesIdUidMapping mapping = new ItunesIdUidMapping(new ItunesIdUidMapping.Key(uid, productid),itunesId, receipt, type);
         itunesIdUidDao.save(mapping);
     }
 

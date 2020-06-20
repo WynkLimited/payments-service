@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 public interface ItunesIdUidDao extends MongoRepository<ItunesIdUidMapping, ItunesIdUidMapping.Key> {
 
     @Query("{'_id.productId : ?0','itunesId : ?1'}")
-    ItunesIdUidMapping findByProductandiTunesId(int productId, String itunesId);
+    ItunesIdUidMapping findByProductAndItunesId(int productId, String itunesId);
 
 
 }

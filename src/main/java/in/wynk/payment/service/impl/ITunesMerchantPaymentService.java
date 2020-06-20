@@ -40,7 +40,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     private Logger logger = LoggerFactory.getLogger(ITunesMerchantPaymentService.class.getCanonicalName());
 
     private static final List<ItunesStatusCodes> failureCodes = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005,
-            ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008);
+            ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008, ItunesStatusCodes.APPLE_21009, ItunesStatusCodes.APPLE_21010);
 
     @Override
     public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
@@ -49,7 +49,6 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
         String tid = chargingStatusRequest.getTransactionId();
         ItunesResponse validationResponse = validateItunesTransaction(uid, requestReceipt, tid);
         return (BaseResponse<T>) BaseResponse.builder().body(validationResponse).status(HttpStatus.OK).build();
-
     }
 
     // TODO - Add Info Logs and create Wynk Error Codes
@@ -78,6 +77,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             String productId = (String) receiptObject.get("product_id");
             String originalITunesTrxnId = (String) receiptObject.get("original_transaction_id");
             String itunesTrxnId = (String) receiptObject.get("transaction_id");
+
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
             ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(originalITunesTrxnId, 12001);
             if (mapping != null && !mapping.getKey().getUid().equals(uid)) {
@@ -86,6 +86,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
                 itunesResponse.setErrorMsg(errorMessge);
                 return itunesResponse;
             }
+
             // TODO - Emit Transaction Event And return response Accordingly
             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                 //saveItunesIdUidMapping(originalITunesTrxnId, pack.getPartnerProductId(), uid, requestReceipt, receiptType);
@@ -166,7 +167,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
         }
         int status = ((Number) receiptJson.get("status")).intValue();
         ItunesStatusCodes code = ItunesStatusCodes.getItunesStatusCodes(status);
-        if (status == 0) {
+        if (status == 0 || status == 21006) {
             return itunesReceiptType.getSubscriptionDetailJson(receiptJson);
         }
         else {

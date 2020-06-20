@@ -1,0 +1,21 @@
+package in.wynk.payment.dto.request;
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import in.wynk.payment.constant.PaymentOption;
+import lombok.Getter;
+
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        property = "type"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = PaytmWalletLinkRequest.class, name = "PaytmWalletLink"),
+        @JsonSubTypes.Type(value = PaytmWalletValidateLinkRequest.class, name = "PaytmWalletValidateLink")
+})
+@Getter
+public class WalletRequest {
+
+    private PaymentOption paymentOption;
+
+}

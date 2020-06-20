@@ -1,0 +1,12 @@
+###### Redis Store Props #######
+session:
+  redis:
+    name: session-store:prepord
+    mode: cluster
+    useSsl: false
+    usePooling: true
+    password: ##
+    enableJmx: true
+    jmxPrefix: session-store:preprod
+    cluster:
+      nodes: 127.0.0.1,127.0.0.1

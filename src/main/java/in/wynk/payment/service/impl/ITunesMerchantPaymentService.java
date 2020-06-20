@@ -52,7 +52,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
 
     }
 
-    // TODO - Add Info Logs
+    // TODO - Add Info Logs and create Wynk Error Codes
     private ItunesResponse validateItunesTransaction(String uid, String requestReceipt, String transactionId){
         String errorMessge = StringUtils.EMPTY;
         ItunesResponse itunesResponse = new ItunesResponse();

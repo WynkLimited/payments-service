@@ -45,7 +45,7 @@ public class RevenuePaymentHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse<?> baseResponse = chargingService.doCharging(request);
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
     @GetMapping("/status/{sid}")
@@ -63,7 +63,7 @@ public class RevenuePaymentHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse<?> baseResponse = statusService.status(request);
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
     @PostMapping("/callback/{sid}")
@@ -82,7 +82,7 @@ public class RevenuePaymentHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
 }

@@ -28,7 +28,7 @@ public class RevenuePaymentWalletHandler {
     @PostMapping("/link/request/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletLink")
-    public ResponseEntity<?> linkRequest(@RequestBody WalletRequest request) {
+    public ResponseEntity<?> linkRequest(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;
         try {
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentOption().name());
@@ -37,7 +37,7 @@ public class RevenuePaymentWalletHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse<?> baseResponse = walletService.linkRequest(request);
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
     @PostMapping("/link/validate/{sid}")
@@ -52,7 +52,7 @@ public class RevenuePaymentWalletHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse baseResponse = walletService.validateLink(request);
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
 
@@ -68,7 +68,7 @@ public class RevenuePaymentWalletHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse baseResponse = walletService.unlink(request);
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
     @GetMapping("/balance/{sid}")
@@ -83,7 +83,7 @@ public class RevenuePaymentWalletHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse baseResponse = walletService.balance();
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
     @PostMapping("/addMoney/{sid}")
@@ -98,7 +98,7 @@ public class RevenuePaymentWalletHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse baseResponse = walletService.addMoney(request);
-        return new ResponseEntity(baseResponse.getBody(), baseResponse.getStatus());
+        return baseResponse.getResponse();
     }
 
 }

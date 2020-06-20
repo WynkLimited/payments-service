@@ -6,6 +6,7 @@ import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 public enum ItunesReceiptType {
@@ -26,24 +27,13 @@ public enum ItunesReceiptType {
                 String value = (String) jsonObj.get(key);
                 desiredJsonRep += (encloseInDoubleQuotes(param) + "=" + encloseInDoubleQuotes(value) + ";");
             }
-            String encodedValue = itunesData;//EncryptUtils.encodeBase64(desiredJsonRep + "}", false);
-            return encodedValue;
+            return Base64.getEncoder().encodeToString((desiredJsonRep + "}").getBytes());
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public JSONArray getSubscriptionDetailJson(JSONObject receiptFullJsonObj) {
-            JSONObject receiptJsonObject = null;
-            List<String> keys = Arrays.asList("latest_expired_receipt_info,latest_receipt_info,receipt".split(","));
-            for(String key : keys) {
-                if(receiptFullJsonObj.get(key) != null) {
-                    receiptJsonObject = (JSONObject) receiptFullJsonObj.get(key);
-                    break;
-                }
-            }
-            JSONArray arr = new JSONArray();
-            arr.add(receiptJsonObject);
-            return arr;
+            return (JSONArray) receiptFullJsonObj.get("latest_receipt_info");
         }
 
         @Override

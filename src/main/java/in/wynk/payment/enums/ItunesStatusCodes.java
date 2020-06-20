@@ -1,7 +1,5 @@
 package in.wynk.payment.enums;
 
-import in.wynk.payment.service.impl.ITunesMerchantPaymentService;
-
 public enum ItunesStatusCodes {
     /* 21000 */
     APPLE_21000("he App Store could not read the JSON object you provided.", 21000),
@@ -14,13 +12,15 @@ public enum ItunesStatusCodes {
     /* 21005 */
     APPLE_21005("The receipt server is not currently available.", 21005),
     /* 21006 */
-    APPLE_21006(
-            "This receipt is valid but the subscription has expired. When this status code is returned to your server, the receipt data is also decoded and returned as part of the response.",
-            21006),
+    APPLE_21006("This receipt is valid but the subscription has expired. When this status code is returned to your server, the receipt data is also decoded and returned as part of the response.", 21006),
     /* 21007 */
     APPLE_21007("This receipt is from the test environment, but it was sent to the production environment for verification. Send it to the test environment instead.", 21007),
     /* 21008 */
-    APPLE_21008("This receipt is from the production environment, but it was sent to the test environment for verification. Send it to the production environment instead.", 21008);
+    APPLE_21008("This receipt is from the production environment, but it was sent to the test environment for verification. Send it to the production environment instead.", 21008),
+    /* APPLE_21009 */
+    APPLE_21009("Internal data access error. Try again later.", 21009),
+    /* APPLE_21010 */
+    APPLE_21010("The user account cannot be found or has been deleted.", 21010);
 
     private String errorTitle;
     private int    errorCode;

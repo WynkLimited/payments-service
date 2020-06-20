@@ -1,24 +1,27 @@
 package in.wynk.payment.dto.response;
 
-import in.wynk.payment.enums.SubscriptionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class ItunesResponse {
-        int                partnerProductId;
+        int   partnerProductId;
 
-        int                productId;
+        int   productId;
 
-        long               vtd;
+        long  vtd;
 
-        SubscriptionStatus status;
+        String status;
+
+        String errorMsg;
 
         @Override
         public String toString() {
-            return "ItunesFinalResponse [partnerProductId=" + partnerProductId + ", productId=" + productId + ", vtd=" + vtd + ", status=" + status + "]";
+            return "ItunesFinalResponse [partnerProductId=" + partnerProductId + ", productId=" + productId + ", vtd=" + vtd + ", status=" + status + ", errorMsg=" + errorMsg + "]";
         }
 }

@@ -7,5 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ItunesIdUidDao extends MongoRepository<ItunesIdUidMapping, ItunesIdUidMapping.Key> {
-    ItunesIdUidMapping findByKey(ItunesIdUidMapping.Key key);
+
+    @Query("{ '_id' : ?0, 'itunesId' : ?1 }")
+    ItunesIdUidMapping findByKeyAnditunesId(ItunesIdUidMapping.Key key, String itunesId);
 }

@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service(BeanConstant.ITUNES_MERCHANT_PAYMENT_SERVICE)
 public class ITunesMerchantPaymentService implements IMerchantPaymentStatusService {
@@ -79,14 +78,8 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             String itunesTrxnId = (String) receiptObject.get(ItunesConstant.TRANSACTION_ID);
 
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
-            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(uid, 12001);
-            logger.info("ItunesIdUidMapping found got uid :{} , productId: {} = {}", uid, productId, mapping);
-            if (mapping != null && !mapping.getKey().getUid().equals(uid)) {
-                logger.error(BaseLoggingMarkers.APPLICATION_INVALID_USECASE, "Already have subscription for the correcponding itunes id on another account");
-                errorMessge = "Already have subscription for the correcponding itunes id on another account";
-                itunesResponse.setErrorMsg(errorMessge);
-                return itunesResponse;
-            }
+            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(uid, 12005, originalITunesTrxnId);
+            logger.info("ItunesIdUidMapping found for uid :{} , productId: {} = {}", uid, productId, mapping);
             // TODO - Emit Transaction Event And return response Accordingly
             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                 saveItunesIdUidMapping(originalITunesTrxnId, 12005, uid, requestReceipt, receiptType);
@@ -141,7 +134,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             //throw new PortalException(WynkErrorType.BSY010, "Encoded itunes / itunes data is empty! for iTunesData");
         }
         ResponseEntity<String> appStoreResponse = getItunesStatus(encodedValue, itunesSecret, itunesApiUrl);
-        if (appStoreResponse == null) {
+        if (!appStoreResponse.getStatusCode().is2xxSuccessful()) {
             logger.error("Failed to get receipt object from itunes :: Receipt returned for response is null!");
 //            createErrorTransactionLog(null, TransactionEvent.SUBSCRIBE, uid, service, receipt, org.apache.commons.lang.StringUtils.EMPTY, receiptFullJsonObj.toString(), response, null);
 //            throw new PortalException(WynkErrorType.BSY008, "Failed to subscribe to itunes");
@@ -153,12 +146,12 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
         } catch (ParseException e) {
             logger.error("Error while parsing, itunes receipt received : {} ", appStoreResponseBody);
         }
-        if (receiptJson == null || receiptJson.get("status") == null) {
+        if (receiptJson == null || !receiptJson.containsKey(ItunesConstant.STATUS)) {
             logger.error("Receipt Object returned for response " + appStoreResponseBody + " is not complete!");
 //            createErrorTransactionLog(null, TransactionEvent.SUBSCRIBE, uid, service, receipt, org.apache.commons.lang.StringUtils.EMPTY, receiptFullJsonObj.toString(), response, null);
-//            throw new PortalException(WynkErrorType.BSY008, "Failed to subscribe to itunes");
+            throw new WynkRuntimeException(PaymentErrorType.PAY001, "Failed to subscribe to itunes");
         }
-        int status = ((Number) receiptJson.get("status")).intValue();
+        int status = ((Number) receiptJson.get(ItunesConstant.STATUS)).intValue();
         ItunesStatusCodes code = ItunesStatusCodes.getItunesStatusCodes(status);
         if (status == 0 || status == 21006) {
             return itunesReceiptType.getSubscriptionDetailJson(receiptJson);
@@ -177,9 +170,9 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     }
 
 
-    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String uid, Integer productid) {
-        logger.info("fetching data with uid : {} and productId : {} from sedb", uid, productid);
-        return itunesIdUidDao.findByKey(new ItunesIdUidMapping.Key(uid, productid));
+    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String uid, Integer productid, String originalITunesTrxnId) {
+        logger.info("fetching data with uid : {} and productId : {} from ItunesIdUisMapping", uid, productid);
+        return itunesIdUidDao.findByKeyAnditunesId(new ItunesIdUidMapping.Key(uid, productid), originalITunesTrxnId);
     }
     private void saveItunesIdUidMapping(String itunesId, int productid, String uid, String receipt, ItunesReceiptType type) {
         ItunesIdUidMapping mapping = new ItunesIdUidMapping(new ItunesIdUidMapping.Key(uid, productid),itunesId, receipt, type);

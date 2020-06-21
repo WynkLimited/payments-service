@@ -1,0 +1,29 @@
+package in.wynk.payment.controller;
+
+import in.wynk.commons.dto.SessionDTO;
+import in.wynk.payment.dto.PaymentMethods;
+import in.wynk.payment.service.IPaymentMethodService;
+import in.wynk.session.aspect.advice.ManageSession;
+import in.wynk.session.context.SessionContextHolder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/wynk/v1/payment/")
+public class PaymentMethodsHandler {
+
+    @Autowired
+    private IPaymentMethodService paymentMethodService;
+
+    @GetMapping("get-methods/{sid}")
+    @ManageSession(sessionId = "#sid")
+    public PaymentMethods getPaymentMethods(@PathVariable String sid) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        return paymentMethodService.getPaymentOptions(sessionDTO);
+    }
+}
+
+

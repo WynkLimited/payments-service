@@ -13,3 +13,6 @@ session:
         maxTotal: 200
         minIdle: 50
         maxIdle: 100
+
+logging:
+  path: /tmp

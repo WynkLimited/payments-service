@@ -78,8 +78,14 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             String itunesTrxnId = (String) receiptObject.get(ItunesConstant.TRANSACTION_ID);
 
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
-            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(uid, 12005, originalITunesTrxnId);
-            logger.info("ItunesIdUidMapping found for uid :{} , productId: {} = {}", uid, productId, mapping);
+            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(12005, originalITunesTrxnId);
+            if(mapping != null && !mapping.getKey().getUid().equals(uid)) {
+                logger.error(BaseLoggingMarkers.APPLICATION_INVALID_USECASE, "Already have subscription for the correcponding itunes id on another account");
+                errorMessge = "Already have subscription for the correcponding itunes id on another account";
+                itunesResponse.setErrorMsg(errorMessge);
+                return itunesResponse;
+            }
+            logger.info("ItunesIdUidMapping found for ItnuesId :{} , productId: {} = {}", originalITunesTrxnId, productId, mapping);
             // TODO - Emit Transaction Event And return response Accordingly
             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                 saveItunesIdUidMapping(originalITunesTrxnId, 12005, uid, requestReceipt, receiptType);
@@ -170,9 +176,9 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     }
 
 
-    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String uid, Integer productid, String originalITunesTrxnId) {
-        logger.info("fetching data with uid : {} and productId : {} from ItunesIdUisMapping", uid, productid);
-        return itunesIdUidDao.findByKeyAnditunesId(new ItunesIdUidMapping.Key(uid, productid), originalITunesTrxnId);
+    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(Integer productid, String originalITunesTrxnId) {
+        logger.info("fetching data with originalItunesTxnId : {} and productId : {} from ItunesIdUisMapping", originalITunesTrxnId, productid);
+        return itunesIdUidDao.findByKeyProductIdAnditunesId(productid, originalITunesTrxnId);
     }
     private void saveItunesIdUidMapping(String itunesId, int productid, String uid, String receipt, ItunesReceiptType type) {
         ItunesIdUidMapping mapping = new ItunesIdUidMapping(new ItunesIdUidMapping.Key(uid, productid),itunesId, receipt, type);

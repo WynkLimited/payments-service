@@ -1,4 +1,5 @@
 package in.wynk.payment.service.impl;
+
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.constant.BeanConstant;
@@ -58,7 +59,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(requestReceipt);
             JSONArray userLatestReceipts = getReceiptObjForUser(requestReceipt, receiptType, uid);
             JSONObject receiptObject = (JSONObject) userLatestReceipts.get(0);
-            //List<JSONObject> latestSortedReceipts = getLatestReceipts(userLatestReceipts, receiptType);
+            logger.info("latest receipt object: {}", receiptObject.toJSONString());
             long expireTimestamp = receiptType.getExpireDate(receiptObject);
             if (receiptObject == null || expireTimestamp == 0) {
                 logger.error(BaseLoggingMarkers.APPLICATION_ERROR, "validateItunesTransaction :: empty receipt or expires_date for uid : {} obj :{} ", uid, receiptObject);
@@ -78,17 +79,17 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             String itunesTrxnId = (String) receiptObject.get(ItunesConstant.TRANSACTION_ID);
 
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
-            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(originalITunesTrxnId, 12001);
+            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(uid, 12001);
+            logger.info("ItunesIdUidMapping found got uid :{} , productId: {} = {}", uid, productId, mapping);
             if (mapping != null && !mapping.getKey().getUid().equals(uid)) {
                 logger.error(BaseLoggingMarkers.APPLICATION_INVALID_USECASE, "Already have subscription for the correcponding itunes id on another account");
                 errorMessge = "Already have subscription for the correcponding itunes id on another account";
                 itunesResponse.setErrorMsg(errorMessge);
                 return itunesResponse;
             }
-
             // TODO - Emit Transaction Event And return response Accordingly
             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
-                //saveItunesIdUidMapping(originalITunesTrxnId, pack.getPartnerProductId(), uid, requestReceipt, receiptType);
+                saveItunesIdUidMapping(originalITunesTrxnId, 12005, uid, requestReceipt, receiptType);
                 long lastSubscribedTimestamp = receiptType.getPurchaseDate(receiptObject);
                 //String tid = createTransactionLog(pack, TransactionEvent.SUBSCRIBE, lastSubscribedTimestamp, uid, service, receipt, itunesTrxnId, isFreeTrial, clientTid);
                 //subscriptionHandlingService.createSubscription(service, uid, pack.getPartnerProductId(), PaymentMethod.ITUNES, new HashMap<String, String>(), expireTimestamp, false, tid);
@@ -115,12 +116,13 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
 
 
     private ResponseEntity<String> getItunesStatus(String encodedValue, String password, String url){
-        Map<String, String> requestJson = new HashMap<>();
+        JSONObject requestJson = new JSONObject();
         requestJson.put(ItunesConstant.RECEIPT_DATA, encodedValue);
         requestJson.put(ItunesConstant.PASSWORD, password);
         ResponseEntity<String> responseEntity = null;
+        System.out.println(requestJson.toString());
         try {
-            RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toString(), HttpMethod.POST, URI.create(url));
+            RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toJSONString(), HttpMethod.POST, URI.create(url));
             responseEntity = iTunesRestTemplate.exchange(requestEntity, String.class);
         }
         catch (Exception e){
@@ -128,14 +130,6 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             throw e;
         }
         return responseEntity;
-    }
-
-
-    private List<JSONObject> getLatestReceipts(JSONArray receiptJsonArr, ItunesReceiptType type) {
-        List<JSONObject> unsortedReceipts = (List<JSONObject>) receiptJsonArr;
-       return unsortedReceipts.parallelStream()
-                .sorted(Comparator.comparingLong(type::getPurchaseDate).reversed())
-                .collect(Collectors.toList());
     }
 
     private JSONArray getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String uid) {
@@ -183,8 +177,9 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     }
 
 
-    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String originalItunesId, int productid) {
-        return itunesIdUidDao.findByProductAndItunesId(productid, originalItunesId);
+    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(String uid, Integer productid) {
+        logger.info("fetching data with uid : {} and productId : {} from sedb", uid, productid);
+        return itunesIdUidDao.findByKey(new ItunesIdUidMapping.Key(uid, productid));
     }
     private void saveItunesIdUidMapping(String itunesId, int productid, String uid, String receipt, ItunesReceiptType type) {
         ItunesIdUidMapping mapping = new ItunesIdUidMapping(new ItunesIdUidMapping.Key(uid, productid),itunesId, receipt, type);

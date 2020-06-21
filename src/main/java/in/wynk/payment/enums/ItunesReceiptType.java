@@ -6,10 +6,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 import in.wynk.payment.constant.ItunesConstant.*;
-
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
+import org.apache.commons.codec.binary.Base64;
 
 public enum ItunesReceiptType {
     SIX {
@@ -29,7 +26,7 @@ public enum ItunesReceiptType {
                 String value = (String) jsonObj.get(key);
                 desiredJsonRep += (encloseInDoubleQuotes(param) + "=" + encloseInDoubleQuotes(value) + ";");
             }
-            return Base64.getEncoder().encodeToString((desiredJsonRep + "}").getBytes());
+            return Base64.encodeBase64String((desiredJsonRep + "}").getBytes());
         }
 
         @Override

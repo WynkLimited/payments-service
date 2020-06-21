@@ -1,23 +1,186 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.payment.constant.BeanConstant;
+import com.github.annotation.analytic.core.service.AnalyticService;
+import com.paytm.pg.merchant.CheckSumServiceHelper;
+import in.wynk.payment.constant.PaymentConstants;
+import in.wynk.payment.constant.PaymentOption;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.*;
+import in.wynk.payment.enums.Status;
+import in.wynk.payment.constant.BeanConstant;
+import in.wynk.payment.errors.ErrorCodes;
+import in.wynk.payment.logging.LoggingMarkers;
 import in.wynk.payment.service.IRenewalMerchantWalletService;
+import in.wynk.payment.utill.Utils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import com.google.gson.*;
+
+import javax.annotation.PostConstruct;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
 
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
 public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService {
 
+    private static final Logger logger = LoggerFactory.getLogger(PaytmMerchantWalletPaymentService.class);
+
+    private static final Long DEFAULT_ACCESS_TOKEN_EXPIRY = 3600000 * 24 * 10L; // 10 Days
+
+    //@Value("${paytm.native.clientId}")
+    private String CLIENT_ID = "merchant-wynk";
+
+    //@Value("${paytm.native.merchantKey}")
+    private String MERCHANT_KEY = "RrGHVFOJyEjbp4hN";
+
+    //@Value("${paytm.native.merchantId}")
+    private String MID = "AirBSB68537227489657";
+
+    //@Value("${paytm.native.secret}")
+    private String SECRET = "fd13c3f9-da62-47e2-b354-8f0f18fbe90b";
+
+    //@Value("${paytm.native.accounts.baseUrl}")
+    private String ACCOUNTS_URL = "https://accounts.paytm.com";
+
+    //@Value("${paytm.native.services.baseUrl}")
+    private String SERVICES_URL = "https://securegw.paytm.in/paymentservices";
+
+    //@Value("${paytm.native.wcf.addMoneyUrl}")
+    private String addMoneyPage = "https://wcfpay-new.wynk.in/paytm-native/add-money";
+
+    //@Value("${paytm.native.wcf.callbackUrl}")
+    private String callBackUrl = "https://capi.wynk.in/wynk/v2/s2s/subscription/callback";
+
+    //@Value("${paytm.native.website}")
+    private String PAYTM_WEBSITE = "WCF";
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    private CheckSumServiceHelper checkSumServiceHelper;
+
+    @PostConstruct
+    public void init() {
+        checkSumServiceHelper = CheckSumServiceHelper.getCheckSumServiceHelper();
+    }
 
     @Override
     public <T> BaseResponse<T> handleCallback(CallbackRequest callbackRequest) {
-        return null;
+        Map<String, List<String>> params = (Map<String, List<String>>) callbackRequest.getBody();
+        List<String> status = params.getOrDefault(PaymentConstants.PAYTM_STATUS, new ArrayList<>());
+        if (CollectionUtils.isEmpty(status)
+                || !status.get(0).equalsIgnoreCase(PaymentConstants.PAYTM_STATUS_SUCCESS)) {
+            logger.error(LoggingMarkers.APPLICATION_ERROR, "Add money txn at paytm failed");
+            throw new RuntimeException("Failed to add money to wallet");
+        }
+        logger.info("Successfully added money to wallet. Now withdrawing amount");
+
+        ChargingRequest chargingRequest = ChargingRequest.builder().sessionId("shjhsdj").partnerProductId("hvhjv").
+                couponId("9y2").paymentOption(PaymentOption.PAYTM_WALLET).build();
+
+        return doCharging(chargingRequest);
     }
 
     @Override
     public <T> BaseResponse<T> doCharging(ChargingRequest chargingRequest) {
-        return null;
+        BigDecimal withdrawalAmount = new BigDecimal("1.00"); //fetch from session
+        ConsultBalanceResponse consultBalanceResponse = (ConsultBalanceResponse)balance().getBody();
+        if (consultBalanceResponse.getStatus() != Status.SUCCESS) {
+            String responseCode = consultBalanceResponse.getResponseCode();
+            ErrorCodes errorCode = ErrorCodes.resolveErrorCode(responseCode);
+            JsonObject response = new JsonObject();
+            if (errorCode == ErrorCodes.INSUFFICIENT_BALANCE) {
+                response.addProperty("amountRequired",
+                        consultBalanceResponse.getDeficitAmount() != null ?
+                                consultBalanceResponse.getDeficitAmount().toString() : null);
+            }
+            response.addProperty("success", false);
+            response.addProperty("message", errorCode.getMessage());
+            response.addProperty("errorCode", errorCode.getCode());
+            return new BaseResponse(response,HttpStatus.OK,null);
+        }
+
+        String msisdn = "9149832387"; //get msisdn from session
+        if (StringUtils.isBlank(msisdn)) {
+            throw new RuntimeException("Linked Msisdn not found for user");
+        }
+
+        String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; // get access token from session
+
+        try {
+
+            URI uri = new URIBuilder(SERVICES_URL + "/HANDLER_FF/withdrawScw").build();
+
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+            headers.putIfAbsent("Content-Type", Arrays.asList("application/json"));
+
+            TreeMap<String, String> parameters = new TreeMap<>();
+            parameters.put("MID", MID);
+            parameters.put("ReqType", "WITHDRAW");
+            parameters.put("TxnAmount", withdrawalAmount.toString());
+            parameters.put("AppIP", "capi-host");
+            parameters.put("OrderId", "456"); //orderiD
+            parameters.put("Currency", "INR");
+            parameters.put("DeviceId", msisdn);
+            parameters.put("SSOToken", accessToken);
+            parameters.put("PaymentMode", "PPI");
+            parameters.put("CustId", "2817"); //CustId
+            parameters.put("IndustryType", "Retail");
+            parameters.put("Channel", "WEB");
+            parameters.put("AuthMode", "USRPWD");
+
+            String checkSum = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters);
+            parameters.put("CheckSum", checkSum);
+
+            logger.info("Generated checksum: {} for payload: {}", checkSum, parameters);
+            RequestEntity requestEntity =
+                    new RequestEntity<>(parameters, headers, HttpMethod.POST, uri);
+
+            logger.info("Paytm wallet charging request: {}", requestEntity);
+            ResponseEntity<PaytmChargingResponse> responseEntity =
+                    restTemplate.exchange(requestEntity, PaytmChargingResponse.class);
+            logger.info("Paytm wallet charging response: {}", responseEntity);
+
+            HttpStatus statusCode = responseEntity.getStatusCode();
+            PaytmChargingResponse paytmChargingResponse = responseEntity.getBody();
+
+            if (!statusCode.is2xxSuccessful() || paytmChargingResponse == null) {
+                ErrorCodes errorCode = ErrorCodes.UNKNOWN;
+                if (paytmChargingResponse != null) {
+                    String responseCode = paytmChargingResponse.getResponseCode();
+                    errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                }
+                logger.error(LoggingMarkers.HTTP_ERROR,
+                        "Error in charging amount. Reason: [{}]",
+                        errorCode.getMessage());
+                throw new RuntimeException("Error in charging amount. Reason: " +
+                        errorCode.getMessage());
+            }
+
+            if (paytmChargingResponse.getStatus().equalsIgnoreCase(PaymentConstants.PAYTM_STATUS_SUCCESS)) {
+                paytmChargingResponse.setResponseCode("100");
+                logger.info("Charging Successful");
+            }
+
+            return new BaseResponse(paytmChargingResponse, HttpStatus.OK, null) ;
+        } catch(URISyntaxException ex) {
+            throw new RuntimeException("URISyntax Exception occurred");
+        } catch(Exception ex) {
+            throw new RuntimeException("Exception Occurred");
+        }
     }
 
     @Override
@@ -25,33 +188,367 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         return null;
     }
 
-    @Override
     public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
-        return null;
-    }
-
-    @Override
-    public <T> BaseResponse<T> linkRequest(WalletRequest request) {
+        // check with the help of transaction id if the entry exists or not
         return null;
     }
 
     @Override
     public <T> BaseResponse<T> validateLink(WalletRequest request) {
-        return null;
+
+        PaytmWalletValidateLinkRequest paytmWalletValidateLinkRequest = (PaytmWalletValidateLinkRequest)request;
+        logger.info("Validating OTP: {} for: {}", paytmWalletValidateLinkRequest.getOtp(), paytmWalletValidateLinkRequest.getMsisdn());
+
+        try {
+            URI uri = new URIBuilder(ACCOUNTS_URL + "/signin/validate/otp").build();
+            String authHeader =
+                    String.format("Basic %s", Utils.encodeBase64(CLIENT_ID + ":" + SECRET));
+
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+            headers.putIfAbsent("Authorization", Arrays.asList(authHeader));
+            headers.putIfAbsent("Content-Type", Arrays.asList("application/json"));
+
+            RequestEntity<PaytmWalletValidateLinkRequest> requestEntity =
+                    new RequestEntity<>(paytmWalletValidateLinkRequest, headers, HttpMethod.POST, uri);
+            ResponseEntity<PaytmWalletValidateLinkResponse> responseEntity = null;
+            HttpStatus statusCode = null;
+            PaytmWalletValidateLinkResponse paytmWalletValidateLinkResponse = null;
+
+            logger.info("Validate paytm otp request: {}", requestEntity);
+            try {
+                responseEntity = restTemplate.exchange(requestEntity, PaytmWalletValidateLinkResponse.class);
+                statusCode = responseEntity.getStatusCode();
+                paytmWalletValidateLinkResponse = responseEntity.getBody();
+            } catch (Exception e) {
+                AnalyticService.update("otpValidated", false);
+                logger.error(LoggingMarkers.HTTP_ERROR, "Error in response: {}", responseEntity);
+                paytmWalletValidateLinkResponse = PaytmWalletValidateLinkResponse.Builder.walletLinkResponse()
+                        .withStatus(Status.FAILURE)
+                        .withStatusMessage(null)
+                        .withResponseCode(ErrorCodes.GENERIC_ERROR_03.getCode())
+                        .withStatusCode(null)
+                        .withMessage(ErrorCodes.GENERIC_ERROR_03.getMessage())
+                        .withAccess_token(null)
+                        .withExpires(0)
+                        .withScope(null)
+                        .withResourceOwnerId(null)
+                        .build();
+                return new BaseResponse(paytmWalletValidateLinkResponse, HttpStatus.OK, null);
+            }
+            logger.info("Validate paytm otp response: {}", responseEntity);
+
+            if (!statusCode.is2xxSuccessful() || paytmWalletValidateLinkResponse == null) {
+                ErrorCodes errorCode = ErrorCodes.UNKNOWN;
+                if (paytmWalletValidateLinkResponse != null) {
+                    String responseCode = paytmWalletValidateLinkResponse.getResponseCode();
+                    errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                }
+                AnalyticService.update("otpValidated", false);
+                logger.error(LoggingMarkers.HTTP_ERROR, "Error in validating otp. Reason: [{}]",
+                        errorCode.getMessage());
+                throw new RuntimeException("Error in validating otp. Reason: " + errorCode.getMessage());
+            }
+
+            String accessToken = paytmWalletValidateLinkResponse.getAccess_token();
+            long expiry = DEFAULT_ACCESS_TOKEN_EXPIRY;
+
+            AnalyticService.update("accessToken", accessToken);
+            if (StringUtils.isBlank(accessToken)) {
+                logger.error(LoggingMarkers.HTTP_ERROR, "Invalid Paytm response. Reason: [{}]",
+                        "Access token received is empty");
+                paytmWalletValidateLinkResponse = PaytmWalletValidateLinkResponse.Builder.walletLinkResponse()
+                        .withStatus(Status.FAILURE)
+                        .withStatusMessage(null)
+                        .withResponseCode(ErrorCodes.INVALID_AUTH.getCode())
+                        .withStatusCode(null)
+                        .withMessage(ErrorCodes.INVALID_AUTH.getMessage())
+                        .withAccess_token(null)
+                        .withExpires(0)
+                        .withScope(null)
+                        .withResourceOwnerId(null)
+                        .build();
+            }
+            // save access token corresponding to uid
+            logger.info("Saving paytm access token to db: {}", accessToken);
+            paytmWalletValidateLinkResponse.setStatus(Status.SUCCESS);
+            return new BaseResponse(paytmWalletValidateLinkResponse, HttpStatus.OK, null);
+        } catch(URISyntaxException e) {
+            throw new RuntimeException("URI Exception");
+        }
     }
 
     @Override
     public <T> BaseResponse<T> unlink(WalletRequest request) {
+        // remove entry from DB
         return null;
     }
 
     @Override
     public <T> BaseResponse<T> balance() {
-        return null;
+        String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; // fetch access token from session
+        ValidateAccessTokenResponse validateAccessTokenResponse = validateAccessToken();
+        if (validateAccessTokenResponse.getStatus() != Status.SUCCESS) {
+            ConsultBalanceResponse consultBalanceResponse = new ConsultBalanceResponse(Status.FAILURE, null,
+                    ErrorCodes.INVALID_TOKEN.getCode(), null,
+                    ErrorCodes.INVALID_TOKEN.getMessage(), null);
+            return new BaseResponse(consultBalanceResponse, HttpStatus.OK, null);
+        }
+
+        BigDecimal amountInRs = new BigDecimal("0.50");
+
+        try {
+            URI uri = new URIBuilder(SERVICES_URL + "/pay/consult").build();
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+            headers.putIfAbsent("session_token", Arrays.asList(accessToken));
+            headers.putIfAbsent("Content-Type", Arrays.asList("application/json"));
+
+            Map<String, BigDecimal> amountDetails = new HashMap<>();
+            amountDetails.put("others", amountInRs);
+            ConsultBalanceRequestBody body = ConsultBalanceRequestBody.Builder.consultBalanceWalletRequestBody()
+                    .withUserToken(accessToken)
+                    .withTotalAmount(amountInRs)
+                    .withMid(MID)
+                    .withAmountDetails(amountDetails)
+                    .build();
+
+            String jsonPayload = new GsonBuilder().create().toJson(body);
+            logger.info("Generating signature for payload: {}", jsonPayload);
+            String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
+
+            ConsultBalanceRequestHead head = ConsultBalanceRequestHead.Builder.consultBalanceWalletRequestHead()
+                    .withClientId(CLIENT_ID)
+                    .withRequestTimestamp(System.currentTimeMillis() + "")
+                    .withSignature(signature)
+                    .withVersion("v1")
+                    .withChannelId("WEB")
+                    .build();
+
+            ConsultBalanceRequest consultBalanceRequest =
+                    ConsultBalanceRequest.Builder.consultBalanceRequest()
+                            .withHead(head)
+                            .withBody(body)
+                            .build();
+
+            RequestEntity requestEntity =
+                    new RequestEntity<>(consultBalanceRequest, headers, HttpMethod.POST, uri);
+
+            logger.info("Paytm wallet balance request: {}", requestEntity);
+            ResponseEntity<WalletBalanceResponse> responseEntity =
+                    restTemplate.exchange(requestEntity, WalletBalanceResponse.class);
+            logger.info("Paytm wallet balance response: {}", responseEntity);
+
+            HttpStatus statusCode = responseEntity.getStatusCode();
+            WalletBalanceResponse walletBalanceResponse = responseEntity.getBody();
+
+            if (!statusCode.is2xxSuccessful() || walletBalanceResponse == null) {
+                ErrorCodes errorCode = ErrorCodes.UNKNOWN;
+                if (walletBalanceResponse != null) {
+                    String responseCode = walletBalanceResponse.getResponseCode();
+                    errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                }
+                logger.error(LoggingMarkers.HTTP_ERROR,
+                        "Error in fetching wallet balance. Reason: [{}]",
+                        errorCode.getMessage());
+                throw new RuntimeException(
+                        "Error in fetching wallet balance. Reason: " + errorCode.getMessage());
+            }
+
+            if (!walletBalanceResponse.getBody().isFundsSufficient()
+                    || walletBalanceResponse.getBody().getResultInfo().getResultStatus()
+                    == Status.FAILURE) {
+
+                BigDecimal deficitAmount = walletBalanceResponse.getBody().getDeficitAmount();
+                String resultMessage = walletBalanceResponse.getBody().getResultInfo().getResultMsg();
+                String resultCode = walletBalanceResponse.getBody().getResultInfo().getResultCode();
+                ErrorCodes errorCode = ErrorCodes.INSUFFICIENT_BALANCE;
+
+                if (!walletBalanceResponse.getBody().isAddMoneyAllowed()) {
+                    errorCode = ErrorCodes.USER_NOT_FOUND;
+                    //userDAO.expireThirdPartyAccessTokenHash(txnLog.getUid());
+                }
+
+                ConsultBalanceResponse consultBalanceResponse = new ConsultBalanceResponse(Status.FAILURE, resultMessage, errorCode.getCode(),
+                        resultCode, errorCode.getMessage(), deficitAmount);
+                return new BaseResponse(consultBalanceResponse, HttpStatus.OK, null);
+            }
+
+            ConsultBalanceResponse consultBalanceResponse = new ConsultBalanceResponse(Status.SUCCESS,
+                    walletBalanceResponse.getStatusMessage(),
+                    null, walletBalanceResponse.getStatusCode(), null, null);
+
+            return new BaseResponse(consultBalanceResponse, HttpStatus.OK, null);
+        }catch(URISyntaxException ex) {
+            throw new RuntimeException("Exception encountered");
+        }catch(Exception e) {
+            throw new RuntimeException("Unknown Exception Occurred");
+        }
+
+    }
+
+    private ValidateAccessTokenResponse validateAccessToken() {
+        String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300";// Fetch access token from session
+        String msisdn = "9149832387";// Fetch from session
+        String uid = "6787687"; // Fetch from session
+        logger.info("Validating access token for msisdn: {}, uid: {}", msisdn,
+                uid);
+
+        if (StringUtils.isBlank(accessToken)) {
+            logger.info("Access token is expired or not present for: {}", msisdn);
+            ValidateAccessTokenResponse validateAccessTokenResponse =
+                    ValidateAccessTokenResponse.Builder.validateAccessTokenResponse()
+                    .withStatus(Status.FAILURE)
+                    .withStatusMessage(null)
+                    .withResponseCode(ErrorCodes.INVALID_TOKEN.getCode())
+                    .withStatusCode(null)
+                    .withMessage(ErrorCodes.INVALID_TOKEN.getMessage())
+                    .withId(null)
+                    .withEmail(null)
+                    .withMobile(null)
+                    .withExpires(0)
+                    .build();
+        }
+
+        try {
+            URI uri = new URIBuilder(ACCOUNTS_URL + "/user/details").build();
+
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+            headers.putIfAbsent("session_token", Arrays.asList(accessToken));
+
+            RequestEntity requestEntity = new RequestEntity<>(headers, HttpMethod.GET, uri);
+
+            logger.info("Validate paytm access token request: {}", requestEntity);
+            ResponseEntity<ValidateAccessTokenResponse> responseEntity =
+                    restTemplate.exchange(requestEntity, ValidateAccessTokenResponse.class);
+
+            HttpStatus statusCode = responseEntity.getStatusCode();
+            ValidateAccessTokenResponse validateAccessTokenResponse = responseEntity.getBody();
+
+            if (!statusCode.is2xxSuccessful() || validateAccessTokenResponse == null) {
+                ErrorCodes errorCode = ErrorCodes.UNKNOWN;
+                if (validateAccessTokenResponse != null) {
+                    String responseCode = validateAccessTokenResponse.getResponseCode();
+                    errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                }
+                logger.error(LoggingMarkers.HTTP_ERROR,
+                        "Error in validating access token. Reason: [{}]",
+                        errorCode.getMessage());
+                throw new RuntimeException("Error in access token. Reason: " + errorCode.getMessage());
+            }
+
+            if (validateAccessTokenResponse.getStatus() != Status.FAILURE) {
+                // Paytm doesn't respond with success in its payload. we need to populate it.
+                validateAccessTokenResponse.setStatus(Status.SUCCESS);
+            }
+            return validateAccessTokenResponse;
+        }catch(URISyntaxException exception) {
+            throw new RuntimeException("Exception throw due to URI");
+        }
     }
 
     @Override
     public <T> BaseResponse<T> addMoney(WalletRequest request) {
-        return null;
+        PaytmWalletAddMoneyRequest paytmWalletAddMoneyRequest = (PaytmWalletAddMoneyRequest) request;
+        String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; //fetch from session
+        String txnId = "767576576";//get from session
+        if (StringUtils.isBlank(accessToken)) {
+            logger.info("Access token is expired or not present for: {}", accessToken);
+            throw new RuntimeException("Access token is not present");
+        }
+
+        try {
+            URI callbackUri =
+                    new URIBuilder(callBackUrl).addParameter("tid", txnId).build();
+
+            TreeMap<String, String> parameters = new TreeMap<>();
+            parameters.put(PaymentConstants.PAYTM_REQUEST_TYPE, PaymentConstants.ADD_MONEY);
+            parameters.put(PaymentConstants.PAYTM_MID, MID);
+            parameters.put(PaymentConstants.PAYTM_REQUST_ORDER_ID, paytmWalletAddMoneyRequest.getOrderId());
+            parameters.put(PaymentConstants.PAYTM_CHANNEL_ID, PaymentConstants.PAYTM_WEB);
+            parameters.put(PaymentConstants.PAYTM_INDUSTRY_TYPE_ID, PaymentConstants.RETAIL);
+            parameters.put(PaymentConstants.PAYTM_REQUEST_CUST_ID, paytmWalletAddMoneyRequest.getUid());
+            parameters.put(PaymentConstants.PAYTM_REQUEST_TXN_AMOUNT, paytmWalletAddMoneyRequest.getAmountToCredit().toString());
+            parameters.put(PaymentConstants.PAYTM_WEBSITE, PAYTM_WEBSITE);
+            parameters.put(PaymentConstants.PAYTM_SSO_TOKEN, accessToken);
+            parameters.put(PaymentConstants.PAYTM_REQUEST_CALLBACK, callbackUri.toString());
+            parameters.put(PaymentConstants.PAYTM_CHECKSUMHASH,
+                    checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters));
+
+            JsonObject json = new GsonBuilder().create().toJsonTree(parameters).getAsJsonObject();
+
+            URI returnUrl = new URIBuilder(addMoneyPage).addParameter("payTMSubscriptionRequest",
+                    json.toString()).build();
+            List<NameValuePair> params = URLEncodedUtils.parse(returnUrl, "UTF-8");
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(returnUrl);
+
+            logger.info("Redirecting user, uid: {}, return URL: {} params: {}", paytmWalletAddMoneyRequest.getUid(),
+                    returnUrl.getHost(), params);
+
+            return new BaseResponse(null, HttpStatus.MOVED_PERMANENTLY, headers);
+        } catch(URISyntaxException e) {
+            throw new RuntimeException("URISyntax Exception");
+        } catch(Exception e) {
+            throw new RuntimeException("Exception occurred");
+        }
+    }
+
+    @Override
+    public <T> BaseResponse<T> linkRequest(WalletRequest walletRequest) {
+        PaytmWalletLinkRequest paytmWalletLinkRequest = (PaytmWalletLinkRequest)walletRequest;
+        String phone =  paytmWalletLinkRequest.getEncSi();// decode msisdn
+        logger.info("Sending OTP to {} via PayTM", phone);
+
+        try {
+            URI uri = new URIBuilder(ACCOUNTS_URL + "/signin/otp").build();
+
+            RequestEntity<PaytmWalletSendOtpRequest> requestEntity =
+                    new RequestEntity<>(PaytmWalletSendOtpRequest.Builder.paytmWalletSendOtpRequest()
+                            .withEmail(null)
+                            .withPhone(phone)
+                            .withClientId(CLIENT_ID)
+                            .withScope("wallet")
+                            .withResponseType("token")
+                            .build(), HttpMethod.POST, uri);
+
+            logger.info("Paytm OTP request: {}", requestEntity);
+
+            ResponseEntity<PaytmWalletLinkResponse> responseEntity =
+                    restTemplate.exchange(requestEntity, PaytmWalletLinkResponse.class);
+
+            logger.info("Paytm OTP response: {}", responseEntity);
+
+            HttpStatus statusCode = responseEntity.getStatusCode();
+            PaytmWalletLinkResponse paytmWalletLinkResponse = responseEntity.getBody();
+
+            if (!statusCode.is2xxSuccessful() || paytmWalletLinkResponse == null) {
+                ErrorCodes errorCode = ErrorCodes.UNKNOWN;
+                if (paytmWalletLinkResponse != null) {
+                    String responseCode = paytmWalletLinkResponse.getResponseCode();
+                    errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                }
+                logger.error(LoggingMarkers.HTTP_ERROR, "Error in sending otp. Reason: [{}]",
+                        errorCode.getMessage());
+            }
+
+            if (paytmWalletLinkResponse.getStatus() == Status.FAILURE) {
+                ErrorCodes errorCode = ErrorCodes.UNKNOWN;
+                String responseCode = paytmWalletLinkResponse.getResponseCode();
+                errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                logger.error(LoggingMarkers.HTTP_ERROR, "Error in sending otp. Reason: [{}]",
+                        errorCode.getMessage());
+                return new BaseResponse(paytmWalletLinkResponse, HttpStatus.OK,  responseEntity.getHeaders());
+            }
+
+            String state = paytmWalletLinkResponse.getState(); // add state in session
+            if (StringUtils.isBlank(state)) {
+                throw new RuntimeException("Paytm responded with empty state for OTP response");
+            }
+
+            logger.info("Otp sent successfully. Status: {}", paytmWalletLinkResponse.getStatus());
+            return new BaseResponse(paytmWalletLinkResponse, HttpStatus.OK, null);
+        } catch(URISyntaxException e) {
+            throw new RuntimeException("Error with URI");
+        }
     }
 }

@@ -11,7 +11,8 @@ import lombok.Getter;
 )
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PaytmWalletLinkRequest.class, name = "PaytmWalletLink"),
-        @JsonSubTypes.Type(value = PaytmWalletValidateLinkRequest.class, name = "PaytmWalletValidateLink")
+        @JsonSubTypes.Type(value = PaytmWalletValidateLinkRequest.class, name = "PaytmWalletValidateLink"),
+        @JsonSubTypes.Type(value = PaytmWalletAddMoneyRequest.class, name = "PaytmWalletAddMoney")
 })
 @Getter
 public class WalletRequest {

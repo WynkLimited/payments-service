@@ -4,7 +4,5 @@ import lombok.Getter;
 
 @Getter
 public class PaytmWalletLinkRequest extends WalletRequest {
-
     private String encSi;
-
 }

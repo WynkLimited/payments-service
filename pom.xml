@@ -9,6 +9,11 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <paytm.version>1.1</paytm.version>
+        <paytm.pg.version>1.0</paytm.pg.version>
+        <gson.version>2.6.1</gson.version>
+    </properties>
 
     <artifactId>payment</artifactId>
 
@@ -24,6 +29,21 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.paytm</groupId>
+            <artifactId>paytm-checksum</artifactId>
+            <version>${paytm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.paytm.pg</groupId>
+            <artifactId>pg-checksum</artifactId>
+            <version>${paytm.pg.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>

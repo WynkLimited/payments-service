@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>payment</artifactId>
+    <artifactId>payments</artifactId>
 
     <dependencies>
         <dependency>
@@ -22,22 +22,18 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-        </dependency>
-        <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-aspects</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-session</artifactId>
+            <artifactId>payments-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-exception</artifactId>
+            <artifactId>lib-session</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

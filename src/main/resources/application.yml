@@ -30,3 +30,5 @@ management:
 ###### log props ######
 logging:
   path: /data
+
+

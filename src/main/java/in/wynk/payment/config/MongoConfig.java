@@ -2,7 +2,9 @@ package in.wynk.payment.config;
 
 import in.wynk.payment.config.properties.Application;
 import org.bson.BsonUndefined;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.mongodb.MongoDbFactory;
@@ -13,6 +15,8 @@ import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import java.util.ArrayList;
 import java.util.List;
 
+@Configuration
+@EnableConfigurationProperties({Application.class})
 public class MongoConfig {
     private final Application.MongoProperties mongoProperties;
 

@@ -139,8 +139,8 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     }
 
     private JSONArray getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String uid) {
-        String itunesSecret = "dggrg";           // set in config and Autowire here
-        String itunesApiUrl = "sandbox.com";     // set in config Autowire here
+        String itunesSecret = "820ea8abe1374b369eaa564dcfa6391c";           // set in config and Autowire here
+        String itunesApiUrl = "https://buy.itunes.apple.com/verifyReceipt";     // set in config Autowire here
         String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
         if (StringUtils.isBlank(encodedValue)) {
             logger.error("Encoded itunes / itunes data is empty! for iTunesData {}", receipt);

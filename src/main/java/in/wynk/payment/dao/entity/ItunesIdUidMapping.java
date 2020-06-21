@@ -1,19 +1,21 @@
 package in.wynk.payment.dao.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.payment.enums.ItunesReceiptType;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.io.Serializable;
 
 @Document(collection = "ItunesIdUidMapping")
 @Getter
 @Setter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItunesIdUidMapping {
+@ToString
+public class ItunesIdUidMapping implements Serializable {
 
     @Id
     private Key         key;

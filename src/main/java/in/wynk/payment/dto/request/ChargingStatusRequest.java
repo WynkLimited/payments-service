@@ -1,15 +1,17 @@
 package in.wynk.payment.dto.request;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-@RequiredArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChargingStatusRequest {
 
-    private final String sessionId;
-    private final String transactionId;
+    private String sessionId;
+    private String transactionId;
 
 }

@@ -5,7 +5,6 @@ import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.UUID;
 
 @Entity
@@ -24,22 +23,18 @@ public class Transaction {
     @Column(name = "transaction_id")
     private UUID id;
 
+    @Column(name = "product_id")
+    private Integer productId;
+
     @Column(name = "paid_amount")
     private float amount;
+
+    @Column(name = "discount_amount")
+    private float discount;
 
     @Column(name = "init_timestamp")
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar initTime;
-
-    @Column(name = "exit_timestamp")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Calendar exitTime;
-
-    @Column(name = "item_id")
-    private int itemId;
-
-    @Column(name = "user_consent_timestamp")
-    private Date consent;
 
     @Column(name = "uid")
     private String uid;
@@ -47,11 +42,11 @@ public class Transaction {
     @Column(name = "msisdn")
     private String msisdn;
 
+    @Column(name = "item_id")
+    private String itemId;
+
     @Column(name = "payment_channel")
     private String paymentChannel;
-
-    @Column(name = "product_id")
-    private Integer productId;
 
     @Column(name = "service")
     private String service;
@@ -65,8 +60,13 @@ public class Transaction {
     @Column(name = "coupon_id")
     private String coupon;
 
-    @Column(name = "discount_amount")
-    private float discount;
+    @Column(name = "exit_timestamp")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar exitTime;
+
+    @Column(name = "user_consent_timestamp")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar consent;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_error_id", referencedColumnName = "payment_error_id")

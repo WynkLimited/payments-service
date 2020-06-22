@@ -130,7 +130,7 @@
                         </goals>
                         <configuration>
                             <outputDirectory>build</outputDirectory>
-                            <mainClass>in.wynk.targeting.TargetingApplication</mainClass>
+                            <mainClass>in.wynk.payment.PaymentBootStarter</mainClass>
                         </configuration>
                     </execution>
                 </executions>

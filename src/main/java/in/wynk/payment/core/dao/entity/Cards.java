@@ -7,7 +7,7 @@ import lombok.Getter;
 import static in.wynk.commons.enums.PaymentGroup.CARD;
 
 @Getter
-public class Cards implements PaymentType {
+public class Cards implements PaymentOption {
 
     private PaymentGroup group = CARD;
 

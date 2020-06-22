@@ -3,20 +3,22 @@ package in.wynk.payment.core.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import static in.wynk.payment.core.constant.BeanConstant.*;
+
 @Getter
 @RequiredArgsConstructor
 public enum PaymentOption {
 
     GOOGLE_UPI("googleUPI"),
     AMAZON_WALLET("amazonWallet"),
-    ITUNES("itunesMerchantPaymentBean"),
-    PAYU_GATEWAY("payUMerchantPaymentBean"),
-    PAYTM_WALLET("payTMMerchantWalletBean"),
-    PHONEPE_WALLET("phonePeMerchantPaymentBean"),
-    GOOGLE_WALLET("googleWalletMerchantPaymentBean"),
-    APB_GATEWAY("airtelPaymentBankMerchantPaymentBean"),
-    SE_BILLING("airtelCarrierBillingMerchantPaymentBean");
+    ITUNES(ITUNES_MERCHANT_PAYMENT_SERVICE),
+    PAYU_GATEWAY(PAYU_MERCHANT_PAYMENT_SERVICE),
+    PAYTM_WALLET(PAYTM_MERCHANT_WALLET_SERVICE),
+    PHONEPE_WALLET(PHONEPE_MERCHANT_PAYMENT_SERVICE),
+    GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE),
+    APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE),
+    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE);
 
-    private final String type;
+    public final String type;
 
 }

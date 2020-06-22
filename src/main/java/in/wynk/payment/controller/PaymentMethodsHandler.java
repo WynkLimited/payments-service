@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,9 +21,9 @@ public class PaymentMethodsHandler {
 
     @GetMapping("get-methods/{sid}")
     @ManageSession(sessionId = "#sid")
-    public PaymentMethods getPaymentMethods(@PathVariable String sid) {
+    public PaymentMethods getPaymentMethods(@PathVariable String sid, @RequestParam String planId) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return paymentMethodService.getPaymentOptions(sessionDTO);
+        return paymentMethodService.getPaymentOptions(sessionDTO, planId);
     }
 }
 

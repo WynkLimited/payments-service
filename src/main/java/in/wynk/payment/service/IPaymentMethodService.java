@@ -5,5 +5,5 @@ import in.wynk.payment.dto.PaymentMethods;
 
 public interface IPaymentMethodService {
 
-    PaymentMethods getPaymentOptions(SessionDTO sessionDTO);
+    PaymentMethods getPaymentOptions(SessionDTO sessionDTO, String planId);
 }

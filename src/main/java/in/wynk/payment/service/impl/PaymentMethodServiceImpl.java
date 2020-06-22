@@ -8,7 +8,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class PaymentMethodServiceImpl implements IPaymentMethodService {
     @Override
-    public PaymentMethods getPaymentOptions(SessionDTO sessionDTO) {
+    public PaymentMethods getPaymentOptions(SessionDTO sessionDTO, String planId) {
+
         return null;
     }
 }

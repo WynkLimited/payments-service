@@ -4,8 +4,10 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 
-@SpringBootApplication(scanBasePackages = "in.wynk")
+@SpringBootApplication(scanBasePackages = "in.wynk", exclude = {RedisAutoConfiguration.class, RedisRepositoriesAutoConfiguration.class})
 public class PaymentBootStarter implements ApplicationRunner {
 
 

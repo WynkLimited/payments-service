@@ -9,7 +9,12 @@ session:
       enableJmx: true
       jmxPrefix: session-store:dev
       cluster:
-        nodes: 127.0.0.1,127.0.0.1
+        nodes: 10.80.1.111:6379,10.80.0.22:6379
+      connection:
+        timeout: 1000
+        maxTotal: 200
+        minIdle: 50
+        maxIdle: 100
 
 ##### mysql database props #####
 spring:
@@ -37,7 +42,7 @@ spring:
     show-sql: false
     open-in-view: false
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -48,5 +53,5 @@ spring:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: false
-      hibernate.hbm2ddl.auto: create
+      hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC

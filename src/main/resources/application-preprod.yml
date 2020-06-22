@@ -9,7 +9,12 @@ session:
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: 127.0.0.1,127.0.0.1
+      nodes: 10.80.1.111:6379,10.80.0.22:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 
 ##### mysql database props #####

@@ -26,14 +26,13 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.uuid</groupId>
+            <artifactId>java-uuid-generator</artifactId>
+        </dependency>
+        <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-exception</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.uuid</groupId>
-            <artifactId>java-uuid-generator</artifactId>
-            <version>${uuid-generator.version}</version>
         </dependency>
     </dependencies>
 

@@ -26,12 +26,12 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-session</artifactId>
+            <artifactId>payments-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-exception</artifactId>
+            <artifactId>lib-session</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

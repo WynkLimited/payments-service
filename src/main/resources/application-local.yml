@@ -14,5 +14,48 @@ session:
         minIdle: 50
         maxIdle: 100
 
+##### mysql database props #####
+spring:
+  datasource:
+    url: jdbc:mysql://localhost/payments
+    username: root
+    password: root
+    hikari:
+      jdbc-url: jdbc:mysql://localhost/payments
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      registerMbeans: true
+      auto-commit: false
+      connectionTimeout: 2000
+      idleTimeout: 10000
+      maxLifetime: 30000
+      poolName: payment-datasource-pool-local
+      minimum-idle: 10
+      maximumPoolSize: 100
+
+
+
+  #### JPA props ######
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    open-in-view: true
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    properties:
+      hibernate.format_sql: true
+      hibernate.id.new_generator_mappings: true
+      hibernate.connection.provider_disables_autocommit: true
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
+      hibernate.generate_statistics: true
+      hibernate.hbm2ddl.auto: validate
+      hibernate.jdbc.time_zone: UTC
+
+#### logging props ####
 logging:
   path: /tmp

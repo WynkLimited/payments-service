@@ -20,7 +20,20 @@ spring:
     url: jdbc:mysql://localhost/payments
     username: root
     password: root
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      jdbc-url: jdbc:mysql://localhost/payments
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      registerMbeans: true
+      auto-commit: false
+      connectionTimeout: 2000
+      idleTimeout: 10000
+      maxLifetime: 30000
+      poolName: payment-datasource-pool-local
+      minimum-idle: 10
+      maximumPoolSize: 100
+
 
 
   #### JPA props ######

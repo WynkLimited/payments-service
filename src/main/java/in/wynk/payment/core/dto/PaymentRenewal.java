@@ -14,11 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "payment_renewal",
-        indexes = {@Index(name = "payment_renewal_day_index", columnList = "renewal_day"),
-                @Index(name = "payment_renewal_hour", columnList = "renewal_hour")
-        }
-)
+@Table(name = "payment_renewal", indexes = {@Index(name = "payment_renewal_day_time_index", columnList = "renewal_day, renewal_hour")})
 public class PaymentRenewal implements Serializable {
 
     @Id

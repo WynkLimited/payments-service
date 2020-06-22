@@ -17,7 +17,19 @@ spring:
     url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/
     username: admin
     password: o7QZ?!n=eu
-    driverClassName: com.mysql.cj.jdbc.Driver
+    hikari:
+      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/
+      username: admin
+      password: o7QZ?!n=eu
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      registerMbeans: true
+      auto-commit: false
+      connectionTimeout: 2000
+      idleTimeout: 10000
+      maxLifetime: 30000
+      poolName: payment-datasource-pool-dev
+      minimum-idle: 10
+      maximumPoolSize: 100
 
   #### JPA props ######
   jpa:

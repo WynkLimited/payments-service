@@ -16,15 +16,9 @@ import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.PayUVerificationResponse;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
-import in.wynk.revenue.commons.EncryptionUtils;
-import in.wynk.revenue.commons.SubscriptionStatus;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
+import in.wynk.revenue.commons.*;
 import in.wynk.revenue.utils.JsonUtils;
 import in.wynk.revenue.utils.Utils;
-import in.wynk.utils.common.PaymentRequestType;
-import in.wynk.utils.constant.PackType;
-import in.wynk.utils.domain.SubscriptionPack;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.http.NameValuePair;
@@ -231,7 +225,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
               .addParameter(PAYU_REQUEST_TRANSACTION_ID, chargingRequest.getTransactionId())
               .addParameter(
                   PAYU_TRANSACTION_AMOUNT,
-                  String.valueOf(pack.getPricing().getRoundedPriceInRupees()))
+                  pack.getPricing())
               .addParameter(PAYU_PRODUCT_INFO, pack.getTitle())
               .addParameter(PAYU_CUSTOMER_FIRSTNAME, firstName)
               .addParameter(PAYU_CUSTOMER_EMAIL, email)
@@ -299,14 +293,14 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
       String udf1,
       String email,
       String firstName) {
-    double amount = pack.getPricing().getRoundedPriceInRupees();
+    String amount = pack.getPricing();
     String productTitle = pack.getTitle();
     String finalString =
         payUMerchantKey
             + PIPE_SEPARATOR
             + chargingRequest.getTransactionId()
             + PIPE_SEPARATOR
-            + String.valueOf(amount)
+            + amount
             + PIPE_SEPARATOR
             + productTitle
             + PIPE_SEPARATOR
@@ -436,7 +430,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     if (Integer.parseInt(transactionDetails.getStatus()) == 1) {
       if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
         subscriptionStatus = SubscriptionStatus.ACTIVE;
-        validTillDate = externalChargingDate + pack.getPackPeriod().getValidityDurationInMillis();
+        validTillDate = externalChargingDate + pack.getPackPeriod();
         transactionStatus = TransactionStatus.SUCCESS;
       } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus())
           || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {

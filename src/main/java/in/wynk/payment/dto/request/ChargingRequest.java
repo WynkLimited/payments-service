@@ -12,12 +12,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChargingRequest {
 
-    private final String sessionId;
-    private final String partnerProductId;
-    private final String couponId;
-    private final PaymentOption paymentOption;
-    private final String enforcePayment; // Do we have to store this value at backend in configuration?
-    private final String pg;
-    private final String msisdn;
-    private final String transactionId;
+    private String sessionId;
+    private String partnerProductId;
+    private String couponId;
+    private PaymentOption paymentOption;
+    private String enforcePayment; // Do we have to store this value at backend in configuration?
+    private String pg;
+    private String msisdn;
+    private String transactionId;
+    private String service;
 }

@@ -11,34 +11,33 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class TransactionDetails {
+public class PayUCallbackRequestPayload {
+  @JsonProperty("bankcode")
+  private String bankCode;
+
+  private String mode;
   private String status;
 
   @JsonProperty("mihpayid")
-  private String payUExternalTxnId;
+  private String externalTransactionId;
 
-  @JsonProperty("addedon")
-  private String payUTransactionDate;
-
-  @JsonProperty("error_code")
-  private String errorCode;
+  @JsonProperty("Error")
+  private String error;
 
   @JsonProperty("error_Message")
   private String errorMessage;
 
-  @JsonProperty("udf1")
-  private String payUUdf1;
+  private String udf1;
+  private String cardToken;
 
   @JsonProperty("card_no")
-  private String responseCardNumber;
+  private String cardNumber;
 
-  @JsonProperty("payuid")
-  private String payuId;
+  private String email;
 
-  @JsonProperty("transactionid")
-  private String transactionId;
+  @JsonProperty("firstname")
+  private String firstName;
 
-  @JsonProperty("field9")
-  private String payUResponseFailureMessage;
+  @JsonProperty("hash")
+  private String responseHash;
 }

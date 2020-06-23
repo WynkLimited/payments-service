@@ -2,8 +2,7 @@ package in.wynk.payment.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import in.wynk.payment.dto.CardDetails;
+import in.wynk.payment.dto.TransactionDetails;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,12 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PayUUserCardDetailsResponse {
-  @JsonProperty("msg")
-  private String message;
-
-  @JsonProperty("user_cards")
-  private Map<String, CardDetails> userCards;
-
-  private String status;
+public class PayURenewalResponse {
+  private Map<String, TransactionDetails> details;
+  private boolean timeOutFlag;
 }

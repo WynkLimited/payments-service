@@ -28,4 +28,19 @@ public class PaymentConstants {
   public static final String PAYU_SI = "si";
   public static final String SUBSID = "subsId";
   public static final String PAYU_CARD_NUMBER = "card_no";
+  public static final String SUCCESS = "success";
+  public static final String FAILURE = "failure";
+  public static final String STATUS = "status";
+  public static final String MESSAGE = "message";
+  public static final String INPROGRESS = "inprogress";
+  public static final String PAYU_STATUS_NOT_FOUND = "Not Found";
+  public static final String PENDING = "pending";
+  public static final String PAYU_RESPONSE_AUTH_PAYUID = "authpayuid";
+  public static final String PAYU_CARD_TOKEN = "card_token";
+  public static final String TRANSACTION_FAILED = "TXN Failed";
+  public static final String TRANSACTION_ID = "transactionid";
+  public static final String PAYU_ERROR_MESSAGE = "Error";
+  public static final String PAYU_RESPONSE_ERROR_MESSAGE = "error_Message";
+  public static final String PAYU_STATUS_CAPTURED = "captured";
+  public static final String PAYU_SI_STATUS_FAILURE = "failed";
 }

@@ -1,15 +1,21 @@
 package in.wynk.payment.dto.request;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
 
-@Getter
+@Data
 @Builder
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CallbackRequest<T> {
 
-    private final String transactionId;
-    private final T body;
-
+    private String transactionId;
+    private T body;
+    private String returnUrl;
+    private String transactionEvent;
+    private String receivedHash;
+    private String amount;
+    private String title;
+    private String id;
 }

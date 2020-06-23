@@ -19,7 +19,7 @@ public class PaymentOptionsHanlder {
     @Autowired
     private IPaymentOptionService paymentMethodService;
 
-    @GetMapping("getMethods/{sid}")
+    @GetMapping("options/{sid}")
     @ManageSession(sessionId = "#sid")
     public PaymentOptionsDTO getPaymentMethods(@PathVariable String sid, @RequestParam String planId) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();

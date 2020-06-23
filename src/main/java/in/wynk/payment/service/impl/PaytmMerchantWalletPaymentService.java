@@ -11,7 +11,8 @@ import in.wynk.payment.core.constant.PaymentOption;
 import in.wynk.payment.errors.ErrorCodes;
 import in.wynk.payment.logging.LoggingMarkers;
 import in.wynk.payment.service.IRenewalMerchantWalletService;
-import in.wynk.payment.utill.Utils;
+
+import in.wynk.revenue.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -19,11 +20,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import com.google.gson.*;
 
@@ -40,32 +43,32 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
     private static final Long DEFAULT_ACCESS_TOKEN_EXPIRY = 3600000 * 24 * 10L; // 10 Days
 
-    //@Value("${paytm.native.clientId}")
-    private String CLIENT_ID = "merchant-wynk";
+    @Value("${paytm.native.clientId}")
+    private String CLIENT_ID;
 
-    //@Value("${paytm.native.merchantKey}")
-    private String MERCHANT_KEY = "RrGHVFOJyEjbp4hN";
+    @Value("${paytm.native.merchantKey}")
+    private String MERCHANT_KEY;
 
-    //@Value("${paytm.native.merchantId}")
-    private String MID = "AirBSB68537227489657";
+    @Value("${paytm.native.merchantId}")
+    private String MID;
 
-    //@Value("${paytm.native.secret}")
-    private String SECRET = "fd13c3f9-da62-47e2-b354-8f0f18fbe90b";
+    @Value("${paytm.native.secret}")
+    private String SECRET;
 
-    //@Value("${paytm.native.accounts.baseUrl}")
-    private String ACCOUNTS_URL = "https://accounts.paytm.com";
+    @Value("${paytm.native.accounts.baseUrl}")
+    private String ACCOUNTS_URL;
 
-    //@Value("${paytm.native.services.baseUrl}")
-    private String SERVICES_URL = "https://securegw.paytm.in/paymentservices";
+    @Value("${paytm.native.services.baseUrl}")
+    private String SERVICES_URL;
 
-    //@Value("${paytm.native.wcf.addMoneyUrl}")
-    private String addMoneyPage = "https://wcfpay-new.wynk.in/paytm-native/add-money";
+    @Value("${paytm.native.wcf.addMoneyUrl}")
+    private String addMoneyPage;
 
-    //@Value("${paytm.native.wcf.callbackUrl}")
-    private String callBackUrl = "https://capi.wynk.in/wynk/v2/s2s/subscription/callback";
+    @Value("${paytm.native.wcf.callbackUrl}")
+    private String callBackUrl;
 
-    //@Value("${paytm.native.website}")
-    private String PAYTM_WEBSITE = "WCF";
+    @Value("${paytm.native.website}")
+    private String PAYTM_WEBSITE;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -96,6 +99,12 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
     @Override
     public <T> BaseResponse<T> doCharging(ChargingRequest chargingRequest) {
+        BaseResponse response = withdrawFromWallet(chargingRequest);
+        //create subscription request
+        return response;
+    }
+
+    private <T> BaseResponse<T> withdrawFromWallet(ChargingRequest chargingRequest) {
         BigDecimal withdrawalAmount = new BigDecimal("1.00"); //fetch from session
         ConsultBalanceResponse consultBalanceResponse = (ConsultBalanceResponse)balance().getBody();
         if (consultBalanceResponse.getStatus() != Status.SUCCESS) {
@@ -178,14 +187,19 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             return new BaseResponse(paytmChargingResponse, HttpStatus.OK, null) ;
         } catch(URISyntaxException ex) {
             throw new RuntimeException("URISyntax Exception occurred");
+        } catch(HttpStatusCodeException e) {
+            throw new RuntimeException("Http Status Exception Occurred");
         } catch(Exception ex) {
             throw new RuntimeException("Exception Occurred");
         }
     }
-
     @Override
     public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
-        return null;
+        ChargingRequest chargingRequest = ChargingRequest.builder().sessionId(paymentRenewalRequest.getSessionId()).partnerProductId(paymentRenewalRequest.getPartnerProductId()).
+                couponId(paymentRenewalRequest.getCouponId()).paymentOption(PaymentOption.PAYTM_WALLET).build();
+        BaseResponse response = withdrawFromWallet(chargingRequest);
+        // send subscription request to queue
+        return response;
     }
 
     public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
@@ -274,6 +288,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             return new BaseResponse(paytmWalletValidateLinkResponse, HttpStatus.OK, null);
         } catch(URISyntaxException e) {
             throw new RuntimeException("URI Exception");
+        }catch(HttpStatusCodeException e) {
+            throw new RuntimeException("Http Status Exception Occurred");
+        }catch(Exception e) {
+            throw new RuntimeException("General Exception Occurred");
         }
     }
 
@@ -304,29 +322,29 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
             Map<String, BigDecimal> amountDetails = new HashMap<>();
             amountDetails.put("others", amountInRs);
-            ConsultBalanceRequestBody body = ConsultBalanceRequestBody.Builder.consultBalanceWalletRequestBody()
-                    .withUserToken(accessToken)
-                    .withTotalAmount(amountInRs)
-                    .withMid(MID)
-                    .withAmountDetails(amountDetails)
+            ConsultBalanceRequest.ConsultBalanceRequestBody body = ConsultBalanceRequest.ConsultBalanceRequestBody.builder()
+                    .userToken(accessToken)
+                    .totalAmount(amountInRs)
+                    .mid(MID)
+                    .amountDetails(amountDetails)
                     .build();
 
             String jsonPayload = new GsonBuilder().create().toJson(body);
             logger.info("Generating signature for payload: {}", jsonPayload);
             String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
 
-            ConsultBalanceRequestHead head = ConsultBalanceRequestHead.Builder.consultBalanceWalletRequestHead()
-                    .withClientId(CLIENT_ID)
-                    .withRequestTimestamp(System.currentTimeMillis() + "")
-                    .withSignature(signature)
-                    .withVersion("v1")
-                    .withChannelId("WEB")
+            ConsultBalanceRequest.ConsultBalanceRequestHead head = ConsultBalanceRequest.ConsultBalanceRequestHead.builder()
+                    .clientId(CLIENT_ID)
+                    .requestTimestamp(System.currentTimeMillis() + "")
+                    .signature(signature)
+                    .version("v1")
+                    .channelId("WEB")
                     .build();
 
             ConsultBalanceRequest consultBalanceRequest =
-                    ConsultBalanceRequest.Builder.consultBalanceRequest()
-                            .withHead(head)
-                            .withBody(body)
+                    ConsultBalanceRequest.builder()
+                            .head(head)
+                            .body(body)
                             .build();
 
             RequestEntity requestEntity =
@@ -379,7 +397,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             return new BaseResponse(consultBalanceResponse, HttpStatus.OK, null);
         }catch(URISyntaxException ex) {
             throw new RuntimeException("Exception encountered");
-        }catch(Exception e) {
+        }catch(HttpStatusCodeException e) {
+            throw new RuntimeException("Http Status Exception Occurred");
+        } catch(Exception e) {
             throw new RuntimeException("Unknown Exception Occurred");
         }
 
@@ -440,8 +460,12 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 validateAccessTokenResponse.setStatus(Status.SUCCESS);
             }
             return validateAccessTokenResponse;
-        }catch(URISyntaxException exception) {
+        } catch(URISyntaxException exception) {
             throw new RuntimeException("Exception throw due to URI");
+        } catch(HttpStatusCodeException e) {
+            throw new RuntimeException("Http Status Exception Occurred");
+        } catch(Exception e) {
+            throw new RuntimeException("General Exception occurred");
         }
     }
 
@@ -449,7 +473,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     public <T> BaseResponse<T> addMoney(WalletRequest request) {
         PaytmWalletAddMoneyRequest paytmWalletAddMoneyRequest = (PaytmWalletAddMoneyRequest) request;
         String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; //fetch from session
-        String txnId = "767576576";//get from session
+        String txnId = "76757657667";//get from session
         if (StringUtils.isBlank(accessToken)) {
             logger.info("Access token is expired or not present for: {}", accessToken);
             throw new RuntimeException("Access token is not present");
@@ -488,7 +512,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             return new BaseResponse(null, HttpStatus.MOVED_PERMANENTLY, headers);
         } catch(URISyntaxException e) {
             throw new RuntimeException("URISyntax Exception");
-        } catch(Exception e) {
+        } catch(HttpStatusCodeException e) {
+            throw new RuntimeException("Http Status Exception Occurred");
+        }catch(Exception e) {
             throw new RuntimeException("Exception occurred");
         }
     }
@@ -496,9 +522,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     @Override
     public <T> BaseResponse<T> linkRequest(WalletRequest walletRequest) {
         PaytmWalletLinkRequest paytmWalletLinkRequest = (PaytmWalletLinkRequest)walletRequest;
-        String phone =  paytmWalletLinkRequest.getEncSi();// decode msisdn
+        String phone =  paytmWalletLinkRequest.getEncSi();
         logger.info("Sending OTP to {} via PayTM", phone);
-
         try {
             URI uri = new URIBuilder(ACCOUNTS_URL + "/signin/otp").build();
 
@@ -549,6 +574,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             return new BaseResponse(paytmWalletLinkResponse, HttpStatus.OK, null);
         } catch(URISyntaxException e) {
             throw new RuntimeException("Error with URI");
+        } catch(HttpStatusCodeException e) {
+            throw new RuntimeException("Http Status Exception Occurred");
+        } catch(Exception e) {
+            throw new RuntimeException("General Exception Occurred");
         }
     }
 }

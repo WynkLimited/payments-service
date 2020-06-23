@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChargingStatusRequest {
-
     private String sessionId;
     private String transactionId;
-
 }

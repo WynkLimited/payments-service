@@ -1,8 +1,8 @@
 package in.wynk.payment.controller;
 
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.payment.dto.PaymentMethods;
-import in.wynk.payment.service.IPaymentMethodService;
+import in.wynk.payment.dto.PaymentOptionsDTO;
+import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/wynk/v1/payment/")
-public class PaymentMethodsHandler {
+public class PaymentOptionsHanlder {
 
     @Autowired
-    private IPaymentMethodService paymentMethodService;
+    private IPaymentOptionService paymentMethodService;
 
-    @GetMapping("get-methods/{sid}")
+    @GetMapping("getMethods/{sid}")
     @ManageSession(sessionId = "#sid")
-    public PaymentMethods getPaymentMethods(@PathVariable String sid, @RequestParam String planId) {
+    public PaymentOptionsDTO getPaymentMethods(@PathVariable String sid, @RequestParam String planId) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         return paymentMethodService.getPaymentOptions(sessionDTO, planId);
     }

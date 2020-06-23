@@ -2,7 +2,7 @@ package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import in.wynk.payment.constant.PaymentOption;
+import in.wynk.payment.core.constant.PaymentOption;
 import lombok.Getter;
 
 @JsonTypeInfo(

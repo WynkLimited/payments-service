@@ -26,7 +26,11 @@ management:
         enabled: false
       diskspace:
         enabled: false
+      redis:
+        enabled: false
 
 ###### log props ######
 logging:
   path: /data
+
+

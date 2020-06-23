@@ -6,11 +6,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 
-@SpringBootApplication(scanBasePackages = "in.wynk")
+@SpringBootApplication(scanBasePackages = "in.wynk", exclude = {RedisAutoConfiguration.class, RedisRepositoriesAutoConfiguration.class})
 public class PaymentBootStarter implements ApplicationRunner {
-
-
     public static void main(String[] args) {
         SpringApplication.run(PaymentBootStarter.class, args);
     }

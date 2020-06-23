@@ -1,7 +1,8 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.constant.PaymentOption;
+import in.wynk.payment.core.constant.PaymentOption;
 import lombok.*;
+import lombok.Builder;
 
 @Builder
 @Data

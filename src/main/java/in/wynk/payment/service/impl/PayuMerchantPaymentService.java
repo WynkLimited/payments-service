@@ -1,6 +1,6 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.payment.constant.BeanConstant;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;

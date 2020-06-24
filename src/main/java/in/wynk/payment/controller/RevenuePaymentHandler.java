@@ -4,8 +4,8 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.ApplicationConstant;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentOption;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
@@ -19,7 +19,12 @@ import in.wynk.session.dto.Session;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -39,8 +44,8 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody ChargingRequest request) {
         IMerchantPaymentChargingService chargingService;
         try {
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentOption().name());
-            chargingService = this.context.getBean(request.getPaymentOption().getType(), IMerchantPaymentChargingService.class);
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
+            chargingService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantPaymentChargingService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
@@ -56,9 +61,9 @@ public class RevenuePaymentHandler {
         Session<Map<String, Object>> session = SessionContextHolder.get();
         ChargingStatusRequest request = ChargingStatusRequest.builder().sessionId(session.getId().toString()).build();
         try {
-            PaymentOption paymentOption = (PaymentOption) session.getBody().get(ApplicationConstant.PAYMENT_METHOD);
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentOption.name());
-            statusService = this.context.getBean(paymentOption.getType(), IMerchantPaymentStatusService.class);
+            PaymentCode paymentCode = (PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD);
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
+            statusService = this.context.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
@@ -74,10 +79,10 @@ public class RevenuePaymentHandler {
         Session<Map<String, Object>> session = SessionContextHolder.get();
         CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
         try {
-            PaymentOption option = ((PaymentOption) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
+            PaymentCode option = ((PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, option.name());
             AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
-            callbackService = this.context.getBean(option.getType(), IMerchantPaymentCallbackService.class);
+            callbackService = this.context.getBean(option.getCode(), IMerchantPaymentCallbackService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }

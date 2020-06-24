@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.constant.PaymentOption;
+import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,11 +11,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChargingRequest {
-
     private String sessionId;
     private String partnerProductId;
     private String couponId;
     private String txnId;
     private PaymentOption paymentOption;
-
+    private PaymentCode paymentCode;
 }

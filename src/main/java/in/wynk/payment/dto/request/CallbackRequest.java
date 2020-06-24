@@ -12,6 +12,5 @@ public class CallbackRequest<T> {
 
     private final String transactionId;
     private final T body;
-    private final MultiValueMap<String, String> params;
 
 }

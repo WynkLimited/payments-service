@@ -36,7 +36,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private RestTemplate phonePeRestTemplate;
 
     @Value("${phonepe.merchant.id}")
-    private String merchantId="WYNK";
+    private String merchantId = "WYNK";
 
     @Value("${phonepe.callback.url}")
     private String phonePeCallBackURL;
@@ -53,6 +53,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private final String prefixStatusApi = "/v3/transaction/" + merchantId + "/";
 
     private final String debitCall = "/v4/debit";
+
 
     private Logger logger = LoggerFactory.getLogger(PhonePeMerchantPaymentService.class.getCanonicalName());
 
@@ -102,7 +103,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     private URI getCallbackRedirectionUri(PhonePeTransactionResponse phonePeTransactionResponse, String transactionId, boolean validChecksum) {
         try {
-            URIBuilder returnUrl = new URIBuilder();
+            URIBuilder returnUrl = new URIBuilder(phonePeCallBackURL);
             if (validChecksum && phonePeTransactionResponse.getCode() != null) {
                 if (PhonePeTransactionStatus.PAYMENT_SUCCESS.equals(phonePeTransactionResponse.getCode())) {
                     addParamToUri(SUCCESS, SUCCESS, returnUrl);

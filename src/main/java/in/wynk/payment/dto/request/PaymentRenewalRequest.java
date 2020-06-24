@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.constant.PaymentOption;
+import in.wynk.payment.core.constant.PaymentCode;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,5 +10,5 @@ public class PaymentRenewalRequest {
     private String sessionId;
     private String partnerProductId;
     private String couponId;
-    private PaymentOption paymentOption;
+    private PaymentCode paymentOption;
 }

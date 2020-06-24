@@ -15,6 +15,7 @@ public class ChargingRequest {
     private String sessionId;
     private String partnerProductId;
     private String couponId;
+    private String txnId;
     private PaymentOption paymentOption;
 
 }

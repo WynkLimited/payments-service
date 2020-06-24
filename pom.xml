@@ -22,22 +22,18 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-        </dependency>
-        <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-aspects</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-session</artifactId>
+            <artifactId>payments-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-exception</artifactId>
+            <artifactId>lib-session</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -134,7 +130,7 @@
                         </goals>
                         <configuration>
                             <outputDirectory>build</outputDirectory>
-                            <mainClass>in.wynk.targeting.TargetingApplication</mainClass>
+                            <mainClass>in.wynk.payment.PaymentBootStarter</mainClass>
                         </configuration>
                     </execution>
                 </executions>

@@ -1,9 +1,11 @@
 FROM 536123028970.dkr.ecr.ap-south-1.amazonaws.com/java:openjdk-8u151-alpine
 ARG profile
 ENV profile $profile
-ENV JAR_NAME=payment-0.0.1.jar
+ARG xmx
+ENV jmx $xmx
+ENV JAR_NAME=payments-0.0.1.jar
 ENV JAVA_OPTS="-Duser.timezone=Asia/Calcutta -Dfile.encoding=UTF-8 -Dspring.profiles.active=$profile"
-ENV JMX_OPTS="-Xmx4g -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:MaxTenuringThreshold=1 -XX:+AggressiveOpts -XX:+UseFastAccessorMethods"
+ENV JMX_OPTS="-Xmx$xmx -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:MaxTenuringThreshold=1 -XX:+AggressiveOpts -XX:+UseFastAccessorMethods"
 ADD $JAR_NAME /opt/
 WORKDIR /opt/
 RUN mkdir -p /data

@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.constant.PaymentOption;
+import in.wynk.payment.core.constant.PaymentOption;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

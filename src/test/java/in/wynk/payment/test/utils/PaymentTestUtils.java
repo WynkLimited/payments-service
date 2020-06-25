@@ -56,7 +56,7 @@ public class PaymentTestUtils {
         return new UserPreferredPayment.Builder().option(payment).uid(DUMMY_UID).build();
     }
 
-    public static SessionDTO dummySession(){
+    public static SessionDTO dummySession() {
         Map<String, Object> map = new HashMap<>();
         map.put(UID, DUMMY_UID);
         SessionDTO sessionDTO = new SessionDTO();

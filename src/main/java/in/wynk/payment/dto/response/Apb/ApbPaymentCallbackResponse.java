@@ -1,6 +1,6 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.response.Apb;
 
-import in.wynk.payment.enums.Status;
+import in.wynk.commons.enums.Status;
 import lombok.Data;
 
 @Data

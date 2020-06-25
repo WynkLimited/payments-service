@@ -1,6 +1,6 @@
 spring:
     profiles:
-      active: ${env:dev}
+      active: ${env:local}
     main:
       banner-mode: off
     devtools:

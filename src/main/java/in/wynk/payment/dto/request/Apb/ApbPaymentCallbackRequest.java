@@ -1,7 +1,7 @@
-package in.wynk.payment.dto.request;
+package in.wynk.payment.dto.request.Apb;
 
+import in.wynk.commons.enums.Currency;
 import in.wynk.payment.enums.Apb.ApbStatus;
-import in.wynk.payment.enums.Apb.Currency;
 import lombok.Data;
 
 @Data

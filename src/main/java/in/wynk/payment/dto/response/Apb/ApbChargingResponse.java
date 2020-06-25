@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.response.Apb;
 
 import lombok.Data;
 

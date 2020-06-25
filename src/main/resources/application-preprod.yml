@@ -16,15 +16,15 @@ session:
       minIdle: 50
       maxIdle: 100
 
+######### MongoDB properties
 app:
   mongo:
     sources:
-      se:
-        nodes: 10.80.0.68:27017,10.80.0.73:27017
+      payment:
+        nodes: 10.80.0.73,10.80.0.68:27017
         username: # None
         password: # None
-        database: sedb
-
+        database: payments
 
 ##### mysql database props #####
 spring:

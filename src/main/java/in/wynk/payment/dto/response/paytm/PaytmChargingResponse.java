@@ -1,11 +1,13 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.response.paytm;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@ToString
+@NoArgsConstructor
 public class PaytmChargingResponse {
     @JsonProperty("TxnId")
     private String txnId;
@@ -23,6 +25,7 @@ public class PaytmChargingResponse {
     private String bankTxnId;
 
     @JsonProperty("ResponseCode")
+    @Setter
     private String responseCode;
 
     @JsonProperty("ResponseMessage")

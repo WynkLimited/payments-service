@@ -12,7 +12,6 @@ paytm:
       merchantKey: RrGHVFOJyEjbp4hN
       merchantId: AirBSB68537227489657
       secret: fd13c3f9-da62-47e2-b354-8f0f18fbe90b
-      website: WCF
       accounts:
         baseUrl: https://accounts.paytm.com
       services:
@@ -20,6 +19,8 @@ paytm:
       wcf:
         addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
         callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback
+    requesting:
+      website: WCF
 
 
 debug: false

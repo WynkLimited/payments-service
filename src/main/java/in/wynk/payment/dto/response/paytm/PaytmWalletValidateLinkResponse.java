@@ -1,5 +1,6 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.response.paytm;
 
+import in.wynk.payment.dto.response.CustomResponse;
 import in.wynk.payment.enums.Status;
 
 public class PaytmWalletValidateLinkResponse extends CustomResponse {
@@ -29,32 +30,16 @@ public class PaytmWalletValidateLinkResponse extends CustomResponse {
         return access_token;
     }
 
-    public void setAccess_token(String access_token) {
-        this.access_token = access_token;
-    }
-
     public long getExpires() {
         return expires;
-    }
-
-    public void setExpires(long expires) {
-        this.expires = expires;
     }
 
     public String getScope() {
         return scope;
     }
 
-    public void setScope(String scope) {
-        this.scope = scope;
-    }
-
     public String getResourceOwnerId() {
         return resourceOwnerId;
-    }
-
-    public void setResourceOwnerId(String resourceOwnerId) {
-        this.resourceOwnerId = resourceOwnerId;
     }
 
     public static interface StatusStep {

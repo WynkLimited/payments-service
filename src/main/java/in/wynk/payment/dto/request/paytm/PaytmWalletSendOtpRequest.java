@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.request;
+package in.wynk.payment.dto.request.paytm;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;

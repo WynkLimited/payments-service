@@ -74,7 +74,7 @@ public class RevenuePaymentHandler {
     @PostMapping("/callback/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
         IMerchantPaymentCallbackService callbackService;
         Session<Map<String, Object>> session = SessionContextHolder.get();
         CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();

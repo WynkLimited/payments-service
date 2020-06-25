@@ -2,7 +2,7 @@ package in.wynk.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,34 +10,33 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class PayUCallbackRequestPayload {
-  @JsonProperty("bankcode")
+  @SerializedName("bankcode")
   private String bankCode;
 
   private String mode;
   private String status;
 
-  @JsonProperty("mihpayid")
+  @SerializedName("mihpayid")
   private String externalTransactionId;
 
-  @JsonProperty("Error")
+  @SerializedName("Error")
   private String error;
 
-  @JsonProperty("error_Message")
+  @SerializedName("error_Message")
   private String errorMessage;
 
   private String udf1;
   private String cardToken;
 
-  @JsonProperty("card_no")
+  @SerializedName("cardnum")
   private String cardNumber;
 
   private String email;
 
-  @JsonProperty("firstname")
+  @SerializedName("firstname")
   private String firstName;
 
-  @JsonProperty("hash")
+  @SerializedName("hash")
   private String responseHash;
 }

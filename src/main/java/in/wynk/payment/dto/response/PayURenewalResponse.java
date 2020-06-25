@@ -11,8 +11,6 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PayURenewalResponse {
   private Map<String, TransactionDetails> details;
   private boolean timeOutFlag;

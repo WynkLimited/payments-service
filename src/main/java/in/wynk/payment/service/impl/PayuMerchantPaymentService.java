@@ -78,8 +78,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
 
   @Override
   public <T> BaseResponse<T> handleCallback(CallbackRequest callbackRequest) {
-    String requestPayload = (String) callbackRequest.getBody();
-    URI returnUrl = processCallback(callbackRequest, requestPayload);
+    URI returnUrl = processCallback(callbackRequest);
     HttpHeaders httpHeaders = new HttpHeaders();
     httpHeaders.add("ct","text/plain; charset=UTF-8");
     httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());
@@ -461,13 +460,12 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     //    TODO : Return pojo in the format of polling message.
   }
 
-  private URI processCallback(CallbackRequest callbackRequest, String requestPayload) {
+  private URI processCallback(CallbackRequest callbackRequest) {
     try {
       // Create POJO from response payload.
-      TreeMap<String, String> parameters = Utils.getReponseParameters(requestPayload);
       PayUCallbackRequestPayload callbackRequestPayload =
           JsonUtils.GSON.fromJson(
-              JsonUtils.GSON.toJsonTree(parameters), PayUCallbackRequestPayload.class);
+              JsonUtils.GSON.toJsonTree((Map<String, Object>)callbackRequest.getBody()), PayUCallbackRequestPayload.class);
       URIBuilder returnUrl = new URIBuilder(callbackRequest.getReturnUrl());
       String errorMessage = callbackRequestPayload.getError();
       if (StringUtils.isEmpty(errorMessage)) {

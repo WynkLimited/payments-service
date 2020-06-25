@@ -6,7 +6,7 @@ public class PaymentConstants {
   public static final String COLON = ":";
   public static final String PAYU_MERCHANT_KEY = "key";
   public static final String PAYU_COMMAND = "command";
-  public static final String PAYU_HASH = "PAYU_HASH";
+  public static final String PAYU_HASH = "hash";
   public static final String PAYU_VARIABLE1 = "var1";
   public static final String PAYU_REQUEST_TRANSACTION_ID = "txnid";
   public static final String PAYU_TRANSACTION_AMOUNT = "amount";

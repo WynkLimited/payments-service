@@ -2,7 +2,7 @@ package in.wynk.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,35 +10,33 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TransactionDetails {
   private String status;
 
-  @JsonProperty("mihpayid")
+  @SerializedName("mihpayid")
   private String payUExternalTxnId;
 
-  @JsonProperty("addedon")
+  @SerializedName("addedon")
   private String payUTransactionDate;
 
-  @JsonProperty("error_code")
+  @SerializedName("error_code")
   private String errorCode;
 
-  @JsonProperty("error_Message")
+  @SerializedName("error_Message")
   private String errorMessage;
 
-  @JsonProperty("udf1")
+  @SerializedName("udf1")
   private String payUUdf1;
 
-  @JsonProperty("card_no")
+  @SerializedName("card_no")
   private String responseCardNumber;
 
-  @JsonProperty("payuid")
+  @SerializedName("payuid")
   private String payuId;
 
-  @JsonProperty("transactionid")
+  @SerializedName("transactionid")
   private String transactionId;
 
-  @JsonProperty("field9")
+  @SerializedName("field9")
   private String payUResponseFailureMessage;
 }

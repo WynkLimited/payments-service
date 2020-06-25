@@ -2,24 +2,29 @@ package in.wynk.payment.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import in.wynk.payment.dto.CardDetails;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.HashMap;
 import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PayUUserCardDetailsResponse {
-  @JsonProperty("msg")
+  @SerializedName("msg")
   private String message;
 
-  @JsonProperty("user_cards")
+  @SerializedName("user_cards")
   private Map<String, CardDetails> userCards;
 
   private String status;
+
+  public Map<String, CardDetails> getUserCards(){
+    if (userCards == null)
+      userCards = new HashMap<>();
+    return userCards;
+  }
 }

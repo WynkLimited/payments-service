@@ -2,7 +2,7 @@ package in.wynk.payment.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import in.wynk.payment.dto.TransactionDetails;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,14 +12,12 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PayUVerificationResponse {
   private long status;
 
-  @JsonProperty("msg")
+  @SerializedName("msg")
   private long message;
 
-  @JsonProperty("transaction_details")
+  @SerializedName("transaction_details")
   private Map<String, TransactionDetails> transactionDetails;
 }

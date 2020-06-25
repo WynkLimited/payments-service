@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.constant.PaymentOption;
+import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,6 +18,6 @@ public class ChargingRequest {
     private String transactionId;
     private Long amount;
     private String uid;
-    private PaymentOption paymentOption;
+    private PaymentCode paymentCode;
 
 }

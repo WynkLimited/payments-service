@@ -4,8 +4,8 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.ApplicationConstant;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentOption;
 import in.wynk.payment.dto.request.WalletRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantWalletService;
@@ -13,7 +13,13 @@ import in.wynk.session.aspect.advice.ManageSession;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/wallet")
@@ -31,8 +37,8 @@ public class RevenuePaymentWalletHandler {
     public ResponseEntity<?> linkRequest(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;
         try {
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentOption().name());
-            walletService = this.context.getBean(request.getPaymentOption().getType(), IMerchantWalletService.class);
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
+            walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
@@ -46,8 +52,8 @@ public class RevenuePaymentWalletHandler {
     public ResponseEntity<?> linkValidate(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;
         try {
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentOption().name());
-            walletService = this.context.getBean(request.getPaymentOption().getType(), IMerchantWalletService.class);
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
+            walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
@@ -62,8 +68,8 @@ public class RevenuePaymentWalletHandler {
     public ResponseEntity<?> unlink(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;
         try {
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentOption().name());
-            walletService = this.context.getBean(request.getPaymentOption().getType(), IMerchantWalletService.class);
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
+            walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
@@ -74,11 +80,11 @@ public class RevenuePaymentWalletHandler {
     @GetMapping("/balance/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletBalance")
-    public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam PaymentOption paymentOption) {
+    public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam PaymentCode paymentCode) {
         IMerchantWalletService walletService;
         try {
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentOption.name());
-            walletService = this.context.getBean(paymentOption.getType(), IMerchantWalletService.class);
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
+            walletService = this.context.getBean(paymentCode.getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
@@ -92,8 +98,8 @@ public class RevenuePaymentWalletHandler {
     public ResponseEntity<?> addMoney(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;
         try {
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentOption().name());
-            walletService = this.context.getBean(request.getPaymentOption().getType(), IMerchantWalletService.class);
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
+            walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }

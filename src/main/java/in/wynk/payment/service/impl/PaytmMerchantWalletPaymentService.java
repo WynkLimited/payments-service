@@ -520,7 +520,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             logger.info("Redirecting user, uid: {}, return URL: {} params: {}", paytmWalletAddMoneyRequest.getUid(),
                     returnUrl.getHost(), params);
 
-            return new BaseResponse(null, HttpStatus.NOT_FOUND, headers);
+            return new BaseResponse(null, HttpStatus.FOUND, headers);
         } catch(URISyntaxException e) {
             throw new RuntimeException("URISyntax Exception");
         } catch(HttpStatusCodeException e) {

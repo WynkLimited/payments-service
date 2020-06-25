@@ -1,7 +1,6 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.phonepe;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.dto.enums.PhonePeTransactionStatus;
 import in.wynk.revenue.commons.utils.Utils;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

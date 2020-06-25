@@ -1,6 +1,7 @@
-package in.wynk.payment.dto.request;
+package in.wynk.payment.dto.phonepe;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.request.ChargingRequest;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -56,3 +56,16 @@ spring:
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
+
+#### PhonePe props ######
+phonepe:
+  merchant:
+    id: WYNK
+  api:
+    base:
+      url: https://mercury-t2.phonepe.com
+  callback:
+    url: https://capi.wynk.in/wynk/v1/paymentcallback/phonepe
+  return:
+    wynkurl: https://wcf-pay.wynk.in
+  salt : 96229dff-07f5-4f92-9348-81bb7fc495b4

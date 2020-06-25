@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.enums;
+package in.wynk.payment.dto.phonepe;
 
 public enum PhonePeTransactionStatus {
         TRANSACTION_NOT_FOUND, BAD_REQUEST, AUTHORIZATION_FAILED, INTERNAL_SERVER_ERROR, PAYMENT_SUCCESS, PAYMENT_ERROR, PAYMENT_PENDING, PAYMENT_CANCELLED, PAYMENT_DECLINED

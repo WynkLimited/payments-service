@@ -29,5 +29,7 @@ public class PhonePeConstant {
 
     public static final String X_REDIRECT_MODE = "x-redirect-mode";
 
+    public static final String CHECKSUM = "checksum";
 
+    public static final String REQUEST = "request";
 }

@@ -3,17 +3,20 @@ package in.wynk.payment.service.impl;
 import com.google.gson.JsonObject;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.dto.enums.PhonePeTransactionStatus;
+import in.wynk.payment.dto.phonepe.PhonePeTransactionStatus;
+import in.wynk.payment.dto.phonepe.PhonePePaymentRequest;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.PhonePeTransactionResponse;
+import in.wynk.payment.dto.phonepe.PhonePeTransactionResponse;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.revenue.commons.utils.Utils;
+import javafx.util.Pair;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -47,7 +50,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     @Value("${phonepe.salt}")
     private String salt;
 
-    @Value("${phonepe.return.url}")
+    @Value("${phonepe.return.wynkurl}")
     private String returnWynkUrl;
 
     private final String prefixStatusApi = "/v3/transaction/" + merchantId + "/";
@@ -60,12 +63,12 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     @Override
     public <T> BaseResponse<T> handleCallback(CallbackRequest callbackRequest) {
         try {
-            String requestPayload = (String) callbackRequest.getBody();
-            Map<String, List<String>> payloadParams = Utils.getParamsFromRequestPayload(requestPayload);
-            PhonePeTransactionResponse phonePeTransactionResponse = new PhonePeTransactionResponse(payloadParams);
-            boolean validChecksum = validateChecksum(requestPayload, Utils.getStringParameter(payloadParams, "checksum"));
-            URI returnUrl = getCallbackRedirectionUri(phonePeTransactionResponse, callbackRequest.getTransactionId(), validChecksum);
-            return new BaseResponse(returnUrl.toString(), HttpStatus.OK, HttpHeaders.EMPTY);
+            String requestPayload = callbackRequest.getBody().toString();
+            Pair<Map<String, List<String>>, Boolean> paramsAndValidChecksum = getParamsAndValidateChecksum(requestPayload);
+            //Map<String, List<String>> payloadParams = Utils.getParamsFromRequestPayload(requestPayload);
+            PhonePeTransactionResponse phonePeTransactionResponse = new PhonePeTransactionResponse(paramsAndValidChecksum.getKey());
+            URI returnUrl = getCallbackRedirectionUri(phonePeTransactionResponse, callbackRequest.getTransactionId(), paramsAndValidChecksum.getValue());
+            return new BaseResponse(returnUrl.toString(), HttpStatus.FOUND, HttpHeaders.EMPTY);
         }
         catch(Exception e){
             throw new WynkRuntimeException(e);
@@ -76,11 +79,10 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     public <T> BaseResponse<T> doCharging(ChargingRequest chargingRequest) {
         try {
             PhonePePaymentRequest phonePePaymentRequest = new PhonePePaymentRequest(chargingRequest);
-            phonePePaymentRequest.setAmount(chargingRequest.getAmount());
             phonePePaymentRequest.setMerchantId(merchantId);
-            HttpEntity<String> requestEnity = getRequestEntity(phonePePaymentRequest);
-            URI redirectUri = getRedirectionUri(requestEnity);
-            return new BaseResponse(redirectUri.toString(), HttpStatus.OK, null);
+            HttpEntity<String> requestEntity = getRequestEntity(phonePePaymentRequest);
+            URI redirectUri = getRedirectionUri(requestEntity);
+            return new BaseResponse(redirectUri.toString(), HttpStatus.FOUND, null);
         }
         catch(Exception e){
             throw new WynkRuntimeException(e);
@@ -137,7 +139,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             String requestJson = Utils.getGson().toJson(phonePePaymentRequest);
             JsonObject jsonRequest = new JsonObject();
             if (StringUtils.isNotEmpty(requestJson)) {
-                jsonRequest.addProperty("request", Utils.encodeBase64(requestJson));
+                jsonRequest.addProperty(REQUEST, Utils.encodeBase64(requestJson));
             }
             String xVerifyHeader = Utils.encodeBase64(requestJson) + debitCall + salt;
             xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
@@ -183,20 +185,27 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         return phonePeTransactionResponse;
     }
 
-    private boolean validateChecksum(String query, String checksum) {
+    private Pair<Map<String, List<String>>, Boolean> getParamsAndValidateChecksum(String requestParams) {
+        Map<String, List<String>> params = new HashMap<String, List<String>>();
+        String checksum = StringUtils.EMPTY;
         boolean validated = false;
         StringBuilder validationString = new StringBuilder();
-        if (StringUtils.isNotEmpty(query)) {
+        if (StringUtils.isNotEmpty(requestParams)) {
             try {
-                for (String param : query.split("&")) {
-                    String pair[] = param.split("=");
+                for (String param : requestParams.split("&")) {
+                    String[] pair = param.split("=");
                     String key = URLDecoder.decode(pair[0], "UTF-8");
                     String value = "";
                     if (pair.length > 1) {
                         value = URLDecoder.decode(pair[1], "UTF-8");
                     }
-                    if (!key.equalsIgnoreCase("checksum"))
+                    List<String> values = params.computeIfAbsent(key, k -> new ArrayList<String>());
+                    values.add(value);
+                    if (!key.equalsIgnoreCase(CHECKSUM))
                         validationString.append(value);
+                    else{
+                        checksum = value;
+                    }
                 }
                 String calculatedChecksum = DigestUtils.sha256Hex(validationString + salt) + "###1";
                 if (StringUtils.equals(checksum, calculatedChecksum)) {
@@ -206,6 +215,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 logger.error("Exception while Checksum validation ", e);
             }
         }
-        return validated;
+        return new Pair<>(params, validated);
     }
 }

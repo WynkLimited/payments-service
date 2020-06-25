@@ -1,6 +1,7 @@
 package in.wynk.payment.config;
 
-import in.wynk.payment.config.properties.Application;
+import in.wynk.payment.config.properties.PaymentProperties;
+import in.wynk.payment.config.properties.PaymentProperties.MongoProperties;
 import org.bson.BsonUndefined;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -8,30 +9,34 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoClientDbFactory;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
-@EnableConfigurationProperties({Application.class})
+@EnableConfigurationProperties({PaymentProperties.class})
+@EnableMongoRepositories(basePackages = "in.wynk.payment.dao", mongoTemplateRef = "paymentMongoTemplate")
+@EnableMongoAuditing
 public class MongoConfig {
-    private final Application.MongoProperties mongoProperties;
+    private final MongoProperties mongoProperties;
 
-    public MongoConfig(Application application) {
-        this.mongoProperties = application.getMongo();
+    public MongoConfig(PaymentProperties paymentProperties) {
+        this.mongoProperties = paymentProperties.getMongo();
     }
 
     @Bean
-    public MongoDbFactory seDbFactory() {
-        return new SimpleMongoClientDbFactory(mongoProperties.getSources().get("se").getConnectionSettings());
+    public MongoDbFactory paymentDbFactory() {
+        return new SimpleMongoClientDbFactory(mongoProperties.getSources().get("payment").getConnectionSettings());
     }
 
     @Bean
-    public MongoTemplate seTemplate() {
-        return new MongoTemplate(seDbFactory());
+    public MongoTemplate paymentMongoTemplate() {
+        return new MongoTemplate(paymentDbFactory());
     }
 
     @Bean

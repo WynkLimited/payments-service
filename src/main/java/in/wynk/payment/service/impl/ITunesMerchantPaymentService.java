@@ -2,7 +2,6 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.constant.ItunesConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dao.entity.ItunesIdUidMapping;
 import in.wynk.payment.dao.receipts.ItunesIdUidDao;
@@ -27,6 +26,8 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.*;
 
+import static in.wynk.payment.constant.ItunesConstant.*;
+
 @Service(BeanConstant.ITUNES_MERCHANT_PAYMENT_SERVICE)
 public class ITunesMerchantPaymentService implements IMerchantPaymentStatusService {
 
@@ -46,12 +47,13 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
         String requestReceipt = chargingStatusRequest.getReceipt();
         String uid = chargingStatusRequest.getUid();
         String tid = chargingStatusRequest.getTransactionId();
-        ItunesResponse validationResponse = validateItunesTransaction(uid, requestReceipt, tid);
+        int productId = chargingStatusRequest.getProductId();
+        ItunesResponse validationResponse = validateItunesTransaction(uid, requestReceipt, tid, productId);
         return (BaseResponse<T>) BaseResponse.builder().body(validationResponse).status(HttpStatus.OK).build();
     }
 
     // TODO - Add Info Logs and create Wynk Error Codes
-    private ItunesResponse validateItunesTransaction(String uid, String requestReceipt, String transactionId){
+    private ItunesResponse validateItunesTransaction(String uid, String requestReceipt, String transactionId, int partnerProductId){
         String errorMessge = StringUtils.EMPTY;
         ItunesResponse itunesResponse = new ItunesResponse();
         try {
@@ -73,12 +75,12 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
                 return itunesResponse;
             }
 
-            String productId = (String) receiptObject.get(ItunesConstant.PRODUCT_ID);
-            String originalITunesTrxnId = (String) receiptObject.get(ItunesConstant.ORIGINAL_TRANSACTION_ID);
-            String itunesTrxnId = (String) receiptObject.get(ItunesConstant.TRANSACTION_ID);
+            String productId = (String) receiptObject.get(PRODUCT_ID);
+            String originalITunesTrxnId = (String) receiptObject.get(ORIGINAL_TRANSACTION_ID);
+            String itunesTrxnId = (String) receiptObject.get(TRANSACTION_ID);
 
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
-            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(12005, originalITunesTrxnId);
+            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(partnerProductId, originalITunesTrxnId);
             if(mapping != null && !mapping.getKey().getUid().equals(uid)) {
                 logger.error(BaseLoggingMarkers.APPLICATION_INVALID_USECASE, "Already have subscription for the correcponding itunes id on another account");
                 errorMessge = "Already have subscription for the correcponding itunes id on another account";
@@ -88,7 +90,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             logger.info("ItunesIdUidMapping found for ItnuesId :{} , productId: {} = {}", originalITunesTrxnId, productId, mapping);
             // TODO - Emit Transaction Event And return response Accordingly
             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
-                saveItunesIdUidMapping(originalITunesTrxnId, 12005, uid, requestReceipt, receiptType);
+                saveItunesIdUidMapping(originalITunesTrxnId, partnerProductId, uid, requestReceipt, receiptType);
                 long lastSubscribedTimestamp = receiptType.getPurchaseDate(receiptObject);
                 //String tid = createTransactionLog(pack, TransactionEvent.SUBSCRIBE, lastSubscribedTimestamp, uid, service, receipt, itunesTrxnId, isFreeTrial, clientTid);
                 //subscriptionHandlingService.createSubscription(service, uid, pack.getPartnerProductId(), PaymentMethod.ITUNES, new HashMap<String, String>(), expireTimestamp, false, tid);
@@ -116,8 +118,8 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
 
     private ResponseEntity<String> getItunesStatus(String encodedValue, String password, String url){
         JSONObject requestJson = new JSONObject();
-        requestJson.put(ItunesConstant.RECEIPT_DATA, encodedValue);
-        requestJson.put(ItunesConstant.PASSWORD, password);
+        requestJson.put(RECEIPT_DATA, encodedValue);
+        requestJson.put(PASSWORD, password);
         ResponseEntity<String> responseEntity = null;
         System.out.println(requestJson.toString());
         try {
@@ -152,12 +154,12 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
         } catch (ParseException e) {
             logger.error("Error while parsing, itunes receipt received : {} ", appStoreResponseBody);
         }
-        if (receiptJson == null || !receiptJson.containsKey(ItunesConstant.STATUS)) {
+        if (receiptJson == null || !receiptJson.containsKey(STATUS)) {
             logger.error("Receipt Object returned for response " + appStoreResponseBody + " is not complete!");
 //            createErrorTransactionLog(null, TransactionEvent.SUBSCRIBE, uid, service, receipt, org.apache.commons.lang.StringUtils.EMPTY, receiptFullJsonObj.toString(), response, null);
             throw new WynkRuntimeException(PaymentErrorType.PAY001, "Failed to subscribe to itunes");
         }
-        int status = ((Number) receiptJson.get(ItunesConstant.STATUS)).intValue();
+        int status = ((Number) receiptJson.get(STATUS)).intValue();
         ItunesStatusCodes code = ItunesStatusCodes.getItunesStatusCodes(status);
         if (status == 0 || status == 21006) {
             return itunesReceiptType.getSubscriptionDetailJson(receiptJson);

@@ -7,7 +7,6 @@ import lombok.Setter;
 
 
 @Getter
-@Builder
 @Setter
 @NoArgsConstructor
 public class ItunesResponse {

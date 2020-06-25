@@ -65,3 +65,9 @@ spring:
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
+
+#### Itunes props ######
+itunes:
+  secret: 820ea8abe1374b369eaa564dcfa6391c
+  api:
+    url: https://buy.itunes.apple.com/verifyReceipt

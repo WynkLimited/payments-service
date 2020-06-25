@@ -20,6 +20,7 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -37,6 +38,12 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     @Autowired
     private ItunesIdUidDao itunesIdUidDao;
 
+    @Value("${itunes.secret}")
+    private String itunesSecret;
+
+    @Value("${itunes.api.url}")
+    private String itunesApiUrl;
+
     private Logger logger = LoggerFactory.getLogger(ITunesMerchantPaymentService.class.getCanonicalName());
 
     private static final List<ItunesStatusCodes> failureCodes = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005,
@@ -44,12 +51,8 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
 
     @Override
     public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
-        String requestReceipt = chargingStatusRequest.getReceipt();
-        String uid = chargingStatusRequest.getUid();
-        String tid = chargingStatusRequest.getTransactionId();
-        int productId = chargingStatusRequest.getProductId();
-        ItunesResponse validationResponse = validateItunesTransaction(uid, requestReceipt, tid, productId);
-        return (BaseResponse<T>) BaseResponse.builder().body(validationResponse).status(HttpStatus.OK).build();
+        ItunesResponse validationResponse = validateItunesTransaction(chargingStatusRequest.getUid(), chargingStatusRequest.getReceipt(), chargingStatusRequest.getTransactionId(), chargingStatusRequest.getProductId());
+        return new BaseResponse(validationResponse, HttpStatus.OK, HttpHeaders.EMPTY);
     }
 
     // TODO - Add Info Logs and create Wynk Error Codes
@@ -134,8 +137,6 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
     }
 
     private JSONArray getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String uid) {
-        String itunesSecret = "820ea8abe1374b369eaa564dcfa6391c";           // set in config and Autowire here
-        String itunesApiUrl = "https://buy.itunes.apple.com/verifyReceipt";     // set in config Autowire here
         String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
         if (StringUtils.isBlank(encodedValue)) {
             logger.error("Encoded itunes / itunes data is empty! for iTunesData {}", receipt);

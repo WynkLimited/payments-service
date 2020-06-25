@@ -10,9 +10,7 @@ import java.io.Serializable;
 
 @Document(collection = "ItunesIdUidMapping")
 @Getter
-@Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@NoArgsConstructor
 @AllArgsConstructor
 @ToString
 public class ItunesIdUidMapping implements Serializable {
@@ -23,7 +21,6 @@ public class ItunesIdUidMapping implements Serializable {
     private String receipt;
     private ItunesReceiptType type;
 
-    @Setter
     @Getter
     public static class Key {
 

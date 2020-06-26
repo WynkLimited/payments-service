@@ -18,13 +18,9 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -71,7 +67,7 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
-    @PostMapping("/callback/{sid}")
+    @PostMapping(value = "/callback/{sid}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {

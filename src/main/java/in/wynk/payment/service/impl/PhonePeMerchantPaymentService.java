@@ -63,8 +63,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             Map<String , String> requestPayload = (Map<String, String>) callbackRequest.getBody();
             Boolean validChecksum = validateChecksum(requestPayload);
             PhonePeTransactionResponse phonePeTransactionResponse = new PhonePeTransactionResponse(requestPayload);
-            String transactionId = "f085234ad233sdcwc";
-            URI returnUrl = getCallbackRedirectionUri(phonePeTransactionResponse, transactionId, validChecksum);
+            URI returnUrl = getCallbackRedirectionUri(phonePeTransactionResponse, callbackRequest.getTransactionId(), validChecksum);
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.add(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8");
             httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());

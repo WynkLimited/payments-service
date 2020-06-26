@@ -2,25 +2,22 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import com.mongodb.util.JSON;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.ApplicationConstant;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.dto.VerificationRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.enums.ItunesReceiptType;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.impl.ITunesMerchantPaymentService;
+import in.wynk.payment.service.IMerchantPaymentVerificationService;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +52,22 @@ public class RevenuePaymentHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse<?> baseResponse = chargingService.doCharging(request);
+        return baseResponse.getResponse();
+    }
+
+    @PostMapping("/verify/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentVerification")
+    public ResponseEntity<?> verify(@PathVariable String sid, @RequestBody VerificationRequest request) {
+        IMerchantPaymentVerificationService verificationService;
+        try {
+            PaymentCode paymentCode = request.getPaymentCode();
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
+            verificationService = this.context.getBean(paymentCode.getCode(), IMerchantPaymentVerificationService.class);
+        } catch (BeansException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+        }
+        BaseResponse<?> baseResponse = verificationService.doVerify(request);
         return baseResponse.getResponse();
     }
 

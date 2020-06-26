@@ -2,16 +2,18 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dao.entity.ItunesIdUidMapping;
 import in.wynk.payment.dao.receipts.ItunesIdUidDao;
-import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.dto.VerificationRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ItunesResponse;
 import in.wynk.payment.enums.ItunesReceiptType;
 import in.wynk.payment.enums.ItunesStatusCodes;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
+import in.wynk.payment.service.IMerchantPaymentVerificationService;
 import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -21,16 +23,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 import static in.wynk.payment.constant.ItunesConstant.*;
 
 @Service(BeanConstant.ITUNES_MERCHANT_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService implements IMerchantPaymentStatusService {
+public class ITunesMerchantPaymentService implements IMerchantPaymentStatusService, IMerchantPaymentVerificationService {
 
     @Autowired
     private RestTemplate iTunesRestTemplate;
@@ -51,13 +59,12 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
 
     @Override
     public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
-        ItunesResponse validationResponse = validateItunesTransaction(chargingStatusRequest.getUid(), chargingStatusRequest.getReceipt(), chargingStatusRequest.getTransactionId(), chargingStatusRequest.getProductId());
-        return new BaseResponse(validationResponse, HttpStatus.OK, HttpHeaders.EMPTY);
+        return null;
     }
 
     // TODO - Add Info Logs and create Wynk Error Codes
-    private ItunesResponse validateItunesTransaction(String uid, String requestReceipt, String transactionId, int partnerProductId){
-        String errorMessge = StringUtils.EMPTY;
+    private ItunesResponse validateItunesTransaction(String uid, String requestReceipt, int planId){
+        String errorMessge;
         ItunesResponse itunesResponse = new ItunesResponse();
         try {
             ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(requestReceipt);
@@ -83,7 +90,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             String itunesTrxnId = (String) receiptObject.get(TRANSACTION_ID);
 
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
-            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(partnerProductId, originalITunesTrxnId);
+            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(planId, originalITunesTrxnId);
             if(mapping != null && !mapping.getKey().getUid().equals(uid)) {
                 logger.error(BaseLoggingMarkers.APPLICATION_INVALID_USECASE, "Already have subscription for the correcponding itunes id on another account");
                 errorMessge = "Already have subscription for the correcponding itunes id on another account";
@@ -93,7 +100,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
             logger.info("ItunesIdUidMapping found for ItnuesId :{} , productId: {} = {}", originalITunesTrxnId, productId, mapping);
             // TODO - Emit Transaction Event And return response Accordingly
             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
-                saveItunesIdUidMapping(originalITunesTrxnId, partnerProductId, uid, requestReceipt, receiptType);
+                saveItunesIdUidMapping(originalITunesTrxnId, planId, uid, requestReceipt, receiptType);
                 long lastSubscribedTimestamp = receiptType.getPurchaseDate(receiptObject);
                 //String tid = createTransactionLog(pack, TransactionEvent.SUBSCRIBE, lastSubscribedTimestamp, uid, service, receipt, itunesTrxnId, isFreeTrial, clientTid);
                 //subscriptionHandlingService.createSubscription(service, uid, pack.getPartnerProductId(), PaymentMethod.ITUNES, new HashMap<String, String>(), expireTimestamp, false, tid);
@@ -188,4 +195,9 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentStatusServi
         itunesIdUidDao.save(mapping);
     }
 
+    @Override
+    public <T> BaseResponse<T> doVerify(VerificationRequest verificationRequest) {
+        ItunesResponse validationResponse = validateItunesTransaction(verificationRequest.getUid(), verificationRequest.getReceipt(), verificationRequest.getPlanId());
+        return new BaseResponse(validationResponse, HttpStatus.OK, HttpHeaders.EMPTY);
+    }
 }

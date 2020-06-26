@@ -77,6 +77,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     @Value("${paytm.requesting.website}")
     private String paytmRequestingWebsite;
 
+    @Value("${redirect.success.page}")
+    private String successPage;
+
     @Autowired
     private RestTemplate restTemplate;
 
@@ -109,15 +112,25 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<PaytmChargingResponse> doCharging(ChargingRequest chargingRequest) {
-        BaseResponse response = withdrawFromWallet(chargingRequest);
-        //create subscription request
-        return response;
+    public BaseResponse doCharging(ChargingRequest chargingRequest) {
+        try {
+            BaseResponse response = withdrawFromWallet(chargingRequest);
+            //create subscription request
+            URI successUrl = new URIBuilder(successPage).build();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(successUrl);
+
+            return new BaseResponse(null, HttpStatus.FOUND, headers);
+        } catch(URISyntaxException e) {
+            throw new RuntimeException("URI Synatx Exception occurred");
+        }
     }
 
     private BaseResponse<PaytmChargingResponse> withdrawFromWallet(ChargingRequest chargingRequest) {
         BigDecimal withdrawalAmount = new BigDecimal("1.00"); //fetch from session
         ConsultBalanceResponse consultBalanceResponse = (ConsultBalanceResponse)balance().getBody();
+
         if (consultBalanceResponse.getStatus() != Status.SUCCESS) {
             String responseCode = consultBalanceResponse.getResponseCode();
             ErrorCodes errorCode = ErrorCodes.resolveErrorCode(responseCode);
@@ -139,7 +152,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         }
 
         String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; // get access token from session
-
+        String uid = "23456"; // custId fetch fromsession
+        String deviceId = "tydtd7566"; // deviceId fetch from session
         try {
 
             URI uri = new URIBuilder(SERVICES_URL + "/HANDLER_FF/withdrawScw").build();
@@ -152,12 +166,12 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             parameters.put("ReqType", "WITHDRAW");
             parameters.put("TxnAmount", withdrawalAmount.toString());
             parameters.put("AppIP", "capi-host");
-            parameters.put("OrderId", "456"); //orderiD
+            parameters.put("OrderId", Utils.getRandomUUID());
             parameters.put("Currency", "INR");
-            parameters.put("DeviceId", msisdn);
+            parameters.put("DeviceId", deviceId);
             parameters.put("SSOToken", accessToken);
             parameters.put("PaymentMode", "PPI");
-            parameters.put("CustId", "2817"); //CustId
+            parameters.put("CustId", uid);
             parameters.put("IndustryType", "Retail");
             parameters.put("Channel", "WEB");
             parameters.put("AuthMode", "USRPWD");
@@ -205,7 +219,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         }
     }
     @Override
-    public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<PaytmChargingResponse> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         ChargingRequest chargingRequest = ChargingRequest.builder().sessionId(paymentRenewalRequest.getSessionId()).partnerProductId(paymentRenewalRequest.getPartnerProductId()).
                 couponId(paymentRenewalRequest.getCouponId()).paymentCode(PaymentCode.PAYTM_WALLET).build();
         BaseResponse response = withdrawFromWallet(chargingRequest);
@@ -481,7 +495,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public <T> BaseResponse<T> addMoney(WalletRequest request) {
+    public BaseResponse addMoney(WalletRequest request) {
         PaytmWalletAddMoneyRequest paytmWalletAddMoneyRequest = (PaytmWalletAddMoneyRequest) request;
         String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; //fetch from session
         String txnId = "76757657667";//get from session

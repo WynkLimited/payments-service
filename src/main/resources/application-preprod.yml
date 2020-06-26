@@ -1,3 +1,25 @@
+###### Properties ##############
+
+paytm:
+  native:
+    clientId: merchant-wynk-staging
+    merchantKey: 6UePBAcq7LTfdGJI
+    merchantId: WYNKLI36809118294255
+    secret: 653fe766-5864-4e16-a288-68ebcccffbd0
+    accounts:
+      baseUrl: https://accounts-uat.paytm.com
+    services:
+      baseUrl: https://securegw-stage.paytm.in/paymentservices
+    wcf:
+      addMoneyUrl: https://wcfpay-dev.wynk.in/paytm-native/add-money
+      callbackUrl: http://capi-wcf-stage.wynk.in/wynk/v2/s2s/subscription/callback
+  requesting:
+    website: WYNKLIMITEDWAP
+
+redirect:
+  success:
+    page: https://www.google.com/
+
 ###### Redis Store Props #######
 session:
   redis:

@@ -5,10 +5,9 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.util.Map;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
 @Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class ConsultBalanceRequest {
 
     private ConsultBalanceRequestHead head;
@@ -16,7 +15,9 @@ public class ConsultBalanceRequest {
     private ConsultBalanceRequestBody body;
 
     @Builder
-    @Data
+    @Getter
+    @RequiredArgsConstructor
+    @AllArgsConstructor
     public static class ConsultBalanceRequestHead {
         private String clientId;
         private String requestTimestamp;
@@ -26,7 +27,9 @@ public class ConsultBalanceRequest {
     }
 
     @Builder
-    @Data
+    @Getter
+    @RequiredArgsConstructor
+    @AllArgsConstructor
     public static class ConsultBalanceRequestBody {
         private String userToken;
         private BigDecimal totalAmount;

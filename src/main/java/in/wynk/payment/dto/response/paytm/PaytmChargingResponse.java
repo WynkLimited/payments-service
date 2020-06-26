@@ -7,7 +7,8 @@ import java.math.BigDecimal;
 
 @Getter
 @ToString
-@NoArgsConstructor
+@AllArgsConstructor
+@RequiredArgsConstructor
 public class PaytmChargingResponse {
     @JsonProperty("TxnId")
     private String txnId;

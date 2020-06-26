@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.response;
 
-import in.wynk.payment.enums.Status;
+import in.wynk.commons.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +20,7 @@ public class ValidateAccessTokenResponse extends CustomResponse{
     private long expires;
 
     public ValidateAccessTokenResponse(Status status, String statusMessage, String responseCode,
-                    String statusCode, String message, String id, String email, String mobile, long expires) {
+                                       String statusCode, String message, String id, String email, String mobile, long expires) {
         super(status, statusMessage, responseCode, statusCode, message);
         this.id = id;
         this.email = email;

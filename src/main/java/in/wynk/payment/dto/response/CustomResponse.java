@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.response;
 
-import in.wynk.payment.enums.Status;
+import in.wynk.commons.enums.Status;
 
 public class CustomResponse {
 

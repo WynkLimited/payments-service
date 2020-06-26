@@ -2,6 +2,7 @@ package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
+import in.wynk.commons.enums.Status;
 import in.wynk.payment.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.*;
@@ -11,10 +12,11 @@ import in.wynk.payment.dto.request.paytm.PaytmWalletSendOtpRequest;
 import in.wynk.payment.dto.request.paytm.PaytmWalletValidateLinkRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
+import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
-import in.wynk.payment.enums.Status;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.enums.paytm.StatusMode;
 import in.wynk.payment.errors.ErrorCodes;
 import in.wynk.payment.logging.LoggingMarkers;
 import in.wynk.payment.service.IRenewalMerchantWalletService;
@@ -152,7 +154,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         }
 
         String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; // get access token from session
-        String uid = "23456"; // custId fetch fromsession
+        String uid = "98998"; // custId fetch fromsession
         String deviceId = "tydtd7566"; // deviceId fetch from session
         try {
 
@@ -227,13 +229,58 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         return response;
     }
 
-    public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
-        // check with the help of transaction id if the entry exists or not
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        if(chargingStatusRequest.getStatusMode().equals(StatusMode.MERCHANT_CHECK)) {
+            PaytmChargingStatusResponse paytmChargingStatusResponse = fetchChargingStatusFromPaytm(chargingStatusRequest);
+            return new BaseResponse(paytmChargingStatusResponse, HttpStatus.OK, null);
+        } else if(chargingStatusRequest.getStatusMode().equals(StatusMode.LOCAL_CHECK)) {
+            // check with the help of transaction id if the entry exists or not
+            ChargingStatusResponse chargingStatusResponse = new ChargingStatusResponse();
+            return new BaseResponse(chargingStatusResponse, HttpStatus.OK, null);
+        }
         return null;
     }
 
+    private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(ChargingStatusRequest chargingStatusRequest) {
+        try{
+            String orderId = "et7";//fetch from session
+            URI uri = new URIBuilder(SERVICES_URL + "/HANDLER_FF/withdrawScw").build();
+
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+            headers.putIfAbsent("Content-Type", Arrays.asList("application/json"));
+            TreeMap<String, String> paytmParams = new TreeMap<String, String>();
+
+            paytmParams.put("MID", MID);
+            paytmParams.put("ORDERID", orderId);
+
+            String checkSum = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, paytmParams);
+            logger.info("Generated checksum: {} for payload: {}", checkSum, paytmParams);
+
+            paytmParams.put("CHECKSUMHASH", checkSum);
+
+            RequestEntity requestEntity = new RequestEntity<>(paytmParams, headers, HttpMethod.POST, uri);
+
+            logger.info("Paytm wallet charging status request: {}", requestEntity);
+            ResponseEntity<PaytmChargingStatusResponse> responseEntity =
+                    restTemplate.exchange(requestEntity, PaytmChargingStatusResponse.class);
+
+            logger.info("Paytm wallet charging status response: {}", responseEntity);
+
+            HttpStatus statusCode = responseEntity.getStatusCode();
+            PaytmChargingStatusResponse paytmChargingStatusResponse = responseEntity.getBody();
+
+            return paytmChargingStatusResponse;
+        } catch(URISyntaxException e) {
+            throw new RuntimeException("URISynatx Exception occurred");
+        } catch(HttpStatusCodeException e) {
+            throw new RuntimeException("HttpStatusCode Exception occurred");
+        } catch(Exception e) {
+            throw new RuntimeException("Exception occurred");
+        }
+    }
+
     @Override
-    public <T> BaseResponse<T> validateLink(WalletRequest request) {
+    public BaseResponse<PaytmWalletValidateLinkResponse> validateLink(WalletRequest request) {
 
         PaytmWalletValidateLinkRequest paytmWalletValidateLinkRequest = (PaytmWalletValidateLinkRequest)request;
         logger.info("Validating OTP: {} for: {}", paytmWalletValidateLinkRequest.getOtp(), paytmWalletValidateLinkRequest.getMsisdn());
@@ -372,8 +419,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                             .body(body)
                             .build();
 
-            RequestEntity requestEntity =
-                    new RequestEntity<>(consultBalanceRequest, headers, HttpMethod.POST, uri);
+            RequestEntity<ConsultBalanceRequest> requestEntity =
+                    new RequestEntity<ConsultBalanceRequest>(consultBalanceRequest, headers, HttpMethod.POST, uri);
 
             logger.info("Paytm wallet balance request: {}", requestEntity);
             ResponseEntity<WalletBalanceResponse> responseEntity =
@@ -420,9 +467,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                     null, walletBalanceResponse.getStatusCode(), null, null);
 
             return new BaseResponse(consultBalanceResponse, HttpStatus.OK, null);
-        }catch(URISyntaxException ex) {
+        } catch(URISyntaxException ex) {
             throw new RuntimeException("Exception encountered");
-        }catch(HttpStatusCodeException e) {
+        } catch(HttpStatusCodeException e) {
             throw new RuntimeException("Http Status Exception Occurred");
         } catch(Exception e) {
             throw new RuntimeException("Unknown Exception Occurred");

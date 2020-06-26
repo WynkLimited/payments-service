@@ -8,6 +8,8 @@ import java.util.Map;
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
+@Getter
+@ToString
 public class ConsultBalanceRequest {
 
     private ConsultBalanceRequestHead head;

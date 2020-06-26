@@ -184,20 +184,26 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private PhonePeTransactionResponse getTransactionStatus(String transactionId){
-        String suffixStatusApi = "/status";
-        String apiPath = prefixStatusApi + transactionId + suffixStatusApi;
-        String xVerifyHeader = apiPath + salt;
-        xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
-        MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
-        headers.add(X_VERIFY, xVerifyHeader);
-        headers.add(CONTENT_TYPE, "application/json");
-        HttpEntity entity = new HttpEntity(headers);
-        ResponseEntity<PhonePeTransactionResponse> responseEntity = phonePeRestTemplate.exchange(phonePeBaseUrl + apiPath, HttpMethod.GET, entity, PhonePeTransactionResponse.class, new HashMap<>());
-        PhonePeTransactionResponse phonePeTransactionResponse = responseEntity.getBody();
-        if (phonePeTransactionResponse != null && phonePeTransactionResponse.getCode() != null) {
-            logger.info("PhonePe txn response for transaction Id {} :: {}", transactionId, phonePeTransactionResponse);
+        try {
+            String suffixStatusApi = "/status";
+            String apiPath = prefixStatusApi + transactionId + suffixStatusApi;
+            String xVerifyHeader = apiPath + salt;
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+            headers.add(X_VERIFY, xVerifyHeader);
+            headers.add(CONTENT_TYPE, "application/json");
+            HttpEntity entity = new HttpEntity(headers);
+            ResponseEntity<PhonePeTransactionResponse> responseEntity = phonePeRestTemplate.exchange(phonePeBaseUrl + apiPath, HttpMethod.GET, entity, PhonePeTransactionResponse.class, new HashMap<>());
+            PhonePeTransactionResponse phonePeTransactionResponse = responseEntity.getBody();
+            if (phonePeTransactionResponse != null && phonePeTransactionResponse.getCode() != null) {
+                logger.info("PhonePe txn response for transaction Id {} :: {}", transactionId, phonePeTransactionResponse);
+            }
+            return phonePeTransactionResponse;
         }
-        return phonePeTransactionResponse;
+        catch(Exception e){
+            logger.error("Unable to verify status from Phonepe",e);
+            throw new WynkRuntimeException(e);
+        }
     }
 
     private Boolean validateChecksum(Map<String, String> requestParams) {

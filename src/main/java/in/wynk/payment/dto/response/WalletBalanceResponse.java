@@ -1,24 +1,13 @@
 package in.wynk.payment.dto.response;
 
-import in.wynk.commons.enums.Status;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
-@Setter
-@ToString
-public class WalletBalanceResponse extends CustomResponse {
+@Builder
+public class WalletBalanceResponse {
 
-    private ConsultBalanceResponseHead head;
-
-    private ConsultBalanceResponseBody body;
-
-    public WalletBalanceResponse(Status status, String statusMessage, String responseCode,
-                                 String statusCode, String message,
-                                 ConsultBalanceResponseHead head, ConsultBalanceResponseBody body) {
-        super(status, statusMessage, responseCode, statusCode, message);
-        this.head = head;
-        this.body = body;
-    }
+    private Double deficitBalance;
+    private boolean fundsSufficient;
+    private boolean isLinked;
 }

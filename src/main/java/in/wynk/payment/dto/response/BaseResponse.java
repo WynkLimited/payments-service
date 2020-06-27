@@ -10,13 +10,13 @@ import org.springframework.http.ResponseEntity;
 @Getter
 @Builder
 @RequiredArgsConstructor
-public class BaseResponse<T> {
+public class BaseResponse<R> {
 
-    private final T body;
+    private final R body;
     private final HttpStatus status;
     private final HttpHeaders headers;
 
-    public ResponseEntity<T> getResponse() {
+    public ResponseEntity<R> getResponse() {
         return new ResponseEntity<>(body, headers, status);
     }
 

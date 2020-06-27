@@ -1,7 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.dto.Transaction;
+import in.wynk.payment.core.entity.Transaction;
 import in.wynk.payment.dao.ITransactionDao;
 import in.wynk.payment.service.ITransactionManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;

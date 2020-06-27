@@ -1,6 +1,6 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dto.Transaction;
+import in.wynk.payment.core.entity.Transaction;
 
 import java.util.UUID;
 

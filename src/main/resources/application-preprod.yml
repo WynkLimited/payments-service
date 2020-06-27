@@ -12,7 +12,7 @@ paytm:
       baseUrl: https://securegw-stage.paytm.in/paymentservices
     wcf:
       addMoneyUrl: https://wcfpay-dev.wynk.in/paytm-native/add-money
-      callbackUrl: http://capi-wcf-stage.wynk.in/wynk/v2/s2s/subscription/callback
+      callbackUrl: http://capi-wcf-stage.wynk.in/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WYNKLIMITEDWAP
 

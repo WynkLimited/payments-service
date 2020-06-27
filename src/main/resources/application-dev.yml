@@ -11,7 +11,7 @@ paytm:
       baseUrl: https://securegw-stage.paytm.in/paymentservices
     wcf:
       addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
-      callbackUrl: http://localhost:8181/wynk/v2/s2s/subscription/callback
+      callbackUrl: http://localhost:8181/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WCF
 

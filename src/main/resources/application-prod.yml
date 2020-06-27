@@ -12,7 +12,7 @@ paytm:
       baseUrl: https://securegw.paytm.in/paymentservices
     wcf:
       addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
-      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback
+      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WCF
 

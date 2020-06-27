@@ -1,9 +1,10 @@
 package in.wynk.payment.dto.request;
 
-import lombok.*;
-
-import java.math.BigDecimal;
-import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 @Builder
 @RequiredArgsConstructor
@@ -34,9 +35,8 @@ public class ConsultBalanceRequest {
     @AllArgsConstructor
     public static class ConsultBalanceRequestBody {
         private String userToken;
-        private BigDecimal totalAmount;
+        private Double totalAmount;
         private String mid;
-        private Map<String, BigDecimal> amountDetails;
     }
 
 }

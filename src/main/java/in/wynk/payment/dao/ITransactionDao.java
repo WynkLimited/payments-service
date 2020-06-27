@@ -1,7 +1,7 @@
 package in.wynk.payment.dao;
 
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.dto.Transaction;
+import in.wynk.payment.core.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

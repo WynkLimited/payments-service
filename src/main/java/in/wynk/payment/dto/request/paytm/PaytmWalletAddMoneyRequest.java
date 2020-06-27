@@ -1,11 +1,9 @@
 package in.wynk.payment.dto.request.paytm;
 
 import in.wynk.payment.dto.request.WalletRequest;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 public class PaytmWalletAddMoneyRequest extends WalletRequest {
-    private String orderId;
-    private String uid;
-    private Double amountToCredit;
+    private double amountToCredit;
 }

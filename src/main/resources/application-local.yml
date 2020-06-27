@@ -9,7 +9,7 @@ paytm:
     accounts:
       baseUrl: https://accounts.paytm.com
     services:
-      baseUrl: https://securegw.paytm.in/paymentservices
+      baseUrl: https://securegw.paytm.in
     wcf:
       addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
       callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback

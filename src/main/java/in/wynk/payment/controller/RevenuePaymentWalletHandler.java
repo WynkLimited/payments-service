@@ -32,7 +32,7 @@ public class RevenuePaymentWalletHandler {
     }
 
     @PostMapping("/link/request/{sid}")
-    //@ManageSession(sessionId = "#sid")
+    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletLink")
     public ResponseEntity<?> linkRequest(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;
@@ -47,7 +47,7 @@ public class RevenuePaymentWalletHandler {
     }
 
     @PostMapping("/link/validate/{sid}")
-    //@ManageSession(sessionId = "#sid")
+    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletValidateLink")
     public ResponseEntity<?> linkValidate(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;
@@ -78,7 +78,7 @@ public class RevenuePaymentWalletHandler {
     }
 
     @GetMapping("/balance/{sid}")
-    //@ManageSession(sessionId = "#sid")
+    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletBalance")
     public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam PaymentCode paymentCode) {
         IMerchantWalletService walletService;
@@ -93,7 +93,7 @@ public class RevenuePaymentWalletHandler {
     }
 
     @PostMapping("/addMoney/{sid}")
-    //@ManageSession(sessionId = "#sid")
+    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletAddMoney")
     public ResponseEntity<?> addMoney(@PathVariable String sid, @RequestBody WalletRequest request) {
         IMerchantWalletService walletService;

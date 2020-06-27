@@ -1,4 +1,4 @@
-package in.wynk.payment.core.dto;
+package in.wynk.payment.core.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

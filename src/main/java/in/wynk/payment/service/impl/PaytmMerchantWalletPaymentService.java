@@ -192,10 +192,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
         String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; // get access token from session
         String uid = "98998"; // custId fetch fromsession
-        String deviceId = "tydtd7566"; // deviceId fetch from session
+        String deviceId = "9149832387"; // deviceId fetch from session
+        String orderId = Utils.getRandomUUID();
         try {
 
-            URI uri = new URIBuilder(SERVICES_URL + "/HANDLER_FF/withdrawScw").build();
+            URI uri = new URIBuilder(SERVICES_URL + "/paymentservices/HANDLER_FF/withdrawScw").build();
 
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
@@ -205,7 +206,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             parameters.put("ReqType", "WITHDRAW");
             parameters.put("TxnAmount", withdrawalAmount.toString());
             parameters.put("AppIP", "capi-host");
-            parameters.put("OrderId", Utils.getRandomUUID());
+            parameters.put("OrderId", orderId);
             parameters.put("Currency", "INR");
             parameters.put("DeviceId", deviceId);
             parameters.put("SSOToken", accessToken);
@@ -279,9 +280,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(ChargingStatusRequest chargingStatusRequest) {
-        try {
-            String orderId = "et7";//fetch from session
-            URI uri = new URIBuilder(SERVICES_URL + "/HANDLER_FF/withdrawScw").build();
+        try{
+            String orderId = "f052764d-53e1-4c25-9021-f76871f5a329";//fetch from session
+            URI uri = new URIBuilder(SERVICES_URL + "/order/status").build();
 
             MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
             headers.putIfAbsent("Content-Type", Arrays.asList("application/json"));
@@ -428,7 +429,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         }
 
         try {
-            URI uri = new URIBuilder(SERVICES_URL + "/pay/consult").build();
+            URI uri = new URIBuilder(SERVICES_URL + "/paymentservices/pay/consult").build();
             ConsultBalanceRequestBody body = ConsultBalanceRequestBody.builder().userToken(accessToken)
                     .totalAmount(amountInRs).mid(MID).build();
 

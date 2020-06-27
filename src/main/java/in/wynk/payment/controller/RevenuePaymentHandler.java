@@ -10,6 +10,7 @@ import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.enums.paytm.StatusMode;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
@@ -72,15 +73,14 @@ public class RevenuePaymentHandler {
     }
 
     @PostMapping("/callback/{sid}")
-    //@ManageSession(sessionId = "#sid")
+    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestBody Map<String, Object> payload) {
         IMerchantPaymentCallbackService callbackService;
-        //Session<Map<String, Object>> session = SessionContextHolder.get();
+        Session<Map<String, Object>> session = SessionContextHolder.get();
         CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
         try {
-            //PaymentCode option = ((PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
-            PaymentCode option = PaymentCode.PAYTM_WALLET;
+            PaymentCode option = ((PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, option.name());
             AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
             callbackService = this.context.getBean(option.getCode(), IMerchantPaymentCallbackService.class);

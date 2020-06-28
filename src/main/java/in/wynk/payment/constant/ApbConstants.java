@@ -13,7 +13,7 @@ public class ApbConstants {
     public static final String MSG = "MSG";
     public static final String SUCCESS_URL = "SU";
     public static final String FAILURE_URL = "FU";
-    public static final String AMOUNT = "AMT";
+    public static final String APB_AMOUNT = "AMT";
     public static final String DATE = "DATE";
     public static final String CURRENCY = "CUR";
     public static final String CUSTOMER_MOBILE = "CUST_MOBILE";

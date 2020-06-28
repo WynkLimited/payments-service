@@ -1,3 +1,6 @@
+payment:
+  encryption:
+    key: BSB$PORTAL@2014#
 
 ######  Properties #########
 paytm:
@@ -19,6 +22,8 @@ paytm:
 redirect:
   success:
     page: https://www.google.com/
+  failure:
+    page: https://www.yahoo.com
 
 ###### Redis Store Props #######
 session:

@@ -14,7 +14,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
 
 
     @Override
-    public <T> BaseResponse<T> handleCallback(CallbackRequest callbackRequest) {
+    public <R> BaseResponse<R> handleCallback(CallbackRequest callbackRequest) {
         return null;
     }
 

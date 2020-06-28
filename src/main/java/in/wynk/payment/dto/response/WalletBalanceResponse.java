@@ -10,4 +10,9 @@ public class WalletBalanceResponse {
     private Double deficitBalance;
     private boolean fundsSufficient;
     private boolean isLinked;
+
+    public static WalletBalanceResponse defaultUnlinkResponse(){
+        return WalletBalanceResponse.builder().isLinked(false).build();
+    }
+
 }

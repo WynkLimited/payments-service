@@ -7,7 +7,7 @@ import lombok.Getter;
 public class PaytmWalletValidateLinkRequest extends WalletRequest {
 
     private String otp;
-    private String msisdn;
+    private String walletUserId;
     private String state;
 
 }

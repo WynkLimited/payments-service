@@ -5,6 +5,6 @@ import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantPaymentCallbackService {
 
-    <R, T> BaseResponse<R> handleCallback(CallbackRequest<T> callbackRequest);
+    <R> BaseResponse<R> handleCallback(CallbackRequest callbackRequest);
 
 }

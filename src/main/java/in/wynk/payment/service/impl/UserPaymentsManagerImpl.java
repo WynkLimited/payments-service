@@ -2,6 +2,7 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.entity.UserPreferredPayment;
+import in.wynk.payment.core.entity.Wallet;
 import in.wynk.payment.dao.UserPreferredPaymentsDao;
 import in.wynk.payment.service.IUserPaymentsManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,5 +25,13 @@ public class UserPaymentsManagerImpl implements IUserPaymentsManager {
     @Override
     public List<UserPreferredPayment> getAllPaymentDetails(String uid) {
         return preferredPaymentsDao.findByUid(uid);
+    }
+
+    //might need to update cache
+    @Override
+    public UserPreferredPayment saveWalletToken(String uid, Wallet wallet) {
+        UserPreferredPayment preferredPayment = new UserPreferredPayment.Builder().uid(uid).option(wallet).build();
+        //TODO: check for existing option
+        return preferredPaymentsDao.save(preferredPayment);
     }
 }

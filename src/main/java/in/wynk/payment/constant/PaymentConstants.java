@@ -19,4 +19,5 @@ public interface PaymentConstants {
     String PAYTM_SSO_TOKEN = "SSO_TOKEN";
     String PAYTM_SESSION_TOKEN = "session_token";
     String PAYTM_REQUEST_CALLBACK = "CALLBACK_URL";
+    String WALLET_USER_ID = "walletUserId";
 }

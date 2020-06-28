@@ -70,6 +70,7 @@ import java.util.UUID;
 
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
+import static in.wynk.payment.constant.PaymentConstants.WALLET_USER_ID;
 import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
 import static in.wynk.payment.logging.PaymentLoggingMarkers.PAYTM_ERROR;
 
@@ -283,8 +284,6 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     public BaseResponse<Void> validateLink(WalletRequest request) {
 
         PaytmWalletValidateLinkRequest paytmWalletValidateLinkRequest = (PaytmWalletValidateLinkRequest) request;
-        logger.info("Validating OTP: {} for: {}", paytmWalletValidateLinkRequest.getOtp(), paytmWalletValidateLinkRequest.getWalletUserId());
-
         try {
             URI uri = new URIBuilder(ACCOUNTS_URL + "/signin/validate/otp").build();
             String authHeader = String.format("Basic %s", Utils.encodeBase64(CLIENT_ID + ":" + SECRET));
@@ -311,9 +310,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         throw new WynkRuntimeException(WynkErrorType.UT777);
     }
 
-    private void saveToken(PaytmWalletValidateLinkResponse paytmWalletValidateLinkResponse) {
-        if (StringUtils.isBlank(paytmWalletValidateLinkResponse.getAccess_token())) {
-
+    private void saveToken(PaytmWalletValidateLinkResponse tokenResponse) {
+        if (StringUtils.isBlank(tokenResponse.getAccess_token())) {
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            String walletUserId = SessionUtils.getString(sessionDTO, WALLET_USER_ID);
+            String uid = SessionUtils.getString(sessionDTO, UID);
+            Wallet wallet = new Wallet.Builder().paymentCode(PAYTM_WALLET).walletUserId(walletUserId)
+                    .accessToken(tokenResponse.getAccess_token()).tokenValidity(tokenResponse.getExpires()).build();
+            userPaymentsManager.saveWalletToken(uid, wallet);
         }
     }
 

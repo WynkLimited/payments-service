@@ -20,4 +20,10 @@ public class BaseResponse<T> {
         return new ResponseEntity<>(body, headers, status);
     }
 
+    public static BaseResponse<Void> redirectResponse(String url){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.LOCATION, url);
+        return BaseResponse.<Void>builder().status(HttpStatus.FOUND).headers(headers).build();
+    }
+
 }

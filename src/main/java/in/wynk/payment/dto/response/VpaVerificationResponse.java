@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VpaVerificationResponse {
 
-    String success;
+    String status;
     String vpa;
     int isVPAValid;
     String payerAccountName;

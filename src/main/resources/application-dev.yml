@@ -71,3 +71,5 @@ itunes:
   secret: d9a2775a407e435cb80e38a5a06f13ac
   api:
     url: https://sandbox.itunes.apple.com/verifyReceipt
+  return:
+    wynkurl: https://wcf-pay.wynk.in

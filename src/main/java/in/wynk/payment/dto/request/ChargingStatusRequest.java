@@ -1,7 +1,5 @@
 package in.wynk.payment.dto.request;
 
-
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

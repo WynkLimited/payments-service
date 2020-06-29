@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/payment")
+@RequestMapping("/wynk/v1/payment")
 public class RevenuePaymentHandler {
 
     private final ApplicationContext context;

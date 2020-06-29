@@ -2,7 +2,7 @@ package in.wynk.payment.constant;
 
 public class PaymentConstants {
   public static final String NETBANKING_MODE = "netbanking";
-  public static final String SID_KEY = "${sid}";
+  public static final String SID_KEY = "{sid}";
   public static final String PIPE_SEPARATOR = "|";
   public static final String COLON = ":";
   public static final String BASE_USER_EMAIL = "@wynk.in";

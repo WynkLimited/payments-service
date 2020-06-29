@@ -34,6 +34,35 @@ logging:
   path: /data
 
 payment:
+  pooling:
+    queue:
+      reconciliation:
+        enabled: true
+        name: wcf-staging-payment-reconciliation
+        delay: 20
+        delayTimeUnit: SECONDS
+        sqs:
+          messages:
+            producer:
+              delayInSecond: 20
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+      renewal:
+        enabled: false
+        name: wcf-staging-payment-renewal
+        delay: 1
+        delayTimeUnit: MINUTES
+      charging:
+        enabled: false
+        name: wcf-staging-payment-charging.fifo
+        delay: 1
+        delayTimeUnit: MINUTES
+      subscription:
+        enabled: false
+        name: wcf-staging-subscription
+        delay: 1
+        delayTimeUnit: MINUTES
   merchant:
     encKey: BSB$PORTAL@2014#
 ####### payu props #########
@@ -42,4 +71,11 @@ payment:
       salt: 6vbnfVtw
 
 
+resilience:
+  retryProperties:
+    maxAttempts: 3
+    waitDuration: 10000
 
+amazon:
+  sdk:
+    regions: ap-south-1

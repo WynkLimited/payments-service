@@ -10,6 +10,7 @@ import in.wynk.payment.constant.PaymentErrorCode;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dto.CardInfo;
+import in.wynk.payment.core.dto.PaymentReconciliationMessage;
 import in.wynk.payment.core.dto.Transaction;
 import in.wynk.payment.dto.CardDetails;
 import in.wynk.payment.dto.PayUCallbackRequestPayload;
@@ -24,6 +25,8 @@ import in.wynk.payment.dto.response.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.PayUVerificationResponse;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.queue.dto.SendSQSMessageRequest;
+import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.revenue.commons.*;
 import in.wynk.revenue.utils.JsonUtils;
 import in.wynk.revenue.utils.Utils;
@@ -37,6 +40,7 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -62,6 +66,9 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
 
   private static final Logger logger = LoggerFactory.getLogger(PayuMerchantPaymentService.class);
 
+  @Value("${payment.pooling.queue.reconciliation.sqs.messages.producer.delayInSecond}")
+  private int sqsMessageDelay;
+
   @Value("${payment.merchant.payu.key}")
   private String payUMerchantKey;
 
@@ -72,7 +79,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   private String payUInfoApiUrl;
 
   @Value("${payment.merchant.payu.internal.web.url}")
-  private String payUUrl;
+  private String webUrl;
 
   @Value("${payment.merchant.payu.internal.callback.successUrl}")
   private String payUSuccessUrl;
@@ -83,16 +90,23 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   @Value("${payment.merchant.encKey}")
   private String encryptionKey;
 
+  @Value("${payment.pooling.queue.reconciliation.name}")
+  private String reconciliationQueue;
+
   private final RestTemplate restTemplate;
+  private final ISQSMessagePublisher sqsMessagePublisher;
   private final ITransactionManagerService transactionManager;
 
   private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
   private static final FastDateFormat DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
-  public PayuMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager) {
+  public PayuMerchantPaymentService(RestTemplate restTemplate,
+                                    ITransactionManagerService transactionManager,
+                                    @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher) {
     this.restTemplate = restTemplate;
     this.transactionManager = transactionManager;
+    this.sqsMessagePublisher = sqsMessagePublisher;
   }
 
   @Override
@@ -114,7 +128,6 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   @Override
   public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
     // any use case for icici bank ?
-
     URI returnUri = startPaymentForPayU(chargingRequest);
     String encryptedParams = Utils.encrypt(returnUri.getRawQuery(), encryptionKey);
 
@@ -216,8 +229,8 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   private URI startPaymentForPayU(ChargingRequest chargingRequest) {
     PlanDTO selectedPlan = getSelectedPlan(chargingRequest.getPlanId());
     Transaction transaction = initialiseTransaction(chargingRequest, selectedPlan);
-
-    String firstName = getValueFromSession(SessionKeys.UID);
+    String uid = getValueFromSession(SessionKeys.UID);
+    String firstName = uid;
     String udf1 = StringUtils.EMPTY;
     String email = firstName + BASE_USER_EMAIL;
     String reqType = PaymentRequestType.DEFAULT.name();
@@ -235,7 +248,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     URI redirectUrl;
 
     try {
-      URIBuilder uriBuilder = new URIBuilder(payUUrl).addParameter(PAYU_REQUEST_TYPE, reqType)
+      URIBuilder uriBuilder = new URIBuilder(webUrl).addParameter(PAYU_REQUEST_TYPE, reqType)
                                                      .addParameter(PAYU_MERCHANT_KEY, payUMerchantKey)
                                                      .addParameter(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString())
                                                      .addParameter(PAYU_TRANSACTION_AMOUNT, String.valueOf(selectedPlan.getPrice().getAmount()))
@@ -261,11 +274,24 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
 
       putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId());
 
-      // TODO : insert into polling queue.
+      PaymentReconciliationMessage message = PaymentReconciliationMessage.builder()
+                                                                         .uid(uid)
+                                                                         .planId(selectedPlan.getId())
+                                                                         .transactionId(transaction.getId().toString())
+                                                                         .build();
+
+      sqsMessagePublisher.publish(SendSQSMessageRequest.<PaymentReconciliationMessage>builder()
+                                                       .queueName(reconciliationQueue)
+                                                       .delaySeconds(sqsMessageDelay)
+                                                       .message(message)
+                                                       .build());
 
     } catch (Exception e) {
-      logger.error("Error in startPaymentForPayU {}", e);
-      throw new WynkRuntimeException("Error in startPaymentForPayU");
+      if(e instanceof WynkRuntimeException) {
+        throw (WynkRuntimeException) e;
+      } else {
+        throw new WynkRuntimeException(PaymentErrorCode.PAY002, e);
+      }
     }
     return redirectUrl;
   }
@@ -492,7 +518,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
       // Create POJO from response payload.
       PayUCallbackRequestPayload payUCallbackRequestPayload = JsonUtils.GSON.fromJson(JsonUtils.GSON.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
-      URIBuilder returnUrl = new URIBuilder(callbackRequest.getReturnUrl());
+      URIBuilder returnUrl = new URIBuilder();
 
       String errorMessage = payUCallbackRequestPayload.getError();
       if (StringUtils.isEmpty(errorMessage)) {

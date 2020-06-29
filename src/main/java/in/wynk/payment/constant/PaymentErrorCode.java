@@ -10,7 +10,9 @@ public enum PaymentErrorCode implements IWynkErrorType {
 
     /** Error type for Invalid value */
     /** PAYU ERROR CODES **/
-    PAY001("Charging Failure", "Invalid URI Syntax while building payU charging url", HttpStatus.INTERNAL_SERVER_ERROR, BaseLoggingMarkers.APPLICATION_ERROR);
+    PAY001("Charging Failure", "Invalid URI Syntax while building payU charging url", HttpStatus.INTERNAL_SERVER_ERROR, BaseLoggingMarkers.APPLICATION_ERROR),
+    PAY002("Charging Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, BaseLoggingMarkers.APPLICATION_ERROR);
+
 
 
     /** The error title. */

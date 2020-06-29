@@ -9,10 +9,12 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.VpaVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
+import in.wynk.payment.service.IMerchantVpaVerificationService;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -64,6 +66,22 @@ public class RevenuePaymentHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
         BaseResponse<?> baseResponse = statusService.status(request);
+        return baseResponse.getResponse();
+    }
+
+    @PostMapping("/verifyVpa/{sid}")
+ //   @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "verifyVpa")
+    public ResponseEntity<?> verifyVpa(@PathVariable String sid, @RequestBody VpaVerificationRequest request) {
+        IMerchantVpaVerificationService vpaVerificationService;
+        try {
+            PaymentCode paymentCode = request.getPaymentCode();
+   //         AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
+            vpaVerificationService = this.context.getBean(paymentCode.getCode(), IMerchantVpaVerificationService.class);
+        } catch (BeansException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+        }
+        BaseResponse<?> baseResponse = vpaVerificationService.verifyVpa(request);
         return baseResponse.getResponse();
     }
 

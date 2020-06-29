@@ -7,14 +7,9 @@ import in.wynk.payment.constant.PaymentConstants;
 import in.wynk.payment.dto.CardDetails;
 import in.wynk.payment.dto.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.TransactionDetails;
-import in.wynk.payment.dto.response.PayURenewalResponse;
-import in.wynk.payment.dto.response.PayUUserCardDetailsResponse;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.PayUVerificationResponse;
+import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.*;
+import in.wynk.payment.service.IMerchantVpaVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.revenue.commons.*;
 import in.wynk.revenue.utils.JsonUtils;
@@ -51,7 +46,7 @@ import static in.wynk.revenue.commons.Constants.ONE_DAY_IN_MILLI;
 import static in.wynk.revenue.commons.Constants.TEXT_PLAIN;
 
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayuMerchantPaymentService implements IRenewalMerchantPaymentService {
+public class PayuMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVpaVerificationService {
 
   private static final Logger logger = LoggerFactory.getLogger(PayuMerchantPaymentService.class);
 
@@ -568,5 +563,16 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
       contentType = APPLICATION_JSON;
     }
     httpHeaders.add("ct", contentType);
+  }
+
+  @Override
+  public BaseResponse<VpaVerificationResponse> verifyVpa(VpaVerificationRequest vpaVerificationRequest) {
+    VpaVerificationResponse verificationResponse =
+            JsonUtils.GSON.fromJson(
+                    getInfoFromPayU("validateVPA", vpaVerificationRequest.getVpa()).toJSONString(),
+                    VpaVerificationResponse.class);
+
+    return BaseResponse.<VpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
+
   }
 }

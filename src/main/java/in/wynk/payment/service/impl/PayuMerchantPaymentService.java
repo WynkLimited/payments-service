@@ -1,34 +1,42 @@
 package in.wynk.payment.service.impl;
 
 import com.google.common.util.concurrent.RateLimiter;
+import in.wynk.commons.constants.SessionKeys;
+import in.wynk.commons.dto.PlanDTO;
+import in.wynk.commons.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.constant.PaymentConstants;
+import in.wynk.payment.constant.PaymentErrorCode;
+import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dto.CardInfo;
+import in.wynk.payment.core.dto.Transaction;
 import in.wynk.payment.dto.CardDetails;
 import in.wynk.payment.dto.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.TransactionDetails;
-import in.wynk.payment.dto.response.PayURenewalResponse;
-import in.wynk.payment.dto.response.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.PayURenewalResponse;
+import in.wynk.payment.dto.response.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.PayUVerificationResponse;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.revenue.commons.*;
 import in.wynk.revenue.utils.JsonUtils;
 import in.wynk.revenue.utils.Utils;
+import in.wynk.session.context.SessionContextHolder;
+import in.wynk.session.dto.Session;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.conn.ConnectTimeoutException;
-import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,43 +53,47 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
+
 import static in.wynk.payment.constant.PaymentConstants.*;
-import static in.wynk.revenue.commons.Constants.APPLICATION_JSON;
-import static in.wynk.revenue.commons.Constants.ONE_DAY_IN_MILLI;
-import static in.wynk.revenue.commons.Constants.TEXT_PLAIN;
+import static in.wynk.revenue.commons.Constants.*;
 
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
 public class PayuMerchantPaymentService implements IRenewalMerchantPaymentService {
 
   private static final Logger logger = LoggerFactory.getLogger(PayuMerchantPaymentService.class);
 
-  @Autowired private RestTemplate restTemplate;
+  @Value("${payment.merchant.payu.key}")
+  private String payUMerchantKey;
 
-//  @Value("${wcf.payment.payU.merchantKey}")
-  private String payUMerchantKey = "aU2Uoi";
+  @Value("${payment.merchant.payu.salt}")
+  private String payUSalt;
 
-//  @Value("${wcf.payment.payU.salt}")
-  private String payUSalt = "6vbnfVtw";
+  @Value("${payment.merchant.payu.api.info}")
+  private String payUInfoApiUrl;
 
-//  @Value("${wcf.payment.payU.info.apiUrl}")
-  private String payUInfoApiUrl = "https://info.payu.in/merchant/postservice.php?form=2";
+  @Value("${payment.merchant.payu.internal.web.url}")
+  private String payUUrl;
 
-//  @Value("${wcf.payment.payu.payment.url}")
-  private String payUUrl = "https://wcfpay-new.wynk.in/wcf/payu";
+  @Value("${payment.merchant.payu.internal.callback.successUrl}")
+  private String payUSuccessUrl;
 
-//  @Value("${wcf.payment.payU.successUrl}")
-  private String payUSuccessUrl = "https://capi.wynk.in/wynk/v1/payucallback/payment";
+  @Value("${payment.merchant.payu.internal.callback.failureUrl}")
+  private String payUFailureUrl;
 
-//  @Value("${wcf.payment.payU.failureUrl}")
-  private String payUFailureUrl = "https://capi.wynk.in/wynk/v1/payucallback/payment";
+  @Value("${payment.merchant.encKey}")
+  private String encryptionKey;
 
-//  @Value("${wcf.payment.payU.encryptionUrl}")
-  private String encryptionKey = "BSB$PORTAL@2014#";
+  private final RestTemplate restTemplate;
+  private final ITransactionManagerService transactionManager;
 
   private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
-  private static final FastDateFormat DATE_FORMAT =
-      FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+  private static final FastDateFormat DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+
+  public PayuMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager) {
+    this.restTemplate = restTemplate;
+    this.transactionManager = transactionManager;
+  }
 
   @Override
   public BaseResponse<String> handleCallback(CallbackRequest callbackRequest) {
@@ -93,28 +105,38 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     httpHeaders.add(HttpHeaders.PRAGMA, "no-cache");
     httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
     return BaseResponse.<String>builder()
-        .status(HttpStatus.FOUND)
-        .headers(httpHeaders)
-        .body(returnUrl.toString())
-        .build();
+            .status(HttpStatus.FOUND)
+            .headers(httpHeaders)
+            .body(returnUrl.toString())
+            .build();
   }
 
   @Override
   public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
-    String isICICI = StringUtils.EMPTY; // Keeping this empty for future use.
-    SubscriptionPack pack = new SubscriptionPack(); // Get pack from partnerProductId.
-    URI returnUri = startPaymentForPayU(pack, chargingRequest);
-    URI finalUri = Utils.encryptUrl(returnUri, encryptionKey);
-    Map<String, String> queryParams =
-        URLEncodedUtils.parse(finalUri, Charset.defaultCharset()).stream()
-            .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+    // any use case for icici bank ?
+
+    URI returnUri = startPaymentForPayU(chargingRequest);
+    String encryptedParams = Utils.encrypt(returnUri.getRawQuery(), encryptionKey);
+
+    URI finalUri;
+    try {
+      finalUri = new URIBuilder(returnUri).removeQuery().addParameter(PAYU_CHARGING_INFO, encryptedParams).build();
+    } catch (Exception e) {
+      throw new WynkRuntimeException(PaymentErrorCode.PAY001);
+    }
+
+    Map<String, String> queryParams = URLEncodedUtils.parse(finalUri, Charset.defaultCharset())
+                                                     .stream()
+                                                     .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+
     HttpHeaders httpHeaders = new HttpHeaders();
     setContentTypeHeader(httpHeaders, JsonUtils.GSON.toJson(queryParams));
+
     return BaseResponse.<Map<String, String>>builder()
-        .body(queryParams)
-        .status(HttpStatus.OK)
-        .headers(httpHeaders)
-        .build();
+                       .body(queryParams)
+                       .status(HttpStatus.OK)
+                       .headers(httpHeaders)
+                       .build();
   }
 
   @Override
@@ -137,12 +159,10 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     try {
       if (StringUtils.isEmpty(paymentRenewalRequest.getCardToken())) {
         String userCredentials = payUMerchantKey + COLON + paymentRenewalRequest.getUid();
-        PayUUserCardDetailsResponse userCardDetailsResponse =
-            JsonUtils.GSON.fromJson(
-                getUserCards(userCredentials).toJSONString(), PayUUserCardDetailsResponse.class);
+        PayUUserCardDetailsResponse userCardDetailsResponse = getUserCardsFromPayu(userCredentials);
         Map<String, String> numberTokenMap =
-            userCardDetailsResponse.getUserCards().values().stream()
-                .collect(Collectors.toMap(CardDetails::getCardNo, CardDetails::getCardToken));
+                userCardDetailsResponse.getUserCards().values().stream()
+                        .collect(Collectors.toMap(CardDetails::getCardNo, CardDetails::getCardToken));
         paymentRenewalRequest.setCardToken(
             numberTokenMap.get(paymentRenewalRequest.getCardNumber()));
       }
@@ -152,9 +172,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
       boolean status = false;
       String errorMessage = StringUtils.EMPTY;
       //      String amount = stringBuilder.append(trLog.getAmount()).append("0").toString();
-      JSONObject paymentResponse = getPayURenewalStatus(paymentRenewalRequest);
-      PayURenewalResponse payURenewalResponse =
-          JsonUtils.GSON.fromJson(paymentResponse.toJSONString(), PayURenewalResponse.class);
+      PayURenewalResponse payURenewalResponse = getPayURenewalStatus(paymentRenewalRequest);
       if (payURenewalResponse.isTimeOutFlag()) {
         status = true;
       } else {
@@ -163,12 +181,11 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
         errorMessage = transactionDetails.getErrorMessage();
         if (transactionDetails.getStatus().equals(PAYU_STATUS_CAPTURED)) {
           status = true;
-          paymentResponse = getPayUTransactionStatus(transactionDetails.getTransactionId());
-          TransactionDetails verificationTransactionDetails =
-              JsonUtils.GSON
-                  .fromJson(paymentResponse.toJSONString(), PayUVerificationResponse.class)
+
+          TransactionDetails verificationTransactionDetails = getPayUTransactionStatus(transactionDetails.getTransactionId())
                   .getTransactionDetails()
                   .get(paymentRenewalRequest.getId());
+
           errorMessage = verificationTransactionDetails.getErrorMessage();
         } else if (transactionDetails.getStatus().equals(PAYU_SI_STATUS_FAILURE)) {
           errorMessage = transactionDetails.getPayUResponseFailureMessage();
@@ -186,86 +203,101 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
 
   @Override
   public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
-    PayUVerificationResponse verificationResponse =
-        JsonUtils.GSON.fromJson(
-            getPayUTransactionStatus(chargingStatusRequest.getOrderId()).toJSONString(),
-            PayUVerificationResponse.class);
-    TransactionDetails transactionDetails =
-        verificationResponse.getTransactionDetails().get(chargingStatusRequest.getOrderId());
+    PayUVerificationResponse verificationResponse = getPayUTransactionStatus(chargingStatusRequest.getOrderId());
+    TransactionDetails transactionDetails = verificationResponse.getTransactionDetails().get(chargingStatusRequest.getOrderId());
     try {
-      //      getPollingMessage(chargingStatusRequest, transactionDetails);
+      // getPollingMessage(chargingStatusRequest, transactionDetails);
     } catch (Exception e) {
+
     }
     return null;
   }
 
-  private URI startPaymentForPayU(SubscriptionPack pack, ChargingRequest chargingRequest) {
+  private URI startPaymentForPayU(ChargingRequest chargingRequest) {
+    PlanDTO selectedPlan = getSelectedPlan(chargingRequest.getPlanId());
+    Transaction transaction = initialiseTransaction(chargingRequest, selectedPlan);
+
+    String firstName = getValueFromSession(SessionKeys.UID);
+    String udf1 = StringUtils.EMPTY;
+    String email = firstName + BASE_USER_EMAIL;
+    String reqType = PaymentRequestType.DEFAULT.name();
+
+    if (!selectedPlan.getPlanType().equals(PlanType.ONE_TIME_SUBSCRIPTION)) {
+      reqType = PaymentRequestType.SUBSCRIBE.name();
+      udf1 = PAYU_SI_KEY.toUpperCase();
+    }
+
+    String checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, firstName, selectedPlan.getTitle(), selectedPlan.getPrice().getAmount());
+
+    String userCredentials = payUMerchantKey + COLON + firstName;
+    List<String> jsonCardsList = getUserCards(userCredentials);
+
+    URI redirectUrl;
+
     try {
-      String firstName = PaymentConstants.DEFAULT_FIRST_NAME;
-      String email = "test@wynk.in";
-      String uid = ""; // uid from msisdn.
-      /*
-      if (!WynkService.NOT_WCF_INTEGRATED_SERVICES.contains(chargingRequest.getService()))
-          UserProfileData user = userDAO.getUserByUid(uid); // for name and email
-      else{
-        jsonPayload in transaction log. for username and email
-      }
-      */
-      // Pair<String,String> user = getNameAndEmail();
-      String udf1 = StringUtils.EMPTY;
-      String reqType = PaymentRequestType.DEFAULT.name();
-      if (!pack.getPackageType().equals(PlanType.ONE_TIME_SUBSCRIPTION)) {
-        reqType = PaymentRequestType.SUBSCRIBE.name();
-        udf1 = "SI";
-      }
-      String checksumHash =
-          getChecksumHashForPayment(pack, chargingRequest, udf1, email, firstName);
-      String userCredentials = payUMerchantKey + COLON + uid;
-      PayUUserCardDetailsResponse payUUserCardDetailsResponse =
-          JsonUtils.GSON.fromJson(
-              getUserCards(userCredentials).toJSONString(), PayUUserCardDetailsResponse.class);
-      List<String> jsonCardsList = new ArrayList<>();
-      for (Map.Entry<String, CardDetails> entry :
-          payUUserCardDetailsResponse.getUserCards().entrySet()) {
-        CardDetails cardDetails = entry.getValue();
-        JSONObject cardInfo = checkCardIsDomestic(cardDetails.getCardBin());
-        cardDetails.setIssuingBank(String.valueOf(cardInfo.get("issuingBank")));
-        jsonCardsList.add(JsonUtils.GSON.toJson(cardDetails));
-      }
-      URI redirectUrl = new URI("");
-      URIBuilder uriBuilder =
-          new URIBuilder(payUUrl)
-              .addParameter("rt", reqType)
-              .addParameter(PAYU_MERCHANT_KEY, payUMerchantKey)
-              .addParameter(PAYU_REQUEST_TRANSACTION_ID, chargingRequest.getTransactionId())
-              .addParameter(PAYU_TRANSACTION_AMOUNT, pack.getPricing())
-              .addParameter(PAYU_PRODUCT_INFO, pack.getTitle())
-              .addParameter(PAYU_CUSTOMER_FIRSTNAME, firstName)
-              .addParameter(PAYU_CUSTOMER_EMAIL, email)
-              .addParameter(
-                  PAYU_CUSTOMER_MSISDN, Utils.getTenDigitMsisdn(chargingRequest.getMsisdn()))
-              .addParameter(PAYU_HASH, checksumHash)
-              .addParameter(PAYU_SUCCESS_URL, payUSuccessUrl)
-              .addParameter(PAYU_FAILURE_URL, payUFailureUrl)
-              .addParameter(PAYU_ENFORCE_PAY_METHOD, chargingRequest.getEnforcePayment())
-              .addParameter(PAYU_UDF1_PARAMETER, udf1)
-              .addParameter(IS_FALLBACK_ATTEMPT, String.valueOf(false))
-              .addParameter(ERROR, PAYU_REDIRECT_MESSAGE)
-              .addParameter(CARD_DETAILS, jsonCardsList.toString())
-              .addParameter(PAYU_PG, chargingRequest.getPg())
-              .addParameter(PAYU_USER_CREDENTIALS, userCredentials);
-      if (pack.getPackageType().equals(PlanType.ONE_TIME_SUBSCRIPTION)) {
-        redirectUrl = uriBuilder.addParameter(PAYU_ENFORCE_PAYMENT, "netbanking").build();
-      } else {
-        redirectUrl = uriBuilder.addParameter(PAYU_SI, "1").build();
-      }
-      return redirectUrl;
+      URIBuilder uriBuilder = new URIBuilder(payUUrl).addParameter(PAYU_REQUEST_TYPE, reqType)
+                                                     .addParameter(PAYU_MERCHANT_KEY, payUMerchantKey)
+                                                     .addParameter(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString())
+                                                     .addParameter(PAYU_TRANSACTION_AMOUNT, String.valueOf(selectedPlan.getPrice().getAmount()))
+                                                     .addParameter(PAYU_PRODUCT_INFO, selectedPlan.getTitle())
+                                                     .addParameter(PAYU_CUSTOMER_FIRSTNAME, firstName)
+                                                     .addParameter(PAYU_CUSTOMER_EMAIL, email)
+                                                     .addParameter(PAYU_CUSTOMER_MSISDN, Utils.getTenDigitMsisdn(chargingRequest.getMsisdn()))
+                                                     .addParameter(PAYU_HASH, checksumHash)
+                                                     .addParameter(PAYU_SUCCESS_URL, payUSuccessUrl.replace(SID_KEY, SessionContextHolder.get().getId().toString()))
+                                                     .addParameter(PAYU_FAILURE_URL, payUFailureUrl.replace(SID_KEY, SessionContextHolder.get().getId().toString()))
+                                                     .addParameter(PAYU_ENFORCE_PAY_METHOD, chargingRequest.getEnforcePayment())
+                                                     .addParameter(PAYU_UDF1_PARAMETER, udf1)
+                                                     .addParameter(IS_FALLBACK_ATTEMPT, String.valueOf(false))
+                                                     .addParameter(ERROR, PAYU_REDIRECT_MESSAGE)
+                                                     .addParameter(CARD_DETAILS, jsonCardsList.toString())
+                                                     .addParameter(PAYU_PG, chargingRequest.getPg())
+                                                     .addParameter(PAYU_USER_CREDENTIALS, userCredentials);
+
+      if (selectedPlan.getPlanType().equals(PlanType.ONE_TIME_SUBSCRIPTION))
+        redirectUrl = uriBuilder.addParameter(PAYU_ENFORCE_PAYMENT, NETBANKING_MODE).build();
+      else
+        redirectUrl = uriBuilder.addParameter(PAYU_SI_KEY, "1").build();
+
+      putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId());
+
       // TODO : insert into polling queue.
-    } catch (Throwable throwable) {
-      logger.error("Error in startPaymentForPayU {}", throwable);
+
+    } catch (Exception e) {
+      logger.error("Error in startPaymentForPayU {}", e);
       throw new WynkRuntimeException("Error in startPaymentForPayU");
     }
+    return redirectUrl;
   }
+
+  private Transaction initialiseTransaction(ChargingRequest chargingRequest, PlanDTO selectedPlan) {
+    return transactionManager.upsert(Transaction.builder()
+            .productId(chargingRequest.getPlanId())
+            .amount(selectedPlan.getPrice().getAmount())
+            .initTime(Calendar.getInstance())
+            .consent(Calendar.getInstance())
+            .uid(getValueFromSession(SessionKeys.UID))
+            .service(getValueFromSession(SessionKeys.SERVICE))
+            .paymentChannel(PaymentCode.PAYU.name())
+            .status(TransactionStatus.INPROGRESS.name())
+            .type(TransactionEvent.SUBSCRIBE.getValue())
+            .build());
+  }
+
+  private List<String> getUserCards(String userCredentials) {
+    PayUUserCardDetailsResponse payUUserCardDetailsResponse = getUserCardsFromPayu(userCredentials);
+    return payUUserCardDetailsResponse.getUserCards()
+                                      .entrySet()
+                                      .parallelStream()
+                                      .map(cardEntry -> {
+                                            CardDetails cardDetails = cardEntry.getValue();
+                                            CardInfo cardInfo = checkCardIsDomestic(cardDetails.getCardBin());
+                                            cardDetails.setIssuingBank(String.valueOf(cardInfo.getIssuingBank()));
+                                            return JsonUtils.GSON.toJson(cardDetails); })
+                                      .collect(Collectors.toList());
+  }
+
+
   // To be checked.
   /*private Pair<String, String> getNameAndEmail(){
     String firstName= "";
@@ -300,46 +332,23 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
     return new Pair<String,String>(firstName, email);
   }*/
-  private String getChecksumHashForPayment(
-      SubscriptionPack pack,
-      ChargingRequest chargingRequest,
-      String udf1,
-      String email,
-      String firstName) {
-    String amount = pack.getPricing();
-    String productTitle = pack.getTitle();
-    String finalString =
-        payUMerchantKey
-            + PIPE_SEPARATOR
-            + chargingRequest.getTransactionId()
-            + PIPE_SEPARATOR
-            + amount
-            + PIPE_SEPARATOR
-            + productTitle
-            + PIPE_SEPARATOR
-            + firstName
-            + PIPE_SEPARATOR
-            + email
-            + PIPE_SEPARATOR
-            + udf1
-            + "||||||||||"
-            + payUSalt;
-    return EncryptionUtils.generateSHA512Hash(finalString);
+
+  private PayUUserCardDetailsResponse getUserCardsFromPayu(String userCredentials) {
+    String response = getInfoFromPayU("get_user_cards", userCredentials);
+    return JsonUtils.GSON.fromJson(response, PayUUserCardDetailsResponse.class);
   }
 
-  private JSONObject getUserCards(String userCredentials) {
-    return getInfoFromPayU("get_user_cards", userCredentials);
+  private CardInfo checkCardIsDomestic(String cardBin) {
+    String response = getInfoFromPayU("check_isDomestic", cardBin);
+    return JsonUtils.GSON.fromJson(response, CardInfo.class);
   }
 
-  private JSONObject checkCardIsDomestic(String cardBin) {
-    return getInfoFromPayU("check_isDomestic", cardBin);
+  private PayUVerificationResponse getPayUTransactionStatus(String orderId) {
+    String response = getInfoFromPayU("verify_payment", orderId);
+    return JsonUtils.GSON.fromJson(response, PayUVerificationResponse.class);
   }
 
-  private JSONObject getPayUTransactionStatus(String orderId) {
-    return getInfoFromPayU("verify_payment", orderId);
-  }
-
-  private JSONObject getPayURenewalStatus(PaymentRenewalRequest paymentRenewalRequest) {
+  private PayURenewalResponse getPayURenewalStatus(PaymentRenewalRequest paymentRenewalRequest) {
     LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
     String userCredentials = payUMerchantKey + COLON + paymentRenewalRequest.getUid();
     orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, paymentRenewalRequest.getSubsId());
@@ -364,17 +373,17 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
         if (e.getRootCause() instanceof SocketTimeoutException) {
           timeOut = true;
           logger.error(
-              "Socket timedout but valid for reconcillation for request : {}",
-              requestMap,
-              e.getMessage(),
-              e);
+                  "Socket timedout but valid for reconcillation for request : {}",
+                  requestMap,
+                  e.getMessage(),
+                  e);
         } else if (e.getRootCause() instanceof ConnectTimeoutException) {
           timeOut = true;
           logger.error(
-              "Connection timedout but valid for reconcillation for request : {}",
-              requestMap,
-              e.getMessage(),
-              e);
+                  "Connection timedout but valid for reconcillation for request : {}",
+                  requestMap,
+                  e.getMessage(),
+                  e);
         } else {
           throw new WynkRuntimeException("Exception occurred while making SI payment on Payu");
         }
@@ -382,15 +391,15 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
         throw new WynkRuntimeException("Exception occurred while making SI payment on Payu");
       }
     }
-    JSONObject paymentResponse = JsonUtils.getJsonObjectFromPayload(response);
+    PayURenewalResponse paymentResponse = JsonUtils.GSON.fromJson(response, PayURenewalResponse.class);
     if (paymentResponse == null) {
-      paymentResponse = new JSONObject();
+      paymentResponse = new PayURenewalResponse();
     }
-    paymentResponse.put("timeOutFlag", timeOut);
+    paymentResponse.setTimeOutFlag(timeOut);
     return paymentResponse;
   }
 
-  private JSONObject getInfoFromPayU(String command, String var1) {
+  private String getInfoFromPayU(String command, String var1) {
     String hash = generateHashForPayUApi(command, var1);
     MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<String, String>();
     requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
@@ -398,24 +407,24 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     requestMap.add(PAYU_HASH, hash);
     requestMap.add(PAYU_VARIABLE1, var1);
     String response = restTemplate.postForObject(payUInfoApiUrl, requestMap, String.class);
-    return JsonUtils.getJsonObjectFromPayload(response);
+    return response;
   }
 
   private String generateHashForPayUApi(String command, String var1) {
     String finalString =
-        payUMerchantKey
-            + PIPE_SEPARATOR
-            + command
-            + PIPE_SEPARATOR
-            + var1
-            + PIPE_SEPARATOR
-            + payUSalt;
+            payUMerchantKey
+                    + PIPE_SEPARATOR
+                    + command
+                    + PIPE_SEPARATOR
+                    + var1
+                    + PIPE_SEPARATOR
+                    + payUSalt;
     return EncryptionUtils.generateSHA512Hash(finalString);
   }
 
   private void getPollingMessage(
-      ChargingStatusRequest chargingStatusRequest, TransactionDetails transactionDetails)
-      throws Exception {
+          ChargingStatusRequest chargingStatusRequest, TransactionDetails transactionDetails)
+          throws Exception {
     long externalChargingDate = System.currentTimeMillis();
     if (!StringUtils.isEmpty(transactionDetails.getPayUTransactionDate())) {
       try {
@@ -423,7 +432,7 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
         externalChargingDate = date.getTime();
       } catch (ParseException e) {
         logger.error(
-            "Exception while parsing date: {}", transactionDetails.getPayUTransactionDate(), e);
+                "Exception while parsing date: {}", transactionDetails.getPayUTransactionDate(), e);
       }
     }
     Map<String, String> paymentMetadata = new HashMap<>();
@@ -450,17 +459,17 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
         validTillDate = externalChargingDate + pack.getPackPeriod();
         transactionStatus = TransactionStatus.SUCCESS;
       } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus())
-          || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+              || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
         subscriptionStatus = SubscriptionStatus.DEACTIVATED;
         transactionStatus = TransactionStatus.FAILURE;
       } else if (chargingStatusRequest.getCreatedTimeStamp().getTime()
               > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3
-          && StringUtils.equalsIgnoreCase(
+              && StringUtils.equalsIgnoreCase(
               PaymentConstants.PENDING, transactionDetails.getStatus())) {
         throw new Exception("Still pending from payU side.");
       } else if (chargingStatusRequest.getCreatedTimeStamp().getTime()
               < System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3
-          && StringUtils.equalsIgnoreCase(
+              && StringUtils.equalsIgnoreCase(
               PaymentConstants.PENDING, transactionDetails.getStatus())) {
         subscriptionStatus = SubscriptionStatus.DEACTIVATED;
         transactionStatus = TransactionStatus.FAILURE;
@@ -481,26 +490,27 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   private URI processCallback(CallbackRequest callbackRequest) {
     try {
       // Create POJO from response payload.
-      PayUCallbackRequestPayload callbackRequestPayload =
-          JsonUtils.GSON.fromJson(
-              JsonUtils.GSON.toJsonTree((Map<String, Object>) callbackRequest.getBody()),
-              PayUCallbackRequestPayload.class);
+      PayUCallbackRequestPayload payUCallbackRequestPayload = JsonUtils.GSON.fromJson(JsonUtils.GSON.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
+
       URIBuilder returnUrl = new URIBuilder(callbackRequest.getReturnUrl());
-      String errorMessage = callbackRequestPayload.getError();
+
+      String errorMessage = payUCallbackRequestPayload.getError();
       if (StringUtils.isEmpty(errorMessage)) {
-        errorMessage = callbackRequestPayload.getErrorMessage();
+        errorMessage = payUCallbackRequestPayload.getErrorMessage();
       }
-      boolean validHash = validateCallbackChecksum(callbackRequestPayload, callbackRequest);
-      String status = callbackRequestPayload.getStatus();
-      if (!validHash) {
+
+      boolean isValidHash = validateCallbackChecksum(payUCallbackRequestPayload, callbackRequest);
+      String status = payUCallbackRequestPayload.getStatus();
+
+      if (!isValidHash) {
         logger.info(
             "PayU Response, txnStatus:{}, transactionId: {}, PayU TXNID: {}, Reason: {}",
-            callbackRequestPayload.getStatus(),
-            callbackRequest.getId(),
-            callbackRequestPayload.getExternalTransactionId(),
+                payUCallbackRequestPayload.getStatus(),
+                callbackRequest.getId(),
+                payUCallbackRequestPayload.getExternalTransactionId(),
             errorMessage);
       }
-      if (validHash && !StringUtils.isEmpty(status)) {
+      if (isValidHash && !StringUtils.isEmpty(status)) {
         if (FAILURE.equalsIgnoreCase(status)) {
           returnUrl
               .addParameter(STATUS, FAILURE)
@@ -536,30 +546,64 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
   }
 
+  private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, float amount) {
+    String rawChecksum = payUMerchantKey
+                                        + PIPE_SEPARATOR
+                                        + transactionId.toString()
+                                        + PIPE_SEPARATOR
+                                        + amount
+                                        + PIPE_SEPARATOR
+                                        + planTitle
+                                        + PIPE_SEPARATOR
+                                        + firstName
+                                        + PIPE_SEPARATOR
+                                        + email
+                                        + PIPE_SEPARATOR
+                                        + udf1
+                                        + "||||||||||"
+                                        + payUSalt;
+    return EncryptionUtils.generateSHA512Hash(rawChecksum);
+  }
+
   private boolean validateCallbackChecksum(
       PayUCallbackRequestPayload callbackRequestPayload, CallbackRequest callbackRequest) {
     DecimalFormat df = new DecimalFormat("#.00");
     String amount = df.format(Double.valueOf(callbackRequest.getAmount()));
     String generatedString =
-        payUSalt
-            + PIPE_SEPARATOR
-            + callbackRequestPayload.getStatus()
-            + "||||||||||"
-            + callbackRequestPayload.getUdf1()
-            + PIPE_SEPARATOR
-            + callbackRequestPayload.getEmail()
-            + PIPE_SEPARATOR
-            + callbackRequestPayload.getFirstName()
-            + PIPE_SEPARATOR
-            + callbackRequest.getTitle()
-            + PIPE_SEPARATOR
-            + amount
-            + PIPE_SEPARATOR
-            + callbackRequest.getId()
-            + PIPE_SEPARATOR
-            + payUMerchantKey;
+            payUSalt
+                    + PIPE_SEPARATOR
+                    + callbackRequestPayload.getStatus()
+                    + "||||||||||"
+                    + callbackRequestPayload.getUdf1()
+                    + PIPE_SEPARATOR
+                    + callbackRequestPayload.getEmail()
+                    + PIPE_SEPARATOR
+                    + callbackRequestPayload.getFirstName()
+                    + PIPE_SEPARATOR
+                    + callbackRequest.getTitle()
+                    + PIPE_SEPARATOR
+                    + amount
+                    + PIPE_SEPARATOR
+                    + callbackRequest.getId()
+                    + PIPE_SEPARATOR
+                    + payUMerchantKey;
     String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
     return generatedHash.equals(callbackRequestPayload.getResponseHash());
+  }
+
+  private PlanDTO getSelectedPlan(int planId) {
+    List<PlanDTO> plans = getValueFromSession(SessionKeys.ELIGIBLE_PLANS);
+    return plans.stream().filter(plan -> plan.getId() == planId).collect(Collectors.toList()).get(0);
+  }
+
+  private <T> T getValueFromSession(String key) {
+    Session<SessionDTO> session = SessionContextHolder.get();
+    return session.getBody().get(key);
+  }
+
+  private <T> void putValueInSession(String key, T value) {
+    Session<SessionDTO> session = SessionContextHolder.get();
+    session.getBody().put(key, value);
   }
 
   private static void setContentTypeHeader(HttpHeaders httpHeaders, String responseStr) {
@@ -569,4 +613,5 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
     httpHeaders.add("ct", contentType);
   }
+
 }

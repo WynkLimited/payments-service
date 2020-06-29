@@ -33,4 +33,13 @@ management:
 logging:
   path: /data
 
+payment:
+  merchant:
+    encKey: BSB$PORTAL@2014#
+####### payu props #########
+    payu:
+      key: aU2Uoi
+      salt: 6vbnfVtw
+
+
 

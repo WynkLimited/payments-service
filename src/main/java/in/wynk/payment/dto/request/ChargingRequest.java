@@ -10,7 +10,7 @@ import lombok.*;
 public class ChargingRequest {
 
     private String sessionId;
-    private String partnerProductId;
+    private int planId;
     private String couponId;
     private PaymentCode paymentCode;
     private String enforcePayment; // Do we have to store this value at backend in configuration?

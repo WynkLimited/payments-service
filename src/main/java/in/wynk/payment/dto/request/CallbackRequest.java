@@ -14,7 +14,6 @@ public class CallbackRequest<T> {
     private T body;
     private String returnUrl;
     private String transactionEvent;
-    private String receivedHash;
     private String amount;
     private String title;
     private String id;

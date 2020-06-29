@@ -1,7 +1,7 @@
 package in.wynk.payment.dao.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.enums.ItunesReceiptType;
+import in.wynk.payment.dto.itunes.ItunesReceiptType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

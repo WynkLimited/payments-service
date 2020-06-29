@@ -1,4 +1,4 @@
-package in.wynk.payment.enums;
+package in.wynk.payment.dto.itunes;
 
 public enum ItunesStatusCodes {
     /* 21000 */

@@ -7,6 +7,7 @@ import in.wynk.commons.utils.CommonUtils;
 import in.wynk.commons.utils.SessionUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.ApbConstants;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.dto.request.Apb.ApbPaymentCallbackRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
@@ -28,6 +29,9 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static in.wynk.commons.constants.Constants.AMOUNT;
@@ -62,35 +66,34 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        ApbPaymentCallbackRequest apbPaymentCallbackRequest = (ApbPaymentCallbackRequest) callbackRequest.getBody();
-        logger.info("ApbPaymentCallbackRequest: {}", apbPaymentCallbackRequest);
-        if (apbPaymentCallbackRequest == null) {
-            throw new RuntimeException("Received invalid callback");
-        }
-        ApbStatus status = apbPaymentCallbackRequest.getStatus();
+        Map<String, List<String>> urlParameters = (Map<String, List<String>>)  callbackRequest.getBody();
+        ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
+        String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
+        String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
+        String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
+        String externalTxnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_ID);
+        String amount = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT);
+        String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
+        String txnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TXN_REF_NO);
+        String requestHash = CommonUtils.getStringParameter(urlParameters, ApbConstants.HASH);
         boolean verified = false;
         if (status == null) {
             throw new RuntimeException("Status is null");
         }
         try {
-            if (status == ApbStatus.SUC) {
-                verified = verifySuccessHash(apbPaymentCallbackRequest);
-            } else if (status == ApbStatus.FAL) {
-                verified = verifyFailureHash(apbPaymentCallbackRequest);
-            }
+            verified = verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash);
             String sessionId = SessionContextHolder.get().getId().toString();
-            String txnId = UUID.randomUUID().toString();// TODO fetch from Transaction object
+            String txn_Id = UUID.randomUUID().toString();// TODO fetch from Transaction object
             String url = String.format(FAILURE_PAGE, sessionId, txnId);
             if (verified) {
                 if (status == ApbStatus.SUC) {
                     //TODO: update txn
-                    String externalTxnId = apbPaymentCallbackRequest.getExternalTxnId();
+                    // externalTxnId
                     // call subscription API
                     //push into RECON QUEUE
                     url = String.format(SUCCESS_PAGE, sessionId, txnId);
                 } else {
-                    String externalMessage = apbPaymentCallbackRequest.getMsg();
-                    String externalTxnId = apbPaymentCallbackRequest.getTxnId();
+                    // externalMessage, externalTxnId
                     //update txn with failure.
                 }
             } else {
@@ -153,16 +156,15 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         return new URIBuilder(CALLBACK_URL).addParameter("tid", txnId).build();
     }
 
-    private boolean verifyFailureHash(ApbPaymentCallbackRequest apbPaymentCallbackRequest) throws NoSuchAlgorithmException {
-        String str = apbPaymentCallbackRequest.getMerchantId() + Constants.HASH + apbPaymentCallbackRequest.getTxnId() + Constants.HASH + apbPaymentCallbackRequest.getAmount() + Constants.HASH + SALT + Constants.HASH + apbPaymentCallbackRequest.getCode() + "#FAL";
+    private boolean verifyHash(ApbStatus status, String merchantId, String txnId, String externalTxnId, String amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
+        String str = null;
+        if(status == ApbStatus.SUC) {
+            str = merchantId + Constants.HASH + externalTxnId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + txnDate + Constants.HASH + SALT;
+        } else if (status == ApbStatus.FAL) {
+            str = merchantId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + SALT + Constants.HASH + code + "#FAL";
+        }
         String generatedHash = CommonUtils.generateHash(str, SHA_512);
-        return apbPaymentCallbackRequest.getHash().equals(generatedHash);
-    }
-
-    private boolean verifySuccessHash(ApbPaymentCallbackRequest apbPaymentCallbackRequest) throws NoSuchAlgorithmException {
-        String str = apbPaymentCallbackRequest.getMerchantId() + Constants.HASH + apbPaymentCallbackRequest.getExternalTxnId() + Constants.HASH + apbPaymentCallbackRequest.getTxnId() + Constants.HASH + apbPaymentCallbackRequest.getAmount() + Constants.HASH + apbPaymentCallbackRequest.getTxnDate() + Constants.HASH + SALT;
-        String generatedHash = CommonUtils.generateHash(str, SHA_512);
-        return apbPaymentCallbackRequest.getHash().equals(generatedHash);
+        return requestHash.equals(generatedHash);
     }
 
     @Override

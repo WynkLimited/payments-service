@@ -1,0 +1,24 @@
+package in.wynk.payment.core.constant;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static in.wynk.payment.core.constant.BeanConstant.*;
+
+@Getter
+@RequiredArgsConstructor
+public enum PaymentCode {
+
+    GOOGLE_UPI("googleUPI"),
+    AMAZON_WALLET("amazonWallet"),
+    ITUNES(ITUNES_MERCHANT_PAYMENT_SERVICE),
+    PAYU(PAYU_MERCHANT_PAYMENT_SERVICE),
+    PAYTM_WALLET(PAYTM_MERCHANT_WALLET_SERVICE),
+    PHONEPE_WALLET(PHONEPE_MERCHANT_PAYMENT_SERVICE),
+    GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE),
+    APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE),
+    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE);
+
+    private final String code;
+
+}

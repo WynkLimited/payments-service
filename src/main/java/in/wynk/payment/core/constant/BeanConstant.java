@@ -14,4 +14,6 @@ public interface BeanConstant {
     String PAYMENT_RENEWAL_DAO = "paymentRenewalDaoBean";
     String TRANSACTION_MANAGER_SERVICE = "transactionManagerBean";
 
+    String POLLING_QUEUE_SCHEDULING_THREAD_POOL = "poolingQueueSchedulingThreadPool";
+
 }

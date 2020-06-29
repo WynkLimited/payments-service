@@ -70,13 +70,13 @@ public class RevenuePaymentHandler {
     }
 
     @PostMapping("/verifyVpa/{sid}")
- //   @ManageSession(sessionId = "#sid")
+    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyVpa")
     public ResponseEntity<?> verifyVpa(@PathVariable String sid, @RequestBody VpaVerificationRequest request) {
         IMerchantVpaVerificationService vpaVerificationService;
         try {
             PaymentCode paymentCode = request.getPaymentCode();
-   //         AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
+            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
             vpaVerificationService = this.context.getBean(paymentCode.getCode(), IMerchantVpaVerificationService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);

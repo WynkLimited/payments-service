@@ -6,10 +6,11 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.constant.PaymentConstants;
 import in.wynk.payment.dto.CardDetails;
 import in.wynk.payment.dto.PayUCallbackRequestPayload;
+import in.wynk.payment.dto.VerificationType;
 import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
-import in.wynk.payment.service.IMerchantVpaVerificationService;
+import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.revenue.commons.*;
 import in.wynk.revenue.utils.JsonUtils;
@@ -46,7 +47,7 @@ import static in.wynk.revenue.commons.Constants.ONE_DAY_IN_MILLI;
 import static in.wynk.revenue.commons.Constants.TEXT_PLAIN;
 
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayuMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVpaVerificationService {
+public class PayuMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService {
 
   private static final Logger logger = LoggerFactory.getLogger(PayuMerchantPaymentService.class);
 
@@ -72,6 +73,10 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
 
 //  @Value("${wcf.payment.payU.encryptionUrl}")
   private String encryptionKey = "BSB$PORTAL@2014#";
+
+//  @Value("${payu.command.verifyVpa}")
+  private String verifyVpaCommand = "validateVPA";
+
 
   private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
@@ -566,13 +571,17 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   }
 
   @Override
-  public BaseResponse<VpaVerificationResponse> verifyVpa(VpaVerificationRequest vpaVerificationRequest) {
-    VpaVerificationResponse verificationResponse =
+  public BaseResponse<Boolean> doVerify(VerificationRequest verificationRequest) {
+    boolean success = false;
+    if(verificationRequest.getVerificationType().equals(VerificationType.VPA)){
+      PayuVpaVerificationResponse verificationResponse =
             JsonUtils.GSON.fromJson(
-                    getInfoFromPayU("validateVPA", vpaVerificationRequest.getVpa()).toJSONString(),
-                    VpaVerificationResponse.class);
+                    getInfoFromPayU(verifyVpaCommand, verificationRequest.getVerifyValue()).toJSONString(),
+                    PayuVpaVerificationResponse.class);
+      if(verificationResponse.getIsVPAValid() == 1)
+        success = true;
 
-    return BaseResponse.<VpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
-
+    }
+    return BaseResponse.<Boolean>builder().body(success).status(HttpStatus.OK).build();
   }
 }

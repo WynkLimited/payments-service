@@ -7,7 +7,6 @@ import lombok.ToString;
 @Builder
 @ToString
 public class ApbTransactionInquiryRequest {
-    @JsonProperty("txnRefNO")
     private String txnRefNo;
     private String feSessionId;
     private String txnDate;

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VerificationRequest<T> {
+public class VerificationRequest {
     VerificationType verificationType;
     String verifyValue;
     PaymentCode paymentCode;

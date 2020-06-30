@@ -9,13 +9,18 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.ApbConstants;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.dto.request.Apb.ApbChargingStatusRequest;
 import in.wynk.payment.dto.request.Apb.ApbPaymentCallbackRequest;
+import in.wynk.payment.dto.request.Apb.ApbTransactionInquiryRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.enums.Apb.ApbStatus;
+import in.wynk.payment.enums.Apb.StatusMode;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.session.context.SessionContextHolder;
 import org.apache.http.client.utils.URIBuilder;
@@ -23,7 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
@@ -63,6 +73,9 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
+
+    @Value("${apb.txn.inquiry.url}")
+    private String APB_TXN_INQUIRY_URL;
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
@@ -126,9 +139,45 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
-        //check from DB or APB
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        ApbChargingStatusRequest apbChargingStatusRequest = (ApbChargingStatusRequest) chargingStatusRequest;
+        if(apbChargingStatusRequest.getStatusMode() == StatusMode.MERCHANT_CHECK) {
+            ApbChargingStatusResponse apbChargingStatusResponse =
+                    fetchTxnStatus(apbChargingStatusRequest.getTxnId(), apbChargingStatusRequest.getAmount(), apbChargingStatusRequest.getTxnDate());
+            return new BaseResponse<>(apbChargingStatusResponse, HttpStatus.OK, null);
+        } else if(apbChargingStatusRequest.getStatusMode() == StatusMode.LOCAL_CHECK){
+            //check from db
+            return new BaseResponse<>(null, HttpStatus.OK, null);
+        }
         return null;
+    }
+
+    private ApbChargingStatusResponse fetchTxnStatus(String txnId, double amount, long txnDate) {
+        try {
+            String formattedDate = CommonUtils.getFormattedDate(txnDate, "ddMMyyyyHHmmss");
+            URI uri = new URI(APB_TXN_INQUIRY_URL);
+            String hashText = MERCHANT_ID + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + formattedDate + Constants.HASH + SALT;
+            String hashValue = CommonUtils.generateHash(hashText, SHA_512);
+            ApbTransactionInquiryRequest apbTransactionInquiryRequest = ApbTransactionInquiryRequest.builder()
+                    .feSessionId(UUID.randomUUID().toString())
+                    .txnRefNo(txnId).txnDate(formattedDate)
+                    .request(ECOMM_INQ).merchantId(MERCHANT_ID)
+                    .hash(hashValue).langId(LANG_ID)
+                    .amount(String.valueOf(amount))
+                    .build();
+            logger.info("ApbTransactionInquiryRequest: {}", apbTransactionInquiryRequest);
+            RequestEntity<ApbTransactionInquiryRequest> requestEntity = new RequestEntity<>(apbTransactionInquiryRequest, HttpMethod.POST, uri);
+            ApbChargingStatusResponse apbChargingStatusResponse = null;
+            ResponseEntity<ApbChargingStatusResponse> responseEntity = restTemplate.exchange(requestEntity, ApbChargingStatusResponse.class);
+            if(responseEntity != null) {
+                apbChargingStatusResponse = responseEntity.getBody();
+            }
+            return apbChargingStatusResponse;
+        } catch(HttpStatusCodeException e) {
+            throw new RuntimeException("Http Status code exception occurred");
+        } catch(Exception e){
+            throw new RuntimeException("Unable to fetch transaction status for txnId = " + txnId);
+        }
     }
 
     private URI getReturnUri(String txnId, String formattedDate, String serviceName) throws Exception {

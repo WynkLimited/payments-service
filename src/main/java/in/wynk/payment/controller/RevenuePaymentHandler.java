@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/payment")
+@RequestMapping("/wynk/v1/payment")
 public class RevenuePaymentHandler {
 
     private final ApplicationContext context;
@@ -69,11 +69,10 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
-    @PostMapping("/verify/{sid}")
+    @PostMapping("/verify")
     @AnalyseTransaction(name = "verify")
-    public ResponseEntity<?> verify(@PathVariable String sid, @RequestBody VerificationRequest request) {
+    public ResponseEntity<?> verify(@RequestBody VerificationRequest request) {
         IMerchantVerificationService verificationService;
-        Session<Map<String, Object>> session = SessionContextHolder.get();
         try {
             PaymentCode paymentCode = request.getPaymentCode();
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());

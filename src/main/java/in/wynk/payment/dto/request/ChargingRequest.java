@@ -9,13 +9,9 @@ import lombok.*;
 @AllArgsConstructor
 public class ChargingRequest {
 
-    private String sessionId;
-    private String partnerProductId;
-    private String couponId;
+    private int planId;
     private PaymentCode paymentCode;
     private String enforcePayment; // Do we have to store this value at backend in configuration?
     private String pg;
     private String msisdn;
-    private String transactionId;
-    private String service;
 }

@@ -66,3 +66,20 @@ spring:
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
+
+
+
+####### payment props #######
+payment:
+  merchant:
+    ####### payu props #########
+    payu:
+      api: https://info.payu.in/merchant/postservice.php?form=2
+      internal:
+        web:
+          url: https://wcfpay-new.wynk.in/wcf/payu
+        callback:
+          successUrl: http://localhost:8081/payment/callback/${sid}
+          failureUrl: http://localhost:8081/payment/callback/${sid}
+      command:
+        verifyVpa: validateVPA

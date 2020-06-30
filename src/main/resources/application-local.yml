@@ -27,13 +27,13 @@ app:
 ##### mysql database props #####
 spring:
   datasource:
-    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-    username: admin
-    password: o7QZ?!n=eu
+    url: jdbc:mysql://localhost:3306/payments
+    username: root
+    password: root
     hikari:
-      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-      username: admin
-      password: o7QZ?!n=eu
+      jdbc-url: jdbc:mysql://localhost:3306/payments
+      username: root
+      password: root
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false
@@ -67,3 +67,19 @@ spring:
 #### logging props ####
 logging:
   path: /tmp
+
+####### payment props #######
+payment:
+  merchant:
+    ####### payu props #########
+    payu:
+      api:
+        info: https://info.payu.in/merchant/postservice.php?form=2
+      internal:
+        web:
+          url: https://wcfpay-new.wynk.in/wcf/payu
+        callback:
+          successUrl: http://localhost:8081/payment/callback/{sid}
+          failureUrl: http://localhost:8081/payment/callback/{sid}
+      command:
+        verifyVpa: validateVPA

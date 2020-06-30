@@ -1,9 +1,13 @@
 package in.wynk.payment.constant;
 
 public class PaymentConstants {
-  public static final String DEFAULT_FIRST_NAME = "User";
+  public static final String NETBANKING_MODE = "netbanking";
+  public static final String SID_KEY = "{sid}";
   public static final String PIPE_SEPARATOR = "|";
   public static final String COLON = ":";
+  public static final String BASE_USER_EMAIL = "@wynk.in";
+  public static final String PAYU_REQUEST_TYPE = "rt";
+  public static final String PAYU_CHARGING_INFO = "info";
   public static final String PAYU_MERCHANT_KEY = "key";
   public static final String PAYU_COMMAND = "command";
   public static final String PAYU_HASH = "hash";
@@ -25,7 +29,7 @@ public class PaymentConstants {
   public static final String PAYU_REDIRECT_MESSAGE = "Redirecting to PayU ";
   public static final String CARD_DETAILS = "CardDetails";
   public static final String PAYU_PG = "pg";
-  public static final String PAYU_SI = "si";
+  public static final String PAYU_SI_KEY = "si";
   public static final String SUBSID = "subsId";
   public static final String PAYU_CARD_NUMBER = "card_no";
   public static final String SUCCESS = "success";

@@ -12,4 +12,6 @@ public class CardInfo {
 
     private String issuingBank;
 
+    private String isDomestic;
+
 }

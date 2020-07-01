@@ -1,4 +1,4 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.request;
 
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class VerificationRequest {
+public class IapVerificationRequest {
 
     private String uid;
     private String receipt;

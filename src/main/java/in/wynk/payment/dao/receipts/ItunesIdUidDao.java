@@ -8,8 +8,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ItunesIdUidDao extends MongoRepository<ItunesIdUidMapping, String> {
 
-    @Query("{ 'planId' : ?0, 'itunesId' : ?1 }")
-    ItunesIdUidMapping findByPlanIdAndItunesId(int productId, String itunesId);
+    @Query("{ 'planId' : ?0, '_id' : ?1 }")
+    ItunesIdUidMapping findByPlanIdAndItunesId(int planId, String itunesId);
 
     ItunesIdUidMapping findByItunesId(String itunesId);
 }

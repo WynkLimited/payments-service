@@ -8,13 +8,13 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dao.entity.ItunesIdUidMapping;
 import in.wynk.payment.dao.receipts.ItunesIdUidDao;
-import in.wynk.payment.dto.VerificationRequest;
+import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.itunes.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ItunesResponse;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
-import in.wynk.payment.service.IMerchantPaymentVerificationService;
+import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONObject;
@@ -35,7 +35,7 @@ import java.util.*;
 import static in.wynk.payment.constant.ItunesConstant.*;
 
 @Service(BeanConstant.ITUNES_MERCHANT_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService implements IMerchantPaymentVerificationService, IMerchantPaymentCallbackService {
+public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentCallbackService {
 
     @Autowired
     private RestTemplate iTunesRestTemplate;
@@ -62,9 +62,9 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentVerificatio
 
 
     @Override
-    public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
+    public BaseResponse<String> verifyIap(IapVerificationRequest iapVerificationRequest) {
         try {
-            ItunesResponse validationResponse = validateItunesTransaction(verificationRequest.getUid(), verificationRequest.getReceipt(), verificationRequest.getPlanId());
+            ItunesResponse validationResponse = validateItunesTransaction(iapVerificationRequest.getUid(), iapVerificationRequest.getReceipt(), iapVerificationRequest.getPlanId());
             URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
             returnUrl.addParameter(STATUS, validationResponse.getStatus());
             HttpHeaders httpHeaders = new HttpHeaders();
@@ -126,13 +126,12 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentVerificatio
                 itunesResponse.setErrorMsg(errorMessge);
                 return itunesResponse;
             }
-
             String productId = latestReceiptInfo.getProductId();
             String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
             String itunesTrxnId = latestReceiptInfo.getTransactionId();
 
             // TODO - Get partner product ID to fecth and save in mongo ItunesIdUidMapping
-            ItunesIdUidMapping mapping = getItunesIdUidMappingFromTrxnId(planId, originalITunesTrxnId);
+            ItunesIdUidMapping mapping = itunesIdUidDao.findByPlanIdAndItunesId(planId, originalITunesTrxnId);
             if(mapping != null && !mapping.getUid().equals(uid)) {
                 logger.error(BaseLoggingMarkers.PAYMENT_ERROR, "Already have subscription for the correcponding itunes id on another account");
                 errorMessge = "Already have subscription for the correcponding itunes id on another account";
@@ -142,8 +141,10 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentVerificatio
             logger.info("ItunesIdUidMapping found for ItnuesId :{} , planId: {} = {}", originalITunesTrxnId, planId, mapping);
             // TODO - Emit Transaction Event And return response Accordingly
             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
-                ItunesIdUidMapping itunesIdUidMapping = ItunesIdUidMapping.builder().uid(uid).itunesId(originalITunesTrxnId).planId(planId).receipt(requestReceipt).type(receiptType).build();
-                saveItunesIdUidMapping(itunesIdUidMapping);
+                if(mapping == null) {
+                    ItunesIdUidMapping itunesIdUidMapping = ItunesIdUidMapping.builder().uid(uid).itunesId(originalITunesTrxnId).planId(planId).receipt(requestReceipt).type(receiptType).build();
+                    saveItunesIdUidMapping(itunesIdUidMapping);
+                }
                 long lastSubscribedTimestamp = receiptType.getPurchaseDate(latestReceiptInfo);
                 //String tid = createTransactionLog(pack, TransactionEvent.SUBSCRIBE, lastSubscribedTimestamp, uid, service, receipt, itunesTrxnId, isFreeTrial, clientTid);
                 //subscriptionHandlingService.createSubscription(service, uid, pack.getPartnerProductId(), PaymentMethod.ITUNES, new HashMap<String, String>(), expireTimestamp, false, tid);
@@ -169,6 +170,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentVerificatio
     }
 
 
+
     private ResponseEntity<String> getItunesStatus(String encodedValue, String password, String url){
         JSONObject requestJson = new JSONObject();
         requestJson.put(RECEIPT_DATA, encodedValue);
@@ -184,6 +186,7 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentVerificatio
         }
         return responseEntity;
     }
+
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String uid) {
         try {
@@ -223,7 +226,8 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentVerificatio
                 String errorMessage;
                 if (code != null && failureCodes.contains(code)) {
                     errorMessage = code.getErrorTitle();
-                } else {
+                }
+                else {
                     errorMessage = "Internal Data Access Error. Try Again Later";
                 }
                 logger.error(BaseLoggingMarkers.PAYMENT_ERROR, "Failed to subscribe to itunes: response {} request!! status : {} error {}", appStoreResponse, status, errorMessage);
@@ -236,17 +240,9 @@ public class ITunesMerchantPaymentService implements IMerchantPaymentVerificatio
         }
     }
 
-
-
-    private ItunesIdUidMapping getItunesIdUidMappingFromTrxnId(Integer productid, String originalITunesTrxnId) {
-        logger.info("fetching data with originalItunesTxnId : {} and productId : {} from ItunesIdUisMapping", originalITunesTrxnId, productid);
-        return itunesIdUidDao.findByPlanIdAndItunesId(productid, originalITunesTrxnId);
-    }
     private void saveItunesIdUidMapping(ItunesIdUidMapping itunesIdUidMapping) {
         itunesIdUidDao.save(itunesIdUidMapping);
     }
-
-
 
     private String getModifiedReceipt(String receipt) throws UnsupportedEncodingException {
         String decodedReceipt;

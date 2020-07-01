@@ -15,9 +15,10 @@ import java.io.Serializable;
 @ToString
 public class ItunesIdUidMapping implements Serializable {
 
+    @Id
+    private String  itunesId;
     private String   uid;
     private int planId;
-    private String  itunesId;
     private String receipt;
     private ItunesReceiptType type;
 

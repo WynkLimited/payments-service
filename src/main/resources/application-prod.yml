@@ -83,3 +83,4 @@ payment:
           failureUrl: http://localhost:8081/payment/callback/${sid}
       command:
         verifyVpa: validateVPA
+        checkIsDomestic: check_isDomestic

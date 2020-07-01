@@ -101,6 +101,8 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   @Value("${payment.merchant.payu.command.verifyVpa}")
   private String verifyVpaCommand;
 
+  @Value("${payment.merchant.payu.command.checkIsDomestic}")
+  private String checkIsDomesticCommand;
 
   private final RestTemplate restTemplate;
   private final ISQSMessagePublisher sqsMessagePublisher;
@@ -654,13 +656,24 @@ public class PayuMerchantPaymentService implements IRenewalMerchantPaymentServic
   @Override
   public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
     boolean success = false;
-    if(verificationRequest.getVerificationType().equals(VerificationType.VPA)){
-      PayuVpaVerificationResponse verificationResponse =
-            JsonUtils.GSON.fromJson(
-                    getInfoFromPayU(verifyVpaCommand, verificationRequest.getVerifyValue()),
-                    PayuVpaVerificationResponse.class);
-      if(verificationResponse.getIsVPAValid() == 1)
-        success = true;
+    VerificationType verificationType = verificationRequest.getVerificationType();
+    switch (verificationType){
+      case VPA:
+        PayuVpaVerificationResponse verificationResponse =
+                JsonUtils.GSON.fromJson(
+                        getInfoFromPayU(verifyVpaCommand, verificationRequest.getVerifyValue()),
+                        PayuVpaVerificationResponse.class);
+        if(verificationResponse.getIsVPAValid() == 1)
+          success = true;
+        break;
+      case BIN:
+        CardInfo cardInfo =
+                JsonUtils.GSON.fromJson(
+                        getInfoFromPayU(checkIsDomesticCommand, verificationRequest.getVerifyValue()),
+                        CardInfo.class);
+        if(cardInfo.getIsDomestic().equalsIgnoreCase("Y"))
+          success = true;
+        break;
     }
     Map<String, Boolean> response = new HashMap<>();
     response.put("success", success);

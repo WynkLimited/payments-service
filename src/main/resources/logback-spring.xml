@@ -16,7 +16,8 @@
         <encoder class="in.wynk.logging.WynkErrorEncoder"/>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd, aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
+                ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd,
+                aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
         </rollingPolicy>
@@ -35,7 +36,8 @@
             <Pattern>%level %date [%thread] %msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd, aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
+            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd,
+                aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
         </rollingPolicy>
@@ -55,7 +57,8 @@
             <Pattern>%msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/logstash/%d{yyyy-MM-dd, aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
+            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/logstash/day=%d{yyyy-MM-dd,
+                aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
         </rollingPolicy>
@@ -109,11 +112,16 @@
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
     </springProfile>
-
-    <springProfile name="dev,prod,preprod">
+    <springProfile name="dev,preprod">
+        <root level="DEBUG">
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERRORLOG"/>
+        </root>
+    </springProfile>
+    <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>
-            <appender-ref ref="ASYNC_ERRORLOG" />
+            <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
     </springProfile>
 </configuration>

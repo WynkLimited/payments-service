@@ -12,7 +12,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     /**
      * PAYU ERROR CODES
      **/
-    PAY001("Charging Failure", "Invalid URI Syntax while building payU charging url", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_CHARGING_FAILURE),
+    PAY001("Charging Failure", "Invalid URI Syntax while building payU charging url", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVALID_URI_SYNTAX),
     PAY002("Charging Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_CHARGING_FAILURE),
     PAY003("PayU Charging Status Failure", "No matching status found for payU renewal", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION_FAILURE),
     PAY004("PayU Charging Status Failure", "Transaction is still pending from payU side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),

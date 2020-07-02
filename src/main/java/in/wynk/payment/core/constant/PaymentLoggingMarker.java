@@ -12,5 +12,6 @@ public class PaymentLoggingMarker extends BaseLoggingMarkers {
     public static final Marker PAYU_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_CALLBACK_FAILURE");
     public static final Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");
     public static final Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
+    public static final Marker INVALID_URI_SYNTAX = MarkerFactory.getMarker("INVALID_URI_SYNTAX");
 
 }

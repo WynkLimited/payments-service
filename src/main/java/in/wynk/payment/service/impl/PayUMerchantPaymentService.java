@@ -55,7 +55,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.revenue.commons.Constants.*;
+import static in.wynk.revenue.commons.Constants.ONE_DAY_IN_MILLI;
 
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService {
@@ -150,13 +150,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                                                      .stream()
                                                      .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
 
-    HttpHeaders httpHeaders = new HttpHeaders();
-    setContentTypeHeader(httpHeaders, JsonUtils.GSON.toJson(queryParams));
-
     return BaseResponse.<Map<String, String>>builder()
                        .body(queryParams)
                        .status(HttpStatus.OK)
-                       .headers(httpHeaders)
                        .build();
   }
 
@@ -194,7 +190,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
       boolean status = false;
       String errorMessage = StringUtils.EMPTY;
       //      String amount = stringBuilder.append(trLog.getAmount()).append("0").toString();
-      PayURenewalResponse payURenewalResponse = getPayURenewalStatus(paymentRenewalRequest);
+      PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalRequest);
       if (payURenewalResponse.isTimeOutFlag()) {
         status = true;
       } else {
@@ -338,7 +334,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     final String checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, selectedPlan.getTitle(), finalPlanAmount);
 
     final String userCredentials = payUMerchantKey + COLON + uid;
-    final List<String> jsonCardsList = getUserCards(userCredentials);
 
     URI redirectUrl;
 
@@ -358,7 +353,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
               .addParameter(PAYU_UDF1_PARAMETER, udf1)
               .addParameter(IS_FALLBACK_ATTEMPT, String.valueOf(false))
               .addParameter(ERROR, PAYU_REDIRECT_MESSAGE)
-              .addParameter(CARD_DETAILS, jsonCardsList.toString())
               .addParameter(PAYU_PG, chargingRequest.getPg())
               .addParameter(PAYU_USER_CREDENTIALS, userCredentials);
 
@@ -435,7 +429,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             .collect(Collectors.toList());
   }
 
-  private PayURenewalResponse getPayURenewalStatus(PaymentRenewalRequest paymentRenewalRequest) {
+  private PayURenewalResponse doChargingForRenewal(PaymentRenewalRequest paymentRenewalRequest) {
     LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
     String userCredentials = payUMerchantKey + COLON + paymentRenewalRequest.getUid();
     orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, paymentRenewalRequest.getSubsId());
@@ -688,14 +682,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
   private <T> void putValueInSession(String key, T value) {
     Session<SessionDTO> session = SessionContextHolder.get();
     session.getBody().put(key, value);
-  }
-
-  private static void setContentTypeHeader(HttpHeaders httpHeaders, String responseStr) {
-    String contentType = TEXT_PLAIN;
-    if (JsonUtils.isDefinitelyJson(responseStr)) {
-      contentType = APPLICATION_JSON;
-    }
-    httpHeaders.add("ct", contentType);
   }
 
 }

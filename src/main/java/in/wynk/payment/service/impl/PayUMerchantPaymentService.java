@@ -51,7 +51,6 @@ import org.springframework.web.client.RestTemplate;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -294,7 +293,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
       }
 
-      transaction.setStatus(finalTransactionStatus);
+      transaction.setStatus(finalTransactionStatus.name());
       transactionManager.upsert(transaction);
     } else {
       finalTransactionStatus = TransactionStatus.FAILUREALREADYSUBSCRIBED;
@@ -380,7 +379,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                       .paymentCode(PaymentCode.PAYU)
                       .transactionId(transaction.getId().toString())
                       .transactionEvent(TransactionEvent.SUBSCRIBE)
-                      .initTimestamp(Calendar.getInstance().getTime())
+                      .initTimestamp(Calendar.getInstance().getTime().getTime())
                       .packPeriod(selectedPlan.getPeriod())
                       .build());
 
@@ -414,8 +413,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             .service(getValueFromSession(SessionKeys.SERVICE))
             .msisdn(getValueFromSession(SessionKeys.MSISDN))
             .paymentChannel(PaymentCode.PAYU)
-            .status(TransactionStatus.INPROGRESS)
-            .type(TransactionEvent.SUBSCRIBE)
+            .status(TransactionStatus.INPROGRESS.name())
+            .type(TransactionEvent.SUBSCRIBE.name())
             .build());
   }
 
@@ -589,7 +588,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .request(payUCallbackRequestPayload)
                 .response(returnUrl.build())
                 .build());
-        transaction.setStatus(finalTransactionStatus);
+        transaction.setStatus(finalTransactionStatus.name());
 
         if (finalTransactionStatus == TransactionStatus.SUCCESS) {
           transaction.setExitTime(Calendar.getInstance());

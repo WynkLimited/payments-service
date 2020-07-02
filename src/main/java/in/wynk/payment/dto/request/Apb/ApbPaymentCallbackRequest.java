@@ -2,9 +2,15 @@ package in.wynk.payment.dto.request.Apb;
 
 import in.wynk.commons.enums.Currency;
 import in.wynk.payment.enums.Apb.ApbStatus;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
-@Data
+@Getter
+@ToString
+@AllArgsConstructor
+@RequiredArgsConstructor
 public class ApbPaymentCallbackRequest {
     private ApbStatus status;
     private String code;

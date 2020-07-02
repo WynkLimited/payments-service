@@ -1,9 +1,14 @@
 package in.wynk.payment.dto.response.Apb;
 
 import in.wynk.commons.enums.Status;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Data
+@AllArgsConstructor
+@RequiredArgsConstructor
+@Getter
 public class ApbPaymentCallbackResponse {
     private Status paymentStatus;
     private String extTxnId;

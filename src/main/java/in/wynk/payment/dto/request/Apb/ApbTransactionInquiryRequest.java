@@ -1,11 +1,12 @@
 package in.wynk.payment.dto.request.Apb;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.ToString;
+import lombok.*;
 
 @Builder
 @ToString
+@Getter
+@AllArgsConstructor
+@RequiredArgsConstructor
 public class ApbTransactionInquiryRequest {
     private String txnRefNo;
     private String feSessionId;

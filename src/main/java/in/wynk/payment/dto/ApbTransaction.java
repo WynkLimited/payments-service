@@ -5,8 +5,10 @@ import in.wynk.payment.enums.Apb.ApbStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 @Getter
+@ToString
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class ApbTransaction {

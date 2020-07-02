@@ -7,6 +7,7 @@ import lombok.Getter;
 @Builder
 public class WalletBalanceResponse {
 
+    private Double balance;
     private Double deficitBalance;
     private boolean fundsSufficient;
     private boolean isLinked;

@@ -2,6 +2,9 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.commons.constants.SessionKeys;
+import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.enums.FetchStrategy;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.ApplicationConstant;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -43,7 +46,7 @@ public class RevenuePaymentHandler {
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
             chargingService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantPaymentChargingService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = chargingService.doCharging(request);
         return baseResponse.getResponse();
@@ -55,13 +58,15 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> status(@PathVariable String sid) {
         IMerchantPaymentStatusService statusService;
         Session<Map<String, Object>> session = SessionContextHolder.get();
-        ChargingStatusRequest request = ChargingStatusRequest.builder().sessionId(session.getId().toString()).build();
+        ChargingStatusRequest request = ChargingStatusRequest.builder()
+                                                             .fetchStrategy(FetchStrategy.DIRECT_SOURCE_INTERNAL_WITHOUT_CACHE)
+                                                             .build();
         try {
             PaymentCode paymentCode = (PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD);
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
             statusService = this.context.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = statusService.status(request);
         return baseResponse.getResponse();
@@ -72,15 +77,15 @@ public class RevenuePaymentHandler {
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
         IMerchantPaymentCallbackService callbackService;
-        Session<Map<String, Object>> session = SessionContextHolder.get();
+        Session<SessionDTO> session = SessionContextHolder.get();
         CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
         try {
-            PaymentCode option = ((PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
+            PaymentCode option = session.getBody().get(SessionKeys.PAYMENT_CODE);
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, option.name());
             AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
             callbackService = this.context.getBean(option.getCode(), IMerchantPaymentCallbackService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();

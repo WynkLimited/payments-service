@@ -39,4 +39,5 @@ public class TransactionDetails {
 
   @SerializedName("field9")
   private String payUResponseFailureMessage;
+
 }

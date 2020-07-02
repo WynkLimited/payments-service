@@ -7,8 +7,6 @@ import in.wynk.payment.service.ITransactionManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
-
 @Service(BeanConstant.TRANSACTION_MANAGER_SERVICE)
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
@@ -24,7 +22,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction get(UUID id) {
+    public Transaction get(String id) {
         return transactionDao.getOne(id);
     }
 

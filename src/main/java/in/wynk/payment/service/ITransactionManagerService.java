@@ -8,6 +8,6 @@ public interface ITransactionManagerService {
 
     Transaction upsert(Transaction transaction);
 
-    Transaction get(UUID id);
+    Transaction get(String id);
 
 }

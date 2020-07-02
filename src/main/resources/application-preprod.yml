@@ -68,13 +68,77 @@ spring:
 
 ####### payment props #######
 payment:
+  recurring:
+    offset:
+      day: 0
+      hour: 1
+  ###### lib-queue props ######
+  pooling:
+    queue:
+      reconciliation:
+        enabled: true
+        name: wcf-staging-payment-reconciliation
+        sqs:
+          messages:
+            producer:
+              delayInSecond: 180
+            consumer:
+              delay: 20
+              delayTimeUnit: SECONDS
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+      renewal:
+        enabled: false
+        name: wcf-staging-payment-renewal
+        sqs:
+          messages:
+            producer:
+              delayInSecond: 180
+            consumer:
+              delay: 20
+              delayTimeUnit: SECONDS
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+      charging:
+        enabled: false
+        name: wcf-staging-payment-charging.fifo
+        sqs:
+          messages:
+            producer:
+              delayInSecond: 180
+            consumer:
+              delay: 20
+              delayTimeUnit: SECONDS
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+      subscription:
+        enabled: false
+        name: wcf-staging-subscription
+        sqs:
+          messages:
+            producer:
+              delayInSecond: 20
+            consumer:
+              delay: 1
+              delayTimeUnit: MINUTES
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+  ###### webview status props #######
+  status:
+    web:
+      url: http://localhost:4200/status
   merchant:
     ####### payu props #########
     payu:
-      api: https://info.payu.in/merchant/postservice.php?form=2
+      api:
+        info: https://info.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
-          successUrl: http://localhost:8081/payment/callback/${sid}
-          failureUrl: http://localhost:8081/payment/callback/${sid}
+          successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+          failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}

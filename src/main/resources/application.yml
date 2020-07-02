@@ -10,7 +10,7 @@ debug: false
 server:
   port: 8081
 
-  ########## Management Config ##########
+########## Management Config ##########
 management:
   endpoints:
     web:
@@ -33,36 +33,8 @@ management:
 logging:
   path: /data
 
+###### payment props ######
 payment:
-  pooling:
-    queue:
-      reconciliation:
-        enabled: true
-        name: wcf-staging-payment-reconciliation
-        delay: 20
-        delayTimeUnit: SECONDS
-        sqs:
-          messages:
-            producer:
-              delayInSecond: 20
-            extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
-      renewal:
-        enabled: false
-        name: wcf-staging-payment-renewal
-        delay: 1
-        delayTimeUnit: MINUTES
-      charging:
-        enabled: false
-        name: wcf-staging-payment-charging.fifo
-        delay: 1
-        delayTimeUnit: MINUTES
-      subscription:
-        enabled: false
-        name: wcf-staging-subscription
-        delay: 1
-        delayTimeUnit: MINUTES
   merchant:
     encKey: BSB$PORTAL@2014#
 ####### payu props #########
@@ -70,12 +42,13 @@ payment:
       key: aU2Uoi
       salt: 6vbnfVtw
 
-
+##### resilience props for lib-queue ######
 resilience:
   retryProperties:
     maxAttempts: 3
     waitDuration: 10000
 
+###### aws sdk props #######
 amazon:
   sdk:
     regions: ap-south-1

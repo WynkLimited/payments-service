@@ -1,14 +1,14 @@
 package in.wynk.payment.core.dto;
 
+import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Getter
@@ -16,14 +16,28 @@ import javax.persistence.Table;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "merchant_transaction")
+@TypeDef(name = "json", typeClass = JsonStringType.class)
 public class MerchantTransaction {
 
     @Id
     @Column(name = "merchant_transaction_id")
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    @Column(name = "merchant_transaction_reference_id")
     private String externalTransactionId;
-    @Column(name = "merchant_request", nullable = false)
-    private String request;
-    @Column(name = "merchant_response", nullable = false)
-    private String response;
+    @Type(type = "json")
+    @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
+    private Object request;
+    @Type(type = "json")
+    @Column(name = "merchant_response", nullable = false, columnDefinition = "json")
+    private Object response;
+
+    public <T> T getRequest() {
+        return (T) request;
+    }
+
+    public <T> T getResponse() {
+        return (T) response;
+    }
 
 }

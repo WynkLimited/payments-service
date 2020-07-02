@@ -11,7 +11,7 @@ public class TransactionIdentityGenerator implements IdentifierGenerator {
 
     @Override
     public Serializable generate(SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws HibernateException {
-        return Generators.timeBasedGenerator().generate();
+        return Generators.timeBasedGenerator().generate().toString();
     }
 
     @Override

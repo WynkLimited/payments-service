@@ -19,7 +19,7 @@ public class PaymentRenewal implements Serializable {
 
     @Id
     @Column(name = "transaction_id")
-    private UUID transaction;
+    private String transactionId;
 
     @Column(name = "renewal_day", nullable = false)
     @Temporal(TemporalType.DATE)

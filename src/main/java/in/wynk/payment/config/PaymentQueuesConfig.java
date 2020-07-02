@@ -5,7 +5,6 @@ import in.wynk.payment.consumer.PaymentReconciliationConsumerPollingQueue;
 import in.wynk.payment.extractor.PaymentReconciliationSQSMessageExtractor;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.queue.registry.SQSMessagePollingQueueRegistry;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -37,14 +36,6 @@ public class PaymentQueuesConfig {
                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentReconciliationSQSMessageExtractor(queueName, sqsClient);
     }
-
-    @Bean
-    public SQSMessagePollingQueueRegistry sqsMessagePollingQueueRegistry(PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue) {
-        SQSMessagePollingQueueRegistry pollingQueueRegistry = new SQSMessagePollingQueueRegistry();
-        pollingQueueRegistry.register(paymentReconciliationConsumerPollingQueue);
-        return pollingQueueRegistry;
-    }
-
 
     private ExecutorService threadPoolExecutor() {
         return Executors.newFixedThreadPool(2);

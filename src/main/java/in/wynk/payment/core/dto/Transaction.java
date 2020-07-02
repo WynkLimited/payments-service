@@ -55,10 +55,10 @@ public class Transaction {
     private String service;
 
     @Column(name = "transaction_type")
-    private TransactionEvent type;
+    private String type;
 
     @Column(name = "transaction_status")
-    private TransactionStatus status;
+    private String status;
 
     @Column(name = "coupon_id")
     private String coupon;
@@ -78,6 +78,14 @@ public class Transaction {
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "fk_merchant_id", referencedColumnName = "merchant_transaction_id")
     private MerchantTransaction merchantTransaction;
+
+    public TransactionEvent getType() {
+        return TransactionEvent.valueOf(type);
+    }
+
+    public TransactionStatus getStatus() {
+        return TransactionStatus.valueOf(status);
+    }
 
     public UUID getId() {
         return id != null ? UUID.fromString(id): null;

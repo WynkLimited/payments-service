@@ -1,7 +1,6 @@
 package in.wynk.payment.core.dto;
 
 import in.wynk.commons.dto.PackPeriodDTO;
-import in.wynk.commons.dto.PlanDTO;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.revenue.commons.TransactionEvent;
 import lombok.*;
@@ -17,9 +16,13 @@ public class PaymentReconciliationMessage {
     private int planId;
     private String uid;
     private String transactionId;
-    private Date initTimestamp;
+    private long initTimestamp;
     private PaymentCode paymentCode;
     private TransactionEvent transactionEvent;
     private PackPeriodDTO packPeriod;
+
+    public Date getInitTimestamp() {
+        return new Date(initTimestamp);
+    }
 
 }

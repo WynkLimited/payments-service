@@ -137,12 +137,18 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<Boolean> status(ChargingStatusRequest chargingStatusRequest) {
+        Boolean res;
         ApbChargingStatusRequest apbChargingStatusRequest = (ApbChargingStatusRequest) chargingStatusRequest;
         if(apbChargingStatusRequest.getStatusMode() == StatusMode.MERCHANT_CHECK) {
             ApbChargingStatusResponse apbChargingStatusResponse =
                     fetchTxnStatus(apbChargingStatusRequest.getTxnId(), apbChargingStatusRequest.getAmount(), apbChargingStatusRequest.getTxnDate());
-            return new BaseResponse<>(apbChargingStatusResponse, HttpStatus.OK, null);
+            if(apbChargingStatusResponse != null && apbChargingStatusResponse.getTxns().get(0).getStatus().equals(ApbStatus.SUC)) {
+                res = true;
+            } else {
+                res = false;
+            }
+            return new BaseResponse<>(res, HttpStatus.OK, null);
         } else if(apbChargingStatusRequest.getStatusMode() == StatusMode.LOCAL_CHECK){
             //check from db
             return new BaseResponse<>(null, HttpStatus.OK, null);

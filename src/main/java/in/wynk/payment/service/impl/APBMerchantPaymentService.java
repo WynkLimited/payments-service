@@ -17,7 +17,6 @@ import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.enums.Apb.ApbStatus;
 import in.wynk.payment.enums.Apb.StatusMode;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
@@ -137,18 +136,12 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<Boolean> status(ChargingStatusRequest chargingStatusRequest) {
-        Boolean res;
+    public BaseResponse<ApbChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
         ApbChargingStatusRequest apbChargingStatusRequest = (ApbChargingStatusRequest) chargingStatusRequest;
         if(apbChargingStatusRequest.getStatusMode() == StatusMode.MERCHANT_CHECK) {
             ApbChargingStatusResponse apbChargingStatusResponse =
                     fetchTxnStatus(apbChargingStatusRequest.getTxnId(), apbChargingStatusRequest.getAmount(), apbChargingStatusRequest.getTxnDate());
-            if(apbChargingStatusResponse != null && apbChargingStatusResponse.getTxns().get(0).getStatus().equals(ApbStatus.SUC)) {
-                res = true;
-            } else {
-                res = false;
-            }
-            return new BaseResponse<>(res, HttpStatus.OK, null);
+            return new BaseResponse<>(apbChargingStatusResponse, HttpStatus.OK, null);
         } else if(apbChargingStatusRequest.getStatusMode() == StatusMode.LOCAL_CHECK){
             //check from db
             return new BaseResponse<>(null, HttpStatus.OK, null);

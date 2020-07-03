@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 @Getter
 @Builder
 @RequiredArgsConstructor
-@AllArgsConstructor
 @ToString
 public class BaseResponse<T> {
 

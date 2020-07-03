@@ -1,11 +1,13 @@
 package in.wynk.payment.dto.response;
 
 import lombok.Builder;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+@Getter
 @Builder
 @RequiredArgsConstructor
 public class BaseResponse<T> {

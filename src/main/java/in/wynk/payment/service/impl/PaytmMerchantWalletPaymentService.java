@@ -243,14 +243,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         return BaseResponse.<PaytmChargingResponse>builder().body(response).build();
     }
 
-    public BaseResponse<Boolean> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
         if (chargingStatusRequest.getStatusMode().equals(StatusMode.MERCHANT_CHECK)) {
             PaytmChargingStatusResponse paytmChargingStatusResponse = fetchChargingStatusFromPaytm(chargingStatusRequest);
-            if(paytmChargingStatusResponse != null && paytmChargingStatusResponse.getStatus().equals("TXN_SUCCESS")) {
-                return new BaseResponse<>(true, HttpStatus.OK, null);
-            } else {
-                return new BaseResponse<>(false, HttpStatus.OK, null);
-            }
+            return new BaseResponse<>(paytmChargingStatusResponse, HttpStatus.OK, null);
         } else if (chargingStatusRequest.getStatusMode().equals(StatusMode.LOCAL_CHECK)) {
             // check with the help of transaction id if the entry exists or not
             return new BaseResponse<>(null, HttpStatus.OK, null);

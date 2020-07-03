@@ -1,20 +1,20 @@
 ###### Redis Store Props #######
 session:
-    redis:
-      name: session-store-dev
-      mode: cluster
-      useSsl: false
-      usePooling: true
-      password: ##
-      enableJmx: true
-      jmxPrefix: session-store:dev
-      cluster:
-        nodes: 10.80.1.111:6379,10.80.0.22:6379
-      connection:
-        timeout: 1000
-        maxTotal: 200
-        minIdle: 50
-        maxIdle: 100
+  redis:
+    name: session-store-dev
+    mode: cluster
+    useSsl: false
+    usePooling: true
+    password: ##
+    enableJmx: true
+    jmxPrefix: session-store:dev
+    cluster:
+      nodes: 10.80.1.111:6379,10.80.0.22:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 ######### MongoDB properties
 app:
@@ -66,7 +66,6 @@ spring:
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
 
-
 ####### payment props #######
 payment:
   recurring:
@@ -81,53 +80,53 @@ payment:
         name: wcf-staging-payment-reconciliation
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       renewal:
         enabled: false
         name: wcf-staging-payment-renewal
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       charging:
         enabled: false
         name: wcf-staging-payment-charging.fifo
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       subscription:
         enabled: false
         name: wcf-staging-subscription
         sqs:
           messages:
-            producer:
-              delayInSecond: 20
-            consumer:
-              delay: 1
-              delayTimeUnit: MINUTES
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
   ###### webview status props #######
   status:
     web:

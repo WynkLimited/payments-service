@@ -80,53 +80,53 @@ payment:
         name: wcf-staging-payment-reconciliation
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       renewal:
         enabled: false
         name: wcf-staging-payment-renewal
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       charging:
         enabled: false
         name: wcf-staging-payment-charging.fifo
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       subscription:
         enabled: false
         name: wcf-staging-subscription
         sqs:
           messages:
-            producer:
-              delayInSecond: 20
-            consumer:
-              delay: 1
-              delayTimeUnit: MINUTES
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
   ###### webview status props #######
   status:
     web:

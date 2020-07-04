@@ -1,9 +1,14 @@
-package in.wynk.payment.core.dto;
+package in.wynk.payment.core.dao.entity;
 
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.revenue.commons.TransactionEvent;
 import in.wynk.revenue.commons.TransactionStatus;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -49,7 +54,7 @@ public class Transaction {
     private String itemId;
 
     @Column(name = "payment_channel")
-    private PaymentCode paymentChannel;
+    private PaymentCode paymentChannel; //TODO: change to string.
 
     @Column(name = "service")
     private String service;

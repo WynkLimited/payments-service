@@ -1,8 +1,8 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.dto.PaymentRenewal;
-import in.wynk.payment.dao.IPaymentRenewalDao;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Qualifier;

@@ -1,10 +1,8 @@
 package in.wynk.payment.dto.response;
 
 import com.google.gson.annotations.SerializedName;
-import in.wynk.payment.core.dto.ChargingStatus;
 import in.wynk.payment.dto.TransactionDetails;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

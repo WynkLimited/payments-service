@@ -20,7 +20,7 @@ import java.util.List;
 
 @Configuration
 @EnableConfigurationProperties({PaymentProperties.class})
-@EnableMongoRepositories(basePackages = "in.wynk.payment.dao", mongoTemplateRef = "paymentMongoTemplate")
+@EnableMongoRepositories(basePackages = "in.wynk.payment.core.dao", mongoTemplateRef = "paymentMongoTemplate")
 @EnableMongoAuditing
 public class MongoConfig {
     private final MongoProperties mongoProperties;

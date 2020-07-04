@@ -4,7 +4,7 @@ session:
       name: session-store:local
       mode: standalone
       standalone:
-        host: localhost
+        host: 10.80.1.111
         port: 6379
         usePooling: false
         enableJmx: false
@@ -27,14 +27,14 @@ app:
 ##### mysql database props #####
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/payments
-    username: root
-    password: root
+    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+    username: admin
+    password: o7QZ?!n=eu
 ###### database connection pooling props ######
     hikari:
-      jdbc-url: jdbc:mysql://localhost:3306/payments
-      username: root
-      password: root
+      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+      username: admin
+      password: o7QZ?!n=eu
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false

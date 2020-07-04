@@ -1,6 +1,6 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dto.PaymentRenewal;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
 
 import java.util.Calendar;
 import java.util.stream.Stream;

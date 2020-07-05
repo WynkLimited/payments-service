@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 @Service
 public class UserPaymentsManagerImpl implements IUserPaymentsManager {
@@ -17,8 +17,8 @@ public class UserPaymentsManagerImpl implements IUserPaymentsManager {
     private UserPreferredPaymentsDao preferredPaymentsDao;
 
     @Override
-    public Optional<UserPreferredPayment> getPaymentDetails(String uid, PaymentCode paymentCode) {
-        return getAllPaymentDetails(uid).stream().filter(p -> p.getOption().getPaymentCode().equals(paymentCode)).findAny();
+    public UserPreferredPayment getPaymentDetails(String uid, PaymentCode paymentCode) {
+        return getAllPaymentDetails(uid).stream().filter(p -> p.getOption().getPaymentCode().equals(paymentCode)).findAny().orElse(null);
     }
 
     // can add cacheable.
@@ -30,8 +30,12 @@ public class UserPaymentsManagerImpl implements IUserPaymentsManager {
     //might need to update cache
     @Override
     public UserPreferredPayment saveWalletToken(String uid, Wallet wallet) {
-        UserPreferredPayment preferredPayment = new UserPreferredPayment.Builder().uid(uid).option(wallet).build();
-        //TODO: check for existing option
-        return preferredPaymentsDao.save(preferredPayment);
+        UserPreferredPayment userPreferredPayment = getPaymentDetails(uid, wallet.getPaymentCode());
+        if (Objects.nonNull(userPreferredPayment)) {
+            userPreferredPayment.setOption(wallet);
+        } else {
+            userPreferredPayment = new UserPreferredPayment.Builder().uid(uid).option(wallet).build();
+        }
+        return preferredPaymentsDao.save(userPreferredPayment);
     }
 }

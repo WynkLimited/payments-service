@@ -9,7 +9,10 @@ import org.springframework.http.HttpStatus;
 public enum PaymentErrorType implements IWynkErrorType {
 
     /** Error type for Invalid value */
-    PAY001("Invalid Payment Method", "unable to charge, unknown payment method is supplied", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE);
+    PAY001("Invalid Payment Method", "unable to charge, unknown payment method is supplied", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+
+    PAY010("Invalid txnId", "Invalid txnId", HttpStatus.NOT_FOUND, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY998("External Partner failure", "External Partner failure", HttpStatus.FAILED_DEPENDENCY, BaseLoggingMarkers.SERVICE_PARTNER_ERROR);
 
     /** The error title. */
     private final String errorTitle;

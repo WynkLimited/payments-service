@@ -2,6 +2,7 @@ package in.wynk.payment.core.entity;
 
 import in.wynk.commons.entity.MongoBaseEntity;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document("user_preferred_payments")
@@ -9,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class UserPreferredPayment extends MongoBaseEntity {
 
     private String uid;
+    @Setter
     private Payment option;
 
 

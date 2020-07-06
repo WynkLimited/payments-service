@@ -507,7 +507,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             String uid = getValueFromSession(SessionKeys.UID);
             String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
 
-            PlanDTO selectedPlan = getSelectedPlan(getValueFromSession(SessionKeys.SELECTED_PLAN_ID));
+            PlanDTO selectedPlan = subscriptionServiceManager.getPlan(getValueFromSession(SessionKeys.SELECTED_PLAN_ID));
             PayUCallbackRequestPayload payUCallbackRequestPayload = JsonUtils.GSON.fromJson(JsonUtils.GSON.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
             String errorCode = payUCallbackRequestPayload.getError();
@@ -634,11 +634,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
         assert generatedHash != null;
         return generatedHash.equals(payUResponseHash);
-    }
-
-    private PlanDTO getSelectedPlan(int planId) {
-        List<PlanDTO> plans = getValueFromSession(SessionKeys.ELIGIBLE_PLANS);
-        return plans.stream().filter(plan -> plan.getId() == planId).collect(Collectors.toList()).get(0);
     }
 
     private <T> T getValueFromSession(String key) {

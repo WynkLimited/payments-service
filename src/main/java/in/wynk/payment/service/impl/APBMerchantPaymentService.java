@@ -256,7 +256,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Unable to fetch transaction status for txnId = " + txnId + "error- " + e.getMessage());
         } finally {
             transaction.setMerchantTransaction(merchantTxnBuilder.build());
-            transactionManager.upsert(transaction);
         }
         return TransactionStatus.FAILURE;
     }

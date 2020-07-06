@@ -1,15 +1,16 @@
 package in.wynk.payment.dto.response.Apb;
 
 import in.wynk.payment.dto.ApbTransaction;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 @Getter
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class ApbChargingStatusResponse extends ChargingStatusResponse {
+public class ApbChargingStatusResponse {
     private String merchantId;
     private List<ApbTransaction> txns;
     private String messageText;

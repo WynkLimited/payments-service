@@ -11,9 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChargingRequest {
-    private String sessionId;
-    private String partnerProductId;
     private String couponId;
-    private String txnId;
+    private String planId;
     private PaymentCode paymentCode;
 }

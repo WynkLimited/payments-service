@@ -13,4 +13,6 @@ import lombok.NoArgsConstructor;
 public class ChargingStatusRequest {
     private String sessionId;
     private String transactionId;
+    @Builder.Default
+    private StatusMode mode = StatusMode.LOCAL;
 }

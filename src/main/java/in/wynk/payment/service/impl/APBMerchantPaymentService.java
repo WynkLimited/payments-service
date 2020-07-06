@@ -1,15 +1,21 @@
 package in.wynk.payment.service.impl;
 
+import com.google.gson.Gson;
 import in.wynk.commons.constants.Constants;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.Currency;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.CommonUtils;
-import in.wynk.commons.utils.SessionUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.ApbConstants;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.dto.request.Apb.ApbChargingStatusRequest;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dto.MerchantTransaction;
+import in.wynk.payment.core.dto.MerchantTransaction.MerchantTransactionBuilder;
+import in.wynk.payment.core.dto.PaymentReconciliationMessage;
+import in.wynk.payment.core.dto.Transaction;
+import in.wynk.payment.dto.ApbTransaction;
 import in.wynk.payment.dto.request.Apb.ApbTransactionInquiryRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
@@ -17,10 +23,18 @@ import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.enums.Apb.ApbStatus;
 import in.wynk.payment.enums.Apb.StatusMode;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.queue.constant.QueueErrorType;
+import in.wynk.queue.dto.SendSQSMessageRequest;
+import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +53,15 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.AMOUNT;
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.SHA_512;
+import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.payment.constant.ApbConstants.HASH;
 import static in.wynk.payment.constant.ApbConstants.*;
+import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
 public class APBMerchantPaymentService implements IRenewalMerchantPaymentService {
@@ -74,57 +91,82 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Value("${apb.txn.inquiry.url}")
     private String APB_TXN_INQUIRY_URL;
 
+    @Value("${payment.pooling.queue.reconciliation.name}")
+    private String reconciliationQueue;
+
+    @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
+    private int reconciliationMessageDelay;
+
+    @Autowired
+    private ITransactionManagerService transactionManager;
+
+    @Autowired
+    private ISQSMessagePublisher messagePublisher;
+
+    @Autowired
+    private Gson gson;
+
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        Map<String, List<String>> urlParameters = (Map<String, List<String>>)  callbackRequest.getBody();
+        Map<String, List<String>> urlParameters = (Map<String, List<String>>) callbackRequest.getBody();
         ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
         String externalTxnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_ID);
-        String amount = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT);
+        Double amount = NumberUtils.toDouble(CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT));
         String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
         String txnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TXN_REF_NO);
-        String requestHash = CommonUtils.getStringParameter(urlParameters, ApbConstants.HASH);
-        boolean verified = false;
-        if (status == null) {
-            throw new RuntimeException("Status is null");
-        }
+        String requestHash = CommonUtils.getStringParameter(urlParameters, HASH);
+        Transaction transaction = transactionManager.get(UUID.fromString(txnId));
         try {
-            verified = verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash);
+            boolean verified = verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash);
             String sessionId = SessionContextHolder.get().getId().toString();
-            String txn_Id = UUID.randomUUID().toString();// TODO fetch from Transaction object
             String url = String.format(FAILURE_PAGE, sessionId, txnId);
-            if (verified) {
-                if (status == ApbStatus.SUC) {
-                    //TODO: update txn
-                    // externalTxnId
-                    // call subscription API
-                    //push into RECON QUEUE
-                    url = String.format(SUCCESS_PAGE, sessionId, txnId);
-                } else {
-                    // externalMessage, externalTxnId
-                    //update txn with failure.
-                }
-            } else {
-                throw new RuntimeException("Unable to verify");
+            if (verified && status == ApbStatus.SUC && fetchAPBTxnStatus(transaction, amount, txnDate).equals(TransactionStatus.SUCCESS)) {
+                url = String.format(SUCCESS_PAGE, sessionId, txnId);
             }
-
             return BaseResponse.redirectResponse(url);
         } catch (Exception e) {
             throw new RuntimeException("Exception Occurred");
+        } finally {
+            transactionManager.upsert(transaction);
         }
     }
 
     @Override
     public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
-        //TODO: generate TXN
-        URI apbRedirectURL = generateApbRedirectURL(chargingRequest.getTxnId());
-        //TODO: push into RECON QUEUE
-        return BaseResponse.redirectResponse(apbRedirectURL.toString());
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        String msisdn = sessionDTO.get(MSISDN);
+        String uid = sessionDTO.get(UID);
+        Double amount = sessionDTO.get(AMOUNT);
+        Integer planId = sessionDTO.get(PLAN_ID);
+        String wynkService = sessionDTO.get(SERVICE);
+        String apbRedirectURL;
+        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, wynkService);
+        try {
+            apbRedirectURL = generateApbRedirectURL(transaction.getId().toString());
+        } finally {
+            //Add reconciliation
+            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
+            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
+        }
+        return BaseResponse.redirectResponse(apbRedirectURL);
     }
 
-    private URI generateApbRedirectURL(String txnId) {
+    private <T> void publishSQSMessage(String queueName, int messageDelay, T message) {
+        try {
+            messagePublisher.publish(SendSQSMessageRequest.<T>builder()
+                    .queueName(queueName)
+                    .delaySeconds(messageDelay)
+                    .message(message)
+                    .build());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(QueueErrorType.SQS001, e);
+        }
+    }
+
+    private String generateApbRedirectURL(String txnId) {
         try {
             long txnDate = System.currentTimeMillis();
             String serviceName = ApbService.NB.name();
@@ -135,59 +177,18 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         }
     }
 
-    @Override
-    public BaseResponse<ApbChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
-        ApbChargingStatusRequest apbChargingStatusRequest = (ApbChargingStatusRequest) chargingStatusRequest;
-        if(apbChargingStatusRequest.getStatusMode() == StatusMode.MERCHANT_CHECK) {
-            ApbChargingStatusResponse apbChargingStatusResponse =
-                    fetchTxnStatus(apbChargingStatusRequest.getTxnId(), apbChargingStatusRequest.getAmount(), apbChargingStatusRequest.getTxnDate());
-            return new BaseResponse<>(apbChargingStatusResponse, HttpStatus.OK, null);
-        } else if(apbChargingStatusRequest.getStatusMode() == StatusMode.LOCAL_CHECK){
-            //check from db
-            return new BaseResponse<>(null, HttpStatus.OK, null);
-        }
-        return null;
-    }
-
-    private ApbChargingStatusResponse fetchTxnStatus(String txnId, double amount, long txnDate) {
-        try {
-            String formattedDate = CommonUtils.getFormattedDate(txnDate, "ddMMyyyyHHmmss");
-            URI uri = new URI(APB_TXN_INQUIRY_URL);
-            String hashText = MERCHANT_ID + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + formattedDate + Constants.HASH + SALT;
-            String hashValue = CommonUtils.generateHash(hashText, SHA_512);
-            ApbTransactionInquiryRequest apbTransactionInquiryRequest = ApbTransactionInquiryRequest.builder()
-                    .feSessionId(UUID.randomUUID().toString())
-                    .txnRefNo(txnId).txnDate(formattedDate)
-                    .request(ECOMM_INQ).merchantId(MERCHANT_ID)
-                    .hash(hashValue).langId(LANG_ID)
-                    .amount(String.valueOf(amount))
-                    .build();
-            logger.info("ApbTransactionInquiryRequest: {}", apbTransactionInquiryRequest);
-            RequestEntity<ApbTransactionInquiryRequest> requestEntity = new RequestEntity<>(apbTransactionInquiryRequest, HttpMethod.POST, uri);
-            ApbChargingStatusResponse apbChargingStatusResponse = null;
-            ResponseEntity<ApbChargingStatusResponse> responseEntity = restTemplate.exchange(requestEntity, ApbChargingStatusResponse.class);
-            if(responseEntity != null) {
-                apbChargingStatusResponse = responseEntity.getBody();
-            }
-            return apbChargingStatusResponse;
-        } catch(HttpStatusCodeException e) {
-            throw new RuntimeException("Http Status code exception occurred");
-        } catch(Exception e){
-            throw new RuntimeException("Unable to fetch transaction status for txnId = " + txnId);
-        }
-    }
-
-    private URI getReturnUri(String txnId, String formattedDate, String serviceName) throws Exception {
+    private String getReturnUri(String txnId, String formattedDate, String serviceName) throws Exception {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        double amount = SessionUtils.get(sessionDTO, AMOUNT, Double.class);
-        String msisdn = SessionUtils.getString(sessionDTO, MSISDN);
+        String sessionId = SessionContextHolder.get().getId().toString();
+        Double amount = sessionDTO.get(AMOUNT);
+        String msisdn = sessionDTO.get(MSISDN);
         String hashText = MERCHANT_ID + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + formattedDate + Constants.HASH + serviceName + Constants.HASH + SALT;
         String hash = CommonUtils.generateHash(hashText, SHA_512);
         return new URIBuilder(APB_INIT_PAYMENT_URL)
                 .addParameter(MID, MERCHANT_ID)
                 .addParameter(TXN_REF_NO, txnId)
-                .addParameter(SUCCESS_URL, getCallbackUrl(txnId).toASCIIString())
-                .addParameter(FAILURE_URL, getCallbackUrl(txnId).toASCIIString())
+                .addParameter(SUCCESS_URL, getCallbackUrl(sessionId, txnId).toASCIIString())
+                .addParameter(FAILURE_URL, getCallbackUrl(sessionId, txnId).toASCIIString())
                 .addParameter(APB_AMOUNT, String.valueOf(amount))
                 .addParameter(DATE, formattedDate)
                 .addParameter(CURRENCY, Currency.INR.name())
@@ -195,16 +196,75 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .addParameter(MERCHANT_NAME, Constants.WYNK)
                 .addParameter(HASH, hash)
                 .addParameter(SERVICE, serviceName)
-                .build();
+                .build().toString();
     }
 
-    private URI getCallbackUrl(String txnId) throws URISyntaxException {
-        return new URIBuilder(CALLBACK_URL).addParameter("tid", txnId).build();
+    private URI getCallbackUrl(String sid, String txnId) throws URISyntaxException {
+        return new URIBuilder(CALLBACK_URL).addParameter("sid", sid).addParameter("tid", txnId).build();
     }
 
-    private boolean verifyHash(ApbStatus status, String merchantId, String txnId, String externalTxnId, String amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
-        String str = null;
-        if(status == ApbStatus.SUC) {
+    @Override
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        ChargingStatusResponse status = ChargingStatusResponse.failure();
+        Transaction transaction = transactionManager.get(UUID.fromString(chargingStatusRequest.getTransactionId()));
+        if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {
+            String txnDate = CommonUtils.getFormattedDate(transaction.getInitTime().getTimeInMillis(), "ddMMyyyyHHmmss");
+            TransactionStatus txnStatus = fetchAPBTxnStatus(transaction, transaction.getAmount(), txnDate);
+            status = ChargingStatusResponse.builder().transactionStatus(txnStatus).build();
+        } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && StringUtils.equalsIgnoreCase(transaction.getStatus(), TransactionStatus.SUCCESS.name())) {
+            status = ChargingStatusResponse.success();
+        }
+        return new BaseResponse<>(status, HttpStatus.OK, null);
+    }
+
+    private TransactionStatus fetchAPBTxnStatus(Transaction transaction, double amount, String txnDate) {
+        String txnId = transaction.getId().toString();
+        MerchantTransactionBuilder merchantTxnBuilder = MerchantTransaction.builder();
+        try {
+            URI uri = new URI(APB_TXN_INQUIRY_URL);
+            String hashText = MERCHANT_ID + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + txnDate + Constants.HASH + SALT;
+            String hashValue = CommonUtils.generateHash(hashText, SHA_512);
+            ApbTransactionInquiryRequest apbTransactionInquiryRequest = ApbTransactionInquiryRequest.builder()
+                    .feSessionId(UUID.randomUUID().toString())
+                    .txnRefNo(txnId).txnDate(txnDate)
+                    .request(ECOMM_INQ).merchantId(MERCHANT_ID)
+                    .hash(hashValue).langId(LANG_ID)
+                    .amount(String.valueOf(amount))
+                    .build();
+            String payload = gson.toJson(apbTransactionInquiryRequest);
+            logger.info("ApbTransactionInquiryRequest: {}", apbTransactionInquiryRequest);
+            merchantTxnBuilder.request(payload);
+            RequestEntity<String> requestEntity = new RequestEntity<>(payload, HttpMethod.POST, uri);
+            ApbChargingStatusResponse apbChargingStatusResponse;
+            ResponseEntity<ApbChargingStatusResponse> responseEntity = restTemplate.exchange(requestEntity, ApbChargingStatusResponse.class);
+            apbChargingStatusResponse = responseEntity.getBody();
+            merchantTxnBuilder.response(gson.toJson(apbChargingStatusResponse));
+            if (Objects.nonNull(apbChargingStatusResponse) && CollectionUtils.isNotEmpty(apbChargingStatusResponse.getTxns())) {
+                Optional<ApbTransaction> apbTransaction = apbChargingStatusResponse.getTxns().stream().filter(txn -> StringUtils.equals(txnId, txn.getTxnId())).findAny();
+                if (apbTransaction.isPresent() && StringUtils.equalsIgnoreCase(apbTransaction.get().getStatus(), ApbStatus.SUC.name())) {
+                    transaction.setStatus(TransactionStatus.SUCCESS.name());
+                    return TransactionStatus.SUCCESS;
+                }
+            }
+            transaction.setStatus(TransactionStatus.FAILURE.name());
+        } catch (HttpStatusCodeException e) {
+            merchantTxnBuilder.response(e.getResponseBodyAsString());
+            logger.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getResponseBodyAsString(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, "APB failure response - " + e.getResponseBodyAsString());
+        } catch (Exception e) {
+            logger.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, "Unable to fetch transaction status for txnId = " + txnId + "error- " + e.getMessage());
+        } finally {
+            transaction.setMerchantTransaction(merchantTxnBuilder.build());
+            transactionManager.upsert(transaction);
+        }
+        return TransactionStatus.FAILURE;
+    }
+
+
+    private boolean verifyHash(ApbStatus status, String merchantId, String txnId, String externalTxnId, Double amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
+        String str = StringUtils.EMPTY;
+        if (status == ApbStatus.SUC) {
             str = merchantId + Constants.HASH + externalTxnId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + txnDate + Constants.HASH + SALT;
         } else if (status == ApbStatus.FAL) {
             str = merchantId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + SALT + Constants.HASH + code + "#FAL";
@@ -215,7 +275,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     @Override
     public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
-        throw new RuntimeException("Unsupported Exception");
+        throw new UnsupportedOperationException("Unsupported operation - Renewal is not supported by APB");
     }
 
     public enum ApbService {

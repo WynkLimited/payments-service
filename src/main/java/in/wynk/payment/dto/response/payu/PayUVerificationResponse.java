@@ -1,7 +1,8 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.response.payu;
 
 import com.google.gson.annotations.SerializedName;
-import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.dto.response.ChargingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,5 +19,5 @@ public class PayUVerificationResponse extends ChargingStatus {
   private String message;
 
   @SerializedName("transaction_details")
-  private Map<String, TransactionDetails> transactionDetails;
+  private Map<String, PayUTransactionDetails> transactionDetails;
 }

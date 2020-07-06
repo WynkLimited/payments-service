@@ -1,6 +1,6 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.response.payu;
 
-import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
 import lombok.*;
 
 import java.util.Map;
@@ -9,7 +9,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PayURenewalResponse {
-  private Map<String, TransactionDetails> details;
+  private Map<String, PayUTransactionDetails> details;
   @Setter
   private boolean timeOutFlag;
 }

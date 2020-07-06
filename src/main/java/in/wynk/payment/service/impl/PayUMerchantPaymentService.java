@@ -19,19 +19,19 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.CardDetails;
-import in.wynk.payment.dto.PayUCallbackRequestPayload;
-import in.wynk.payment.dto.PayUCardInfo;
-import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.dto.payu.CardDetails;
+import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
+import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.dto.response.PayURenewalResponse;
-import in.wynk.payment.dto.response.PayUUserCardDetailsResponse;
-import in.wynk.payment.dto.response.PayUVerificationResponse;
+import in.wynk.payment.dto.response.payu.PayURenewalResponse;
+import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -196,21 +196,21 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (payURenewalResponse.isTimeOutFlag()) {
                 status = true;
             } else {
-                TransactionDetails transactionDetails =
+                PayUTransactionDetails payUTransactionDetails =
                         payURenewalResponse.getDetails().get(paymentRenewalRequest.getId());
-                errorMessage = transactionDetails.getErrorMessage();
-                if (transactionDetails.getStatus().equals(PAYU_STATUS_CAPTURED)) {
+                errorMessage = payUTransactionDetails.getErrorMessage();
+                if (payUTransactionDetails.getStatus().equals(PAYU_STATUS_CAPTURED)) {
                     status = true;
 
-                    TransactionDetails verificationTransactionDetails = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), transactionDetails.getTransactionId()),
+                    PayUTransactionDetails verificationPayUTransactionDetails = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), payUTransactionDetails.getTransactionId()),
                             PayUVerificationResponse.class)
                             .getTransactionDetails()
                             .get(paymentRenewalRequest.getId());
 
-                    errorMessage = verificationTransactionDetails.getErrorMessage();
-                } else if (transactionDetails.getStatus().equals(PAYU_SI_STATUS_FAILURE)) {
-                    errorMessage = transactionDetails.getPayUResponseFailureMessage();
-                } else if (transactionDetails.getStatus().equals(SUCCESS)) {
+                    errorMessage = verificationPayUTransactionDetails.getErrorMessage();
+                } else if (payUTransactionDetails.getStatus().equals(PAYU_SI_STATUS_FAILURE)) {
+                    errorMessage = payUTransactionDetails.getPayUResponseFailureMessage();
+                } else if (payUTransactionDetails.getStatus().equals(SUCCESS)) {
                     status = true;
                 }
             }
@@ -247,25 +247,25 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         if (transaction.getStatus() != TransactionStatus.SUCCESS) { // why this check???
             MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), chargingStatusRequest.getTransactionId());
             PayUVerificationResponse payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, PayUVerificationResponse.class);
-            TransactionDetails transactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(chargingStatusRequest.getTransactionId());
+            PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(chargingStatusRequest.getTransactionId());
 
             if (payUChargingVerificationResponse.getStatus() == 1) {
-                if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
+                if (SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     transaction.setExitTime(Calendar.getInstance());
                     finalTransactionStatus = TransactionStatus.SUCCESS;
-                    if (transactionDetails.getPayUUdf1().equalsIgnoreCase(PAYU_SI_KEY)) {
+                    if (payUTransactionDetails.getPayUUdf1().equalsIgnoreCase(PAYU_SI_KEY)) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, chargingStatusRequest.getPackPeriod().getValidity());
                         recurringPaymentManagerService.addRecurringPayment(transaction.getId().toString(), nextRecurringDateTime);
                     }
-                } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+                } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     transaction.setExitTime(Calendar.getInstance());
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 } else if (chargingStatusRequest.getChargingTimestamp().getTime() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                        StringUtils.equalsIgnoreCase(PaymentConstants.PENDING, transactionDetails.getStatus())) {
+                        StringUtils.equalsIgnoreCase(PaymentConstants.PENDING, payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.INPROGRESS;
                 } else if (chargingStatusRequest.getChargingTimestamp().getTime() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                        StringUtils.equalsIgnoreCase(PaymentConstants.PENDING, transactionDetails.getStatus())) {
+                        StringUtils.equalsIgnoreCase(PaymentConstants.PENDING, payUTransactionDetails.getStatus())) {
                     transaction.setExitTime(Calendar.getInstance());
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 } else {
@@ -277,16 +277,16 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             }
 
             transaction.setMerchantTransaction(MerchantTransaction.builder()
-                    .externalTransactionId(transactionDetails.getPayUExternalTxnId())
+                    .externalTransactionId(payUTransactionDetails.getPayUExternalTxnId())
                     .request(payUChargingVerificationRequest)
                     .response(payUChargingVerificationResponse)
                     .build());
 
             if (finalTransactionStatus == TransactionStatus.FAILURE) {
-                if (!StringUtils.isEmpty(transactionDetails.getErrorCode()) || !StringUtils.isEmpty(transactionDetails.getErrorMessage())) {
+                if (!StringUtils.isEmpty(payUTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUTransactionDetails.getErrorMessage())) {
                     transaction.setPaymentError(PaymentError.builder()
-                            .code(transactionDetails.getErrorCode())
-                            .description(transactionDetails.getErrorMessage())
+                            .code(payUTransactionDetails.getErrorCode())
+                            .description(payUTransactionDetails.getErrorMessage())
                             .build());
                 }
             }

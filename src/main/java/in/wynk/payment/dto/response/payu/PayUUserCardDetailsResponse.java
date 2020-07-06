@@ -1,9 +1,7 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.response.payu;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.annotations.SerializedName;
-import in.wynk.payment.dto.CardDetails;
+import in.wynk.payment.dto.payu.CardDetails;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

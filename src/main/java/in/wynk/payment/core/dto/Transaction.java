@@ -1,6 +1,11 @@
 package in.wynk.payment.core.dto;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -23,14 +28,14 @@ public class Transaction {
     @Column(name = "transaction_id")
     private UUID id;
 
-    @Column(name = "product_id")
-    private Integer productId;
+    @Column(name = "plan_id")
+    private Integer planId;
 
     @Column(name = "paid_amount")
-    private float amount;
+    private Double amount;
 
     @Column(name = "discount_amount")
-    private float discount;
+    private Double discount;
 
     @Column(name = "init_timestamp")
     @Temporal(TemporalType.TIMESTAMP)

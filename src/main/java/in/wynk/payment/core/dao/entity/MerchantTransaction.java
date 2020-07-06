@@ -1,6 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
+import in.wynk.revenue.commons.TransactionEvent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -8,12 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Getter
@@ -30,12 +26,18 @@ public class MerchantTransaction {
     private Long id;
     @Column(name = "merchant_transaction_reference_id")
     private String externalTransactionId;
+    @Column(name = "merchant_transaction_event")
+    private String transactionEvent;
     @Type(type = "json")
     @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
     private Object request;
     @Type(type = "json")
     @Column(name = "merchant_response", nullable = false, columnDefinition = "json")
     private Object response;
+
+    public TransactionEvent getTransactionEvent() {
+        return TransactionEvent.valueOf(transactionEvent);
+    }
 
     public <T> T getRequest() {
         return (T) request;

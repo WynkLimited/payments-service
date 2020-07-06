@@ -9,7 +9,12 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.dto.SubscriptionNotificationMessage;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PayUCommand;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -34,7 +39,11 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.revenue.commons.*;
+import in.wynk.revenue.commons.EncryptionUtils;
+import in.wynk.revenue.commons.PaymentRequestType;
+import in.wynk.revenue.commons.PlanType;
+import in.wynk.revenue.commons.TransactionEvent;
+import in.wynk.revenue.commons.TransactionStatus;
 import in.wynk.revenue.utils.JsonUtils;
 import in.wynk.revenue.utils.Utils;
 import in.wynk.session.context.SessionContextHolder;
@@ -59,7 +68,12 @@ import org.springframework.web.client.RestTemplate;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.*;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -130,7 +144,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
-        // any use case for icici bank ?
         Map<String, String> payUpayload = startPaymentChargingForPayU(chargingRequest);
         String encryptedParams = null;
         try {
@@ -150,21 +163,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
-        //    Subscription subscription =
-        // subscriptionService.getSubscriptionForPartnerProductId(renewalMessage.getService(),
-        // renewalMessage.getUid(), renewalMessage.getPartnerProductId());
-        //    SubscriptionPack pack =
-        // subscriptionPacksCachingService.getPackByProductId(subscription.getProductId());
-        if (StringUtils.isEmpty(paymentRenewalRequest.getPaidPartnerProductId())) {
-            //      pack = subscriptionPacksCachingService.getPackOfType(PaymentMethod.PAY_U,
-            // paidPartnerProductId);
-        }
-    /*
-        Map<String, String> paymentMetadata = subscription.getPaymentMetaData();
-        String subsId = paymentMetadata.get(PaymentConstants.SUBSID);
-        String cardToken = paymentMetadata.get(PaymentConstants.PAYU_RESPONSE_CARDTOKEN);
-        String cardNumber = paymentMetadata.get(PaymentConstants.PAYU_RESPONSE_CARDNUMBER);
-    */
         try {
             if (StringUtils.isEmpty(paymentRenewalRequest.getCardToken())) {
                 String userCredentials = payUMerchantKey + COLON + paymentRenewalRequest.getUid();
@@ -405,6 +403,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
 
+    //TODO: ( on AMAN) need to use to fetch user's saved cards.
     public List<String> getUserCards(String uid) {
         String userCredentials = payUMerchantKey + COLON + uid;
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
@@ -503,9 +502,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private URI processCallback(CallbackRequest<Map<String, Object>> callbackRequest) {
+        String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
+        Transaction transaction = transactionManager.get(transactionId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
         try {
             String uid = getValueFromSession(SessionKeys.UID);
-            String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
 
             PlanDTO selectedPlan = subscriptionServiceManager.getPlan(getValueFromSession(SessionKeys.SELECTED_PLAN_ID));
             PayUCallbackRequestPayload payUCallbackRequestPayload = JsonUtils.GSON.fromJson(JsonUtils.GSON.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
@@ -538,37 +538,20 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
             if (isValidHash && !StringUtils.isEmpty(status)) {
                 if (FAILURE.equalsIgnoreCase(status)) {
-                    returnUrl
-                            .addParameter(STATUS, FAILURE)
-                            .addParameter(PAYU_BSYS_PARAM, FAILURE)
-                            .addParameter(MESSAGE, TRANSACTION_FAILED);
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 } else if (SUCCESS.equalsIgnoreCase(status)) {
-                    returnUrl
-                            .addParameter(STATUS, SUCCESS)
-                            .addParameter(PAYU_BSYS_PARAM, SUCCESS)
-                            .addParameter(MESSAGE, SUCCESS);
                     finalTransactionStatus = TransactionStatus.SUCCESS;
                 } else if (PENDING.equalsIgnoreCase(status)) {
-                    returnUrl
-                            .addParameter(STATUS, INPROGRESS)
-                            .addParameter(PAYU_BSYS_PARAM, INPROGRESS)
-                            .addParameter(MESSAGE, INPROGRESS);
                     finalTransactionStatus = TransactionStatus.INPROGRESS;
                 }
             } else {
-                returnUrl
-                        .addParameter(STATUS, FAILURE)
-                        .addParameter(PAYU_BSYS_PARAM, FAILURE)
-                        .addParameter(MESSAGE, TRANSACTION_FAILED);
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
 
             returnUrl.addParameter(TRANSACTION_ID, transactionId);
             returnUrl.addParameter(SESSION_ID, SessionContextHolder.get().getId().toString());
 
-            Transaction transaction = transactionManager.get(transactionId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
-
+            //TODO: verify txnStatus with payU
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 transaction.setMerchantTransaction(MerchantTransaction.builder()
                         .externalTransactionId(payUCallbackRequestPayload.getExternalTransactionId())
@@ -598,12 +581,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                             .description(errorMessage)
                             .build());
                 }
-                transactionManager.upsert(transaction);
+
             }
 
             return returnUrl.build();
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+        }finally {
+            transactionManager.upsert(transaction);
         }
     }
 

@@ -114,7 +114,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
         String externalTxnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_ID);
-        Double amount = NumberUtils.toDouble(CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT));
+        double amount = NumberUtils.toDouble(CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT));
         String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
         String txnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TXN_REF_NO);
         String requestHash = CommonUtils.getStringParameter(urlParameters, HASH);
@@ -256,7 +256,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Unable to fetch transaction status for txnId = " + txnId + "error- " + e.getMessage());
         } finally {
             transaction.setMerchantTransaction(merchantTxnBuilder.build());
-            transactionManager.upsert(transaction);
         }
         return TransactionStatus.FAILURE;
     }

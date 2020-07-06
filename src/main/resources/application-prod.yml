@@ -27,6 +27,20 @@ app:
         database: payments
 
 
+apb:
+  txn:
+    inquiry:
+      url: https://ecom.airtelbank.com/ecom/v2/inquiry
+  callback:
+    url: http://payments.wynk.in/wynk/wynk/v1/paymentcallback/apb
+  merchant:
+    id:
+  salt:
+  init:
+    payment:
+      url: https://ecom.airtelbank.com/ecom/v2/initiatePayment
+
+
 ##### mysql database props #####
 spring:
   datasource:

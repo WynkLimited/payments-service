@@ -6,16 +6,6 @@ spring:
     devtools:
       add-properties: false
 
-apb:
-    callback:
-      url: http://capi.wcf.internal/wynk/wynk/v1/paymentcallback/apb
-    merchant:
-      id: 180704
-    salt: d41d8cd98f00a
-    init:
-      payment:
-        url: https://ecom.airtelbank.com/ecom/v2/initiatePayment
-
 
 debug: false
 server:

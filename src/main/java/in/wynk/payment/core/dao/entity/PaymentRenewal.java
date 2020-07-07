@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.commons.enums.TransactionEvent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,5 +38,12 @@ public class PaymentRenewal implements Serializable {
     @Column(name = "renewal_hour", nullable = false)
     @Temporal(TemporalType.TIME)
     private Date hour;
+
+    @Column(name = "merchant_transaction_event")
+    private String transactionEvent;
+
+    public TransactionEvent getTransactionEvent() {
+        return TransactionEvent.valueOf(transactionEvent);
+    }
 
 }

@@ -1,8 +1,8 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,14 +31,14 @@ public class Transaction {
     @Column(name = "transaction_id")
     private String id;
 
-    @Column(name = "product_id")
-    private Integer productId;
+    @Column(name = "plan_id")
+    private Integer planId;
 
     @Column(name = "paid_amount")
-    private float amount;
+    private double amount;
 
     @Column(name = "discount_amount")
-    private float discount;
+    private double discount;
 
     @Column(name = "init_timestamp")
     @Temporal(TemporalType.TIMESTAMP)
@@ -54,7 +54,7 @@ public class Transaction {
     private String itemId;
 
     @Column(name = "payment_channel")
-    private PaymentCode paymentChannel; //TODO: change to string.
+    private String paymentChannel;
 
     @Column(name = "service")
     private String service;
@@ -94,6 +94,10 @@ public class Transaction {
 
     public UUID getId() {
         return id != null ? UUID.fromString(id): null;
+    }
+
+    public PaymentCode getPaymentChannel() {
+        return PaymentCode.valueOf(paymentChannel);
     }
 
 }

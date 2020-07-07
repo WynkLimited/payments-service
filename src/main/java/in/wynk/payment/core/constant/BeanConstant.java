@@ -17,4 +17,8 @@ public interface BeanConstant {
 
     String POLLING_QUEUE_SCHEDULING_THREAD_POOL = "poolingQueueSchedulingThreadPool";
 
+    String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";
+
+
+
 }

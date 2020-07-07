@@ -2,8 +2,8 @@ package in.wynk.payment.service;
 
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.State;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.repository.PaymentMethodDao;
+import in.wynk.payment.core.entity.PaymentMethod;
+import in.wynk.payment.dao.PaymentMethodDao;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;

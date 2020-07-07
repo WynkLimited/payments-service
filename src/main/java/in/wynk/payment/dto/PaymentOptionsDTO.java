@@ -1,7 +1,7 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto;
 
 import in.wynk.commons.enums.PaymentGroup;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.entity.PaymentMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,9 +14,9 @@ import java.util.Map;
 public class PaymentOptionsDTO {
 
     private List<PaymentGroupsDTO> paymentGroups;
-    private Double discountedPrice;
-    private Double price;
-    private Boolean priceChanged;
+    private float discountedPrice;
+    private float price;
+    private boolean priceChanged;
 
     @Builder
     @Data

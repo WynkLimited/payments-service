@@ -4,11 +4,11 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.State;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.Card;
-import in.wynk.payment.core.dao.entity.Payment;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.entity.Card;
+import in.wynk.payment.core.entity.Payment;
+import in.wynk.payment.core.entity.PaymentMethod;
+import in.wynk.payment.core.entity.UserPreferredPayment;
+import in.wynk.payment.core.entity.Wallet;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class PaymentTestUtils {
     public static SessionDTO dummySession() {
         Map<String, Object> map = new HashMap<>();
         map.put(UID, DUMMY_UID);
-        SessionDTO sessionDTO = SessionDTO.builder().build();
+        SessionDTO sessionDTO = new SessionDTO();
         sessionDTO.setPayload(map);
         return sessionDTO;
     }

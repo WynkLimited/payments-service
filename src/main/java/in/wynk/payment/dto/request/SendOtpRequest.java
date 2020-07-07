@@ -1,4 +1,4 @@
 package in.wynk.payment.dto.request;
 
-public class ConsultBalanceRequest {
+public class SendOtpRequest {
 }

@@ -1,9 +1,9 @@
 package in.wynk.payment.test;
 
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.repository.PaymentMethodDao;
-import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
+import in.wynk.payment.core.entity.PaymentMethod;
+import in.wynk.payment.core.entity.UserPreferredPayment;
+import in.wynk.payment.dao.PaymentMethodDao;
+import in.wynk.payment.dao.UserPreferredPaymentsDao;
 import in.wynk.payment.test.utils.PaymentTestUtils;
 import org.junit.Test;
 import org.junit.platform.commons.util.StringUtils;

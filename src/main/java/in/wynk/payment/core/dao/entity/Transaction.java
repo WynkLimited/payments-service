@@ -35,10 +35,10 @@ public class Transaction {
     private Integer productId;
 
     @Column(name = "paid_amount")
-    private float amount;
+    private double amount;
 
     @Column(name = "discount_amount")
-    private float discount;
+    private double discount;
 
     @Column(name = "init_timestamp")
     @Temporal(TemporalType.TIMESTAMP)
@@ -54,7 +54,7 @@ public class Transaction {
     private String itemId;
 
     @Column(name = "payment_channel")
-    private PaymentCode paymentChannel; //TODO: change to string.
+    private String paymentChannel;
 
     @Column(name = "service")
     private String service;
@@ -94,6 +94,10 @@ public class Transaction {
 
     public UUID getId() {
         return id != null ? UUID.fromString(id): null;
+    }
+
+    public PaymentCode getPaymentChannel() {
+        return PaymentCode.valueOf(paymentChannel);
     }
 
 }

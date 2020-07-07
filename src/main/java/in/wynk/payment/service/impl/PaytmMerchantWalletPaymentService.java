@@ -42,7 +42,6 @@ import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
 import in.wynk.payment.enums.paytm.StatusMode;
 import in.wynk.payment.errors.ErrorCodes;
-import in.wynk.payment.logging.PaymentLoggingMarkers;
 import in.wynk.payment.service.IRenewalMerchantWalletService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.IUserPaymentsManager;
@@ -77,10 +76,12 @@ import java.util.TreeMap;
 
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
+import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 import static in.wynk.payment.constant.PaymentConstants.PAYTM_STATUS_SUCCESS;
 import static in.wynk.payment.constant.PaymentConstants.WALLET_USER_ID;
 import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
-import static in.wynk.payment.logging.PaymentLoggingMarkers.PAYTM_ERROR;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.HTTP_ERROR;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
 public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService {
@@ -153,7 +154,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         Map<String, List<String>> params = (Map<String, List<String>>) callbackRequest.getBody();
         List<String> status = params.getOrDefault(PaymentConstants.PAYTM_STATUS, new ArrayList<>());
         if (CollectionUtils.isEmpty(status) || !status.get(0).equalsIgnoreCase(PaymentConstants.PAYTM_STATUS_SUCCESS)) {
-            logger.error(PaymentLoggingMarkers.APPLICATION_ERROR, "Add money txn at paytm failed");
+            logger.error(APPLICATION_ERROR, "Add money txn at paytm failed");
             throw new RuntimeException("Failed to add money to wallet");
         }
         logger.info("Successfully added money to wallet. Now withdrawing amount");
@@ -519,7 +520,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                     String responseCode = paytmWalletLinkResponse.getResponseCode();
                     errorCode = ErrorCodes.resolveErrorCode(responseCode);
                 }
-                logger.error(PaymentLoggingMarkers.HTTP_ERROR, "Error in sending otp. Reason: [{}]",
+                logger.error(HTTP_ERROR, "Error in sending otp. Reason: [{}]",
                         errorCode.getMessage());
             }
 
@@ -527,7 +528,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 ErrorCodes errorCode;
                 String responseCode = paytmWalletLinkResponse.getResponseCode();
                 errorCode = ErrorCodes.resolveErrorCode(responseCode);
-                logger.error(PaymentLoggingMarkers.HTTP_ERROR, "Error in sending otp. Reason: [{}]",
+                logger.error(HTTP_ERROR, "Error in sending otp. Reason: [{}]",
                         errorCode.getMessage());
                 return new BaseResponse<>(paytmWalletLinkResponse, HttpStatus.OK, responseEntity.getHeaders());
             }

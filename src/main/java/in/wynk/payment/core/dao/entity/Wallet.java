@@ -1,39 +1,37 @@
-package in.wynk.payment.core.entity;
+package in.wynk.payment.core.dao.entity;
 
 
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.Getter;
 
-import static in.wynk.commons.enums.PaymentGroup.CARD;
+import static in.wynk.commons.enums.PaymentGroup.WALLET;
 
 @Getter
-public class Card implements Payment {
+public class Wallet implements Payment {
 
-    private PaymentGroup group = CARD;
+    private PaymentGroup group = WALLET;
     private PaymentCode paymentCode;
 
 
-    private Card() {
-    }
-
     public static final class Builder {
-        private PaymentGroup group = CARD;
+        private PaymentGroup group = WALLET;
         private PaymentCode paymentCode;
 
         public Builder() {
         }
+
 
         public Builder paymentCode(PaymentCode paymentCode) {
             this.paymentCode = paymentCode;
             return this;
         }
 
-        public Card build() {
-            Card card = new Card();
-            card.paymentCode = this.paymentCode;
-            card.group = this.group;
-            return card;
+        public Wallet build() {
+            Wallet wallet = new Wallet();
+            wallet.paymentCode = this.paymentCode;
+            wallet.group = this.group;
+            return wallet;
         }
     }
 }

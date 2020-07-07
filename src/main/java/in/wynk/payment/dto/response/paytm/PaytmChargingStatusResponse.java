@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.response.paytm;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class PaytmChargingStatusResponse extends ChargingStatusResponse {
+public class PaytmChargingStatusResponse {
     @JsonProperty("MID")
     private String mid;
 

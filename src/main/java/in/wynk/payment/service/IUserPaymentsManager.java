@@ -1,8 +1,8 @@
 package in.wynk.payment.service;
 
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.entity.UserPreferredPayment;
-import in.wynk.payment.core.entity.Wallet;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.core.dao.entity.Wallet;
 
 import java.util.List;
 

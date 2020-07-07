@@ -6,14 +6,13 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.entity.Transaction;
-import in.wynk.payment.dao.ITransactionDao;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.service.ITransactionManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Calendar;
-import java.util.UUID;
 
 @Service(BeanConstant.TRANSACTION_MANAGER_SERVICE)
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
@@ -30,8 +29,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction get(UUID id) {
-        return transactionDao.findById(id).orElseThrow(()->new WynkRuntimeException(PaymentErrorType.PAY010, "Invalid txnId - "+id.toString()));
+    public Transaction get(String id) {
+        return transactionDao.findById(id).orElseThrow(()->new WynkRuntimeException(PaymentErrorType.PAY010, "Invalid txnId - "+ id));
     }
 
     public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, String wynkService) {

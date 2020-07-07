@@ -17,11 +17,20 @@
     <artifactId>payments</artifactId>
 
     <dependencies>
+
         <!--PROJECT DEPENDENCIES-->
         <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>revenue-commons</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
@@ -40,12 +49,22 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>lib-queue</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>lib-logging</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-queue</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>lib-http</artifactId>
             <version>${project.version}</version>
         </dependency>
 

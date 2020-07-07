@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/wallet")
+@RequestMapping("/wynk/v1/wallet")
 public class RevenuePaymentWalletHandler {
 
     private final ApplicationContext context;
@@ -40,7 +40,7 @@ public class RevenuePaymentWalletHandler {
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
             walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = walletService.linkRequest(request);
         return baseResponse.getResponse();
@@ -55,7 +55,7 @@ public class RevenuePaymentWalletHandler {
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
             walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = walletService.validateLink(request);
         return baseResponse.getResponse();
@@ -71,7 +71,7 @@ public class RevenuePaymentWalletHandler {
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
             walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = walletService.unlink(request);
         return baseResponse.getResponse();
@@ -86,7 +86,7 @@ public class RevenuePaymentWalletHandler {
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
             walletService = this.context.getBean(paymentCode.getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = walletService.balance();
         return baseResponse.getResponse();
@@ -101,7 +101,7 @@ public class RevenuePaymentWalletHandler {
             AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, request.getPaymentCode().name());
             walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
+            throw new WynkRuntimeException(PaymentErrorType.PAY005);
         }
         BaseResponse<?> baseResponse = walletService.addMoney(request);
         return baseResponse.getResponse();

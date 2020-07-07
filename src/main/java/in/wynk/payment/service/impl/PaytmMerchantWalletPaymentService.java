@@ -7,18 +7,18 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.Status;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.EncryptionUtils;
-import in.wynk.commons.utils.SessionUtils;
+import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.PaymentConstants;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
+import in.wynk.payment.core.dao.entity.PaymentError;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.core.entity.MerchantTransaction;
-import in.wynk.payment.core.entity.PaymentError;
-import in.wynk.payment.core.entity.Transaction;
-import in.wynk.payment.core.entity.UserPreferredPayment;
-import in.wynk.payment.core.entity.Wallet;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
@@ -49,7 +49,6 @@ import in.wynk.payment.service.IUserPaymentsManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.revenue.util.Utils;
 import in.wynk.session.context.SessionContextHolder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -75,7 +74,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.UUID;
 
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
@@ -175,7 +173,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         Double amount = sessionDTO.get(AMOUNT);
         Integer planId = sessionDTO.get(PLAN_ID);
         String wynkService = sessionDTO.get(SERVICE);
-        String deviceId = SessionUtils.getString(sessionDTO, DEVICE_ID); // deviceId fetch from session
+        String deviceId = sessionDTO.get(DEVICE_ID); // deviceId fetch from session
         WalletBalanceResponse walletBalanceResponse = balance().getBody();
         if (!walletBalanceResponse.isFundsSufficient()) {
             throw new WynkRuntimeException(WynkErrorType.UT001);
@@ -193,11 +191,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 String successUrl = String.format(successPage, sessionId, transaction.getId().toString());
                 //TODO: send an event to subscription system.
                 return BaseResponse.redirectResponse(successUrl);
-            } else if(Objects.nonNull(paytmChargingResponse)){
+            } else if (Objects.nonNull(paytmChargingResponse)) {
                 PaymentError error = PaymentError.builder().code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build();
                 transaction.setPaymentError(error);
             }
-        }finally {
+        } finally {
             transactionManager.upsert(transaction);
             //Add reconciliation
             PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
@@ -206,7 +204,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         return BaseResponse.redirectResponse(failurePage);
     }
 
-    private String getAccessToken(String uid){
+    private String getAccessToken(String uid) {
         String accessToken;
         UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
         if (Objects.nonNull(userPreferredPayment)) {
@@ -256,11 +254,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             String errorResponse = e.getResponseBodyAsString();
             builder.response(errorResponse);
             logger.error(PAYTM_ERROR, "Error from paytm : {}", errorResponse, e);
-            throw new WynkRuntimeException(PAYTM_ERROR, e.getResponseBodyAsString(),e);
+            throw new WynkRuntimeException(PAYTM_ERROR, e.getResponseBodyAsString(), e);
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
             logger.error(PAYTM_ERROR, "Error from paytm : {}", ex.getMessage(), ex);
-            throw new WynkRuntimeException(PAYTM_ERROR, ex.getMessage(),ex);
+            throw new WynkRuntimeException(PAYTM_ERROR, ex.getMessage(), ex);
         } finally {
             //update transaction
             transaction.setMerchantTransaction(builder.build());
@@ -299,13 +297,12 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
         if (chargingStatusRequest.getStatusMode().equals(StatusMode.SOURCE)) {
             PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(chargingStatusRequest.getTransactionId());
-            if(paytmResponse!=null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)){
+            if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
                 return new BaseResponse<>(ChargingStatusResponse.success(), HttpStatus.OK, null);
             }
         } else if (chargingStatusRequest.getStatusMode().equals(StatusMode.LOCAL)) {
-            UUID txnId = UUID.fromString(chargingStatusRequest.getTransactionId());
-            Transaction transaction = transactionManager.get(txnId);
-            if(StringUtils.equalsIgnoreCase(transaction.getStatus(), TransactionStatus.SUCCESS.name())){
+            Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
+            if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
                 return new BaseResponse<>(ChargingStatusResponse.success(), HttpStatus.OK, null);
             }
         }
@@ -365,8 +362,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     private void saveToken(PaytmWalletValidateLinkResponse tokenResponse) {
         if (StringUtils.isBlank(tokenResponse.getAccess_token())) {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-            String walletUserId = SessionUtils.getString(sessionDTO, WALLET_USER_ID);
-            String uid = SessionUtils.getString(sessionDTO, UID);
+            String walletUserId = sessionDTO.get(WALLET_USER_ID);
+            String uid = sessionDTO.get(UID);
             Wallet wallet = new Wallet.Builder().paymentCode(PAYTM_WALLET).walletUserId(walletUserId)
                     .accessToken(tokenResponse.getAccess_token()).tokenValidity(tokenResponse.getExpires()).build();
             userPaymentsManager.saveWalletToken(uid, wallet);
@@ -462,7 +459,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     public BaseResponse<Map<String, String>> addMoney(WalletRequest request) {
         PaytmWalletAddMoneyRequest paytmWalletAddMoneyRequest = (PaytmWalletAddMoneyRequest) request;
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        String uid = SessionUtils.getString(sessionDTO, UID);
+        String uid = sessionDTO.get(UID);
         String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; //fetch from session
         if (StringUtils.isBlank(accessToken)) {
             logger.info("Access token is expired or not present for: {}", accessToken);
@@ -544,10 +541,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             return new BaseResponse(paytmWalletLinkResponse, HttpStatus.OK, null);
         } catch (HttpStatusCodeException e) {
             logger.error(PAYTM_ERROR, "Error from paytm: {}", e.getResponseBodyAsString(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - "+ e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - " + e.getResponseBodyAsString());
         } catch (Exception e) {
             logger.error(PAYTM_ERROR, "Error from paytm: {}", e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - "+ e.getMessage());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - " + e.getMessage());
         }
     }
 }

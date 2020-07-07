@@ -1,7 +1,3 @@
-payment:
-  encryption:
-    key: BSB$PORTAL@2014#
-
 ######  Properties #########
 paytm:
   native:
@@ -27,19 +23,19 @@ redirect:
 
 ###### Redis Store Props #######
 session:
-    redis:
-      name: session-store:local
-      mode: standalone
-      standalone:
-        host: 10.80.0.22
-        port: 6379
-        usePooling: false
-        enableJmx: false
-      connection:
-        timeout: 1000
-        maxTotal: 200
-        minIdle: 50
-        maxIdle: 100
+  redis:
+    name: session-store:local
+    mode: standalone
+    standalone:
+      host: 10.80.1.111
+      port: 6379
+      usePooling: false
+      enableJmx: false
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 ######### MongoDB properties
 app:
@@ -57,6 +53,7 @@ spring:
     url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
     username: admin
     password: o7QZ?!n=eu
+    ###### database connection pooling props ######
     hikari:
       jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
       username: admin
@@ -90,7 +87,117 @@ spring:
       hibernate.generate_statistics: true
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
+      hibernate.enable_lazy_load_no_trans: true
+      hibernate.types.print.banner: false
 
 #### logging props ####
 logging:
   path: /tmp
+
+####### payment props #######
+payment:
+  encKey: BSB$PORTAL@2014#
+  recurring:
+    offset:
+      day: 0
+      hour: 1
+  ###### lib-queue props ######
+  pooling:
+    queue:
+      reconciliation:
+        enabled: true
+        name: wcf-staging-payment-reconciliation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      renewal:
+        enabled: false
+        name: wcf-staging-payment-renewal
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      charging:
+        enabled: false
+        name: wcf-staging-payment-charging.fifo
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      subscription:
+        enabled: false
+        name: wcf-staging-subscription
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+  ###### webview status props #######
+  status:
+    web:
+      url: http://localhost:4200/status
+  merchant:
+    ####### payu props #########
+    payu:
+      key: aU2Uoi
+      salt: 6vbnfVtw
+      api:
+        info: https://info.payu.in/merchant/postservice.php?form=2
+      internal:
+        web:
+          url: https://wcfpay-new.wynk.in/wcf/payu
+        callback:
+          successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+          failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+
+####### Http Client Props #######
+http:
+  enableTemplateRegistration: true
+  templates:
+    subscriptionHttpTemplate:
+      pool:
+        connection:
+          max: 5000
+          maxPerHost: 500
+          validateAfterInActivity: 100
+          timeout: 4000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          socket:
+            timeout: 6000
+            factory:
+              type: both
+          request:
+            timeout: 1000
+
+
+###### Service Endpoints  ######
+
+service:
+  subscription:
+    api:
+      root: http://localhost:${server.port}

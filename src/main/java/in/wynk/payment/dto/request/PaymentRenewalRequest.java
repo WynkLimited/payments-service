@@ -1,16 +1,24 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.entity.Transaction;
+import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
-@Getter
-@RequiredArgsConstructor
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class PaymentRenewalRequest {
 
     private Transaction previousTransaction;
+    private String paidPartnerProductId;
+    private String subsId;
+    private String cardToken;
+    private String cardNumber;
+    private String uid;
+    private String amount;
+    private String transactionId;
+    private String id;
 }

@@ -10,7 +10,7 @@ debug: false
 server:
   port: 8081
 
-  ########## Management Config ##########
+########## Management Config ##########
 management:
   endpoints:
     web:
@@ -33,4 +33,23 @@ management:
 logging:
   path: /data
 
+##### resilience props for lib-queue ######
+resilience:
+  retryProperties:
+    maxAttempts: 3
+    waitDuration: 10000
+
+###### aws sdk props #######
+amazon:
+  sdk:
+    regions: ap-south-1
+
+
+###### Subscription Service End Point #######
+
+service:
+  subscription:
+    api:
+      endpoint:
+        allPlans: /wynk/v1/plans
 

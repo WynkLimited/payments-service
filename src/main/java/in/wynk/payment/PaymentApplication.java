@@ -11,8 +11,6 @@ import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication(scanBasePackages = "in.wynk", exclude = {RedisAutoConfiguration.class, RedisRepositoriesAutoConfiguration.class})
 public class PaymentApplication implements ApplicationRunner {
-
-
     public static void main(String[] args) {
         SpringApplication.run(PaymentApplication.class, args);
     }
@@ -25,5 +23,11 @@ public class PaymentApplication implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         System.out.println("PaymentApplication Starting");
+    }
+
+    //TODO: to be removed.
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

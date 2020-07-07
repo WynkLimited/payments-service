@@ -1,16 +1,24 @@
 package in.wynk.payment.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import in.wynk.payment.dto.request.Apb.ApbPaymentRenewalRequest;
+import in.wynk.payment.core.dao.entity.Transaction;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        property = "type"
-)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = ApbPaymentRenewalRequest.class, name = "ApbPaymentRenewal")
-})
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class PaymentRenewalRequest {
 
+    private Transaction previousTransaction;
+    private String paidPartnerProductId;
+    private String subsId;
+    private String cardToken;
+    private String cardNumber;
+    private String uid;
+    private String amount;
+    private String transactionId;
+    private String id;
 }

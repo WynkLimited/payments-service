@@ -31,6 +31,7 @@ import in.wynk.payment.dto.phonepe.PhonePeTransactionResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -63,6 +64,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private final ISQSMessagePublisher sqsMessagePublisher;
     private final ITransactionManagerService transactionManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
     @Value("${payment.merchant.phonepe.id}")
@@ -84,38 +86,36 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     @Value("${payment.pooling.queue.subscription.sqs.producer.delayInSecond}")
     private int subscriptionMessageDelay;
 
+
     private final String debitCall = "/v3/debit";
 
 
     private Logger logger = LoggerFactory.getLogger(PhonePeMerchantPaymentService.class.getCanonicalName());
 
     public PhonePeMerchantPaymentService(RestTemplate restTemplate,
-                                      ITransactionManagerService transactionManager,
-                                      IRecurringPaymentManagerService recurringPaymentManagerService,
-                                      @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher) {
+                                         ITransactionManagerService transactionManager,
+                                         IRecurringPaymentManagerService recurringPaymentManagerService,
+                                         @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher, ISubscriptionServiceManager subscriptionServiceManager) {
         this.restTemplate = restTemplate;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.subscriptionServiceManager = subscriptionServiceManager;
     }
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        try {
-            URI returnUrl = processCallback(callbackRequest);
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());
-            httpHeaders.add(HttpHeaders.CACHE_CONTROL, CacheControl.maxAge(Duration.ZERO).mustRevalidate().getHeaderValue());
-            httpHeaders.add(HttpHeaders.PRAGMA, CacheControl.noCache().getHeaderValue());
-            httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
-            return BaseResponse.<Void>builder()
-                    .status(HttpStatus.FOUND)
-                    .headers(httpHeaders)
-                    .build();
-        }
-        catch(Exception e){
-            throw new WynkRuntimeException(e);
-        }
+        URI returnUrl = processCallback(callbackRequest);
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());
+        httpHeaders.add(HttpHeaders.CACHE_CONTROL, CacheControl.maxAge(Duration.ZERO).mustRevalidate().getHeaderValue());
+        httpHeaders.add(HttpHeaders.PRAGMA, CacheControl.noCache().getHeaderValue());
+        httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
+        return BaseResponse.<Void>builder()
+                .status(HttpStatus.FOUND)
+                .headers(httpHeaders)
+                .build();
+
     }
 
     @Override
@@ -193,61 +193,75 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 .build();
     }
 
-    private ChargingStatus fetchChargingStatusFromPhonePeSource(ChargingStatusRequest chargingStatusRequest) {
-        TransactionStatus finalTransactionStatus;
-        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
-        if (transaction.getStatus() != TransactionStatus.SUCCESS) { // why this check???
-            PhonePeTransactionResponse phonePeTransactionStatusResponse = getTransactionStatus(chargingStatusRequest.getTransactionId());
-            //TransactionDetails transactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(chargingStatusRequest.getTransactionId());
+    private void fetchAndUpdateTransactionFromSource(Transaction transaction){
 
-            if (phonePeTransactionStatusResponse.getSuccess()){
-                PhonePeTransactionStatus statusCode = phonePeTransactionStatusResponse.getCode();
-                if (statusCode == PhonePeTransactionStatus.PAYMENT_SUCCESS) {
-                    transaction.setExitTime(Calendar.getInstance());
-                    finalTransactionStatus = TransactionStatus.SUCCESS;
+        TransactionStatus finalTransactionStatus;
+        PhonePeTransactionResponse phonePeTransactionStatusResponse = getTransactionStatus(transaction.getId().toString());
+        if (phonePeTransactionStatusResponse.getSuccess()){
+            PhonePeTransactionStatus statusCode = phonePeTransactionStatusResponse.getCode();
+            if (statusCode == PhonePeTransactionStatus.PAYMENT_SUCCESS) {
+                transaction.setExitTime(Calendar.getInstance());
+                finalTransactionStatus = TransactionStatus.SUCCESS;
 //                    if (transactionDetails.getPayUUdf1().equalsIgnoreCase(PAYU_SI_KEY)) {
 //                        Calendar nextRecurringDateTime = Calendar.getInstance();
 //                        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, chargingStatusRequest.getPackPeriod().getValidity());
 //                        recurringPaymentManagerService.addRecurringPayment(transaction.getId().toString(), nextRecurringDateTime);
 //                    }
-                } else if (chargingStatusRequest.getChargingTimestamp().getTime() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                       statusCode == PhonePeTransactionStatus.PAYMENT_PENDING) {
-                    finalTransactionStatus = TransactionStatus.INPROGRESS;
-                } else if (chargingStatusRequest.getChargingTimestamp().getTime() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                        statusCode == PhonePeTransactionStatus.PAYMENT_PENDING) {
-                    transaction.setExitTime(Calendar.getInstance());
-                    finalTransactionStatus = TransactionStatus.FAILURE;
-                } else{
-                    finalTransactionStatus = TransactionStatus.FAILURE;
-                }
-            } else {
-                transaction.setExitTime(Calendar.getInstance());
+            } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
+                    statusCode == PhonePeTransactionStatus.PAYMENT_PENDING) {
+                finalTransactionStatus = TransactionStatus.INPROGRESS;
+            } else{
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
+        } else {
+            transaction.setExitTime(Calendar.getInstance());
+            finalTransactionStatus = TransactionStatus.FAILURE;
+        }
 
 //            transaction.setMerchantTransaction(MerchantTransaction.builder()
 //                    .externalTransactionId(phonePeTransactionStatusResponse.getData().providerReferenceId)
 //                    .request(payUChargingVerificationRequest)
 //                    .response(payUChargingVerificationResponse)
 //                    .build());
-            if (finalTransactionStatus == TransactionStatus.FAILURE) {
-                    transaction.setPaymentError(PaymentError.builder()
-                            .code(phonePeTransactionStatusResponse.getCode().name())
-                            .description(phonePeTransactionStatusResponse.getMessage())
-                            .build());
-            }
-            transaction.setStatus(finalTransactionStatus.name());
-            transactionManager.upsert(transaction);
-        } else {
-            finalTransactionStatus = TransactionStatus.FAILUREALREADYSUBSCRIBED;
-            logger.info(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is already processed successfully for transactionId {}", chargingStatusRequest.getTransactionId());
+        if (finalTransactionStatus == TransactionStatus.FAILURE) {
+            transaction.setPaymentError(PaymentError.builder()
+                    .code(phonePeTransactionStatusResponse.getCode().name())
+                    .description(phonePeTransactionStatusResponse.getMessage())
+                    .build());
         }
+        transaction.setStatus(finalTransactionStatus.name());
+    }
+
+    private ChargingStatus fetchChargingStatusFromPhonePeSource(ChargingStatusRequest chargingStatusRequest) {
+        TransactionStatus existingTransactionStatus;
+        TransactionStatus finalTransactionStatus;
+
+        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
+
+        existingTransactionStatus = transaction.getStatus();
+        fetchAndUpdateTransactionFromSource(transaction);
+        finalTransactionStatus = transaction.getStatus();
+
+        if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
+            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
+                    chargingStatusRequest.getUid(),
+                    chargingStatusRequest.getTransactionId(),
+                    finalTransactionStatus,
+                    chargingStatusRequest.getTransactionEvent());
+        } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
+                    chargingStatusRequest.getUid(),
+                    chargingStatusRequest.getTransactionId(),
+                    finalTransactionStatus,
+                    TransactionEvent.UNSUBSCRIBE);
+        }
+        transactionManager.upsert(transaction);
 
         if (finalTransactionStatus == TransactionStatus.INPROGRESS) {
             logger.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for transactionId {}", chargingStatusRequest.getTransactionId());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
-        } else if (finalTransactionStatus == TransactionStatus.FAILURE) {
-            logger.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Failure Transaction status from Phonepe end for transactionId {}", chargingStatusRequest.getTransactionId());
+        } else if (finalTransactionStatus == TransactionStatus.UNKNOWN) {
+            logger.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status from phonePe end for transactionId {}", chargingStatusRequest.getTransactionId());
             throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
 
@@ -265,79 +279,54 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private URI processCallback(CallbackRequest callbackRequest) {
+        final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
+        final Transaction transaction = transactionManager.get(transactionId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
+
         try {
             Map<String , String> requestPayload = (Map<String, String>) callbackRequest.getBody();
             String uid = getValueFromSession(SessionKeys.UID);
-            String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
             PlanDTO selectedPlan = getSelectedPlan(getValueFromSession(SessionKeys.SELECTED_PLAN_ID));
-            Boolean validChecksum = validateChecksum(requestPayload);
+
             PhonePeTransactionResponse phonePeTransactionResponse = new PhonePeTransactionResponse(requestPayload);
-            TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
+
             String errorCode = phonePeTransactionResponse.getCode().name();
             String errorMessage = phonePeTransactionResponse.getMessage();
-            URIBuilder returnUrl = new URIBuilder(phonePeCallBackURL);
+
+            Boolean validChecksum = validateChecksum(requestPayload);
             if (validChecksum && phonePeTransactionResponse.getCode() != null) {
-                if (PhonePeTransactionStatus.PAYMENT_SUCCESS.equals(phonePeTransactionResponse.getCode())) {
-                    addParamToUri(SUCCESS, SUCCESS, returnUrl);
-                    finalTransactionStatus = TransactionStatus.SUCCESS;
-                } else if (PhonePeTransactionStatus.PAYMENT_PENDING.equals(phonePeTransactionResponse.getCode())) {
-                    addParamToUri(INPROGRESS, INPROGRESS, returnUrl);
-                    finalTransactionStatus = TransactionStatus.INPROGRESS;
-                } else {
-                    addParamToUri(FAILURE, FAILURE, returnUrl);
-                    finalTransactionStatus = TransactionStatus.FAILURE;
-                }
-            } else {
-                addParamToUri(FAILURE, FAILURE, returnUrl);
-                finalTransactionStatus = TransactionStatus.FAILURE;
-            }
-            returnUrl.addParameter(TRANSACTION_ID, transactionId);
-            returnUrl.addParameter(SESSION_ID, SessionContextHolder.get().getId().toString());
+                fetchAndUpdateTransactionFromSource(transaction);
 
-            Transaction transaction = transactionManager.get(transactionId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
-
-            if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                transaction.setMerchantTransaction(MerchantTransaction.builder()
-                        .externalTransactionId(phonePeTransactionResponse.getData().providerReferenceId)
-                        .request(phonePeTransactionResponse)
-                        .response(returnUrl.build())
-                        .build());
-                transaction.setStatus(finalTransactionStatus.name());
-
-                if (finalTransactionStatus == TransactionStatus.SUCCESS) {
+                if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     transaction.setExitTime(Calendar.getInstance());
-                    publishSQSMessage(subscriptionQueue,
-                            subscriptionMessageDelay,
-                            SubscriptionNotificationMessage.builder()
-                                    .planId(selectedPlan.getId())
-                                    .transactionId(transactionId)
-                                    .transactionEvent(transaction.getType())
-                                    .transactionStatus(transaction.getStatus())
-                                    .build());
+                    subscriptionServiceManager.publish(selectedPlan.getId(), uid, transactionId, transaction.getStatus(), transaction.getType());
                     if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                         recurringPaymentManagerService.addRecurringPayment(transactionId, nextRecurringDateTime);
                     }
-                } else {
-                    transaction.setPaymentError(PaymentError.builder()
-                            .code(errorCode)
-                            .description(errorMessage)
-                            .build());
                 }
-                transactionManager.upsert(transaction);
             }
+            else {
+                logger.error(PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE,
+                        "Invalid checksum found with Wynk transactionId: {}, PhonePe transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
+                        transactionId,
+                        phonePeTransactionResponse.getData().getProviderReferenceId(),
+                        errorCode,
+                        errorMessage,
+                        uid);
+            }
+
+            URIBuilder returnUrl = new URIBuilder(phonePeCallBackURL);
+            returnUrl.addParameter(TRANSACTION_ID, transactionId);
+            returnUrl.addParameter(SESSION_ID, SessionContextHolder.get().getId().toString());
             return returnUrl.build();
         }
         catch(Throwable th) {
             throw new WynkRuntimeException(th);
         }
-    }
-
-    private void addParamToUri(String status, String message, URIBuilder uri){
-        uri.addParameter(STATUS, status);
-        uri.addParameter(BSYS, status);
-        uri.addParameter(MESSAGE, message);
+        finally {
+            transactionManager.upsert(transaction);
+        }
     }
 
     private HttpEntity<String> getRequestEntity(PhonePePaymentRequest phonePePaymentRequest){

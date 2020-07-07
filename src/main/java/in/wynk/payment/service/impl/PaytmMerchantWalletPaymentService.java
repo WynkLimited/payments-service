@@ -243,10 +243,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             parameters.put("CheckSum", checkSum);
             logger.info("Generated checksum: {} for payload: {}", checkSum, parameters);
             RequestEntity<Map<String, String>> requestEntity = new RequestEntity<>(parameters, HttpMethod.POST, uri);
-            builder.request(requestEntity.toString());
+            builder.request(requestEntity);
             logger.info("Paytm wallet charging request: {}", requestEntity);
             ResponseEntity<PaytmChargingResponse> responseEntity = restTemplate.exchange(requestEntity, PaytmChargingResponse.class);
-            builder.response(responseEntity.toString());
+            builder.response(responseEntity);
             logger.info("Paytm wallet charging response: {}", responseEntity);
             return responseEntity.getBody();
         } catch (HttpStatusCodeException e) {

@@ -595,24 +595,21 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
-        boolean success = false;
         VerificationType verificationType = verificationRequest.getVerificationType();
         switch (verificationType){
             case VPA:
                 MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
                 PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
                 if(verificationResponse.getIsVPAValid() == 1)
-                    success = true;
-                break;
+                    verificationResponse.setValid(true);
+                return BaseResponse.<String>builder().body(JsonUtils.GSON.toJson(verificationResponse)).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
                 PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
                 if(payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
-                    success = true;
-                break;
+                    payUCardInfo.setValid(true);
+                return BaseResponse.<String>builder().body(JsonUtils.GSON.toJson(payUCardInfo)).status(HttpStatus.OK).build();
         }
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("success", success);
-        return BaseResponse.<String>builder().body(JsonUtils.GSON.toJson(response)).status(HttpStatus.OK).build();
+       return null;
     }
 }

@@ -8,7 +8,12 @@ import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PayUCommand;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -33,7 +38,11 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.revenue.commons.*;
+import in.wynk.revenue.commons.EncryptionUtils;
+import in.wynk.revenue.commons.PaymentRequestType;
+import in.wynk.revenue.commons.PlanType;
+import in.wynk.revenue.commons.TransactionEvent;
+import in.wynk.revenue.commons.TransactionStatus;
 import in.wynk.revenue.utils.JsonUtils;
 import in.wynk.revenue.utils.Utils;
 import in.wynk.session.context.SessionContextHolder;
@@ -58,7 +67,12 @@ import org.springframework.web.client.RestTemplate;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.*;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -260,7 +274,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 finalTransactionStatus = TransactionStatus.SUCCESS;
                 if (payUTransactionDetails.getPayUUdf1().equalsIgnoreCase(PAYU_SI_KEY)) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
-                    PlanDTO plan = subscriptionServiceManager.getPlan(transaction.getProductId());
+                    PlanDTO plan = subscriptionServiceManager.getPlan(transaction.getPlanId());
                     nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, plan.getPeriod().getValidity());
                     recurringPaymentManagerService.addRecurringPayment(transaction.getId().toString(), nextRecurringDateTime);
                 }
@@ -376,7 +390,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private Transaction initialiseTransaction(ChargingRequest chargingRequest, double amount) {
         return transactionManager.upsert(Transaction.builder()
-                .productId(chargingRequest.getPlanId())
+                .planId(chargingRequest.getPlanId())
                 .amount(amount)
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
@@ -494,7 +508,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         try {
             final String uid = transaction.getUid();
 
-            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(transaction.getProductId());
+            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = JsonUtils.GSON.fromJson(JsonUtils.GSON.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
             final String errorCode = payUCallbackRequestPayload.getError();

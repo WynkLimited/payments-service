@@ -1,7 +1,7 @@
 package in.wynk.payment.controller;
 
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.payment.dto.PaymentOptionsDTO;
+import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;

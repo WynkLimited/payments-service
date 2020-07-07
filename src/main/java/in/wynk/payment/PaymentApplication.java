@@ -22,9 +22,5 @@ public class PaymentApplication implements ApplicationRunner {
         System.out.println("PaymentApplication Starting");
     }
 
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
 
 }

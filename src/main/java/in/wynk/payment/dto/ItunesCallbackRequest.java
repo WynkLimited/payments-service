@@ -1,7 +1,8 @@
-package in.wynk.payment.dto.itunes;
+package in.wynk.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import in.wynk.payment.core.dto.itunes.LatestReceiptInfo;
 import lombok.Data;
 
 @Data

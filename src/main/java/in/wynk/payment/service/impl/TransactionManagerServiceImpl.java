@@ -1,13 +1,13 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.dto.Transaction;
-import in.wynk.payment.dao.ITransactionDao;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.service.ITransactionManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import java.util.Optional;
 
 @Service(BeanConstant.TRANSACTION_MANAGER_SERVICE)
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
@@ -24,8 +24,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction get(UUID id) {
-        return transactionDao.getOne(id);
+    public Optional<Transaction> get(String id) {
+        return transactionDao.findById(id);
     }
 
 }

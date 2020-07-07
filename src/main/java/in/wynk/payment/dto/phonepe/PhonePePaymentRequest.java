@@ -1,13 +1,12 @@
 package in.wynk.payment.dto.phonepe;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.dto.request.ChargingRequest;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
-@Setter
+@Builder
 public class PhonePePaymentRequest {
 
         private String merchantId;
@@ -21,9 +20,4 @@ public class PhonePePaymentRequest {
         private String email;
         private String shortName;
 
-        public PhonePePaymentRequest(ChargingRequest chargingRequest){
-                this.transactionId = chargingRequest.getTransactionId();
-                this.amount = chargingRequest.getAmount() * 100; // PhonePe needs amount in paisa
-                this.merchantUserId = chargingRequest.getUid();
-        }
 }

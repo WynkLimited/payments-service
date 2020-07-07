@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -38,6 +40,12 @@ public class BaseResponse<R> {
     @SneakyThrows
     public static BaseResponse<Void> redirectResponse(String location) {
         return redirectResponse(location, Collections.emptyList());
+    }
+
+    public static BaseResponse<Object> status(boolean success){
+        Map<String, Boolean> status =  new HashMap<>();
+        status.put("success", success);
+        return BaseResponse.builder().body(status).status(HttpStatus.OK).build();
     }
 
 }

@@ -13,4 +13,6 @@ public interface IUserPaymentsManager {
     List<UserPreferredPayment> getAllPaymentDetails(String uid);
 
     UserPreferredPayment saveWalletToken(String uid, Wallet wallet);
+
+    void deletePaymentDetails(String uid, PaymentCode paymentCode);
 }

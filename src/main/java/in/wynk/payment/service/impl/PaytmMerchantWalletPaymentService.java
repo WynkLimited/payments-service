@@ -372,9 +372,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public <R> BaseResponse<R> unlink(WalletRequest request) {
-        // remove entry from DB
-        return null;
+    public BaseResponse<Object> unlink(WalletRequest request) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        String uid = sessionDTO.get(UID);
+        userPaymentsManager.deletePaymentDetails(uid, PAYTM_WALLET);
+        return BaseResponse.status(true);
     }
 
     @Override

@@ -1,8 +1,8 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

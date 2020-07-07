@@ -29,8 +29,8 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import org.apache.commons.lang.StringUtils;
@@ -216,14 +216,14 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     private Transaction initialiseTransaction(int planId, float amount, String uid) {
         return transactionManager.upsert(Transaction.builder()
-                .productId(planId)
+                .planId(planId)
                 .amount(amount)
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
                 .uid(uid)
                 //.service(getValueFromSession(SessionKeys.SERVICE))
                 //.msisdn(getValueFromSession(SessionKeys.MSISDN))
-                .paymentChannel(PaymentCode.ITUNES)
+                .paymentChannel(PaymentCode.ITUNES.name())
                 .status(TransactionStatus.INPROGRESS.name())
                 .type(TransactionEvent.PURCHASE.name())
                 .build());

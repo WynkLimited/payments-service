@@ -1,17 +1,13 @@
 package in.wynk.payment.dto.request;
 
 import in.wynk.payment.core.constant.PaymentCode;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+
+@Getter
 public class ChargingRequest {
 
     private int planId;
     private PaymentCode paymentCode;
+    private String couponId;
 }

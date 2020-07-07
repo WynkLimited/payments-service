@@ -9,7 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +31,7 @@ public class SessionController {
 
     @PostMapping("/create")
     public ResponseEntity<?> create(@RequestBody List<PlanDTO> eligiblePlans) {
-        SessionDTO sessionDTO = new SessionDTO();
+        SessionDTO sessionDTO = SessionDTO.builder().build();
         sessionDTO.setPayload(new HashMap<>());
         sessionDTO.getPayload().put(SessionKeys.ELIGIBLE_PLANS, eligiblePlans);
         return new ResponseEntity<>(sessionManager.init(sessionDTO, 5, TimeUnit.DAYS), HttpStatus.OK);

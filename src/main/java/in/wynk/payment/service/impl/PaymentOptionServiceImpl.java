@@ -2,7 +2,6 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PaymentGroup;
-import in.wynk.commons.utils.SessionUtils;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
@@ -31,7 +30,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
     @Override
     public PaymentOptionsDTO getPaymentOptions(SessionDTO sessionDTO, String planId) {
-        String uid = SessionUtils.getString(sessionDTO, UID);
+        String uid = sessionDTO.get(UID);
         Map<PaymentGroup, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<UserPreferredPayment> preferredPayments = userPreferredPaymentsDao.findByUid(uid);
         return paymentMethods(availableMethods, preferredPayments);

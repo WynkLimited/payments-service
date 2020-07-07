@@ -1,10 +1,16 @@
 spring:
-    profiles:
-      active: ${env:local}
-    main:
-      banner-mode: off
-    devtools:
-      add-properties: false
+  profiles:
+    active: ${env:local}
+  main:
+    banner-mode: off
+  devtools:
+    add-properties: false
+###### SPRING AUTO-CONFIG EXCLUSION
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  jackson:
+    default-property-inclusion: NON_NULL
+
 
 debug: false
 server:
@@ -33,15 +39,6 @@ management:
 logging:
   path: /data
 
-###### payment props ######
-payment:
-  merchant:
-    encKey: BSB$PORTAL@2014#
-####### payu props #########
-    payu:
-      key: aU2Uoi
-      salt: 6vbnfVtw
-
 ##### resilience props for lib-queue ######
 resilience:
   retryProperties:
@@ -52,3 +49,17 @@ resilience:
 amazon:
   sdk:
     regions: ap-south-1
+
+
+###### Subscription Service End Point #######
+
+service:
+  subscription:
+    api:
+      endpoint:
+        allPlans: /wynk/v1/plans
+
+cors:
+  maxAge: 3600
+  allowed:
+    methods: GET, PUT, PATCH, POST, OPTIONS

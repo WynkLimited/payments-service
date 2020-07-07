@@ -19,6 +19,7 @@ import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.utils.BeanLocatorFactory;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.session.dto.Session;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -97,17 +98,12 @@ public class RevenuePaymentHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleCallbackForAPB(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
-        IMerchantPaymentCallbackService callbackService;
         Session<Map<String, Object>> session = SessionContextHolder.get();
         CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
-        try {
-            PaymentCode option = ((PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
-            AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, option.name());
-            AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
-            callbackService = this.context.getBean(option.getCode(), IMerchantPaymentCallbackService.class);
-        } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY001);
-        }
+        PaymentCode option = ((PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
+        AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, option.name());
+        AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
+        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(option.getCode(), IMerchantPaymentCallbackService.class);
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();
     }

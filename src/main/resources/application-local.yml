@@ -15,12 +15,6 @@ paytm:
   requesting:
     website: WCF
 
-redirect:
-  success:
-    page: https://www.google.com/
-  failure:
-    page: https://www.yahoo.com
-
 ###### Redis Store Props #######
 session:
   redis:
@@ -111,6 +105,10 @@ logging:
 ####### payment props #######
 payment:
   encKey: BSB$PORTAL@2014#
+  success:
+    page: https://www.google.com/
+  failure:
+    page: https://www.yahoo.com
   recurring:
     offset:
       day: 0

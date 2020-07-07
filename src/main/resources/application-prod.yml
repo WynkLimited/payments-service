@@ -107,6 +107,11 @@ spring:
 
 ####### payment props #######
 payment:
+  success:
+    page: https://www.google.com/
+  failure:
+    page: https://www.yahoo.com
+  encKey: BSB$PORTAL@2014#
   recurring:
     offset:
       day: 0

@@ -14,11 +14,6 @@ public class PaymentApplication implements ApplicationRunner {
         SpringApplication.run(PaymentApplication.class, args);
     }
 
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-
     @Override
     public void run(ApplicationArguments args) {
         System.out.println("PaymentApplication Starting");

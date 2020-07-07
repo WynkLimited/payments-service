@@ -40,7 +40,7 @@ import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
-import in.wynk.payment.enums.paytm.StatusMode;
+import in.wynk.payment.enums.StatusMode;
 import in.wynk.payment.errors.ErrorCodes;
 import in.wynk.payment.service.IRenewalMerchantWalletService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -115,10 +115,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     @Value("${paytm.requesting.website}")
     private String paytmRequestingWebsite;
 
-    @Value("${redirect.success.page}")
+    @Value("${payment.success.page}")
     private String successPage;
 
-    @Value("${redirect.failure.page}")
+    @Value("${payment.failure.page}")
     private String failurePage;
 
     @Value("{payment.encryption.key}")
@@ -296,12 +296,12 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
-        if (chargingStatusRequest.getStatusMode().equals(StatusMode.SOURCE)) {
+        if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
             PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(chargingStatusRequest.getTransactionId());
             if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
                 return new BaseResponse<>(ChargingStatusResponse.success(), HttpStatus.OK, null);
             }
-        } else if (chargingStatusRequest.getStatusMode().equals(StatusMode.LOCAL)) {
+        } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
             Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
                 return new BaseResponse<>(ChargingStatusResponse.success(), HttpStatus.OK, null);

@@ -1,4 +1,4 @@
-package in.wynk.payment.enums.paytm;
+package in.wynk.payment.enums;
 
 public enum StatusMode {
     SOURCE, LOCAL

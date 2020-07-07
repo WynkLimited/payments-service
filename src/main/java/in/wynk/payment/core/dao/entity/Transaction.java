@@ -21,7 +21,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "transaction_stage")
+@Table(name = "transaction")
 public class Transaction {
 
     @Id

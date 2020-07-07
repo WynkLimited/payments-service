@@ -14,4 +14,5 @@ public class ChargingRequest {
 
     private int planId;
     private PaymentCode paymentCode;
+    private String couponId;
 }

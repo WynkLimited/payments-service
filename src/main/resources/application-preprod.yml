@@ -1,3 +1,22 @@
+###### Properties ##############
+
+paytm:
+  native:
+    clientId: merchant-wynk-staging
+    merchantKey: 6UePBAcq7LTfdGJI
+    merchantId: WYNKLI36809118294255
+    secret: 653fe766-5864-4e16-a288-68ebcccffbd0
+    accounts:
+      baseUrl: https://accounts-uat.paytm.com
+    services:
+      baseUrl: https://securegw-stage.paytm.in
+    wcf:
+      addMoneyUrl: https://wcfpay-dev.wynk.in/paytm-native/add-money
+      callbackUrl: http://capi-wcf-stage.wynk.in/wynk/v2/s2s/subscription/callback?sid=
+  requesting:
+    website: WYNKLIMITEDWAP
+
+
 ###### Redis Store Props #######
 session:
   redis:
@@ -25,6 +44,21 @@ app:
         username: # None
         password: # None
         database: payments
+
+
+apb:
+  txn:
+    inquiry:
+      url: https://apptest.airtelbank.com/ecom/v2/inquiry
+  callback:
+    url: http://capi.wcf.internal/wynk/wynk/v1/paymentcallback/apb
+  merchant:
+    id: 180704
+  salt: d41d8cd98f00a
+  init:
+    payment:
+      url: https://apptest.airtelbank.com/ecom/v2/initiatePayment
+
 
 ##### mysql database props #####
 spring:
@@ -70,6 +104,11 @@ spring:
 
 ####### payment props #######
 payment:
+  success:
+    page: https://www.google.com/
+  failure:
+    page: https://www.yahoo.com
+  encKey: BSB$PORTAL@2014#
   recurring:
     offset:
       day: 0
@@ -176,3 +215,8 @@ http:
               type: both
           request:
             timeout: 1000
+
+cors:
+  allowed:
+    origins: "*"
+

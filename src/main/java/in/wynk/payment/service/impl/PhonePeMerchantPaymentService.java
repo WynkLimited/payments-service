@@ -452,7 +452,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     private Transaction initialiseTransaction(ChargingRequest chargingRequest, float amount) {
         return transactionManager.upsert(Transaction.builder()
-                .productId(chargingRequest.getPlanId())
+                .planId(chargingRequest.getPlanId())
                 .amount(amount)
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())

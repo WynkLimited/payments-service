@@ -2,6 +2,8 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SubscriptionNotificationMessage;
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -9,8 +11,6 @@ import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;

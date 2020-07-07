@@ -202,3 +202,7 @@ http:
               type: both
           request:
             timeout: 1000
+
+cors:
+  allowed:
+    origins: "*"

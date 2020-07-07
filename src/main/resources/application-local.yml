@@ -214,3 +214,7 @@ service:
   subscription:
     api:
       root: http://localhost:${server.port}
+
+cors:
+  allowed:
+    origins: "*"

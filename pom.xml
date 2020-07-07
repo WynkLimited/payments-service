@@ -9,6 +9,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <paytm.version>1.1</paytm.version>
+        <paytm.pg.version>1.0</paytm.pg.version>
+    </properties>
 
     <artifactId>payments</artifactId>
 
@@ -55,6 +59,11 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>lib-queue</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>lib-http</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -63,6 +72,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.paytm</groupId>
+            <artifactId>paytm-checksum</artifactId>
+            <version>${paytm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.paytm.pg</groupId>
+            <artifactId>pg-checksum</artifactId>
+            <version>${paytm.pg.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

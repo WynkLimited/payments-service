@@ -1,5 +1,6 @@
-package in.wynk.payment.core.entity;
+package in.wynk.payment.core.dao.entity;
 
+import in.wynk.commons.enums.TransactionEvent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,7 +17,6 @@ import javax.persistence.TemporalType;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.UUID;
 
 @Entity
 @Getter
@@ -29,7 +29,7 @@ public class PaymentRenewal implements Serializable {
 
     @Id
     @Column(name = "transaction_id")
-    private UUID transaction;
+    private String transactionId;
 
     @Column(name = "renewal_day", nullable = false)
     @Temporal(TemporalType.DATE)
@@ -38,5 +38,12 @@ public class PaymentRenewal implements Serializable {
     @Column(name = "renewal_hour", nullable = false)
     @Temporal(TemporalType.TIME)
     private Date hour;
+
+    @Column(name = "merchant_transaction_event")
+    private String transactionEvent;
+
+    public TransactionEvent getTransactionEvent() {
+        return TransactionEvent.valueOf(transactionEvent);
+    }
 
 }

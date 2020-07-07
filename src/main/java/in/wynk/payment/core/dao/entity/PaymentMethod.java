@@ -1,4 +1,4 @@
-package in.wynk.payment.core.entity;
+package in.wynk.payment.core.dao.entity;
 
 import in.wynk.commons.entity.MongoBaseEntity;
 import in.wynk.commons.enums.PaymentGroup;

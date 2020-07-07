@@ -18,8 +18,9 @@ paytm:
 redirect:
   success:
     page: https://www.google.com/
+  failure:
+    page: https://www.yahoo.com
 
-  paytm.native.status.baseUrl=https://securegw-stage.paytm.in/merchant-status
 
 ###### Redis Store Props #######
 session:
@@ -78,7 +79,7 @@ spring:
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false
-      connectionTimeout: 2000
+      connectionTimeout: 5000
       idleTimeout: 10000
       maxLifetime: 30000
       poolName: payment-datasource-pool-dev
@@ -107,6 +108,7 @@ spring:
 
 ####### payment props #######
 payment:
+  encKey: BSB$PORTAL@2014#
   recurring:
     offset:
       day: 0
@@ -173,6 +175,8 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+      key: aU2Uoi
+      salt: 6vbnfVtw
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
       internal:
@@ -202,3 +206,9 @@ http:
               type: both
           request:
             timeout: 1000
+service:
+  subscription:
+    api:
+      root: http://subscription-statging.wynk.in
+logging:
+  path: /tmp

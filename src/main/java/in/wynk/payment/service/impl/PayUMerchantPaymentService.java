@@ -29,14 +29,22 @@ import in.wynk.payment.dto.payu.CardDetails;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IMerchantVerificationService;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -466,7 +474,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, Class<T> target) {
         String response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
-        return JsonUtils.GSON.fromJson(response, target);
+        return gson.fromJson(response, target);
     }
 
     private MultiValueMap<String, String> buildPayUInfoRequest(String command, String var1) {
@@ -593,13 +601,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
                 if(verificationResponse.getIsVPAValid() == 1)
                     verificationResponse.setValid(true);
-                return BaseResponse.<String>builder().body(JsonUtils.GSON.toJson(verificationResponse)).status(HttpStatus.OK).build();
+                return BaseResponse.<String>builder().body(gson.toJson(verificationResponse)).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
                 PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
                 if(payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
                     payUCardInfo.setValid(true);
-                return BaseResponse.<String>builder().body(JsonUtils.GSON.toJson(payUCardInfo)).status(HttpStatus.OK).build();
+                return BaseResponse.<String>builder().body(gson.toJson(payUCardInfo)).status(HttpStatus.OK).build();
         }
        return null;
     }

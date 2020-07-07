@@ -25,14 +25,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-aspects</artifactId>
             <version>${project.version}</version>
@@ -45,11 +37,6 @@
         <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-session</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>in.wynk</groupId>
-            <artifactId>lib-queue</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

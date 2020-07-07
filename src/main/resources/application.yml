@@ -1,10 +1,15 @@
 spring:
-    profiles:
-      active: ${env:local}
-    main:
-      banner-mode: off
-    devtools:
-      add-properties: false
+  profiles:
+    active: ${env:local}
+  main:
+    banner-mode: off
+  devtools:
+    add-properties: false
+###### SPRING AUTO-CONFIG EXCLUSION
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  jackson:
+    default-property-inclusion: NON_NULL
 
 
 debug: false

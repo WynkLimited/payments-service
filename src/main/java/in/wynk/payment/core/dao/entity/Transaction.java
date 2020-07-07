@@ -1,5 +1,8 @@
-package in.wynk.payment.core.dto;
+package in.wynk.payment.core.dao.entity;
 
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,16 +29,16 @@ public class Transaction {
     @GeneratedValue(generator = "transaction_seq_id")
     @Setter(AccessLevel.NONE)
     @Column(name = "transaction_id")
-    private UUID id;
+    private String id;
 
     @Column(name = "plan_id")
     private Integer planId;
 
     @Column(name = "paid_amount")
-    private Double amount;
+    private double amount;
 
     @Column(name = "discount_amount")
-    private Double discount;
+    private double discount;
 
     @Column(name = "init_timestamp")
     @Temporal(TemporalType.TIMESTAMP)
@@ -73,12 +76,28 @@ public class Transaction {
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar consent;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "fk_error_id", referencedColumnName = "payment_error_id")
     private PaymentError paymentError;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "fk_merchant_id", referencedColumnName = "merchant_transaction_id")
     private MerchantTransaction merchantTransaction;
+
+    public TransactionEvent getType() {
+        return TransactionEvent.valueOf(type);
+    }
+
+    public TransactionStatus getStatus() {
+        return TransactionStatus.valueOf(status);
+    }
+
+    public UUID getId() {
+        return id != null ? UUID.fromString(id): null;
+    }
+
+    public PaymentCode getPaymentChannel() {
+        return PaymentCode.valueOf(paymentChannel);
+    }
 
 }

@@ -18,6 +18,8 @@ public class PaymentLoggingMarker extends BaseLoggingMarkers {
     public static final Marker PHONEPE_CHARGING_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_FAILURE");
     public static final Marker PHONEPE_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_CALLBACK_FAILURE");
 
+    public static final Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
+    public static final Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
 
-
+    public static final Marker APB_ERROR = MarkerFactory.getMarker("APB_ERROR");
 }

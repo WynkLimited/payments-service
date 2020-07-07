@@ -1,4 +1,4 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -7,10 +7,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PayUCallbackRequestPayload {
+public class PayUCallbackRequestPayload implements Serializable {
   @SerializedName("bankcode")
   private String bankCode;
 

@@ -1,13 +1,13 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dto.Transaction;
+import in.wynk.payment.core.dao.entity.Transaction;
 
-import java.util.UUID;
+import java.util.Optional;
 
 public interface ITransactionManagerService {
 
     Transaction upsert(Transaction transaction);
 
-    Transaction get(UUID id);
+    Optional<Transaction> get(String id);
 
 }

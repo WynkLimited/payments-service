@@ -13,19 +13,23 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.VerificationType;
 import in.wynk.payment.dto.payu.CardDetails;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -61,7 +65,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.revenue.commons.Constants.ONE_DAY_IN_MILLI;
 
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService {
+public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService {
 
     private static final Logger logger = LoggerFactory.getLogger(PayUMerchantPaymentService.class);
     private final RestTemplate restTemplate;
@@ -90,10 +94,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-    @Value("${payment.merchant.payu.command.verifyVpa}")
-    private String verifyVpaCommand;
-    @Value("${payment.merchant.payu.command.checkIsDomestic}")
-    private String checkIsDomesticCommand;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     @Autowired
     private Gson gson;
@@ -210,7 +210,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .body(chargingStatus)
                 .build();
     }
-
 
     private ChargingStatus fetchChargingStatusFromPayUSource(ChargingStatusRequest chargingStatusRequest) {
         TransactionStatus existingTransactionStatus;
@@ -582,26 +581,4 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         session.getBody().put(key, value);
     }
 
-    @Override
-    public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
-        boolean success = false;
-        VerificationType verificationType = verificationRequest.getVerificationType();
-        switch (verificationType){
-            case VPA:
-                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
-                PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
-                if(verificationResponse.getIsVPAValid() == 1)
-                    success = true;
-                break;
-            case BIN:
-                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
-                PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
-                if(payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
-                    success = true;
-                break;
-        }
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("success", success);
-        return BaseResponse.<String>builder().body(JsonUtils.GSON.toJson(response)).status(HttpStatus.OK).build();
-    }
 }

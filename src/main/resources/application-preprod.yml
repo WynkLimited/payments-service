@@ -68,16 +68,98 @@ spring:
 
 ####### payment props #######
 payment:
+  recurring:
+    offset:
+      day: 0
+      hour: 1
+  ###### lib-queue props ######
+  pooling:
+    queue:
+      reconciliation:
+        enabled: true
+        name: wcf-staging-payment-reconciliation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      renewal:
+        enabled: false
+        name: wcf-staging-payment-renewal
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      charging:
+        enabled: false
+        name: wcf-staging-payment-charging.fifo
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      subscription:
+        enabled: false
+        name: wcf-staging-subscription
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+  ###### webview status props #######
+  status:
+    web:
+      url: http://localhost:4200/status
   merchant:
     ####### payu props #########
     payu:
-      api: https://info.payu.in/merchant/postservice.php?form=2
+      api:
+        info: https://info.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
-          successUrl: http://localhost:8081/payment/callback/${sid}
-          failureUrl: http://localhost:8081/payment/callback/${sid}
-      command:
-        verifyVpa: validateVPA
-        checkIsDomestic: check_isDomestic
+          successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+          failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+
+
+####### Http Client Props #######
+http:
+  enableTemplateRegistration: true
+  templates:
+    subscriptionHttpTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 500
+          validateAfterInActivity: 100
+          timeout: 4000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          socket:
+            timeout: 6000
+            factory:
+              type: both
+          request:
+            timeout: 1000

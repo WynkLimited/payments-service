@@ -1,4 +1,4 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TransactionDetails {
+public class PayUTransactionDetails {
   private String status;
 
   @SerializedName("mihpayid")
@@ -39,4 +39,5 @@ public class TransactionDetails {
 
   @SerializedName("field9")
   private String payUResponseFailureMessage;
+
 }

@@ -49,5 +49,12 @@ public class PaymentConstants {
   public static final String PAYU_RESPONSE_ERROR_MESSAGE = "error_Message";
   public static final String PAYU_STATUS_CAPTURED = "captured";
   public static final String PAYU_SI_STATUS_FAILURE = "failed";
+  public static final String X_VERIFY = "x-verify";
+  public static final String CONTENT_TYPE = "content-type";
+  public static final String X_REDIRECT_URL = "x-redirect-url";
+  public static final String X_REDIRECT_MODE = "x-redirect-mode";
+  public static final String BSYS = "bsys";
+  public static final String REQUEST = "request";
+
 
 }

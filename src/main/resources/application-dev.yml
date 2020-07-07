@@ -205,5 +205,3 @@ service:
   subscription:
     api:
       root: http://subscription-statging.wynk.in
-logging:
-  path: /tmp

@@ -474,7 +474,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, Class<T> target) {
-        return restTemplate.postForObject(payUInfoApiUrl, request, target);
+        String response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
+        return JsonUtils.GSON.fromJson(response, target);
     }
 
     private MultiValueMap<String, String> buildPayUInfoRequest(String command, String var1) {

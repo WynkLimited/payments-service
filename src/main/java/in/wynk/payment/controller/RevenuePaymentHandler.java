@@ -19,10 +19,10 @@ import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.utils.BeanLocatorFactory;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
-import in.wynk.session.dto.Session;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -97,13 +97,13 @@ public class RevenuePaymentHandler {
     @GetMapping("/callback/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handleCallbackForAPB(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
-        Session<Map<String, Object>> session = SessionContextHolder.get();
-        CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
-        PaymentCode option = ((PaymentCode) session.getBody().get(ApplicationConstant.PAYMENT_METHOD));
-        AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, option.name());
+    public ResponseEntity<?> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        CallbackRequest<MultiValueMap<String, String>> request = CallbackRequest.<MultiValueMap<String, String>>builder().body(payload).build();
+        PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
+        AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(option.getCode(), IMerchantPaymentCallbackService.class);
+        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();
     }

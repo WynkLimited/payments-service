@@ -45,14 +45,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -109,7 +108,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        Map<String, List<String>> urlParameters = (Map<String, List<String>>) callbackRequest.getBody();
+        MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
         ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);

@@ -90,10 +90,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-    @Value("${payment.merchant.payu.command.verifyVpa}")
-    private String verifyVpaCommand;
-    @Value("${payment.merchant.payu.command.checkIsDomestic}")
-    private String checkIsDomesticCommand;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     @Autowired
     private Gson gson;

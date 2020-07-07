@@ -31,8 +31,8 @@ public class Transaction {
     @Column(name = "transaction_id")
     private String id;
 
-    @Column(name = "product_id")
-    private Integer productId;
+    @Column(name = "plan_id")
+    private Integer planId;
 
     @Column(name = "paid_amount")
     private double amount;

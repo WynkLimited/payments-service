@@ -1,6 +1,14 @@
-package in.wynk.payment.core.dto;
+package in.wynk.payment.core.dao.entity;
 
-import lombok.*;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.revenue.commons.TransactionEvent;
+import in.wynk.revenue.commons.TransactionStatus;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -21,7 +29,7 @@ public class Transaction {
     @GeneratedValue(generator = "transaction_seq_id")
     @Setter(AccessLevel.NONE)
     @Column(name = "transaction_id")
-    private UUID id;
+    private String id;
 
     @Column(name = "product_id")
     private Integer productId;
@@ -46,7 +54,7 @@ public class Transaction {
     private String itemId;
 
     @Column(name = "payment_channel")
-    private String paymentChannel;
+    private PaymentCode paymentChannel; //TODO: change to string.
 
     @Column(name = "service")
     private String service;
@@ -68,12 +76,24 @@ public class Transaction {
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar consent;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "fk_error_id", referencedColumnName = "payment_error_id")
     private PaymentError paymentError;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "fk_merchant_id", referencedColumnName = "merchant_transaction_id")
     private MerchantTransaction merchantTransaction;
+
+    public TransactionEvent getType() {
+        return TransactionEvent.valueOf(type);
+    }
+
+    public TransactionStatus getStatus() {
+        return TransactionStatus.valueOf(status);
+    }
+
+    public UUID getId() {
+        return id != null ? UUID.fromString(id): null;
+    }
 
 }

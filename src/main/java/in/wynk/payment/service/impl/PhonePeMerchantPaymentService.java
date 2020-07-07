@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -36,9 +37,9 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.revenue.commons.PlanType;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
+import in.wynk.commons.enums.PlanType;
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -46,6 +47,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -54,8 +56,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.revenue.commons.Constants.ONE_DAY_IN_MILLI;
 
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
 public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService {
@@ -85,6 +87,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private int reconciliationMessageDelay;
     @Value("${payment.pooling.queue.subscription.sqs.producer.delayInSecond}")
     private int subscriptionMessageDelay;
+    @Autowired
+    private Gson gson;
 
 
     private final String debitCall = "/v3/debit";
@@ -146,16 +150,9 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             putValueInSession(SessionKeys.SELECTED_PLAN_ID, selectedPlan.getId());
             putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET);
 
-            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay,
-                    PaymentReconciliationMessage.builder()
-                            .uid(uid)
-                            .planId(planId)
-                            .paymentCode(PaymentCode.PHONEPE_WALLET)
-                            .transactionId(transaction.getId().toString())
-                            .transactionEvent(TransactionEvent.PURCHASE)
-                            .initTimestamp(System.currentTimeMillis())
-                            .packPeriod(selectedPlan.getPeriod())
-                            .build());
+            PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
+            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
+
             return BaseResponse.<String>builder()
                     .body(redirectUri.toString())
                     .status(HttpStatus.FOUND)
@@ -236,7 +233,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         TransactionStatus existingTransactionStatus;
         TransactionStatus finalTransactionStatus;
 
-        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
+        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
 
         existingTransactionStatus = transaction.getStatus();
         fetchAndUpdateTransactionFromSource(transaction);
@@ -272,7 +269,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     private ChargingStatus fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest) {
         String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID);
-        Transaction transaction = transactionManager.get(transactionId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
+        Transaction transaction = transactionManager.get(transactionId);
         return ChargingStatus.builder()
                 .transactionStatus(transaction.getStatus())
                 .build();
@@ -280,7 +277,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     private URI processCallback(CallbackRequest callbackRequest) {
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
-        final Transaction transaction = transactionManager.get(transactionId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010));
+        final Transaction transaction = transactionManager.get(transactionId);
 
         try {
             Map<String , String> requestPayload = (Map<String, String>) callbackRequest.getBody();
@@ -331,7 +328,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     private HttpEntity<String> getRequestEntity(PhonePePaymentRequest phonePePaymentRequest){
         try {
-            String requestJson = Utils.getGson().toJson(phonePePaymentRequest);
+            String requestJson = gson.toJson(phonePePaymentRequest);
             JsonObject jsonRequest = new JsonObject();
             if (StringUtils.isNotEmpty(requestJson)) {
                 jsonRequest.addProperty(REQUEST, Utils.encodeBase64(requestJson));

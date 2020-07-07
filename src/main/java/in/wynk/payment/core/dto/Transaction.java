@@ -1,14 +1,6 @@
-package in.wynk.payment.core.dao.entity;
+package in.wynk.payment.core.dto;
 
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.payment.core.constant.PaymentCode;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -29,16 +21,16 @@ public class Transaction {
     @GeneratedValue(generator = "transaction_seq_id")
     @Setter(AccessLevel.NONE)
     @Column(name = "transaction_id")
-    private String id;
+    private UUID id;
 
-    @Column(name = "plan_id")
-    private Integer planId;
+    @Column(name = "product_id")
+    private Integer productId;
 
     @Column(name = "paid_amount")
-    private double amount;
+    private float amount;
 
     @Column(name = "discount_amount")
-    private double discount;
+    private float discount;
 
     @Column(name = "init_timestamp")
     @Temporal(TemporalType.TIMESTAMP)
@@ -76,28 +68,12 @@ public class Transaction {
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar consent;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_error_id", referencedColumnName = "payment_error_id")
     private PaymentError paymentError;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_merchant_id", referencedColumnName = "merchant_transaction_id")
     private MerchantTransaction merchantTransaction;
-
-    public TransactionEvent getType() {
-        return TransactionEvent.valueOf(type);
-    }
-
-    public TransactionStatus getStatus() {
-        return TransactionStatus.valueOf(status);
-    }
-
-    public UUID getId() {
-        return id != null ? UUID.fromString(id): null;
-    }
-
-    public PaymentCode getPaymentChannel() {
-        return PaymentCode.valueOf(paymentChannel);
-    }
 
 }

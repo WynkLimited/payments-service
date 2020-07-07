@@ -1,3 +1,25 @@
+###### Properties ##############
+
+paytm:
+  native:
+    clientId: merchant-wynk-staging
+    merchantKey: 6UePBAcq7LTfdGJI
+    merchantId: WYNKLI36809118294255
+    secret: 653fe766-5864-4e16-a288-68ebcccffbd0
+    accounts:
+      baseUrl: https://accounts-uat.paytm.com
+    services:
+      baseUrl: https://securegw-stage.paytm.in
+    wcf:
+      addMoneyUrl: https://wcfpay-dev.wynk.in/paytm-native/add-money
+      callbackUrl: http://capi-wcf-stage.wynk.in/wynk/v2/s2s/subscription/callback?sid=
+  requesting:
+    website: WYNKLIMITEDWAP
+
+redirect:
+  success:
+    page: https://www.google.com/
+
 ###### Redis Store Props #######
 session:
   redis:
@@ -65,3 +87,101 @@ spring:
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
+
+####### payment props #######
+payment:
+  recurring:
+    offset:
+      day: 0
+      hour: 1
+  ###### lib-queue props ######
+  pooling:
+    queue:
+      reconciliation:
+        enabled: true
+        name: wcf-staging-payment-reconciliation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      renewal:
+        enabled: false
+        name: wcf-staging-payment-renewal
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      charging:
+        enabled: false
+        name: wcf-staging-payment-charging.fifo
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      subscription:
+        enabled: false
+        name: wcf-staging-subscription
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+  ###### webview status props #######
+  status:
+    web:
+      url: http://localhost:4200/status
+  merchant:
+    ####### payu props #########
+    payu:
+      api:
+        info: https://info.payu.in/merchant/postservice.php?form=2
+      internal:
+        web:
+          url: https://wcfpay-new.wynk.in/wcf/payu
+        callback:
+          successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+          failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+
+
+####### Http Client Props #######
+http:
+  enableTemplateRegistration: true
+  templates:
+    subscriptionHttpTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 500
+          validateAfterInActivity: 100
+          timeout: 4000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          socket:
+            timeout: 6000
+            factory:
+              type: both
+          request:
+            timeout: 1000

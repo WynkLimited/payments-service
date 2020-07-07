@@ -1,4 +1,4 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.payu;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

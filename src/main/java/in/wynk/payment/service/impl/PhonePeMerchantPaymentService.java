@@ -470,7 +470,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 .uid(getValueFromSession(SessionKeys.UID))
                 .service(getValueFromSession(SessionKeys.SERVICE))
                 .msisdn(getValueFromSession(SessionKeys.MSISDN))
-                .paymentChannel(PaymentCode.PHONEPE_WALLET)
+                .paymentChannel(PaymentCode.PHONEPE_WALLET.name())
                 .status(TransactionStatus.INPROGRESS.name())
                 .type(TransactionEvent.PURCHASE.name())
                 .build());

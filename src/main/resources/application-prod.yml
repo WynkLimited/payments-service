@@ -156,3 +156,23 @@ payment:
         wynkurl: https://wcf-pay.wynk.in
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
 
+
+####### Http Client Props #######
+http:
+  enableTemplateRegistration: true
+  templates:
+    subscriptionHttpTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 500
+          timeout: 4000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 6000
+            factory:
+              type: both
+          request:
+            timeout: 1000

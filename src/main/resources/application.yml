@@ -52,3 +52,13 @@ resilience:
 amazon:
   sdk:
     regions: ap-south-1
+
+
+###### Subscription Service End Point #######
+
+service:
+  subscription:
+    api:
+      endpoint:
+        allPlans: /wynk/v1/plans
+

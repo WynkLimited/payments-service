@@ -3,6 +3,7 @@ package in.wynk.payment.dto.request;
 import in.wynk.commons.dto.PackPeriodDTO;
 import in.wynk.commons.enums.FetchStrategy;
 import in.wynk.revenue.commons.TransactionEvent;
+import in.wynk.revenue.commons.TransactionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,5 +22,8 @@ public class ChargingStatusRequest {
     private TransactionEvent transactionEvent;
     private FetchStrategy fetchStrategy;
     private PackPeriodDTO packPeriod;
+    private String uid;
+    private int planId;
+
 
 }

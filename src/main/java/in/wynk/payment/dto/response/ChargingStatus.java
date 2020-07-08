@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.response;
 
-import in.wynk.revenue.commons.TransactionStatus;
+import in.wynk.commons.enums.TransactionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

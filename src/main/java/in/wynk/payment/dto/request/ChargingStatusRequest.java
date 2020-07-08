@@ -1,19 +1,19 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.commons.dto.PackPeriodDTO;
+import in.wynk.commons.dto.PlanPeriodDTO;
 import in.wynk.commons.enums.FetchStrategy;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.payment.enums.StatusMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Date;
 
 @Getter
 @Builder
-@NoArgsConstructor
+@RequiredArgsConstructor
 @AllArgsConstructor
 public class ChargingStatusRequest {
 
@@ -21,9 +21,10 @@ public class ChargingStatusRequest {
     private Date chargingTimestamp;
     private TransactionEvent transactionEvent;
     private FetchStrategy fetchStrategy;
-    private PackPeriodDTO packPeriod;
+    private PlanPeriodDTO packPeriod;
     private String uid;
     private int planId;
 
 
+    private StatusMode mode;
 }

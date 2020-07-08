@@ -23,9 +23,7 @@ import in.wynk.payment.core.dto.itunes.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.service.IMerchantPaymentCallbackService;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -60,6 +58,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final RestTemplate restTemplate;
     private final ITransactionManagerService transactionManager;
     private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
 
@@ -89,17 +88,18 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private static final List<ItunesStatusCodes> failureCodes = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005,
             ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008, ItunesStatusCodes.APPLE_21009, ItunesStatusCodes.APPLE_21010);
 
-    public ITunesMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager, ISQSMessagePublisher sqsMessagePublisher) {
+    public ITunesMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager, ISQSMessagePublisher sqsMessagePublisher, ISubscriptionServiceManager subscriptionServiceManager) {
         this.restTemplate = restTemplate;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
+        this.subscriptionServiceManager = subscriptionServiceManager;
     }
 
 
     @Override
     public BaseResponse<String> verifyIap(IapVerificationRequest iapVerificationRequest) {
         try {
-            ChargingStatus validationResponse = validateItunesTransaction(iapVerificationRequest.getUid(), iapVerificationRequest.getReceipt(), iapVerificationRequest.getPlanId());
+            ChargingStatus validationResponse = validateItunesTransaction(iapVerificationRequest.getUid(), iapVerificationRequest.getReceipt(), iapVerificationRequest.getPlanId(), getValueFromSession(SessionKeys.SERVICE));
             URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
             returnUrl.addParameter(STATUS, validationResponse.getTransactionStatus().name());
             HttpHeaders httpHeaders = new HttpHeaders();
@@ -108,7 +108,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             httpHeaders.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
             httpHeaders.add(HttpHeaders.PRAGMA, "no-cache");
             httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
-            return BaseResponse.<String>builder().body(returnUrl.toString()).status(HttpStatus.FOUND).headers(httpHeaders).build();
+             return BaseResponse.<String>builder().body(returnUrl.toString()).status(HttpStatus.FOUND).headers(httpHeaders).build();
         }
         catch (Exception e){
             throw new WynkRuntimeException(e);
@@ -125,11 +125,12 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 String itunesId = latestReceiptInfo.getOriginalTransactionId();
                 ItunesIdUidMapping itunesIdUidMapping = itunesIdUidDao.findByItunesId(itunesId);
                 String uid = itunesIdUidMapping.getUid();
+                String service = itunesIdUidMapping.getService();
                 int planId = itunesIdUidMapping.getPlanId();
                 String decodedReceipt = StringUtils.EMPTY;
                 try {
                     decodedReceipt = getModifiedReceipt(itunesCallbackRequest.getLatestReceipt());
-                    validationResponse = validateItunesTransaction(uid, decodedReceipt, planId);
+                    validationResponse = validateItunesTransaction(uid, decodedReceipt, planId, service);
                 } catch (UnsupportedEncodingException e) {
                     logger.error(BaseLoggingMarkers.PAYMENT_ERROR, String.valueOf(e));
                 }
@@ -141,7 +142,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         }
     }
 
-    private ChargingStatus validateItunesTransaction(String uid, String requestReceipt, int planId){
+    private ChargingStatus validateItunesTransaction(String uid, String requestReceipt, int planId, String service){
         String errorMessage = StringUtils.EMPTY;
         try {
             final PlanDTO selectedPlan = getSelectedPlan(planId);
@@ -163,7 +164,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 String itunesTrxnId = latestReceiptInfo.getTransactionId();
                 ItunesIdUidMapping mapping = itunesIdUidDao.findByPlanIdAndItunesId(planId, originalITunesTrxnId);
 
-                // TODO - Is this needed ??
                 if (mapping != null && !mapping.getUid().equals(uid)) {
                     logger.error(BaseLoggingMarkers.PAYMENT_ERROR, "Already have subscription for the correcponding itunes id on another account");
                     errorMessage = "Already have subscription for the correcponding itunes id on another account";
@@ -172,17 +172,17 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 logger.info("ItunesIdUidMapping found for ItnuesId :{} , planId: {} = {}", originalITunesTrxnId, planId, mapping);
                 if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                     if (mapping == null) {
-                        ItunesIdUidMapping itunesIdUidMapping = ItunesIdUidMapping.builder().uid(uid).itunesId(originalITunesTrxnId).planId(planId).receipt(requestReceipt).type(receiptType).build();
+                        ItunesIdUidMapping itunesIdUidMapping =
+                                ItunesIdUidMapping.builder()
+                                                    .uid(uid)
+                                                    .itunesId(originalITunesTrxnId)
+                                                    .planId(planId)
+                                                    .receipt(requestReceipt)
+                                                    .type(receiptType)
+                                                    .service(service)
+                                                    .build();
                         saveItunesIdUidMapping(itunesIdUidMapping);
                     }
-                    publishSQSMessage(subscriptionQueue,
-                            subscriptionMessageDelay,
-                            SubscriptionNotificationMessage.builder()
-                                    .planId(selectedPlan.getId())
-                                    .transactionId(transaction.getId().toString())
-                                    .transactionEvent(transaction.getType())
-                                    .transactionStatus(transaction.getStatus())
-                                    .build());
                     transaction.setStatus(TransactionStatus.SUCCESS.name());
                 } else {
                     errorMessage = "Itunes transaction Id not found";
@@ -190,9 +190,16 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 }
             }
 
-            transaction.setPaymentError(PaymentError.builder()
-                    .description(errorMessage)
-                    .build());
+            if(transaction.getStatus() == TransactionStatus.SUCCESS){
+                transaction.setExitTime(Calendar.getInstance());
+             //   subscriptionServiceManager.publish(selectedPlan.getId(), uid, transaction.getId().toString(), transaction.getStatus(), transaction.getType());
+
+            }
+            else {
+                transaction.setPaymentError(PaymentError.builder()
+                        .description(errorMessage)
+                        .build());
+            }
             transactionManager.upsert(transaction);
             return ChargingStatus
                     .builder()
@@ -221,25 +228,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
                 .uid(uid)
-                //.service(getValueFromSession(SessionKeys.SERVICE))
-                //.msisdn(getValueFromSession(SessionKeys.MSISDN))
+                .service(getValueFromSession(SessionKeys.SERVICE))
                 .paymentChannel(PaymentCode.ITUNES.name())
                 .status(TransactionStatus.INPROGRESS.name())
                 .type(TransactionEvent.PURCHASE.name())
                 .build());
     }
 
-    private <T> void publishSQSMessage(String queueName, int messageDelay, T message) {
-        try {
-            sqsMessagePublisher.publish(SendSQSMessageRequest.<T>builder()
-                    .queueName(queueName)
-                    .delaySeconds(messageDelay)
-                    .message(message)
-                    .build());
-        } catch (Exception e) {
-            throw new WynkRuntimeException(QueueErrorType.SQS001, e);
-        }
-    }
 
     private PlanDTO getSelectedPlan(int planId) {
         List<PlanDTO> plans = getValueFromSession(SessionKeys.ELIGIBLE_PLANS);
@@ -291,7 +286,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 errorMessage = "Encoded itunes receipt data is empty!";
                 createErrorTransaction(transaction, errorMessage);
                 logger.error(BaseLoggingMarkers.PAYMENT_ERROR, "Encoded itunes receipt data is empty! for iTunesData {}", receipt);
-                throw new WynkRuntimeException(PaymentErrorType.PAY001, errorMessage);
+                throw new WynkRuntimeException(PaymentErrorType.PAY011, errorMessage);
             }
             ResponseEntity<String> appStoreResponse = getItunesStatus(encodedValue, itunesSecret, itunesApiUrl);
             String appStoreResponseBody = appStoreResponse.getBody();
@@ -312,7 +307,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 logger.error("Receipt Object returned for response " + appStoreResponseBody + " is not complete!");
                 errorMessage = "Receipt Object returned from itunes is null";
                 createErrorTransaction(transaction, errorMessage);
-                throw new WynkRuntimeException(PaymentErrorType.PAY001, errorMessage);
+                throw new WynkRuntimeException(PaymentErrorType.PAY011, errorMessage);
             }
             int status = Integer.parseInt(receiptObj.getStatus());
             ItunesStatusCodes code = ItunesStatusCodes.getItunesStatusCodes(status);
@@ -334,7 +329,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         .build());
                 transaction.setStatus(TransactionStatus.FAILURE.name());
                 transactionManager.upsert(transaction);
-                throw new WynkRuntimeException(PaymentErrorType.PAY001, errorMessage);
+                throw new WynkRuntimeException(PaymentErrorType.PAY011, errorMessage);
             }
         }
         catch(Exception e){

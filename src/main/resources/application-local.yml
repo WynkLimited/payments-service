@@ -189,9 +189,9 @@ payment:
           failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
     #### Itunes props ######
     itunes:
-      secret: d9a2775a407e435cb80e38a5a06f13ac
+      secret: 820ea8abe1374b369eaa564dcfa6391c
       api:
-        url: https://sandbox.itunes.apple.com/verifyReceipt
+        url: https://buy.itunes.apple.com/verifyReceipt
       return:
         wynkurl: https://wcf-pay.wynk.in
 

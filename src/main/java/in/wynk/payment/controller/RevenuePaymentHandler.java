@@ -108,12 +108,10 @@ public class RevenuePaymentHandler {
     }
 
     @PostMapping("/itunescallback/{sid}")
-    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleItunesCallback(@PathVariable String sid, @RequestBody Map<String, Object> payload) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
         CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
-        PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
+        PaymentCode paymentCode = PaymentCode.ITUNES;
         AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);

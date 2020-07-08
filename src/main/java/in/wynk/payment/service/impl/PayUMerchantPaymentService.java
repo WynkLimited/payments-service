@@ -10,7 +10,7 @@ import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import org.springframework.stereotype.Service;
 
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayuMerchantPaymentService implements IRenewalMerchantPaymentService {
+public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService {
 
 
     @Override

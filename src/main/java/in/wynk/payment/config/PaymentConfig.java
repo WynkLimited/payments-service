@@ -20,15 +20,12 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableConfigurationProperties({CorsProperties.class})
 public class PaymentConfig implements WebMvcConfigurer {
 
-<<<<<<< HEAD
-=======
     private final CorsProperties corsProperties;
 
     public PaymentConfig(CorsProperties corsProperties) {
         this.corsProperties = corsProperties;
     }
 
->>>>>>> 5927d79d7941b669263f0bd6522bb6b1915a090f
     @Profile("!prod")
     @Bean
     public Docket api() {

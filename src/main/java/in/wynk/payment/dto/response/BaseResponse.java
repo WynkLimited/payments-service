@@ -1,20 +1,15 @@
 package in.wynk.payment.dto.response;
 
-<<<<<<< HEAD
 import lombok.Builder;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-=======
-import lombok.*;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
->>>>>>> 5927d79d7941b669263f0bd6522bb6b1915a090f
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-<<<<<<< HEAD
-=======
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -23,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
->>>>>>> 5927d79d7941b669263f0bd6522bb6b1915a090f
 @Builder
 @RequiredArgsConstructor
 @ToString

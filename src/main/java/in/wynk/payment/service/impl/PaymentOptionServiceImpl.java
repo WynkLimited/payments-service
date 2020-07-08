@@ -2,21 +2,11 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PaymentGroup;
-<<<<<<< HEAD
-import in.wynk.payment.core.entity.PaymentMethod;
-import in.wynk.payment.core.entity.UserPreferredPayment;
-import in.wynk.payment.dao.UserPreferredPaymentsDao;
-import in.wynk.payment.dto.PaymentOptionsDTO;
-import in.wynk.payment.dto.PaymentOptionsDTO.PaymentGroupsDTO;
-import in.wynk.payment.dto.PaymentOptionsDTO.PaymentMethodDTO;
-=======
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
-import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentGroupsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
->>>>>>> 5927d79d7941b669263f0bd6522bb6b1915a090f
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.PaymentCachingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,10 +36,10 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     }
 
     private PaymentOptionsDTO paymentMethods(Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments){
-        List<PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
+        List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for(PaymentGroup group: availableMethods.keySet()){
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
-            PaymentGroupsDTO groupsDTO = PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group).build();
+            PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group).build();
             paymentGroupsDTOS.add(groupsDTO);
         }
         return PaymentOptionsDTO.builder().paymentGroups(paymentGroupsDTOS).build();

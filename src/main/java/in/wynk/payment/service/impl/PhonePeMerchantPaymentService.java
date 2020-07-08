@@ -199,27 +199,21 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             if (statusCode == PhonePeTransactionStatus.PAYMENT_SUCCESS) {
                 transaction.setExitTime(Calendar.getInstance());
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-//                    if (transactionDetails.getPayUUdf1().equalsIgnoreCase(PAYU_SI_KEY)) {
-//                        Calendar nextRecurringDateTime = Calendar.getInstance();
-//                        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, chargingStatusRequest.getPackPeriod().getValidity());
-//                        recurringPaymentManagerService.addRecurringPayment(transaction.getId().toString(), nextRecurringDateTime);
-//                    }
             } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
                     statusCode == PhonePeTransactionStatus.PAYMENT_PENDING) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             } else{
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
+            transaction.setMerchantTransaction(MerchantTransaction.builder()
+                .externalTransactionId(phonePeTransactionStatusResponse.getData().providerReferenceId)
+                .response(phonePeTransactionStatusResponse)
+                .build());
         } else {
             transaction.setExitTime(Calendar.getInstance());
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
 
-//            transaction.setMerchantTransaction(MerchantTransaction.builder()
-//                    .externalTransactionId(phonePeTransactionStatusResponse.getData().providerReferenceId)
-//                    .request(payUChargingVerificationRequest)
-//                    .response(payUChargingVerificationResponse)
-//                    .build());
         if (finalTransactionStatus == TransactionStatus.FAILURE) {
             transaction.setPaymentError(PaymentError.builder()
                     .code(phonePeTransactionStatusResponse.getCode().name())
@@ -296,11 +290,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     transaction.setExitTime(Calendar.getInstance());
                     subscriptionServiceManager.publish(selectedPlan.getId(), uid, transactionId, transaction.getStatus(), transaction.getType());
-                    if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
-                        Calendar nextRecurringDateTime = Calendar.getInstance();
-                        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
-                        recurringPaymentManagerService.addRecurringPayment(transactionId, nextRecurringDateTime);
-                    }
                 }
             }
             else {

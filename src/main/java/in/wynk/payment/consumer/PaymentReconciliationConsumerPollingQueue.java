@@ -52,7 +52,6 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                 .transactionEvent(message.getTransactionEvent())
                 .fetchStrategy(FetchStrategy.DIRECT_SOURCE_EXTERNAL_WITHOUT_CACHE)
                 .chargingTimestamp(message.getInitTimestamp())
-                .packPeriod(message.getPackPeriod())
                 .build());
     }
 

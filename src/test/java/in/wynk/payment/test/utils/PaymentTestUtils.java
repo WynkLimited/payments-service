@@ -59,7 +59,7 @@ public class PaymentTestUtils {
     public static SessionDTO dummySession() {
         Map<String, Object> map = new HashMap<>();
         map.put(UID, DUMMY_UID);
-        SessionDTO sessionDTO = new SessionDTO();
+        SessionDTO sessionDTO = SessionDTO.builder().build();
         sessionDTO.setPayload(map);
         return sessionDTO;
     }

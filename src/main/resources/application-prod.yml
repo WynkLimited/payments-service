@@ -1,3 +1,35 @@
+####### Properties #########
+
+paytm:
+  native:
+    clientId: merchant-wynk
+    merchantKey: RrGHVFOJyEjbp4hN
+    merchantId: AirBSB68537227489657
+    secret: fd13c3f9-da62-47e2-b354-8f0f18fbe90b
+    accounts:
+      baseUrl: https://accounts.paytm.com
+    services:
+      baseUrl: https://securegw.paytm.in
+    wcf:
+      addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
+      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
+  requesting:
+    website: WCF
+
+apb:
+  txn:
+    inquiry:
+      url: https://ecom.airtelbank.com/ecom/v2/inquiry
+  callback:
+    url: http://payments.wynk.in/wynk/wynk/v1/paymentcallback/apb
+  merchant:
+    id:
+  salt:
+  init:
+    payment:
+      url: https://ecom.airtelbank.com/ecom/v2/initiatePayment
+
+
 ###### Redis Store Props #######
 session:
   redis:
@@ -71,6 +103,11 @@ spring:
 
 ####### payment props #######
 payment:
+  success:
+    page: https://www.google.com/
+  failure:
+    page: https://www.yahoo.com
+  encKey: BSB$PORTAL@2014#
   recurring:
     offset:
       day: 0

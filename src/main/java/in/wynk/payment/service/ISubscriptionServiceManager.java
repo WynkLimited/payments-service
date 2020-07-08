@@ -1,8 +1,8 @@
 package in.wynk.payment.service;
 
 import in.wynk.commons.dto.PlanDTO;
-import in.wynk.revenue.commons.TransactionEvent;
-import in.wynk.revenue.commons.TransactionStatus;
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 
 public interface ISubscriptionServiceManager {
 

@@ -8,11 +8,10 @@ import org.springframework.http.HttpStatus;
 
 public enum PaymentErrorType implements IWynkErrorType {
 
-    /** Error type for Invalid value */
     /**
      * PAYU ERROR CODES
      **/
-    PAY001("Charging Failure", "Invalid URI Syntax while building payU charging url", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVALID_URI_SYNTAX),
+    PAY001("Invalid Payment Method", "unable to charge, unknown payment method is supplied", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY002("Charging Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_CHARGING_FAILURE),
     PAY003("PayU Charging Status Failure", "No matching status found for payU renewal", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION_FAILURE),
     PAY004("PayU Charging Status Failure", "Transaction is still pending from payU side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
@@ -20,7 +19,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY006("Payment Charging Callback Failure", "Something went wrong", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE),
     PAY008("Payment Charging Status Failure", "Invalid Fetching strategy is supplied", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION_FAILURE),
     PAY009("Payment Renewal Failure", "An Error occurred while making SI payment on payU", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR),
-    PAY010("Invalid txnId", "Invalid txnId", HttpStatus.NOT_FOUND, PaymentLoggingMarker.APPLICATION_INVALID_USECASE);
+    PAY010("Invalid txnId", "Invalid txnId", HttpStatus.NOT_FOUND, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR);
 
 
     /**

@@ -19,6 +19,7 @@ import in.wynk.session.dto.Session;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -86,6 +87,20 @@ public class RevenuePaymentHandler {
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY001);
         }
+        BaseResponse<?> baseResponse = callbackService.handleCallback(request);
+        return baseResponse.getResponse();
+    }
+
+    @GetMapping("/callback/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentCallback")
+    public ResponseEntity<?> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        CallbackRequest<MultiValueMap<String, String>> request = CallbackRequest.<MultiValueMap<String, String>>builder().body(payload).build();
+        PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
+        AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
+        AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
+        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();
     }

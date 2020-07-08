@@ -112,12 +112,18 @@
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
     </springProfile>
+
     <springProfile name="dev,preprod">
-        <root level="DEBUG">
+        <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>
-            <appender-ref ref="ASYNC_ERRORLOG"/>
+            <appender-ref ref="ASYNC_ERRORLOG" />
         </root>
+        <logger name="in.wynk" additivity="false" level="DEBUG">
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERRORLOG" />
+        </logger>
     </springProfile>
+
     <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>

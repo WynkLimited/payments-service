@@ -20,6 +20,7 @@ public class ItunesIdUidMapping implements Serializable {
     private String   uid;
     private int planId;
     private String receipt;
+    private String service;
     private ItunesReceiptType type;
 
 }

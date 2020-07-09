@@ -15,6 +15,7 @@ public class PaymentLoggingMarker extends BaseLoggingMarkers {
     public static final Marker INVALID_URI_SYNTAX = MarkerFactory.getMarker("INVALID_URI_SYNTAX");
     public static final Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     public static final Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
+    public static final Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
 
     public static final Marker APB_ERROR = MarkerFactory.getMarker("APB_ERROR");
 }

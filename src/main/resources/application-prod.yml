@@ -48,9 +48,6 @@ app:
         password: # None
         database: payments
 
-<<<<<<< HEAD
-=======
-
 apb:
   txn:
     inquiry:
@@ -65,7 +62,6 @@ apb:
       url: https://ecom.airtelbank.com/ecom/v2/initiatePayment
 
 
->>>>>>> 23a847c3ed881c624dcbe5d40580b1e2821fb17b
 ##### mysql database props #####
 spring:
   datasource:

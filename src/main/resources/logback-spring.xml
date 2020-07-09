@@ -124,7 +124,7 @@
     <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>
-            <appender-ref ref="ASYNC_ERRORLOG" />
+            <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
     </springProfile>
 </configuration>

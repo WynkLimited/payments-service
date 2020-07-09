@@ -16,6 +16,19 @@ paytm:
   requesting:
     website: WYNKLIMITEDWAP
 
+apb:
+  txn:
+    inquiry:
+      url: https://apptest.airtelbank.com/ecom/v2/inquiry
+  callback:
+    url: http://capi.wcf.internal/wynk/wynk/v1/paymentcallback/apb
+  merchant:
+    id: 180704
+  salt: d41d8cd98f00a
+  init:
+    payment:
+      url: https://apptest.airtelbank.com/ecom/v2/initiatePayment
+
 
 ###### Redis Store Props #######
 session:
@@ -44,21 +57,6 @@ app:
         username: # None
         password: # None
         database: payments
-
-
-apb:
-  txn:
-    inquiry:
-      url: https://apptest.airtelbank.com/ecom/v2/inquiry
-  callback:
-    url: http://capi.wcf.internal/wynk/wynk/v1/paymentcallback/apb
-  merchant:
-    id: 180704
-  salt: d41d8cd98f00a
-  init:
-    payment:
-      url: https://apptest.airtelbank.com/ecom/v2/initiatePayment
-
 
 ##### mysql database props #####
 spring:

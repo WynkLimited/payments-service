@@ -1,7 +1,10 @@
 package in.wynk.payment.dto.response;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.http.HttpHeaders;

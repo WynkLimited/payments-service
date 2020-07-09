@@ -41,4 +41,3 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 .type(TransactionEvent.PURCHASE.name()).build());
     }
 }
-

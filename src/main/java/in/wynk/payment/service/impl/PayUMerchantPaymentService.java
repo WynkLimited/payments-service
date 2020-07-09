@@ -144,7 +144,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
         Map<String, String> payUpayload = startPaymentChargingForPayU(chargingRequest);
-        String encryptedParams = null;
+        String encryptedParams;
         try {
             encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUpayload), encryptionKey);
         } catch (Exception e) {
@@ -161,7 +161,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<Void> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         try {
             if (StringUtils.isEmpty(paymentRenewalRequest.getCardToken())) {
                 String userCredentials = payUMerchantKey + COLON + paymentRenewalRequest.getUid();

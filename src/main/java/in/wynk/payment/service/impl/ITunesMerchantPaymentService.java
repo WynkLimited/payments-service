@@ -192,7 +192,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
             if(transaction.getStatus() == TransactionStatus.SUCCESS){
                 transaction.setExitTime(Calendar.getInstance());
-             //   subscriptionServiceManager.publish(selectedPlan.getId(), uid, transaction.getId().toString(), transaction.getStatus(), transaction.getType());
+                subscriptionServiceManager.publish(selectedPlan.getId(), uid, transaction.getId().toString(), transaction.getStatus(), transaction.getType());
 
             }
             else {
@@ -244,11 +244,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private <T> T getValueFromSession(String key) {
         Session<SessionDTO> session = SessionContextHolder.get();
         return session.getBody().get(key);
-    }
-
-    private <T> void putValueInSession(String key, T value) {
-        Session<SessionDTO> session = SessionContextHolder.get();
-        session.getBody().put(key, value);
     }
 
     private float getFinalPlanAmountToBePaid(PlanDTO selectedPlan) {

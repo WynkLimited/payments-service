@@ -365,8 +365,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         } else {
             paylaod.put(PAYU_SI_KEY, "1");
         }
-        putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId());
-        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU);
+        putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
+        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
 
         PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
         publishSQSMessage(reconciliationQueue, reconciliationMessageDelay,reconciliationMessage);

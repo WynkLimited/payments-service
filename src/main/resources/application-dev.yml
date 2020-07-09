@@ -207,6 +207,3 @@ service:
 cors:
   allowed:
     origins: "*"
-
-logging:
-  path: /tmp

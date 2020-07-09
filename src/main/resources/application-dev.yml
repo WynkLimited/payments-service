@@ -32,15 +32,13 @@ apb:
 ###### Redis Store Props #######
 session:
   redis:
-    name: session-store-dev
-    mode: cluster
-    useSsl: false
-    usePooling: true
-    password: ##
-    enableJmx: true
-    jmxPrefix: session-store:dev
-    cluster:
-      nodes: 10.80.1.111:6379,10.80.0.22:6379
+    name: session-store:local
+    mode: standalone
+    standalone:
+      host: 10.80.1.111
+      port: 6379
+      usePooling: false
+      enableJmx: false
     connection:
       timeout: 1000
       maxTotal: 200
@@ -209,3 +207,6 @@ service:
 cors:
   allowed:
     origins: "*"
+
+logging:
+  path: /tmp

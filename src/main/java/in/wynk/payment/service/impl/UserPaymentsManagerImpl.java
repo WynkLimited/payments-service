@@ -1,6 +1,5 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.commons.enums.State;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;

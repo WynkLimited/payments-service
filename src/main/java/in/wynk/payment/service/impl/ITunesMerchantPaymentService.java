@@ -21,6 +21,7 @@ import in.wynk.payment.dto.ItunesCallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.core.dto.itunes.*;
 import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ItunesVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.service.*;
@@ -99,7 +100,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     @Override
     public BaseResponse<String> verifyIap(IapVerificationRequest iapVerificationRequest) {
         try {
-            ChargingStatus validationResponse = validateItunesTransaction(iapVerificationRequest.getUid(), iapVerificationRequest.getReceipt(), iapVerificationRequest.getPlanId(), getValueFromSession(SessionKeys.SERVICE));
+            ItunesVerificationRequest itunesVerificationRequest = (ItunesVerificationRequest) iapVerificationRequest;
+            ChargingStatus validationResponse = validateItunesTransaction(iapVerificationRequest.getUid(), itunesVerificationRequest.getReceipt(), iapVerificationRequest.getPlanId(), getValueFromSession(SessionKeys.SERVICE));
             URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
             returnUrl.addParameter(STATUS, validationResponse.getTransactionStatus().name());
             HttpHeaders httpHeaders = new HttpHeaders();

@@ -162,11 +162,10 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         catch(Exception e){
             throw new WynkRuntimeException(e);
         }
-
     }
 
     @Override
-    public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<?> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         return null;
     }
 

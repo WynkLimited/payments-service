@@ -9,6 +9,7 @@ public interface BeanConstant {
     String APB_MERCHANT_PAYMENT_SERVICE = "AirtelPaymentBank";
     String ACB_MERCHANT_PAYMENT_SERVICE = "AirtelCarrierBilling";
     String GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE = "GoogleWallet";
+    String AMAZON_IAP_MERCHANT_PAYMENT_SERVICE = "AmazonWallet";
 
     String TRANSACTION_DAO = "transactionDaoBean";
     String PAYMENT_RENEWAL_DAO = "paymentRenewalDaoBean";

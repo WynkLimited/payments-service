@@ -273,7 +273,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<Void> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         throw new UnsupportedOperationException("Unsupported operation - Renewal is not supported by APB");
     }
 

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Service(BeanConstant.ITUNES_MERCHANT_PAYMENT_SERVICE)
 public class ITunesMerchantPaymentService implements IMerchantPaymentStatusService {
     @Override
-    public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
         return null;
     }
 }

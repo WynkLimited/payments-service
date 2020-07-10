@@ -45,6 +45,7 @@ import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -112,6 +113,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final PaymentCachingService cachingService;
     @Autowired
     private Gson gson;
 
@@ -119,12 +121,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                                       ITransactionManagerService transactionManager,
                                       IRecurringPaymentManagerService recurringPaymentManagerService,
                                       @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher,
-                                      ISubscriptionServiceManager subscriptionServiceManager) {
+                                      ISubscriptionServiceManager subscriptionServiceManager,
+                                      PaymentCachingService paymentCachingService) {
         this.restTemplate = restTemplate;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.cachingService = paymentCachingService;
     }
 
     @Override
@@ -144,7 +148,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
         Map<String, String> payUpayload = startPaymentChargingForPayU(chargingRequest);
-        String encryptedParams = null;
+        String encryptedParams;
         try {
             encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUpayload), encryptionKey);
         } catch (Exception e) {
@@ -161,7 +165,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<Void> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         try {
             if (StringUtils.isEmpty(paymentRenewalRequest.getCardToken())) {
                 String userCredentials = payUMerchantKey + COLON + paymentRenewalRequest.getUid();
@@ -278,7 +282,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 finalTransactionStatus = TransactionStatus.SUCCESS;
                 if (payUTransactionDetails.getPayUUdf1().equalsIgnoreCase(PAYU_SI_KEY)) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
-                    PlanDTO plan = subscriptionServiceManager.getPlan(transaction.getPlanId());
+                    PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
                     nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, plan.getPeriod().getValidity());
                     recurringPaymentManagerService.addRecurringPayment(transaction.getId().toString(), nextRecurringDateTime);
                 }
@@ -328,7 +332,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String reqType = PaymentRequestType.DEFAULT.name();
         String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
 
-        final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(planId);
+        final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
         final Transaction transaction = initialiseTransaction(chargingRequest, finalPlanAmount);
         final String uid = getValueFromSession(SessionKeys.UID);
@@ -346,7 +350,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_MERCHANT_KEY, payUMerchantKey);
         paylaod.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
         paylaod.put(PAYU_TRANSACTION_AMOUNT, String.valueOf(finalPlanAmount));
-        paylaod.put(PAYU_PRODUCT_INFO, selectedPlan.getTitle());
+        paylaod.put(PAYU_PRODUCT_INFO, String.valueOf(planId));
         paylaod.put(PAYU_CUSTOMER_FIRSTNAME, uid);
         paylaod.put(PAYU_CUSTOMER_EMAIL, email);
         paylaod.put(PAYU_CUSTOMER_MSISDN, msisdn);
@@ -365,8 +369,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         } else {
             paylaod.put(PAYU_SI_KEY, "1");
         }
-        putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId());
-        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU);
+        putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
+        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
 
         PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
         publishSQSMessage(reconciliationQueue, reconciliationMessageDelay,reconciliationMessage);
@@ -505,7 +509,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         try {
             final String uid = transaction.getUid();
 
-            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(transaction.getPlanId());
+            final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
             final String errorCode = payUCallbackRequestPayload.getError();

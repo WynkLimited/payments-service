@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import springfox.documentation.builders.PathSelectors;
@@ -17,6 +18,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @EnableSwagger2
 @Configuration
+@EnableScheduling
 @EnableConfigurationProperties({CorsProperties.class})
 public class PaymentConfig implements WebMvcConfigurer {
 

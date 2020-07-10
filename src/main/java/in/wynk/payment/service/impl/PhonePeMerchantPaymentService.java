@@ -166,7 +166,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     @Override
-    public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<?> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         return null;
     }
 

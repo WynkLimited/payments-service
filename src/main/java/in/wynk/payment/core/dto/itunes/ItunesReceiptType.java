@@ -68,7 +68,7 @@ public enum ItunesReceiptType {
                 jsonObj = (JSONObject) JSONValue.parseWithException(itunesData);
             }
             catch (ParseException e) {
-                throw new RuntimeException("Error while parsing itunes subscription data " + itunesData);
+                throw new WynkRuntimeException("Error while parsing itunes subscription data " + itunesData);
             }
             return (String) jsonObj.get(RECEIPT_DATA);
         }

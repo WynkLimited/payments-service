@@ -16,6 +16,6 @@ public class PaymentLoggingMarker extends BaseLoggingMarkers {
     public static final Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     public static final Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
     public static final Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
-
+    public static final Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
     public static final Marker APB_ERROR = MarkerFactory.getMarker("APB_ERROR");
 }

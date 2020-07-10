@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.Objects;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -24,7 +25,7 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage{
         super.setPlanId(transaction.getPlanId());
         super.setTransactionId(transaction.getId().toString());
         super.setTransactionEvent(transaction.getType());
-        this.externalTransactionId = transaction.getMerchantTransaction().getExternalTransactionId();
+        this.externalTransactionId = Objects.nonNull(transaction.getMerchantTransaction())? transaction.getMerchantTransaction().getExternalTransactionId(): null;
         this.initTimestamp = System.currentTimeMillis();
     }
 }

@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dto.itunes;
 
+import in.wynk.exception.WynkRuntimeException;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -19,7 +20,7 @@ public enum ItunesReceiptType {
                 jsonObj = (JSONObject) JSONValue.parseWithException(itunesData);
             }
             catch (ParseException e) {
-                throw new RuntimeException("Error while parsing itunes subscription data " + itunesData);
+                throw new WynkRuntimeException("Error while parsing itunes subscription data " + itunesData);
             }
             String desiredJsonRep = "{";
             for(Object key : jsonObj.keySet()) {
@@ -67,7 +68,7 @@ public enum ItunesReceiptType {
                 jsonObj = (JSONObject) JSONValue.parseWithException(itunesData);
             }
             catch (ParseException e) {
-                throw new RuntimeException("Error while parsing itunes subscription data " + itunesData);
+                throw new WynkRuntimeException("Error while parsing itunes subscription data " + itunesData);
             }
             return (String) jsonObj.get(RECEIPT_DATA);
         }

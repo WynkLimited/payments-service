@@ -2,10 +2,7 @@ package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.DiscountDTO;
 import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -22,9 +19,8 @@ import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.session.context.SessionContextHolder;
-import in.wynk.session.dto.Session;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -34,8 +30,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.util.Calendar;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service(BeanConstant.AMAZON_IAP_MERCHANT_PAYMENT_SERVICE)
 public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService {
@@ -54,12 +48,14 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private final ISQSMessagePublisher sqsMessagePublisher;
     private final RestTemplate restTemplate;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final PaymentCachingService cachingService;
 
-    public AmazonIapMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager, ISQSMessagePublisher sqsMessagePublisher, ISubscriptionServiceManager subscriptionServiceManager) {
+    public AmazonIapMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager, ISQSMessagePublisher sqsMessagePublisher, ISubscriptionServiceManager subscriptionServiceManager, PaymentCachingService cachingService) {
         this.restTemplate = restTemplate;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.subscriptionServiceManager = subscriptionServiceManager;
+        this.cachingService = cachingService;
     }
 
     @Override
@@ -82,7 +78,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             if (amazonIapReceipt == null) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment resposne received from client");
             }
-            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(amazonIapVerificationRequest.getPlanId());
+            final PlanDTO selectedPlan = cachingService.getPlan(amazonIapVerificationRequest.getPlanId());
             final float finalPlanAmount = selectedPlan.getPrice().getAmount();
 
             TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;

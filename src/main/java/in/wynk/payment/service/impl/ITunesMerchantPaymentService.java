@@ -7,7 +7,6 @@ import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.DiscountDTO;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.dto.SubscriptionNotificationMessage;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
@@ -26,8 +25,6 @@ import in.wynk.payment.dto.request.ItunesVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.service.*;
-import in.wynk.queue.constant.QueueErrorType;
-import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
@@ -61,6 +58,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final ITransactionManagerService transactionManager;
     private final ISQSMessagePublisher sqsMessagePublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final PaymentCachingService cachingService;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
 
@@ -90,11 +88,12 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private static final List<ItunesStatusCodes> failureCodes = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005,
             ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008, ItunesStatusCodes.APPLE_21009, ItunesStatusCodes.APPLE_21010);
 
-    public ITunesMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager, ISQSMessagePublisher sqsMessagePublisher, ISubscriptionServiceManager subscriptionServiceManager) {
+    public ITunesMerchantPaymentService(RestTemplate restTemplate, ITransactionManagerService transactionManager, ISQSMessagePublisher sqsMessagePublisher, ISubscriptionServiceManager subscriptionServiceManager, PaymentCachingService cachingService) {
         this.restTemplate = restTemplate;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.subscriptionServiceManager = subscriptionServiceManager;
+        this.cachingService = cachingService;
     }
 
 
@@ -148,9 +147,9 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private ChargingStatus validateItunesTransaction(String uid, String requestReceipt, int planId, String service){
         String errorMessage = StringUtils.EMPTY;
         try {
-            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(planId);
+            final PlanDTO selectedPlan = cachingService.getPlan(planId);
             final float finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
-            Transaction transaction = initialiseTransaction(planId, finalPlanAmount, uid);
+            Transaction transaction = initialiseTransaction(planId, finalPlanAmount, uid, service);
             ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(requestReceipt);
             List<LatestReceiptInfo> userLatestReceipts = getReceiptObjForUser(requestReceipt, receiptType, transaction);
             LatestReceiptInfo latestReceiptInfo = userLatestReceipts.get(0);
@@ -224,24 +223,18 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         transactionManager.upsert(transaction);
     }
 
-    private Transaction initialiseTransaction(int planId, float amount, String uid) {
+    private Transaction initialiseTransaction(int planId, float amount, String uid, String service) {
         return transactionManager.upsert(Transaction.builder()
                 .planId(planId)
                 .amount(amount)
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
                 .uid(uid)
-                .service(getValueFromSession(SessionKeys.SERVICE))
+                .service(service)
                 .paymentChannel(PaymentCode.ITUNES.name())
                 .status(TransactionStatus.INPROGRESS.name())
                 .type(TransactionEvent.PURCHASE.name())
                 .build());
-    }
-
-
-    private PlanDTO getSelectedPlan(int planId) {
-        List<PlanDTO> plans = getValueFromSession(SessionKeys.ELIGIBLE_PLANS);
-        return plans.stream().filter(plan -> plan.getId() == planId).collect(Collectors.toList()).get(0);
     }
 
     private <T> T getValueFromSession(String key) {

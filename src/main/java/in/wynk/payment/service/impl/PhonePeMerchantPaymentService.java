@@ -12,22 +12,22 @@ import org.springframework.stereotype.Service;
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
 public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService {
     @Override
-    public <T> BaseResponse<T> handleCallback(CallbackRequest callbackRequest) {
+    public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
         return null;
     }
 
     @Override
-    public <T> BaseResponse<T> doCharging(ChargingRequest chargingRequest) {
+    public BaseResponse<?> doCharging(ChargingRequest chargingRequest) {
         return null;
     }
 
     @Override
-    public <T> BaseResponse<T> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<?> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         return null;
     }
 
     @Override
-    public <T> BaseResponse<T> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
         return null;
     }
 }

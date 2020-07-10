@@ -13,13 +13,10 @@ import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
@@ -46,17 +43,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public PlanDTO getPlan(int planId) {
-        return httpTemplate.exchange(SUBSCRIPTION_SERVICE_ENDPOINT + allPlanApiEndPoint,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<PlanDTO>>() {})
-                .map(ResponseEntity::getBody)
-                .get()
-                .stream()
-                .filter(plan -> plan.getId() == planId)
-                .collect(Collectors.toList())
-                .get(0);
+    public List<PlanDTO> getPlans() {
+        return Arrays.asList(httpTemplate.getForObject(SUBSCRIPTION_SERVICE_ENDPOINT + allPlanApiEndPoint, PlanDTO[].class).orElse(new PlanDTO[0]));
     }
 
     @Override

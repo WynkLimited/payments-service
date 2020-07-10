@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.State;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
@@ -9,6 +10,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -19,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 
@@ -32,11 +36,16 @@ public class PaymentCachingService {
     private final Lock writeLock = lock.writeLock();
     @Autowired
     private PaymentMethodDao paymentMethodDao;
+    @Autowired
+    private ISubscriptionServiceManager subscriptionServiceManager;
     private Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
+    private Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
 
+    @Scheduled(fixedDelay = 30 * 60 * 1000L)
     @PostConstruct
     public void init() {
         loadPayments();
+        loadPlans();
     }
 
     private void loadPayments() {
@@ -60,10 +69,30 @@ public class PaymentCachingService {
         }
     }
 
+    private void loadPlans() {
+        List<PlanDTO> planList = subscriptionServiceManager.getPlans();
+        if (CollectionUtils.isNotEmpty(planList) && writeLock.tryLock()) {
+            try {
+                Map<Integer, PlanDTO> planDTOMap = planList.stream().collect(Collectors.toMap(PlanDTO::getId, Function.identity()));
+                plans.clear();
+                plans.putAll(planDTOMap);
+
+            } catch (Throwable th) {
+                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
+                throw th;
+            } finally {
+                writeLock.unlock();
+            }
+        }
+    }
+
 
     private List<PaymentMethod> getActivePaymentMethods() {
         return paymentMethodDao.findAllByState(State.ACTIVE);
     }
 
 
+    public PlanDTO getPlan(Integer planId) {
+        return plans.get(planId);
+    }
 }

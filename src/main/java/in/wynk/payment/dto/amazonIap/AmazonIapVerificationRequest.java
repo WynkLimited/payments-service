@@ -10,4 +10,5 @@ import lombok.Getter;
 public class AmazonIapVerificationRequest extends IapVerificationRequest {
     private UserData userData;
     private Receipt receipt;
+    private String service;
 }

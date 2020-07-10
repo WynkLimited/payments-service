@@ -1,7 +1,6 @@
 package in.wynk.payment.service;
 
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
 
 public interface ITransactionManagerService {

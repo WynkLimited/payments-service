@@ -55,7 +55,6 @@ app:
         password: # None
         database: payments
 
-
 ##### mysql database props #####
 spring:
   datasource:

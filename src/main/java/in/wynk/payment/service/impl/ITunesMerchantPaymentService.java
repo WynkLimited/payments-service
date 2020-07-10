@@ -8,6 +8,7 @@ import in.wynk.commons.dto.DiscountDTO;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.dto.SubscriptionNotificationMessage;
+import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -113,7 +114,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
              return BaseResponse.<String>builder().body(returnUrl.toString()).status(HttpStatus.FOUND).headers(httpHeaders).build();
         }
         catch (Exception e){
-            throw new WynkRuntimeException(e);
+            throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
         }
     }
 
@@ -140,14 +141,14 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             return BaseResponse.<ChargingStatus>builder().body(validationResponse).status(HttpStatus.OK).build();
         }
         catch (Exception e){
-            throw new WynkRuntimeException(e);
+            throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
         }
     }
 
     private ChargingStatus validateItunesTransaction(String uid, String requestReceipt, int planId, String service){
         String errorMessage = StringUtils.EMPTY;
         try {
-            final PlanDTO selectedPlan = getSelectedPlan(planId);
+            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(planId);
             final float finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
             Transaction transaction = initialiseTransaction(planId, finalPlanAmount, uid);
             ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(requestReceipt);
@@ -211,7 +212,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         }
         catch (Exception e) {
             logger.error(BaseLoggingMarkers.PAYMENT_ERROR, "validateItunesTransaction :: raised exception for uid : {} receipt : {} ", uid, requestReceipt, e);
-            throw new WynkRuntimeException("Could not process itunes validate transaction request for uid: " + uid + " ERROR: " + e);
+            throw new WynkRuntimeException(WynkErrorType.UT999, "Could not process itunes validate transaction request for uid: " + uid + " ERROR: " + e);
         }
     }
 
@@ -331,7 +332,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         }
         catch(Exception e){
             createErrorTransaction(transaction, e.getMessage());
-            throw new WynkRuntimeException(e);
+            throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
         }
     }
 

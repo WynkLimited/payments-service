@@ -82,9 +82,9 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             if (amazonIapReceipt == null) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment resposne received from client");
             }
-//            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(amazonIapVerificationRequest.getPlanId());
-//            final float finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
-            final float finalPlanAmount = 10;
+            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(amazonIapVerificationRequest.getPlanId());
+            final float finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
+
             TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
             TransactionEvent transactionEvent = TransactionEvent.SUBSCRIBE;
 
@@ -114,11 +114,11 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                     .merchantTransaction(merchantTransaction)
                     .build());
 
-//            subscriptionServiceManager.publish(amazonIapVerificationRequest.getPlanId(),
-//                    amazonIapVerificationRequest.getUid(),
-//                    transaction.getId().toString(),
-//                    transaction.getStatus(),
-//                    transaction.getType());
+            subscriptionServiceManager.publish(amazonIapVerificationRequest.getPlanId(),
+                    amazonIapVerificationRequest.getUid(),
+                    transaction.getId().toString(),
+                    transaction.getStatus(),
+                    transaction.getType());
 
             return ChargingStatus
                     .builder()

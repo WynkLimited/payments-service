@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AmazonIapReceipt {
+public class AmazonIapReceiptResponse {
 
     boolean betaProduct;
     Long cancelDate;

@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.DiscountDTO;
@@ -10,9 +11,10 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.amazonIap.AmazonIapReceipt;
+import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -27,6 +29,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
@@ -66,88 +69,81 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             ChargingStatus amazonIapVerificationResponse = validateTransaction(amazonIapVerificationRequest);
             URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
             returnUrl.addParameter("status", amazonIapVerificationResponse.getTransactionStatus().name());
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.add(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8");
-            httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());
-            httpHeaders.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-            httpHeaders.add(HttpHeaders.PRAGMA, "no-cache");
-            httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
-            return BaseResponse.<String>builder().body(returnUrl.toString()).status(HttpStatus.OK).headers(httpHeaders).build();
+            return BaseResponse.<String>builder().body(returnUrl.toString()).status(HttpStatus.FOUND).build();
         }
         catch (Exception e){
-            throw new WynkRuntimeException(e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         }
     }
 
     private ChargingStatus validateTransaction(AmazonIapVerificationRequest amazonIapVerificationRequest){
         try {
-            AmazonIapReceipt amazonIapReceipt = getReceiptStatus(amazonIapVerificationRequest.getPaymentResponse().getReceipt().getReceiptId(), amazonIapVerificationRequest.getPaymentResponse().getUserData().getUserId());
+            AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(amazonIapVerificationRequest.getReceipt().getReceiptId(), amazonIapVerificationRequest.getUserData().getUserId());
             if (amazonIapReceipt == null) {
-                throw new WynkRuntimeException("Unable to verify amazon iap receipt for payment resposne received from client");
+                throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment resposne received from client");
             }
-            final PlanDTO selectedPlan = getSelectedPlan(amazonIapVerificationRequest.getPlanId());
-            final float finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
-            Transaction transaction = initialiseTransaction(amazonIapVerificationRequest.getPlanId(), finalPlanAmount, amazonIapVerificationRequest.getUid());
-            if (amazonIapReceipt.getCancelDate() == null) {
-                transaction.setExitTime(Calendar.getInstance());
-                subscriptionServiceManager.publish(amazonIapVerificationRequest.getPlanId(), amazonIapVerificationRequest.getUid(), transaction.getId().toString(), transaction.getStatus(), transaction.getType());
-                transaction.setStatus(TransactionStatus.SUCCESS.name());
-            } else {
-                //TODO - Is there anything else to be done here ?
-                transaction.setStatus(TransactionStatus.FAILURE.name());
+//            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(amazonIapVerificationRequest.getPlanId());
+//            final float finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
+            final float finalPlanAmount = 10;
+            TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+            TransactionEvent transactionEvent = TransactionEvent.SUBSCRIBE;
 
+            if (amazonIapReceipt.getCancelDate() == null) {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
             }
-            transaction.setMerchantTransaction(MerchantTransaction.builder().request(amazonIapVerificationRequest).response(amazonIapReceipt).externalTransactionId(amazonIapReceipt.getReceiptID()).build());
-            transactionManager.upsert(transaction);
+            else {
+                transactionEvent = TransactionEvent.UNSUBSCRIBE;
+            }
+
+            MerchantTransaction merchantTransaction = MerchantTransaction.builder()
+                    .request(amazonIapVerificationRequest)
+                    .response(amazonIapReceipt)
+                    .externalTransactionId(amazonIapReceipt.getReceiptID())
+                    .build();
+
+            Transaction transaction = transactionManager.upsert(Transaction.builder()
+                    .planId(amazonIapVerificationRequest.getPlanId())
+                    .amount(finalPlanAmount)
+                    .initTime(Calendar.getInstance())
+                    .consent(Calendar.getInstance())
+                    .uid(amazonIapVerificationRequest.getUid())
+                    //.service(getValueFromSession(SessionKeys.SERVICE))
+                    .paymentChannel(PaymentCode.AMAZON_IAP.name())
+                    .status(finalTransactionStatus.name())
+                    .type(transactionEvent.name())
+                    .merchantTransaction(merchantTransaction)
+                    .build());
+
+//            subscriptionServiceManager.publish(amazonIapVerificationRequest.getPlanId(),
+//                    amazonIapVerificationRequest.getUid(),
+//                    transaction.getId().toString(),
+//                    transaction.getStatus(),
+//                    transaction.getType());
+
             return ChargingStatus
                     .builder()
                     .transactionStatus(transaction.getStatus())
                     .build();
         }
         catch (Exception e){
-            throw new WynkRuntimeException(e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         }
     }
 
-    private AmazonIapReceipt getReceiptStatus(String receiptId, String userId){
+    private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId){
         String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
-        AmazonIapReceipt receiptObj = null;
+        AmazonIapReceiptResponse receiptObj = null;
         try {
             RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
             ResponseEntity<String> responseEntity = restTemplate.exchange(requestEntity, String.class);
             if(responseEntity.getBody()!=null)
-                receiptObj = mapper.readValue(responseEntity.getBody(), AmazonIapReceipt.class);
+                receiptObj = mapper.readValue(responseEntity.getBody(), AmazonIapReceiptResponse.class);
 
         }
-        catch (Exception e){
-            throw new WynkRuntimeException(e);
+        catch (HttpStatusCodeException | JsonProcessingException e){
+            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         }
         return receiptObj;
-    }
-
-    private Transaction initialiseTransaction(int planId, float amount, String uid) {
-        return transactionManager.upsert(Transaction.builder()
-                .planId(planId)
-                .amount(amount)
-                .initTime(Calendar.getInstance())
-                .consent(Calendar.getInstance())
-                .uid(uid)
-                //.service(getValueFromSession(SessionKeys.SERVICE))
-                .paymentChannel(PaymentCode.AMAZON_IAP.name())
-                .status(TransactionStatus.INPROGRESS.name())
-                .type(TransactionEvent.PURCHASE.name())
-                .build());
-    }
-
-
-    private PlanDTO getSelectedPlan(int planId) {
-        List<PlanDTO> plans = getValueFromSession(SessionKeys.ELIGIBLE_PLANS);
-        return plans.stream().filter(plan -> plan.getId() == planId).collect(Collectors.toList()).get(0);
-    }
-
-    private <T> T getValueFromSession(String key) {
-        Session<SessionDTO> session = SessionContextHolder.get();
-        return session.getBody().get(key);
     }
 
     private float getFinalPlanAmountToBePaid(PlanDTO selectedPlan) {

@@ -8,5 +8,6 @@ import lombok.Getter;
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AmazonIapVerificationRequest extends IapVerificationRequest {
-    private PaymentResponse paymentResponse;
+    private UserData userData;
+    private Receipt receipt;
 }

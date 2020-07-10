@@ -5,5 +5,5 @@ import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantVerificationService {
 
-    <R> BaseResponse<R> doVerify(VerificationRequest verificationRequest);
+    BaseResponse<?> doVerify(VerificationRequest verificationRequest);
 }

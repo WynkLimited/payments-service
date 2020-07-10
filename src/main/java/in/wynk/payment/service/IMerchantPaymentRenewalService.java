@@ -5,6 +5,6 @@ import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantPaymentRenewalService {
 
-    <R> BaseResponse<R> doRenewal(PaymentRenewalRequest paymentRenewalRequest);
+    BaseResponse<?> doRenewal(PaymentRenewalRequest paymentRenewalRequest);
 
 }

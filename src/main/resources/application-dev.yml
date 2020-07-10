@@ -163,6 +163,19 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      recurrence:
+        enabled: true
+        name: wcf-staging-payment-recurring
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
   ###### webview status props #######
   status:
     web:
@@ -204,7 +217,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-statging.wynk.in
+      root: https://subscription-statging.wynk.in
 
 cors:
   allowed:

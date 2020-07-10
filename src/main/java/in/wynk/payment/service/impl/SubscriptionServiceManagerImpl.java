@@ -1,7 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SubscriptionNotificationMessage;
+import in.wynk.commons.dto.SubscriptionProvisioningMessage;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -62,10 +62,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public String publish(int planId, String uid, String transactionId, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
         try {
-            return sqsMessagePublisher.publish(SendSQSMessageRequest.<SubscriptionNotificationMessage>builder()
+            return sqsMessagePublisher.publish(SendSQSMessageRequest.<SubscriptionProvisioningMessage>builder()
                     .queueName(subscriptionQueue)
                     .delaySeconds(subscriptionMessageDelay)
-                    .message(SubscriptionNotificationMessage.builder()
+                    .message(SubscriptionProvisioningMessage.builder()
                             .uid(uid)
                             .planId(planId)
                             .transactionId(transactionId)

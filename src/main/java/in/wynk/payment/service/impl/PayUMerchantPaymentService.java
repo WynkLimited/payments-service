@@ -567,7 +567,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {
         String rawChecksum = payUMerchantKey
-                + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
+                                + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
                 + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUSalt;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
     }

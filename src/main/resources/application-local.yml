@@ -194,6 +194,13 @@ payment:
         url: https://buy.itunes.apple.com/verifyReceipt
       return:
         wynkurl: https://wcf-pay.wynk.in
+    #### AmazonIap props ######
+    amazonIap:
+      secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
+      status:
+        baseUrl: http://localhost:8080/RVSSandbox/version/1.0/verifyReceiptId/developer/
+      return:
+        wynkUrl: https://wcfpay-new.wynk.in/wcf
 
 ####### Http Client Props #######
 http:

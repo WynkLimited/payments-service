@@ -148,7 +148,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private ChargingStatus validateItunesTransaction(String uid, String requestReceipt, int planId, String service){
         String errorMessage = StringUtils.EMPTY;
         try {
-            final PlanDTO selectedPlan = getSelectedPlan(planId);
+            final PlanDTO selectedPlan = subscriptionServiceManager.getPlan(planId);
             final float finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
             Transaction transaction = initialiseTransaction(planId, finalPlanAmount, uid);
             ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(requestReceipt);

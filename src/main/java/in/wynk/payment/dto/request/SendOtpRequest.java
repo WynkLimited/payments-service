@@ -1,5 +1,4 @@
 package in.wynk.payment.dto.request;
 
-public class PaymentStatusRequest {
-
+public class SendOtpRequest {
 }

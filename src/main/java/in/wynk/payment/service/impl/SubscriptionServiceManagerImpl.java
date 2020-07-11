@@ -6,7 +6,6 @@ import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -17,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
 
 @Service
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
@@ -37,7 +38,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private String allPlanApiEndPoint;
 
     public SubscriptionServiceManagerImpl(ISQSMessagePublisher sqsMessagePublisher,
-                                          @Qualifier(BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE) HttpTemplate httpTemplate) {
+                                          @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) HttpTemplate httpTemplate) {
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.httpTemplate = httpTemplate;
     }

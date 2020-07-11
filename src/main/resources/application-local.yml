@@ -224,7 +224,7 @@ http:
 service:
   subscription:
     api:
-      root: http://localhost:${server.port}
+      root: http://subscription-statging.wynk.in
 
 cors:
   allowed:

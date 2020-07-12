@@ -4,8 +4,10 @@ import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SubscriptionNotificationMessage;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
+import in.wynk.payment.dto.AllPlans;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -14,7 +16,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
@@ -45,7 +46,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public List<PlanDTO> getPlans() {
-        return Arrays.asList(httpTemplate.getForObject(SUBSCRIPTION_SERVICE_ENDPOINT + allPlanApiEndPoint, PlanDTO[].class).orElse(new PlanDTO[0]));
+        return httpTemplate.getForObject(SUBSCRIPTION_SERVICE_ENDPOINT + allPlanApiEndPoint, AllPlans.class)
+                .orElseThrow(()->new WynkRuntimeException(WynkErrorType.UT777)).getData().getPlans();
     }
 
     @Override

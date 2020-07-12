@@ -547,7 +547,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             }
 
             final URIBuilder returnUrl = new URIBuilder(statusWebUrl);
-            returnUrl.addParameter(TRANSACTION_ID, transactionId);
+            returnUrl.addParameter(TXN_ID, transactionId);
             returnUrl.addParameter(SESSION_ID, SessionContextHolder.get().getId().toString());
             return returnUrl.build();
         } catch (Exception e) {

@@ -61,6 +61,8 @@ import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.payment.constant.ApbConstants.HASH;
 import static in.wynk.payment.constant.ApbConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
+import static in.wynk.payment.core.constant.PaymentConstants.SESSION_ID;
+import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
@@ -200,7 +202,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     private URI getCallbackUrl(String sid, String txnId) throws URISyntaxException {
-        return new URIBuilder(CALLBACK_URL).addParameter("sid", sid).addParameter("tid", txnId).build();
+        return new URIBuilder(CALLBACK_URL).addParameter(SESSION_ID, sid).addParameter(TXN_ID, txnId).build();
     }
 
     @Override

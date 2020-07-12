@@ -1,0 +1,19 @@
+####### Http Client Props #######
+http:
+  enableTemplateRegistration: true
+  templates:
+    subscriptionHttpTemplate:
+      pool:
+        connection:
+          max: 5000
+          maxPerHost: 500
+          validateAfterInActivity: 100
+          timeout: 4000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          socket:
+            timeout: 6000
+            factory:
+              type: both
+          request:
+            timeout: 1000

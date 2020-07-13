@@ -2,7 +2,9 @@ package in.wynk.payment.core.dao.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.payment.core.dto.itunes.ItunesReceiptType;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -22,5 +24,6 @@ public class ItunesIdUidMapping implements Serializable {
     private String receipt;
     private String service;
     private ItunesReceiptType type;
+    private String msisdn;
 
 }

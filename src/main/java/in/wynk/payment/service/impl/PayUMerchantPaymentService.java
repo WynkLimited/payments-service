@@ -3,7 +3,6 @@ package in.wynk.payment.service.impl;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.DiscountDTO;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PaymentRequestType;
@@ -333,18 +332,19 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
 
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final double finalPlanAmount = getFinalPlanAmountToBePaid(selectedPlan);
+        final double finalPlanAmount = selectedPlan.getFinalPrice();
         final Transaction transaction = initialiseTransaction(chargingRequest, finalPlanAmount);
         final String uid = getValueFromSession(SessionKeys.UID);
         final String email = uid + BASE_USER_EMAIL;
-        if (!selectedPlan.getPlanType().equals(PlanType.ONE_TIME_SUBSCRIPTION)) {
+        Map<String, String> paylaod = new HashMap<>();
+        if (!PlanType.ONE_TIME_SUBSCRIPTION.equals(selectedPlan.getPlanType())) {
             reqType = PaymentRequestType.SUBSCRIBE.name();
             udf1 = PAYU_SI_KEY.toUpperCase();
+            paylaod.put(PAYU_SI_KEY, "1");
         }
 
         String checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount);
         String userCredentials = payUMerchantKey + COLON + uid;
-        Map<String, String> paylaod = new HashMap<>();
 
         paylaod.put(PAYU_REQUEST_TYPE, reqType);
         paylaod.put(PAYU_MERCHANT_KEY, payUMerchantKey);
@@ -362,13 +362,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(IS_FALLBACK_ATTEMPT, String.valueOf(false));
         paylaod.put(ERROR, PAYU_REDIRECT_MESSAGE);
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
-
-        if (selectedPlan.getPlanType().equals(PlanType.ONE_TIME_SUBSCRIPTION)) {
-            paylaod.put(PAYU_ENFORCE_PAYMENT, NETBANKING_MODE);
-            //@Zuber why we are forcing option to NetBanking
-        } else {
-            paylaod.put(PAYU_SI_KEY, "1");
-        }
         putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
 
@@ -376,16 +369,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         publishSQSMessage(reconciliationQueue, reconciliationMessageDelay,reconciliationMessage);
 
         return paylaod;
-    }
-
-    private double getFinalPlanAmountToBePaid(PlanDTO selectedPlan) {
-        float finalPlanAmount = selectedPlan.getPrice().getAmount();
-        if (selectedPlan.getPrice().getDiscount().size() > 0) {
-            for (DiscountDTO discount : selectedPlan.getPrice().getDiscount()) {
-                finalPlanAmount *= ((double) (100 - discount.getPercent()) / 100);
-            }
-        }
-        return finalPlanAmount;
     }
 
     private Transaction initialiseTransaction(ChargingRequest chargingRequest, double amount) {
@@ -520,8 +503,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     payUCallbackRequestPayload.getUdf1(),
                     payUCallbackRequestPayload.getEmail(),
                     payUCallbackRequestPayload.getFirstName(),
-                    selectedPlan.getTitle(),
-                    getFinalPlanAmountToBePaid(selectedPlan),
+                    String.valueOf(transaction.getPlanId()),
+                    selectedPlan.getFinalPrice(),
                     payUCallbackRequestPayload.getResponseHash());
 
             if (isValidHash) {

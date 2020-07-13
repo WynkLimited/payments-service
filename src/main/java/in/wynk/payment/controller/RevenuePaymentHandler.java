@@ -4,19 +4,17 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.FetchStrategy;
 import in.wynk.payment.core.constant.ApplicationConstant;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.enums.StatusMode;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.utils.BeanLocatorFactory;
 import in.wynk.session.aspect.advice.ManageSession;
@@ -56,25 +54,12 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
-    @PostMapping("/verifyIap/{sid}")
-    @ManageSession(sessionId = "#sid")
-    @AnalyseTransaction(name = "IapPaymentVerification")
-    public ResponseEntity<?> verifyIap(@PathVariable String sid, @RequestBody IapVerificationRequest request) {
-        PaymentCode paymentCode = request.getPaymentCode();
-        AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
-        IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
-        BaseResponse<?> baseResponse = verificationService.verifyIap(request);
-        return baseResponse.getResponse();
-    }
-
     @GetMapping("/status/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentStatus")
     public ResponseEntity<?> status(@PathVariable String sid) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        ChargingStatusRequest request = ChargingStatusRequest.builder()
-                .fetchStrategy(FetchStrategy.DIRECT_SOURCE_INTERNAL_WITHOUT_CACHE)
-                .build();
+        ChargingStatusRequest request = ChargingStatusRequest.builder().mode(StatusMode.LOCAL).build();
         PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
         AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);

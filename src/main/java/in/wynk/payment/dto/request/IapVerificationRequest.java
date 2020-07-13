@@ -4,22 +4,19 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
-import in.wynk.payment.dto.request.paytm.PaytmWalletAddMoneyRequest;
-import in.wynk.payment.dto.request.paytm.PaytmWalletLinkRequest;
-import in.wynk.payment.dto.request.paytm.PaytmWalletValidateLinkRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import static in.wynk.payment.core.constant.BeanConstant.AMAZON_IAP_PAYMENT_SERVICE;
+import static in.wynk.payment.core.constant.BeanConstant.ITUNES_PAYMENT_SERVICE;
 
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        property = "type"
-)
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"),
-        @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")
+        @JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = ITUNES_PAYMENT_SERVICE),
+        @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = AMAZON_IAP_PAYMENT_SERVICE)
 })
 
 @Builder

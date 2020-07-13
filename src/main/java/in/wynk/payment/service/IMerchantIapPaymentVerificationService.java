@@ -5,6 +5,6 @@ import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantIapPaymentVerificationService {
 
-    <T> BaseResponse<T> verifyIap(IapVerificationRequest iapVerificationRequest);
+    BaseResponse<?> verifyReceipt(IapVerificationRequest iapVerificationRequest);
 
 }

@@ -7,6 +7,8 @@ import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.DiscountDTO;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
@@ -17,19 +19,25 @@ import in.wynk.payment.core.dao.entity.ItunesIdUidMapping;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
+import in.wynk.payment.core.dto.itunes.ItunesReceipt;
+import in.wynk.payment.core.dto.itunes.ItunesReceiptType;
+import in.wynk.payment.core.dto.itunes.ItunesStatusCodes;
+import in.wynk.payment.core.dto.itunes.LatestReceiptInfo;
 import in.wynk.payment.dto.ItunesCallbackRequest;
-import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.core.dto.itunes.*;
 import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.ItunesVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
+import in.wynk.payment.service.IMerchantPaymentCallbackService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONObject;
@@ -38,19 +46,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.apache.commons.codec.binary.Base64;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
 
-import static in.wynk.payment.core.dto.itunes.ItunesConstant.*;
+import static in.wynk.payment.core.dto.itunes.ItunesConstant.LATEST_RECEIPT_INFO;
+import static in.wynk.payment.core.dto.itunes.ItunesConstant.PASSWORD;
+import static in.wynk.payment.core.dto.itunes.ItunesConstant.RECEIPT_DATA;
+import static in.wynk.payment.core.dto.itunes.ItunesConstant.STATUS;
 
-@Service(BeanConstant.ITUNES_MERCHANT_PAYMENT_SERVICE)
+@Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
 public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentCallbackService {
 
 
@@ -98,19 +114,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
 
     @Override
-    public BaseResponse<String> verifyIap(IapVerificationRequest iapVerificationRequest) {
+    public BaseResponse<Void> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
         try {
             ItunesVerificationRequest itunesVerificationRequest = (ItunesVerificationRequest) iapVerificationRequest;
             ChargingStatus validationResponse = validateItunesTransaction(iapVerificationRequest.getUid(), itunesVerificationRequest.getReceipt(), iapVerificationRequest.getPlanId(), getValueFromSession(SessionKeys.SERVICE));
             URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
             returnUrl.addParameter(STATUS, validationResponse.getTransactionStatus().name());
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.add(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8");
-            httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());
-            httpHeaders.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-            httpHeaders.add(HttpHeaders.PRAGMA, "no-cache");
-            httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
-             return BaseResponse.<String>builder().body(returnUrl.toString()).status(HttpStatus.FOUND).headers(httpHeaders).build();
+             return BaseResponse.redirectResponse(returnUrl.build().toString());
         }
         catch (Exception e){
             throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
@@ -175,14 +185,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                     if (mapping == null) {
                         ItunesIdUidMapping itunesIdUidMapping =
-                                ItunesIdUidMapping.builder()
-                                                    .uid(uid)
-                                                    .itunesId(originalITunesTrxnId)
-                                                    .planId(planId)
-                                                    .receipt(requestReceipt)
-                                                    .type(receiptType)
-                                                    .service(service)
-                                                    .build();
+                                ItunesIdUidMapping.builder().uid(uid).itunesId(originalITunesTrxnId).planId(planId)
+                                        .receipt(requestReceipt).type(receiptType).service(service).build();
                         saveItunesIdUidMapping(itunesIdUidMapping);
                     }
                     transaction.setStatus(TransactionStatus.SUCCESS.name());

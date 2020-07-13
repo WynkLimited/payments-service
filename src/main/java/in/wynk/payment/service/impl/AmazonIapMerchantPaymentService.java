@@ -23,7 +23,9 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -31,7 +33,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.Calendar;
 
-@Service(BeanConstant.AMAZON_IAP_MERCHANT_PAYMENT_SERVICE)
+@Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
 public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService {
 
     @Value("${payment.merchant.amazonIap.secret}")
@@ -59,13 +61,13 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     @Override
-    public BaseResponse<String> verifyIap(IapVerificationRequest iapVerificationRequest) {
+    public BaseResponse<Void> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
         try {
             AmazonIapVerificationRequest amazonIapVerificationRequest = (AmazonIapVerificationRequest) iapVerificationRequest;
             ChargingStatus amazonIapVerificationResponse = validateTransaction(amazonIapVerificationRequest);
             URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
             returnUrl.addParameter("status", amazonIapVerificationResponse.getTransactionStatus().name());
-            return BaseResponse.<String>builder().body(returnUrl.toString()).status(HttpStatus.FOUND).build();
+            return BaseResponse.redirectResponse(returnUrl.build().toString());
         }
         catch (Exception e){
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);

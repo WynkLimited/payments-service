@@ -27,6 +27,8 @@ public class IapVerificationRequest {
 
     private String uid;
     private int planId;
+    private String deviceId;
+    private String msisdn;
     private PaymentCode paymentCode;
 
 }

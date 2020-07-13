@@ -237,7 +237,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-staging.wynk.in
+      root: https://subscription-staging.wynk.in
 
 cors:
   allowed:

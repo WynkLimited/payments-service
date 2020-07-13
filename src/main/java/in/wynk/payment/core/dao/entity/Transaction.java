@@ -96,6 +96,10 @@ public class Transaction {
         return id != null ? UUID.fromString(id): null;
     }
 
+    public String getIdStr(){
+        return id;
+    }
+
     public PaymentCode getPaymentChannel() {
         return PaymentCode.valueOf(paymentChannel);
     }

@@ -239,10 +239,10 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
         if (finalTransactionStatus == TransactionStatus.INPROGRESS) {
             logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for transactionId {}", chargingStatusRequest.getTransactionId());
-            throw new WynkRuntimeException(PaymentErrorType.PAY013);
+            throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
         } else if (finalTransactionStatus == TransactionStatus.UNKNOWN) {
             logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status from phonePe end for transactionId {}", chargingStatusRequest.getTransactionId());
-            throw new WynkRuntimeException(PaymentErrorType.PAY014);
+            throw new WynkRuntimeException(PaymentErrorType.PAY008, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
         }
 
         return ChargingStatus.builder()

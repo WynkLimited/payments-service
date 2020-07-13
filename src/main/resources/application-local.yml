@@ -98,7 +98,6 @@ spring:
       hibernate.enable_lazy_load_no_trans: true
       hibernate.types.print.banner: false
 
-
 #### logging props ####
 logging:
   path: /tmp
@@ -186,6 +185,17 @@ payment:
         callback:
           successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
           failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+    #### PhonePe props ######
+    phonepe:
+      id: WYNK
+      api:
+        base:
+          url: https://mercury-t2.phonepe.com
+      callback:
+        url: http://dev.wynk.in:8080/wynk/v2/paymentcallback/phonepe
+      return:
+        wynkurl: https://wcf-pay.wynk.in
+      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
     #### Itunes props ######
     itunes:
       secret: 820ea8abe1374b369eaa564dcfa6391c
@@ -227,7 +237,7 @@ http:
 service:
   subscription:
     api:
-      root: http://localhost:${server.port}
+      root: http://subscription-staging.wynk.in
 
 cors:
   allowed:

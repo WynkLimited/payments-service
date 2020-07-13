@@ -353,11 +353,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         } catch (HttpStatusCodeException e) {
             AnalyticService.update("otpValidated", false);
             logger.error(PAYTM_ERROR, "Error in response: {}", e.getResponseBodyAsString(), e);
-            throw new WynkRuntimeException(WynkErrorType.UT777, e, e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e, e.getResponseBodyAsString());
         } catch (Exception ex) {
             logger.error(PAYTM_ERROR, "Error in response: {}", ex.getMessage(), ex);
         }
-        throw new WynkRuntimeException(WynkErrorType.UT777);
+        throw new WynkRuntimeException(PaymentErrorType.PAY998, PAYTM_ERROR);
     }
 
     private void saveToken(PaytmWalletValidateLinkResponse tokenResponse) {

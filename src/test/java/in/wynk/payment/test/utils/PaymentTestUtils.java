@@ -1,7 +1,11 @@
 package in.wynk.payment.test.utils;
 
+import in.wynk.commons.dto.PlanDTO;
+import in.wynk.commons.dto.PlanPeriodDTO;
+import in.wynk.commons.dto.PriceDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PaymentGroup;
+import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.State;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Card;
@@ -10,14 +14,21 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import static in.wynk.commons.constants.Constants.MSISDN;
+import static in.wynk.commons.constants.Constants.SERVICE;
 import static in.wynk.commons.constants.Constants.UID;
 
 public class PaymentTestUtils {
 
     public static final String DUMMY_UID = "test_uid";
+    public static final int PLAN_ID = 1000180;
+    private static final String DUMMY_MSISDN = "1111111111";
 
     public static PaymentMethod dummyNetbankingMethod() {
         Map<String, Object> meta = new HashMap<>();
@@ -60,6 +71,26 @@ public class PaymentTestUtils {
         Map<String, Object> map = new HashMap<>();
         map.put(UID, DUMMY_UID);
         SessionDTO sessionDTO = SessionDTO.builder().build();
+        sessionDTO.setPayload(map);
+        return sessionDTO;
+    }
+
+    public static List<PlanDTO> dummyPlansDTO() {
+        return Collections.singletonList(dummyPlanDTO());
+    }
+
+    public static PlanDTO dummyPlanDTO() {
+        PlanPeriodDTO planPeriodDTO = PlanPeriodDTO.builder().timeUnit(TimeUnit.DAYS).validity(30).build();
+        PriceDTO priceDTO = PriceDTO.builder().amount(10).currency("INR").build();
+        return PlanDTO.builder().planType(PlanType.ONE_TIME_SUBSCRIPTION).id(PLAN_ID).period(planPeriodDTO).price(priceDTO).title("DUMMY_PLAN").build();
+    }
+
+    public static SessionDTO dummyAtvSession() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(MSISDN, DUMMY_MSISDN);
+        map.put(UID, DUMMY_UID);
+        map.put(SERVICE, "airteltv");
+        SessionDTO sessionDTO = new SessionDTO();
         sessionDTO.setPayload(map);
         return sessionDTO;
     }

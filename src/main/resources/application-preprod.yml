@@ -98,8 +98,6 @@ spring:
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
 
-
-
 ####### payment props #######
 payment:
   success:
@@ -196,6 +194,17 @@ payment:
       return:
         wynkUrl: https://wcfpay-new.wynk.in/wcf
 
+    #### PhonePe props ######
+    phonepe:
+      id: WYNK
+      api:
+        base:
+          url: https://mercury-t2.phonepe.com
+      callback:
+        url: https://capi.wynk.in/wynk/v1/paymentcallback/phonepe
+      return:
+        wynkurl: https://wcf-pay.wynk.in
+      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
 
 ####### Http Client Props #######
 http:

@@ -84,8 +84,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private String itunesSecret;
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
-    @Value("${payment.merchant.itunes.return.wynkurl}")
-    private String wynkReturnUrl;
+    @Value("${payment.status.web.url}")
+    private String statusWebUrl;
     @Value("${payment.pooling.queue.reconciliation.name}")
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.subscription.name}")
@@ -117,7 +117,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         try {
             ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
             ChargingStatus validationResponse = validateItunesTransaction(iapVerificationRequest.getUid(), request.getMsisdn(), request.getReceipt(), iapVerificationRequest.getPlanId(), getValueFromSession(SessionKeys.SERVICE));
-            URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
+            URIBuilder returnUrl = new URIBuilder(statusWebUrl);
             returnUrl.addParameter(STATUS, validationResponse.getTransactionStatus().name());
              return BaseResponse.redirectResponse(returnUrl.build().toString());
         }

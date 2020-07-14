@@ -42,8 +42,8 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
 
-    @Value("${payment.merchant.amazonIap.return.wynkUrl}")
-    private String wynkReturnUrl;
+    @Value("${payment.status.web.url}")
+    private String statusWebUrl;
 
     private static ObjectMapper mapper = new ObjectMapper();
     private final ITransactionManagerService transactionManager;
@@ -65,7 +65,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         try {
             AmazonIapVerificationRequest amazonIapVerificationRequest = (AmazonIapVerificationRequest) iapVerificationRequest;
             ChargingStatus amazonIapVerificationResponse = validateTransaction(amazonIapVerificationRequest);
-            URIBuilder returnUrl = new URIBuilder(wynkReturnUrl);
+            URIBuilder returnUrl = new URIBuilder(statusWebUrl);
             returnUrl.addParameter("status", amazonIapVerificationResponse.getTransactionStatus().name());
             return BaseResponse.redirectResponse(returnUrl.build().toString());
         }

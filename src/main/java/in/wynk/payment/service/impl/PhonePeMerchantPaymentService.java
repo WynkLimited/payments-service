@@ -87,8 +87,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private String phonePeBaseUrl;
     @Value("${payment.merchant.phonepe.salt}")
     private String salt;
-    @Value("${payment.merchant.phonepe.return.wynkurl}")
-    private String returnWynkUrl;
+    @Value("${payment.status.web.url}")
+    private String statusWebUrl;
     @Value("${payment.pooling.queue.reconciliation.name}")
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.subscription.name}")
@@ -290,7 +290,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                         uid);
             }
 
-            URIBuilder returnUrl = new URIBuilder(phonePeCallBackURL).addParameter(TXN_ID, transactionId)
+            URIBuilder returnUrl = new URIBuilder(statusWebUrl).addParameter(TXN_ID, transactionId)
                     .addParameter(SESSION_ID, SessionContextHolder.getId());
             return returnUrl.build();
         } catch (Exception e) {

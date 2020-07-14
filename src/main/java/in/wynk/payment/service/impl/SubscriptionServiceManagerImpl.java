@@ -8,6 +8,7 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -16,7 +17,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -42,9 +42,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public List<PlanDTO> getPlans() {
-        return httpTemplate.getForObject(allPlanApiEndPoint, AllPlansResponse.class).map(allPlansResponse -> {
-            return allPlansResponse.getData();
-        }).orElse(new ArrayList<>());
+        return httpTemplate.getForObject(allPlanApiEndPoint, AllPlansResponse.class).map(AllPlansResponse::getData).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY011));
     }
 
     @Override

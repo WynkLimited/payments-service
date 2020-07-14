@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.commons.dto.AllPlansResponse;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SubscriptionProvisioningMessage;
 import in.wynk.commons.enums.TransactionEvent;
@@ -15,7 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -30,9 +31,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${payment.pooling.queue.subscription.sqs.producer.delayInSecond}")
     private int subscriptionMessageDelay;
 
-    @Value("${service.subscription.api.root}")
-    private String SUBSCRIPTION_SERVICE_ENDPOINT;
-
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
 
@@ -44,7 +42,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public List<PlanDTO> getPlans() {
-        return Arrays.asList(httpTemplate.getForObject(SUBSCRIPTION_SERVICE_ENDPOINT + allPlanApiEndPoint, PlanDTO[].class).orElse(new PlanDTO[0]));
+        return httpTemplate.getForObject(allPlanApiEndPoint, AllPlansResponse.class).map(allPlansResponse -> {
+            return allPlansResponse.getData();
+        }).orElse(new ArrayList<>());
     }
 
     @Override

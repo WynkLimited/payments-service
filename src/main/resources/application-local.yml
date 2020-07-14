@@ -82,7 +82,7 @@ spring:
     show-sql: true
     open-in-view: true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -93,7 +93,7 @@ spring:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: true
-      hibernate.hbm2ddl.auto: validate
+      hibernate.hbm2ddl.auto: update
       hibernate.jdbc.time_zone: UTC
       hibernate.enable_lazy_load_no_trans: true
       hibernate.types.print.banner: false
@@ -225,7 +225,7 @@ http:
 service:
   subscription:
     api:
-      root: http://localhost:${server.port}
+      root: http://localhost:8081
 
 cors:
   allowed:

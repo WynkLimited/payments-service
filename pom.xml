@@ -27,6 +27,12 @@
             <groupId>in.wynk</groupId>
             <artifactId>lib-aspects</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>

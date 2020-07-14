@@ -12,9 +12,9 @@ spring:
     default-property-inclusion: NON_NULL
 
 
-debug: false
+debug: true
 server:
-  port: 8081
+  port: 8080
 
 ########## Management Config ##########
 management:
@@ -57,7 +57,7 @@ service:
   subscription:
     api:
       endpoint:
-        allPlans: ${service.subscription.api.root}/wynk/v1/plans
+        allPlans: ${service.subscription.api.root}/wynk/v1/s2s/data/allPlans
 
 cors:
   maxAge: 3600

@@ -233,16 +233,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         return session.getBody().get(key);
     }
 
-    private float getFinalPlanAmountToBePaid(PlanDTO selectedPlan) {
-        float finalPlanAmount = selectedPlan.getPrice().getAmount();
-        if (selectedPlan.getPrice().getDiscount().size() > 0) {
-            for (DiscountDTO discount : selectedPlan.getPrice().getDiscount()) {
-                finalPlanAmount *= ((double) (100 - discount.getPercent()) / 100);
-            }
-        }
-        return finalPlanAmount;
-    }
-
     private ResponseEntity<String> getItunesStatus(String encodedValue, String password, String url){
         JSONObject requestJson = new JSONObject();
         requestJson.put(RECEIPT_DATA, encodedValue);

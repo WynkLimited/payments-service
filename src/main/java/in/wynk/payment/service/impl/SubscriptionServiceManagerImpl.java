@@ -42,7 +42,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public List<PlanDTO> getPlans() {
-        return httpTemplate.getForObject(allPlanApiEndPoint, AllPlansResponse.class).map(AllPlansResponse::getData).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY011));
+        return httpTemplate.getForObject(allPlanApiEndPoint, AllPlansResponse.class).map(AllPlansResponse::getData).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY013));
     }
 
     @Override

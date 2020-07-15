@@ -7,6 +7,8 @@ import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.DiscountDTO;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.enums.PlanType;
+import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
@@ -158,7 +160,9 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         String errorMessage = StringUtils.EMPTY;
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();
-        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, finalPlanAmount, PaymentCode.ITUNES, service);
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+
+        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, finalPlanAmount, PaymentCode.ITUNES, eventType, service);
 
         try {
             ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(requestReceipt);

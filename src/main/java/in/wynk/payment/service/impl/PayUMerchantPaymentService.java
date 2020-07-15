@@ -306,16 +306,21 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private Map<String, String> startPaymentChargingForPayU(ChargingRequest chargingRequest) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        int planId = chargingRequest.getPlanId();
         String udf1 = StringUtils.EMPTY;
         String reqType = PaymentRequestType.DEFAULT.name();
-        String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
 
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final int planId = chargingRequest.getPlanId();
+        final String uid = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.UID));
+        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
+        final String service = getValueFromSession(SessionKeys.SERVICE);
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();
-        final Transaction transaction = initialiseTransaction(chargingRequest, finalPlanAmount);
-        final String uid = getValueFromSession(SessionKeys.UID);
+
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+
+        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn,chargingRequest.getPlanId(),finalPlanAmount, PaymentCode.PAYU, eventType, service);
+
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> paylaod = new HashMap<>();
         if (!PlanType.ONE_TIME_SUBSCRIPTION.equals(selectedPlan.getPlanType())) {
@@ -350,21 +355,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         publishSQSMessage(reconciliationQueue, reconciliationMessageDelay,reconciliationMessage);
 
         return paylaod;
-    }
-
-    private Transaction initialiseTransaction(ChargingRequest chargingRequest, double amount) {
-        return transactionManager.upsert(Transaction.builder()
-                .planId(chargingRequest.getPlanId())
-                .amount(amount)
-                .initTime(Calendar.getInstance())
-                .consent(Calendar.getInstance())
-                .uid(getValueFromSession(SessionKeys.UID))
-                .service(getValueFromSession(SessionKeys.SERVICE))
-                .msisdn(getValueFromSession(SessionKeys.MSISDN))
-                .paymentChannel(PaymentCode.PAYU.name())
-                .status(TransactionStatus.INPROGRESS.name())
-                .type(TransactionEvent.PURCHASE.name())
-                .build());
     }
 
 

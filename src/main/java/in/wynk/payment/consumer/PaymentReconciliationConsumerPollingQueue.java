@@ -5,6 +5,7 @@ import in.wynk.commons.enums.FetchStrategy;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.enums.StatusMode;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -50,7 +51,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
         statusService.status(ChargingStatusRequest.builder()
                 .transactionId(message.getTransactionId())
                 .transactionEvent(message.getTransactionEvent())
-                .fetchStrategy(FetchStrategy.DIRECT_SOURCE_EXTERNAL_WITHOUT_CACHE)
+                .mode(StatusMode.SOURCE)
                 .chargingTimestamp(message.getInitTimestamp())
                 .build());
     }

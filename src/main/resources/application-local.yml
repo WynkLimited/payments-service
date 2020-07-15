@@ -82,7 +82,7 @@ spring:
     show-sql: true
     open-in-view: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -93,7 +93,7 @@ spring:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: true
-      hibernate.hbm2ddl.auto: update
+      hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
       hibernate.enable_lazy_load_no_trans: true
       hibernate.types.print.banner: false
@@ -198,6 +198,25 @@ payment:
         callback:
           successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
           failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+    #### PhonePe props ######
+    phonepe:
+      id: WYNK
+      api:
+        base:
+          url: https://mercury-t2.phonepe.com
+      callback:
+        url: http://dev.wynk.in:8080/wynk/v2/paymentcallback/phonepe
+      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    #### Itunes props ######
+    itunes:
+      secret: 820ea8abe1374b369eaa564dcfa6391c
+      api:
+        url: https://buy.itunes.apple.com/verifyReceipt
+    #### AmazonIap props ######
+    amazonIap:
+      secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
+      status:
+        baseUrl: http://localhost:8080/RVSSandbox/version/1.0/verifyReceiptId/developer/
 
 ####### Http Client Props #######
 http:
@@ -225,7 +244,7 @@ http:
 service:
   subscription:
     api:
-      root: https://payments-staging.wynk.in
+      root: https://subscription-staging.wynk.in
 
 cors:
   allowed:

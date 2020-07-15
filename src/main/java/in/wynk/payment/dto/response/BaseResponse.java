@@ -32,8 +32,12 @@ public class BaseResponse<R> {
     }
 
     public static BaseResponse<Void> redirectResponse(String location, List<NameValuePair> nvps) throws URISyntaxException {
-        HttpHeaders headers = new HttpHeaders();
         URI uri = new URIBuilder(location).addParameters(nvps).build();
+        return redirectResponse(uri);
+    }
+
+    public static BaseResponse<Void> redirectResponse(URI uri){
+        HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.LOCATION, uri.toString());
         return BaseResponse.<Void>builder().headers(headers).status(HttpStatus.FOUND).build();
     }

@@ -4,7 +4,6 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.FetchStrategy;
 import in.wynk.payment.core.constant.ApplicationConstant;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
@@ -12,6 +11,7 @@ import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.enums.StatusMode;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
@@ -46,10 +46,7 @@ public class RevenuePaymentHandler {
     @AnalyseTransaction(name = "paymentStatus")
     public ResponseEntity<?> status(@PathVariable String sid) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        ChargingStatusRequest request = ChargingStatusRequest.builder()
-                .fetchStrategy(FetchStrategy.DIRECT_SOURCE_INTERNAL_WITHOUT_CACHE)
-                .transactionId(sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID))
-                .build();
+        ChargingStatusRequest request = ChargingStatusRequest.builder().mode(StatusMode.LOCAL).transactionId(sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID)).build();
         PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
         AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);

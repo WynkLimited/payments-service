@@ -9,7 +9,6 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -22,6 +21,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
 
 @Service
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
@@ -39,15 +40,18 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private String allPlanApiEndPoint;
 
     public SubscriptionServiceManagerImpl(ISQSMessagePublisher sqsMessagePublisher,
-                                          @Qualifier(BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE) HttpTemplate httpTemplate) {
+                                          @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) HttpTemplate httpTemplate) {
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.httpTemplate = httpTemplate;
     }
 
     @Override
     public List<PlanDTO> getPlans() {
-        return httpTemplate.exchange(allPlanApiEndPoint, HttpMethod.GET, null, new ParameterizedTypeReference<BaseResponse<AllPlansResponse.AllPlans>>() {
-        }).map(HttpEntity::getBody).map(BaseResponse::getData).map(AllPlansResponse.AllPlans::getPlans).orElseThrow(() -> new WynkRuntimeException(WynkErrorType.RG777));
+        return httpTemplate.exchange(allPlanApiEndPoint, HttpMethod.GET, null, new ParameterizedTypeReference<BaseResponse<AllPlansResponse.AllPlans>>() {})
+                .map(HttpEntity::getBody)
+                .map(BaseResponse::getData)
+                .map(AllPlansResponse.AllPlans::getPlans)
+                .orElseThrow(() -> new WynkRuntimeException(WynkErrorType.RG777));
     }
 
     @Override

@@ -192,7 +192,25 @@ payment:
         callback:
           successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
           failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
-
+    #### Itunes props ######
+    itunes:
+      secret: 820ea8abe1374b369eaa564dcfa6391c
+      api:
+        url: https://buy.itunes.apple.com/verifyReceipt
+    #### AmazonIap props ######
+    amazonIap:
+      secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
+      status:
+        baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
+    #### PhonePe props ######
+    phonepe:
+      id: WYNK
+      api:
+        base:
+          url: https://mercury-t2.phonepe.com
+      callback:
+        url: https://capi.wynk.in/wynk/v1/paymentcallback/phonepe
+      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
 
 ####### Http Client Props #######
 http:

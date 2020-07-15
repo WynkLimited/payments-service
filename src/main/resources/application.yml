@@ -57,7 +57,7 @@ service:
   subscription:
     api:
       endpoint:
-        allPlans: /wynk/v1/s2s/data/allPlans
+        allPlans: /wynk/s2s/v1/data/allPlans
 
 cors:
   maxAge: 3600

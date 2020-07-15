@@ -1,20 +1,24 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.commons.dto.AllPlansResponse;
+import in.wynk.commons.dto.BaseResponse;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SubscriptionProvisioningMessage;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,7 +46,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public List<PlanDTO> getPlans() {
-        return httpTemplate.getForObject(allPlanApiEndPoint, AllPlansResponse.class).map(AllPlansResponse::getData).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY013));
+        return httpTemplate.exchange(allPlanApiEndPoint, HttpMethod.GET, null, new ParameterizedTypeReference<BaseResponse<AllPlansResponse.AllPlans>>() {
+        }).map(HttpEntity::getBody).map(BaseResponse::getData).map(AllPlansResponse.AllPlans::getPlans).orElseThrow(() -> new WynkRuntimeException(WynkErrorType.RG777));
     }
 
     @Override

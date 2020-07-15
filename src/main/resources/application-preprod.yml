@@ -222,3 +222,6 @@ service:
 cors:
   allowed:
     origins: "*"
+
+
+debug: true

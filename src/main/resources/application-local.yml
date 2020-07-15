@@ -225,8 +225,10 @@ http:
 service:
   subscription:
     api:
-      root: http://localhost:8081
+      root: https://payments-staging.wynk.in
 
 cors:
   allowed:
     origins: "*"
+
+debug: true

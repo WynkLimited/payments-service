@@ -12,6 +12,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "recurringPaymentEvent")
-    public void onRecurringPaymentEvent(RecurringPaymentEvent event) { }
+    public void onRecurringPaymentEvent(RecurringPaymentEvent event) { // for auditing and stop recurring in external payment gateway
+    }
 
 }

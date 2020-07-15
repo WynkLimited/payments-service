@@ -215,8 +215,10 @@ http:
 service:
   subscription:
     api:
-      root: https://subscription-staging.wcf.internal
+      root: http://subscription-staging.wcf.internal
 
 cors:
   allowed:
     origins: "*"
+
+debug: true

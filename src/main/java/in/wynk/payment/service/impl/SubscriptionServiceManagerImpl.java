@@ -1,19 +1,21 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.commons.dto.AllPlansResponse;
 import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SubscriptionNotificationMessage;
+import in.wynk.commons.dto.SubscriptionProvisioningMessage;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
-import in.wynk.payment.dto.AllPlans;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,9 +34,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${payment.pooling.queue.subscription.sqs.producer.delayInSecond}")
     private int subscriptionMessageDelay;
 
-    @Value("${service.subscription.api.root}")
-    private String SUBSCRIPTION_SERVICE_ENDPOINT;
-
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
 
@@ -46,17 +45,20 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public List<PlanDTO> getPlans() {
-        return httpTemplate.getForObject(SUBSCRIPTION_SERVICE_ENDPOINT + allPlanApiEndPoint, AllPlans.class)
-                .orElseThrow(()->new WynkRuntimeException(WynkErrorType.UT777)).getData().getPlans();
+        return httpTemplate.exchange(allPlanApiEndPoint, HttpMethod.GET, null, AllPlansResponse.class)
+                .map(HttpEntity::getBody)
+                .map(AllPlansResponse::getData)
+                .map(AllPlansResponse.AllPlans::getPlans)
+                .orElseThrow(() -> new WynkRuntimeException(WynkErrorType.RG777));
     }
 
     @Override
     public String publish(int planId, String uid, String transactionId, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
         try {
-            return sqsMessagePublisher.publish(SendSQSMessageRequest.<SubscriptionNotificationMessage>builder()
+            return sqsMessagePublisher.publish(SendSQSMessageRequest.<SubscriptionProvisioningMessage>builder()
                     .queueName(subscriptionQueue)
                     .delaySeconds(subscriptionMessageDelay)
-                    .message(SubscriptionNotificationMessage.builder()
+                    .message(SubscriptionProvisioningMessage.builder()
                             .uid(uid)
                             .planId(planId)
                             .transactionId(transactionId)

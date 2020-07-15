@@ -116,7 +116,7 @@ payment:
     queue:
       reconciliation:
         enabled: true
-        name: wcf-staging-payment-reconciliation
+        name: wcf-prod-payment-reconciliation
         sqs:
           messages:
             producer:
@@ -129,7 +129,7 @@ payment:
               waitTimeInSeconds: 10
       renewal:
         enabled: false
-        name: wcf-staging-payment-renewal
+        name: wcf-prod-staging-payment-renewal
         sqs:
           messages:
             producer:
@@ -142,7 +142,7 @@ payment:
               waitTimeInSeconds: 10
       charging:
         enabled: false
-        name: wcf-staging-payment-charging.fifo
+        name: wcf-prod-payment-charging.fifo
         sqs:
           messages:
             producer:
@@ -155,7 +155,7 @@ payment:
               waitTimeInSeconds: 10
       subscription:
         enabled: false
-        name: wcf-staging-subscription
+        name: wcf-prod-subscription
         sqs:
           messages:
             producer:
@@ -166,6 +166,19 @@ payment:
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+      recurrence:
+        enabled: true
+        name: wcf-prod-payment-recurring
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
   ###### webview status props #######
   status:
     web:
@@ -221,3 +234,8 @@ http:
               type: both
           request:
             timeout: 1000
+
+service:
+  subscription:
+    api:
+      root: https://subscription.wynk.in

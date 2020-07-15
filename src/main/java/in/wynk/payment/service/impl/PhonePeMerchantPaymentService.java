@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.Utils;
@@ -125,15 +126,19 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     @Override
     public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        String uid = sessionDTO.get(UID);
-        String msisdn = sessionDTO.get(MSISDN);
-        String wynkService = sessionDTO.get(SERVICE);
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final String uid = sessionDTO.get(UID);
+        final String msisdn = sessionDTO.get(MSISDN);
+        final String wynkService = sessionDTO.get(SERVICE);
+
+        int planId = chargingRequest.getPlanId();
+        final PlanDTO selectedPlan = cachingService.getPlan(planId);
+
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+
         try {
-            int planId = chargingRequest.getPlanId();
-            final PlanDTO selectedPlan = cachingService.getPlan(planId);
             final long finalPlanAmount = selectedPlan.getFinalPriceInPaise();
-            final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, selectedPlan.getFinalPrice(), PaymentCode.PHONEPE_WALLET, wynkService);
+            final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, selectedPlan.getFinalPrice(), PaymentCode.PHONEPE_WALLET, eventType, wynkService);
             String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
 
             putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getIdStr());

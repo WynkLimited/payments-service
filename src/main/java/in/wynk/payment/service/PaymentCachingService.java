@@ -9,7 +9,6 @@ import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -34,12 +33,16 @@ public class PaymentCachingService {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
-    @Autowired
-    private PaymentMethodDao paymentMethodDao;
-    @Autowired
-    private ISubscriptionServiceManager subscriptionServiceManager;
-    private Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
-    private Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
+    private final PaymentMethodDao paymentMethodDao;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
+
+    private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
+    private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
+
+    public PaymentCachingService(PaymentMethodDao paymentMethodDao, ISubscriptionServiceManager subscriptionServiceManager) {
+        this.paymentMethodDao = paymentMethodDao;
+        this.subscriptionServiceManager = subscriptionServiceManager;
+    }
 
     @Scheduled(fixedDelay = 30 * 60 * 1000L)
     @PostConstruct

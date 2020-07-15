@@ -13,6 +13,7 @@ spring:
 
 
 debug: false
+
 server:
   port: 8081
 
@@ -57,7 +58,8 @@ service:
   subscription:
     api:
       endpoint:
-        allPlans: /wynk/s2s/v1/data/allPlans
+        allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
+
 
 cors:
   maxAge: 3600

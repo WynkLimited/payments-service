@@ -2,8 +2,11 @@ package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
 import in.wynk.commons.constants.Constants;
+import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.Currency;
+import in.wynk.commons.enums.PlanType;
+import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
@@ -28,6 +31,7 @@ import in.wynk.payment.enums.Apb.ApbStatus;
 import in.wynk.payment.enums.StatusMode;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -106,6 +110,9 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     private ISQSMessagePublisher messagePublisher;
 
     @Autowired
+    private PaymentCachingService cachingService;
+
+    @Autowired
     private Gson gson;
 
     @Override
@@ -138,14 +145,19 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     @Override
     public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        String msisdn = sessionDTO.get(MSISDN);
-        String uid = sessionDTO.get(UID);
-        Double amount = sessionDTO.get(AMOUNT);
-        Integer planId = sessionDTO.get(PLAN_ID);
-        String wynkService = sessionDTO.get(SERVICE);
         String apbRedirectURL;
-        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, wynkService);
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final String msisdn = sessionDTO.get(MSISDN);
+        final String uid = sessionDTO.get(UID);
+        final Double amount = sessionDTO.get(AMOUNT);
+        final Integer planId = sessionDTO.get(PLAN_ID);
+        final String wynkService = sessionDTO.get(SERVICE);
+
+        final PlanDTO selectedPlan = cachingService.getPlan(planId);
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+
+        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, eventType, wynkService);
+
         try {
             apbRedirectURL = generateApbRedirectURL(transaction.getId().toString());
         } finally {

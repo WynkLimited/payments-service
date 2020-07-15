@@ -13,12 +13,7 @@ import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PayUCommand;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -28,23 +23,14 @@ import in.wynk.payment.dto.payu.CardDetails;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
-import in.wynk.payment.service.IMerchantVerificationService;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.IRenewalMerchantPaymentService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -70,12 +56,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
@@ -215,11 +196,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<ChargingStatus> status(ChargingStatusRequest chargingStatusRequest) {
         ChargingStatus chargingStatus;
-        switch (chargingStatusRequest.getFetchStrategy()) {
-            case DIRECT_SOURCE_EXTERNAL_WITHOUT_CACHE:
+        switch (chargingStatusRequest.getMode()) {
+            case SOURCE:
                 chargingStatus = fetchChargingStatusFromPayUSource(chargingStatusRequest);
                 break;
-            case DIRECT_SOURCE_INTERNAL_WITHOUT_CACHE:
+            case LOCAL:
                 chargingStatus = fetchChargingStatusFromDataSource(chargingStatusRequest);
                 break;
             default:
@@ -325,16 +306,21 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private Map<String, String> startPaymentChargingForPayU(ChargingRequest chargingRequest) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        int planId = chargingRequest.getPlanId();
         String udf1 = StringUtils.EMPTY;
         String reqType = PaymentRequestType.DEFAULT.name();
-        String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
 
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final int planId = chargingRequest.getPlanId();
+        final String uid = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.UID));
+        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
+        final String service = getValueFromSession(SessionKeys.SERVICE);
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();
-        final Transaction transaction = initialiseTransaction(chargingRequest, finalPlanAmount);
-        final String uid = getValueFromSession(SessionKeys.UID);
+
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+
+        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn,chargingRequest.getPlanId(),finalPlanAmount, PaymentCode.PAYU, eventType, service);
+
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> paylaod = new HashMap<>();
         if (!PlanType.ONE_TIME_SUBSCRIPTION.equals(selectedPlan.getPlanType())) {
@@ -369,21 +355,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         publishSQSMessage(reconciliationQueue, reconciliationMessageDelay,reconciliationMessage);
 
         return paylaod;
-    }
-
-    private Transaction initialiseTransaction(ChargingRequest chargingRequest, double amount) {
-        return transactionManager.upsert(Transaction.builder()
-                .planId(chargingRequest.getPlanId())
-                .amount(amount)
-                .initTime(Calendar.getInstance())
-                .consent(Calendar.getInstance())
-                .uid(getValueFromSession(SessionKeys.UID))
-                .service(getValueFromSession(SessionKeys.SERVICE))
-                .msisdn(getValueFromSession(SessionKeys.MSISDN))
-                .paymentChannel(PaymentCode.PAYU.name())
-                .status(TransactionStatus.INPROGRESS.name())
-                .type(TransactionEvent.PURCHASE.name())
-                .build());
     }
 
 
@@ -554,7 +525,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {
         String rawChecksum = payUMerchantKey
-                + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
+                                + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
                 + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUSalt;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
     }

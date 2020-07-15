@@ -34,10 +34,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return transactionDao.findById(id).orElseThrow(()->new WynkRuntimeException(PaymentErrorType.PAY010, "Invalid txnId - "+ id));
     }
 
-    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, String wynkService) {
+    @Override
+    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event, String wynkService) {
         return upsert(Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance()).uid(uid).service(wynkService).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
-                .type(TransactionEvent.PURCHASE.name()).build());
+                .type(event.name()).build());
     }
 }

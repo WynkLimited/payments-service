@@ -10,7 +10,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;

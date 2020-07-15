@@ -3,8 +3,11 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
+import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.Status;
+import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
@@ -45,6 +48,7 @@ import in.wynk.payment.errors.ErrorCodes;
 import in.wynk.payment.service.IRenewalMerchantWalletService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.IUserPaymentsManager;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -141,6 +145,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     private ITransactionManagerService transactionManager;
     @Autowired
     private ISQSMessagePublisher messagePublisher;
+    @Autowired
+    private PaymentCachingService cachingService;
 
     private CheckSumServiceHelper checkSumServiceHelper;
 
@@ -176,6 +182,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         String wynkService = sessionDTO.get(SERVICE);
         String deviceId = sessionDTO.get(DEVICE_ID); // deviceId fetch from session
         WalletBalanceResponse walletBalanceResponse = balance().getBody();
+
+        final PlanDTO selectedPlan = cachingService.getPlan(planId);
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+
         if (!walletBalanceResponse.isFundsSufficient()) {
             throw new WynkRuntimeException(WynkErrorType.UT001);
         }
@@ -183,7 +193,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             throw new WynkRuntimeException(WynkErrorType.UT001, "Linked Msisdn or UID not found for user");
         }
         String accessToken = getAccessToken(uid);
-        transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, wynkService);
+        transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, eventType, wynkService);
         try {
             PaytmChargingResponse paytmChargingResponse = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);
             if (paytmChargingResponse != null && paytmChargingResponse.getStatus().equalsIgnoreCase(PaymentConstants.PAYTM_STATUS_SUCCESS)) {
@@ -289,7 +299,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         String accessToken = getAccessToken(uid);
         String wynkService = previousTransaction.getService();
         String deviceId = "abcd"; //TODO: might need to store device id or can be fetched from merchant txn.
-        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, wynkService);
+
+        final PlanDTO selectedPlan = cachingService.getPlan(planId);
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+
+        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, eventType, wynkService);
         PaytmChargingResponse response = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);
         // send subscription request to queue
         return BaseResponse.<Void>builder().build();

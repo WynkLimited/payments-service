@@ -20,7 +20,7 @@ apb:
     inquiry:
       url: https://apptest.airtelbank.com/ecom/v2/inquiry
   callback:
-    url: http://localhost:8081/wynk/wynk/v1/paymentcallback/apb
+    url: https://payments-staging.wynk.in/wynk/v1/callback/{sid}
   merchant:
     id: 180704
   salt: d41d8cd98f00a

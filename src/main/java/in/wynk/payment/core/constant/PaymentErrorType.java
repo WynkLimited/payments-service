@@ -20,8 +20,9 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY008("Payment Charging Status Failure", "Invalid Fetching strategy is supplied", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION_FAILURE),
     PAY009("Payment Renewal Failure", "An Error occurred while making SI payment on payU", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR),
     PAY010("Invalid txnId", "Invalid txnId", HttpStatus.NOT_FOUND, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY011("Verification Failure ",  "Failure in validating transaction from itunes", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE),
+    PAY012("Verification Failure ",  "Failure in validating transaction from amazon iap", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE),
     PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR);
-
 
     /**
      * The error title.
@@ -43,12 +44,9 @@ public enum PaymentErrorType implements IWynkErrorType {
     /**
      * Instantiates a new wynk error type.
      *
-     * @param errorTitle
-     *            the error title
-     * @param errorMsg
-     *            the error msg
-     * @param httpResponseStatus
-     *            the http response status
+     * @param errorTitle         the error title
+     * @param errorMsg           the error msg
+     * @param httpResponseStatus the http response status
      */
     PaymentErrorType(String errorTitle, String errorMsg, HttpStatus httpResponseStatus, Marker marker) {
         this.errorTitle = errorTitle;

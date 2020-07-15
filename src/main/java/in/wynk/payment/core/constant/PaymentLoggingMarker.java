@@ -25,4 +25,5 @@ public class PaymentLoggingMarker extends BaseLoggingMarkers {
     public static final Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
     public static final Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
     public static final Marker APB_ERROR = MarkerFactory.getMarker("APB_ERROR");
+    public static final Marker RECURRING_PAYMENT_EVENT = MarkerFactory.getMarker("RECURRING_PAYMENT_EVENT");
 }

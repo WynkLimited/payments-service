@@ -42,6 +42,14 @@ public class PaymentRenewal implements Serializable {
     @Column(name = "merchant_transaction_event")
     private String transactionEvent;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_timestamp")
+    private Calendar createdTimestamp;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "updated_timestamp")
+    private Calendar updatedTimestamp;
+
     public TransactionEvent getTransactionEvent() {
         return TransactionEvent.valueOf(transactionEvent);
     }

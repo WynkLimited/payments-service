@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -46,6 +47,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
+    @Transactional
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments() {
         Calendar currentDay = Calendar.getInstance();
         Calendar currentDayWithOffset = Calendar.getInstance();

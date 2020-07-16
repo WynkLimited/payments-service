@@ -12,6 +12,7 @@ import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.enums.StatusMode;
+import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
@@ -77,6 +78,13 @@ public class RevenuePaymentHandler {
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.name(), IMerchantPaymentCallbackService.class);
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();
+    }
+    @GetMapping("/callback1/{sid}")
+ //   @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentCallback")
+    public ResponseEntity<?> handleCallbackGet1(@PathVariable String sid) {
+       // PaymentRenewalsScheduler.paymentRenew();
+        return null;
     }
 
     @GetMapping("/callback/{sid}")

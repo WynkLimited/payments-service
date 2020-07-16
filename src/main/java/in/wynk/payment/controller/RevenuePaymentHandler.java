@@ -79,13 +79,6 @@ public class RevenuePaymentHandler {
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();
     }
-    @GetMapping("/callback1/{sid}")
- //   @ManageSession(sessionId = "#sid")
-    @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handleCallbackGet1(@PathVariable String sid) {
-       // PaymentRenewalsScheduler.paymentRenew();
-        return null;
-    }
 
     @GetMapping("/callback/{sid}")
     @ManageSession(sessionId = "#sid")

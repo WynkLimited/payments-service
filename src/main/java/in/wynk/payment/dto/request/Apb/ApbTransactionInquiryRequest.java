@@ -1,6 +1,10 @@
 package in.wynk.payment.dto.request.Apb;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 @Builder
 @ToString
@@ -8,7 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class ApbTransactionInquiryRequest {
-    private String txnRefNo;
+    private String txnRefNO;
     private String feSessionId;
     private String txnDate;
     private String merchantId;

@@ -1,5 +1,7 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.commons.constants.SessionKeys;
+import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -9,10 +11,12 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.session.context.SessionContextHolder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Calendar;
+import java.util.Objects;
 
 @Service(BeanConstant.TRANSACTION_MANAGER_SERVICE)
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
@@ -31,14 +35,19 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction get(String id) {
-        return transactionDao.findById(id).orElseThrow(()->new WynkRuntimeException(PaymentErrorType.PAY010, "Invalid txnId - "+ id));
+        return transactionDao.findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, "Invalid txnId - " + id));
     }
 
     @Override
     public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event, String wynkService) {
-        return upsert(Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
+        Transaction transaction = upsert(Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance()).uid(uid).service(wynkService).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
                 .type(event.name()).build());
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        if (Objects.nonNull(sessionDTO)) {
+            sessionDTO.put(SessionKeys.WYNK_TRANSACTION_ID, transaction.getIdStr());
+        }
+        return transaction;
     }
 }

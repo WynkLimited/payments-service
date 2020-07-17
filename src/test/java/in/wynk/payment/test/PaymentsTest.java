@@ -1,5 +1,6 @@
 package in.wynk.payment.test;
 
+import in.wynk.commons.dto.SessionDTO;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -11,15 +12,15 @@ import in.wynk.payment.test.utils.PaymentTestUtils;
 import in.wynk.payment.utils.BeanLocatorFactory;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
-import org.junit.Before;
+import in.wynk.session.service.ISessionManager;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.UUID;
 
 import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
@@ -31,19 +32,21 @@ import static org.mockito.ArgumentMatchers.anyString;
 @RunWith(SpringRunner.class)
 public class PaymentsTest {
 
+    @MockBean
+    protected ISubscriptionServiceManager subscriptionServiceManager;
 
     @MockBean
-    private ISubscriptionServiceManager subscriptionServiceManager;
+    protected PaymentCachingService cachingService;
 
-    @MockBean
-    PaymentCachingService cachingService;
+    @Autowired
+    protected ISessionManager sessionManager;
 
-    @Before
-    public void setup() {
+    public void setup(Session<SessionDTO> session) {
         Mockito.doReturn(PaymentTestUtils.dummyPlansDTO()).when(subscriptionServiceManager).getPlans();
         Mockito.doReturn("MOCKED_SUCCESS").when(subscriptionServiceManager)
                 .publish(anyInt(), anyString(), anyString(), any(), any());
-        SessionContextHolder.set(Session.builder().body(PaymentTestUtils.dummyAtvSession()).id(UUID.randomUUID()).build());
+        sessionManager.put(session);
+        SessionContextHolder.set(session);
         Mockito.doReturn(dummyPlanDTO()).when(cachingService).getPlan(anyInt());
     }
 
@@ -55,16 +58,15 @@ public class PaymentsTest {
         assert response.getStatus().is3xxRedirection();
     }
 
-    private BaseResponse<?> doChargingTest(PaymentCode paymentCode) {
+    protected BaseResponse<?> doChargingTest(PaymentCode paymentCode) {
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         ChargingRequest request = ChargingRequest.builder().paymentCode(paymentCode).planId(PLAN_ID).build();
         return chargingService.doCharging(request);
     }
 
-    @Test
-    public void apbChargingTest() {
-        PaymentCode code = PaymentCode.APB_GATEWAY;
-        BaseResponse<?> response = doChargingTest(code);
-        assert response.getStatus().is3xxRedirection();
+    @After
+    public void finish(){
+        Session<SessionDTO> session = SessionContextHolder.get();
+        sessionManager.put(session);
     }
 }

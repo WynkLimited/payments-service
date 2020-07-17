@@ -105,10 +105,6 @@ logging:
 ####### payment props #######
 payment:
   encKey: BSB$PORTAL@2014#
-  success:
-    page: https://www.google.com/
-  failure:
-    page: https://www.yahoo.com
   recurring:
     offset:
       day: 0
@@ -251,3 +247,6 @@ cors:
     origins: "*"
 
 debug: false
+
+webview:
+  host: https://pay-stage.wynk.in

@@ -100,10 +100,6 @@ spring:
 ####### payment props #######
 payment:
   encKey: BSB$PORTAL@2014#
-  success:
-    page: https://www.google.com/
-  failure:
-    page: https://www.yahoo.com
   recurring:
     offset:
       day: 0
@@ -177,6 +173,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
   ###### webview status props #######
+#  TODO: update the status web URL in classes
   status:
     web:
       url: http://localhost:4200/status
@@ -244,3 +241,6 @@ cors:
     origins: "*"
 
 debug: true
+
+webview:
+  host: https://pay-stage.wynk.in

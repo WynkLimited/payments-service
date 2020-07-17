@@ -60,6 +60,13 @@ service:
       endpoint:
         allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
 
+####### payment props #######
+payment:
+  success:
+    page: ${webview.host}/subscription/success/
+  failure:
+    page: ${webview.host}/txn-state/payment-failed/
+
 cors:
   maxAge: 3600
   allowed:

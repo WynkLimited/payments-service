@@ -100,10 +100,6 @@ spring:
 
 ####### payment props #######
 payment:
-  success:
-    page: https://www.google.com/
-  failure:
-    page: https://www.yahoo.com
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:
@@ -243,3 +239,6 @@ cors:
 
 
 debug: true
+
+webview:
+  host: https://pay-preprod.wynk.in

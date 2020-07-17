@@ -41,7 +41,8 @@ public class PaymentsTest {
     @Before
     public void setup() {
         Mockito.doReturn(PaymentTestUtils.dummyPlansDTO()).when(subscriptionServiceManager).getPlans();
-        Mockito.doReturn("MOCKED_SUCCESS").when(subscriptionServiceManager).publish(anyInt(), anyString(), anyString(), any(), any());
+        Mockito.doReturn("MOCKED_SUCCESS").when(subscriptionServiceManager)
+                .publish(anyInt(), anyString(), anyString(), any(), any());
         SessionContextHolder.set(Session.builder().body(PaymentTestUtils.dummyAtvSession()).id(UUID.randomUUID()).build());
         Mockito.doReturn(dummyPlanDTO()).when(cachingService).getPlan(anyInt());
     }
@@ -58,5 +59,12 @@ public class PaymentsTest {
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         ChargingRequest request = ChargingRequest.builder().paymentCode(paymentCode).planId(PLAN_ID).build();
         return chargingService.doCharging(request);
+    }
+
+    @Test
+    public void apbChargingTest() {
+        PaymentCode code = PaymentCode.APB_GATEWAY;
+        BaseResponse<?> response = doChargingTest(code);
+        assert response.getStatus().is3xxRedirection();
     }
 }

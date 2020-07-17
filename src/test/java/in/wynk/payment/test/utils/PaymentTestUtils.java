@@ -26,7 +26,7 @@ import static in.wynk.commons.constants.Constants.UID;
 
 public class PaymentTestUtils {
 
-    public static final String DUMMY_UID = "test_uid";
+    public static final String DUMMY_UID = "lViUuniOH80osYFqy0";
     public static final int PLAN_ID = 1000180;
     private static final String DUMMY_MSISDN = "1111111111";
 
@@ -69,8 +69,10 @@ public class PaymentTestUtils {
 
     public static SessionDTO dummySession() {
         Map<String, Object> map = new HashMap<>();
+        map.put(MSISDN, DUMMY_MSISDN);
         map.put(UID, DUMMY_UID);
-        SessionDTO sessionDTO = SessionDTO.builder().build();
+        map.put(SERVICE, "airteltv");
+        SessionDTO sessionDTO = new SessionDTO();
         sessionDTO.setPayload(map);
         return sessionDTO;
     }

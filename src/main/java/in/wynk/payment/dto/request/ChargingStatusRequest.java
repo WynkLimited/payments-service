@@ -1,6 +1,5 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.commons.dto.PlanPeriodDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.payment.enums.StatusMode;
 import lombok.AllArgsConstructor;
@@ -19,7 +18,6 @@ public class ChargingStatusRequest {
     private String transactionId;
     private Date chargingTimestamp;
     private TransactionEvent transactionEvent;
-    private PlanPeriodDTO packPeriod;
     private String uid;
     private int planId;
     private StatusMode mode;

@@ -13,7 +13,12 @@ import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PayUCommand;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -23,14 +28,23 @@ import in.wynk.payment.dto.payu.CardDetails;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IMerchantVerificationService;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -56,7 +70,12 @@ import org.springframework.web.client.RestTemplate;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.*;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
@@ -71,7 +90,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private final ITransactionManagerService transactionManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
-
+    private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final PaymentCachingService cachingService;
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
     @Value("${payment.encKey}")
@@ -92,8 +112,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-    private final ISubscriptionServiceManager subscriptionServiceManager;
-    private final PaymentCachingService cachingService;
     @Autowired
     private Gson gson;
 
@@ -317,9 +335,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();
 
-        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
 
-        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn,chargingRequest.getPlanId(),finalPlanAmount, PaymentCode.PAYU, eventType, service);
+        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, chargingRequest.getPlanId(), finalPlanAmount, PaymentCode.PAYU, eventType, service);
 
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> paylaod = new HashMap<>();
@@ -331,7 +349,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
         String checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount);
         String userCredentials = payUMerchantKey + COLON + uid;
-
+        String sid = SessionContextHolder.get().getId().toString();
         paylaod.put(PAYU_REQUEST_TYPE, reqType);
         paylaod.put(PAYU_MERCHANT_KEY, payUMerchantKey);
         paylaod.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
@@ -341,8 +359,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_CUSTOMER_EMAIL, email);
         paylaod.put(PAYU_CUSTOMER_MSISDN, msisdn);
         paylaod.put(PAYU_HASH, checksumHash);
-        paylaod.put(PAYU_SUCCESS_URL, payUSuccessUrl.replace(SID_KEY, SessionContextHolder.get().getId().toString()));
-        paylaod.put(PAYU_FAILURE_URL, payUFailureUrl.replace(SID_KEY, SessionContextHolder.get().getId().toString()));
+        paylaod.put(PAYU_SUCCESS_URL, payUSuccessUrl + sid);
+        paylaod.put(PAYU_FAILURE_URL, payUFailureUrl + sid);
 //      paylaod.put(PAYU_ENFORCE_PAY_METHOD, chargingRequest.getEnforcePayment()) upto FE since it knows which option is chosen.
         paylaod.put(PAYU_UDF1_PARAMETER, udf1);
         paylaod.put(IS_FALLBACK_ATTEMPT, String.valueOf(false));
@@ -352,7 +370,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
 
         PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
-        publishSQSMessage(reconciliationQueue, reconciliationMessageDelay,reconciliationMessage);
+        publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
 
         return paylaod;
     }
@@ -525,7 +543,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {
         String rawChecksum = payUMerchantKey
-                                + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
+                + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
                 + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUSalt;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
     }
@@ -553,20 +571,20 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
         VerificationType verificationType = verificationRequest.getVerificationType();
-        switch (verificationType){
+        switch (verificationType) {
             case VPA:
                 MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
                 PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
-                if(verificationResponse.getIsVPAValid() == 1)
+                if (verificationResponse.getIsVPAValid() == 1)
                     verificationResponse.setValid(true);
                 return BaseResponse.<String>builder().body(gson.toJson(verificationResponse)).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
                 PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
-                if(payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
+                if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
                     payUCardInfo.setValid(true);
                 return BaseResponse.<String>builder().body(gson.toJson(payUCardInfo)).status(HttpStatus.OK).build();
         }
-       return null;
+        return null;
     }
 }

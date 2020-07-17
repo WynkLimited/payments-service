@@ -20,7 +20,7 @@ apb:
     inquiry:
       url: https://apptest.airtelbank.com/ecom/v2/inquiry
   callback:
-    url: https://payments-staging.wynk.in/wynk/v1/callback/{sid}
+    url: https://payments-staging.wynk.in/wynk/v1/callback/
   merchant:
     id: 180704
   salt: d41d8cd98f00a
@@ -196,8 +196,8 @@ payment:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
-          successUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
-          failureUrl: http://localhost:8081/wynk/v1/payment/callback/{sid}
+          successUrl: http://localhost:8081/wynk/v1/payment/callback/
+          failureUrl: http://localhost:8081/wynk/v1/payment/callback/
     #### PhonePe props ######
     phonepe:
       id: WYNK
@@ -250,4 +250,4 @@ cors:
   allowed:
     origins: "*"
 
-debug: true
+debug: false

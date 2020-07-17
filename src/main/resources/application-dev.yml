@@ -191,8 +191,8 @@ payment:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
-          successUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/{sid}
-          failureUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/{sid}
+          successUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/
+          failureUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
       secret: d9a2775a407e435cb80e38a5a06f13ac

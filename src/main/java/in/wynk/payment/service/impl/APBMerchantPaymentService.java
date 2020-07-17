@@ -66,7 +66,6 @@ import static in.wynk.payment.constant.ApbConstants.HASH;
 import static in.wynk.payment.constant.ApbConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentConstants.SESSION_ID;
-import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
@@ -145,26 +144,16 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     @Override
     public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
-        String apbRedirectURL;
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String msisdn = sessionDTO.get(MSISDN);
         final String uid = sessionDTO.get(UID);
-        final Double amount = sessionDTO.get(AMOUNT);
-        final Integer planId = sessionDTO.get(PLAN_ID);
         final String wynkService = sessionDTO.get(SERVICE);
-
-        final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
-
+        int planId = chargingRequest.getPlanId();
+        PlanDTO planDTO = cachingService.getPlan(planId);
+        double amount = planDTO.getFinalPrice();
+        final TransactionEvent eventType = planDTO.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
         Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, eventType, wynkService);
-
-        try {
-            apbRedirectURL = generateApbRedirectURL(transaction.getId().toString());
-        } finally {
-            //Add reconciliation
-            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
-            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
-        }
+        String apbRedirectURL = generateApbRedirectURL(transaction);
         return BaseResponse.redirectResponse(apbRedirectURL);
     }
 
@@ -180,12 +169,16 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         }
     }
 
-    private String generateApbRedirectURL(String txnId) {
+    private String generateApbRedirectURL(Transaction transaction) {
         try {
             long txnDate = System.currentTimeMillis();
             String serviceName = ApbService.NB.name();
             String formattedDate = CommonUtils.getFormattedDate(txnDate, "ddMMyyyyHHmmss");
-            return getReturnUri(txnId, formattedDate, serviceName);
+            String chargingUrl =  getReturnUri(transaction.getIdStr(), formattedDate, serviceName);
+            //Add reconciliation
+            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
+            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
+            return chargingUrl;
         } catch (Exception e) {
             throw new WynkRuntimeException(WynkErrorType.UT999, "Exception occurred while generating URL");
         }
@@ -201,8 +194,8 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         return new URIBuilder(APB_INIT_PAYMENT_URL)
                 .addParameter(MID, MERCHANT_ID)
                 .addParameter(TXN_REF_NO, txnId)
-                .addParameter(SUCCESS_URL, getCallbackUrl(sessionId, txnId).toASCIIString())
-                .addParameter(FAILURE_URL, getCallbackUrl(sessionId, txnId).toASCIIString())
+                .addParameter(SUCCESS_URL, getCallbackUrl(sessionId).toASCIIString())
+                .addParameter(FAILURE_URL, getCallbackUrl(sessionId).toASCIIString())
                 .addParameter(APB_AMOUNT, String.valueOf(amount))
                 .addParameter(DATE, formattedDate)
                 .addParameter(CURRENCY, Currency.INR.name())
@@ -213,8 +206,8 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .build().toString();
     }
 
-    private URI getCallbackUrl(String sid, String txnId) throws URISyntaxException {
-        return new URIBuilder(CALLBACK_URL).addParameter(SESSION_ID, sid).addParameter(TXN_ID, txnId).build();
+    private URI getCallbackUrl(String sid) throws URISyntaxException {
+        return new URIBuilder(CALLBACK_URL).addParameter(SESSION_ID, sid).build();
     }
 
     @Override

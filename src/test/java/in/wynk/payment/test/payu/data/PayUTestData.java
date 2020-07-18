@@ -1,0 +1,251 @@
+package in.wynk.payment.test.payu.data;
+
+import in.wynk.commons.constants.SessionKeys;
+import in.wynk.commons.dto.PlanDTO;
+import in.wynk.commons.dto.PlanPeriodDTO;
+import in.wynk.commons.dto.PriceDTO;
+import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.enums.PlanType;
+import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.payment.core.constant.PayUCommand;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.test.payu.constant.PayUDataConstant;
+import in.wynk.session.dto.Session;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU_VARIABLE1;
+
+public class PayUTestData {
+
+
+    public static Transaction initOneTimePaymentTransaction() {
+        return Transaction.builder()
+                .id(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
+                .uid(PayUDataConstant.UID)
+                .msisdn(PayUDataConstant.MSISDN)
+                .planId(PayUDataConstant.ONE_TIME_PLAN_ID)
+                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .service(PayUDataConstant.WYNK_SERVICE.name())
+                .paymentChannel(PaymentCode.PAYU.name())
+                .initTime(Calendar.getInstance())
+                .consent(Calendar.getInstance())
+                .status(TransactionStatus.INPROGRESS.name())
+                .type(TransactionEvent.PURCHASE.name())
+                .build();
+    }
+
+    public static Transaction initRecurringPaymentTransaction() {
+        return Transaction.builder()
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .uid(PayUDataConstant.UID)
+                .msisdn(PayUDataConstant.MSISDN)
+                .planId(PayUDataConstant.RECURRING_PLAN_ID)
+                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .service(PayUDataConstant.WYNK_SERVICE.name())
+                .paymentChannel(PaymentCode.PAYU.name())
+                .initTime(Calendar.getInstance())
+                .consent(Calendar.getInstance())
+                .status(TransactionStatus.INPROGRESS.name())
+                .type(TransactionEvent.PURCHASE.name())
+                .build();
+    }
+
+    public static Session<SessionDTO> initSession() {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put(SessionKeys.UID, PayUDataConstant.UID);
+        payload.put(SessionKeys.MSISDN, PayUDataConstant.MSISDN);
+        payload.put(SessionKeys.APP_ID, PayUDataConstant.APP_ID);
+        payload.put(SessionKeys.DEVICE_ID, PayUDataConstant.DEVICE_ID);
+        payload.put(SessionKeys.APP_VERSION, PayUDataConstant.APP_VERSION);
+        payload.put(SessionKeys.BUILD_NO, PayUDataConstant.BUILD_NO);
+        payload.put(SessionKeys.OS, PayUDataConstant.OS);
+        payload.put(SessionKeys.PACK_GROUP, "");
+        payload.put(SessionKeys.SERVICE, PayUDataConstant.WYNK_SERVICE.name());
+        return Session.<SessionDTO>builder()
+                .id(UUID.randomUUID())
+                .body(SessionDTO.builder().payload(payload).build())
+                .build();
+    }
+
+    public static PlanDTO getPlanOfType(int planID, PlanType planType) {
+        return PlanDTO.builder()
+                .id(planID)
+                .title(PayUDataConstant.PLAN_TITTLE)
+                .planType(planType)
+                .price(PriceDTO.builder().amount(PayUDataConstant.SELECTED_PLAN_AMOUNT).currency(PayUDataConstant.CURRENCY_TYPE).discount(Collections.emptyList()).build())
+                .period(PlanPeriodDTO.builder().validity(100).timeUnit(TimeUnit.DAYS).build())
+                .build();
+    }
+
+    public static ChargingRequest buildOneTimeChargingRequest() {
+        return ChargingRequest.builder().paymentCode(PaymentCode.PAYU).planId(PayUDataConstant.ONE_TIME_PLAN_ID).build();
+    }
+
+    public static ChargingRequest buildRecurringChargingRequest() {
+        return ChargingRequest.builder().paymentCode(PaymentCode.PAYU).planId(PayUDataConstant.RECURRING_PLAN_ID).build();
+    }
+
+    public static CallbackRequest<Map<String, Object>> buildOneTimeCallbackRequest() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("mihpayid","10616026107");
+        map.put("mode","CC");
+        map.put("status","success");
+        map.put("unmappedstatus","captured");
+        map.put("key","aU2Uoi");
+        map.put("txnid","5a9119b0bae411eab235c98f59a5b6411111");
+        map.put("amount",1.00);
+        map.put("cardCategory","domestic");
+        map.put("discount",0.00);
+        map.put("net_amount_debit",1);
+        map.put("addedon","2020-06-30+20,47,36");
+        map.put("productinfo","Monthly");
+        map.put("firstname","B8NClsZs5cnDYbsHS0");
+        map.put("lastname","");
+        map.put("address1", "");
+        map.put("address2","");
+        map.put("city","");
+        map.put("state","");
+        map.put("country","");
+        map.put("zipcode","");
+        map.put("email","B8NClsZs5cnDYbsHS0@wynk.in");
+        map.put("phone","8887528761");
+        map.put("udf1", "");
+        map.put("udf2", "");
+        map.put("udf3", "");
+        map.put("udf4", "");
+        map.put("udf5", "");
+        map.put("udf6", "");
+        map.put("udf7", "");
+        map.put("udf8", "");
+        map.put("udf9", "");
+        map.put("udf10", "");
+        map.put("hash",PayUDataConstant.SUCCESS_ONE_TIME_CALLBACK_PAYU_HASH);
+        map.put("field1","5935302770396731405036");
+        map.put("field2","060812");
+        map.put("field3",1.00);
+        map.put("field4","10616026107");
+        map.put("field5",100);
+        map.put("field6","05");
+        map.put("field7","AUTHPOSITIVE");
+        map.put("field8","");
+        map.put("field9","Transaction+is+Successful");
+        map.put("payment_source","payu");
+        map.put("PG_TYPE","AxisCYBER");
+        map.put("bank_ref_num","5935302770396731405036");
+        map.put("bankcode","CC");
+        map.put("error","E000");
+        map.put("error_Message","No+Error");
+        map.put("cardToken","2aec9d61ceb65918965823");
+        map.put("name_on_card","SICard");
+        map.put("cardnum","489377XXXXXX2986");
+        map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
+       return CallbackRequest.<Map<String, Object>>builder().body(map).build();
+    }
+
+    public static CallbackRequest<Map<String, Object>> buildRecurringCallbackRequest() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("mihpayid","10616026107");
+        map.put("mode","CC");
+        map.put("status","success");
+        map.put("unmappedstatus","captured");
+        map.put("key","aU2Uoi");
+        map.put("txnid","5a9119b0bae411eab235c98f59a5b6411111");
+        map.put("amount",1.00);
+        map.put("cardCategory","domestic");
+        map.put("discount",0.00);
+        map.put("net_amount_debit",1);
+        map.put("addedon","2020-06-30+20,47,36");
+        map.put("productinfo","Monthly");
+        map.put("firstname","B8NClsZs5cnDYbsHS0");
+        map.put("lastname","");
+        map.put("address1", "");
+        map.put("address2","");
+        map.put("city","");
+        map.put("state","");
+        map.put("country","");
+        map.put("zipcode","");
+        map.put("email","B8NClsZs5cnDYbsHS0@wynk.in");
+        map.put("phone","8887528761");
+        map.put("udf1", "si");
+        map.put("udf2", "");
+        map.put("udf3", "");
+        map.put("udf4", "");
+        map.put("udf5", "");
+        map.put("udf6", "");
+        map.put("udf7", "");
+        map.put("udf8", "");
+        map.put("udf9", "");
+        map.put("udf10", "");
+        map.put("hash",PayUDataConstant.SUCCESS_RECURRING_CALLBACK_PAYU_HASH);
+        map.put("field1","5935302770396731405036");
+        map.put("field2","060812");
+        map.put("field3",1.00);
+        map.put("field4","10616026107");
+        map.put("field5",100);
+        map.put("field6","05");
+        map.put("field7","AUTHPOSITIVE");
+        map.put("field8","");
+        map.put("field9","Transaction+is+Successful");
+        map.put("payment_source","payu");
+        map.put("PG_TYPE","AxisCYBER");
+        map.put("bank_ref_num","5935302770396731405036");
+        map.put("bankcode","CC");
+        map.put("error","E000");
+        map.put("error_Message","No+Error");
+        map.put("cardToken","2aec9d61ceb65918965823");
+        map.put("name_on_card","SICard");
+        map.put("cardnum","489377XXXXXX2986");
+        map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
+        return CallbackRequest.<Map<String, Object>>builder().body(map).build();
+    }
+
+    public static MultiValueMap<String, String> buildOneTimePayUTransactionStatusRequest(String payUMerchantKey) {
+        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
+        requestMap.add(PAYU_COMMAND, PayUCommand.VERIFY_PAYMENT.getCode());
+        requestMap.add(PAYU_HASH, "298b545adbddc18b5375d19a89e6445f50f1cce38815b71b6969f88fa8114387c577222d04901b1381f43d8a6ac0e6f1523534398648a698065eabae0c66fd68");
+        requestMap.add(PAYU_VARIABLE1, PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString());
+        return requestMap;
+    }
+
+    public static MultiValueMap<String, String> buildRecurringPayUTransactionStatusRequest(String payUMerchantKey) {
+        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
+        requestMap.add(PAYU_COMMAND, PayUCommand.VERIFY_PAYMENT.getCode());
+        requestMap.add(PAYU_HASH, "476a552efcb08b91947af9d5e40eaec7c910091df89a37661a92f83f746ec5d685d6adca251add25d25ef9861ccf165434382056a29978814499194fba3200fa");
+        requestMap.add(PAYU_VARIABLE1, PayUDataConstant.RECURRING_TRANSACTION_ID.toString());
+        return requestMap;
+    }
+
+    public static String buildSuccessOneTimePayUTransactionStatusResponse() {
+        return PayUDataConstant.SUCCESS_ONE_TIME_PAYU_TRANSACTION_STATUS;
+    }
+
+    public static String buildSuccessRecurringPayUTransactionStatusResponse() {
+        return PayUDataConstant.SUCCESS_RECURRING_PAYU_TRANSACTION_STATUS;
+    }
+
+    public static String buildFailurePayUTransactionStatusResponse() {
+        return PayUDataConstant.FAILURE_PAYU_TRANSACTION_STATUS;
+    }
+
+    public static String buildPendingPayUTransactionStatusResponse() {
+        return PayUDataConstant.PENDING_PAYU_TRANSACTION_STATUS;
+    }
+
+    public static String buildUnknownPayUTransactionStatusResponse() {
+        return PayUDataConstant.UNKNOWN_PAYU_TRANSACTION_STATUS;
+    }
+
+
+
+}

@@ -29,7 +29,7 @@ public class RevenueCallbackHandler {
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handlePartnerCallback(@PathVariable String partner, @RequestBody Map<String, Object> payload) {
-        CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
+        CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, gson.toJson(payload));

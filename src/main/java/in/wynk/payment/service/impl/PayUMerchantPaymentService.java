@@ -51,15 +51,12 @@ import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -68,8 +65,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.time.Duration;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -100,8 +95,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String payUMerchantKey;
     @Value("${payment.merchant.payu.api.info}")
     private String payUInfoApiUrl;
-    @Value("${payment.status.web.url}")
-    private String statusWebUrl;
+    @Value("${payment.success.page}")
+    private String SUCCESS_PAGE;
+    @Value("${payment.failure.page}")
+    private String FAILURE_PAGE;
     @Value("${payment.merchant.payu.internal.web.url}")
     private String payUwebUrl;
     @Value("${payment.merchant.payu.internal.callback.successUrl}")
@@ -131,16 +128,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        URI returnUrl = processCallback(callbackRequest);
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());
-        httpHeaders.add(HttpHeaders.CACHE_CONTROL, CacheControl.maxAge(Duration.ZERO).mustRevalidate().getHeaderValue());
-        httpHeaders.add(HttpHeaders.PRAGMA, CacheControl.noCache().getHeaderValue());
-        httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
-        return BaseResponse.<Void>builder()
-                .status(HttpStatus.FOUND)
-                .headers(httpHeaders)
-                .build();
+        String returnUrl = processCallback(callbackRequest);
+        return BaseResponse.redirectResponse(returnUrl);
     }
 
     @Override
@@ -475,12 +464,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return EncryptionUtils.generateSHA512Hash(finalString);
     }
 
-    private URI processCallback(CallbackRequest<Map<String, Object>> callbackRequest) {
+    private String processCallback(CallbackRequest callbackRequest) {
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
         final Transaction transaction = transactionManager.get(transactionId);
         try {
             final String uid = transaction.getUid();
-
+            String url = FAILURE_PAGE + SessionContextHolder.getId();
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
@@ -500,6 +489,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 fetchAndUpdateTransactionFromSource(transaction);
                 if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     transaction.setExitTime(Calendar.getInstance());
+                    url = SUCCESS_PAGE + SessionContextHolder.getId();
                     subscriptionServiceManager.publish(selectedPlan.getId(), uid, transactionId, transaction.getStatus(), transaction.getType());
                     if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
@@ -518,10 +508,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                         uid);
             }
 
-            final URIBuilder returnUrl = new URIBuilder(statusWebUrl);
-            returnUrl.addParameter(TXN_ID, transactionId);
-            returnUrl.addParameter(SESSION_ID, SessionContextHolder.get().getId().toString());
-            return returnUrl.build();
+            return url;
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
         } finally {

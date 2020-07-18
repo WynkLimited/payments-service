@@ -22,7 +22,13 @@ import in.wynk.session.context.SessionContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -70,7 +76,7 @@ public class RevenuePaymentHandler {
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        CallbackRequest<Map<String, Object>> request = CallbackRequest.<Map<String, Object>>builder().body(payload).build();
+        CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
         AnalyticService.update(SessionKeys.PAYMENT_CODE, paymentCode.name());
         AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());
@@ -84,7 +90,7 @@ public class RevenuePaymentHandler {
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        CallbackRequest<MultiValueMap<String, String>> request = CallbackRequest.<MultiValueMap<String, String>>builder().body(payload).build();
+        CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
         AnalyticService.update(ApplicationConstant.PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(ApplicationConstant.REQUEST_PAYLOAD, payload.toString());

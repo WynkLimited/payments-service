@@ -8,6 +8,7 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.commons.enums.WynkService;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -44,12 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -60,15 +56,9 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
-import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
@@ -229,17 +219,19 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         finalTransactionStatus = transaction.getStatus();
 
         if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
-                    chargingStatusRequest.getUid(),
-                    chargingStatusRequest.getTransactionId(),
-                    finalTransactionStatus,
-                    chargingStatusRequest.getTransactionEvent());
+            subscriptionServiceManager.subscribePlanAsync(chargingStatusRequest.getPlanId(),
+                    transaction.getId().toString(),
+                    transaction.getUid(),
+                    transaction.getMsisdn(),
+                    WynkService.fromString(transaction.getService()),
+                    finalTransactionStatus);
         } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
-                    chargingStatusRequest.getUid(),
-                    chargingStatusRequest.getTransactionId(),
-                    finalTransactionStatus,
-                    TransactionEvent.UNSUBSCRIBE);
+            subscriptionServiceManager.unSubscribePlanAsync(chargingStatusRequest.getPlanId(),
+                    transaction.getId().toString(),
+                    transaction.getUid(),
+                    transaction.getMsisdn(),
+                    WynkService.fromString(transaction.getService()),
+                    finalTransactionStatus);
         }
 
         if (finalTransactionStatus == TransactionStatus.INPROGRESS) {
@@ -266,10 +258,9 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private URI processCallback(CallbackRequest callbackRequest) {
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID);
         final Transaction transaction = transactionManager.get(transactionId);
-
+        final String sessionId = SessionContextHolder.get().getId().toString();
         try {
             Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();
-            String uid = getValueFromSession(UID);
             PlanDTO selectedPlan = cachingService.getPlan(getValueFromSession(SessionKeys.SELECTED_PLAN_ID));
 
             PhonePeTransactionResponse phonePeTransactionResponse = new PhonePeTransactionResponse(requestPayload);
@@ -282,8 +273,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 fetchAndUpdateTransactionFromSource(transaction);
 
                 if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                    transaction.setExitTime(Calendar.getInstance());
-                    subscriptionServiceManager.publish(selectedPlan.getId(), uid, transactionId, transaction.getStatus(), transaction.getType());
+                    subscriptionServiceManager.subscribePlanSync(selectedPlan.getId(), sessionId, transactionId, transaction.getUid(), transaction.getMsisdn(), WynkService.fromString(transaction.getService()), transaction.getStatus());
                 }
             } else {
                 logger.error(PHONEPE_CHARGING_CALLBACK_FAILURE,
@@ -292,7 +282,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                         phonePeTransactionResponse.getData().getProviderReferenceId(),
                         errorCode,
                         errorMessage,
-                        uid);
+                        transaction.getUid());
             }
 
             URIBuilder returnUrl = new URIBuilder(statusWebUrl).addParameter(TXN_ID, transactionId)
@@ -300,8 +290,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             return returnUrl.build();
         } catch (Exception e) {
             throw new WynkRuntimeException(PHONEPE_CHARGING_CALLBACK_FAILURE, e.getMessage(), e);
-        } finally {
-            transactionManager.upsert(transaction);
         }
     }
 

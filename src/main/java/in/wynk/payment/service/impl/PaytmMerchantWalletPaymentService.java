@@ -5,10 +5,7 @@ import com.google.gson.Gson;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.Status;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.commons.enums.*;
 import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkErrorType;
@@ -16,39 +13,23 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.PaymentConstants;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.PaymentError;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.ConsultBalanceRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.WalletRequest;
 import in.wynk.payment.dto.request.paytm.PaytmWalletAddMoneyRequest;
 import in.wynk.payment.dto.request.paytm.PaytmWalletLinkRequest;
 import in.wynk.payment.dto.request.paytm.PaytmWalletOtpRequest;
 import in.wynk.payment.dto.request.paytm.PaytmWalletValidateLinkRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.ConsultBalanceResponse;
-import in.wynk.payment.dto.response.ValidateTokenResponse;
-import in.wynk.payment.dto.response.WalletBalanceResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
 import in.wynk.payment.enums.StatusMode;
 import in.wynk.payment.errors.ErrorCodes;
-import in.wynk.payment.service.IRenewalMerchantWalletService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.IUserPaymentsManager;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -59,11 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -71,12 +48,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
@@ -148,6 +120,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     @Autowired
     private PaymentCachingService cachingService;
 
+    @Autowired
+    private ISubscriptionServiceManager subscriptionServiceManager;
+
     private CheckSumServiceHelper checkSumServiceHelper;
 
     @PostConstruct
@@ -201,6 +176,13 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 String sessionId = SessionContextHolder.get().getId().toString();
                 String successUrl = String.format(successPage, sessionId, transaction.getId().toString());
                 //TODO: send an event to subscription system.
+                subscriptionServiceManager.subscribePlanSync(planId,
+                        SessionContextHolder.get().getId().toString(),
+                        transaction.getId().toString(),
+                        uid,
+                        msisdn,
+                        WynkService.fromString(wynkService),
+                        transaction.getStatus());
                 return BaseResponse.redirectResponse(successUrl);
             } else if (Objects.nonNull(paytmChargingResponse)) {
                 PaymentError error = PaymentError.builder().code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build();

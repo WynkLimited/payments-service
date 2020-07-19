@@ -13,6 +13,8 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.enums.StatusMode;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
 import org.springframework.util.LinkedMultiValueMap;
@@ -34,7 +36,7 @@ public class PayUTestData {
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.ONE_TIME_PLAN_ID)
                 .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
-                .service(PayUDataConstant.WYNK_SERVICE.name())
+                .service(PayUDataConstant.WYNK_SERVICE.getValue())
                 .paymentChannel(PaymentCode.PAYU.name())
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
@@ -50,7 +52,7 @@ public class PayUTestData {
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.RECURRING_PLAN_ID)
                 .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
-                .service(PayUDataConstant.WYNK_SERVICE.name())
+                .service(PayUDataConstant.WYNK_SERVICE.getValue())
                 .paymentChannel(PaymentCode.PAYU.name())
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
@@ -226,12 +228,64 @@ public class PayUTestData {
         return requestMap;
     }
 
+    public static MultiValueMap<String, String> buildValidVPAVerificationRequest(String payUMerchantKey) {
+        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
+        requestMap.add(PAYU_COMMAND, PayUCommand.VERIFY_VPA.getCode());
+        requestMap.add(PAYU_HASH, "a5c697536498b869b307a00d29ed7a657ac211cc6d1f2d201d8a84b13ddb0c0b272d614342e01e426bd97795ba5fd6184e8a62f54adb683812803e0babbe1139");
+        requestMap.add(PAYU_VARIABLE1, "valid_random_vpa");
+        return requestMap;
+    }
+
+    public static MultiValueMap<String, String> buildValidBINVerificationRequest(String payUMerchantKey) {
+        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
+        requestMap.add(PAYU_COMMAND, PayUCommand.CARD_BIN_INFO.getCode());
+        requestMap.add(PAYU_HASH, "d3984b2ecb1681ea394aebef57bbeba0f620a88f54513fce566b58234c494ac5a763b90e4583b6f91333750c918a45080a548dc7d6ea15338a63d2ae4be90843");
+        requestMap.add(PAYU_VARIABLE1, "valid_random_bin");
+        return requestMap;
+    }
+
+    public static MultiValueMap<String, String> buildInValidVPAVerificationRequest(String payUMerchantKey) {
+        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
+        requestMap.add(PAYU_COMMAND, PayUCommand.VERIFY_VPA.getCode());
+        requestMap.add(PAYU_HASH, "286543cb05761157af6659e6a12ecf6e5d5e70507c250393f467e9ab17457a67e82c7bbffd56403f025cbda18a83f9a2ff3276cbed14ebbb50ae44229d69b617");
+        requestMap.add(PAYU_VARIABLE1, "invalid_random_vpa");
+        return requestMap;
+    }
+
+    public static MultiValueMap<String, String> buildInValidBINVerificationRequest(String payUMerchantKey) {
+        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
+        requestMap.add(PAYU_COMMAND, PayUCommand.CARD_BIN_INFO.getCode());
+        requestMap.add(PAYU_HASH, "3aa08aac17d18e686b1e22e9249ea87b5880861089657d33bcfdb287dc113eeb1410808944d2e9a0ea89c7e1e7a7657eb2197f7a59aad21a10a6ddc0d44cff7f");
+        requestMap.add(PAYU_VARIABLE1, "invalid_random_bin");
+        return requestMap;
+    }
+
     public static String buildSuccessOneTimePayUTransactionStatusResponse() {
         return PayUDataConstant.SUCCESS_ONE_TIME_PAYU_TRANSACTION_STATUS;
     }
 
     public static String buildSuccessRecurringPayUTransactionStatusResponse() {
         return PayUDataConstant.SUCCESS_RECURRING_PAYU_TRANSACTION_STATUS;
+    }
+
+    public static String buildValidVPAPayUTransactionStatusResponse() {
+        return PayUDataConstant.VALID_VPA_VERIFICATION_RESPONSE;
+    }
+
+    public static String buildValidBINPayUTransactionStatusResponse() {
+        return PayUDataConstant.VALID_BIN_VERIFICATION_RESPONSE;
+    }
+
+    public static String buildInvalidVPAPayUTransactionStatusResponse() {
+        return PayUDataConstant.INVALID_VPA_VERIFICATION_RESPONSE;
+    }
+
+    public static String buildInvalidBINPayUTransactionStatusResponse() {
+        return PayUDataConstant.INVALID_BIN_VERIFICATION_RESPONSE;
     }
 
     public static String buildFailurePayUTransactionStatusResponse() {
@@ -244,6 +298,28 @@ public class PayUTestData {
 
     public static String buildUnknownPayUTransactionStatusResponse() {
         return PayUDataConstant.UNKNOWN_PAYU_TRANSACTION_STATUS;
+    }
+
+    public static ChargingStatusRequest buildOneTimePaymentStatusRequest() {
+        return ChargingStatusRequest.builder()
+                                    .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
+                                    .uid(PayUDataConstant.UID)
+                                    .planId(PayUDataConstant.ONE_TIME_PLAN_ID)
+                                    .mode(StatusMode.SOURCE)
+                                    .transactionEvent(TransactionEvent.PURCHASE)
+                                    .chargingTimestamp(Calendar.getInstance().getTime())
+                                    .build();
+    }
+
+    public static ChargingStatusRequest buildRecurringPaymentStatusRequest() {
+        return ChargingStatusRequest.builder()
+                .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .uid(PayUDataConstant.UID)
+                .planId(PayUDataConstant.RECURRING_PLAN_ID)
+                .mode(StatusMode.SOURCE)
+                .transactionEvent(TransactionEvent.SUBSCRIBE)
+                .chargingTimestamp(Calendar.getInstance().getTime())
+                .build();
     }
 
 

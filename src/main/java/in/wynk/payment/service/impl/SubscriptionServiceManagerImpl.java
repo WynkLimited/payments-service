@@ -3,11 +3,14 @@ package in.wynk.payment.service.impl;
 import in.wynk.commons.dto.AllPlansResponse;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SubscriptionProvisioningMessage;
+import in.wynk.commons.dto.SubscriptionProvisioningRequest;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.commons.enums.WynkService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -37,6 +40,12 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
 
+    @Value("${service.subscription.api.endpoint.subscribePlan}")
+    private String subscribePlanEndPoint;
+
+    @Value("${service.subscription.api.endpoint.unSubscribePlan}")
+    private String unSubscribePlanEndPoint;
+
     public SubscriptionServiceManagerImpl(ISQSMessagePublisher sqsMessagePublisher,
                                           @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) HttpTemplate httpTemplate) {
         this.sqsMessagePublisher = sqsMessagePublisher;
@@ -53,21 +62,79 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public String publish(int planId, String uid, String transactionId, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
+    public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus) {
+        this.publishAsync(SubscriptionProvisioningMessage.builder()
+                .uid(uid)
+                .msisdn(msisdn)
+                .planId(planId)
+                .service(service)
+                .transactionId(transactionId)
+                .transactionEvent(TransactionEvent.SUBSCRIBE)
+                .transactionStatus(transactionStatus)
+                .build());
+    }
+
+    @Override
+    public void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus) {
+        this.publishAsync(SubscriptionProvisioningMessage.builder()
+                .uid(uid)
+                .msisdn(msisdn)
+                .planId(planId)
+                .service(service)
+                .transactionId(transactionId)
+                .transactionEvent(TransactionEvent.UNSUBSCRIBE)
+                .transactionStatus(transactionStatus)
+                .build());
+    }
+
+    @Override
+    public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus) {
         try {
-            return sqsMessagePublisher.publish(SendSQSMessageRequest.<SubscriptionProvisioningMessage>builder()
-                    .queueName(subscriptionQueue)
-                    .delaySeconds(subscriptionMessageDelay)
-                    .message(SubscriptionProvisioningMessage.builder()
+            httpTemplate.postForObject(subscribePlanEndPoint + sid,
+                    SubscriptionProvisioningRequest.builder()
                             .uid(uid)
                             .planId(planId)
+                            .msisdn(msisdn)
+                            .service(service)
                             .transactionId(transactionId)
-                            .transactionEvent(transactionEvent)
                             .transactionStatus(transactionStatus)
-                            .build())
+                            .eventType(TransactionEvent.SUBSCRIBE)
+                            .build(),
+                    String.class);
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
+        }
+    }
+
+    @Override
+    public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus) {
+        try {
+            httpTemplate.postForObject(unSubscribePlanEndPoint + sid,
+                    SubscriptionProvisioningRequest.builder()
+                            .uid(uid)
+                            .planId(planId)
+                            .msisdn(msisdn)
+                            .service(service)
+                            .transactionId(transactionId)
+                            .transactionStatus(transactionStatus)
+                            .eventType(TransactionEvent.UNSUBSCRIBE)
+                            .build(),
+                    String.class);
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY014, e);
+        }
+    }
+
+    private void publishAsync(SubscriptionProvisioningMessage message) {
+        try {
+            sqsMessagePublisher.publish(SendSQSMessageRequest.<SubscriptionProvisioningMessage>builder()
+                    .queueName(subscriptionQueue)
+                    .delaySeconds(subscriptionMessageDelay)
+                    .message(message)
                     .build());
         } catch (Exception e) {
             throw new WynkRuntimeException(QueueErrorType.SQS001, e);
         }
     }
+
 }

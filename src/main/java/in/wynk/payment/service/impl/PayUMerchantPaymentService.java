@@ -5,20 +5,12 @@ import com.google.gson.Gson;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PaymentRequestType;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.commons.enums.*;
 import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PayUCommand;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -28,23 +20,14 @@ import in.wynk.payment.dto.payu.CardDetails;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
-import in.wynk.payment.service.IMerchantVerificationService;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.IRenewalMerchantPaymentService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -70,12 +53,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
@@ -231,37 +209,36 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
 
-    private ChargingStatus fetchChargingStatusFromPayUSource(ChargingStatusRequest chargingStatusRequest) {
+    private ChargingStatus fetchChargingStatusFromPayUSource(ChargingStatusRequest request) {
         TransactionStatus existingTransactionStatus;
         TransactionStatus finalTransactionStatus;
 
-        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
+        Transaction transaction = transactionManager.get(request.getTransactionId());
 
         existingTransactionStatus = transaction.getStatus();
         fetchAndUpdateTransactionFromSource(transaction);
         finalTransactionStatus = transaction.getStatus();
+        PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
 
         if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
-                    chargingStatusRequest.getUid(),
-                    chargingStatusRequest.getTransactionId(),
-                    finalTransactionStatus,
-                    chargingStatusRequest.getTransactionEvent());
+            if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
+                Calendar nextRecurringDateTime = Calendar.getInstance();
+                nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
+                recurringPaymentManagerService.scheduleRecurringPayment(transaction.getId(), nextRecurringDateTime);
+            }
+            subscriptionServiceManager.subscribePlanAsync(request.getPlanId(), transaction.getId().toString(), request.getUid(), request.getTransactionId(), WynkService.fromString(transaction.getService()), finalTransactionStatus);
         } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
-                    chargingStatusRequest.getUid(),
-                    chargingStatusRequest.getTransactionId(),
-                    finalTransactionStatus,
-                    TransactionEvent.UNSUBSCRIBE);
+            if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getId());
+            }
+            subscriptionServiceManager.unSubscribePlanAsync(request.getPlanId(), transaction.getId().toString(), request.getUid(), request.getTransactionId(), WynkService.fromString(transaction.getService()), finalTransactionStatus);
         }
 
-        transactionManager.upsert(transaction);
-
         if (finalTransactionStatus == TransactionStatus.INPROGRESS) {
-            logger.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for transactionId {}", chargingStatusRequest.getTransactionId());
+            logger.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for transactionId {}", request.getTransactionId());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
         } else if (finalTransactionStatus == TransactionStatus.UNKNOWN) {
-            logger.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status from payu end for transactionId {}", chargingStatusRequest.getTransactionId());
+            logger.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status from payu end for transactionId {}", request.getTransactionId());
             throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
 
@@ -278,12 +255,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         if (payUChargingVerificationResponse.getStatus() == 1) {
             if (SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-                if (payUTransactionDetails.getPayUUdf1().equalsIgnoreCase(PAYU_SI_KEY)) {
-                    Calendar nextRecurringDateTime = Calendar.getInstance();
-                    PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
-                    nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, plan.getPeriod().getValidity());
-                    recurringPaymentManagerService.addRecurringPayment(transaction.getId().toString(), nextRecurringDateTime);
-                }
+                transaction.setExitTime(Calendar.getInstance());
             } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
@@ -313,6 +285,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build());
 
         transaction.setStatus(finalTransactionStatus.name());
+        transactionManager.upsert(transaction);
     }
 
 
@@ -479,8 +452,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
         final Transaction transaction = transactionManager.get(transactionId);
         try {
-            final String uid = transaction.getUid();
-
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
@@ -499,13 +470,18 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (isValidHash) {
                 fetchAndUpdateTransactionFromSource(transaction);
                 if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                    transaction.setExitTime(Calendar.getInstance());
-                    subscriptionServiceManager.publish(selectedPlan.getId(), uid, transactionId, transaction.getStatus(), transaction.getType());
                     if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
-                        recurringPaymentManagerService.addRecurringPayment(transactionId, nextRecurringDateTime);
+                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getId(), nextRecurringDateTime);
                     }
+                    subscriptionServiceManager.subscribePlanSync(selectedPlan.getId(),
+                            SessionContextHolder.get().getId().toString(),
+                            transaction.getId().toString(),
+                            transaction.getUid(),
+                            transaction.getMsisdn(),
+                            WynkService.fromString(transaction.getService()),
+                            transaction.getStatus());
                 }
             } else {
                 logger.error(PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE,
@@ -515,7 +491,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                         payUCallbackRequestPayload.getExternalTransactionId(),
                         errorCode,
                         errorMessage,
-                        uid);
+                        transaction.getUid());
             }
 
             final URIBuilder returnUrl = new URIBuilder(statusWebUrl);
@@ -524,8 +500,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             return returnUrl.build();
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
-        } finally {
-            transactionManager.upsert(transaction);
         }
     }
 

@@ -30,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentTestConfiguration.class)
@@ -64,12 +65,12 @@ public class PayUPaymentCallbackTest {
         if(SessionContextHolder.<SessionDTO>get() == null || SessionContextHolder.<SessionDTO>get().getBody() == null) {
             SessionContextHolder.set(PayUTestData.initSession());
         }
-        Mockito.when(recurringPaymentManager.addRecurringPayment(anyString(), any())).thenReturn(null);
-        Mockito.when(subscriptionManager.publish(anyInt(), anyString(), anyString(), any(), any())).thenReturn("SUCCESS");
+        Mockito.when(recurringPaymentManager.scheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID), any())).thenReturn(null);
+        Mockito.doNothing().when(subscriptionManager).subscribePlanSync(anyInt(), anyString(), anyString(), anyString(), anyString(), any(), any());
 
         Mockito.when(transactionManager.upsert(any())).thenReturn(null);
-        Mockito.when(transactionManager.get(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())).thenReturn(PayUTestData.initOneTimePaymentTransaction());
-        Mockito.when(transactionManager.get(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())).thenReturn(PayUTestData.initRecurringPaymentTransaction());
+        Mockito.when(transactionManager.get(eq(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString()))).thenReturn(PayUTestData.initOneTimePaymentTransaction());
+        Mockito.when(transactionManager.get(eq(PayUDataConstant.RECURRING_TRANSACTION_ID.toString()))).thenReturn(PayUTestData.initRecurringPaymentTransaction());
 
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.RECURRING_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.RECURRING_PLAN_ID, PlanType.SUBSCRIPTION));
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.ONE_TIME_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.ONE_TIME_PLAN_ID, PlanType.ONE_TIME_SUBSCRIPTION));

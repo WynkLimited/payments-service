@@ -2,8 +2,10 @@ package in.wynk.payment.dto.response;
 
 import in.wynk.commons.enums.TransactionStatus;
 import lombok.Builder;
+import lombok.Getter;
 
 @Builder
+@Getter
 public class ChargingStatusResponse {
     TransactionStatus transactionStatus;
 

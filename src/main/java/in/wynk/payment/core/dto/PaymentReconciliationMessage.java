@@ -10,13 +10,9 @@ import java.util.Objects;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class PaymentReconciliationMessage extends AbstractTransactionMessage{
-    private String externalTransactionId;
-    private long initTimestamp;
+public class PaymentReconciliationMessage extends AbstractTransactionMessage {
 
-    public Date getInitTimestamp() {
-        return new Date(initTimestamp);
-    }
+    private String externalTransactionId;
 
     public PaymentReconciliationMessage(Transaction transaction){
         super.setUid(transaction.getUid());
@@ -26,6 +22,5 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage{
         super.setTransactionId(transaction.getId().toString());
         super.setTransactionEvent(transaction.getType());
         this.externalTransactionId = Objects.nonNull(transaction.getMerchantTransaction())? transaction.getMerchantTransaction().getExternalTransactionId(): null;
-        this.initTimestamp = System.currentTimeMillis();
     }
 }

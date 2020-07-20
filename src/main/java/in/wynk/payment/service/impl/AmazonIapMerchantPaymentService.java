@@ -120,7 +120,8 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                     transaction.getUid(),
                     transaction.getMsisdn(),
                     WynkService.fromString(transaction.getService()),
-                    transaction.getStatus());
+                    transaction.getStatus(),
+                    transaction.getType());
 
             return ChargingStatus
                     .builder()

@@ -182,7 +182,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                         uid,
                         msisdn,
                         WynkService.fromString(wynkService),
-                        transaction.getStatus());
+                        transaction.getStatus(),
+                        transaction.getType());
                 return BaseResponse.redirectResponse(successUrl);
             } else if (Objects.nonNull(paytmChargingResponse)) {
                 PaymentError error = PaymentError.builder().code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build();

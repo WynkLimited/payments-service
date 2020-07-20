@@ -200,7 +200,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         uid,
                         msisdn,
                         WynkService.fromString(transaction.getService()),
-                        transaction.getStatus());
+                        transaction.getStatus(),
+                        transaction.getType());
 
             }
             else {

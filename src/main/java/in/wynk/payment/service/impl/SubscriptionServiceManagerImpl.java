@@ -1,9 +1,6 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.commons.dto.AllPlansResponse;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SubscriptionProvisioningMessage;
-import in.wynk.commons.dto.SubscriptionProvisioningRequest;
+import in.wynk.commons.dto.*;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.enums.WynkService;
@@ -62,14 +59,14 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus) {
+    public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
         this.publishAsync(SubscriptionProvisioningMessage.builder()
                 .uid(uid)
                 .msisdn(msisdn)
                 .planId(planId)
                 .service(service)
                 .transactionId(transactionId)
-                .transactionEvent(TransactionEvent.SUBSCRIBE)
+                .transactionEvent(transactionEvent)
                 .transactionStatus(transactionStatus)
                 .build());
     }
@@ -88,7 +85,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus) {
+    public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
         try {
             httpTemplate.postForObject(subscribePlanEndPoint + sid,
                     SubscriptionProvisioningRequest.builder()
@@ -98,7 +95,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                             .service(service)
                             .transactionId(transactionId)
                             .transactionStatus(transactionStatus)
-                            .eventType(TransactionEvent.SUBSCRIBE)
+                            .eventType(transactionEvent)
                             .build(),
                     String.class);
         } catch (Exception e) {
@@ -110,14 +107,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, WynkService service, TransactionStatus transactionStatus) {
         try {
             httpTemplate.postForObject(unSubscribePlanEndPoint + sid,
-                    SubscriptionProvisioningRequest.builder()
+                    SubscriptionUnProvisioningRequest.builder()
                             .uid(uid)
                             .planId(planId)
-                            .msisdn(msisdn)
                             .service(service)
-                            .transactionId(transactionId)
-                            .transactionStatus(transactionStatus)
-                            .eventType(TransactionEvent.UNSUBSCRIBE)
                             .build(),
                     String.class);
         } catch (Exception e) {

@@ -226,12 +226,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                 recurringPaymentManagerService.scheduleRecurringPayment(transaction.getId(), nextRecurringDateTime);
             }
-            subscriptionServiceManager.subscribePlanAsync(request.getPlanId(), transaction.getId().toString(), request.getUid(), request.getTransactionId(), WynkService.fromString(transaction.getService()), finalTransactionStatus);
+            subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), request.getTransactionId(), WynkService.fromString(transaction.getService()), finalTransactionStatus, transaction.getType());
         } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
             if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
                 recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getId());
             }
-            subscriptionServiceManager.unSubscribePlanAsync(request.getPlanId(), transaction.getId().toString(), request.getUid(), request.getTransactionId(), WynkService.fromString(transaction.getService()), finalTransactionStatus);
+            subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), request.getTransactionId(), WynkService.fromString(transaction.getService()), finalTransactionStatus);
         }
 
         if (finalTransactionStatus == TransactionStatus.INPROGRESS) {
@@ -481,7 +481,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                             transaction.getUid(),
                             transaction.getMsisdn(),
                             WynkService.fromString(transaction.getService()),
-                            transaction.getStatus());
+                            transaction.getStatus(),
+                            transaction.getType());
                 }
             } else {
                 logger.error(PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE,

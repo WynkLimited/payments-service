@@ -219,14 +219,15 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         finalTransactionStatus = transaction.getStatus();
 
         if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-            subscriptionServiceManager.subscribePlanAsync(chargingStatusRequest.getPlanId(),
+            subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(),
                     transaction.getId().toString(),
                     transaction.getUid(),
                     transaction.getMsisdn(),
                     WynkService.fromString(transaction.getService()),
-                    finalTransactionStatus);
+                    finalTransactionStatus,
+                    transaction.getType());
         } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-            subscriptionServiceManager.unSubscribePlanAsync(chargingStatusRequest.getPlanId(),
+            subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(),
                     transaction.getId().toString(),
                     transaction.getUid(),
                     transaction.getMsisdn(),
@@ -273,7 +274,14 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 fetchAndUpdateTransactionFromSource(transaction);
 
                 if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                    subscriptionServiceManager.subscribePlanSync(selectedPlan.getId(), sessionId, transactionId, transaction.getUid(), transaction.getMsisdn(), WynkService.fromString(transaction.getService()), transaction.getStatus());
+                    subscriptionServiceManager.subscribePlanSync(selectedPlan.getId(),
+                            sessionId,
+                            transactionId,
+                            transaction.getUid(),
+                            transaction.getMsisdn(),
+                            WynkService.fromString(transaction.getService()),
+                            transaction.getStatus(),
+                            transaction.getType());
                 }
             } else {
                 logger.error(PHONEPE_CHARGING_CALLBACK_FAILURE,

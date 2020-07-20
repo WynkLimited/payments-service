@@ -303,22 +303,14 @@ public class PayUTestData {
     public static ChargingStatusRequest buildOneTimePaymentStatusRequest() {
         return ChargingStatusRequest.builder()
                                     .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
-                                    .uid(PayUDataConstant.UID)
-                                    .planId(PayUDataConstant.ONE_TIME_PLAN_ID)
                                     .mode(StatusMode.SOURCE)
-                                    .transactionEvent(TransactionEvent.PURCHASE)
-                                    .chargingTimestamp(Calendar.getInstance().getTime())
                                     .build();
     }
 
     public static ChargingStatusRequest buildRecurringPaymentStatusRequest() {
         return ChargingStatusRequest.builder()
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .uid(PayUDataConstant.UID)
-                .planId(PayUDataConstant.RECURRING_PLAN_ID)
                 .mode(StatusMode.SOURCE)
-                .transactionEvent(TransactionEvent.SUBSCRIBE)
-                .chargingTimestamp(Calendar.getInstance().getTime())
                 .build();
     }
 

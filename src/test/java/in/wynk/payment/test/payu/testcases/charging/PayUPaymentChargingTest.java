@@ -5,11 +5,13 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.payment.test.payu.data.PayUTestData;
+import in.wynk.payment.test.utils.PaymentTestUtils;
 import in.wynk.payment.utils.BeanLocatorFactory;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
@@ -27,7 +29,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentTestConfiguration.class)
@@ -44,10 +49,14 @@ public class PayUPaymentChargingTest {
 
     private IMerchantPaymentChargingService chargingService;
 
+    @MockBean
+    protected ISubscriptionServiceManager subscriptionServiceManager;
+
     @Before
     @SneakyThrows
     public void setup() {
         SessionContextHolder.set(PayUTestData.initSession());
+        Mockito.when(subscriptionServiceManager.getPlans()).thenReturn(PaymentTestUtils.dummyPlansDTO());
         Mockito.when(sqsMessagePublisher.publish(any())).thenReturn("SUCCESS");
         Mockito.when(transactionManager.initiateTransaction(anyString(), anyString(), eq(PayUDataConstant.ONE_TIME_PLAN_ID), anyDouble(), any(), any(), any())).thenReturn(PayUTestData.initOneTimePaymentTransaction());
         Mockito.when(transactionManager.initiateTransaction(anyString(), anyString(), eq(PayUDataConstant.RECURRING_PLAN_ID), anyDouble(), any(), any(), any())).thenReturn(PayUTestData.initRecurringPaymentTransaction());

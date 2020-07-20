@@ -24,7 +24,15 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY012("Verification Failure ",  "Failure in validating transaction from amazon iap", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE),
     PAY013("Subscription Provision Failure",  "Unable to subscribe plan after successful payment", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.SUBSCRIPTION_ERROR),
     PAY014("Subscription Provision Failure",  "Unable to unSubscribe plan after successful payment", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.SUBSCRIPTION_ERROR),
-    PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR);
+    PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),
+
+    /**
+     * Payment Redirect webview code
+     */
+    PAY300("Payment Charging Callback Failure", "Transaction is still pending at source", "${payment.pending.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE),
+    PAY301("Payment Charging Callback Failure", "No matching status found at source", "${payment.unknown.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE),
+    PAY302("Payment Charging Callback Failure", "Something went wrong", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE);
+
 
     /**
      * The error title.
@@ -35,6 +43,11 @@ public enum PaymentErrorType implements IWynkErrorType {
      * The error msg.
      */
     private final String errorMsg;
+
+    /**
+     * The http response status.
+     */
+    private String redirectUrlProp;
 
     /**
      * The http response status.
@@ -50,6 +63,22 @@ public enum PaymentErrorType implements IWynkErrorType {
      * @param errorMsg           the error msg
      * @param httpResponseStatus the http response status
      */
+    PaymentErrorType(String errorTitle, String errorMsg, String redirectUrlProp, HttpStatus httpResponseStatus, Marker marker) {
+        this.errorTitle = errorTitle;
+        this.errorMsg = errorMsg;
+        this.redirectUrlProp = redirectUrlProp;
+        this.httpResponseStatusCode = httpResponseStatus;
+        this.marker = marker;
+    }
+
+
+    /**
+     * Instantiates a new wynk error type.
+     *
+     * @param errorTitle         the error title
+     * @param errorMsg           the error msg
+     * @param httpResponseStatus the http response status
+     */
     PaymentErrorType(String errorTitle, String errorMsg, HttpStatus httpResponseStatus, Marker marker) {
         this.errorTitle = errorTitle;
         this.errorMsg = errorMsg;
@@ -57,8 +86,8 @@ public enum PaymentErrorType implements IWynkErrorType {
         this.marker = marker;
     }
 
-    public static WynkErrorType getWynkErrorType(String name) {
-        return WynkErrorType.valueOf(name);
+    public static PaymentErrorType getWynkErrorType(String name) {
+        return PaymentErrorType.valueOf(name);
     }
 
     /**
@@ -89,6 +118,16 @@ public enum PaymentErrorType implements IWynkErrorType {
     @Override
     public String getErrorMessage() {
         return errorMsg;
+    }
+
+
+    /**
+     * Gets the redirect Url Prop.
+     *
+     * @return the redirect url prop
+     */
+    public String getRedirectUrlProp() {
+        return redirectUrlProp;
     }
 
     /**

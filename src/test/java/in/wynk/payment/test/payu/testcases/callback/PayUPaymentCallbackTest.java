@@ -6,7 +6,11 @@ import in.wynk.commons.enums.PlanType;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IMerchantPaymentCallbackService;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.payment.test.payu.data.PayUTestData;
@@ -27,10 +31,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentTestConfiguration.class)
@@ -85,7 +89,7 @@ public class PayUPaymentCallbackTest {
     @Order(1)
     public void handleOneTimeCallbackTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.WYNK_TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
-        CallbackRequest<Map<String, Object>> request = PayUTestData.buildOneTimeCallbackRequest();
+        CallbackRequest request = PayUTestData.buildOneTimeCallbackRequest();
         BaseResponse<?> response = callbackService.handleCallback(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.FOUND);
         Assert.assertNull(response.getResponse().getBody());
@@ -96,7 +100,7 @@ public class PayUPaymentCallbackTest {
     @Order(2)
     public void handleRecurringCallbackTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.WYNK_TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
-        CallbackRequest<Map<String, Object>> request = PayUTestData.buildRecurringCallbackRequest();
+        CallbackRequest request = PayUTestData.buildRecurringCallbackRequest();
         BaseResponse<?> response = callbackService.handleCallback(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.FOUND);
         Assert.assertNull(response.getResponse().getBody());

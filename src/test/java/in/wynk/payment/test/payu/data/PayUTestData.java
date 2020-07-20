@@ -20,10 +20,16 @@ import in.wynk.session.dto.Session;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU_COMMAND;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU_HASH;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU_MERCHANT_KEY;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYU_VARIABLE1;
 
 public class PayUTestData {
@@ -96,7 +102,7 @@ public class PayUTestData {
         return ChargingRequest.builder().paymentCode(PaymentCode.PAYU).planId(PayUDataConstant.RECURRING_PLAN_ID).build();
     }
 
-    public static CallbackRequest<Map<String, Object>> buildOneTimeCallbackRequest() {
+    public static CallbackRequest buildOneTimeCallbackRequest() {
         Map<String, Object> map = new HashMap<>();
         map.put("mihpayid","10616026107");
         map.put("mode","CC");
@@ -150,10 +156,10 @@ public class PayUTestData {
         map.put("name_on_card","SICard");
         map.put("cardnum","489377XXXXXX2986");
         map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
-       return CallbackRequest.<Map<String, Object>>builder().body(map).build();
+       return CallbackRequest.builder().body(map).build();
     }
 
-    public static CallbackRequest<Map<String, Object>> buildRecurringCallbackRequest() {
+    public static CallbackRequest buildRecurringCallbackRequest() {
         Map<String, Object> map = new HashMap<>();
         map.put("mihpayid","10616026107");
         map.put("mode","CC");
@@ -207,7 +213,7 @@ public class PayUTestData {
         map.put("name_on_card","SICard");
         map.put("cardnum","489377XXXXXX2986");
         map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
-        return CallbackRequest.<Map<String, Object>>builder().body(map).build();
+        return CallbackRequest.builder().body(map).build();
     }
 
     public static MultiValueMap<String, String> buildOneTimePayUTransactionStatusRequest(String payUMerchantKey) {

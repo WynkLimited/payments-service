@@ -2,9 +2,13 @@ package in.wynk.payment.test;
 
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
+import in.wynk.payment.service.IMerchantPaymentStatusService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
@@ -58,6 +62,16 @@ public class PaymentsTest {
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         ChargingRequest request = ChargingRequest.builder().paymentCode(paymentCode).planId(PLAN_ID).build();
         return chargingService.doCharging(request);
+    }
+
+    protected BaseResponse<?> callbackTest(PaymentCode paymentCode, CallbackRequest request) {
+        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
+        return callbackService.handleCallback(request);
+    }
+
+    protected BaseResponse<?> statusTest(PaymentCode paymentCode, ChargingStatusRequest statusRequest){
+        IMerchantPaymentStatusService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
+        return callbackService.status(statusRequest);
     }
 
     @After

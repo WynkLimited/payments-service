@@ -42,7 +42,6 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +53,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -73,8 +71,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String payUMerchantKey;
     @Value("${payment.merchant.payu.api.info}")
     private String payUInfoApiUrl;
-    @Value("${payment.status.web.url}")
-    private String statusWebUrl;
+    @Value("${payment.success.page}")
+    private String SUCCESS_PAGE;
+    @Value("${payment.failure.page}")
+    private String FAILURE_PAGE;
     @Value("${payment.merchant.payu.internal.web.url}")
     private String payUwebUrl;
     @Value("${payment.merchant.payu.internal.callback.successUrl}")
@@ -85,6 +85,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
+
     private final Gson gson;
     private final RestTemplate restTemplate;
     private final ISQSMessagePublisher sqsMessagePublisher;
@@ -106,7 +107,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        URI returnUrl = processCallback(callbackRequest);
+        String returnUrl = processCallback(callbackRequest);
         return BaseResponse.redirectResponse(returnUrl);
     }
 
@@ -416,10 +417,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return EncryptionUtils.generateSHA512Hash(finalString);
     }
 
-    private URI processCallback(CallbackRequest<Map<String, Object>> callbackRequest) {
+    private String processCallback(CallbackRequest callbackRequest) {
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
         final Transaction transaction = transactionManager.get(transactionId);
         try {
+            String url = FAILURE_PAGE + SessionContextHolder.getId();
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
@@ -444,6 +446,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
+                } else if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
+                    url = SUCCESS_PAGE + SessionContextHolder.getId();
                 }
 
             } else {
@@ -456,11 +460,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                         errorMessage,
                         transaction.getUid());
             }
-
-            final URIBuilder returnUrl = new URIBuilder(statusWebUrl);
-            returnUrl.addParameter(TXN_ID, transactionId);
-            returnUrl.addParameter(SESSION_ID, SessionContextHolder.get().getId().toString());
-            return returnUrl.build();
+            return url;
         } catch (PaymentRuntimeException e) {
             throw e;
         } catch (Exception e) {

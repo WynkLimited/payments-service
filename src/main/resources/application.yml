@@ -65,7 +65,7 @@ service:
 ####### payment props #######
 payment:
   success:
-    page: ${webview.host}/subscription/success/
+    page: ${webview.host}/#/subscription/success/
   failure:
     page: ${webview.host}/txn-state/payment-failed/
   pending:

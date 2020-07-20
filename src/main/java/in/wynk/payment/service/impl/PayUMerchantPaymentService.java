@@ -475,6 +475,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             return url;
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+        } finally {
+            transactionManager.upsert(transaction);
         }
     }
 

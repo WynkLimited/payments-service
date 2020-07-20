@@ -104,4 +104,15 @@ public class Transaction {
         return PaymentCode.valueOf(paymentChannel);
     }
 
+
+    public void setMerchantTransaction(MerchantTransaction merchantTransaction) {
+        if(this.merchantTransaction != null) {
+            this.merchantTransaction.setRequest(merchantTransaction.getRequest());
+            this.merchantTransaction.setRequest(merchantTransaction.getResponse());
+            this.merchantTransaction.setExternalTransactionId(merchantTransaction.getExternalTransactionId());
+        } else {
+            this.merchantTransaction = merchantTransaction;
+        }
+    }
+
 }

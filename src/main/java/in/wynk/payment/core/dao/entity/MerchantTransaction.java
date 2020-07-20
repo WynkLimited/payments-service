@@ -1,10 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -28,11 +25,14 @@ public class MerchantTransaction {
     @Column(name = "merchant_transaction_id")
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+    @Setter
     @Column(name = "merchant_transaction_reference_id")
     private String externalTransactionId;
+    @Setter
     @Type(type = "json")
     @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
     private Object request;
+    @Setter
     @Type(type = "json")
     @Column(name = "merchant_response", nullable = false, columnDefinition = "json")
     private Object response;

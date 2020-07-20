@@ -30,6 +30,7 @@ import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -45,8 +46,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -56,7 +55,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -109,15 +107,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
         URI returnUrl = processCallback(callbackRequest);
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.add(HttpHeaders.LOCATION, returnUrl.toString());
-        httpHeaders.add(HttpHeaders.CACHE_CONTROL, CacheControl.maxAge(Duration.ZERO).mustRevalidate().getHeaderValue());
-        httpHeaders.add(HttpHeaders.PRAGMA, CacheControl.noCache().getHeaderValue());
-        httpHeaders.add(HttpHeaders.EXPIRES, String.valueOf(0));
-        return BaseResponse.<Void>builder()
-                .status(HttpStatus.FOUND)
-                .headers(httpHeaders)
-                .build();
+        return BaseResponse.redirectResponse(returnUrl);
     }
 
     @Override
@@ -450,10 +440,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
                 if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY004);
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY300);
                 } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY003);
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 }
 
             } else {
@@ -471,8 +461,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             returnUrl.addParameter(TXN_ID, transactionId);
             returnUrl.addParameter(SESSION_ID, SessionContextHolder.get().getId().toString());
             return returnUrl.build();
+        } catch (PaymentRuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             transactionManager.upsert(transaction);
         }

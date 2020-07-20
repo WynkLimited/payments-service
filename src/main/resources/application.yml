@@ -68,6 +68,10 @@ payment:
     page: ${webview.host}/subscription/success/
   failure:
     page: ${webview.host}/txn-state/payment-failed/
+  pending:
+    page: ${webview.host}/txn-state/payment-pending/
+  unknown:
+    page: ${webview.host}/txn-state/payment-unknown/
 
 cors:
   maxAge: 3600

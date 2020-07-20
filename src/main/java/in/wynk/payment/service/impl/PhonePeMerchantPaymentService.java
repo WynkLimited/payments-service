@@ -27,6 +27,7 @@ import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
+import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -248,10 +249,10 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
                 if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY300, "Transaction is still pending at phonepe");
                 } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                     logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY008, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY301, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
                 }
 
             } else {
@@ -267,8 +268,10 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             URIBuilder returnUrl = new URIBuilder(statusWebUrl).addParameter(TXN_ID, transactionId)
                     .addParameter(SESSION_ID, SessionContextHolder.getId());
             return returnUrl.build();
+        } catch (PaymentRuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            throw new WynkRuntimeException(PHONEPE_CHARGING_CALLBACK_FAILURE, e.getMessage(), e);
+            throw new PaymentRuntimeException(PHONEPE_CHARGING_CALLBACK_FAILURE, e.getMessage(), e);
         } finally {
             transactionManager.upsert(transaction);
         }

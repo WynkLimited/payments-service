@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.commons.enums.WynkService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -21,6 +22,7 @@ import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.producer.ISQSMessagePublisher;
+import in.wynk.session.context.SessionContextHolder;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
@@ -81,7 +83,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                 throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment resposne received from client");
             }
             final PlanDTO selectedPlan = cachingService.getPlan(amazonIapVerificationRequest.getPlanId());
-            final float finalPlanAmount = selectedPlan.getPrice().getAmount();
+            final double finalPlanAmount = selectedPlan.getPrice().getAmount();
 
             TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
             TransactionEvent transactionEvent = TransactionEvent.SUBSCRIBE;
@@ -112,9 +114,12 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                     .merchantTransaction(merchantTransaction)
                     .build());
 
-            subscriptionServiceManager.publish(amazonIapVerificationRequest.getPlanId(),
-                    amazonIapVerificationRequest.getUid(),
+            subscriptionServiceManager.subscribePlanSync(amazonIapVerificationRequest.getPlanId(),
                     transaction.getId().toString(),
+                    SessionContextHolder.get().getId().toString(),
+                    transaction.getUid(),
+                    transaction.getMsisdn(),
+                    WynkService.fromString(transaction.getService()),
                     transaction.getStatus(),
                     transaction.getType());
 

@@ -44,12 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -60,15 +55,9 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
-import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
@@ -92,12 +81,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private String statusWebUrl;
     @Value("${payment.pooling.queue.reconciliation.name}")
     private String reconciliationQueue;
-    @Value("${payment.pooling.queue.subscription.name}")
-    private String subscriptionQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-    @Value("${payment.pooling.queue.subscription.sqs.producer.delayInSecond}")
-    private int subscriptionMessageDelay;
     @Autowired
     private Gson gson;
 
@@ -215,44 +200,28 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                     .description(phonePeTransactionStatusResponse.getMessage())
                     .build());
         }
+
         transaction.setStatus(finalTransactionStatus.name());
     }
 
     private ChargingStatus getStatusFromPhonePe(ChargingStatusRequest chargingStatusRequest) {
-        TransactionStatus existingTransactionStatus;
-        TransactionStatus finalTransactionStatus;
-
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
+        try {
+            transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateTransactionFromSource);
 
-        existingTransactionStatus = transaction.getStatus();
-        fetchAndUpdateTransactionFromSource(transaction);
-        finalTransactionStatus = transaction.getStatus();
+            if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
+            } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+                logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                throw new WynkRuntimeException(PaymentErrorType.PAY008, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
+            }
 
-        if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
-                    chargingStatusRequest.getUid(),
-                    chargingStatusRequest.getTransactionId(),
-                    finalTransactionStatus,
-                    chargingStatusRequest.getTransactionEvent());
-        } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-            subscriptionServiceManager.publish(chargingStatusRequest.getPlanId(),
-                    chargingStatusRequest.getUid(),
-                    chargingStatusRequest.getTransactionId(),
-                    finalTransactionStatus,
-                    TransactionEvent.UNSUBSCRIBE);
+            return ChargingStatus.builder().transactionStatus(transaction.getStatus()).build();
+        } finally {
+            transactionManager.upsert(transaction);
         }
 
-        if (finalTransactionStatus == TransactionStatus.INPROGRESS) {
-            logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for transactionId {}", chargingStatusRequest.getTransactionId());
-            throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
-        } else if (finalTransactionStatus == TransactionStatus.UNKNOWN) {
-            logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status from phonePe end for transactionId {}", chargingStatusRequest.getTransactionId());
-            throw new WynkRuntimeException(PaymentErrorType.PAY008, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
-        }
-
-        return ChargingStatus.builder()
-                .transactionStatus(finalTransactionStatus)
-                .build();
     }
 
     private ChargingStatus fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest) {
@@ -266,12 +235,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private URI processCallback(CallbackRequest callbackRequest) {
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID);
         final Transaction transaction = transactionManager.get(transactionId);
-
         try {
             Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();
-            String uid = getValueFromSession(UID);
-            PlanDTO selectedPlan = cachingService.getPlan(getValueFromSession(SessionKeys.SELECTED_PLAN_ID));
-
             PhonePeTransactionResponse phonePeTransactionResponse = new PhonePeTransactionResponse(requestPayload);
 
             String errorCode = phonePeTransactionResponse.getCode().name();
@@ -279,12 +244,16 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
             Boolean validChecksum = validateChecksum(requestPayload);
             if (validChecksum && phonePeTransactionResponse.getCode() != null) {
-                fetchAndUpdateTransactionFromSource(transaction);
+                transactionManager.updateAndPublishSync(transaction, this::fetchAndUpdateTransactionFromSource);
 
-                if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                    transaction.setExitTime(Calendar.getInstance());
-                    subscriptionServiceManager.publish(selectedPlan.getId(), uid, transactionId, transaction.getStatus(), transaction.getType());
+                if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                    logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
+                } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+                    logger.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    throw new WynkRuntimeException(PaymentErrorType.PAY008, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
                 }
+
             } else {
                 logger.error(PHONEPE_CHARGING_CALLBACK_FAILURE,
                         "Invalid checksum found with Wynk transactionId: {}, PhonePe transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
@@ -292,7 +261,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                         phonePeTransactionResponse.getData().getProviderReferenceId(),
                         errorCode,
                         errorMessage,
-                        uid);
+                        transaction.getUid());
             }
 
             URIBuilder returnUrl = new URIBuilder(statusWebUrl).addParameter(TXN_ID, transactionId)

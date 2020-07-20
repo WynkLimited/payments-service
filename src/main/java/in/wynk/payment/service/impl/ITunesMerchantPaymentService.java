@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.DiscountDTO;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.commons.enums.WynkService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
@@ -30,11 +30,7 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.ItunesVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.IMerchantPaymentCallbackService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -62,10 +58,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
-import static in.wynk.payment.core.dto.itunes.ItunesConstant.LATEST_RECEIPT_INFO;
-import static in.wynk.payment.core.dto.itunes.ItunesConstant.PASSWORD;
-import static in.wynk.payment.core.dto.itunes.ItunesConstant.RECEIPT_DATA;
-import static in.wynk.payment.core.dto.itunes.ItunesConstant.STATUS;
+import static in.wynk.payment.core.dto.itunes.ItunesConstant.*;
 
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
 public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentCallbackService {
@@ -199,9 +192,16 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 }
             }
 
-            if(transaction.getStatus() == TransactionStatus.SUCCESS){
+            if(transaction.getStatus() == TransactionStatus.SUCCESS) {
                 transaction.setExitTime(Calendar.getInstance());
-                subscriptionServiceManager.publish(selectedPlan.getId(), uid, transaction.getId().toString(), transaction.getStatus(), transaction.getType());
+                subscriptionServiceManager.subscribePlanSync(selectedPlan.getId(),
+                        SessionContextHolder.get().getId().toString(),
+                        transaction.getId().toString(),
+                        uid,
+                        msisdn,
+                        WynkService.fromString(transaction.getService()),
+                        transaction.getStatus(),
+                        transaction.getType());
 
             }
             else {

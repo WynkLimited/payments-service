@@ -1,7 +1,6 @@
 package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
-import in.wynk.commons.enums.FetchStrategy;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
@@ -48,12 +47,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
 
         IMerchantPaymentStatusService statusService = this.applicationContext.getBean(message.getPaymentCode().getCode(), IMerchantPaymentStatusService.class);
-        statusService.status(ChargingStatusRequest.builder()
-                .transactionId(message.getTransactionId())
-                .transactionEvent(message.getTransactionEvent())
-                .mode(StatusMode.SOURCE)
-                .chargingTimestamp(message.getInitTimestamp())
-                .build());
+        statusService.status(ChargingStatusRequest.builder().transactionId(message.getTransactionId()).mode(StatusMode.SOURCE).build());
     }
 
     @Override

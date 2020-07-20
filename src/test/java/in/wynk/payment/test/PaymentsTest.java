@@ -28,9 +28,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 
 @SpringBootTest(classes = PaymentTestConfiguration.class)
 @RunWith(SpringRunner.class)
@@ -47,8 +45,6 @@ public class PaymentsTest {
 
     public void setup(Session<SessionDTO> session) {
         Mockito.doReturn(PaymentTestUtils.dummyPlansDTO()).when(subscriptionServiceManager).getPlans();
-        Mockito.doReturn("MOCKED_SUCCESS").when(subscriptionServiceManager)
-                .publish(anyInt(), anyString(), anyString(), any(), any());
         sessionManager.put(session);
         SessionContextHolder.set(session);
         Mockito.doReturn(dummyPlanDTO()).when(cachingService).getPlan(anyInt());

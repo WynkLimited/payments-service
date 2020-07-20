@@ -16,9 +16,5 @@ import java.util.Date;
 public class ChargingStatusRequest {
 
     private String transactionId;
-    private Date chargingTimestamp;
-    private TransactionEvent transactionEvent;
-    private String uid;
-    private int planId;
     private StatusMode mode;
 }

@@ -8,6 +8,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.Calendar;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -51,9 +52,6 @@ public class Transaction {
     @Column(name = "payment_channel")
     private String paymentChannel;
 
-    @Column(name = "service")
-    private String service;
-
     @Column(name = "transaction_type")
     private String type;
 
@@ -78,6 +76,8 @@ public class Transaction {
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "fk_merchant_id", referencedColumnName = "merchant_transaction_id")
     private MerchantTransaction merchantTransaction;
+
+    private transient Map<String, Object> paymentMetaData;
 
     public TransactionEvent getType() {
         return TransactionEvent.valueOf(type);
@@ -108,6 +108,14 @@ public class Transaction {
         } else {
             this.merchantTransaction = merchantTransaction;
         }
+    }
+
+    public <R> R getValueFromPaymentMetaData(String key) {
+        return (R) paymentMetaData.get(key);
+    }
+
+    public <R> void putValueInPaymentMetaData(String key, R value) {
+        paymentMetaData.put(key, value);
     }
 
 }

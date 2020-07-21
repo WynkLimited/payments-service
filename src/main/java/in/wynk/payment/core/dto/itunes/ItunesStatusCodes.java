@@ -18,12 +18,22 @@ public enum ItunesStatusCodes {
     /* APPLE_21009 */
     APPLE_21009("Internal data access error. Try again later.", 21009),
     /* APPLE_21010 */
-    APPLE_21010("The user account cannot be found or has been deleted.", 21010);
+    APPLE_21010("The user account cannot be found or has been deleted.", 21010),
+
+    /* Internal Codes for Itunes */
+    /* APPLE_21011 */
+    APPLE_21011("Encoded iTunes receipt data is empty!", 21011),
+    /* APPLE_21012 */
+    APPLE_21012("Receipt Object returned from iTunes is null", 21012),
+    /* APPLE_21013 */
+    APPLE_21013("Unable to post receipt over iTunes server", 21013),
+    /* APPLE_21014 */
+    APPLE_21014("Something went wrong", 21013);
 
     private String errorTitle;
     private int    errorCode;
 
-    private ItunesStatusCodes(String errorTitle, int errorCode) {
+    ItunesStatusCodes(String errorTitle, int errorCode) {
         this.errorTitle = errorTitle;
         this.errorCode = errorCode;
 

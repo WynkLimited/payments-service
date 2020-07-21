@@ -56,6 +56,7 @@ public interface PaymentConstants {
     String PHONE_STATUS_CODE = "phonePeStatusCode";
     String BSYS = "bsys";
     String REQUEST = "request";
+    String DECODED_RECEIPT = "decodedReceipt";
 
 
 }

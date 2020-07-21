@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CallbackRequest<T> {
+public class CallbackRequest {
 
-    private T body;
+    private Object body;
 
 }

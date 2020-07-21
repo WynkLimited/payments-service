@@ -26,7 +26,7 @@ import static in.wynk.commons.constants.Constants.UID;
 
 public class PaymentTestUtils {
 
-    public static final String DUMMY_UID = "test_uid";
+    public static final String DUMMY_UID = "lViUuniOH80osYFqy0";
     public static final int PLAN_ID = 1000180;
     private static final String DUMMY_MSISDN = "1111111111";
 
@@ -69,8 +69,10 @@ public class PaymentTestUtils {
 
     public static SessionDTO dummySession() {
         Map<String, Object> map = new HashMap<>();
+        map.put(MSISDN, DUMMY_MSISDN);
         map.put(UID, DUMMY_UID);
-        SessionDTO sessionDTO = SessionDTO.builder().build();
+        map.put(SERVICE, "airteltv");
+        SessionDTO sessionDTO = new SessionDTO();
         sessionDTO.setPayload(map);
         return sessionDTO;
     }
@@ -81,7 +83,7 @@ public class PaymentTestUtils {
 
     public static PlanDTO dummyPlanDTO() {
         PlanPeriodDTO planPeriodDTO = PlanPeriodDTO.builder().timeUnit(TimeUnit.DAYS).validity(30).build();
-        PriceDTO priceDTO = PriceDTO.builder().amount(10).currency("INR").build();
+        PriceDTO priceDTO = PriceDTO.builder().amount(50).currency("INR").build();
         return PlanDTO.builder().planType(PlanType.ONE_TIME_SUBSCRIPTION).id(PLAN_ID).period(planPeriodDTO).price(priceDTO).title("DUMMY_PLAN").build();
     }
 

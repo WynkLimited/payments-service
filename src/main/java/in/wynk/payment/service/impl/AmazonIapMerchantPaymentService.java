@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.enums.WynkService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -107,7 +106,6 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                     .initTime(Calendar.getInstance())
                     .consent(Calendar.getInstance())
                     .uid(amazonIapVerificationRequest.getUid())
-                    .service(amazonIapVerificationRequest.getService())
                     .paymentChannel(PaymentCode.AMAZON_IAP.name())
                     .status(finalTransactionStatus.name())
                     .type(transactionEvent.name())
@@ -119,7 +117,6 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                     SessionContextHolder.get().getId().toString(),
                     transaction.getUid(),
                     transaction.getMsisdn(),
-                    WynkService.fromString(transaction.getService()),
                     transaction.getStatus(),
                     transaction.getType());
 

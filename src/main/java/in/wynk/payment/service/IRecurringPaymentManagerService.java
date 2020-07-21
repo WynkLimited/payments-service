@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 public interface IRecurringPaymentManagerService {
 
-    PaymentRenewal scheduleRecurringPayment(UUID transactionId, Calendar nextRecurringDateTime);
+    PaymentRenewal scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime);
 
     Stream<PaymentRenewal> getCurrentDueRecurringPayments();
 

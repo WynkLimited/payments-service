@@ -42,7 +42,6 @@ public class PayUTestData {
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.ONE_TIME_PLAN_ID)
                 .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
-                .service(PayUDataConstant.WYNK_SERVICE.getValue())
                 .paymentChannel(PaymentCode.PAYU.name())
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
@@ -58,7 +57,6 @@ public class PayUTestData {
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.RECURRING_PLAN_ID)
                 .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
-                .service(PayUDataConstant.WYNK_SERVICE.getValue())
                 .paymentChannel(PaymentCode.PAYU.name())
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
@@ -77,7 +75,6 @@ public class PayUTestData {
         payload.put(SessionKeys.BUILD_NO, PayUDataConstant.BUILD_NO);
         payload.put(SessionKeys.OS, PayUDataConstant.OS);
         payload.put(SessionKeys.PACK_GROUP, "");
-        payload.put(SessionKeys.SERVICE, PayUDataConstant.WYNK_SERVICE.name());
         return Session.<SessionDTO>builder()
                 .id(UUID.randomUUID())
                 .body(SessionDTO.builder().payload(payload).build())

@@ -75,8 +75,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String SUCCESS_PAGE;
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
-    @Value("${payment.merchant.payu.internal.web.url}")
-    private String payUwebUrl;
     @Value("${payment.merchant.payu.internal.callback.successUrl}")
     private String payUSuccessUrl;
     @Value("${payment.merchant.payu.internal.callback.failureUrl}")
@@ -88,10 +86,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private final Gson gson;
     private final RestTemplate restTemplate;
+    private final PaymentCachingService cachingService;
     private final ISQSMessagePublisher sqsMessagePublisher;
     private final ITransactionManagerService transactionManager;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
-    private final PaymentCachingService cachingService;
 
     public PayUMerchantPaymentService(Gson gson,
                                       RestTemplate restTemplate,
@@ -201,21 +199,15 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private ChargingStatus fetchChargingStatusFromPayUSource(ChargingStatusRequest request) {
         final Transaction transaction = transactionManager.get(request.getTransactionId());
-        try {
-            transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateTransactionFromSource);
-
-            if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY004);
-            } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY003);
-            }
-
-            return ChargingStatus.builder().transactionStatus(transaction.getStatus()).build();
-        } finally {
-            transactionManager.upsert(transaction);
+        transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateTransactionFromSource);
+        if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+            log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY004);
+        } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+            log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
+        return ChargingStatus.builder().transactionStatus(transaction.getStatus()).build();
     }
 
     public void fetchAndUpdateTransactionFromSource(Transaction transaction) {
@@ -273,13 +265,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final int planId = chargingRequest.getPlanId();
         final String uid = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.UID));
         final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
-        final String service = getValueFromSession(SessionKeys.SERVICE);
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();
 
         final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
 
-        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, chargingRequest.getPlanId(), finalPlanAmount, PaymentCode.PAYU, eventType, service);
+        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, chargingRequest.getPlanId(), finalPlanAmount, PaymentCode.PAYU, eventType);
 
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> paylaod = new HashMap<>();
@@ -465,8 +456,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             throw e;
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
-        } finally {
-            transactionManager.upsert(transaction);
         }
     }
 

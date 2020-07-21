@@ -42,7 +42,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -52,7 +51,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URLDecoder;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,12 +61,6 @@ import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
 public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService {
-
-    private final RestTemplate restTemplate;
-    private final ISQSMessagePublisher sqsMessagePublisher;
-    private final ITransactionManagerService transactionManager;
-    private final ISubscriptionServiceManager subscriptionServiceManager;
-    private final PaymentCachingService cachingService;
 
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
@@ -84,8 +76,13 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-    @Autowired
-    private Gson gson;
+
+    private final Gson gson;
+    private final RestTemplate restTemplate;
+    private final PaymentCachingService cachingService;
+    private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ITransactionManagerService transactionManager;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
 
 
     private final String debitCall = "/v3/debit";
@@ -93,14 +90,18 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     private Logger logger = LoggerFactory.getLogger(PhonePeMerchantPaymentService.class.getCanonicalName());
 
-    public PhonePeMerchantPaymentService(RestTemplate restTemplate,
+    public PhonePeMerchantPaymentService(Gson gson,
+                                         RestTemplate restTemplate,
+                                         PaymentCachingService cachingService,
                                          ITransactionManagerService transactionManager,
-                                         @Qualifier(SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher, ISubscriptionServiceManager subscriptionServiceManager, PaymentCachingService cachingService) {
+                                         ISubscriptionServiceManager subscriptionServiceManager,
+                                         @Qualifier(SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher) {
+        this.gson = gson;
         this.restTemplate = restTemplate;
+        this.cachingService = cachingService;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.subscriptionServiceManager = subscriptionServiceManager;
-        this.cachingService = cachingService;
     }
 
     @Override
@@ -115,7 +116,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(UID);
         final String msisdn = sessionDTO.get(MSISDN);
-        final String wynkService = sessionDTO.get(SERVICE);
 
         int planId = chargingRequest.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
@@ -124,7 +124,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
         try {
             final long finalPlanAmount = selectedPlan.getFinalPriceInPaise();
-            final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, selectedPlan.getFinalPrice(), PaymentCode.PHONEPE_WALLET, eventType, wynkService);
+            final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, selectedPlan.getFinalPrice(), PaymentCode.PHONEPE_WALLET, eventType);
             String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
 
             putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getIdStr());
@@ -178,7 +178,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         if (phonePeTransactionStatusResponse.getSuccess()) {
             PhonePeTransactionStatus statusCode = phonePeTransactionStatusResponse.getCode();
             if (statusCode == PhonePeTransactionStatus.PAYMENT_SUCCESS) {
-                transaction.setExitTime(Calendar.getInstance());
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
                     statusCode == PhonePeTransactionStatus.PAYMENT_PENDING) {
@@ -191,7 +190,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                     .response(phonePeTransactionStatusResponse)
                     .build());
         } else {
-            transaction.setExitTime(Calendar.getInstance());
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
 
@@ -226,8 +224,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private ChargingStatus fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest) {
-        String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID);
-        Transaction transaction = transactionManager.get(transactionId);
+        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         return ChargingStatus.builder()
                 .transactionStatus(transaction.getStatus())
                 .build();

@@ -1,7 +1,5 @@
 package in.wynk.payment.test.payu.constant;
 
-import in.wynk.commons.enums.WynkService;
-
 import java.util.UUID;
 
 public interface PayUDataConstant {
@@ -22,7 +20,6 @@ public interface PayUDataConstant {
     int ONE_TIME_PLAN_ID = 1000182;
     int RECURRING_PLAN_ID = 1000181;
     double SELECTED_PLAN_AMOUNT = 1.00;
-    WynkService WYNK_SERVICE = WynkService.AIRTEL_TV;
 
 
     String SUCCESS_ONE_TIME_PAYU_TRANSACTION_STATUS = "{\"status\":1,\"msg\":\"1 out of 1 transaction fetched\",\"transaction_details\": { \"e99fff07-849e-4f99-ab69-5ddc11211378\" : {\"status\":\"success\",\"mihpayid\":\"asnaksknqwnkekwe12123\",\"addedon\":\"2016-12-18@07:53:34.740+0000\",\"error_code\":\"NO ERROR\",\"error_Message\":\"NO ERROR\",\"udf1\":\"\",\"card_no\":\"213232xxxxx23232\",\"payuid\":\"adsdsdf\",\"transactionid\":\"e99fff07-849e-4f99-ab69-5ddc11211378\",\"field9\":\"NO ERROR\"}}}";

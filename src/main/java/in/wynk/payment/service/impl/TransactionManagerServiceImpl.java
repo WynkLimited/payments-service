@@ -6,7 +6,6 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.enums.WynkService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -54,9 +53,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event, String wynkService) {
+    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event) {
         Transaction transaction = upsert(Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
-                .consent(Calendar.getInstance()).uid(uid).service(wynkService).msisdn(msisdn)
+                .consent(Calendar.getInstance()).uid(uid).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
                 .type(event.name()).build());
         SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -77,35 +76,38 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     private void updateAndPublish(Transaction transaction, Consumer<Transaction> fetchAndUpdateFromSourceFn, boolean isSync) {
-        PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
-        TransactionStatus existingTransactionStatus = transaction.getStatus();
-        fetchAndUpdateFromSourceFn.accept(transaction);
-        TransactionStatus finalTransactionStatus = transaction.getStatus();
+        try {
+            PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
+            TransactionStatus existingTransactionStatus = transaction.getStatus();
+            fetchAndUpdateFromSourceFn.accept(transaction);
+            TransactionStatus finalTransactionStatus = transaction.getStatus();
 
-        if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-            if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
-                Calendar nextRecurringDateTime = Calendar.getInstance();
-                nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
-                recurringPaymentManagerService.scheduleRecurringPayment(transaction.getId(), nextRecurringDateTime);
+            if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
+                if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
+                    Calendar nextRecurringDateTime = Calendar.getInstance();
+                    nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
+                    recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                }
+
+                if (isSync) {
+                    subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+                } else {
+                    subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+                }
+
+            } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                if (isSync) {
+                    subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
+                } else {
+                    subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
+                }
+
             }
-
-            if (isSync) {
-                subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), WynkService.fromString(transaction.getService()), finalTransactionStatus, transaction.getType());
-            } else {
-                subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), WynkService.fromString(transaction.getService()), finalTransactionStatus, transaction.getType());
+        } finally {
+            if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
+                transaction.setExitTime(Calendar.getInstance());
             }
-
-        } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-            if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getId());
-            }
-
-            if (isSync) {
-                subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), WynkService.fromString(transaction.getService()), finalTransactionStatus);
-            } else {
-                subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), WynkService.fromString(transaction.getService()), finalTransactionStatus);
-            }
-
+            this.upsert(transaction);
         }
     }
 

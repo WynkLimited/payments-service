@@ -1,9 +1,13 @@
 package in.wynk.payment.exception.handler;
 
+import in.wynk.commons.constants.SessionKeys;
+import in.wynk.commons.dto.SessionDTO;
 import in.wynk.exception.handler.WynkGlobalExceptionHandler;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
+import in.wynk.session.context.SessionContextHolder;
+import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.http.HttpStatus;
@@ -26,8 +30,10 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
     public ResponseEntity<?> handlePaymentRuntimeException(PaymentRuntimeException ex, WebRequest request) {
         PaymentErrorType errorType = PaymentErrorType.getWynkErrorType(ex.getErrorCode());
         if (errorType.getHttpResponseStatusCode() == HttpStatus.FOUND && errorType.getRedirectUrlProp() != null) {
+            final String sid = SessionContextHolder.getId();
+            final String tid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.WYNK_TRANSACTION_ID);
             final String webViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp());
-            return BaseResponse.redirectResponse(webViewUrl).getResponse();
+            return BaseResponse.redirectResponse(webViewUrl + sid + "/" + tid).getResponse();
         }
         return super.handleWynkRuntimeExceptionInternal(ex, request);
     }

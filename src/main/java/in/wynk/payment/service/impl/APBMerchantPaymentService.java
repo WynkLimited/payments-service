@@ -60,11 +60,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
 import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.SHA_512;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
+import static in.wynk.payment.constant.ApbConstants.HASH;
 import static in.wynk.payment.constant.ApbConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
@@ -150,12 +149,11 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         sessionDTO.put(PAYMENT_CODE, APB_GATEWAY);
         final String msisdn = sessionDTO.get(MSISDN);
         final String uid = sessionDTO.get(UID);
-        final String wynkService = sessionDTO.get(SERVICE);
         int planId = chargingRequest.getPlanId();
         PlanDTO planDTO = cachingService.getPlan(planId);
         double amount = planDTO.getFinalPrice();
         final TransactionEvent eventType = planDTO.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
-        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, eventType, wynkService);
+        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, eventType);
         String apbRedirectURL = generateApbRedirectURL(transaction);
         return BaseResponse.redirectResponse(apbRedirectURL);
     }

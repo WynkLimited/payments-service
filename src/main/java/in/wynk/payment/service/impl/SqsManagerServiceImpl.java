@@ -16,14 +16,23 @@ public class SqsManagerServiceImpl implements ISqsManagerService {
     private SQSMessagePublisher sqsMessagePublisher;
 
     @Override
-        public <T> void publishSQSMessage(T message) {
+        public <T> void publishSQSMessage(T message, String messageDeDuplicationId) {
             try {
                 WynkQueue queueData = message.getClass().getAnnotation(WynkQueue.class);
-                sqsMessagePublisher.publish(SendSQSMessageRequest.<T>builder()
-                        .queueName(PaymentProperties.getPropertyValue(queueData.queueName(), String.class))
-                        .delaySeconds(PaymentProperties.getPropertyValue(queueData.delaySeconds(),Integer.class))
-                        .message(message)
-                        .build());
+                if(queueData.queueType().equalsIgnoreCase("FIFO")){
+                        sqsMessagePublisher.publish(SendSQSMessageRequest.<T>builder()
+                                .queueName(PaymentProperties.getPropertyValue(queueData.queueName(), String.class))
+                                .message(message)
+                                .messageGroupId(messageDeDuplicationId)
+                                .messageDeduplicationId(messageDeDuplicationId)
+                                .build());
+                } else {
+                    sqsMessagePublisher.publish(SendSQSMessageRequest.<T>builder()
+                            .queueName(PaymentProperties.getPropertyValue(queueData.queueName(), String.class))
+                            .delaySeconds(PaymentProperties.getPropertyValue(queueData.delaySeconds(), Integer.class))
+                            .message(message)
+                            .build());
+                }
             } catch (Exception e) {
                 throw new WynkRuntimeException(QueueErrorType.SQS001, e);
             }

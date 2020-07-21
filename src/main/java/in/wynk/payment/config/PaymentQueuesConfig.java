@@ -76,7 +76,7 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor(@Value("${payment.pooling.queue.renewal.name}") String queueName,
+    public PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor(@Value("${payment.pooling.queue.charging.name}") String queueName,
                                                                                        @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentRenewalChargingSQSMessageExtractor(queueName, sqsClient);
     }

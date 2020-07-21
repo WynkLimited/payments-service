@@ -3,8 +3,8 @@ package in.wynk.payment.consumer;
 import com.amazonaws.services.sqs.AmazonSQS;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dto.PaymentRenewalChargingMessage;
-import in.wynk.payment.core.dto.PaymentRenewalMessage;
+import in.wynk.payment.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.service.ISqsManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
@@ -48,7 +48,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     @Override
     public void start() {
         if (renewalPollingEnabled) {
-            log.info("Starting PaymentReconciliationConsumerPollingQueue...");
+            log.info("Starting PaymentRenewalConsumerPollingQueue...");
             pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
@@ -73,7 +73,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
 
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        sqsManagerService.publishSQSMessage(new PaymentRenewalChargingMessage(transaction));
+        sqsManagerService.publishSQSMessage(new PaymentRenewalChargingMessage(transaction), transaction.getId().toString());
 
     }
 

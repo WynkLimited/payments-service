@@ -52,8 +52,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         Calendar currentDay = Calendar.getInstance();
         Calendar currentDayWithOffset = Calendar.getInstance();
         Date currentTime = currentDay.getTime();
-        Date currentTimeWithOffset = currentDayWithOffset.getTime();
-        DateUtils.addHours(currentTimeWithOffset, dueRecurringOffsetTime);
+        Date currentTimeWithOffset = DateUtils.addHours(currentTime, dueRecurringOffsetTime);
         currentDayWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayWithOffset, currentTime, currentTimeWithOffset);
     }

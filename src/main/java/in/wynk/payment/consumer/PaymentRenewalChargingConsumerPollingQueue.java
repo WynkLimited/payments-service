@@ -2,13 +2,14 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.service.IMerchantPaymentRenewalService;
 import in.wynk.payment.utils.BeanLocatorFactory;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -63,14 +64,10 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
 
     @Override
     public void consume(PaymentRenewalChargingMessage message) {
-        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getTransaction());
+        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getPaymentRenewalRequest());
 
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(message.getPaymentCode().getCode(), IMerchantPaymentRenewalService.class);
-        merchantPaymentRenewalService.doRenewal
-                    (PaymentRenewalRequest
-                        .builder()
-                        .previousTransaction(message.getTransaction())
-                        .build());
+        merchantPaymentRenewalService.doRenewal(message.getPaymentRenewalRequest());
     }
 
     @Override

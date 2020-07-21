@@ -1,4 +1,4 @@
-package in.wynk.payment.core.constant;
+package in.wynk.payment.core.enums;
 
 import in.wynk.exception.WynkRuntimeException;
 import lombok.Getter;
@@ -11,8 +11,6 @@ import static in.wynk.payment.core.constant.BeanConstant.*;
 @RequiredArgsConstructor
 public enum PaymentCode {
 
-    GOOGLE_UPI("googleUPI"),
-    AMAZON_WALLET("amazonWallet"),
     AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE),
     ITUNES(ITUNES_PAYMENT_SERVICE),
     PAYU(PAYU_MERCHANT_PAYMENT_SERVICE),

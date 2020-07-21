@@ -8,8 +8,8 @@ import org.json.simple.parser.ParseException;
 
 import java.util.List;
 
-import static in.wynk.payment.core.constant.ItunesConstant.PURCHASE_INFO;
-import static in.wynk.payment.core.constant.ItunesConstant.RECEIPT_DATA;
+import static in.wynk.payment.core.constant.itune.ItunesConstant.PURCHASE_INFO;
+import static in.wynk.payment.core.constant.itune.ItunesConstant.RECEIPT_DATA;
 
 public enum ItunesReceiptType {
     SIX {

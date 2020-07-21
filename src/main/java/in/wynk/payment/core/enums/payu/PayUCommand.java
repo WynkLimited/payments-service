@@ -1,4 +1,4 @@
-package in.wynk.payment.core.constant;
+package in.wynk.payment.core.enums.payu;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

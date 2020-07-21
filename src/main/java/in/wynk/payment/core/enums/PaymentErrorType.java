@@ -1,8 +1,8 @@
-package in.wynk.payment.core.constant;
+package in.wynk.payment.core.enums;
 
 import in.wynk.exception.IWynkErrorType;
-import in.wynk.exception.WynkErrorType;
 import in.wynk.logging.BaseLoggingMarkers;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import org.slf4j.Marker;
 import org.springframework.http.HttpStatus;
 

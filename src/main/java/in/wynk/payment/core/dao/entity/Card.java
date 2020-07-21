@@ -2,7 +2,7 @@ package in.wynk.payment.core.dao.entity;
 
 
 import in.wynk.commons.enums.PaymentGroup;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.enums.PaymentCode;
 import lombok.Data;
 import lombok.Getter;
 

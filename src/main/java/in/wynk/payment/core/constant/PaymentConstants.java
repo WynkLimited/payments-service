@@ -1,62 +1,23 @@
 package in.wynk.payment.core.constant;
 
 public interface PaymentConstants {
-    String PAYU_BSYS_PARAM = "bsys";
-    String NETBANKING_MODE = "netbanking";
-    String SID_KEY = "{sid}";
-    String PIPE_SEPARATOR = "|";
+
     String COLON = ":";
-    String BASE_USER_EMAIL = "@wynk.in";
-    String PAYU_REQUEST_TYPE = "rt";
-    String PAYU_CHARGING_INFO = "info";
-    String PAYU_MERCHANT_KEY = "key";
-    String PAYU_COMMAND = "command";
-    String PAYU_HASH = "hash";
-    String PAYU_VARIABLE1 = "var1";
-    String PAYU_REQUEST_TRANSACTION_ID = "txnid";
-    String PAYU_TRANSACTION_AMOUNT = "amount";
-    String PAYU_PRODUCT_INFO = "productinfo";
-    String PAYU_CUSTOMER_FIRSTNAME = "firstname";
-    String PAYU_CUSTOMER_EMAIL = "email";
-    String PAYU_CUSTOMER_MSISDN = "phone";
-    String PAYU_ENFORCE_PAYMENT = "enforce_payment";
-    String PAYU_SUCCESS_URL = "surl";
-    String PAYU_FAILURE_URL = "furl";
-    String PAYU_USER_CREDENTIALS = "user_credentials";
-    String PAYU_ENFORCE_PAY_METHOD = "enforce_paymethod";
-    String PAYU_UDF1_PARAMETER = "udf1";
-    String IS_FALLBACK_ATTEMPT = "isFallbackAttempt";
+    String TXN_ID = "tid";
     String ERROR = "error";
-    String PAYU_REDIRECT_MESSAGE = "Redirecting to PayU ";
-    String CARD_DETAILS = "CardDetails";
-    String PAYU_PG = "pg";
-    String PAYU_SI_KEY = "si";
     String SUBSID = "subsId";
-    String PAYU_CARD_NUMBER = "card_no";
+    String STATUS = "status";
+    String SESSION_ID = "sid";
+    String REQUEST = "request";
+    String PENDING = "pending";
     String SUCCESS = "success";
     String FAILURE = "failure";
-    String STATUS = "status";
-    String MESSAGE = "message";
-    String INPROGRESS = "inprogress";
-    String PAYU_STATUS_NOT_FOUND = "Not Found";
-    String PENDING = "pending";
-    String PAYU_RESPONSE_AUTH_PAYUID = "authpayuid";
-    String PAYU_CARD_TOKEN = "card_token";
-    String TRANSACTION_FAILED = "TXN Failed";
-    String TXN_ID = "tid";
-    String SESSION_ID = "sid";
-    String PAYU_ERROR_MESSAGE = "Error";
-    String PAYU_RESPONSE_ERROR_MESSAGE = "error_Message";
-    String PAYU_STATUS_CAPTURED = "captured";
-    String PAYU_SI_STATUS_FAILURE = "failed";
-    String X_VERIFY = "x-verify";
-    String CONTENT_TYPE = "content-type";
-    String X_REDIRECT_URL = "x-redirect-url";
-    String X_REDIRECT_MODE = "x-redirect-mode";
-    String PHONE_STATUS_CODE = "phonePeStatusCode";
-    String BSYS = "bsys";
-    String REQUEST = "request";
-    String DECODED_RECEIPT = "decodedReceipt";
+    String PIPE_SEPARATOR = "|";
+    String BASE_USER_EMAIL = "@wynk.in";
+
+
+    String PAYMENT_METHOD = "paymentMethod";
+    String REQUEST_PAYLOAD = "requestPayload";
 
 
 }

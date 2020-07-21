@@ -1,4 +1,4 @@
-package in.wynk.payment.core.dto.itunes;
+package in.wynk.payment.core.constant;
 
 public class ItunesConstant {
     public static final String PRODUCT_ID = "product_id";

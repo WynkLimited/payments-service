@@ -1,14 +1,15 @@
 package in.wynk.payment.core.dto.itunes;
 
 import in.wynk.exception.WynkRuntimeException;
+import org.apache.commons.codec.binary.Base64;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
-import org.apache.commons.codec.binary.Base64;
 
 import java.util.List;
 
-import static in.wynk.payment.core.dto.itunes.ItunesConstant.*;
+import static in.wynk.payment.core.constant.ItunesConstant.PURCHASE_INFO;
+import static in.wynk.payment.core.constant.ItunesConstant.RECEIPT_DATA;
 
 public enum ItunesReceiptType {
     SIX {

@@ -3,12 +3,12 @@ package in.wynk.payment.test;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.enums.StatusMode;
+import in.wynk.payment.core.dto.request.CallbackRequest;
+import in.wynk.payment.core.dto.request.ChargingStatusRequest;
+import in.wynk.payment.core.dto.response.BaseResponse;
+import in.wynk.payment.core.dto.response.ChargingStatusResponse;
+import in.wynk.payment.core.enums.PaymentCode;
+import in.wynk.payment.core.enums.StatusMode;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import org.junit.Before;
@@ -21,9 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 
 public class ApbPaymentsTest extends PaymentsTest {
 

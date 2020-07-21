@@ -7,12 +7,8 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.State;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.Card;
-import in.wynk.payment.core.dao.entity.Payment;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.enums.PaymentCode;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,9 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 
 public class PaymentTestUtils {
 

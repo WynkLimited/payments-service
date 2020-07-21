@@ -13,25 +13,24 @@ import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.constant.PaymentConstants;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
-import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
-import in.wynk.payment.dto.request.paytm.PaytmWalletAddMoneyRequest;
-import in.wynk.payment.dto.request.paytm.PaytmWalletLinkRequest;
-import in.wynk.payment.dto.request.paytm.PaytmWalletOtpRequest;
-import in.wynk.payment.dto.request.paytm.PaytmWalletValidateLinkRequest;
-import in.wynk.payment.dto.response.*;
-import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
-import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
-import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
-import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
-import in.wynk.payment.enums.StatusMode;
-import in.wynk.payment.errors.ErrorCodes;
+import in.wynk.payment.core.dto.request.*;
+import in.wynk.payment.core.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
+import in.wynk.payment.core.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
+import in.wynk.payment.core.dto.request.paytm.PaytmWalletAddMoneyRequest;
+import in.wynk.payment.core.dto.request.paytm.PaytmWalletLinkRequest;
+import in.wynk.payment.core.dto.request.paytm.PaytmWalletOtpRequest;
+import in.wynk.payment.core.dto.request.paytm.PaytmWalletValidateLinkRequest;
+import in.wynk.payment.core.dto.response.*;
+import in.wynk.payment.core.dto.response.paytm.PaytmChargingResponse;
+import in.wynk.payment.core.dto.response.paytm.PaytmChargingStatusResponse;
+import in.wynk.payment.core.dto.response.paytm.PaytmWalletLinkResponse;
+import in.wynk.payment.core.dto.response.paytm.PaytmWalletValidateLinkResponse;
+import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.enums.StatusMode;
+import in.wynk.payment.core.enums.paytm.PayTmErrorCodes;
 import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -56,11 +55,10 @@ import java.util.*;
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
-import static in.wynk.payment.constant.PaymentConstants.PAYTM_STATUS_SUCCESS;
-import static in.wynk.payment.constant.PaymentConstants.WALLET_USER_ID;
-import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.HTTP_ERROR;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
+import static in.wynk.payment.core.constant.paytm.PayTmConstants.*;
+import static in.wynk.payment.core.enums.PaymentCode.PAYTM_WALLET;
 
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
 public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService {
@@ -138,8 +136,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final int planId = sessionDTO.get(PLAN_ID);
         Map<String, List<String>> params = (Map<String, List<String>>) callbackRequest.getBody();
-        List<String> status = params.getOrDefault(PaymentConstants.PAYTM_STATUS, new ArrayList<>());
-        if (CollectionUtils.isEmpty(status) || !status.get(0).equalsIgnoreCase(PaymentConstants.PAYTM_STATUS_SUCCESS)) {
+        List<String> status = params.getOrDefault(PAYTM_STATUS, new ArrayList<>());
+        if (CollectionUtils.isEmpty(status) || !status.get(0).equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
             logger.error(APPLICATION_ERROR, "Add money txn at paytm failed");
             throw new RuntimeException("Failed to add money to wallet");
         }
@@ -190,7 +188,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         try {
             String accessToken = getAccessToken(transaction.getUid());
             PaytmChargingResponse paytmChargingResponse = withdrawFromPaytm(transaction.getUid(), transaction, String.valueOf(transaction.getAmount()), accessToken, deviceId);
-            if (paytmChargingResponse != null && paytmChargingResponse.getStatus().equalsIgnoreCase(PaymentConstants.PAYTM_STATUS_SUCCESS)) {
+            if (paytmChargingResponse != null && paytmChargingResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
                 transaction.setStatus(TransactionStatus.SUCCESS.name());
             } else if (Objects.nonNull(paytmChargingResponse)) {
                 transaction.setStatus(TransactionStatus.FAILURE.name());
@@ -477,17 +475,17 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         try {
             String wynkCallbackURL = callBackUrl + sid;
             TreeMap<String, String> parameters = new TreeMap<>();
-            parameters.put(PaymentConstants.PAYTM_REQUEST_TYPE, PaymentConstants.ADD_MONEY);
-            parameters.put(PaymentConstants.PAYTM_MID, MID);
-            parameters.put(PaymentConstants.PAYTM_REQUST_ORDER_ID, sid);
-            parameters.put(PaymentConstants.PAYTM_CHANNEL_ID, PaymentConstants.PAYTM_WEB);
-            parameters.put(PaymentConstants.PAYTM_INDUSTRY_TYPE_ID, PaymentConstants.RETAIL);
-            parameters.put(PaymentConstants.PAYTM_REQUEST_CUST_ID, uid);
-            parameters.put(PaymentConstants.PAYTM_REQUEST_TXN_AMOUNT, amount);
-            parameters.put(PaymentConstants.PAYTM_REQUESTING_WEBSITE, paytmRequestingWebsite);
-            parameters.put(PaymentConstants.PAYTM_SSO_TOKEN, accessToken);
-            parameters.put(PaymentConstants.PAYTM_REQUEST_CALLBACK, wynkCallbackURL);
-            parameters.put(PaymentConstants.PAYTM_CHECKSUMHASH, checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters));
+            parameters.put(PAYTM_REQUEST_TYPE, ADD_MONEY);
+            parameters.put(PAYTM_MID, MID);
+            parameters.put(PAYTM_REQUST_ORDER_ID, sid);
+            parameters.put(PAYTM_CHANNEL_ID, PAYTM_WEB);
+            parameters.put(PAYTM_INDUSTRY_TYPE_ID, RETAIL);
+            parameters.put(PAYTM_REQUEST_CUST_ID, uid);
+            parameters.put(PAYTM_REQUEST_TXN_AMOUNT, amount);
+            parameters.put(PAYTM_REQUESTING_WEBSITE, paytmRequestingWebsite);
+            parameters.put(PAYTM_SSO_TOKEN, accessToken);
+            parameters.put(PAYTM_REQUEST_CALLBACK, wynkCallbackURL);
+            parameters.put(PAYTM_CHECKSUMHASH, checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters));
             String payTmRequestParams = gson.toJson(parameters);
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
             Map<String, String> params = new HashMap<>();
@@ -518,19 +516,19 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
             //TODO: refactor
             if (!statusCode.is2xxSuccessful() || paytmWalletLinkResponse == null) {
-                ErrorCodes errorCode = ErrorCodes.UNKNOWN;
+                PayTmErrorCodes errorCode = PayTmErrorCodes.UNKNOWN;
                 if (paytmWalletLinkResponse != null) {
                     String responseCode = paytmWalletLinkResponse.getResponseCode();
-                    errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                    errorCode = PayTmErrorCodes.resolveErrorCode(responseCode);
                 }
                 logger.error(HTTP_ERROR, "Error in sending otp. Reason: [{}]",
                         errorCode.getMessage());
             }
 
             if (paytmWalletLinkResponse.getStatus() == Status.FAILURE) {
-                ErrorCodes errorCode;
+                PayTmErrorCodes errorCode;
                 String responseCode = paytmWalletLinkResponse.getResponseCode();
-                errorCode = ErrorCodes.resolveErrorCode(responseCode);
+                errorCode = PayTmErrorCodes.resolveErrorCode(responseCode);
                 logger.error(HTTP_ERROR, "Error in sending otp. Reason: [{}]",
                         errorCode.getMessage());
                 return new BaseResponse<>(paytmWalletLinkResponse, HttpStatus.OK, responseEntity.getHeaders());

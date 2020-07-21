@@ -10,24 +10,23 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.ItunesIdUidMapping;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
+import in.wynk.payment.core.dto.ItunesCallbackRequest;
 import in.wynk.payment.core.dto.itunes.ItunesReceipt;
 import in.wynk.payment.core.dto.itunes.ItunesReceiptType;
-import in.wynk.payment.core.dto.itunes.ItunesStatusCodes;
 import in.wynk.payment.core.dto.itunes.LatestReceiptInfo;
-import in.wynk.payment.dto.ItunesCallbackRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.request.ItunesVerificationRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatus;
+import in.wynk.payment.core.dto.request.CallbackRequest;
+import in.wynk.payment.core.dto.request.IapVerificationRequest;
+import in.wynk.payment.core.dto.request.ItunesVerificationRequest;
+import in.wynk.payment.core.dto.response.BaseResponse;
+import in.wynk.payment.core.dto.response.ChargingStatus;
+import in.wynk.payment.core.enums.PaymentCode;
+import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.enums.itune.ItunesStatusCodes;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -54,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static in.wynk.payment.core.constant.ItunesConstant.*;
+import static in.wynk.payment.core.constant.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
@@ -91,7 +90,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
             final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
             final Transaction transaction = transactionManager.initiateTransaction(request.getUid(), request.getMsisdn(), selectedPlan.getId(), selectedPlan.getPrice().getAmount(), PaymentCode.ITUNES, eventType);
-            transaction.putValueInPaymentMetaData(PaymentConstants.DECODED_RECEIPT, request.getReceipt());
+            transaction.putValueInPaymentMetaData(DECODED_RECEIPT, request.getReceipt());
             transactionManager.updateAndPublishSync(transaction, this::fetchAndUpdateFromReceipt);
             URIBuilder returnUrl = new URIBuilder(statusWebUrl);
             returnUrl.addParameter(STATUS, transaction.getStatus().name());
@@ -117,7 +116,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                     final PlanDTO selectedPlan = cachingService.getPlan(itunesIdUidMapping.getPlanId());
                     final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
                     final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, selectedPlan.getId(), selectedPlan.getPrice().getAmount(), PaymentCode.ITUNES, eventType);
-                    transaction.putValueInPaymentMetaData(PaymentConstants.DECODED_RECEIPT, decodedReceipt);
+                    transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
                     transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateFromReceipt);
                     finalTransactionStatus = transaction.getStatus();
                 } catch (UnsupportedEncodingException e) {
@@ -132,7 +131,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     private void fetchAndUpdateFromReceipt(Transaction transaction) {
         String errorMessage = StringUtils.EMPTY;
-        final String decodedReceipt = transaction.getValueFromPaymentMetaData(PaymentConstants.DECODED_RECEIPT);
+        final String decodedReceipt = transaction.getValueFromPaymentMetaData(DECODED_RECEIPT);
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(decodedReceipt);
         try {
             final List<LatestReceiptInfo> userLatestReceipts = getReceiptObjForUser(decodedReceipt, receiptType, transaction);

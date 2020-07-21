@@ -13,23 +13,27 @@ import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.VerificationType;
-import in.wynk.payment.dto.payu.CardDetails;
-import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
-import in.wynk.payment.dto.payu.PayUCardInfo;
-import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
-import in.wynk.payment.dto.response.payu.PayURenewalResponse;
-import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.core.dto.VerificationType;
+import in.wynk.payment.core.dto.payu.CardDetails;
+import in.wynk.payment.core.dto.payu.PayUCallbackRequestPayload;
+import in.wynk.payment.core.dto.payu.PayUCardInfo;
+import in.wynk.payment.core.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.core.dto.request.*;
+import in.wynk.payment.core.dto.response.BaseResponse;
+import in.wynk.payment.core.dto.response.ChargingStatus;
+import in.wynk.payment.core.dto.response.PayuVpaVerificationResponse;
+import in.wynk.payment.core.dto.response.payu.PayURenewalResponse;
+import in.wynk.payment.core.dto.response.payu.PayUUserCardDetailsResponse;
+import in.wynk.payment.core.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.core.enums.PaymentCode;
+import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.enums.payu.PayUCommand;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
@@ -58,6 +62,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
@@ -221,10 +226,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                    StringUtils.equalsIgnoreCase(PaymentConstants.PENDING, payUTransactionDetails.getStatus())) {
+                    StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                    StringUtils.equalsIgnoreCase(PaymentConstants.PENDING, payUTransactionDetails.getStatus())) {
+                    StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
         } else {
@@ -296,7 +301,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_FAILURE_URL, payUFailureUrl + sid);
 //      paylaod.put(PAYU_ENFORCE_PAY_METHOD, chargingRequest.getEnforcePayment()) upto FE since it knows which option is chosen.
         paylaod.put(PAYU_UDF1_PARAMETER, udf1);
-        paylaod.put(IS_FALLBACK_ATTEMPT, String.valueOf(false));
+        paylaod.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         paylaod.put(ERROR, PAYU_REDIRECT_MESSAGE);
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
         putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());

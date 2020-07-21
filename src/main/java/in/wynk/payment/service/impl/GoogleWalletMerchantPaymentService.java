@@ -1,8 +1,8 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.core.dto.request.ChargingStatusRequest;
+import in.wynk.payment.core.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
 import org.springframework.stereotype.Service;
 

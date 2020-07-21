@@ -10,4 +10,5 @@ import java.lang.annotation.Target;
 public @interface WynkQueue {
     String queueName() default "";
     String delaySeconds() default "";
+    String queueType() default "STANDARD";
 }

@@ -23,7 +23,7 @@ import org.springframework.util.MultiValueMap;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.payu.PayUConstants.*;
 
 public class PayUTestData {
 

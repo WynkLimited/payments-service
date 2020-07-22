@@ -67,7 +67,7 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
-    @PostMapping(value = "/callback/{sid}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(path = "/callback/{sid}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
@@ -76,7 +76,7 @@ public class RevenuePaymentHandler {
         PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
         AnalyticService.update(SessionKeys.PAYMENT_CODE, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.name(), IMerchantPaymentCallbackService.class);
+        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();
     }

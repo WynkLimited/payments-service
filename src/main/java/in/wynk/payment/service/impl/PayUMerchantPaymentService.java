@@ -78,8 +78,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String payUInfoApiUrl;
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
-    @Value("${payment.failure.page}")
-    private String FAILURE_PAGE;
     @Value("${payment.merchant.payu.internal.callback.successUrl}")
     private String payUSuccessUrl;
     @Value("${payment.merchant.payu.internal.callback.failureUrl}")
@@ -417,7 +415,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
         final Transaction transaction = transactionManager.get(transactionId);
         try {
-            String url = FAILURE_PAGE + SessionContextHolder.getId();
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
@@ -443,9 +440,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                    url = SUCCESS_PAGE + SessionContextHolder.getId();
+                    return SUCCESS_PAGE + SessionContextHolder.getId();
+                } else {
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }
-
             } else {
                 log.error(PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE,
                         "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
@@ -455,8 +453,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                         errorCode,
                         errorMessage,
                         transaction.getUid());
+                throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + transactionId);
             }
-            return url;
         } catch (PaymentRuntimeException e) {
             throw e;
         } catch (Exception e) {

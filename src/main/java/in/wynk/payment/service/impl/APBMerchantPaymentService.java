@@ -13,6 +13,7 @@ import in.wynk.commons.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.constant.apb.ApbConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.MerchantTransaction.MerchantTransactionBuilder;
@@ -30,6 +31,7 @@ import in.wynk.payment.core.dto.response.ChargingStatusResponse;
 import in.wynk.payment.core.enums.Apb.ApbStatus;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.enums.StatusMode;
+import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -37,12 +39,10 @@ import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -67,12 +67,9 @@ import static in.wynk.payment.core.constant.apb.ApbConstants.HASH;
 import static in.wynk.payment.core.constant.apb.ApbConstants.*;
 import static in.wynk.payment.core.enums.PaymentCode.APB_GATEWAY;
 
+@Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
 public class APBMerchantPaymentService implements IRenewalMerchantPaymentService {
-    private static final Logger logger = LoggerFactory.getLogger(APBMerchantPaymentService.class);
-
-    @Autowired
-    private RestTemplate restTemplate;
 
     @Value("${apb.callback.url}")
     private String CALLBACK_URL;
@@ -89,9 +86,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
 
-    @Value("${payment.failure.page}")
-    private String FAILURE_PAGE;
-
     @Value("${apb.txn.inquiry.url}")
     private String APB_TXN_INQUIRY_URL;
 
@@ -101,17 +95,19 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
 
-    @Autowired
-    private ITransactionManagerService transactionManager;
+    private final Gson gson;
+    private final RestTemplate restTemplate;
+    private final PaymentCachingService cachingService;
+    private final ISQSMessagePublisher messagePublisher;
+    private final ITransactionManagerService transactionManager;
 
-    @Autowired
-    private ISQSMessagePublisher messagePublisher;
-
-    @Autowired
-    private PaymentCachingService cachingService;
-
-    @Autowired
-    private Gson gson;
+    public APBMerchantPaymentService(Gson gson, RestTemplate restTemplate, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ITransactionManagerService transactionManager) {
+        this.gson = gson;
+        this.restTemplate = restTemplate;
+        this.cachingService = cachingService;
+        this.messagePublisher = messagePublisher;
+        this.transactionManager = transactionManager;
+    }
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
@@ -126,20 +122,37 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         String amount = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT);
         String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
         String requestHash = CommonUtils.getStringParameter(urlParameters, HASH);
-        String sessionId = SessionContextHolder.get().getId().toString();
-        String url = FAILURE_PAGE + sessionId;
         try {
+            final Transaction transaction = transactionManager.get(txnId);
             if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
-                Transaction transaction = transactionManager.get(txnId);
                 transactionManager.updateAndPublishSync(transaction, this::fetchAPBTxnStatus);
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                    url = String.format(SUCCESS_PAGE, sessionId, txnId);
+                    return BaseResponse.redirectResponse(SUCCESS_PAGE + SessionContextHolder.getId());
+                } else if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                    log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY300);
+                } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+                    log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY301);
+                } else {
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }
+            } else {
+                log.error(PaymentLoggingMarker.APB_CHARGING_CALLBACK_FAILURE,
+                        "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
+                        transaction.getStatus(),
+                        transaction.getIdStr(),
+                        externalTxnId,
+                        code,
+                        externalMessage,
+                        transaction.getUid());
+                throw new PaymentRuntimeException(PaymentErrorType.PAY302, "invalid checksum is supplied for transactionId:" + transaction.getIdStr());
             }
+        } catch (PaymentRuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            throw new WynkRuntimeException("Exception Occurred while verifying status from Airtel Payments Bank");
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Exception Occurred while verifying status from airtel payments bank");
         }
-        return BaseResponse.redirectResponse(url);
     }
 
     @Override
@@ -237,7 +250,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                     .amount(String.valueOf(transaction.getAmount()))
                     .build();
             String payload = gson.toJson(apbTransactionInquiryRequest);
-            logger.info("ApbTransactionInquiryRequest: {}", apbTransactionInquiryRequest);
+            log.info("ApbTransactionInquiryRequest: {}", apbTransactionInquiryRequest);
             merchantTxnBuilder.request(payload);
             RequestEntity<String> requestEntity = new RequestEntity<>(payload, HttpMethod.POST, uri);
             ResponseEntity<ApbChargingStatusResponse> responseEntity = restTemplate.exchange(requestEntity, ApbChargingStatusResponse.class);
@@ -251,10 +264,10 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             }
         } catch (HttpStatusCodeException e) {
             merchantTxnBuilder.response(e.getResponseBodyAsString());
-            logger.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getResponseBodyAsString(), e);
+            log.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getResponseBodyAsString(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "APB failure response - " + e.getResponseBodyAsString());
         } catch (Exception e) {
-            logger.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getMessage(), e);
+            log.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Unable to fetch transaction status for txnId = " + txnId + "error- " + e.getMessage());
         } finally {
             transaction.setMerchantTransaction(merchantTxnBuilder.build());

@@ -49,7 +49,7 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> status(@PathVariable String sid) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         ChargingStatusRequest request = ChargingStatusRequest.builder().mode(StatusMode.LOCAL).transactionId(sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID)).build();
-        PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
+        PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         BaseResponse<?> baseResponse = statusService.status(request);
@@ -73,7 +73,7 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
-        PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
+        PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(SessionKeys.PAYMENT_CODE, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
@@ -87,7 +87,7 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
-        PaymentCode paymentCode = sessionDTO.get(SessionKeys.PAYMENT_CODE);
+        PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);

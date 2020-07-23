@@ -4,7 +4,7 @@ import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.ISqsManagerService;
+import in.wynk.queue.service.ISqsManagerService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,7 +36,10 @@ public class PaymentRenewalsScheduler {
     }
     private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals){
         for(PaymentRenewal paymentRenewal : paymentRenewals){
-            sqsManagerService.publishSQSMessage(new PaymentRenewalMessage(paymentRenewal), StringUtils.EMPTY);
+            sqsManagerService.publishSQSMessage(PaymentRenewalMessage.builder()
+                                                    .transactionId(paymentRenewal.getTransactionId())
+                                                    .transactionEvent(paymentRenewal.getTransactionEvent())
+                                                    .build(), StringUtils.EMPTY);
         }
     }
 

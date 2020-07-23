@@ -28,9 +28,4 @@ public class PaymentRenewalRequest {
     private String cardNumber;
     private String id;
 
-    public PaymentRenewalRequest(Transaction transaction){
-        this.uid = transaction.getUid();
-        this.transactionId = transaction.getId().toString();
-        this.planId = transaction.getPlanId();
-    }
 }

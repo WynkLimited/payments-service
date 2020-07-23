@@ -4,33 +4,15 @@ import com.mongodb.ConnectionString;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.EnvironmentAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
-
-import static javafx.scene.input.KeyCode.T;
 
 
 @ConfigurationProperties("app")
 @Getter
 @Setter
-public class PaymentProperties implements EnvironmentAware {
-
-    private static Environment environment;
-
-    @Override
-    public void setEnvironment(Environment environment) {
-        PaymentProperties.environment = environment;
-    }
-
-    public static <T> T getPropertyValue(String var1, Class<T> var2) {
-        return environment.getRequiredProperty(var1, var2);
-    }
-
+public class PaymentProperties {
 
     private MongoProperties mongo;
 

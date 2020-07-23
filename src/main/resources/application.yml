@@ -59,8 +59,8 @@ service:
     api:
       endpoint:
         allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
-        subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/provision/
-        unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/unprovision/
+        subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/subscription/provision/
+        unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/subscription/unprovision/
 
 ####### payment props #######
 payment:

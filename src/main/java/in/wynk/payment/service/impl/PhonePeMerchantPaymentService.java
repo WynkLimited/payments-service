@@ -124,7 +124,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
             putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getIdStr());
             putValueInSession(SessionKeys.SELECTED_PLAN_ID, selectedPlan.getId());
-            putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET.getCode());
+            putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET);
 
             PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
             publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);

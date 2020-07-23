@@ -303,7 +303,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(ERROR, PAYU_REDIRECT_MESSAGE);
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
         putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
-        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
+        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU);
 
         PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
         publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);

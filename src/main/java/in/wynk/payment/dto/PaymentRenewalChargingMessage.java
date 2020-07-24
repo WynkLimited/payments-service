@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-@WynkQueue(queueName ="payment.pooling.queue.charging.name", delaySeconds = "payment.pooling.queue.charging.sqs.producer.delayInSecond", queueType = QueueType.FIFO)
+@WynkQueue(queueName ="${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
 public class PaymentRenewalChargingMessage{
 
     private PaymentCode paymentCode;

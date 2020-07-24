@@ -1,15 +1,9 @@
 package in.wynk.payment.core.dao.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
@@ -23,9 +17,9 @@ import javax.persistence.Table;
 public class PaymentError {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "payment_error_id")
-    private Long id;
+    @Column(name = "transaction_id")
+    @Setter(AccessLevel.NONE)
+    private String id;
     @Column(name = "error_code", nullable = false)
     private String code;
     @Column(name = "error_description", nullable = false)

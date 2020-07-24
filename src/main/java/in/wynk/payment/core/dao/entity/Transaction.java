@@ -69,14 +69,6 @@ public class Transaction {
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar consent;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "fk_error_id", referencedColumnName = "payment_error_id")
-    private PaymentError paymentError;
-
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "fk_merchant_id", referencedColumnName = "merchant_transaction_id")
-    private MerchantTransaction merchantTransaction;
-
     private transient Map<String, Object> paymentMetaData;
 
     public TransactionEvent getType() {
@@ -97,17 +89,6 @@ public class Transaction {
 
     public PaymentCode getPaymentChannel() {
         return PaymentCode.valueOf(paymentChannel);
-    }
-
-
-    public void setMerchantTransaction(MerchantTransaction merchantTransaction) {
-        if(this.merchantTransaction != null) {
-            this.merchantTransaction.setRequest(merchantTransaction.getRequest());
-            this.merchantTransaction.setRequest(merchantTransaction.getResponse());
-            this.merchantTransaction.setExternalTransactionId(merchantTransaction.getExternalTransactionId());
-        } else {
-            this.merchantTransaction = merchantTransaction;
-        }
     }
 
     public <R> R getValueFromPaymentMetaData(String key) {

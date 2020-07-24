@@ -11,10 +11,11 @@ public interface BeanConstant {
     String GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE = "GoogleWallet";
     String AMAZON_IAP_PAYMENT_SERVICE = "AmazonIap";
 
+    String PAYMENT_ERROR_DAO = "paymentErrorDao";
     String TRANSACTION_DAO = "transactionDaoBean";
     String PAYMENT_RENEWAL_DAO = "paymentRenewalDaoBean";
+    String MERCHANT_TRANSACTION_DAO = "merchantTransactionDao";
 
-    String TRANSACTION_MANAGER_SERVICE = "transactionManagerBean";
     String RECURRING_PAYMENT_RENEWAL_SERVICE = "recurringPaymentRenewalManagerBean";
 
     String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";

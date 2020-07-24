@@ -7,13 +7,12 @@ import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,17 +21,14 @@ import javax.persistence.Table;
 public class MerchantTransaction {
 
     @Id
-    @Column(name = "merchant_transaction_id")
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-    @Setter
+    @Column(name = "transaction_id")
+    @Setter(AccessLevel.NONE)
+    private String id;
     @Column(name = "merchant_transaction_reference_id")
     private String externalTransactionId;
-    @Setter
     @Type(type = "json")
     @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
     private Object request;
-    @Setter
     @Type(type = "json")
     @Column(name = "merchant_response", nullable = false, columnDefinition = "json")
     private Object response;

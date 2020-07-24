@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 @Slf4j
-@Service(BeanConstant.TRANSACTION_MANAGER_SERVICE)
+@Service
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
     private final ITransactionDao transactionDao;

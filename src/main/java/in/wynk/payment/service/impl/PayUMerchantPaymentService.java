@@ -15,8 +15,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
 import in.wynk.payment.core.dto.VerificationType;
@@ -34,6 +32,8 @@ import in.wynk.payment.core.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.enums.payu.PayUCommand;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
@@ -49,6 +49,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -92,6 +93,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
     private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
@@ -99,9 +101,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                                       RestTemplate restTemplate,
                                       PaymentCachingService paymentCachingService,
                                       ITransactionManagerService transactionManager,
-                                      @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher) {
+                                      @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher, ApplicationEventPublisher eventPublisher) {
         this.gson = gson;
         this.restTemplate = restTemplate;
+        this.eventPublisher = eventPublisher;
         this.cachingService = paymentCachingService;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
@@ -237,20 +240,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
         if (finalTransactionStatus == TransactionStatus.FAILURE) {
             if (!StringUtils.isEmpty(payUTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUTransactionDetails.getErrorMessage())) {
-                transaction.setPaymentError(PaymentError.builder()
-                        .code(payUTransactionDetails.getErrorCode())
-                        .description(payUTransactionDetails.getErrorMessage())
-                        .build());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder().id(transaction.getIdStr()).code(payUTransactionDetails.getErrorCode()).description(payUTransactionDetails.getErrorMessage()).build());
             }
         }
 
         transaction.setStatus(finalTransactionStatus.name());
 
-        transaction.setMerchantTransaction(MerchantTransaction.builder()
-                .externalTransactionId(payUTransactionDetails.getPayUExternalTxnId())
-                .request(payUChargingVerificationRequest)
-                .response(payUChargingVerificationResponse)
-                .build());
+        eventPublisher.publishEvent(MerchantTransactionEvent.builder().id(transaction.getIdStr()).externalTransactionId(payUTransactionDetails.getPayUExternalTxnId()).request(payUChargingVerificationRequest).response(payUChargingVerificationResponse).build());
     }
 
 

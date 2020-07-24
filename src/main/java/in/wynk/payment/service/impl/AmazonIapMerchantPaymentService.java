@@ -10,7 +10,6 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.core.dto.amazonIap.AmazonIapVerificationRequest;
@@ -18,6 +17,7 @@ import in.wynk.payment.core.dto.request.IapVerificationRequest;
 import in.wynk.payment.core.dto.response.BaseResponse;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -25,6 +25,7 @@ import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -50,12 +51,14 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, RestTemplate restTemplate, PaymentCachingService cachingService, ITransactionManagerService transactionManager) {
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, RestTemplate restTemplate, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.cachingService = cachingService;
+        this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;
     }
 
@@ -96,15 +99,15 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                 transactionEvent = TransactionEvent.UNSUBSCRIBE;
             }
 
-            MerchantTransaction merchantTransaction = MerchantTransaction.builder()
+            eventPublisher.publishEvent(MerchantTransactionEvent.builder()
+                    .id(transaction.getIdStr())
+                    .externalTransactionId(amazonIapReceipt.getReceiptID())
                     .request(request)
                     .response(amazonIapReceipt)
-                    .externalTransactionId(amazonIapReceipt.getReceiptID())
-                    .build();
+                    .build());
 
             transaction.setType(transactionEvent.name());
             transaction.setStatus(finalTransactionStatus.name());
-            transaction.setMerchantTransaction(merchantTransaction);
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);

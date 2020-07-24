@@ -12,9 +12,6 @@ import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.MerchantTransaction.MerchantTransactionBuilder;
-import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
 import in.wynk.payment.core.dto.phonepe.PhonePePaymentRequest;
@@ -28,6 +25,8 @@ import in.wynk.payment.core.dto.response.BaseResponse;
 import in.wynk.payment.core.dto.response.ChargingStatus;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -43,6 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -81,6 +81,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private final Gson gson;
     private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ISQSMessagePublisher sqsMessagePublisher;
     private final ITransactionManagerService transactionManager;
 
@@ -90,11 +91,12 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     public PhonePeMerchantPaymentService(Gson gson,
                                          RestTemplate restTemplate,
                                          PaymentCachingService cachingService,
-                                         ITransactionManagerService transactionManager,
+                                         ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager,
                                          @Qualifier(SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher) {
         this.gson = gson;
         this.restTemplate = restTemplate;
         this.cachingService = cachingService;
+        this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;
         this.sqsMessagePublisher = sqsMessagePublisher;
     }
@@ -179,19 +181,12 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
-            transaction.setMerchantTransaction(MerchantTransaction.builder()
-                    .externalTransactionId(phonePeTransactionStatusResponse.getData().providerReferenceId)
-                    .response(phonePeTransactionStatusResponse)
-                    .build());
         } else {
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
 
         if (finalTransactionStatus == TransactionStatus.FAILURE) {
-            transaction.setPaymentError(PaymentError.builder()
-                    .code(phonePeTransactionStatusResponse.getCode().name())
-                    .description(phonePeTransactionStatusResponse.getMessage())
-                    .build());
+            eventPublisher.publishEvent(PaymentErrorEvent.builder().id(transaction.getIdStr()).code(phonePeTransactionStatusResponse.getCode().name()).description(phonePeTransactionStatusResponse.getMessage()).build());
         }
 
         transaction.setStatus(finalTransactionStatus.name());
@@ -291,7 +286,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private PhonePeTransactionResponse getTransactionStatus(Transaction txn) {
-        MerchantTransactionBuilder merchantTxnBuilder = MerchantTransaction.builder();
+        MerchantTransactionEvent.MerchantTransactionEventBuilder merchantTransactionEventBuilder = MerchantTransactionEvent.builder().id(txn.getIdStr());
         try {
             String prefixStatusApi = "/v3/transaction/" + merchantId + "/";
             String suffixStatusApi = "/status";
@@ -302,22 +297,24 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            merchantTxnBuilder.request(entity);
+            merchantTransactionEventBuilder.request(entity);
             ResponseEntity<PhonePeTransactionResponse> responseEntity = restTemplate.exchange(phonePeBaseUrl + apiPath, HttpMethod.GET, entity, PhonePeTransactionResponse.class, new HashMap<>());
             PhonePeTransactionResponse phonePeTransactionResponse = responseEntity.getBody();
             if (phonePeTransactionResponse != null && phonePeTransactionResponse.getCode() != null) {
                 log.info("PhonePe txn response for transaction Id {} :: {}", txn.getIdStr(), phonePeTransactionResponse);
             }
+            merchantTransactionEventBuilder.externalTransactionId(phonePeTransactionResponse.getData().providerReferenceId);
+            merchantTransactionEventBuilder.response(phonePeTransactionResponse);
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             return phonePeTransactionResponse;
-        }catch (HttpStatusCodeException hex){
-            merchantTxnBuilder.response(hex.getResponseBodyAsString());
+        } catch (HttpStatusCodeException hex) {
+            merchantTransactionEventBuilder.response(hex.getResponseBodyAsString());
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Error from phonepe: {}", hex.getResponseBodyAsString(), hex);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, hex, "Error from PhonePe - " + hex.getStatusCode().toString());
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Unable to verify status from Phonepe");
             throw new WynkRuntimeException(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, e.getMessage(), e);
-        } finally {
-            txn.setMerchantTransaction(merchantTxnBuilder.build());
         }
 
     }

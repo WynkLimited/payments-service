@@ -14,7 +14,9 @@ import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
 import in.wynk.payment.core.dto.request.*;
 import in.wynk.payment.core.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
@@ -31,6 +33,8 @@ import in.wynk.payment.core.dto.response.paytm.PaytmWalletValidateLinkResponse;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.enums.StatusMode;
 import in.wynk.payment.core.enums.paytm.PayTmErrorCodes;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -42,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -124,6 +129,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     @Autowired
     private ISubscriptionServiceManager subscriptionServiceManager;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
     private CheckSumServiceHelper checkSumServiceHelper;
 
     @PostConstruct
@@ -192,7 +200,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 transaction.setStatus(TransactionStatus.SUCCESS.name());
             } else if (Objects.nonNull(paytmChargingResponse)) {
                 transaction.setStatus(TransactionStatus.FAILURE.name());
-                transaction.setPaymentError(PaymentError.builder().code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder().id(transaction.getIdStr()).code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build());
             }
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
@@ -218,7 +226,6 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     private PaytmChargingResponse withdrawFromPaytm(String uid, Transaction transaction, String amount, String accessToken, String deviceId) {
-        MerchantTransaction.MerchantTransactionBuilder builder = MerchantTransaction.builder();
         try {
             URI uri = new URIBuilder(SERVICES_URL + "/paymentservices/HANDLER_FF/withdrawScw").build();
             TreeMap<String, String> parameters = new TreeMap<>();
@@ -239,25 +246,20 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             parameters.put("CheckSum", checkSum);
             logger.info("Generated checksum: {} for payload: {}", checkSum, parameters);
             RequestEntity<Map<String, String>> requestEntity = new RequestEntity<>(parameters, HttpMethod.POST, uri);
-            builder.request(requestEntity);
             logger.info("Paytm wallet charging request: {}", requestEntity);
             ResponseEntity<PaytmChargingResponse> responseEntity = restTemplate.exchange(requestEntity, PaytmChargingResponse.class);
-            builder.response(responseEntity);
             logger.info("Paytm wallet charging response: {}", responseEntity);
+            eventPublisher.publishEvent(MerchantTransactionEvent.builder().id(transaction.getIdStr()).externalTransactionId(responseEntity.getBody().getOrderId()).request(requestEntity).response(responseEntity.getBody()).build());
             return responseEntity.getBody();
         } catch (HttpStatusCodeException e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
             String errorResponse = e.getResponseBodyAsString();
-            builder.response(errorResponse);
             logger.error(PAYTM_ERROR, "Error from paytm : {}", errorResponse, e);
             throw new WynkRuntimeException(PAYTM_ERROR, e.getResponseBodyAsString(), e);
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
             logger.error(PAYTM_ERROR, "Error from paytm : {}", ex.getMessage(), ex);
             throw new WynkRuntimeException(PAYTM_ERROR, ex.getMessage(), ex);
-        } finally {
-            //update transaction
-            transaction.setMerchantTransaction(builder.build());
         }
     }
 

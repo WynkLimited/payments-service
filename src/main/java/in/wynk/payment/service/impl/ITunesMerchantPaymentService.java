@@ -11,8 +11,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.dao.entity.ItunesIdUidMapping;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
 import in.wynk.payment.core.dto.ItunesCallbackRequest;
@@ -27,6 +25,8 @@ import in.wynk.payment.core.dto.response.ChargingStatus;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.enums.itune.ItunesStatusCodes;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -39,6 +39,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -71,15 +72,17 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final RestTemplate restTemplate;
     private final ItunesIdUidDao itunesIdUidDao;
     private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private static final List<ItunesStatusCodes> failureCodes = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005, ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008, ItunesStatusCodes.APPLE_21009, ItunesStatusCodes.APPLE_21010);
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, RestTemplate restTemplate, ItunesIdUidDao itunesIdUidDao, PaymentCachingService cachingService, ITransactionManagerService transactionManager) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, RestTemplate restTemplate, ItunesIdUidDao itunesIdUidDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.itunesIdUidDao = itunesIdUidDao;
         this.cachingService = cachingService;
+        this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;
     }
 
@@ -173,9 +176,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             }
 
             if (transaction.getStatus() != TransactionStatus.SUCCESS) {
-                transaction.setPaymentError(PaymentError.builder()
-                        .description(errorMessage)
-                        .build());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder().id(transaction.getIdStr()).description(errorMessage).build());
             }
         } catch (Exception e) {
             log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), decodedReceipt, e);
@@ -194,7 +195,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             }
 
             ResponseEntity<String> appStoreResponse;
-            MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder();
+            MerchantTransactionEvent.MerchantTransactionEventBuilder merchantTransactionBuilder = MerchantTransactionEvent.builder().id(transaction.getIdStr());
 
             try {
                 JSONObject requestJson = new JSONObject();
@@ -234,7 +235,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 merchantTransactionBuilder.externalTransactionId(receiptObj.getLatestReceiptInfoList().get(0).getOriginalTransactionId());
             }
 
-            transaction.setMerchantTransaction(merchantTransactionBuilder.build());
+            eventPublisher.publishEvent(merchantTransactionBuilder.build());
 
             int status = Integer.parseInt(receiptObj.getStatus());
             ItunesStatusCodes responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
@@ -251,7 +252,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             }
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
-            transaction.setPaymentError(PaymentError.builder()
+            eventPublisher.publishEvent(PaymentErrorEvent.builder()
+                    .id(transaction.getIdStr())
                     .code(statusCode.toString())
                     .description(statusCode.getErrorTitle())
                     .build());

@@ -15,8 +15,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.constant.apb.ApbConstants;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.MerchantTransaction.MerchantTransactionBuilder;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dto.ApbTransaction;
 import in.wynk.payment.core.dto.PaymentReconciliationMessage;
@@ -31,6 +29,7 @@ import in.wynk.payment.core.dto.response.ChargingStatusResponse;
 import in.wynk.payment.core.enums.Apb.ApbStatus;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.enums.StatusMode;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -44,6 +43,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -99,13 +99,15 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
     private final ISQSMessagePublisher messagePublisher;
+    private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
-    public APBMerchantPaymentService(Gson gson, RestTemplate restTemplate, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ITransactionManagerService transactionManager) {
+    public APBMerchantPaymentService(Gson gson, RestTemplate restTemplate, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.gson = gson;
         this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.messagePublisher = messagePublisher;
+        this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;
     }
 
@@ -236,7 +238,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     public void fetchAPBTxnStatus(Transaction transaction) {
         String txnId = transaction.getId().toString();
-        MerchantTransactionBuilder merchantTxnBuilder = MerchantTransaction.builder();
         try {
             URI uri = new URI(APB_TXN_INQUIRY_URL);
             String txnDate = CommonUtils.getFormattedDate(transaction.getInitTime().getTimeInMillis(), "ddMMyyyyHHmmss");
@@ -251,26 +252,22 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                     .build();
             String payload = gson.toJson(apbTransactionInquiryRequest);
             log.info("ApbTransactionInquiryRequest: {}", apbTransactionInquiryRequest);
-            merchantTxnBuilder.request(payload);
             RequestEntity<String> requestEntity = new RequestEntity<>(payload, HttpMethod.POST, uri);
             ResponseEntity<ApbChargingStatusResponse> responseEntity = restTemplate.exchange(requestEntity, ApbChargingStatusResponse.class);
             ApbChargingStatusResponse apbChargingStatusResponse = responseEntity.getBody();
-            merchantTxnBuilder.response(apbChargingStatusResponse);
             if (Objects.nonNull(apbChargingStatusResponse) && CollectionUtils.isNotEmpty(apbChargingStatusResponse.getTxns())) {
                 Optional<ApbTransaction> apbTransaction = apbChargingStatusResponse.getTxns().stream().filter(txn -> StringUtils.equals(txnId, txn.getTxnId())).findAny();
                 if (apbTransaction.isPresent() && StringUtils.equalsIgnoreCase(apbTransaction.get().getStatus(), ApbStatus.SUC.name())) {
                     transaction.setStatus(TransactionStatus.SUCCESS.name());
                 }
             }
+            eventPublisher.publishEvent(MerchantTransactionEvent.builder().id(transaction.getIdStr()).request(payload).response(apbChargingStatusResponse).build());
         } catch (HttpStatusCodeException e) {
-            merchantTxnBuilder.response(e.getResponseBodyAsString());
             log.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getResponseBodyAsString(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "APB failure response - " + e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Unable to fetch transaction status for txnId = " + txnId + "error- " + e.getMessage());
-        } finally {
-            transaction.setMerchantTransaction(merchantTxnBuilder.build());
         }
         transaction.setStatus(TransactionStatus.FAILURE.name());
     }

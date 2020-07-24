@@ -8,6 +8,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -52,6 +55,13 @@ public class PaymentConfig implements WebMvcConfigurer {
                 .allowedOrigins(corsProperties.getAllowed().getOrigins())
                 .allowedMethods(corsProperties.getAllowed().getMethods())
                 .maxAge(corsProperties.getMaxAge());
+    }
+
+    @Bean
+    public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
+        SimpleApplicationEventMulticaster eventMultiCaster = new SimpleApplicationEventMulticaster();
+        eventMultiCaster.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        return eventMultiCaster;
     }
 
 }

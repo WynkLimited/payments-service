@@ -1,6 +1,6 @@
 package in.wynk.payment.exception.handler;
 
-import in.wynk.commons.constants.SessionKeys;
+import in.wynk.commons.constants.Constants;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.exception.handler.WynkGlobalExceptionHandler;
 import in.wynk.payment.core.dto.response.BaseResponse;
@@ -30,9 +30,9 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
         PaymentErrorType errorType = PaymentErrorType.getWynkErrorType(ex.getErrorCode());
         if (errorType.getHttpResponseStatusCode() == HttpStatus.FOUND && errorType.getRedirectUrlProp() != null) {
             final String sid = SessionContextHolder.getId();
-            final String tid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.WYNK_TRANSACTION_ID);
+            final String os = SessionContextHolder.<SessionDTO>getBody().get(Constants.OS);
             final String webViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp());
-            return BaseResponse.redirectResponse(webViewUrl + sid + "/" + tid).getResponse();
+            return BaseResponse.redirectResponse(webViewUrl + sid + "/" + os).getResponse();
         }
         return super.handleWynkRuntimeExceptionInternal(ex, request);
     }

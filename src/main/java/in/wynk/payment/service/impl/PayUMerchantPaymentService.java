@@ -74,6 +74,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.Constants.OS;
+import static in.wynk.commons.constants.Constants.SLASH;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
@@ -469,7 +471,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final Transaction transaction = transactionManager.get(transactionId);
         try {
             final String uid = transaction.getUid();
-            String url = FAILURE_PAGE + SessionContextHolder.getId();
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            String url = FAILURE_PAGE +  SessionContextHolder.getId() + SLASH +  sessionDTO.get(OS);
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
@@ -489,7 +492,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 fetchAndUpdateTransactionFromSource(transaction);
                 if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     transaction.setExitTime(Calendar.getInstance());
-                    url = SUCCESS_PAGE + SessionContextHolder.getId();
+                    url = SUCCESS_PAGE + SessionContextHolder.getId() + SLASH +  sessionDTO.get(OS);
                     subscriptionServiceManager.publish(selectedPlan.getId(), uid, transactionId, transaction.getStatus(), transaction.getType());
                     if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();

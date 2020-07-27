@@ -61,11 +61,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
 import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.SHA_512;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
+import static in.wynk.payment.constant.ApbConstants.HASH;
 import static in.wynk.payment.constant.ApbConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
@@ -130,14 +129,14 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
         String requestHash = CommonUtils.getStringParameter(urlParameters, HASH);
         String sessionId = SessionContextHolder.get().getId().toString();
-        String url = FAILURE_PAGE + sessionId;
+        String url = FAILURE_PAGE + sessionId + SLASH + sessionDTO.get(OS);
         try {
             if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
                 Transaction transaction = transactionManager.get(txnId);
                 TransactionStatus txnStatus = fetchAPBTxnStatus(transaction);
                 updateTransactionIfRequired(txnStatus, transaction);
                 if (txnStatus.equals(TransactionStatus.SUCCESS)) {
-                    url = String.format(SUCCESS_PAGE, sessionId, txnId);
+                    url = SUCCESS_PAGE+ sessionId + SLASH + sessionDTO.get(OS);
                 }
             }
         } catch (Exception e) {

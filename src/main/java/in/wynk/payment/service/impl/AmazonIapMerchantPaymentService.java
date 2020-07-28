@@ -9,15 +9,15 @@ import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dto.amazonIap.AmazonIapReceiptResponse;
-import in.wynk.payment.core.dto.amazonIap.AmazonIapVerificationRequest;
-import in.wynk.payment.core.dto.request.IapVerificationRequest;
-import in.wynk.payment.core.dto.response.BaseResponse;
-import in.wynk.payment.core.enums.PaymentCode;
-import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
+import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
+import in.wynk.payment.dto.request.IapVerificationRequest;
+import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -39,20 +39,17 @@ import java.net.URI;
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
 public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService {
 
-    @Value("${payment.merchant.amazonIap.secret}")
-    private String amazonIapSecret;
-
-    @Value("${payment.merchant.amazonIap.status.baseUrl}")
-    private String amazonIapStatusUrl;
-
-    @Value("${payment.status.web.url}")
-    private String statusWebUrl;
-
     private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
+    @Value("${payment.merchant.amazonIap.secret}")
+    private String amazonIapSecret;
+    @Value("${payment.merchant.amazonIap.status.baseUrl}")
+    private String amazonIapStatusUrl;
+    @Value("${payment.status.web.url}")
+    private String statusWebUrl;
 
     public AmazonIapMerchantPaymentService(ObjectMapper mapper, RestTemplate restTemplate, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.mapper = mapper;
@@ -114,17 +111,16 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         }
     }
 
-    private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId){
+    private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
         String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
         AmazonIapReceiptResponse receiptObj = null;
         try {
             RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
             ResponseEntity<String> responseEntity = restTemplate.exchange(requestEntity, String.class);
-            if(responseEntity.getBody()!=null)
+            if (responseEntity.getBody() != null)
                 receiptObj = mapper.readValue(responseEntity.getBody(), AmazonIapReceiptResponse.class);
 
-        }
-        catch (HttpStatusCodeException | JsonProcessingException e){
+        } catch (HttpStatusCodeException | JsonProcessingException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         }
         return receiptObj;

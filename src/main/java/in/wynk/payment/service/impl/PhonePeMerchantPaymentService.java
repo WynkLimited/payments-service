@@ -11,22 +11,22 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.core.dto.phonepe.PhonePePaymentRequest;
-import in.wynk.payment.core.dto.phonepe.PhonePeTransactionResponse;
-import in.wynk.payment.core.dto.phonepe.PhonePeTransactionStatus;
-import in.wynk.payment.core.dto.request.CallbackRequest;
-import in.wynk.payment.core.dto.request.ChargingRequest;
-import in.wynk.payment.core.dto.request.ChargingStatusRequest;
-import in.wynk.payment.core.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.core.dto.response.BaseResponse;
-import in.wynk.payment.core.dto.response.ChargingStatus;
-import in.wynk.payment.core.enums.PaymentCode;
-import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.phonepe.PhonePePaymentRequest;
+import in.wynk.payment.dto.phonepe.PhonePeTransactionResponse;
+import in.wynk.payment.dto.phonepe.PhonePeTransactionStatus;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -43,7 +43,12 @@ import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -53,16 +58,28 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.Constants.MSISDN;
+import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.Constants.UID;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.core.constant.phonepe.PhonePeConstants.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE;
+import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
 public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService {
 
+    private final Gson gson;
+    private final RestTemplate restTemplate;
+    private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ITransactionManagerService transactionManager;
+    private final String debitCall = "/v3/debit";
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
     @Value("${payment.merchant.phonepe.callback.url}")
@@ -77,16 +94,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ISQSMessagePublisher sqsMessagePublisher;
-    private final ITransactionManagerService transactionManager;
-
-
-    private final String debitCall = "/v3/debit";
 
     public PhonePeMerchantPaymentService(Gson gson,
                                          RestTemplate restTemplate,
@@ -117,7 +124,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         int planId = chargingRequest.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
 
-        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
 
         try {
             final long finalPlanAmount = selectedPlan.getFinalPriceInPaise();
@@ -278,7 +285,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
             log.error(PHONEPE_CHARGING_FAILURE, "Error from phonepe: {}", hex.getResponseBodyAsString(), hex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, hex, "Error from phonepe - " +hex.getStatusCode().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, hex, "Error from phonepe - " + hex.getStatusCode().toString());
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_FAILURE, "Error requesting URL from phonepe");
             throw new WynkRuntimeException(PHONEPE_CHARGING_FAILURE, e.getMessage(), e);

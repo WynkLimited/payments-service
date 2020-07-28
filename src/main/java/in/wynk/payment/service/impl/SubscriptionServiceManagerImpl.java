@@ -6,7 +6,7 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
-import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -108,7 +108,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                             .build(),
                     String.class);
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY014, e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, "Unable to unSubscribe plan after successful payment");
         }
     }
 

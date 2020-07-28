@@ -7,8 +7,8 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.State;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.enums.PaymentCode;
 
 import java.util.Collections;
 import java.util.HashMap;

@@ -1,5 +1,7 @@
 package in.wynk.payment.test;
 
+import in.wynk.http.config.HttpClientConfig;
+import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.repository.PaymentMethodDao;
@@ -17,7 +19,7 @@ import java.util.List;
 
 import static in.wynk.payment.test.utils.PaymentTestUtils.DUMMY_UID;
 
-@SpringBootTest
+@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 @RunWith(SpringRunner.class)
 public class MongoCrudTest {
 

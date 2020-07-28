@@ -14,26 +14,30 @@ import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.core.dto.VerificationType;
-import in.wynk.payment.core.dto.payu.CardDetails;
-import in.wynk.payment.core.dto.payu.PayUCallbackRequestPayload;
-import in.wynk.payment.core.dto.payu.PayUCardInfo;
-import in.wynk.payment.core.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.core.dto.request.*;
-import in.wynk.payment.core.dto.response.BaseResponse;
-import in.wynk.payment.core.dto.response.ChargingStatus;
-import in.wynk.payment.core.dto.response.PayuVpaVerificationResponse;
-import in.wynk.payment.core.dto.response.payu.PayURenewalResponse;
-import in.wynk.payment.core.dto.response.payu.PayUUserCardDetailsResponse;
-import in.wynk.payment.core.dto.response.payu.PayUVerificationResponse;
-import in.wynk.payment.core.enums.PaymentCode;
-import in.wynk.payment.core.enums.PaymentErrorType;
-import in.wynk.payment.core.enums.payu.PayUCommand;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.payu.CardDetails;
+import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
+import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.PayUCommand;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.dto.payu.VerificationType;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatus;
+import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
+import in.wynk.payment.dto.response.payu.PayURenewalResponse;
+import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
@@ -59,17 +63,30 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.Constants.OS;
+import static in.wynk.commons.constants.Constants.SLASH;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.payu.PayUConstants.*;
+import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService {
 
+    private final Gson gson;
+    private final RestTemplate restTemplate;
+    private final PaymentCachingService cachingService;
+    private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManager;
+    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
     @Value("${payment.encKey}")
@@ -88,14 +105,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String reconciliationQueue;
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher sqsMessagePublisher;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
-    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
     public PayUMerchantPaymentService(Gson gson,
                                       RestTemplate restTemplate,
@@ -412,6 +421,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
         final Transaction transaction = transactionManager.get(transactionId);
         try {
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
@@ -437,7 +447,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                    return SUCCESS_PAGE + SessionContextHolder.getId();
+                    return SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.get(OS);
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }

@@ -1,9 +1,9 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
-import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.service.IUserPaymentsManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

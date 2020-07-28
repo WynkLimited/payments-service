@@ -13,12 +13,19 @@ import lombok.NoArgsConstructor;
 public class PaymentRenewalRequest {
 
     private Transaction previousTransaction;
+    private String uid;
+    //private double amount;
+    private String transactionId;
+    private Integer planId;
+
+
+
+    // Todo - Fetch all this in respective services
     private String paidPartnerProductId;
     private String subsId;
     private String cardToken;
-    private String cardNumber;
-    private String uid;
     private String amount;
-    private String transactionId;
+    private String cardNumber;
     private String id;
+
 }

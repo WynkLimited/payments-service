@@ -7,6 +7,8 @@ import org.slf4j.MarkerFactory;
 public class PaymentLoggingMarker extends BaseLoggingMarkers {
     public static final Marker PAYMENT_RECONCILIATION_FAILURE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_FAILURE");
     public static final Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");
+    public static final Marker PAYMENT_RENEWAL_QUEUE = MarkerFactory.getMarker("PAYMENT_RENEWAL_QUEUE");
+    public static final Marker PAYMENT_CHARGING_QUEUE = MarkerFactory.getMarker("PAYMENT_CHARGING_QUEUE");
     public static final Marker PAYU_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION");
     public static final Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
     public static final Marker PAYU_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_CALLBACK_FAILURE");

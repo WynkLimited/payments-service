@@ -6,10 +6,10 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
+import in.wynk.queue.service.ISqsManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -75,13 +75,13 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
 
         Transaction transaction = transactionManager.get(message.getTransactionId());
         sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
-                                                .paymentCode(transaction.getPaymentChannel())
-                                                .paymentRenewalRequest(PaymentRenewalRequest.builder()
-                                                                            .planId(transaction.getPlanId())
-                                                                            .uid(transaction.getUid())
-                                                                            .transactionId(transaction.getId().toString())
-                                                                            .build())
-                                                .build() , transaction.getId().toString());
+                .paymentCode(transaction.getPaymentChannel())
+                .paymentRenewalRequest(PaymentRenewalRequest.builder()
+                        .planId(transaction.getPlanId())
+                        .uid(transaction.getUid())
+                        .transactionId(transaction.getId().toString())
+                        .build())
+                .build());
 
     }
 

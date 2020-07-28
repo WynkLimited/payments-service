@@ -15,6 +15,10 @@ public class PaymentLoggingMarker extends BaseLoggingMarkers {
 
     public static final Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");
     public static final Marker PAYMENT_RECONCILIATION_FAILURE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_FAILURE");
+
+    public static final Marker PAYMENT_RENEWAL_QUEUE = MarkerFactory.getMarker("PAYMENT_RENEWAL_QUEUE");
+    public static final Marker PAYMENT_CHARGING_QUEUE = MarkerFactory.getMarker("PAYMENT_CHARGING_QUEUE");
+
     public static final Marker PAYMENT_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_FAILURE");
     public static final Marker PAYMENT_CHARGING_CALLBACK_PENDING = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_PENDING");
 

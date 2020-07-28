@@ -56,7 +56,6 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Calendar;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -133,9 +132,8 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         try {
             if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
                 Transaction transaction = transactionManager.get(txnId);
-                TransactionStatus txnStatus = fetchAPBTxnStatus(transaction);
-                updateTransactionIfRequired(txnStatus, transaction);
-                if (txnStatus.equals(TransactionStatus.SUCCESS)) {
+                transactionManager.updateAndPublishSync(transaction, this::fetchAPBTxnStatus);
+                if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                     url = SUCCESS_PAGE+ sessionId + SLASH + sessionDTO.get(OS);
                 }
             }
@@ -151,12 +149,11 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         sessionDTO.put(PAYMENT_CODE, APB_GATEWAY);
         final String msisdn = sessionDTO.get(MSISDN);
         final String uid = sessionDTO.get(UID);
-        final String wynkService = sessionDTO.get(SERVICE);
         int planId = chargingRequest.getPlanId();
         PlanDTO planDTO = cachingService.getPlan(planId);
         double amount = planDTO.getFinalPrice();
         final TransactionEvent eventType = planDTO.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
-        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, eventType, wynkService);
+        Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, eventType);
         String apbRedirectURL = generateApbRedirectURL(transaction);
         return BaseResponse.redirectResponse(apbRedirectURL);
     }
@@ -216,25 +213,16 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         ChargingStatusResponse status = ChargingStatusResponse.failure();
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {
-            TransactionStatus txnStatus = fetchAPBTxnStatus(transaction);
-            updateTransactionIfRequired(txnStatus, transaction);
-            status = ChargingStatusResponse.builder().transactionStatus(txnStatus).build();
+            transactionManager.updateAndPublishAsync(transaction, this::fetchAPBTxnStatus);
+            status = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
             status = ChargingStatusResponse.success();
         }
         return new BaseResponse<>(status, HttpStatus.OK, null);
     }
 
-    private void updateTransactionIfRequired(TransactionStatus finalStatus, Transaction transaction) {
-        if(!finalStatus.equals(transaction.getStatus())){
-            transaction.setExitTime(Calendar.getInstance());
-            transaction.setStatus(finalStatus.name());
-            transactionManager.upsert(transaction);
-        }
-    }
 
-
-    private TransactionStatus fetchAPBTxnStatus(Transaction transaction) {
+    public void fetchAPBTxnStatus(Transaction transaction) {
         String txnId = transaction.getId().toString();
         MerchantTransactionBuilder merchantTxnBuilder = MerchantTransaction.builder();
         try {
@@ -259,7 +247,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             if (Objects.nonNull(apbChargingStatusResponse) && CollectionUtils.isNotEmpty(apbChargingStatusResponse.getTxns())) {
                 Optional<ApbTransaction> apbTransaction = apbChargingStatusResponse.getTxns().stream().filter(txn -> StringUtils.equals(txnId, txn.getTxnId())).findAny();
                 if (apbTransaction.isPresent() && StringUtils.equalsIgnoreCase(apbTransaction.get().getStatus(), ApbStatus.SUC.name())) {
-                    return TransactionStatus.SUCCESS;
+                    transaction.setStatus(TransactionStatus.SUCCESS.name());
                 }
             }
         } catch (HttpStatusCodeException e) {
@@ -272,7 +260,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         } finally {
             transaction.setMerchantTransaction(merchantTxnBuilder.build());
         }
-        return TransactionStatus.FAILURE;
+        transaction.setStatus(TransactionStatus.FAILURE.name());
     }
 
 

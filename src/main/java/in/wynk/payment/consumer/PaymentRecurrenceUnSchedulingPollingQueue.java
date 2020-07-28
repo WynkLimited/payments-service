@@ -10,7 +10,6 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 
 import java.util.UUID;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -18,7 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class PaymentRecurrenceUnschdulerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<UnSchedulePaymentRecurrenceMessage> {
+public class PaymentRecurrenceUnSchedulingPollingQueue extends AbstractSQSMessageConsumerPollingQueue<UnSchedulePaymentRecurrenceMessage> {
 
     @Value("${payment.pooling.queue.recurring.enabled}")
     private boolean reconciliationPollingEnabled;
@@ -27,23 +26,20 @@ public class PaymentRecurrenceUnschdulerPollingQueue extends AbstractSQSMessageC
     @Value("${payment.pooling.queue.recurring.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
 
-    private final ApplicationContext applicationContext;
     private final ThreadPoolExecutor messageHandlerThreadPool;
     private final ScheduledThreadPoolExecutor pollingThreadPool;
     private final IRecurringPaymentManagerService recurringPaymentManager;
 
-    public PaymentRecurrenceUnschdulerPollingQueue(String queueName,
-                                                   AmazonSQS sqs,
-                                                   ISQSMessageExtractor messagesExtractor,
-                                                   ThreadPoolExecutor messageHandlerThreadPool,
-                                                   ScheduledThreadPoolExecutor pollingThreadPool,
-                                                   ApplicationContext applicationContext,
-                                                   @Qualifier(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager) {
+    public PaymentRecurrenceUnSchedulingPollingQueue(String queueName,
+                                                     AmazonSQS sqs,
+                                                     ISQSMessageExtractor messagesExtractor,
+                                                     ThreadPoolExecutor messageHandlerThreadPool,
+                                                     ScheduledThreadPoolExecutor pollingThreadPool,
+                                                     @Qualifier(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager) {
         super(queueName, sqs, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
-        this.messageHandlerThreadPool = messageHandlerThreadPool;
-        this.applicationContext = applicationContext;
         this.recurringPaymentManager = recurringPaymentManager;
+        this.messageHandlerThreadPool = messageHandlerThreadPool;
     }
 
     @Override

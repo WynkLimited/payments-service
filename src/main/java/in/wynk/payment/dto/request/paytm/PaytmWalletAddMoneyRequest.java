@@ -5,5 +5,6 @@ import lombok.Getter;
 
 @Getter
 public class PaytmWalletAddMoneyRequest extends WalletRequest {
+    private int planId;
     private double amountToCredit;
 }

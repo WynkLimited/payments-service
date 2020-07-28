@@ -1,14 +1,19 @@
 package in.wynk.payment.test;
 
 import in.wynk.commons.dto.SessionDTO;
+import in.wynk.http.config.HttpClientConfig;
+import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.dto.request.CallbackRequest;
 import in.wynk.payment.core.dto.request.ChargingRequest;
 import in.wynk.payment.core.dto.request.ChargingStatusRequest;
 import in.wynk.payment.core.dto.response.BaseResponse;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.utils.BeanLocatorFactory;
-import in.wynk.payment.service.*;
-import in.wynk.payment.test.config.PaymentTestConfiguration;
+import in.wynk.payment.service.IMerchantPaymentCallbackService;
+import in.wynk.payment.service.IMerchantPaymentChargingService;
+import in.wynk.payment.service.IMerchantPaymentStatusService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.test.utils.PaymentTestUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -26,7 +31,7 @@ import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
 import static org.mockito.ArgumentMatchers.anyInt;
 
-@SpringBootTest(classes = PaymentTestConfiguration.class)
+@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 @RunWith(SpringRunner.class)
 public class PaymentsTest {
 

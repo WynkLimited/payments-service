@@ -57,13 +57,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.Constants.MSISDN;
+import static in.wynk.commons.constants.Constants.SERVICE;
+import static in.wynk.commons.constants.Constants.SHA_512;
+import static in.wynk.commons.constants.Constants.UID;
 import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
-import static in.wynk.payment.core.constant.apb.ApbConstants.HASH;
 import static in.wynk.payment.core.constant.apb.ApbConstants.*;
 import static in.wynk.payment.core.enums.PaymentCode.APB_GATEWAY;
 
@@ -257,8 +258,8 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             ApbChargingStatusResponse apbChargingStatusResponse = responseEntity.getBody();
             merchantTxnBuilder.response(apbChargingStatusResponse);
             if (Objects.nonNull(apbChargingStatusResponse) && CollectionUtils.isNotEmpty(apbChargingStatusResponse.getTxns())) {
-                Optional<ApbTransaction> apbTransaction = apbChargingStatusResponse.getTxns().stream().filter(txn -> StringUtils.equals(txnId, txn.getTxnId())).findAny();
-                if (apbTransaction.isPresent() && StringUtils.equalsIgnoreCase(apbTransaction.get().getStatus(), ApbStatus.SUC.name())) {
+                ApbTransaction apbTransaction = apbChargingStatusResponse.getTxns().get(0);
+                if (StringUtils.equalsIgnoreCase(apbTransaction.getStatus(), ApbStatus.SUC.name())) {
                     transaction.setStatus(TransactionStatus.SUCCESS.name());
                 }
             }

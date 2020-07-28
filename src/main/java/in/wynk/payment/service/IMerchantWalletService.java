@@ -1,7 +1,7 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dto.request.WalletRequest;
-import in.wynk.payment.core.dto.response.BaseResponse;
+import in.wynk.payment.dto.request.WalletRequest;
+import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantWalletService {
 

@@ -9,9 +9,9 @@ import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dto.request.CallbackRequest;
-import in.wynk.payment.core.dto.request.ChargingRequest;
-import in.wynk.payment.core.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.enums.StatusMode;
 import in.wynk.payment.core.enums.payu.PayUCommand;
@@ -23,7 +23,7 @@ import org.springframework.util.MultiValueMap;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.core.constant.payu.PayUConstants.*;
+import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 public class PayUTestData {
 

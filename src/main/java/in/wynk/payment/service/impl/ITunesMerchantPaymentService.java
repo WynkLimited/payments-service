@@ -15,15 +15,15 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
-import in.wynk.payment.core.dto.ItunesCallbackRequest;
-import in.wynk.payment.core.dto.itunes.ItunesReceipt;
-import in.wynk.payment.core.dto.itunes.ItunesReceiptType;
-import in.wynk.payment.core.dto.itunes.LatestReceiptInfo;
-import in.wynk.payment.core.dto.request.CallbackRequest;
-import in.wynk.payment.core.dto.request.IapVerificationRequest;
-import in.wynk.payment.core.dto.request.ItunesVerificationRequest;
-import in.wynk.payment.core.dto.response.BaseResponse;
-import in.wynk.payment.core.dto.response.ChargingStatus;
+import in.wynk.payment.dto.itune.ItunesCallbackRequest;
+import in.wynk.payment.core.dao.entity.ItunesReceipt;
+import in.wynk.payment.core.dao.entity.ItunesReceiptType;
+import in.wynk.payment.core.dao.entity.LatestReceiptInfo;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.IapVerificationRequest;
+import in.wynk.payment.dto.itune.ItunesVerificationRequest;
+import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatus;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.enums.itune.ItunesStatusCodes;
@@ -53,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static in.wynk.payment.core.constant.itune.ItunesConstant.*;
+import static in.wynk.payment.core.constant.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)

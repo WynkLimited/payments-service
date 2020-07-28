@@ -2,8 +2,8 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.core.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.core.enums.StatusMode;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;

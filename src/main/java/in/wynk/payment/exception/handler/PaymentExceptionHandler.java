@@ -3,7 +3,7 @@ package in.wynk.payment.exception.handler;
 import in.wynk.commons.constants.Constants;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.exception.handler.WynkGlobalExceptionHandler;
-import in.wynk.payment.core.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.session.context.SessionContextHolder;

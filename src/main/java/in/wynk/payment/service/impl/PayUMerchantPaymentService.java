@@ -18,19 +18,19 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.core.dto.VerificationType;
-import in.wynk.payment.core.dto.payu.CardDetails;
-import in.wynk.payment.core.dto.payu.PayUCallbackRequestPayload;
-import in.wynk.payment.core.dto.payu.PayUCardInfo;
-import in.wynk.payment.core.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.core.dto.request.*;
-import in.wynk.payment.core.dto.response.BaseResponse;
-import in.wynk.payment.core.dto.response.ChargingStatus;
-import in.wynk.payment.core.dto.response.PayuVpaVerificationResponse;
-import in.wynk.payment.core.dto.response.payu.PayURenewalResponse;
-import in.wynk.payment.core.dto.response.payu.PayUUserCardDetailsResponse;
-import in.wynk.payment.core.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.payu.VerificationType;
+import in.wynk.payment.dto.payu.CardDetails;
+import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
+import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatus;
+import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
+import in.wynk.payment.dto.response.payu.PayURenewalResponse;
+import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.enums.PaymentErrorType;
 import in.wynk.payment.core.enums.payu.PayUCommand;
@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.payu.PayUConstants.*;
+import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)

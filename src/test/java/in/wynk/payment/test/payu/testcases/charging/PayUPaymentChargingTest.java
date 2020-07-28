@@ -1,8 +1,8 @@
 package in.wynk.payment.test.payu.testcases.charging;
 
 import in.wynk.commons.enums.PlanType;
-import in.wynk.payment.core.dto.request.ChargingRequest;
-import in.wynk.payment.core.dto.response.BaseResponse;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.service.IMerchantPaymentChargingService;

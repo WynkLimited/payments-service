@@ -1,6 +1,12 @@
-package in.wynk.payment.core.constant;
+package in.wynk.payment.core.dto.itunes;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class ItunesConstant {
+
+    public static final List<ItunesStatusCodes> FAILURE_CODES = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005, ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008, ItunesStatusCodes.APPLE_21009, ItunesStatusCodes.APPLE_21010);
+
     public static final String PRODUCT_ID = "product_id";
     public static final String ORIGINAL_TRANSACTION_ID = "original_transaction_id";
     public static final String TRANSACTION_ID = "transaction_id";

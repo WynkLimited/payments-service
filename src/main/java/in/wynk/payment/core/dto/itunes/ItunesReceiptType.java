@@ -8,26 +8,26 @@ import org.json.simple.parser.ParseException;
 
 import java.util.List;
 
-import static in.wynk.payment.core.constant.ItunesConstant.PURCHASE_INFO;
-import static in.wynk.payment.core.constant.ItunesConstant.RECEIPT_DATA;
+import static in.wynk.payment.core.dto.itunes.ItunesConstant.PURCHASE_INFO;
+import static in.wynk.payment.core.dto.itunes.ItunesConstant.RECEIPT_DATA;
 
 public enum ItunesReceiptType {
     SIX {
 
         @Override
         public String getEncodedItunesData(String itunesData) {
-            JSONObject jsonObj = null;
+            JSONObject jsonObj;
             try {
                 jsonObj = (JSONObject) JSONValue.parseWithException(itunesData);
             }
             catch (ParseException e) {
                 throw new WynkRuntimeException("Error while parsing itunes subscription data " + itunesData);
             }
-            String desiredJsonRep = "{";
+            StringBuilder desiredJsonRep = new StringBuilder("{");
             for(Object key : jsonObj.keySet()) {
                 String param = (String) key;
                 String value = (String) jsonObj.get(key);
-                desiredJsonRep += (encloseInDoubleQuotes(param) + "=" + encloseInDoubleQuotes(value) + ";");
+                desiredJsonRep.append(encloseInDoubleQuotes(param)).append("=").append(encloseInDoubleQuotes(value)).append(";");
             }
             return Base64.encodeBase64String((desiredJsonRep + "}").getBytes());
         }
@@ -64,7 +64,7 @@ public enum ItunesReceiptType {
 
         @Override
         public String getEncodedItunesData(String itunesData) {
-            JSONObject jsonObj = null;
+            JSONObject jsonObj;
             try {
                 jsonObj = (JSONObject) JSONValue.parseWithException(itunesData);
             }

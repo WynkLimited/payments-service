@@ -1,15 +1,13 @@
-package in.wynk.payment.core.dto.itunes;
+package in.wynk.payment.core.dao.entity;
 
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.ItunesConstant;
 import org.apache.commons.codec.binary.Base64;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 
 import java.util.List;
-
-import static in.wynk.payment.core.constant.itune.ItunesConstant.PURCHASE_INFO;
-import static in.wynk.payment.core.constant.itune.ItunesConstant.RECEIPT_DATA;
 
 public enum ItunesReceiptType {
     SIX {
@@ -71,7 +69,7 @@ public enum ItunesReceiptType {
             catch (ParseException e) {
                 throw new WynkRuntimeException("Error while parsing itunes subscription data " + itunesData);
             }
-            return (String) jsonObj.get(RECEIPT_DATA);
+            return (String) jsonObj.get(ItunesConstant.RECEIPT_DATA);
         }
 
         @Override
@@ -97,10 +95,10 @@ public enum ItunesReceiptType {
     };
 
     public static ItunesReceiptType getReceiptType(String payload) {
-        if(payload.contains(RECEIPT_DATA)) {
+        if (payload.contains(ItunesConstant.RECEIPT_DATA)) {
             return SEVEN;
         }
-        if(payload.contains(PURCHASE_INFO)) {
+        if (payload.contains(ItunesConstant.PURCHASE_INFO)) {
             return SIX;
         }
         throw new IllegalArgumentException("Illegal value for payload : " + payload);

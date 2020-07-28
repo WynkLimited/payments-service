@@ -1,7 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.core.dto.itunes.ItunesReceiptType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;

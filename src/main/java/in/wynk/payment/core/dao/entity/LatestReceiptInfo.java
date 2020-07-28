@@ -1,4 +1,4 @@
-package in.wynk.payment.core.dto.itunes;
+package in.wynk.payment.core.dao.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

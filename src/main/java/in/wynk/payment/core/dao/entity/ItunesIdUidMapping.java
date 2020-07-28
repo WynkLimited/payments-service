@@ -1,7 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.core.dto.itunes.ItunesReceiptType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -22,7 +21,7 @@ public class ItunesIdUidMapping implements Serializable {
     private String   uid;
     private int planId;
     private String receipt;
-    private ItunesReceiptType type;
+    private String type;
     private String msisdn;
 
 }

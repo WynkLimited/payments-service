@@ -123,11 +123,17 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         String amount = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT);
         String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
         String requestHash = CommonUtils.getStringParameter(urlParameters, HASH);
+<<<<<<< HEAD
+=======
+        String sessionId = SessionContextHolder.get().getId().toString();
+        String url = FAILURE_PAGE + sessionId + SLASH + sessionDTO.get(OS);
+>>>>>>> ecd6527cf9e1594bfe31bd28d6a0257e73d53658
         try {
             final Transaction transaction = transactionManager.get(txnId);
             if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
                 transactionManager.updateAndPublishSync(transaction, this::fetchAPBTxnStatus);
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
+<<<<<<< HEAD
                     return BaseResponse.redirectResponse(SUCCESS_PAGE + SessionContextHolder.getId());
                 } else if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
@@ -137,6 +143,9 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
+=======
+                    url = SUCCESS_PAGE+ sessionId + SLASH + sessionDTO.get(OS);
+>>>>>>> ecd6527cf9e1594bfe31bd28d6a0257e73d53658
                 }
             } else {
                 log.error(PaymentLoggingMarker.APB_CHARGING_CALLBACK_FAILURE,

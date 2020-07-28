@@ -1,7 +1,7 @@
 package in.wynk.payment.core.utils;
 
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;

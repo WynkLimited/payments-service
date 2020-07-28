@@ -1,4 +1,4 @@
-package in.wynk.payment.core.enums;
+package in.wynk.payment.core.constant;
 
 import in.wynk.exception.WynkRuntimeException;
 import lombok.Getter;

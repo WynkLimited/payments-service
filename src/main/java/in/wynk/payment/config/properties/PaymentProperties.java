@@ -16,6 +16,8 @@ public class PaymentProperties {
 
     private MongoProperties mongo;
 
+
+
     @Setter
     @Getter
     public static class MongoProperties {

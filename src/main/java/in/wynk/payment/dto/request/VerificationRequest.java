@@ -1,7 +1,7 @@
 package in.wynk.payment.dto.request;
 
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.payu.VerificationType;
-import in.wynk.payment.core.enums.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

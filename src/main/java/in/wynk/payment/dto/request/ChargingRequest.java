@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.enums.PaymentCode;
+import in.wynk.payment.core.constant.PaymentCode;
 import lombok.*;
 
 

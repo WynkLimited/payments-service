@@ -14,23 +14,19 @@ import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
-import in.wynk.payment.dto.paytm.PaytmWalletAddMoneyRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletLinkRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletOtpRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletValidateLinkRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
-import in.wynk.payment.core.enums.PaymentErrorType;
-import in.wynk.payment.core.enums.StatusMode;
-import in.wynk.payment.core.enums.paytm.PayTmErrorCodes;
 import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
@@ -55,10 +51,10 @@ import java.util.*;
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
+import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.HTTP_ERROR;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
-import static in.wynk.payment.core.enums.PaymentCode.PAYTM_WALLET;
 
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
 public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService {

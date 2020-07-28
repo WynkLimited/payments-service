@@ -1,13 +1,13 @@
 package in.wynk.payment.test.payu.testcases.verify;
 
 import com.google.gson.Gson;
-import in.wynk.payment.dto.payu.VerificationType;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
-import in.wynk.payment.core.enums.PaymentCode;
-import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.data.PayUTestData;

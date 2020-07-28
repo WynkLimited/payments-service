@@ -1,6 +1,6 @@
 package in.wynk.payment.dto;
 
-import in.wynk.payment.core.enums.PaymentCode;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.queue.dto.FIFOQueueMessageMarker;
 import in.wynk.queue.dto.QueueType;

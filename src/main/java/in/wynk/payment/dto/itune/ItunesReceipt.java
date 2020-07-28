@@ -2,15 +2,24 @@ package in.wynk.payment.dto.itune;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
+import java.util.List;
+
+@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ItunesCallbackRequest {
+public class ItunesReceipt {
 
     @JsonProperty("latest_receipt_info")
-    private LatestReceiptInfo latestReceiptInfo;
+    List<LatestReceiptInfo> latestReceiptInfoList;
+
+    String status;
 
     @JsonProperty("latest_receipt")
-    private String latestReceipt;
+    String latestReceipt;
+
+    String environment;
+
+
 }
+

@@ -6,7 +6,7 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.template.HttpTemplate;
-import in.wynk.payment.core.enums.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;

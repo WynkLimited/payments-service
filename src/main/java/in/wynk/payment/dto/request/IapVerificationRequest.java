@@ -2,8 +2,8 @@ package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
-import in.wynk.payment.core.enums.PaymentCode;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

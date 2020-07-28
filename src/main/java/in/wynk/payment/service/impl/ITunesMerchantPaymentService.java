@@ -10,23 +10,18 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.ItunesIdUidMapping;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
-import in.wynk.payment.dto.itune.ItunesCallbackRequest;
-import in.wynk.payment.core.dao.entity.ItunesReceipt;
-import in.wynk.payment.core.dao.entity.ItunesReceiptType;
-import in.wynk.payment.core.dao.entity.LatestReceiptInfo;
+import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.itune.ItunesVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.core.enums.PaymentCode;
-import in.wynk.payment.core.enums.PaymentErrorType;
-import in.wynk.payment.core.enums.itune.ItunesStatusCodes;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -52,7 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import static in.wynk.payment.core.dao.entity.ItunesConstant.*;
+import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
@@ -157,7 +152,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                                 .uid(transaction.getUid())
                                 .msisdn(transaction.getMsisdn())
                                 .planId(transaction.getPlanId())
-                                .type(receiptType)
+                                .type(receiptType.name())
                                 .receipt(decodedReceipt)
                                 .itunesId(originalITunesTrxnId)
                                 .build();

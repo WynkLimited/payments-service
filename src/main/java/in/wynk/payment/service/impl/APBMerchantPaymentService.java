@@ -13,13 +13,16 @@ import in.wynk.commons.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.dto.apb.ApbConstants;
+import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.MerchantTransaction.MerchantTransactionBuilder;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.apb.ApbTransaction;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.apb.ApbConstants;
+import in.wynk.payment.dto.apb.ApbStatus;
+import in.wynk.payment.dto.apb.ApbTransaction;
 import in.wynk.payment.dto.apb.ApbTransactionInquiryRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
@@ -28,9 +31,6 @@ import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.core.enums.Apb.ApbStatus;
-import in.wynk.payment.core.enums.PaymentErrorType;
-import in.wynk.payment.core.enums.StatusMode;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -61,9 +61,9 @@ import java.util.UUID;
 
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
+import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
-import static in.wynk.payment.core.enums.PaymentCode.APB_GATEWAY;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)

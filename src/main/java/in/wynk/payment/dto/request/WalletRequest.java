@@ -2,10 +2,10 @@ package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.paytm.PaytmWalletAddMoneyRequest;
 import in.wynk.payment.dto.paytm.PaytmWalletLinkRequest;
 import in.wynk.payment.dto.paytm.PaytmWalletValidateLinkRequest;
-import in.wynk.payment.core.enums.PaymentCode;
 import lombok.Getter;
 import lombok.Setter;
 

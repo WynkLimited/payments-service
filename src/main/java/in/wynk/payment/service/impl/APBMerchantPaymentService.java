@@ -59,10 +59,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.SHA_512;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
@@ -113,28 +110,25 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        String txnId = sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID);
         MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
-        ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
+
+        String txnId = sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID);
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
         String externalTxnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_ID);
         String amount = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT);
         String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
-        String requestHash = CommonUtils.getStringParameter(urlParameters, HASH);
-<<<<<<< HEAD
-=======
+        String requestHash = CommonUtils.getStringParameter(urlParameters, ApbConstants.HASH);
+        ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
         String sessionId = SessionContextHolder.get().getId().toString();
-        String url = FAILURE_PAGE + sessionId + SLASH + sessionDTO.get(OS);
->>>>>>> ecd6527cf9e1594bfe31bd28d6a0257e73d53658
+
         try {
             final Transaction transaction = transactionManager.get(txnId);
             if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
                 transactionManager.updateAndPublishSync(transaction, this::fetchAPBTxnStatus);
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-<<<<<<< HEAD
-                    return BaseResponse.redirectResponse(SUCCESS_PAGE + SessionContextHolder.getId());
+                    return BaseResponse.redirectResponse(SUCCESS_PAGE+ sessionId + SLASH + sessionDTO.get(OS));
                 } else if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY300);
@@ -143,9 +137,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
-=======
-                    url = SUCCESS_PAGE+ sessionId + SLASH + sessionDTO.get(OS);
->>>>>>> ecd6527cf9e1594bfe31bd28d6a0257e73d53658
                 }
             } else {
                 log.error(PaymentLoggingMarker.APB_CHARGING_CALLBACK_FAILURE,
@@ -221,7 +212,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .addParameter(CURRENCY, Currency.INR.name())
                 .addParameter(CUSTOMER_MOBILE, txn.getMsisdn())
                 .addParameter(MERCHANT_NAME, Constants.WYNK)
-                .addParameter(HASH, hash)
+                .addParameter(ApbConstants.HASH, hash)
                 .addParameter(SERVICE, serviceName)
                 .build().toString();
     }

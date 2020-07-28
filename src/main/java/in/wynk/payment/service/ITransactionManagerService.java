@@ -1,8 +1,8 @@
 package in.wynk.payment.service;
 
 import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.enums.PaymentCode;
 
 import java.util.function.Consumer;
 

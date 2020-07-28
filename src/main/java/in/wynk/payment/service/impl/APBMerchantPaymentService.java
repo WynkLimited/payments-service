@@ -13,24 +13,24 @@ import in.wynk.commons.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.constant.apb.ApbConstants;
+import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.MerchantTransaction.MerchantTransactionBuilder;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dto.ApbTransaction;
-import in.wynk.payment.core.dto.PaymentReconciliationMessage;
-import in.wynk.payment.core.dto.request.Apb.ApbTransactionInquiryRequest;
-import in.wynk.payment.core.dto.request.CallbackRequest;
-import in.wynk.payment.core.dto.request.ChargingRequest;
-import in.wynk.payment.core.dto.request.ChargingStatusRequest;
-import in.wynk.payment.core.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.core.dto.response.Apb.ApbChargingStatusResponse;
-import in.wynk.payment.core.dto.response.BaseResponse;
-import in.wynk.payment.core.dto.response.ChargingStatusResponse;
-import in.wynk.payment.core.enums.Apb.ApbStatus;
-import in.wynk.payment.core.enums.PaymentErrorType;
-import in.wynk.payment.core.enums.StatusMode;
+import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.apb.ApbConstants;
+import in.wynk.payment.dto.apb.ApbStatus;
+import in.wynk.payment.dto.apb.ApbTransaction;
+import in.wynk.payment.dto.apb.ApbTransactionInquiryRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
+import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -57,15 +57,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
+import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
-import static in.wynk.payment.core.constant.apb.ApbConstants.HASH;
-import static in.wynk.payment.core.constant.apb.ApbConstants.*;
-import static in.wynk.payment.core.enums.PaymentCode.APB_GATEWAY;
+import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
@@ -112,22 +110,25 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        String txnId = sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID);
         MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
-        ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
+
+        String txnId = sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID);
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
         String externalTxnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_ID);
         String amount = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT);
         String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
-        String requestHash = CommonUtils.getStringParameter(urlParameters, HASH);
+        String requestHash = CommonUtils.getStringParameter(urlParameters, ApbConstants.HASH);
+        ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
+        String sessionId = SessionContextHolder.get().getId().toString();
+
         try {
             final Transaction transaction = transactionManager.get(txnId);
             if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
                 transactionManager.updateAndPublishSync(transaction, this::fetchAPBTxnStatus);
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                    return BaseResponse.redirectResponse(SUCCESS_PAGE + SessionContextHolder.getId());
+                    return BaseResponse.redirectResponse(SUCCESS_PAGE+ sessionId + SLASH + sessionDTO.get(OS));
                 } else if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY300);
@@ -211,7 +212,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .addParameter(CURRENCY, Currency.INR.name())
                 .addParameter(CUSTOMER_MOBILE, txn.getMsisdn())
                 .addParameter(MERCHANT_NAME, Constants.WYNK)
-                .addParameter(HASH, hash)
+                .addParameter(ApbConstants.HASH, hash)
                 .addParameter(SERVICE, serviceName)
                 .build().toString();
     }
@@ -257,8 +258,8 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             ApbChargingStatusResponse apbChargingStatusResponse = responseEntity.getBody();
             merchantTxnBuilder.response(apbChargingStatusResponse);
             if (Objects.nonNull(apbChargingStatusResponse) && CollectionUtils.isNotEmpty(apbChargingStatusResponse.getTxns())) {
-                Optional<ApbTransaction> apbTransaction = apbChargingStatusResponse.getTxns().stream().filter(txn -> StringUtils.equals(txnId, txn.getTxnId())).findAny();
-                if (apbTransaction.isPresent() && StringUtils.equalsIgnoreCase(apbTransaction.get().getStatus(), ApbStatus.SUC.name())) {
+                ApbTransaction apbTransaction = apbChargingStatusResponse.getTxns().get(0);
+                if (StringUtils.equalsIgnoreCase(apbTransaction.getStatus(), ApbStatus.SUC.name())) {
                     transaction.setStatus(TransactionStatus.SUCCESS.name());
                 }
             }

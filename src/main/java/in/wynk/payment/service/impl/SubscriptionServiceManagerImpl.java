@@ -108,7 +108,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                             .build(),
                     String.class);
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY014, e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, "Unable to unSubscribe plan after successful payment");
         }
     }
 

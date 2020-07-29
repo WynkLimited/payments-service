@@ -272,7 +272,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final int planId = chargingRequest.getPlanId();
-        final String uid = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.UID));
+        final String uid = sessionDTO.get(SessionKeys.UID);
         final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();

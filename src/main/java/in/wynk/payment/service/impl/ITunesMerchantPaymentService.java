@@ -246,7 +246,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
         } catch (HttpStatusCodeException e) {
             merchantTransactionBuilder.response(e.getResponseBodyAsString());
-            log.error("Exception while posting data to iTunes for uid {} ", transaction.getUid());
+            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE,"Exception while posting data to iTunes for uid {} ", transaction.getUid());
             throw new WynkRuntimeException(PaymentErrorType.PAY011, e);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to ", e);

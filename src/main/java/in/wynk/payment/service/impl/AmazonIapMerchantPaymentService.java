@@ -8,12 +8,10 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
@@ -80,15 +78,17 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     private void fetchAndUpdateTransaction(Transaction transaction) {
+        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+        Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         AmazonIapVerificationRequest request = transaction.getValueFromPaymentMetaData("amazonIapVerificationRequest");
         try {
+            builder.request(request);
             AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
             if (amazonIapReceipt == null) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment response received from client");
             }
 
-            TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
-            TransactionEvent transactionEvent = TransactionEvent.SUBSCRIBE;
+            TransactionEvent transactionEvent = TransactionEvent.PURCHASE;
 
             if (amazonIapReceipt.getCancelDate() == null) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
@@ -96,34 +96,33 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                 transactionEvent = TransactionEvent.UNSUBSCRIBE;
             }
 
-            eventPublisher.publishEvent(MerchantTransactionEvent.builder()
-                    .id(transaction.getIdStr())
-                    .externalTransactionId(amazonIapReceipt.getReceiptID())
-                    .request(request)
-                    .response(amazonIapReceipt)
-                    .build());
+            builder.externalTransactionId(amazonIapReceipt.getReceiptID()).response(amazonIapReceipt);
 
             transaction.setType(transactionEvent.name());
-            transaction.setStatus(finalTransactionStatus.name());
-        } catch (Exception e) {
-            transaction.setStatus(TransactionStatus.FAILURE.name());
+        } catch (HttpStatusCodeException e) {
+            builder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE, "failed to execute fetchAndUpdateTransaction for amazonIap due to ", e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
+        } finally {
+            transaction.setStatus(finalTransactionStatus.name());
+            eventPublisher.publishEvent(builder.build());
         }
     }
 
     private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
-        String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
-        AmazonIapReceiptResponse receiptObj = null;
         try {
+            String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
             RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
             ResponseEntity<String> responseEntity = restTemplate.exchange(requestEntity, String.class);
             if (responseEntity.getBody() != null)
-                receiptObj = mapper.readValue(responseEntity.getBody(), AmazonIapReceiptResponse.class);
-
-        } catch (HttpStatusCodeException | JsonProcessingException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
+                return mapper.readValue(responseEntity.getBody(), AmazonIapReceiptResponse.class);
+            else
+                throw new WynkRuntimeException(PaymentErrorType.PAY012);
+        } catch (JsonProcessingException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         }
-        return receiptObj;
     }
 
 }

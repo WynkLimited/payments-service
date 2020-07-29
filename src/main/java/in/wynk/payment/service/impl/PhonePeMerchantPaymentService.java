@@ -16,6 +16,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRequest;
@@ -193,7 +194,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         }
 
         if (finalTransactionStatus == TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder().id(transaction.getIdStr()).code(phonePeTransactionStatusResponse.getCode().name()).description(phonePeTransactionStatusResponse.getMessage()).build());
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(phonePeTransactionStatusResponse.getCode().name()).description(phonePeTransactionStatusResponse.getMessage()).build());
         }
 
         transaction.setStatus(finalTransactionStatus.name());
@@ -293,7 +294,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private PhonePeTransactionResponse getTransactionStatus(Transaction txn) {
-        MerchantTransactionEvent.MerchantTransactionEventBuilder merchantTransactionEventBuilder = MerchantTransactionEvent.builder().id(txn.getIdStr());
+        Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(txn.getIdStr());
         try {
             String prefixStatusApi = "/v3/transaction/" + merchantId + "/";
             String suffixStatusApi = "/status";
@@ -314,16 +315,16 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             merchantTransactionEventBuilder.response(phonePeTransactionResponse);
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             return phonePeTransactionResponse;
-        } catch (HttpStatusCodeException hex) {
-            merchantTransactionEventBuilder.response(hex.getResponseBodyAsString());
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
-            log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Error from phonepe: {}", hex.getResponseBodyAsString(), hex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, hex, "Error from PhonePe - " + hex.getStatusCode().toString());
+        } catch (HttpStatusCodeException e) {
+            merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
+            log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Error from phonepe: {}", e.getResponseBodyAsString(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from PhonePe " + e.getStatusCode().toString());
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Unable to verify status from Phonepe");
             throw new WynkRuntimeException(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, e.getMessage(), e);
+        } finally {
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
-
     }
 
     private Boolean validateChecksum(Map<String, String> requestParams) {

@@ -18,6 +18,7 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.apb.ApbStatus;
@@ -231,6 +232,8 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     public void fetchAPBTxnStatus(Transaction transaction) {
         String txnId = transaction.getId().toString();
+        Builder builder = MerchantTransactionEvent.builder(txnId);
+        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         try {
             URI uri = new URI(APB_TXN_INQUIRY_URL);
             String txnDate = CommonUtils.getFormattedDate(transaction.getInitTime().getTimeInMillis(), "ddMMyyyyHHmmss");
@@ -244,6 +247,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                     .amount(String.valueOf(transaction.getAmount()))
                     .build();
             String payload = gson.toJson(apbTransactionInquiryRequest);
+            builder.request(payload);
             log.info("ApbTransactionInquiryRequest: {}", apbTransactionInquiryRequest);
             RequestEntity<String> requestEntity = new RequestEntity<>(payload, HttpMethod.POST, uri);
             ResponseEntity<ApbChargingStatusResponse> responseEntity = restTemplate.exchange(requestEntity, ApbChargingStatusResponse.class);
@@ -251,18 +255,21 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             if (Objects.nonNull(apbChargingStatusResponse) && CollectionUtils.isNotEmpty(apbChargingStatusResponse.getTxns())) {
                 ApbTransaction apbTransaction = apbChargingStatusResponse.getTxns().get(0);
                 if (StringUtils.equalsIgnoreCase(apbTransaction.getStatus(), ApbStatus.SUC.name())) {
-                    transaction.setStatus(TransactionStatus.SUCCESS.name());
+                    finalTransactionStatus = TransactionStatus.SUCCESS;
                 }
             }
-            eventPublisher.publishEvent(MerchantTransactionEvent.builder().id(transaction.getIdStr()).request(payload).response(apbChargingStatusResponse).build());
+            builder.response(apbChargingStatusResponse);
         } catch (HttpStatusCodeException e) {
+            builder.response(e.getResponseBodyAsString());
             log.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getResponseBodyAsString(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "APB failure response - " + e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(APB_ERROR, "Error for txnId {} from APB : {}", txnId, e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Unable to fetch transaction status for txnId = " + txnId + "error- " + e.getMessage());
+        } finally {
+            transaction.setStatus(finalTransactionStatus.name());
+            eventPublisher.publishEvent(builder.build());
         }
-        transaction.setStatus(TransactionStatus.FAILURE.name());
     }
 
 

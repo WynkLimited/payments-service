@@ -12,16 +12,18 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.ItunesIdUidMapping;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
+import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -40,6 +42,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.UnsupportedEncodingException;
@@ -169,17 +172,21 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             }
 
             if (transaction.getStatus() != TransactionStatus.SUCCESS) {
-                eventPublisher.publishEvent(PaymentErrorEvent.builder().id(transaction.getIdStr()).description(errorMessage).build());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).description(errorMessage).build());
             }
-        } catch (Exception e) {
+        } catch (WynkRuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
             log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), decodedReceipt, e);
             throw new WynkRuntimeException(WynkErrorType.UT999, e, "Could not process iTunes validate transaction request for uid: " + transaction.getUid());
         }
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
-        ItunesStatusCodes statusCode = ItunesStatusCodes.APPLE_21014;
+        Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
+            ItunesStatusCodes statusCode;
             String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
             if (StringUtils.isBlank(encodedValue)) {
                 statusCode = ItunesStatusCodes.APPLE_21011;
@@ -188,21 +195,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             }
 
             ResponseEntity<String> appStoreResponse;
-            MerchantTransactionEvent.MerchantTransactionEventBuilder merchantTransactionBuilder = MerchantTransactionEvent.builder().id(transaction.getIdStr());
-
-            try {
-                JSONObject requestJson = new JSONObject();
-                requestJson.put(RECEIPT_DATA, encodedValue);
-                requestJson.put(PASSWORD, itunesSecret);
-                merchantTransactionBuilder.request(gson.toJson(requestJson));
-                RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toJSONString(), HttpMethod.POST, URI.create(itunesApiUrl));
-                appStoreResponse = restTemplate.exchange(requestEntity, String.class);
-                merchantTransactionBuilder.response(gson.toJson(appStoreResponse));
-            } catch (Exception e) {
-                statusCode = ItunesStatusCodes.APPLE_21013;
-                log.info("Exception while posting data to iTunes for uid {}, receipt {} ", transaction.getUid(), encodedValue);
-                throw new WynkRuntimeException(PaymentErrorType.PAY011, e);
-            }
+            JSONObject requestJson = new JSONObject();
+            requestJson.put(RECEIPT_DATA, encodedValue);
+            requestJson.put(PASSWORD, itunesSecret);
+            merchantTransactionBuilder.request(gson.toJson(requestJson));
+            RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toJSONString(), HttpMethod.POST, URI.create(itunesApiUrl));
+            appStoreResponse = restTemplate.exchange(requestEntity, String.class);
+            merchantTransactionBuilder.response(gson.toJson(appStoreResponse));
 
             String appStoreResponseBody = appStoreResponse.getBody();
             ItunesReceipt receiptObj = new ItunesReceipt();
@@ -240,17 +239,21 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 } else {
                     statusCode = ItunesStatusCodes.APPLE_21009;
                 }
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(statusCode.toString()).description(statusCode.getErrorTitle()).build());
                 log.error(BaseLoggingMarkers.PAYMENT_ERROR, "Failed to subscribe to iTunes: response {} request!! status : {} error {}", appStoreResponse, status, statusCode.getErrorTitle());
                 throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
             }
+
+        } catch (HttpStatusCodeException e) {
+            merchantTransactionBuilder.response(e.getResponseBodyAsString());
+            log.error("Exception while posting data to iTunes for uid {} ", transaction.getUid());
+            throw new WynkRuntimeException(PaymentErrorType.PAY011, e);
         } catch (Exception e) {
+            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to ", e);
             transaction.setStatus(TransactionStatus.FAILURE.name());
-            eventPublisher.publishEvent(PaymentErrorEvent.builder()
-                    .id(transaction.getIdStr())
-                    .code(statusCode.toString())
-                    .description(statusCode.getErrorTitle())
-                    .build());
             throw new WynkRuntimeException(WynkErrorType.UT999, e);
+        } finally {
+            eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }
     }
 

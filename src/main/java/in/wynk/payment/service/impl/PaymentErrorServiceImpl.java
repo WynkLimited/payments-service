@@ -23,6 +23,6 @@ public class PaymentErrorServiceImpl implements IPaymentErrorService {
 
     @Override
     public PaymentError getPaymentError(String id) {
-        return paymentErrorDao.getOne(id);
+        return paymentErrorDao.findById(id).get();
     }
 }

@@ -1,5 +1,4 @@
-###### Properties ##############
-
+######  Properties #########
 paytm:
   native:
     clientId: merchant-wynk-staging
@@ -9,10 +8,10 @@ paytm:
     accounts:
       baseUrl: https://accounts-uat.paytm.com
     services:
-      baseUrl: https://securegw-stage.paytm.in
+      baseUrl: https://securegw-stage.paytm.in/paymentservices
     wcf:
-      addMoneyUrl: https://wcfpay-dev.wynk.in/paytm-native/add-money
-      callbackUrl: http://capi-wcf-stage.wynk.in/wynk/v2/s2s/subscription/callback?sid=
+      addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
+      callbackUrl: http://localhost:8181/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WYNKLIMITEDWAP
 
@@ -51,11 +50,11 @@ session:
 ##### mysql database props #####
 spring:
   datasource:
-    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
     username: admin
     password: o7QZ?!n=eu
     hikari:
-      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
       username: admin
       password: o7QZ?!n=eu
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -177,14 +176,16 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+      key: aU2Uoi
+      salt: 6vbnfVtw
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
-          successUrl: https://payments-preprod.wynk.in//wynk/v1/payment/callback/
-          failureUrl: https://payments-preprod.wynk.in//wynk/v1/payment/callback/
+          successUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
+          failureUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
       secret: 820ea8abe1374b369eaa564dcfa6391c
@@ -202,7 +203,7 @@ payment:
         base:
           url: https://mercury-t2.phonepe.com
       callback:
-        url: https://capi.wynk.in/wynk/v1/paymentcallback/phonepe
+        url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
 
 ####### Http Client Props #######
@@ -228,7 +229,7 @@ http:
 service:
   subscription:
     api:
-      root: https://subscription-preprod.wynk.in
+      root: http://subscription-preprod.wcf.internal
 
 cors:
   allowed:

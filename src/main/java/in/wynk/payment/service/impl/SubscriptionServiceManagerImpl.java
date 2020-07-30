@@ -46,9 +46,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private String unSubscribePlanEndPoint;
 
     public SubscriptionServiceManagerImpl(ISQSMessagePublisher sqsMessagePublisher,
-                                          @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate httpTemplate) {
+                                          @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate restTemplate) {
         this.sqsMessagePublisher = sqsMessagePublisher;
-        this.restTemplate = httpTemplate;
+        this.restTemplate = restTemplate;
     }
 
     @Override

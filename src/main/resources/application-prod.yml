@@ -179,6 +179,8 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+      key: aU2Uoi
+      salt: 6vbnfVtw
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
       internal:

@@ -45,16 +45,6 @@ session:
       minIdle: 50
       maxIdle: 100
 
-######### MongoDB properties
-app:
-  mongo:
-    sources:
-      payment:
-        nodes: 10.80.0.73,10.80.0.68:27017
-        username: # None
-        password: # None
-        database: payments
-
 ##### mysql database props #####
 spring:
   datasource:
@@ -100,6 +90,13 @@ spring:
 ####### payment props #######
 payment:
   encKey: BSB$PORTAL@2014#
+  mongo:
+    sources:
+      payment:
+        nodes: 10.80.0.73,10.80.0.68:27017
+        username: # None
+        password: # None
+        database: payments
   recurring:
     offset:
       day: 0

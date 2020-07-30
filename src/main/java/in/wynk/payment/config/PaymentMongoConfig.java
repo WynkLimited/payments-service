@@ -1,7 +1,7 @@
 package in.wynk.payment.config;
 
+import in.wynk.payment.config.properties.MongoProperties;
 import in.wynk.payment.config.properties.PaymentProperties;
-import in.wynk.payment.config.properties.PaymentProperties.MongoProperties;
 import org.bson.BsonUndefined;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -22,16 +22,16 @@ import java.util.List;
 @EnableConfigurationProperties({PaymentProperties.class})
 @EnableMongoRepositories(basePackages = "in.wynk.payment.core.dao", mongoTemplateRef = "paymentMongoTemplate")
 @EnableMongoAuditing
-public class MongoConfig {
+public class PaymentMongoConfig {
     private final MongoProperties mongoProperties;
 
-    public MongoConfig(PaymentProperties paymentProperties) {
+    public PaymentMongoConfig(PaymentProperties paymentProperties) {
         this.mongoProperties = paymentProperties.getMongo();
     }
 
     @Bean
     public MongoDbFactory paymentDbFactory() {
-        return new SimpleMongoClientDbFactory(mongoProperties.getSources().get("payment").getConnectionSettings());
+        return new SimpleMongoClientDbFactory(mongoProperties.getConnectionSettings("payment"));
     }
 
     @Bean

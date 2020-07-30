@@ -4,40 +4,40 @@ import in.wynk.logging.BaseLoggingMarkers;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
-public class PaymentLoggingMarker extends BaseLoggingMarkers {
+public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
-    public static final Marker APB_ERROR = MarkerFactory.getMarker("APB_ERROR");
+    Marker APB_ERROR = MarkerFactory.getMarker("APB_ERROR");
 
-    public static final Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
-    public static final Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
-    public static final Marker SUBSCRIPTION_ERROR = MarkerFactory.getMarker("SUBSCRIPTION_ERROR");
+    Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
+    Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
+    Marker SUBSCRIPTION_ERROR = MarkerFactory.getMarker("SUBSCRIPTION_ERROR");
 
 
-    public static final Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");
-    public static final Marker PAYMENT_RECONCILIATION_FAILURE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_FAILURE");
+    Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");
+    Marker PAYMENT_RECONCILIATION_FAILURE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_FAILURE");
 
-    public static final Marker PAYMENT_RENEWAL_QUEUE = MarkerFactory.getMarker("PAYMENT_RENEWAL_QUEUE");
-    public static final Marker PAYMENT_CHARGING_QUEUE = MarkerFactory.getMarker("PAYMENT_CHARGING_QUEUE");
+    Marker PAYMENT_RENEWAL_QUEUE = MarkerFactory.getMarker("PAYMENT_RENEWAL_QUEUE");
+    Marker PAYMENT_CHARGING_QUEUE = MarkerFactory.getMarker("PAYMENT_CHARGING_QUEUE");
 
-    public static final Marker PAYMENT_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_FAILURE");
-    public static final Marker PAYMENT_CHARGING_CALLBACK_PENDING = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_PENDING");
+    Marker PAYMENT_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_FAILURE");
+    Marker PAYMENT_CHARGING_CALLBACK_PENDING = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_PENDING");
 
-    public static final Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
-    public static final Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");
-    public static final Marker PAYU_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_CALLBACK_FAILURE");
-    public static final Marker PAYU_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION");
-    public static final Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
+    Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
+    Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");
+    Marker PAYU_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_CALLBACK_FAILURE");
+    Marker PAYU_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION");
+    Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
 
-    public static final Marker PHONEPE_CHARGING_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_FAILURE");
-    public static final Marker PHONEPE_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_CALLBACK_FAILURE");
-    public static final Marker PHONEPE_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PHONEPE_CHARGING_STATUS_VERIFICATION");
-    public static final Marker PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE");
+    Marker PHONEPE_CHARGING_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_FAILURE");
+    Marker PHONEPE_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_CALLBACK_FAILURE");
+    Marker PHONEPE_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PHONEPE_CHARGING_STATUS_VERIFICATION");
+    Marker PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE");
 
-    public static final Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
+    Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
 
-    public static final Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
+    Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
 
-    public static final Marker APB_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APB_CHARGING_STATUS_VERIFICATION");
-    public static final Marker APB_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("APB_CHARGING_CALLBACK_FAILURE");
+    Marker APB_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APB_CHARGING_STATUS_VERIFICATION");
+    Marker APB_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("APB_CHARGING_CALLBACK_FAILURE");
 
 }

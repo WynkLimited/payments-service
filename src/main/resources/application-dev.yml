@@ -45,7 +45,6 @@ session:
       minIdle: 50
       maxIdle: 100
 
-
 ##### mysql database props #####
 spring:
   datasource:

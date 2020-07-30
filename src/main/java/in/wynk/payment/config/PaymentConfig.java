@@ -57,11 +57,12 @@ public class PaymentConfig implements WebMvcConfigurer {
                 .maxAge(corsProperties.getMaxAge());
     }
 
-    @Bean
+    @Profile("!local")
+    @Bean(name = "applicationEventMulticaster")
     public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
-        SimpleApplicationEventMulticaster eventMultiCaster = new SimpleApplicationEventMulticaster();
-        eventMultiCaster.setTaskExecutor(new SimpleAsyncTaskExecutor());
-        return eventMultiCaster;
+        SimpleApplicationEventMulticaster eventMulticaster = new SimpleApplicationEventMulticaster();
+        eventMulticaster.setTaskExecutor(new SimpleAsyncTaskExecutor("sub-event"));
+        return eventMulticaster;
     }
 
 }

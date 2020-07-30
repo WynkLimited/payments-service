@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: ${env:local}
+    active: ${env}
   main:
     banner-mode: off
   devtools:
@@ -38,7 +38,7 @@ management:
 
 ###### log props ######
 logging:
-  path: /tmp
+  path: /data
 
 ##### resilience props for lib-queue ######
 resilience:

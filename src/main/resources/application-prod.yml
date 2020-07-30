@@ -93,13 +93,6 @@ spring:
 ####### payment props #######
 payment:
   encKey: BSB$PORTAL@2014#
-  mongo:
-    sources:
-      payment:
-        nodes: 10.80.0.73,10.80.0.68:27017 # need to point to prod.
-        username: # None
-        password: # None
-        database: payments
   recurring:
     offset:
       day: 0
@@ -237,3 +230,23 @@ service:
 
 webview:
   host: https://pay.wynk.in
+
+########### MONGO CONFIG ###########
+wynk:
+  mongodb:
+    enabled: true
+    sources:
+      payment:
+        nodes: 10.80.0.68,10.80.0.73 #TODO: need to point to prod.
+        username:
+        password:
+        database: payment
+    ########### Mongo Pool Config ###########
+    minConnectionsPerHost: 1
+    maxConnectionsPerHost: 5
+    threadsAllowedToBlockForConnectionMultiplier: 5
+    serverSelectionTimeoutMs: 30000
+    maxWaitTime: 30000
+    connectTimeout: 20000
+    socketTimeout: 50000
+    readPreference: secondaryPreferred

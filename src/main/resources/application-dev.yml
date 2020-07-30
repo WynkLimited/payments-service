@@ -90,14 +90,6 @@ spring:
 ####### payment props #######
 payment:
   encKey: BSB$PORTAL@2014#
-  ######### MongoDB properties
-  mongo:
-    sources:
-      payment:
-        nodes: 10.80.0.73,10.80.0.68:27017
-        username: # None
-        password: # None
-        database: payments
   recurring:
     offset:
       day: 0
@@ -232,13 +224,33 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-staging.wcf.internal
+      root: https://subscription-staging.wynk.in
 
 cors:
   allowed:
     origins: "*"
 
-debug: true
+debug: false
 
 webview:
   host: https://pay-stage.wynk.in
+
+########### MONGO CONFIG ###########
+wynk:
+  mongodb:
+    enabled: true
+    sources:
+      payment:
+        nodes: 10.80.0.68,10.80.0.73
+        username:
+        password:
+        database: payment
+    ########### Mongo Pool Config ###########
+    minConnectionsPerHost: 10
+    maxConnectionsPerHost: 50
+    threadsAllowedToBlockForConnectionMultiplier: 5
+    serverSelectionTimeoutMs: 30000
+    maxWaitTime: 30000
+    connectTimeout: 20000
+    socketTimeout: 50000
+    readPreference: secondaryPreferred

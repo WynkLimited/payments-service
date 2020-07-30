@@ -1,11 +1,13 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.commons.dto.*;
+import in.wynk.commons.dto.AllPlansResponse;
+import in.wynk.commons.dto.PlanDTO;
+import in.wynk.commons.dto.SubscriptionProvisioningMessage;
+import in.wynk.commons.dto.SubscriptionProvisioningRequest;
+import in.wynk.commons.dto.SubscriptionUnProvisioningRequest;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.http.template.HttpTemplate;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
@@ -13,18 +15,19 @@ import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Objects;
 
 import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
 
 @Service
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
 
-    private final HttpTemplate httpTemplate;
+    private final RestTemplate restTemplate;
     private final ISQSMessagePublisher sqsMessagePublisher;
 
     @Value("${payment.pooling.queue.subscription.name}")
@@ -43,18 +46,14 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private String unSubscribePlanEndPoint;
 
     public SubscriptionServiceManagerImpl(ISQSMessagePublisher sqsMessagePublisher,
-                                          @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) HttpTemplate httpTemplate) {
+                                          @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate httpTemplate) {
         this.sqsMessagePublisher = sqsMessagePublisher;
-        this.httpTemplate = httpTemplate;
+        this.restTemplate = httpTemplate;
     }
 
     @Override
     public List<PlanDTO> getPlans() {
-        return httpTemplate.exchange(allPlanApiEndPoint, HttpMethod.GET, null, AllPlansResponse.class)
-                .map(HttpEntity::getBody)
-                .map(AllPlansResponse::getData)
-                .map(AllPlansResponse.AllPlans::getPlans)
-                .orElseThrow(() -> new WynkRuntimeException(WynkErrorType.RG777));
+        return Objects.requireNonNull(restTemplate.exchange(allPlanApiEndPoint, HttpMethod.GET, null, AllPlansResponse.class).getBody()).getData().getPlans();
     }
 
     @Override
@@ -84,7 +83,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
         try {
-            httpTemplate.postForObject(subscribePlanEndPoint + sid,
+            restTemplate.postForObject(subscribePlanEndPoint + sid,
                     SubscriptionProvisioningRequest.builder()
                             .uid(uid)
                             .planId(planId)
@@ -101,7 +100,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
         try {
-            httpTemplate.postForObject(unSubscribePlanEndPoint + sid,
+            restTemplate.postForObject(unSubscribePlanEndPoint + sid,
                     SubscriptionUnProvisioningRequest.builder()
                             .uid(uid)
                             .planId(planId)

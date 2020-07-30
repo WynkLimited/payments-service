@@ -247,3 +247,24 @@ debug: false
 
 webview:
   host: https://pay-stage.wynk.in
+
+
+########### MONGO CONFIG ###########
+wynk:
+  mongodb:
+    enabled: true
+    sources:
+      payment:
+        nodes: 10.80.0.68,10.80.0.73
+        username:
+        password:
+        database: payment
+########### Mongo Pool Config ###########
+    minConnectionsPerHost: 1
+    maxConnectionsPerHost: 5
+    threadsAllowedToBlockForConnectionMultiplier: 5
+    serverSelectionTimeoutMs: 30000
+    maxWaitTime: 30000
+    connectTimeout: 20000
+    socketTimeout: 50000
+    readPreference: secondaryPreferred

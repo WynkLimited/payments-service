@@ -15,7 +15,6 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
@@ -24,16 +23,33 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.paytm.*;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.paytm.PayTmErrorCodes;
+import in.wynk.payment.dto.paytm.PaytmWalletAddMoneyRequest;
+import in.wynk.payment.dto.paytm.PaytmWalletLinkRequest;
+import in.wynk.payment.dto.paytm.PaytmWalletOtpRequest;
+import in.wynk.payment.dto.paytm.PaytmWalletValidateLinkRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.ConsultBalanceRequest;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
-import in.wynk.payment.dto.response.*;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.WalletRequest;
+import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.ConsultBalanceResponse;
+import in.wynk.payment.dto.response.ValidateTokenResponse;
+import in.wynk.payment.dto.response.WalletBalanceResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IRenewalMerchantWalletService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.IUserPaymentsManager;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -45,7 +61,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -53,7 +73,12 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
@@ -298,18 +323,19 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        String tid = chargingStatusRequest.getTransactionId();
+        Transaction transaction = transactionManager.get(tid);
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
-            PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(chargingStatusRequest.getTransactionId());
+            PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(tid);
             if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
-                return new BaseResponse<>(ChargingStatusResponse.success(), HttpStatus.OK, null);
+                return new BaseResponse<>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
             }
         } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
-            Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-                return new BaseResponse<>(ChargingStatusResponse.success(), HttpStatus.OK, null);
+                return new BaseResponse<>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
             }
         }
-        return new BaseResponse<>(ChargingStatusResponse.failure(), HttpStatus.OK, null);
+        return new BaseResponse<>(ChargingStatusResponse.failure(tid), HttpStatus.OK, null);
     }
 
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(String txnId) {

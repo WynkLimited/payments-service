@@ -19,11 +19,16 @@ import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.itune.*;
+import in.wynk.payment.dto.itune.ItunesCallbackRequest;
+import in.wynk.payment.dto.itune.ItunesReceipt;
+import in.wynk.payment.dto.itune.ItunesReceiptType;
+import in.wynk.payment.dto.itune.ItunesStatusCodes;
+import in.wynk.payment.dto.itune.ItunesVerificationRequest;
+import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatus;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -100,7 +105,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public BaseResponse<ChargingStatus> handleCallback(CallbackRequest callbackRequest) {
+    public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue(gson.toJson(callbackRequest.getBody()), ItunesCallbackRequest.class);
@@ -122,7 +127,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                     log.error(BaseLoggingMarkers.PAYMENT_ERROR, String.valueOf(e));
                 }
             }
-            return BaseResponse.<ChargingStatus>builder().body(ChargingStatus.builder().transactionStatus(finalTransactionStatus).build()).status(HttpStatus.OK).build();
+            return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(finalTransactionStatus).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
             throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
         }

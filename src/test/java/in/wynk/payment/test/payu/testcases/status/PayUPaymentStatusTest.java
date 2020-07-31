@@ -8,8 +8,12 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatus;
-import in.wynk.payment.service.*;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.service.IMerchantPaymentStatusService;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.payment.test.payu.data.PayUTestData;
@@ -28,7 +32,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentTestConfiguration.class)
@@ -90,7 +97,7 @@ public class PayUPaymentStatusTest {
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getResponse().getBody());
-        Assert.assertEquals(((ChargingStatus) response.getResponse().getBody()).getTransactionStatus(), TransactionStatus.SUCCESS);
+        Assert.assertEquals(((ChargingStatusResponse) response.getResponse().getBody()).getTransactionStatus(), TransactionStatus.SUCCESS);
     }
 
     @Test
@@ -101,7 +108,7 @@ public class PayUPaymentStatusTest {
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getResponse().getBody());
-        Assert.assertEquals(((ChargingStatus) response.getResponse().getBody()).getTransactionStatus(), TransactionStatus.SUCCESS);
+        Assert.assertEquals(((ChargingStatusResponse) response.getResponse().getBody()).getTransactionStatus(), TransactionStatus.SUCCESS);
     }
 
 }

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -95,7 +96,14 @@ public class PaymentCachingService {
     }
 
 
-    public PlanDTO getPlan(Integer planId) {
+    public PlanDTO getPlan(int planId) {
         return plans.get(planId);
+    }
+
+    public Long validTillDate(int planId){
+        PlanDTO planDTO = getPlan(planId);
+        int validity = planDTO.getPeriod().getValidity();
+        TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
+        return System.currentTimeMillis() + timeUnit.toMillis(validity);
     }
 }

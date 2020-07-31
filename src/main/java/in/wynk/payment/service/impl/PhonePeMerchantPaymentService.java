@@ -27,7 +27,7 @@ import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatus;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -158,8 +158,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
 
     @Override
-    public BaseResponse<ChargingStatus> status(ChargingStatusRequest chargingStatusRequest) {
-        ChargingStatus chargingStatus;
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        ChargingStatusResponse chargingStatus;
         switch (chargingStatusRequest.getMode()) {
             case SOURCE:
                 chargingStatus = getStatusFromPhonePe(chargingStatusRequest);
@@ -170,7 +170,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
         }
-        return BaseResponse.<ChargingStatus>builder()
+        return BaseResponse.<ChargingStatusResponse>builder()
                 .status(HttpStatus.OK)
                 .body(chargingStatus)
                 .build();
@@ -200,7 +200,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         transaction.setStatus(finalTransactionStatus.name());
     }
 
-    private ChargingStatus getStatusFromPhonePe(ChargingStatusRequest chargingStatusRequest) {
+    private ChargingStatusResponse getStatusFromPhonePe(ChargingStatusRequest chargingStatusRequest) {
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         try {
             transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateTransactionFromSource);
@@ -213,16 +213,16 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 throw new WynkRuntimeException(PaymentErrorType.PAY008, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
             }
 
-            return ChargingStatus.builder().transactionStatus(transaction.getStatus()).build();
+            return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
         } finally {
             transactionManager.upsert(transaction);
         }
 
     }
 
-    private ChargingStatus fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest) {
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest) {
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
-        return ChargingStatus.builder()
+        return ChargingStatusResponse.builder()
                 .transactionStatus(transaction.getStatus())
                 .build();
     }

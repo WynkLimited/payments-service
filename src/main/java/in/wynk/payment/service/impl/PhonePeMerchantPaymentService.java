@@ -80,7 +80,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     private final ApplicationEventPublisher eventPublisher;
     private final ISQSMessagePublisher sqsMessagePublisher;
     private final ITransactionManagerService transactionManager;
-    private final String debitCall = "/v3/debit";
+    private static final String DEBIT_API = "/v3/debit";
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
     @Value("${payment.merchant.phonepe.callback.url}")
@@ -273,15 +273,15 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             String requestJson = gson.toJson(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-            String xVerifyHeader = Utils.encodeBase64(requestJson) + debitCall + salt;
+            String xVerifyHeader = Utils.encodeBase64(requestJson) + DEBIT_API + salt;
             xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            headers.add(X_REDIRECT_URL, phonePeCallBackURL + "?sid=" + SessionContextHolder.getId());
+            headers.add(X_REDIRECT_URL, phonePeCallBackURL + SessionContextHolder.getId());
             headers.add(X_REDIRECT_MODE, HttpMethod.POST.name());
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
-            URI uri = restTemplate.postForLocation(phonePeBaseUrl + debitCall, requestEntity);
+            URI uri = restTemplate.postForLocation(phonePeBaseUrl + DEBIT_API, requestEntity);
             return new URI(phonePeBaseUrl + uri);
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());

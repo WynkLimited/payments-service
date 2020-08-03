@@ -32,15 +32,11 @@ apb:
 ###### Redis Store Props #######
 session:
   redis:
-    name: session-store:prod
+    name: session-store:local
     mode: cluster
-    useSsl: false
     usePooling: true
-    password: ##
-    enableJmx: true
-    jmxPrefix: session-store:prod
     cluster:
-      nodes: 127.0.0.1,127.0.0.1
+      nodes: wcf-redis-production.8hya7e.clustercfg.aps1.cache.amazonaws.com
     connection:
       timeout: 1000
       maxTotal: 200
@@ -50,13 +46,13 @@ session:
 ##### mysql database props #####
 spring:
   datasource:
-    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+    url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
     username: admin
-    password: o7QZ?!n=eu
+    password: H3ePp15ZdKfDyE7Tzp6M
     hikari:
-      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+      jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
       username: admin
-      password: o7QZ?!n=eu
+      password: H3ePp15ZdKfDyE7Tzp6M
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false
@@ -101,7 +97,7 @@ payment:
     queue:
       reconciliation:
         enabled: true
-        name: wcf-prod-payment-reconciliation
+        name: wcf-production-revenue-payment-reconcilation
         sqs:
           messages:
             producer:
@@ -114,7 +110,7 @@ payment:
               waitTimeInSeconds: 10
       renewal:
         enabled: false
-        name: wcf-prod-staging-payment-renewal
+        name: wcf-production-revenue-renewal
         sqs:
           messages:
             producer:
@@ -127,7 +123,7 @@ payment:
               waitTimeInSeconds: 10
       charging:
         enabled: false
-        name: wcf-prod-payment-charging.fifo
+        name: wcf-production-revenue-payment-charging.fifo
         sqs:
           messages:
             producer:
@@ -153,7 +149,7 @@ payment:
               waitTimeInSeconds: 10
       recurrence:
         enabled: true
-        name: wcf-prod-payment-recurring
+        name: wcf-production-revenue-recurring
         sqs:
           messages:
             extractor:

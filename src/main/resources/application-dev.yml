@@ -222,7 +222,7 @@ http:
 service:
   subscription:
     api:
-      root: https://subscription-staging.wynk.in
+      root: http://subscription-staging.wcf.internal
 
 cors:
   allowed:

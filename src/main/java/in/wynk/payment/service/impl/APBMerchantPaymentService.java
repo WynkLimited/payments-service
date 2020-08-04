@@ -6,7 +6,6 @@ import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.Currency;
-import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.CommonUtils;
@@ -160,7 +159,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         int planId = chargingRequest.getPlanId();
         PlanDTO planDTO = cachingService.getPlan(planId);
         double amount = planDTO.getFinalPrice();
-        final TransactionEvent eventType = planDTO.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
+        final TransactionEvent eventType = chargingRequest.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
         Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, APB_GATEWAY, eventType);
         String apbRedirectURL = generateApbRedirectURL(transaction);
         return BaseResponse.redirectResponse(apbRedirectURL);

@@ -11,6 +11,8 @@ import lombok.*;
 public class ChargingRequest {
 
     private int planId;
-    private PaymentCode paymentCode;
+    private boolean autoRenew;
     private String couponId;
+    private PaymentCode paymentCode;
+
 }

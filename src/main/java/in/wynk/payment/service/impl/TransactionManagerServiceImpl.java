@@ -3,7 +3,6 @@ package in.wynk.payment.service.impl;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -83,7 +82,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             TransactionStatus finalTransactionStatus = transaction.getStatus();
 
             if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                if (selectedPlan.getPlanType() == PlanType.SUBSCRIPTION) {
+                if (transaction.getType() == TransactionEvent.SUBSCRIBE) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);

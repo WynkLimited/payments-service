@@ -36,12 +36,17 @@ session:
     mode: cluster
     usePooling: true
     cluster:
-      nodes: wcf-redis-production.8hya7e.clustercfg.aps1.cache.amazonaws.com
+      nodes: wcf-redis-production.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
       timeout: 1000
       maxTotal: 200
       minIdle: 50
       maxIdle: 100
+
+###### CORS config #####
+cors:
+  allowed:
+    origins: "*"
 
 ##### mysql database props #####
 spring:
@@ -100,53 +105,53 @@ payment:
         name: wcf-production-revenue-payment-reconcilation
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       renewal:
         enabled: false
         name: wcf-production-revenue-renewal
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       charging:
         enabled: false
         name: wcf-production-revenue-payment-charging.fifo
         sqs:
           messages:
-            producer:
-              delayInSecond: 180
-            consumer:
-              delay: 20
-              delayTimeUnit: SECONDS
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       subscription:
         enabled: false
         name: wcf-prod-subscription
         sqs:
           messages:
-            producer:
-              delayInSecond: 20
-            consumer:
-              delay: 1
-              delayTimeUnit: MINUTES
             extractor:
               batchSize: 5
               waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 20
+          consumer:
+            delay: 1
+            delayTimeUnit: MINUTES
       recurrence:
         enabled: true
         name: wcf-production-revenue-recurring
@@ -221,7 +226,7 @@ http:
 service:
   subscription:
     api:
-      root: https://subscription.wynk.in
+      root: http://subscription.wcf.internal
 
 webview:
   host: https://pay.wynk.in
@@ -232,7 +237,7 @@ wynk:
     enabled: true
     sources:
       payment:
-        nodes: 10.80.0.68,10.80.0.73 #TODO: need to point to prod.
+        nodes: 10.40.12.139,10.40.12.140,10.40.12.133
         username:
         password:
         database: payment

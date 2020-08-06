@@ -19,12 +19,7 @@ import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.itune.ItunesCallbackRequest;
-import in.wynk.payment.dto.itune.ItunesReceipt;
-import in.wynk.payment.dto.itune.ItunesReceiptType;
-import in.wynk.payment.dto.itune.ItunesStatusCodes;
-import in.wynk.payment.dto.itune.ItunesVerificationRequest;
-import in.wynk.payment.dto.itune.LatestReceiptInfo;
+import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -40,6 +35,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
@@ -69,18 +66,20 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     @Value("${payment.status.web.url}")
     private String statusWebUrl;
 
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
     private final Gson gson;
     private final ObjectMapper mapper;
-    private final RestTemplate restTemplate;
     private final ItunesIdUidDao itunesIdUidDao;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, RestTemplate restTemplate, ItunesIdUidDao itunesIdUidDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ItunesIdUidDao itunesIdUidDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.gson = gson;
         this.mapper = mapper;
-        this.restTemplate = restTemplate;
         this.itunesIdUidDao = itunesIdUidDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;

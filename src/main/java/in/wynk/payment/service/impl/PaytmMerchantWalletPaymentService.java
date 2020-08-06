@@ -42,6 +42,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
@@ -108,11 +109,13 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
-    @Autowired
-    private RestTemplate restTemplate;
 
     @Autowired
     private Gson gson;
+
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
 
     @Autowired
     private IUserPaymentsManager userPaymentsManager;

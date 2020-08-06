@@ -43,6 +43,7 @@ import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,13 +68,6 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService {
 
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher sqsMessagePublisher;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
-    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
     @Value("${payment.encKey}")
@@ -93,13 +87,21 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
 
+    private final Gson gson;
+    private final PaymentCachingService cachingService;
+    private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManager;
+    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
     public PayUMerchantPaymentService(Gson gson,
-                                      RestTemplate restTemplate,
                                       PaymentCachingService paymentCachingService,
                                       ITransactionManagerService transactionManager,
                                       @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher, ApplicationEventPublisher eventPublisher) {
         this.gson = gson;
-        this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
         this.cachingService = paymentCachingService;
         this.transactionManager = transactionManager;

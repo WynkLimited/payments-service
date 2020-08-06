@@ -43,6 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
@@ -70,12 +72,6 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
 public class APBMerchantPaymentService implements IRenewalMerchantPaymentService {
 
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher messagePublisher;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
     @Value("${apb.callback.url}")
     private String CALLBACK_URL;
     @Value("${apb.merchant.id}")
@@ -93,9 +89,17 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
 
-    public APBMerchantPaymentService(Gson gson, RestTemplate restTemplate, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    private final Gson gson;
+    private final PaymentCachingService cachingService;
+    private final ISQSMessagePublisher messagePublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManager;
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
+    public APBMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.gson = gson;
-        this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.messagePublisher = messagePublisher;
         this.eventPublisher = eventPublisher;

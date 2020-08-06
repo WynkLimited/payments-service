@@ -22,6 +22,8 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
@@ -37,11 +39,6 @@ import java.net.URI;
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
 public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService {
 
-    private final ObjectMapper mapper;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
     @Value("${payment.merchant.amazonIap.secret}")
     private String amazonIapSecret;
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
@@ -49,9 +46,16 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     @Value("${payment.status.web.url}")
     private String statusWebUrl;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, RestTemplate restTemplate, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    private final ObjectMapper mapper;
+    private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManager;
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.mapper = mapper;
-        this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;

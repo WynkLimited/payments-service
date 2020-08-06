@@ -41,15 +41,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -59,14 +55,9 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
@@ -74,13 +65,8 @@ import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
 public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService {
 
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ISQSMessagePublisher sqsMessagePublisher;
-    private final ITransactionManagerService transactionManager;
     private static final String DEBIT_API = "/v3/debit";
+
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
     @Value("${payment.merchant.phonepe.callback.url}")
@@ -96,13 +82,20 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
 
+    private final Gson gson;
+    private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ITransactionManagerService transactionManager;
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
     public PhonePeMerchantPaymentService(Gson gson,
-                                         RestTemplate restTemplate,
                                          PaymentCachingService cachingService,
                                          ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager,
                                          @Qualifier(SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher) {
         this.gson = gson;
-        this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;

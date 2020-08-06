@@ -32,7 +32,7 @@ apb:
 ###### Redis Store Props #######
 session:
   redis:
-    name: session-store:local
+    name: session-store:prod
     mode: cluster
     usePooling: true
     cluster:
@@ -46,18 +46,20 @@ session:
 ###### CORS config #####
 cors:
   allowed:
-    origins: "*"
+    origins:
+      - "https://pay.wynk.in"
+      - "http://subscription.wcf.internal"
 
 ##### mysql database props #####
 spring:
   datasource:
     url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-    username: admin
-    password: H3ePp15ZdKfDyE7Tzp6M
+    username: huygens
+    password: 2dtRAHGI5OhfBj1hNkpd
     hikari:
       jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-      username: admin
-      password: H3ePp15ZdKfDyE7Tzp6M
+      username: huygens
+      password: 2dtRAHGI5OhfBj1hNkpd
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false
@@ -218,6 +220,21 @@ http:
           validateAfterInActivity: 100
           socket:
             timeout: 6000
+            factory:
+              type: both
+          request:
+            timeout: 1000
+    paymentGatewayHttpTemplate:
+      pool:
+        connection:
+          max: 2000
+          maxPerHost: 500
+          timeout: 2000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
             factory:
               type: both
           request:

@@ -8,8 +8,13 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.session.aspect.advice.ManageSession;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
@@ -17,6 +22,8 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 @RequestMapping("/wynk/v1/s2s")
 public class RevenuePaymentsS2SHandler {
 
+    @ApiOperation("Accepts the receipt of various IAP partners." +
+            "\nAn alernate API for old itunes/receipt and /amazon-iap/verification API")
     @PostMapping("/verify/receipt/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "receiptVerification")

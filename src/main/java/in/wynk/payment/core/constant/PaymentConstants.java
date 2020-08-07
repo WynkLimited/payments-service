@@ -7,7 +7,6 @@ public interface PaymentConstants {
     String ERROR = "error";
     String SUBSID = "subsId";
     String STATUS = "status";
-    String SESSION_ID = "sid";
     String REQUEST = "request";
     String PENDING = "pending";
     String SUCCESS = "success";

@@ -63,6 +63,13 @@ import static in.wynk.commons.constants.Constants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
+/**
+ * TODO:
+ * txn decouple
+ * payment error decouple
+ * merchant txn decouple
+ * polling queue decouple
+ */
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService {

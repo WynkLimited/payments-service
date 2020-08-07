@@ -59,7 +59,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 .type(event.name()).build());
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         if (Objects.nonNull(sessionDTO)) {
-            sessionDTO.put(SessionKeys.WYNK_TRANSACTION_ID, transaction.getIdStr());
+            sessionDTO.put(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
         }
         return transaction;
     }

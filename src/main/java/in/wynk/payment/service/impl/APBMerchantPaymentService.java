@@ -110,7 +110,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
 
-        String txnId = sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID);
+        String txnId = sessionDTO.get(SessionKeys.TRANSACTION_ID);
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);

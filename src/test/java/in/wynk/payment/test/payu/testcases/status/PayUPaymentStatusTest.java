@@ -92,7 +92,7 @@ public class PayUPaymentStatusTest {
     @Test
     @Order(1)
     public void handleOneTimePaymentStatusTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.WYNK_TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
+        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
         ChargingStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest();
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
@@ -103,7 +103,7 @@ public class PayUPaymentStatusTest {
     @Test
     @Order(2)
     public void handleRecurringPaymentStatusTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.WYNK_TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
+        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
         ChargingStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest();
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);

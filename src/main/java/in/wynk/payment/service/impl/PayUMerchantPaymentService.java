@@ -22,8 +22,17 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.payu.*;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.payu.CardDetails;
+import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
+import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.PayUCommand;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.dto.payu.VerificationType;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
@@ -57,10 +66,16 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.Constants.OS;
+import static in.wynk.commons.constants.Constants.SLASH;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -309,7 +324,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         paylaod.put(ERROR, PAYU_REDIRECT_MESSAGE);
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
-        putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
+        putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getId().toString());
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
 
         PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
@@ -419,7 +434,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private String processCallback(CallbackRequest callbackRequest) {
-        final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
+        final String transactionId = getValueFromSession(SessionKeys.TRANSACTION_ID).toString();
         final Transaction transaction = transactionManager.get(transactionId);
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();

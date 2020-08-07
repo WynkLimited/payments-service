@@ -44,7 +44,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -54,9 +59,14 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.Constants.MSISDN;
+import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.Constants.UID;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
@@ -124,7 +134,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, selectedPlan.getFinalPrice(), PaymentCode.PHONEPE_WALLET, eventType);
             String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
 
-            putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getIdStr());
+            putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
             putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET.getCode());
 
             PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
@@ -220,7 +230,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private URI processCallback(CallbackRequest callbackRequest) {
-        final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID);
+        final String transactionId = getValueFromSession(SessionKeys.TRANSACTION_ID);
         final Transaction transaction = transactionManager.get(transactionId);
         try {
             Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();

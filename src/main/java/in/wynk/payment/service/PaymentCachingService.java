@@ -1,6 +1,7 @@
 package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.State;
@@ -50,8 +51,11 @@ public class PaymentCachingService {
     @PostConstruct
     @AnalyseTransaction(name = "refreshInMemoryCache")
     public void init() {
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("cacheLoadInit", true);
         loadPayments();
         loadPlans();
+        AnalyticService.update("cacheLoadCompleted", true);
     }
 
     private void loadPayments() {

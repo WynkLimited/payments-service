@@ -91,6 +91,8 @@ spring:
 #### logging props ####
 logging:
   path: /tmp
+  level:
+    in.wynk.*: DEBUG
 
 ####### payment props #######
 payment:

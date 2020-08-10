@@ -62,7 +62,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static in.wynk.commons.constants.Constants.*;
-import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
@@ -157,7 +156,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Override
     public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(PAYMENT_CODE, APB_GATEWAY);
         final String msisdn = sessionDTO.get(MSISDN);
         final String uid = sessionDTO.get(UID);
         int planId = chargingRequest.getPlanId();

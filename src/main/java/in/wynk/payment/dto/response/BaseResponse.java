@@ -1,6 +1,11 @@
 package in.wynk.payment.dto.response;
 
-import lombok.*;
+import in.wynk.payment.core.constant.PaymentConstants;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.ToString;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.http.HttpHeaders;
@@ -46,7 +51,7 @@ public class BaseResponse<R> {
 
     public static BaseResponse<Object> status(boolean success){
         Map<String, Boolean> status =  new HashMap<>();
-        status.put("success", success);
+        status.put(PaymentConstants.SUCCESS, success);
         return BaseResponse.builder().body(status).status(HttpStatus.OK).build();
     }
 

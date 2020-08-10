@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.PlanType;
@@ -19,7 +20,12 @@ import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.itune.*;
+import in.wynk.payment.dto.itune.ItunesCallbackRequest;
+import in.wynk.payment.dto.itune.ItunesReceipt;
+import in.wynk.payment.dto.itune.ItunesReceiptType;
+import in.wynk.payment.dto.itune.ItunesStatusCodes;
+import in.wynk.payment.dto.itune.ItunesVerificationRequest;
+import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -90,6 +96,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public BaseResponse<Void> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
         try {
             ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
+            AnalyticService.update(request);
             final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
             final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
             final Transaction transaction = transactionManager.initiateTransaction(request.getUid(), request.getMsisdn(), selectedPlan.getId(), selectedPlan.getPrice().getAmount(), PaymentCode.ITUNES, eventType);

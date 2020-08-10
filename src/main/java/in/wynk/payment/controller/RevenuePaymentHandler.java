@@ -4,9 +4,9 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.StatusMode;
-import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
@@ -62,13 +62,14 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
+    //TODO: add SID
     @PostMapping("/verify")
-    @AnalyseTransaction(name = "verify")
+    @AnalyseTransaction(name = "verifyUserPaymentBin")
     public ResponseEntity<?> verify(@RequestBody VerificationRequest request) {
-        IMerchantVerificationService verificationService;
+        AnalyticService.update(request);
         PaymentCode paymentCode = request.getPaymentCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantVerificationService.class);
+        IMerchantVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantVerificationService.class);
         BaseResponse<?> baseResponse = verificationService.doVerify(request);
         return baseResponse.getResponse();
     }
@@ -80,7 +81,7 @@ public class RevenuePaymentHandler {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
-        AnalyticService.update(SessionKeys.PAYMENT_CODE, paymentCode.name());
+        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);

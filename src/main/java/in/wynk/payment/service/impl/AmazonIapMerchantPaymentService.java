@@ -2,13 +2,18 @@ package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.constants.Constants;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -66,6 +71,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     public BaseResponse<Void> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
         try {
             final AmazonIapVerificationRequest request = (AmazonIapVerificationRequest) iapVerificationRequest;
+            AnalyticService.update(request);
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
             final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
             final String msisdn = sessionDTO.get(Constants.MSISDN);

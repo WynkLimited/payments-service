@@ -81,6 +81,10 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
+    <logger name="verifyUserPaymentBin" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <logger name="refreshInMemoryCache" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -103,6 +107,10 @@
     </logger>
 
     <logger name="walletAddMoney" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="paymentOptions" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 

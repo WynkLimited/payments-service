@@ -1,37 +1,46 @@
 package in.wynk.payment.dto.response;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
 
 @Builder
-@Data
+@Getter
+@AnalysedEntity
 public class PaymentOptionsDTO {
 
     private List<PaymentGroupsDTO> paymentGroups;
-    private Double discountedPrice;
-    private Double price;
-    private Boolean priceChanged;
+    private double discountedPrice;
+    private double price;
+    private boolean priceChanged;
 
     @Builder
-    @Data
+    @Getter
+    @AnalysedEntity
     public static class PaymentGroupsDTO {
         List<PaymentMethodDTO> paymentMethods;
         private PaymentGroup paymentGroup;
     }
 
-    @Data
+    @Getter
     @AllArgsConstructor
     @Builder
+    @AnalysedEntity
     public static class PaymentMethodDTO {
+        @Analysed
         private String group;
+        @Analysed
         private Map<String, Object> meta;
+        @Analysed
         private String displayName;
+        @Analysed
         private String paymentCode;
 
         public PaymentMethodDTO(PaymentMethod method) {

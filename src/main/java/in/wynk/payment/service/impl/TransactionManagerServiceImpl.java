@@ -53,6 +53,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event) {
+        log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}",uid, planId, amount, paymentCode.getCode(), event.getValue());
         Transaction transaction = upsert(Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance()).uid(uid).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
@@ -60,6 +61,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         if (Objects.nonNull(sessionDTO)) {
             sessionDTO.put(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
+            sessionDTO.put(SessionKeys.PAYMENT_CODE, paymentCode.getCode());
         }
         return transaction;
     }

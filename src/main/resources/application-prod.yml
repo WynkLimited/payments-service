@@ -20,7 +20,7 @@ apb:
     inquiry:
       url: https://ecom.airtelbank.com/ecom/v2/inquiry
   callback:
-    url: http://payments.wynk.in/wynk/wynk/v1/paymentcallback/apb
+    url: https://payments.wynk.in/wynk/v1/payment/callback/
   merchant:
     id:
   salt:

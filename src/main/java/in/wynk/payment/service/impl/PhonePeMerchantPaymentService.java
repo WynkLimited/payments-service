@@ -134,8 +134,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, selectedPlan.getFinalPrice(), PaymentCode.PHONEPE_WALLET, eventType);
             String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
 
-            putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
-            putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET.getCode());
+//            putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
+//            putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET.getPaymentCode());
 
             PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
             publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);

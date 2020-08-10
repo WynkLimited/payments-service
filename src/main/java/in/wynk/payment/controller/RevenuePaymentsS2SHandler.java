@@ -2,8 +2,8 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @RestController
-@RequestMapping("/wynk/v1/s2s")
+@RequestMapping("/wynk/s2s/v1")
 public class RevenuePaymentsS2SHandler {
 
     @ApiOperation("Accepts the receipt of various IAP partners." +

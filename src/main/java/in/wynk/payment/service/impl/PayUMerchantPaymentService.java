@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PaymentRequestType;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
@@ -27,6 +26,7 @@ import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.dto.payu.PaymentRequestType;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
@@ -267,7 +267,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ",e);
+            log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
@@ -324,8 +324,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         paylaod.put(ERROR, PAYU_REDIRECT_MESSAGE);
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
-        putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getId().toString());
-        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
 
         PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
         publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
@@ -526,7 +524,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
+    public BaseResponse<?> doVerify(VerificationRequest verificationRequest) {
         VerificationType verificationType = verificationRequest.getVerificationType();
         switch (verificationType) {
             case VPA:
@@ -534,14 +532,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
                 if (verificationResponse.getIsVPAValid() == 1)
                     verificationResponse.setValid(true);
-                return BaseResponse.<String>builder().body(gson.toJson(verificationResponse)).status(HttpStatus.OK).build();
+                return BaseResponse.<PayuVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
                 PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
                 if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
                     payUCardInfo.setValid(true);
-                return BaseResponse.<String>builder().body(gson.toJson(payUCardInfo)).status(HttpStatus.OK).build();
+                return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
         }
-        return null;
+        return BaseResponse.status(false);
     }
 }

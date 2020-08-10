@@ -1,11 +1,13 @@
 package in.wynk.payment.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.commons.enums.TransactionStatus;
 import lombok.Builder;
 import lombok.Getter;
 
 @Builder
 @Getter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChargingStatusResponse {
     private TransactionStatus transactionStatus;
     private String tid;

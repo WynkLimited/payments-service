@@ -2,6 +2,8 @@ package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
@@ -24,12 +26,20 @@ import static in.wynk.payment.core.constant.BeanConstant.ITUNES_PAYMENT_SERVICE;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@AnalysedEntity
 public class IapVerificationRequest {
-
+    @Analysed
     private String uid;
+    @Analysed
     private int planId;
+    @Analysed
     private String deviceId;
+    @Analysed
     private String msisdn;
+    @Analysed
+    private String service;
+    @Analysed
+    private String sid;
     private PaymentCode paymentCode;
 
 }

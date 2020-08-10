@@ -16,8 +16,10 @@ import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
 import in.wynk.payment.service.IMerchantVerificationService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -32,14 +34,17 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 @RequestMapping("/wynk/v1/payment")
 public class RevenuePaymentHandler {
 
+    @Autowired
+    private PaymentManager paymentManager;
+
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
     public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody ChargingRequest request) {
-        PaymentCode paymentCode = request.getPaymentCode();
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        BaseResponse<?> baseResponse = chargingService.doCharging(request);
+//        PaymentCode paymentCode = request.getPaymentCode();
+//        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
+//        IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
+        BaseResponse<?> baseResponse =  paymentManager.doCharging(request);
         return baseResponse.getResponse();
     }
 

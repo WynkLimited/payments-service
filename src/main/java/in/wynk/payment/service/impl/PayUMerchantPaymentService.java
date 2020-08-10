@@ -120,8 +120,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
-        Map<String, String> payUpayload = startPaymentChargingForPayU(chargingRequest);
+    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest, Transaction transaction) {
+        Map<String, String> payUpayload = startPaymentChargingForPayU(chargingRequest, transaction);
         String encryptedParams;
         try {
             encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUpayload), encryptionKey);
@@ -131,7 +131,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put(PAYU_CHARGING_INFO, encryptedParams);
-
         return BaseResponse.<Map<String, String>>builder()
                 .body(queryParams)
                 .status(HttpStatus.OK)
@@ -272,21 +271,23 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
     }
 
-    private Map<String, String> startPaymentChargingForPayU(ChargingRequest chargingRequest) {
+    private Map<String, String> startPaymentChargingForPayU(ChargingRequest chargingRequest, Transaction transaction) {
         String udf1 = StringUtils.EMPTY;
         String reqType = PaymentRequestType.DEFAULT.name();
-
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final int planId = chargingRequest.getPlanId();
-        final String uid = sessionDTO.get(SessionKeys.UID);
-        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
+//
+//        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final int planId = transaction.getPlanId();
+//        final String uid = sessionDTO.get(SessionKeys.UID);
+//        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();
+//
+//        final TransactionEvent eventType = chargingRequest.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
 
-        final TransactionEvent eventType = chargingRequest.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
+//        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, chargingRequest.getPlanId(), finalPlanAmount, PaymentCode.PAYU, eventType);
 
-        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, chargingRequest.getPlanId(), finalPlanAmount, PaymentCode.PAYU, eventType);
-
+        String uid = transaction.getUid();
+        String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> paylaod = new HashMap<>();
         if (!PlanType.ONE_TIME_SUBSCRIPTION.equals(selectedPlan.getPlanType())) {
@@ -316,9 +317,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
         putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
-
-        PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
-        publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
+//
+//        PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
+//        publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
 
         return paylaod;
     }

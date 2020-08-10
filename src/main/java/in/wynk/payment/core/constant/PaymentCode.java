@@ -1,5 +1,7 @@
 package in.wynk.payment.core.constant;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.exception.WynkRuntimeException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +11,7 @@ import static in.wynk.payment.core.constant.BeanConstant.*;
 
 @Getter
 @RequiredArgsConstructor
+@AnalysedEntity
 public enum PaymentCode {
 
     AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE),
@@ -19,7 +22,7 @@ public enum PaymentCode {
     GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE),
     APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE),
     SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE);
-
+    @Analysed
     private final String code;
 
     public static PaymentCode getFromCode(String codeStr) {

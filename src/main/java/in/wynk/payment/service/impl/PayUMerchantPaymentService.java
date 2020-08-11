@@ -114,14 +114,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        String returnUrl = processCallback(callbackRequest);
+    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
+        String returnUrl = processCallback(callbackRequest, transaction);
         return BaseResponse.redirectResponse(returnUrl);
     }
 
     @Override
     public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest, Transaction transaction) {
-        Map<String, String> payUpayload = startPaymentChargingForPayU(chargingRequest, transaction);
+        Map<String, String> payUpayload = startPaymentChargingForPayU(transaction);
         String encryptedParams;
         try {
             encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUpayload), encryptionKey);
@@ -271,7 +271,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
     }
 
-    private Map<String, String> startPaymentChargingForPayU(ChargingRequest chargingRequest, Transaction transaction) {
+    private Map<String, String> startPaymentChargingForPayU(Transaction transaction) {
         String udf1 = StringUtils.EMPTY;
         String reqType = PaymentRequestType.DEFAULT.name();
 //
@@ -424,9 +424,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return EncryptionUtils.generateSHA512Hash(finalString);
     }
 
-    private String processCallback(CallbackRequest callbackRequest) {
-        final String transactionId = getValueFromSession(SessionKeys.WYNK_TRANSACTION_ID).toString();
-        final Transaction transaction = transactionManager.get(transactionId);
+    private String processCallback(CallbackRequest callbackRequest, Transaction transaction) {
+        final String transactionId = transaction.getIdStr();
+//        final Transaction transaction = transactionManager.get(transactionId);
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());

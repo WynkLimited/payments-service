@@ -137,7 +137,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
+    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final int planId = sessionDTO.get(PLAN_ID);
         Map<String, List<String>> params = (Map<String, List<String>>) callbackRequest.getBody();
@@ -150,8 +150,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         return withdrawFromWallet(ChargingRequest.builder().planId(planId).paymentCode(PAYTM_WALLET).build());
     }
 
+    //TODO: use txn provided by payment manager and remove redundant code
     @Override
-    public BaseResponse<Void> doCharging(ChargingRequest request) {
+    public BaseResponse<Void> doCharging(ChargingRequest request, Transaction transaction) {
         return withdrawFromWallet(request);
     }
 

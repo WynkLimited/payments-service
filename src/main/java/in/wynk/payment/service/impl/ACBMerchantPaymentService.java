@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
@@ -13,12 +14,12 @@ import org.springframework.stereotype.Service;
 public class ACBMerchantPaymentService implements IRenewalMerchantPaymentService {
 
     @Override
-    public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
+    public BaseResponse<?> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
         return null;
     }
 
     @Override
-    public BaseResponse<?> doCharging(ChargingRequest chargingRequest) {
+    public BaseResponse<?> doCharging(ChargingRequest chargingRequest, Transaction transaction) {
         return null;
     }
 

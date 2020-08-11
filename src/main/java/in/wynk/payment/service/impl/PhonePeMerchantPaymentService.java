@@ -99,14 +99,15 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
+    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
         URI returnUrl = processCallback(callbackRequest);
         return BaseResponse.redirectResponse(returnUrl);
 
     }
 
+    //TODO: use txn provided by payment manager and remove redundant code
     @Override
-    public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
+    public BaseResponse<Void> doCharging(ChargingRequest chargingRequest, Transaction txn) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(UID);
         final String msisdn = sessionDTO.get(MSISDN);

@@ -102,7 +102,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
+    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
 
@@ -118,7 +118,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         String sessionId = SessionContextHolder.get().getId().toString();
 
         try {
-            final Transaction transaction = transactionManager.get(txnId);
+//            final Transaction transaction = transactionManager.get(txnId);
             if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
                 transactionManager.updateAndPublishSync(transaction, this::fetchAPBTxnStatus);
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
@@ -150,8 +150,9 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         }
     }
 
+    //TODO: use txn provided by payment manager and remove redundant code
     @Override
-    public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
+    public BaseResponse<Void> doCharging(ChargingRequest chargingRequest, Transaction txn) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         sessionDTO.put(PAYMENT_CODE, APB_GATEWAY);
         final String msisdn = sessionDTO.get(MSISDN);

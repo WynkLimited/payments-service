@@ -105,7 +105,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest) {
+    public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest, Transaction txn) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue(gson.toJson(callbackRequest.getBody()), ItunesCallbackRequest.class);

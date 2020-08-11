@@ -1,6 +1,8 @@
 package in.wynk.payment.core.constant;
 
-public interface PaymentConstants {
+import in.wynk.commons.constants.BaseConstants;
+
+public interface PaymentConstants extends BaseConstants {
 
     String COLON = ":";
     String TXN_ID = "tid";

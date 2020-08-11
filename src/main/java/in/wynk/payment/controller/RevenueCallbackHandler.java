@@ -8,6 +8,8 @@ import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
+import in.wynk.payment.service.PaymentManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,15 +28,18 @@ public class RevenueCallbackHandler {
         this.gson = gson;
     }
 
+    @Autowired
+    private PaymentManager paymentManager;
+
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handlePartnerCallback(@PathVariable String partner, @RequestBody Map<String, Object> payload) {
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
-        PaymentCode paymentCode = PaymentCode.getFromCode(partner);
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
-        BaseResponse<?> baseResponse = callbackService.handleCallback(request);
+//        PaymentCode paymentCode = PaymentCode.getFromCode(partner);
+//        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
+//        AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
+//        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(request);
         return baseResponse.getResponse();
     }
 }

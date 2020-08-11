@@ -8,7 +8,11 @@ import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.State;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.Card;
+import in.wynk.payment.core.dao.entity.Payment;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.core.dao.entity.Wallet;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,7 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.BaseConstants.MSISDN;
+import static in.wynk.commons.constants.BaseConstants.SERVICE;
+import static in.wynk.commons.constants.BaseConstants.UID;
 
 public class PaymentTestUtils {
 

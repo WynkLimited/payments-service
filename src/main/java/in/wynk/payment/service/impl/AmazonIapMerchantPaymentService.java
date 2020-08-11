@@ -3,7 +3,7 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.commons.constants.Constants;
+import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionEvent;
@@ -74,7 +74,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             AnalyticService.update(request);
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
             final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
-            final String msisdn = sessionDTO.get(Constants.MSISDN);
+            final String msisdn = sessionDTO.get(BaseConstants.MSISDN);
 
             Transaction transaction = transactionManager.initiateTransaction(request.getUid(), msisdn, selectedPlan.getId(), selectedPlan.getPrice().getAmount(), PaymentCode.AMAZON_IAP, TransactionEvent.PURCHASE);
             transaction.putValueInPaymentMetaData("amazonIapVerificationRequest", request);

@@ -114,7 +114,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue(gson.toJson(callbackRequest.getBody()), ItunesCallbackRequest.class);
+            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
             if (itunesCallbackRequest.getLatestReceiptInfo() != null) {
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
@@ -135,7 +135,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             }
             return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(finalTransactionStatus).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
+            throw new WynkRuntimeException(WynkErrorType.UT999, "Error while handling iTunes callback");
         }
     }
 

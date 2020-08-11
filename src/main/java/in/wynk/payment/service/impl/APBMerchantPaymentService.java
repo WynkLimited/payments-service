@@ -1,7 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
-import in.wynk.commons.constants.Constants;
+import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
@@ -61,7 +61,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
@@ -196,7 +196,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     private String getReturnUri(Transaction txn, String formattedDate, String serviceName) throws Exception {
         String sessionId = SessionContextHolder.get().getId().toString();
-        String hashText = MERCHANT_ID + Constants.HASH + txn.getIdStr() + Constants.HASH + txn.getAmount() + Constants.HASH + formattedDate + Constants.HASH + serviceName + Constants.HASH + SALT;
+        String hashText = MERCHANT_ID + BaseConstants.HASH + txn.getIdStr() + BaseConstants.HASH + txn.getAmount() + BaseConstants.HASH + formattedDate + BaseConstants.HASH + serviceName + BaseConstants.HASH + SALT;
         String hash = CommonUtils.generateHash(hashText, SHA_512);
         return new URIBuilder(APB_INIT_PAYMENT_URL)
                 .addParameter(MID, MERCHANT_ID)
@@ -207,7 +207,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .addParameter(DATE, formattedDate)
                 .addParameter(CURRENCY, Currency.INR.name())
                 .addParameter(CUSTOMER_MOBILE, txn.getMsisdn())
-                .addParameter(MERCHANT_NAME, Constants.WYNK)
+                .addParameter(MERCHANT_NAME, BaseConstants.WYNK)
                 .addParameter(ApbConstants.HASH, hash)
                 .addParameter(SERVICE, serviceName)
                 .build().toString();
@@ -238,7 +238,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         try {
             URI uri = new URI(APB_TXN_INQUIRY_URL);
             String txnDate = CommonUtils.getFormattedDate(transaction.getInitTime().getTimeInMillis(), "ddMMyyyyHHmmss");
-            String hashText = MERCHANT_ID + Constants.HASH + txnId + Constants.HASH + transaction.getAmount() + Constants.HASH + txnDate + Constants.HASH + SALT;
+            String hashText = MERCHANT_ID + BaseConstants.HASH + txnId + BaseConstants.HASH + transaction.getAmount() + BaseConstants.HASH + txnDate + BaseConstants.HASH + SALT;
             String hashValue = CommonUtils.generateHash(hashText, SHA_512);
             ApbTransactionInquiryRequest apbTransactionInquiryRequest = ApbTransactionInquiryRequest.builder()
                     .feSessionId(UUID.randomUUID().toString())
@@ -277,9 +277,9 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     private boolean verifyHash(ApbStatus status, String merchantId, String txnId, String externalTxnId, String amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
         String str = StringUtils.EMPTY;
         if (status == ApbStatus.SUC) {
-            str = merchantId + Constants.HASH + externalTxnId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + txnDate + Constants.HASH + SALT;
+            str = merchantId + BaseConstants.HASH + externalTxnId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + txnDate + BaseConstants.HASH + SALT;
         } else if (status == ApbStatus.FAL) {
-            str = merchantId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + SALT + Constants.HASH + code + "#FAL";
+            str = merchantId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + SALT + BaseConstants.HASH + code + "#FAL";
         }
         String generatedHash = CommonUtils.generateHash(str, SHA_512);
         return requestHash.equals(generatedHash);

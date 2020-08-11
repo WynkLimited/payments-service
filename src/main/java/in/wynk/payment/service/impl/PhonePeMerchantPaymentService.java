@@ -59,9 +59,9 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.BaseConstants.MSISDN;
+import static in.wynk.commons.constants.BaseConstants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.BaseConstants.UID;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE;

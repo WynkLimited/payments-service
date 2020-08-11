@@ -21,9 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.MSISDN;
-import static in.wynk.commons.constants.Constants.SERVICE;
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.BaseConstants.MSISDN;
+import static in.wynk.commons.constants.BaseConstants.SERVICE;
+import static in.wynk.commons.constants.BaseConstants.UID;
 
 public class ApbPaymentsTest extends PaymentsTest {
 

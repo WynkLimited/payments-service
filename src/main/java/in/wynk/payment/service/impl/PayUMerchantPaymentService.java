@@ -73,9 +73,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static in.wynk.commons.constants.Constants.ONE_DAY_IN_MILLI;
-import static in.wynk.commons.constants.Constants.OS;
-import static in.wynk.commons.constants.Constants.SLASH;
+import static in.wynk.commons.constants.BaseConstants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.BaseConstants.OS;
+import static in.wynk.commons.constants.BaseConstants.SLASH;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 

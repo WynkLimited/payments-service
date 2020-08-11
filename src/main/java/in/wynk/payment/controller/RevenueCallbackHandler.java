@@ -2,7 +2,6 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import com.google.gson.Gson;
 import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
@@ -15,8 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 
@@ -24,19 +21,13 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 @RequestMapping("wynk/v1/callback")
 public class RevenueCallbackHandler {
 
-    private final Gson gson;
-
-    public RevenueCallbackHandler(Gson gson) {
-        this.gson = gson;
-    }
-
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handlePartnerCallback(@PathVariable String partner, @RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
+        AnalyticService.update(REQUEST_PAYLOAD, payload);
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         return baseResponse.getResponse();

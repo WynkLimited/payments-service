@@ -73,7 +73,7 @@ public class PaymentTestUtils {
         map.put(UID, DUMMY_UID);
         map.put(SERVICE, "airteltv");
         SessionDTO sessionDTO = new SessionDTO();
-        sessionDTO.setPayload(map);
+        sessionDTO.setSessionPayload(map);
         return sessionDTO;
     }
 
@@ -93,7 +93,7 @@ public class PaymentTestUtils {
         map.put(UID, DUMMY_UID);
         map.put(SERVICE, "airteltv");
         SessionDTO sessionDTO = new SessionDTO();
-        sessionDTO.setPayload(map);
+        sessionDTO.setSessionPayload(map);
         return sessionDTO;
     }
 }

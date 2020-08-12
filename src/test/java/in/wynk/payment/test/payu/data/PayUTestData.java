@@ -20,10 +20,17 @@ import in.wynk.session.dto.Session;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.dto.payu.PayUConstants.*;
+import static in.wynk.payment.dto.payu.PayUConstants.PAYU_COMMAND;
+import static in.wynk.payment.dto.payu.PayUConstants.PAYU_HASH;
+import static in.wynk.payment.dto.payu.PayUConstants.PAYU_MERCHANT_KEY;
+import static in.wynk.payment.dto.payu.PayUConstants.PAYU_VARIABLE1;
 
 public class PayUTestData {
 
@@ -70,7 +77,7 @@ public class PayUTestData {
         payload.put(SessionKeys.PACK_GROUP, "");
         return Session.<SessionDTO>builder()
                 .id(UUID.randomUUID())
-                .body(SessionDTO.builder().payload(payload).build())
+                .body(SessionDTO.builder().sessionPayload(payload).build())
                 .build();
     }
 

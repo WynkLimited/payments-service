@@ -37,7 +37,7 @@ public class ApbPaymentsTest extends PaymentsTest {
         map.put(UID, "SpTr7ZHG7ZrgfDMEl0");
         map.put(SERVICE, "airteltv");
         SessionDTO sessionDTO = new SessionDTO();
-        sessionDTO.setPayload(map);
+        sessionDTO.setSessionPayload(map);
         return sessionDTO;
     }
 

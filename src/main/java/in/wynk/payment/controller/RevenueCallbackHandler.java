@@ -23,6 +23,9 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 @RequestMapping("wynk/v1/callback")
 public class RevenueCallbackHandler {
 
+    @Autowired
+    private PaymentManager paymentManager;
+
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
@@ -30,8 +33,7 @@ public class RevenueCallbackHandler {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
-        BaseResponse<?> baseResponse = callbackService.handleCallback(request);
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode);
         return baseResponse.getResponse();
     }
 }

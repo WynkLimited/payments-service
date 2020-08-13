@@ -91,7 +91,6 @@ public class PaymentManager {
 
     public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode) {
         Transaction transaction = TransactionContext.get();
-        AnalyticService.update(SessionKeys.PAYMENT_CODE, paymentCode.name());
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         TransactionStatus initialTxnStatus = transaction.getStatus();
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);

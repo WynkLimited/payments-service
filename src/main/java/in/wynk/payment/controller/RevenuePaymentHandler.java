@@ -85,6 +85,7 @@ public class RevenuePaymentHandler {
         final Transaction transaction = transactionManager.get(transactionId);
         TransactionContext.set(transaction);
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
+        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode);
         return baseResponse.getResponse();
     }

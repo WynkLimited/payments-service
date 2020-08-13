@@ -42,8 +42,6 @@ import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
-import in.wynk.queue.constant.QueueErrorType;
-import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;

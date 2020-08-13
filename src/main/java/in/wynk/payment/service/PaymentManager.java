@@ -106,8 +106,7 @@ public class PaymentManager {
         TransactionContext.set(transaction);
         TransactionStatus existingStatus = transaction.getStatus();
         BaseResponse<?> baseResponse = statusService.status(request);
-        ChargingStatusResponse chargingStatusResponse = (ChargingStatusResponse) baseResponse.getBody();
-        TransactionStatus finalStatus = chargingStatusResponse.getTransactionStatus();
+        TransactionStatus finalStatus = ((ChargingStatusResponse) baseResponse.getBody()).getTransactionStatus();
         transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
         return baseResponse;
     }

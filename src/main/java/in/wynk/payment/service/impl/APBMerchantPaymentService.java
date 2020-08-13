@@ -154,9 +154,8 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         }
     }
 
-    //TODO: use txn provided by payment manager and remove redundant code
     @Override
-    public BaseResponse<Void> doCharging(ChargingRequest chargingRequest, Transaction txn) {
+    public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String msisdn = sessionDTO.get(MSISDN);
         final String uid = sessionDTO.get(UID);

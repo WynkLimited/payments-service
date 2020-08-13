@@ -179,9 +179,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         return withdrawFromWallet(ChargingRequest.builder().planId(planId).paymentCode(PAYTM_WALLET).build());
     }
 
-    //TODO: use txn provided by payment manager and remove redundant code
     @Override
-    public BaseResponse<Void> doCharging(ChargingRequest request, Transaction transaction) {
+    public BaseResponse<Void> doCharging(ChargingRequest request) {
         return withdrawFromWallet(request);
     }
 

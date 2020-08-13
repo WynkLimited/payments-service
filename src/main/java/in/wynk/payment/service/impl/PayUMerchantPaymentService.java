@@ -12,6 +12,7 @@ import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
+import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -138,8 +139,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest, Transaction transaction) {
-        Map<String, String> payUpayload = startPaymentChargingForPayU(transaction);
+    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
+        Map<String, String> payUpayload = startPaymentChargingForPayU(TransactionContext.get());
         String encryptedParams;
         try {
             encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUpayload), encryptionKey);
@@ -274,6 +275,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             }
 
             transaction.setStatus(finalTransactionStatus.name());
+            TransactionContext.set(transaction);
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
@@ -296,18 +298,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private Map<String, String> startPaymentChargingForPayU(Transaction transaction) {
         String udf1 = StringUtils.EMPTY;
         String reqType = PaymentRequestType.DEFAULT.name();
-//
-//        final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final int planId = transaction.getPlanId();
-//        final String uid = sessionDTO.get(SessionKeys.UID);
-//        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalPlanAmount = selectedPlan.getFinalPrice();
-//
-//        final TransactionEvent eventType = chargingRequest.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
-
-//        final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, chargingRequest.getPlanId(), finalPlanAmount, PaymentCode.PAYU, eventType);
-
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
@@ -339,11 +332,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
         putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
-//
-//        PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
-//        publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
-
-        return paylaod;
+       return paylaod;
     }
 
 
@@ -467,7 +456,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     payUCallbackRequestPayload.getResponseHash());
 
             if (isValidHash) {
-                transactionManager.updateAndPublishSync(transaction, this::fetchAndUpdateTransactionFromSource);
+                fetchAndUpdateTransactionFromSource(transaction);
+//                transactionManager.updateAndPublishSync(transaction, this::fetchAndUpdateTransactionFromSource);
 
                 if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());

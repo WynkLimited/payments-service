@@ -133,8 +133,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     //TODO: refactor
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
-        String returnUrl = processCallback(callbackRequest, transaction);
+    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
+        String returnUrl = processCallback(callbackRequest);
         return BaseResponse.redirectResponse(returnUrl);
     }
 
@@ -436,9 +436,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return EncryptionUtils.generateSHA512Hash(finalString);
     }
 
-    private String processCallback(CallbackRequest callbackRequest, Transaction transaction) {
+    private String processCallback(CallbackRequest callbackRequest) {
+        final Transaction transaction = TransactionContext.get();
         final String transactionId = transaction.getIdStr();
-//        final Transaction transaction = transactionManager.get(transactionId);
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());

@@ -166,7 +166,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
+    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final int planId = sessionDTO.get(PLAN_ID);
         Map<String, List<String>> params = (Map<String, List<String>>) callbackRequest.getBody();

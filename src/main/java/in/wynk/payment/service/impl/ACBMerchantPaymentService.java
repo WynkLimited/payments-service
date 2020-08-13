@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 public class ACBMerchantPaymentService implements IRenewalMerchantPaymentService {
 
     @Override
-    public BaseResponse<?> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
+    public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
         return null;
     }
 

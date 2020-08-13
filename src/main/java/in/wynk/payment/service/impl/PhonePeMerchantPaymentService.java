@@ -112,7 +112,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
+    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
         URI returnUrl = processCallback(callbackRequest);
         return BaseResponse.redirectResponse(returnUrl);
 

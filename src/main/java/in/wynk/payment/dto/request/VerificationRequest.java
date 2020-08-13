@@ -1,5 +1,7 @@
 package in.wynk.payment.dto.request;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.payu.VerificationType;
 import lombok.AllArgsConstructor;
@@ -11,8 +13,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@AnalysedEntity
 public class VerificationRequest {
-    VerificationType verificationType;
-    String verifyValue;
-    PaymentCode paymentCode;
+    @Analysed
+    private VerificationType verificationType;
+    @Analysed
+    private String verifyValue;
+    private PaymentCode paymentCode;
 }

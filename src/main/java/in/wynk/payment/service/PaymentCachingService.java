@@ -1,5 +1,7 @@
 package in.wynk.payment.service;
 
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.commons.enums.State;
@@ -47,9 +49,13 @@ public class PaymentCachingService {
 
     @Scheduled(fixedDelay = 30 * 60 * 1000L)
     @PostConstruct
+    @AnalyseTransaction(name = "refreshInMemoryCache")
     public void init() {
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("cacheLoadInit", true);
         loadPayments();
         loadPlans();
+        AnalyticService.update("cacheLoadCompleted", true);
     }
 
     private void loadPayments() {
@@ -100,7 +106,7 @@ public class PaymentCachingService {
         return plans.get(planId);
     }
 
-    public Long validTillDate(int planId){
+    public Long validTillDate(int planId) {
         PlanDTO planDTO = getPlan(planId);
         int validity = planDTO.getPeriod().getValidity();
         TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();

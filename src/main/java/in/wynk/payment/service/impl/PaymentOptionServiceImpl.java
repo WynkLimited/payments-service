@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static in.wynk.commons.constants.Constants.UID;
+import static in.wynk.commons.constants.BaseConstants.UID;
 
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {

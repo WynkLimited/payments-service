@@ -21,7 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.BaseConstants.MSISDN;
+import static in.wynk.commons.constants.BaseConstants.SERVICE;
+import static in.wynk.commons.constants.BaseConstants.UID;
 
 public class ApbPaymentsTest extends PaymentsTest {
 
@@ -35,7 +37,7 @@ public class ApbPaymentsTest extends PaymentsTest {
         map.put(UID, "SpTr7ZHG7ZrgfDMEl0");
         map.put(SERVICE, "airteltv");
         SessionDTO sessionDTO = new SessionDTO();
-        sessionDTO.setPayload(map);
+        sessionDTO.setSessionPayload(map);
         return sessionDTO;
     }
 
@@ -83,7 +85,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     @Test
     public void apbCallbackFailureTest() {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(SessionKeys.WYNK_TRANSACTION_ID, TXN_ID);
+        sessionDTO.put(SessionKeys.TRANSACTION_ID, TXN_ID);
         BaseResponse<?> response = callbackTest(CODE, dummyApbFailureCallback());
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();
@@ -128,7 +130,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     @Test
     public void apbCallbackSuccessTest() {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(SessionKeys.WYNK_TRANSACTION_ID, TXN_ID);
+        sessionDTO.put(SessionKeys.TRANSACTION_ID, TXN_ID);
         BaseResponse<?> response = callbackTest(CODE, dummyApbSuccessCallback());
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();

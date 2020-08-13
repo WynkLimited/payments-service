@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PaymentRequestType;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
@@ -22,8 +21,18 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.payu.*;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.payu.CardDetails;
+import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
+import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.PayUCommand;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.dto.payu.PaymentRequestType;
+import in.wynk.payment.dto.payu.VerificationType;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
@@ -43,6 +52,7 @@ import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -56,10 +66,16 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static in.wynk.commons.constants.Constants.*;
+import static in.wynk.commons.constants.BaseConstants.ONE_DAY_IN_MILLI;
+import static in.wynk.commons.constants.BaseConstants.OS;
+import static in.wynk.commons.constants.BaseConstants.SLASH;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -74,13 +90,6 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService {
 
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher sqsMessagePublisher;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
-    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
     @Value("${payment.encKey}")
@@ -100,13 +109,21 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
 
+    private final Gson gson;
+    private final PaymentCachingService cachingService;
+    private final ISQSMessagePublisher sqsMessagePublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManager;
+    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
     public PayUMerchantPaymentService(Gson gson,
-                                      RestTemplate restTemplate,
                                       PaymentCachingService paymentCachingService,
                                       ITransactionManagerService transactionManager,
                                       @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher, ApplicationEventPublisher eventPublisher) {
         this.gson = gson;
-        this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
         this.cachingService = paymentCachingService;
         this.transactionManager = transactionManager;
@@ -261,7 +278,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ",e);
+            log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
@@ -523,7 +540,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     //TODO: refactor
     @Override
-    public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
+    public BaseResponse<?> doVerify(VerificationRequest verificationRequest) {
         VerificationType verificationType = verificationRequest.getVerificationType();
         switch (verificationType) {
             case VPA:
@@ -531,14 +548,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
                 if (verificationResponse.getIsVPAValid() == 1)
                     verificationResponse.setValid(true);
-                return BaseResponse.<String>builder().body(gson.toJson(verificationResponse)).status(HttpStatus.OK).build();
+                return BaseResponse.<PayuVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
                 PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
                 if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
                     payUCardInfo.setValid(true);
-                return BaseResponse.<String>builder().body(gson.toJson(payUCardInfo)).status(HttpStatus.OK).build();
+                return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
         }
-        return null;
+        return BaseResponse.status(false);
     }
 }

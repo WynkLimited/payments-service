@@ -1,8 +1,8 @@
 package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.service.IMerchantPaymentRenewalService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;

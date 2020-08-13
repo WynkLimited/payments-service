@@ -1,7 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
-import in.wynk.commons.constants.Constants;
+import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
@@ -42,6 +42,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
@@ -59,8 +61,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.Constants.*;
-import static in.wynk.commons.constants.SessionKeys.PAYMENT_CODE;
+import static in.wynk.commons.constants.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
@@ -69,12 +70,6 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
 public class APBMerchantPaymentService implements IRenewalMerchantPaymentService {
 
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher messagePublisher;
-    private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
     @Value("${apb.callback.url}")
     private String CALLBACK_URL;
     @Value("${apb.merchant.id}")
@@ -92,9 +87,17 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
     private int reconciliationMessageDelay;
 
-    public APBMerchantPaymentService(Gson gson, RestTemplate restTemplate, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    private final Gson gson;
+    private final PaymentCachingService cachingService;
+    private final ISQSMessagePublisher messagePublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManager;
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
+    public APBMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.gson = gson;
-        this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.messagePublisher = messagePublisher;
         this.eventPublisher = eventPublisher;
@@ -107,7 +110,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
 
-        String txnId = sessionDTO.get(SessionKeys.WYNK_TRANSACTION_ID);
+        String txnId = sessionDTO.get(SessionKeys.TRANSACTION_ID);
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
@@ -155,7 +158,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     @Override
     public BaseResponse<Void> doCharging(ChargingRequest chargingRequest, Transaction txn) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(PAYMENT_CODE, APB_GATEWAY);
         final String msisdn = sessionDTO.get(MSISDN);
         final String uid = sessionDTO.get(UID);
         int planId = chargingRequest.getPlanId();
@@ -196,7 +198,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     private String getReturnUri(Transaction txn, String formattedDate, String serviceName) throws Exception {
         String sessionId = SessionContextHolder.get().getId().toString();
-        String hashText = MERCHANT_ID + Constants.HASH + txn.getIdStr() + Constants.HASH + txn.getAmount() + Constants.HASH + formattedDate + Constants.HASH + serviceName + Constants.HASH + SALT;
+        String hashText = MERCHANT_ID + BaseConstants.HASH + txn.getIdStr() + BaseConstants.HASH + txn.getAmount() + BaseConstants.HASH + formattedDate + BaseConstants.HASH + serviceName + BaseConstants.HASH + SALT;
         String hash = CommonUtils.generateHash(hashText, SHA_512);
         return new URIBuilder(APB_INIT_PAYMENT_URL)
                 .addParameter(MID, MERCHANT_ID)
@@ -207,7 +209,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .addParameter(DATE, formattedDate)
                 .addParameter(CURRENCY, Currency.INR.name())
                 .addParameter(CUSTOMER_MOBILE, txn.getMsisdn())
-                .addParameter(MERCHANT_NAME, Constants.WYNK)
+                .addParameter(MERCHANT_NAME, BaseConstants.WYNK)
                 .addParameter(ApbConstants.HASH, hash)
                 .addParameter(SERVICE, serviceName)
                 .build().toString();
@@ -238,7 +240,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         try {
             URI uri = new URI(APB_TXN_INQUIRY_URL);
             String txnDate = CommonUtils.getFormattedDate(transaction.getInitTime().getTimeInMillis(), "ddMMyyyyHHmmss");
-            String hashText = MERCHANT_ID + Constants.HASH + txnId + Constants.HASH + transaction.getAmount() + Constants.HASH + txnDate + Constants.HASH + SALT;
+            String hashText = MERCHANT_ID + BaseConstants.HASH + txnId + BaseConstants.HASH + transaction.getAmount() + BaseConstants.HASH + txnDate + BaseConstants.HASH + SALT;
             String hashValue = CommonUtils.generateHash(hashText, SHA_512);
             ApbTransactionInquiryRequest apbTransactionInquiryRequest = ApbTransactionInquiryRequest.builder()
                     .feSessionId(UUID.randomUUID().toString())
@@ -277,9 +279,9 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     private boolean verifyHash(ApbStatus status, String merchantId, String txnId, String externalTxnId, String amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
         String str = StringUtils.EMPTY;
         if (status == ApbStatus.SUC) {
-            str = merchantId + Constants.HASH + externalTxnId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + txnDate + Constants.HASH + SALT;
+            str = merchantId + BaseConstants.HASH + externalTxnId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + txnDate + BaseConstants.HASH + SALT;
         } else if (status == ApbStatus.FAL) {
-            str = merchantId + Constants.HASH + txnId + Constants.HASH + amount + Constants.HASH + SALT + Constants.HASH + code + "#FAL";
+            str = merchantId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + SALT + BaseConstants.HASH + code + "#FAL";
         }
         String generatedHash = CommonUtils.generateHash(str, SHA_512);
         return requestHash.equals(generatedHash);

@@ -3,6 +3,8 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
@@ -24,6 +26,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
+import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 
 @RestController
 @RequestMapping("/wynk/v1/payment")
@@ -54,8 +61,9 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
+    //TODO: add SID
     @PostMapping("/verify")
-    @AnalyseTransaction(name = "verify")
+    @AnalyseTransaction(name = "verifyUserPaymentBin")
     public ResponseEntity<?> verify(@RequestBody VerificationRequest request) {
 //        IMerchantVerificationService verificationService;
 //        PaymentCode paymentCode = request.getPaymentCode();

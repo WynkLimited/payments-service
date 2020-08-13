@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.PlanType;
@@ -40,6 +41,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
@@ -69,18 +72,20 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     @Value("${payment.status.web.url}")
     private String statusWebUrl;
 
+    @Autowired
+    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+
     private final Gson gson;
     private final ObjectMapper mapper;
-    private final RestTemplate restTemplate;
     private final ItunesIdUidDao itunesIdUidDao;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, RestTemplate restTemplate, ItunesIdUidDao itunesIdUidDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ItunesIdUidDao itunesIdUidDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.gson = gson;
         this.mapper = mapper;
-        this.restTemplate = restTemplate;
         this.itunesIdUidDao = itunesIdUidDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
@@ -91,6 +96,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public BaseResponse<Void> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
         try {
             ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
+            AnalyticService.update(request);
             final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
             final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
             final Transaction transaction = transactionManager.initiateTransaction(request.getUid(), request.getMsisdn(), selectedPlan.getId(), selectedPlan.getPrice().getAmount(), PaymentCode.ITUNES, eventType);
@@ -108,7 +114,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest, Transaction txn) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue(gson.toJson(callbackRequest.getBody()), ItunesCallbackRequest.class);
+            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
             if (itunesCallbackRequest.getLatestReceiptInfo() != null) {
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
@@ -129,7 +135,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             }
             return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(finalTransactionStatus).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
+            throw new WynkRuntimeException(WynkErrorType.UT999, "Error while handling iTunes callback");
         }
     }
 

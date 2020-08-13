@@ -33,12 +33,10 @@ apb:
 session:
   redis:
     name: session-store:local
-    mode: standalone
-    standalone:
-      host: 10.80.1.111
-      port: 6379
-      usePooling: false
-      enableJmx: false
+    mode: cluster
+    usePooling: true
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -82,7 +80,7 @@ spring:
       hibernate.connection.provider_disables_autocommit: true
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
-      hibernate.generate_statistics: true
+      hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
       hibernate.enable_lazy_load_no_trans: true
@@ -91,6 +89,8 @@ spring:
 #### logging props ####
 logging:
   path: /tmp
+  level:
+    in.wynk.*: INFO
 
 ####### payment props #######
 payment:
@@ -208,6 +208,21 @@ payment:
 http:
   enableTemplateRegistration: true
   templates:
+    paymentGatewayHttpTemplate:
+      pool:
+        connection:
+          max: 2000
+          maxPerHost: 500
+          timeout: 2000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 1000
     subscriptionHttpTemplate:
       pool:
         connection:

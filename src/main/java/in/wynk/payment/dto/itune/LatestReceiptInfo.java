@@ -2,75 +2,86 @@ package in.wynk.payment.dto.itune;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@AnalysedEntity
 public class LatestReceiptInfo {
 
     @JsonProperty("cancellation_date")
-    String cancellationDate;
+    private String cancellationDate;
 
     @JsonProperty("cancellation_date_ms")
-    String cancellationDateMs;
+    @Analysed
+    private String cancellationDateMs;
 
     @JsonProperty("cancellation_date_pst")
-    String cancellationDatePst;
+    private String cancellationDatePst;
 
     @JsonProperty("expires_date_ms")
-    String expiresDateMs;
+    @Analysed
+    private String expiresDateMs;
 
     @JsonProperty("expires_date")
-    String expiresDate;
+    private String expiresDate;
 
     @JsonProperty("cancellation_reason")
-    String cancellationReason;
+    @Analysed
+    private String cancellationReason;
 
     @JsonProperty("expires_date_pst")
-    String expiresDatePst;
+    private String expiresDatePst;
 
     @JsonProperty("is_in_intro_offer_period")
-    String isInIntroOfferPeriod;
+    @Analysed
+    private String isInIntroOfferPeriod;
 
     @JsonProperty("is_trial_period")
-    String isTrialPeriod;
+    @Analysed
+    private String isTrialPeriod;
 
     @JsonProperty("is_upgraded")
-    String isUpgraded;
+    private String isUpgraded;
 
     @JsonProperty("original_purchase_date")
-    String originalPurchaseDate;
+    private String originalPurchaseDate;
 
     @JsonProperty("original_purchase_date_ms")
-    String originalPurchaseDateMs;
+    private String originalPurchaseDateMs;
 
     @JsonProperty("original_purchase_date_pst")
-    String originalPurchaseDatePst;
+    private String originalPurchaseDatePst;
 
     @JsonProperty("original_transaction_id")
-    String originalTransactionId;
+    @Analysed
+    private String originalTransactionId;
 
     @JsonProperty("product_id")
-    String productId;
+    @Analysed
+    private String productId;
 
     @JsonProperty("purchase_date")
-    String purchaseDate;
+    private String purchaseDate;
 
     @JsonProperty("purchase_date_ms")
-    String purchaseDateMs;
+    private String purchaseDateMs;
 
     @JsonProperty("purchase_date_pst")
-    String purchaseDatePst;
+    private String purchaseDatePst;
 
-    String quantity;
+    private String quantity;
 
     @JsonProperty("subscription_group_identifier")
-    String subscriptionGroupIdentifier;
+    private String subscriptionGroupIdentifier;
 
     @JsonProperty("transaction_id")
-    String transactionId;
+    @Analysed
+    private String transactionId;
 
     @JsonProperty("web_order_line_item_id")
-    String webOrderLineItemId;
+    private String webOrderLineItemId;
 
 }

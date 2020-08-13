@@ -219,7 +219,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest, Transaction txn) {
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
         ChargingStatusResponse status = ChargingStatusResponse.failure(chargingStatusRequest.getTransactionId());
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {

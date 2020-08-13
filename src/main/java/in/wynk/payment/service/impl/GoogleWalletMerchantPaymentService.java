@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class GoogleWalletMerchantPaymentService implements IMerchantPaymentStatusService {
 
     @Override
-    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest, Transaction transaction) {
+    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
         return null;
     }
 

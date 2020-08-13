@@ -29,7 +29,7 @@ public class ACBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest, Transaction transaction) {
+    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
         return null;
     }
 }

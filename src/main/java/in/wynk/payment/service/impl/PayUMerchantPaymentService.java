@@ -208,8 +208,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     //TODO: refactor
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest, Transaction transaction) {
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
         ChargingStatusResponse statusResponse;
+        Transaction transaction = TransactionContext.get();
         switch (chargingStatusRequest.getMode()) {
             case SOURCE:
                 statusResponse = fetchChargingStatusFromPayUSource(chargingStatusRequest, transaction);

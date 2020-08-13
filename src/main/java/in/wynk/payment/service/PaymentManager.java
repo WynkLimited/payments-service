@@ -5,8 +5,10 @@ import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.utils.BeanLocatorFactory;
@@ -16,6 +18,7 @@ import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -24,6 +27,7 @@ import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
@@ -50,6 +54,14 @@ public class PaymentManager {
     @Autowired
     private ISQSMessagePublisher sqsMessagePublisher;
 
+    /**
+     * TODO:
+     * fetch tid from session
+     * fetch txn from tid
+     * put tid into context
+     * create aspect for the above
+     */
+
     public BaseResponse<?> doCharging(ChargingRequest request) {
         PaymentCode paymentCode = request.getPaymentCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
@@ -62,6 +74,7 @@ public class PaymentManager {
     }
 
     private Transaction initiateTransaction(ChargingRequest request, PaymentCode paymentCode) {
+        //TODO: Remove session dependency
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final int planId = request.getPlanId();
         final String uid = sessionDTO.get(SessionKeys.UID);
@@ -105,7 +118,12 @@ public class PaymentManager {
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
-        BaseResponse<?> baseResponse = statusService.status(request);
+        final Transaction transaction = transactionManager.get(request.getTransactionId());
+        TransactionStatus existingStatus = transaction.getStatus();
+        BaseResponse<?> baseResponse = statusService.status(request, transaction);
+        ChargingStatusResponse chargingStatusResponse = (ChargingStatusResponse) baseResponse.getBody();
+        TransactionStatus finalStatus = chargingStatusResponse.getTransactionStatus();
+        transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
         return baseResponse;
     }
 

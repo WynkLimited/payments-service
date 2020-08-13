@@ -74,20 +74,32 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         this.updateAndPublish(transaction, fetchAndUpdateFromSourceFn, false);
     }
 
+    @Override
+    public void updateAndSyncPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
+        this.updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, true);
+    }
+
+    @Override
+    public void updateAndAsyncPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
+        this.updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, false);
+    }
+
     private void updateAndPublish(Transaction transaction, Consumer<Transaction> fetchAndUpdateFromSourceFn, boolean isSync) {
-        try {
-            PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             TransactionStatus existingTransactionStatus = transaction.getStatus();
             fetchAndUpdateFromSourceFn.accept(transaction);
             TransactionStatus finalTransactionStatus = transaction.getStatus();
+            updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, isSync);
+    }
 
+    private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
+        try {
+            PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
                 if (transaction.getType() == TransactionEvent.SUBSCRIBE) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
                 }
-
                 if (isSync) {
                     subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
                 } else {

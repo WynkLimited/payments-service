@@ -36,9 +36,6 @@ public class RevenuePaymentHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
     public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody ChargingRequest request) {
-//        PaymentCode paymentCode = request.getPaymentCode();
-//        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-//        IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         BaseResponse<?> baseResponse =  paymentManager.doCharging(request);
         return baseResponse.getResponse();
     }

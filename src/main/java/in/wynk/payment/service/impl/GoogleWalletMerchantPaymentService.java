@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class GoogleWalletMerchantPaymentService implements IMerchantPaymentStatusService {
 
     @Override
-    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest, Transaction transaction) {
         return null;
     }
 

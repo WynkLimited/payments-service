@@ -148,7 +148,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest, Transaction transaction) {
         ChargingStatusResponse chargingStatus;
         switch (chargingStatusRequest.getMode()) {
             case SOURCE:

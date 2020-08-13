@@ -113,6 +113,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         this.sqsMessagePublisher = sqsMessagePublisher;
     }
 
+    //TODO: refactor
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest, Transaction transaction) {
         String returnUrl = processCallback(callbackRequest, transaction);
@@ -137,6 +138,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
     }
 
+    //TODO: refactor
     @Override
     public BaseResponse<Void> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
         try {
@@ -186,15 +188,16 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return null;
     }
 
+    //TODO: refactor
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest, Transaction transaction) {
         ChargingStatusResponse statusResponse;
         switch (chargingStatusRequest.getMode()) {
             case SOURCE:
-                statusResponse = fetchChargingStatusFromPayUSource(chargingStatusRequest);
+                statusResponse = fetchChargingStatusFromPayUSource(chargingStatusRequest, transaction);
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(chargingStatusRequest);
+                statusResponse = fetchChargingStatusFromDataSource(chargingStatusRequest, transaction);
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
@@ -206,9 +209,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
 
-    private ChargingStatusResponse fetchChargingStatusFromPayUSource(ChargingStatusRequest request) {
-        final Transaction transaction = transactionManager.get(request.getTransactionId());
-        transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateTransactionFromSource);
+    private ChargingStatusResponse fetchChargingStatusFromPayUSource(ChargingStatusRequest request, Transaction transaction) {
+//        final Transaction transaction = transactionManager.get(request.getTransactionId());
+//        transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateTransactionFromSource);
+        fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
@@ -219,6 +223,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
     }
 
+    //TODO: refactor
     public void fetchAndUpdateTransactionFromSource(Transaction transaction) {
         Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
@@ -264,8 +269,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest) {
-        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest, Transaction transaction) {
+//        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         return ChargingStatusResponse.builder()
                 .transactionStatus(transaction.getStatus())
                 .build();
@@ -516,6 +521,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         session.getBody().put(key, value);
     }
 
+    //TODO: refactor
     @Override
     public BaseResponse<String> doVerify(VerificationRequest verificationRequest) {
         VerificationType verificationType = verificationRequest.getVerificationType();

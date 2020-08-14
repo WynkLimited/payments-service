@@ -5,9 +5,11 @@ import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.service.IMerchantPaymentRenewalService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -27,15 +29,18 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
 
     private final ThreadPoolExecutor messageHandlerThreadPool;
     private final ScheduledThreadPoolExecutor pollingThreadPool;
+    private final PaymentManager paymentManager;
 
     public PaymentRenewalChargingConsumerPollingQueue(String queueName,
                                               AmazonSQS sqs,
                                               ISQSMessageExtractor messagesExtractor,
                                               ThreadPoolExecutor messageHandlerThreadPool,
-                                              ScheduledThreadPoolExecutor pollingThreadPool) {
+                                              ScheduledThreadPoolExecutor pollingThreadPool,
+                                                      PaymentManager paymentManager) {
         super(queueName, sqs, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
+        this.paymentManager = paymentManager;
     }
 
     @Override
@@ -63,9 +68,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     @Override
     public void consume(PaymentRenewalChargingMessage message) {
         log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getPaymentRenewalRequest());
-
-        IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(message.getPaymentCode().getCode(), IMerchantPaymentRenewalService.class);
-        merchantPaymentRenewalService.doRenewal(message.getPaymentRenewalRequest());
+        paymentManager.doRenewal(message);
     }
 
     @Override

@@ -2,12 +2,15 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.commons.constants.SessionKeys;
+import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.PaymentManager;
+import in.wynk.session.context.SessionContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,7 +36,8 @@ public class RevenueCallbackHandler {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode);
+        final String transactionId = ((SessionDTO)SessionContextHolder.getBody()).get(SessionKeys.WYNK_TRANSACTION_ID).toString();
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode, transactionId);
         return baseResponse.getResponse();
     }
 }

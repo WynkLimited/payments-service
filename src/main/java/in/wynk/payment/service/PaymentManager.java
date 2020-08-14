@@ -1,13 +1,13 @@
 package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.TransactionContext;
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
@@ -49,14 +49,6 @@ public class PaymentManager {
     @Autowired
     private ISQSMessagePublisher sqsMessagePublisher;
 
-    /**
-     * TODO:
-     * fetch tid from session
-     * fetch txn from tid
-     * put tid into context
-     * create aspect for the above
-     */
-
     public BaseResponse<?> doCharging(ChargingRequest request, String uid, String msisdn) {
         PaymentCode paymentCode = request.getPaymentCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
@@ -89,7 +81,8 @@ public class PaymentManager {
         }
     }
 
-    public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode) {
+    @TransactionAware(txnId = "#transactionId")
+    public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode, String transactionId) {
         Transaction transaction = TransactionContext.get();
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         TransactionStatus initialTxnStatus = transaction.getStatus();
@@ -99,6 +92,7 @@ public class PaymentManager {
         return baseResponse;
     }
 
+    @TransactionAware(txnId = "#request.getTransactionId()")
     public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode) {
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         final Transaction transaction = transactionManager.get(request.getTransactionId());
@@ -114,7 +108,6 @@ public class PaymentManager {
         PaymentCode paymentCode = request.getPaymentCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         IMerchantVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantVerificationService.class);
-        BaseResponse<?> baseResponse = verificationService.doVerify(request);
-        return baseResponse;
+        return verificationService.doVerify(request);
     }
 }

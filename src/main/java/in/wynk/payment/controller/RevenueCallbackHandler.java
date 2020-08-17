@@ -36,7 +36,7 @@ public class RevenueCallbackHandler {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        final String transactionId = ((SessionDTO)SessionContextHolder.getBody()).get(SessionKeys.WYNK_TRANSACTION_ID).toString();
+        final String transactionId = ((SessionDTO)SessionContextHolder.getBody()).get(SessionKeys.TRANSACTION_ID).toString();
         BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode, transactionId);
         return baseResponse.getResponse();
     }

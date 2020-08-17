@@ -320,7 +320,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         paylaod.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         paylaod.put(ERROR, PAYU_REDIRECT_MESSAGE);
         paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
-        putValueInSession(SessionKeys.WYNK_TRANSACTION_ID, transaction.getId().toString());
+        putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getId().toString());
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
        return paylaod;
     }

@@ -29,22 +29,20 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
 
-    private final ApplicationContext applicationContext;
     private final ThreadPoolExecutor messageHandlerThreadPool;
     private final ScheduledThreadPoolExecutor pollingThreadPool;
-    private final PaymentManager paymentManager;
+
+    @Autowired
+    private PaymentManager paymentManager;
 
     public PaymentReconciliationConsumerPollingQueue(String queueName,
                                                      AmazonSQS sqs,
                                                      ISQSMessageExtractor messagesExtractor,
                                                      ThreadPoolExecutor messageHandlerThreadPool,
-                                                     ScheduledThreadPoolExecutor pollingThreadPool,
-                                                     ApplicationContext applicationContext, PaymentManager paymentManager) {
+                                                     ScheduledThreadPoolExecutor pollingThreadPool) {
         super(queueName, sqs, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
-        this.applicationContext = applicationContext;
-        this.paymentManager = paymentManager;
     }
 
     @Override

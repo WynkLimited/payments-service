@@ -29,18 +29,17 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
 
     private final ThreadPoolExecutor messageHandlerThreadPool;
     private final ScheduledThreadPoolExecutor pollingThreadPool;
-    private final PaymentManager paymentManager;
+    @Autowired
+    private PaymentManager paymentManager;
 
     public PaymentRenewalChargingConsumerPollingQueue(String queueName,
                                               AmazonSQS sqs,
                                               ISQSMessageExtractor messagesExtractor,
                                               ThreadPoolExecutor messageHandlerThreadPool,
-                                              ScheduledThreadPoolExecutor pollingThreadPool,
-                                                      PaymentManager paymentManager) {
+                                              ScheduledThreadPoolExecutor pollingThreadPool) {
         super(queueName, sqs, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
-        this.paymentManager = paymentManager;
     }
 
     @Override

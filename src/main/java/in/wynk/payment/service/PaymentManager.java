@@ -67,7 +67,7 @@ public class PaymentManager {
         final double finalPlanAmount;
         if(StringUtils.isNotEmpty(request.getCouponId())) {
             Coupon coupon = getCoupon(request.getCouponId(), msisdn, uid, paymentCode, selectedPlan);
-            transactionInitRequestBuilder.couponId(coupon.getId()).discount(coupon.getDiscount());
+            transactionInitRequestBuilder.couponId(coupon.getId()).discount(coupon.getDiscountPercent());
             finalPlanAmount = getFinalAmount(selectedPlan, coupon);
         } else{
             finalPlanAmount = selectedPlan.getFinalPrice();
@@ -86,7 +86,7 @@ public class PaymentManager {
 
     private double getFinalAmount(PlanDTO selectedPlan, Coupon coupon) {
         final double planAmount = selectedPlan.getFinalPrice();
-        double discount = coupon.getDiscount();
+        double discount = coupon.getDiscountPercent();
         return planAmount - (planAmount * discount) / 100;
     }
 

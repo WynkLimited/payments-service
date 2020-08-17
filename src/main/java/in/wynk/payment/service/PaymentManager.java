@@ -4,6 +4,10 @@ import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.dto.CouponProvisionRequest;
+import in.wynk.coupon.core.dto.CouponResponse;
+import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -13,11 +17,13 @@ import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.TransactionInitRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.queue.service.ISqsManagerService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -38,9 +44,12 @@ public class PaymentManager {
     @Autowired
     private ISqsManagerService sqsManagerService;
 
-    public BaseResponse<?> doCharging(ChargingRequest request, String uid, String msisdn) {
+    @Autowired
+    private ICouponManager couponManager;
+
+    public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
         PaymentCode paymentCode = request.getPaymentCode();
-        final Transaction transaction = initiateTransaction(request, paymentCode, uid, msisdn);
+        final Transaction transaction = initiateTransaction(uid, msisdn, request);
         TransactionContext.set(transaction);
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         BaseResponse<?> baseResponse = chargingService.doCharging(request);
@@ -49,34 +58,70 @@ public class PaymentManager {
         return baseResponse;
     }
 
-    private Transaction initiateTransaction(ChargingRequest request, PaymentCode paymentCode, String uid, String msisdn) {
+    private Transaction initiateTransaction(String uid, String msisdn, ChargingRequest request) {
         final int planId = request.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final double finalPlanAmount = selectedPlan.getFinalPrice();
+        PaymentCode paymentCode = request.getPaymentCode();
+        TransactionInitRequest.TransactionInitRequestBuilder transactionInitRequestBuilder = TransactionInitRequest.builder()
+                .msisdn(msisdn).paymentCode(paymentCode).planId(planId).uid(uid);
+        final double finalPlanAmount;
+        if(StringUtils.isNotEmpty(request.getCouponId())) {
+            Coupon coupon = getCoupon(request.getCouponId(), msisdn, uid, paymentCode, selectedPlan);
+            transactionInitRequestBuilder.couponId(coupon.getId()).discount(coupon.getDiscount());
+            finalPlanAmount = getFinalAmount(selectedPlan, coupon);
+        } else{
+            finalPlanAmount = selectedPlan.getFinalPrice();
+        }
         final TransactionEvent eventType = request.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
-        return transactionManager.initiateTransaction(uid, msisdn, planId, finalPlanAmount, paymentCode, eventType);
+        TransactionInitRequest transactionInitRequest = transactionInitRequestBuilder.amount(finalPlanAmount).event(eventType).build();
+        return transactionManager.initiateTransaction(transactionInitRequest);
+    }
+
+    private Coupon getCoupon(String couponId, String msisdn,String uid, PaymentCode paymentCode, PlanDTO selectedPlan) {
+        CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
+                .couponCode(couponId).msisdn(msisdn).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).build();
+        CouponResponse couponResponse = couponManager.applyCoupon(couponProvisionRequest);
+        return couponResponse.getCoupon();
+    }
+
+    private double getFinalAmount(PlanDTO selectedPlan, Coupon coupon) {
+        final double planAmount = selectedPlan.getFinalPrice();
+        double discount = coupon.getDiscount();
+        return planAmount - (planAmount * discount) / 100;
     }
 
     @TransactionAware(txnId = "#transactionId")
-    public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode, String transactionId) {
+    public BaseResponse<?> handleCallback(String transactionId, CallbackRequest request, PaymentCode paymentCode) {
         Transaction transaction = TransactionContext.get();
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
         TransactionStatus initialTxnStatus = transaction.getStatus();
         BaseResponse<?> baseResponse = callbackService.handleCallback(request);
         TransactionStatus finalStatus = TransactionContext.get().getStatus();
         transactionManager.updateAndSyncPublish(transaction, initialTxnStatus, finalStatus);
+        if(finalStatus == TransactionStatus.SUCCESS){
+            exhaustCoupon();
+        }
         return baseResponse;
     }
 
+    private void exhaustCoupon() {
+        Transaction transaction = TransactionContext.get();
+        couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+    }
+
     @TransactionAware(txnId = "#request.getTransactionId()")
-    public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode) {
+    public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode, boolean isSync) {
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         final Transaction transaction = transactionManager.get(request.getTransactionId());
         TransactionContext.set(transaction);
         TransactionStatus existingStatus = transaction.getStatus();
         BaseResponse<?> baseResponse = statusService.status(request);
         TransactionStatus finalStatus = ((ChargingStatusResponse) baseResponse.getBody()).getTransactionStatus();
-        transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+        if(isSync) {
+            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
+        } else {
+            transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+        }
         return baseResponse;
     }
 

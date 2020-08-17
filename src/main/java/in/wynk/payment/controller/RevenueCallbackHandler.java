@@ -37,7 +37,7 @@ public class RevenueCallbackHandler {
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
         final String transactionId = ((SessionDTO)SessionContextHolder.getBody()).get(SessionKeys.TRANSACTION_ID).toString();
-        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode, transactionId);
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(transactionId, request, paymentCode);
         return baseResponse.getResponse();
     }
 }

@@ -48,7 +48,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     @Override
     public void consume(PaymentReconciliationMessage message) {
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        paymentManager.status(ChargingStatusRequest.builder().transactionId(message.getTransactionId()).mode(StatusMode.SOURCE).build(), message.getPaymentCode());
+        paymentManager.status(ChargingStatusRequest.builder().transactionId(message.getTransactionId()).mode(StatusMode.SOURCE).build(), message.getPaymentCode(), false);
     }
 
     @Override

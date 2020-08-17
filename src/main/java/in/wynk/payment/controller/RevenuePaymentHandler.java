@@ -48,7 +48,7 @@ public class RevenuePaymentHandler {
         final String uid = sessionDTO.get(SessionKeys.UID);
         final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
-        BaseResponse<?> baseResponse =  paymentManager.doCharging(request, uid, msisdn);
+        BaseResponse<?> baseResponse =  paymentManager.doCharging(uid, msisdn, request);
         return baseResponse.getResponse();
     }
 
@@ -60,7 +60,7 @@ public class RevenuePaymentHandler {
         ChargingStatusRequest request = ChargingStatusRequest.builder().mode(StatusMode.LOCAL).transactionId(sessionDTO.get(SessionKeys.TRANSACTION_ID)).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        BaseResponse<?> baseResponse = paymentManager.status(request, paymentCode);
+        BaseResponse<?> baseResponse = paymentManager.status(request, paymentCode, true);
         return baseResponse.getResponse();
     }
 
@@ -82,7 +82,7 @@ public class RevenuePaymentHandler {
         final String transactionId = sessionDTO.get(SessionKeys.TRANSACTION_ID).toString();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode, transactionId);
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(transactionId, request, paymentCode);
         return baseResponse.getResponse();
     }
 
@@ -96,7 +96,7 @@ public class RevenuePaymentHandler {
         final String transactionId = sessionDTO.get(SessionKeys.TRANSACTION_ID).toString();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
-        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode, transactionId);
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(transactionId, request, paymentCode);
         return baseResponse.getResponse();
     }
 

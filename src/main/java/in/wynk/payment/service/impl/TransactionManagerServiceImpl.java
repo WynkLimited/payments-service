@@ -11,6 +11,7 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
+import in.wynk.payment.dto.request.TransactionInitRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -54,16 +55,39 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event) {
         log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}",uid, planId, amount, paymentCode.getCode(), event.getValue());
-        Transaction transaction = upsert(Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
+        Transaction txn = Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance()).uid(uid).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
-                .type(event.name()).build());
+                .type(event.name()).build();
+        return initTransaction(txn);
+    }
+
+    private Transaction initTransaction(Transaction txn){
+        Transaction transaction = upsert(txn);
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         if (Objects.nonNull(sessionDTO)) {
             sessionDTO.put(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
-            sessionDTO.put(SessionKeys.PAYMENT_CODE, paymentCode.getCode());
+            sessionDTO.put(SessionKeys.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         }
         return transaction;
+    }
+
+    @Override
+    public Transaction initiateTransaction(TransactionInitRequest transactionInitRequest) {
+        Transaction txn = Transaction.builder()
+                .planId(transactionInitRequest.getPlanId())
+                .amount(transactionInitRequest.getAmount())
+                .initTime(Calendar.getInstance())
+                .consent(Calendar.getInstance())
+                .uid(transactionInitRequest.getUid())
+                .msisdn(transactionInitRequest.getMsisdn())
+                .paymentChannel(transactionInitRequest.getPaymentCode().name())
+                .status(TransactionStatus.INPROGRESS.name())
+                .type(transactionInitRequest.getEvent().name())
+                .coupon(transactionInitRequest.getCouponId())
+                .discount(transactionInitRequest.getDiscount())
+                .build();
+        return initTransaction(txn);
     }
 
     @Override

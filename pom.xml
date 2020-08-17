@@ -64,6 +64,11 @@
             <artifactId>lib-http</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>coupon-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!--DEPENDENCIES-->
         <dependency>

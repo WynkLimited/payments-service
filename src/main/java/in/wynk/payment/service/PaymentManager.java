@@ -99,14 +99,16 @@ public class PaymentManager {
         TransactionStatus finalStatus = TransactionContext.get().getStatus();
         transactionManager.updateAndSyncPublish(transaction, initialTxnStatus, finalStatus);
         if(finalStatus == TransactionStatus.SUCCESS){
-            exhaustCoupon();
+            exhaustCouponIfApplicable();
         }
         return baseResponse;
     }
 
-    private void exhaustCoupon() {
+    private void exhaustCouponIfApplicable() {
         Transaction transaction = TransactionContext.get();
-        couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+        if(StringUtils.isNotEmpty(transaction.getCoupon())) {
+            couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+        }
     }
 
     @TransactionAware(txnId = "#request.getTransactionId()")

@@ -5,15 +5,20 @@ import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.session.aspect.advice.ManageSession;
 import java.lang.reflect.Method;
+import java.util.Objects;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.reflect.CodeSignature;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
 
 /**
@@ -31,7 +36,7 @@ public class TransactionAwareAspect {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         TransactionAware transactionAware = method.getAnnotation(TransactionAware.class);
         if (!StringUtils.isEmpty(transactionAware.txnId())) {
-            String txnId = parseTxnId(transactionAware.txnId());
+            String txnId = parseSpel(joinPoint, transactionAware);
             final Transaction transaction = transactionManager.get(txnId);
             if(transaction != null){
                 TransactionContext.set(transaction);
@@ -43,10 +48,21 @@ public class TransactionAwareAspect {
         }
     }
 
-    private String parseTxnId(String expressionToEval) {
+    private String parseSpel(JoinPoint joinPoint, TransactionAware transactionAware) {
+        CodeSignature methodSignature = (CodeSignature) joinPoint.getSignature();
+        String[] keyParams = methodSignature.getParameterNames();
+        Object[] valueParams = joinPoint.getArgs();
+        StandardEvaluationContext context = new StandardEvaluationContext();
+        for (int i = 0; i < Objects.requireNonNull(keyParams).length; i++) {
+            context.setVariable(keyParams[i], valueParams[i]);
+        }
         ExpressionParser expressionParser = new SpelExpressionParser();
-        Expression expression = expressionParser.parseExpression(expressionToEval);
-        return expression.getValue(String.class);
+        try {
+            Expression expression = expressionParser.parseExpression(transactionAware.txnId());
+            return expression.getValue(context, String.class);
+        } catch (Exception e) {
+            return "defaultResult";
+        }
     }
 
 }

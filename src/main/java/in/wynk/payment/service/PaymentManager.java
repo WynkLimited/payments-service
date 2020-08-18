@@ -112,8 +112,7 @@ public class PaymentManager {
     @TransactionAware(txnId = "#request.getTransactionId()")
     public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode, boolean isSync) {
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
-        final Transaction transaction = transactionManager.get(request.getTransactionId());
-        TransactionContext.set(transaction);
+        final Transaction transaction = TransactionContext.get();
         TransactionStatus existingStatus = transaction.getStatus();
         BaseResponse<?> baseResponse = statusService.status(request);
         TransactionStatus finalStatus = ((ChargingStatusResponse) baseResponse.getBody()).getTransactionStatus();

@@ -9,6 +9,7 @@ import in.wynk.payment.config.properties.CorsProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
@@ -59,11 +60,13 @@ public class PaymentConfig implements WebMvcConfigurer {
     }
 
     @Bean
+    @Primary
     public MongoDbFactory paymentDbFactory(MongoProperties mongoProperties) {
         return WynkMongoDbFactoryBuilder.buildMongoDbFactory(mongoProperties, "payment");
     }
 
     @Bean
+    @Primary
     public MongoTemplate paymentMongoTemplate(MongoDbFactory paymentDbFactory) {
         return new MongoTemplate(paymentDbFactory);
     }

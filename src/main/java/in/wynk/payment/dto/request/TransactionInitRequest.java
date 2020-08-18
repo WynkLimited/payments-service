@@ -19,9 +19,9 @@ public class TransactionInitRequest {
     private String uid;
     private String msisdn;
     private int planId;
-    private Double amount;
+    private double amount;
     private PaymentCode paymentCode;
     private TransactionEvent event;
     private String couponId;
-    private Double discount;
+    private double discount;
 }

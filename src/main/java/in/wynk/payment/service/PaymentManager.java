@@ -4,6 +4,8 @@ import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.coupon.core.constant.CouponProvisionState;
+import in.wynk.coupon.core.constant.ProvisionSource;
 import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
@@ -14,11 +16,7 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.TransactionInitRequest;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.queue.service.ISqsManagerService;
@@ -65,11 +63,11 @@ public class PaymentManager {
         TransactionInitRequest.TransactionInitRequestBuilder transactionInitRequestBuilder = TransactionInitRequest.builder()
                 .msisdn(msisdn).paymentCode(paymentCode).planId(planId).uid(uid);
         final double finalPlanAmount;
-        if(StringUtils.isNotEmpty(request.getCouponId())) {
-            Coupon coupon = getCoupon(request.getCouponId(), msisdn, uid, paymentCode, selectedPlan);
+        Coupon coupon = getCoupon(request.getCouponId(), msisdn, uid, paymentCode, selectedPlan);
+        if (coupon != null) {
             transactionInitRequestBuilder.couponId(coupon.getId()).discount(coupon.getDiscountPercent());
             finalPlanAmount = getFinalAmount(selectedPlan, coupon);
-        } else{
+        } else {
             finalPlanAmount = selectedPlan.getFinalPrice();
         }
         final TransactionEvent eventType = request.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
@@ -79,9 +77,9 @@ public class PaymentManager {
 
     private Coupon getCoupon(String couponId, String msisdn,String uid, PaymentCode paymentCode, PlanDTO selectedPlan) {
         CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                .couponCode(couponId).msisdn(msisdn).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).build();
-        CouponResponse couponResponse = couponManager.applyCoupon(couponProvisionRequest);
-        return couponResponse.getCoupon();
+                .couponCode(couponId).msisdn(msisdn).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
+        CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+        return couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
     }
 
     private double getFinalAmount(PlanDTO selectedPlan, Coupon coupon) {
@@ -118,10 +116,13 @@ public class PaymentManager {
         TransactionStatus existingStatus = transaction.getStatus();
         BaseResponse<?> baseResponse = statusService.status(request);
         TransactionStatus finalStatus = ((ChargingStatusResponse) baseResponse.getBody()).getTransactionStatus();
-        if(isSync) {
+        if (isSync) {
             transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
         } else {
             transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+        }
+        if (finalStatus == TransactionStatus.SUCCESS) {
+            exhaustCouponIfApplicable();
         }
         return baseResponse;
     }

@@ -21,4 +21,7 @@ public interface BeanConstant {
     String EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE = "paymentGatewayHttpTemplate";
     String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";
 
+    String PAYMENT_MONGO_TEMPLATE_REF = "paymentMongoTemplateRef";
+    String PAYMENT_MONGO_DB_FACTORY_REF = "paymentMongodbFactoryRef";
+
 }

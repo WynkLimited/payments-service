@@ -6,6 +6,7 @@ import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.coupon.core.constant.ProvisionSource;
+import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
@@ -16,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("wynk/v1/coupon")
@@ -50,6 +53,21 @@ public class CouponController {
         AnalyticService.update(SessionKeys.UID, uid);
         AnalyticService.update(SessionKeys.COUPON_ID, couponCode);
         return new ResponseEntity<>(couponManager.removeCoupon(uid, couponCode), HttpStatus.OK);
+    }
+
+    @GetMapping("/eligibility/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "eligibleCoupons")
+    public ResponseEntity<List<Coupon>> getEligibleCoupons(@PathVariable String sid, @RequestParam Integer planId) {
+        PlanDTO planDTO = cachingService.getPlan(planId);
+        String uid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.UID);
+        String msisdn = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.MSISDN);
+        AnalyticService.update(SessionKeys.UID, uid);
+        AnalyticService.update(SessionKeys.MSISDN, msisdn);
+        AnalyticService.update(SessionKeys.SELECTED_PLAN_ID, planId);
+        CouponProvisionRequest request = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).selectedPlan(planDTO).source(ProvisionSource.UNMANAGED).build();
+        List<Coupon> eligibleCoupons = couponManager.getEligibleCoupons(request);
+        return new ResponseEntity<>(eligibleCoupons, HttpStatus.OK);
     }
 
 }

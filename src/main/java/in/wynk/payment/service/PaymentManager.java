@@ -76,10 +76,14 @@ public class PaymentManager {
     }
 
     private Coupon getCoupon(String couponId, String msisdn,String uid, PaymentCode paymentCode, PlanDTO selectedPlan) {
-        CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                .couponCode(couponId).msisdn(msisdn).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
-        CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
-        return couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
+        if (!StringUtils.isEmpty(couponId)) {
+            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
+                    .couponCode(couponId).msisdn(msisdn).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
+            CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            return couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
+        } else {
+            return null;
+        }
     }
 
     private double getFinalAmount(PlanDTO selectedPlan, Coupon coupon) {

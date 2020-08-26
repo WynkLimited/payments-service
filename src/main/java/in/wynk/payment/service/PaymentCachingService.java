@@ -47,7 +47,7 @@ public class PaymentCachingService {
         this.subscriptionServiceManager = subscriptionServiceManager;
     }
 
-    @Scheduled(fixedDelay = 30 * 60 * 1000L)
+    @Scheduled(fixedDelay = 30 * 60 * 1000L,  initialDelay = 30 * 60 * 1000L )
     @PostConstruct
     @AnalyseTransaction(name = "refreshInMemoryCache")
     public void init() {

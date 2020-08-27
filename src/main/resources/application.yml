@@ -79,4 +79,4 @@ payment:
 cors:
   maxAge: 3600
   allowed:
-    methods: GET, PUT, PATCH, POST, OPTIONS
+    methods: GET, PUT, PATCH, POST, OPTIONS, DELETE

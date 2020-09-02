@@ -88,7 +88,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                             .uid(uid)
                             .planId(planId)
                             .msisdn(msisdn)
-                            .transactionId(transactionId)
+                            .referenceId(transactionId)
+                            .paymentPartner("wynk")
                             .eventType(transactionEvent)
                             .build(),
                     String.class);

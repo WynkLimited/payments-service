@@ -266,7 +266,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String reqType = PaymentRequestType.DEFAULT.name();
         final int planId = transaction.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final double finalPlanAmount = selectedPlan.getFinalPrice();
+        final double finalPlanAmount = transaction.getAmount();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
@@ -418,7 +418,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     payUCallbackRequestPayload.getEmail(),
                     payUCallbackRequestPayload.getFirstName(),
                     String.valueOf(transaction.getPlanId()),
-                    selectedPlan.getFinalPrice(),
+                    transaction.getAmount(),
                     payUCallbackRequestPayload.getResponseHash());
 
             if (isValidHash) {

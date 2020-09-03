@@ -18,7 +18,13 @@ import in.wynk.session.context.SessionContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -43,7 +49,7 @@ public class RevenuePaymentHandler {
         final String uid = sessionDTO.get(SessionKeys.UID);
         final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
-        AnalyticService.update(REQUEST_PAYLOAD, request.toString());
+        AnalyticService.update(request);
         BaseResponse<?> baseResponse =  paymentManager.doCharging(uid, msisdn, request);
         return baseResponse.getResponse();
     }

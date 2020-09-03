@@ -15,17 +15,12 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
-import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
@@ -48,6 +43,7 @@ public class RevenuePaymentHandler {
         final String uid = sessionDTO.get(SessionKeys.UID);
         final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+        AnalyticService.update(REQUEST_PAYLOAD, request.toString());
         BaseResponse<?> baseResponse =  paymentManager.doCharging(uid, msisdn, request);
         return baseResponse.getResponse();
     }
@@ -69,6 +65,7 @@ public class RevenuePaymentHandler {
     @AnalyseTransaction(name = "verifyUserPaymentBin")
     public ResponseEntity<?> verify(@RequestBody VerificationRequest request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+        AnalyticService.update(REQUEST_PAYLOAD, request.toString());
         BaseResponse<?> baseResponse = paymentManager.doVerify(request);
         return baseResponse.getResponse();
     }
@@ -79,9 +76,10 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
-        final String transactionId = sessionDTO.get(SessionKeys.TRANSACTION_ID).toString();
+        final String transactionId = sessionDTO.get(SessionKeys.TRANSACTION_ID);
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
+        AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
         BaseResponse<?> baseResponse = paymentManager.handleCallback(transactionId, request, paymentCode);
         return baseResponse.getResponse();
     }

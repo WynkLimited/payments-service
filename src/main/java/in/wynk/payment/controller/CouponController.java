@@ -36,8 +36,6 @@ public class CouponController {
         PlanDTO planDTO = cachingService.getPlan(planId);
         String uid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.MSISDN);
-        AnalyticService.update(SessionKeys.UID, uid);
-        AnalyticService.update(SessionKeys.MSISDN, msisdn);
         AnalyticService.update(SessionKeys.SELECTED_PLAN_ID, planId);
         AnalyticService.update(SessionKeys.COUPON_ID, couponCode);
         CouponProvisionRequest request = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).couponCode(couponCode).selectedPlan(planDTO).source(ProvisionSource.UNMANAGED).build();
@@ -50,7 +48,6 @@ public class CouponController {
     @AnalyseTransaction(name = "removeCoupon")
     public ResponseEntity<CouponResponse> removeCoupon(@PathVariable String sid, @RequestParam String couponCode) {
         String uid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.UID);
-        AnalyticService.update(SessionKeys.UID, uid);
         AnalyticService.update(SessionKeys.COUPON_ID, couponCode);
         return new ResponseEntity<>(couponManager.removeCoupon(uid, couponCode), HttpStatus.OK);
     }
@@ -62,8 +59,6 @@ public class CouponController {
         PlanDTO planDTO = cachingService.getPlan(planId);
         String uid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.MSISDN);
-        AnalyticService.update(SessionKeys.UID, uid);
-        AnalyticService.update(SessionKeys.MSISDN, msisdn);
         AnalyticService.update(SessionKeys.SELECTED_PLAN_ID, planId);
         CouponProvisionRequest request = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).selectedPlan(planDTO).source(ProvisionSource.UNMANAGED).build();
         List<Coupon> eligibleCoupons = couponManager.getEligibleCoupons(request);

@@ -5,21 +5,18 @@ import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.session.aspect.advice.ManageSession;
-import java.lang.reflect.Method;
-import java.util.Objects;
+import in.wynk.spel.IRuleEvaluator;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.CodeSignature;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
+
+import java.lang.reflect.Method;
+import java.util.Objects;
 
 /**
  * @author Abhishek
@@ -27,6 +24,9 @@ import org.springframework.util.StringUtils;
  */
 @Aspect
 public class TransactionAwareAspect {
+
+    @Autowired
+    private IRuleEvaluator ruleEvaluator;
 
     @Autowired
     private ITransactionManagerService transactionManager;
@@ -56,12 +56,10 @@ public class TransactionAwareAspect {
         for (int i = 0; i < Objects.requireNonNull(keyParams).length; i++) {
             context.setVariable(keyParams[i], valueParams[i]);
         }
-        ExpressionParser expressionParser = new SpelExpressionParser();
         try {
-            Expression expression = expressionParser.parseExpression(transactionAware.txnId());
-            return expression.getValue(context, String.class);
+            return ruleEvaluator.evaluate(transactionAware.txnId(), () -> context, String.class);
         } catch (Exception e) {
-            return "defaultResult";
+            throw new WynkRuntimeException("Unable to parse transactionId " + transactionAware.txnId() + " due to", e);
         }
     }
 

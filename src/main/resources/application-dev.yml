@@ -254,10 +254,10 @@ wynk:
     enabled: true
     sources:
       payment:
-        nodes: 10.80.0.68,10.80.0.73
-        username:
-        password:
-        database: payment
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_payments
+        password: zS7VvjYRSE
+        database: payments
     ########### Mongo Pool Config ###########
     minConnectionsPerHost: 10
     maxConnectionsPerHost: 50

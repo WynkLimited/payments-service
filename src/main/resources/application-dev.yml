@@ -206,8 +206,8 @@ http:
     paymentGatewayHttpTemplate:
       pool:
         connection:
-          max: 2000
-          maxPerHost: 500
+          max: 300
+          maxPerHost: 60
           timeout: 2000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
@@ -221,8 +221,8 @@ http:
     subscriptionHttpTemplate:
       pool:
         connection:
-          max: 20
-          maxPerHost: 500
+          max: 250
+          maxPerHost: 200
           validateAfterInActivity: 100
           timeout: 4000
           defaultKeepAliveTime: 500

@@ -21,7 +21,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -86,7 +85,7 @@ public class PayUTestData {
                 .id(planID)
                 .title(PayUDataConstant.PLAN_TITTLE)
                 .planType(planType)
-                .price(PriceDTO.builder().amount(PayUDataConstant.SELECTED_PLAN_AMOUNT).currency(PayUDataConstant.CURRENCY_TYPE).discount(Collections.emptyList()).build())
+                .price(PriceDTO.builder().amount(PayUDataConstant.SELECTED_PLAN_AMOUNT).currency(PayUDataConstant.CURRENCY_TYPE).build())
                 .period(PlanPeriodDTO.builder().validity(100).timeUnit(TimeUnit.DAYS).build())
                 .build();
     }

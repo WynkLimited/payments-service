@@ -264,11 +264,11 @@ wynk:
         password: 6sSUZcp2gy
         database: coupons
     ########### Mongo Pool Config ###########
-    minConnectionsPerHost: 1
-    maxConnectionsPerHost: 5
+    minConnectionsPerHost: 20
+    maxConnectionsPerHost: 150
     threadsAllowedToBlockForConnectionMultiplier: 5
-    serverSelectionTimeoutMs: 30000
-    maxWaitTime: 30000
-    connectTimeout: 20000
-    socketTimeout: 50000
+    serverSelectionTimeoutMs: 10000
+    maxWaitTime: 10000
+    connectTimeout: 2000
+    socketTimeout: 5000
     readPreference: secondaryPreferred

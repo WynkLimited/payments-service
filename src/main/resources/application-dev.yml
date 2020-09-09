@@ -267,8 +267,8 @@ wynk:
     minConnectionsPerHost: 10
     maxConnectionsPerHost: 50
     threadsAllowedToBlockForConnectionMultiplier: 5
-    serverSelectionTimeoutMs: 30000
-    maxWaitTime: 30000
-    connectTimeout: 20000
-    socketTimeout: 50000
+    serverSelectionTimeoutMs: 10000
+    maxWaitTime: 10000
+    connectTimeout: 2000
+    socketTimeout: 5000
     readPreference: secondaryPreferred

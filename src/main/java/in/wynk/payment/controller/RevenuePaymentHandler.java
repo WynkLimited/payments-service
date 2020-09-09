@@ -2,9 +2,10 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import com.google.gson.Gson;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.commons.utils.Utils;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.dto.request.CallbackRequest;
@@ -12,10 +13,7 @@ import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.service.IMerchantPaymentCallbackService;
-import in.wynk.payment.service.IMerchantPaymentChargingService;
-import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.IMerchantVerificationService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import org.springframework.http.MediaType;
@@ -38,15 +36,24 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 @RequestMapping("/wynk/v1/payment")
 public class RevenuePaymentHandler {
 
+    private final PaymentManager paymentManager;
+    private Gson gson;
+
+    public RevenuePaymentHandler(PaymentManager paymentManager, Gson gson){
+        this.paymentManager = paymentManager;
+        this.gson = gson;
+    }
+
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
     public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody ChargingRequest request) {
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final String uid = sessionDTO.get(SessionKeys.UID);
+        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        PaymentCode paymentCode = request.getPaymentCode();
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        BaseResponse<?> baseResponse = chargingService.doCharging(request);
+        BaseResponse<?> baseResponse =  paymentManager.doCharging(uid, msisdn, request);
         return baseResponse.getResponse();
     }
 
@@ -58,20 +65,17 @@ public class RevenuePaymentHandler {
         ChargingStatusRequest request = ChargingStatusRequest.builder().mode(StatusMode.LOCAL).transactionId(sessionDTO.get(SessionKeys.TRANSACTION_ID)).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
-        BaseResponse<?> baseResponse = statusService.status(request);
+        BaseResponse<?> baseResponse = paymentManager.status(request, paymentCode, true);
         return baseResponse.getResponse();
     }
 
-    //TODO: add SID
-    @PostMapping("/verify")
+    @PostMapping("/verify/{sid}")
+    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public ResponseEntity<?> verify(@RequestBody VerificationRequest request) {
+    public ResponseEntity<?> verify(@PathVariable String sid, @RequestBody VerificationRequest request) {
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        PaymentCode paymentCode = request.getPaymentCode();
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        IMerchantVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantVerificationService.class);
-        BaseResponse<?> baseResponse = verificationService.doVerify(request);
+        BaseResponse<?> baseResponse = paymentManager.doVerify(request);
         return baseResponse.getResponse();
     }
 
@@ -81,11 +85,11 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
+        final String transactionId = sessionDTO.get(SessionKeys.TRANSACTION_ID);
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
-        BaseResponse<?> baseResponse = callbackService.handleCallback(request);
+        AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(transactionId, request, paymentCode);
         return baseResponse.getResponse();
     }
 
@@ -96,10 +100,10 @@ public class RevenuePaymentHandler {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
+        final String transactionId = sessionDTO.get(SessionKeys.TRANSACTION_ID);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        AnalyticService.update(REQUEST_PAYLOAD, payload.toString());
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
-        BaseResponse<?> baseResponse = callbackService.handleCallback(request);
+        AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(transactionId, request, paymentCode);
         return baseResponse.getResponse();
     }
 

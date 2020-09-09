@@ -11,6 +11,7 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
+import in.wynk.payment.dto.request.TransactionInitRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -54,16 +55,39 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event) {
         log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}",uid, planId, amount, paymentCode.getCode(), event.getValue());
-        Transaction transaction = upsert(Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
+        Transaction txn = Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance()).uid(uid).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
-                .type(event.name()).build());
+                .type(event.name()).build();
+        return initTransaction(txn);
+    }
+
+    private Transaction initTransaction(Transaction txn){
+        Transaction transaction = upsert(txn);
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         if (Objects.nonNull(sessionDTO)) {
             sessionDTO.put(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
-            sessionDTO.put(SessionKeys.PAYMENT_CODE, paymentCode.getCode());
+            sessionDTO.put(SessionKeys.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         }
         return transaction;
+    }
+
+    @Override
+    public Transaction initiateTransaction(TransactionInitRequest transactionInitRequest) {
+        Transaction txn = Transaction.builder()
+                .planId(transactionInitRequest.getPlanId())
+                .amount(transactionInitRequest.getAmount())
+                .initTime(Calendar.getInstance())
+                .consent(Calendar.getInstance())
+                .uid(transactionInitRequest.getUid())
+                .msisdn(transactionInitRequest.getMsisdn())
+                .paymentChannel(transactionInitRequest.getPaymentCode().name())
+                .status(TransactionStatus.INPROGRESS.name())
+                .type(transactionInitRequest.getEvent().name())
+                .coupon(transactionInitRequest.getCouponId())
+                .discount(transactionInitRequest.getDiscount())
+                .build();
+        return initTransaction(txn);
     }
 
     @Override
@@ -76,20 +100,32 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         this.updateAndPublish(transaction, fetchAndUpdateFromSourceFn, false);
     }
 
+    @Override
+    public void updateAndSyncPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
+        this.updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, true);
+    }
+
+    @Override
+    public void updateAndAsyncPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
+        this.updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, false);
+    }
+
     private void updateAndPublish(Transaction transaction, Consumer<Transaction> fetchAndUpdateFromSourceFn, boolean isSync) {
-        try {
-            PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             TransactionStatus existingTransactionStatus = transaction.getStatus();
             fetchAndUpdateFromSourceFn.accept(transaction);
             TransactionStatus finalTransactionStatus = transaction.getStatus();
+            updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, isSync);
+    }
 
+    private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
+        try {
+            PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
                 if (transaction.getType() == TransactionEvent.SUBSCRIBE) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
                 }
-
                 if (isSync) {
                     subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
                 } else {

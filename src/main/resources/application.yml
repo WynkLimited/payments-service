@@ -1,6 +1,7 @@
 spring:
   profiles:
     active: ${env}
+    include: application-coupon-core-${env}
   main:
     banner-mode: off
   devtools:
@@ -61,6 +62,8 @@ service:
         allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/subscription/provision/
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/subscription/unprovision/
+        thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
+        activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
 
 ####### payment props #######
 payment:
@@ -76,4 +79,4 @@ payment:
 cors:
   maxAge: 3600
   allowed:
-    methods: GET, PUT, PATCH, POST, OPTIONS
+    methods: GET, PUT, PATCH, POST, OPTIONS, DELETE

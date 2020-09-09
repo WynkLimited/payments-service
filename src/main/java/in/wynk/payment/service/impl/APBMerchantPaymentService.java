@@ -104,6 +104,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         this.transactionManager = transactionManager;
     }
 
+    //TODO: use txn provided by payment manager and remove redundant code
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();

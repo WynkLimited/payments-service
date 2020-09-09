@@ -5,6 +5,6 @@ import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantPaymentChargingService {
 
-    BaseResponse<?>  doCharging(ChargingRequest chargingRequest);
+    BaseResponse<?> doCharging(ChargingRequest chargingRequest);
 
 }

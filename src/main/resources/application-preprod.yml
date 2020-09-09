@@ -261,9 +261,9 @@ wynk:
         database: payments_preprod
       coupons:
         nodes: 10.80.0.128,10.80.0.240
-        username:
-        password:
-        database: coupons
+        username: user_coupons_preprod
+        password: yC3weM5K2Q
+        database: coupons_preprod
     ########### Mongo Pool Config ###########
     minConnectionsPerHost: 10
     maxConnectionsPerHost: 50

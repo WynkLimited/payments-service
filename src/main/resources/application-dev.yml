@@ -260,8 +260,8 @@ wynk:
         database: payments
       coupons:
         nodes: 10.80.0.128,10.80.0.240
-        username:
-        password:
+        username: user_coupons
+        password: Sk6kzU8GU5
         database: coupons
     ########### Mongo Pool Config ###########
     minConnectionsPerHost: 10

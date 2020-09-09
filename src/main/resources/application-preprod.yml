@@ -255,12 +255,12 @@ wynk:
     enabled: true
     sources:
       payment:
-        nodes: 10.80.0.68,10.80.0.73
-        username:
-        password:
-        database: payments-preprod
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_payments_preprod
+        password: t2KXcR8dnW
+        database: payments_preprod
       coupons:
-        nodes: 10.80.0.68,10.80.0.73
+        nodes: 10.80.0.128,10.80.0.240
         username:
         password:
         database: coupons

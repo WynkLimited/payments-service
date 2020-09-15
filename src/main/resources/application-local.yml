@@ -28,7 +28,6 @@ apb:
     payment:
       url: https://apptest.airtelbank.com/ecom/v2/initiatePayment
 
-
 ###### Redis Store Props #######
 session:
   redis:
@@ -239,7 +238,6 @@ http:
           request:
             timeout: 1000
 
-
 ###### Service Endpoints  ######
 
 service:
@@ -256,21 +254,20 @@ debug: false
 webview:
   host: https://pay-stage.wynk.in
 
-
 ########### MONGO CONFIG ###########
 wynk:
   mongodb:
     enabled: true
     sources:
       payment:
-        nodes: 10.80.0.68,10.80.0.73
-        username:
-        password:
-        database: payment
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_payments
+        password: zS7VvjYRSE
+        database: payments
       coupons:
-        nodes: 10.80.0.68,10.80.0.73
-        username:
-        password:
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_coupons
+        password: Sk6kzU8GU5
         database: coupons
 ########### Mongo Pool Config ###########
     minConnectionsPerHost: 1

@@ -3,8 +3,8 @@ package in.wynk.payment.service.impl;
 import in.wynk.commons.dto.AllPlansResponse;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SubscriptionProvisioningMessage;
-import in.wynk.commons.dto.SubscriptionProvisioningRequest;
-import in.wynk.commons.dto.SubscriptionUnProvisioningRequest;
+import in.wynk.commons.dto.PlanProvisioningRequest;
+import in.wynk.commons.dto.PlanUnProvisioningRequest;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -84,7 +84,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
         try {
             restTemplate.postForObject(subscribePlanEndPoint + sid,
-                    SubscriptionProvisioningRequest.builder()
+                    PlanProvisioningRequest.builder()
                             .uid(uid)
                             .planId(planId)
                             .msisdn(msisdn)
@@ -102,7 +102,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
         try {
             restTemplate.postForObject(unSubscribePlanEndPoint + sid,
-                    SubscriptionUnProvisioningRequest.builder()
+                    PlanUnProvisioningRequest.builder()
                             .uid(uid)
                             .planId(planId)
                             .build(),

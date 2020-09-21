@@ -1,15 +1,16 @@
 package in.wynk.payment.core.dao.entity;
 
-
 import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import static in.wynk.commons.enums.PaymentGroup.WALLET;
 
 @Getter
-public class Wallet implements Payment {
+@NoArgsConstructor
+public class Wallet extends Payment {
 
     private PaymentGroup group = WALLET;
     private PaymentCode paymentCode;

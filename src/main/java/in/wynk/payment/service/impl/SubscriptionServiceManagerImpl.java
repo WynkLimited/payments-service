@@ -1,10 +1,7 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.commons.dto.AllPlansResponse;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SubscriptionProvisioningMessage;
-import in.wynk.commons.dto.PlanProvisioningRequest;
-import in.wynk.commons.dto.PlanUnProvisioningRequest;
+import in.wynk.commons.constants.BaseConstants;
+import in.wynk.commons.dto.*;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -62,6 +59,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 .uid(uid)
                 .msisdn(msisdn)
                 .planId(planId)
+                .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .transactionId(transactionId)
                 .transactionEvent(transactionEvent)
                 .transactionStatus(transactionStatus)
@@ -74,6 +72,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 .uid(uid)
                 .msisdn(msisdn)
                 .planId(planId)
+                .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .transactionId(transactionId)
                 .transactionEvent(TransactionEvent.UNSUBSCRIBE)
                 .transactionStatus(transactionStatus)
@@ -83,13 +82,12 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
         try {
-            restTemplate.postForObject(subscribePlanEndPoint + sid,
+            restTemplate.postForObject(String.format("%s/%s", subscribePlanEndPoint, planId),
                     PlanProvisioningRequest.builder()
                             .uid(uid)
-                            .planId(planId)
                             .msisdn(msisdn)
                             .referenceId(transactionId)
-                            .paymentPartner("wynk")
+                            .paymentPartner(BaseConstants.WYNK.toLowerCase())
                             .eventType(transactionEvent)
                             .build(),
                     String.class);
@@ -101,10 +99,12 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
         try {
-            restTemplate.postForObject(unSubscribePlanEndPoint + sid,
+            restTemplate.postForObject(String.format("%s/%s", unSubscribePlanEndPoint, planId),
+
                     PlanUnProvisioningRequest.builder()
                             .uid(uid)
-                            .planId(planId)
+                            .referenceId(transactionId)
+                            .paymentPartner(BaseConstants.WYNK.toLowerCase())
                             .build(),
                     String.class);
         } catch (Exception e) {

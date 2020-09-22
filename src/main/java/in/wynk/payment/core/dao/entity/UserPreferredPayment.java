@@ -13,6 +13,9 @@ public class UserPreferredPayment extends MongoBaseEntity {
     @Setter
     private Payment option;
 
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public static final class Builder {
         private String id;

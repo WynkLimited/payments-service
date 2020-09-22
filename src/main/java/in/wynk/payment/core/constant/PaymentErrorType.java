@@ -7,6 +7,12 @@ import org.springframework.http.HttpStatus;
 
 public enum PaymentErrorType implements IWynkErrorType {
 
+
+
+    PAY021("Invalid Id", "Can not find Itunes Id Uid Mapping with given invalid id", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ITUNES_ID_UID_MAPPING_ERROR),
+    PAY022("Invalid Id", "Can not find Payments Method with given invalid id", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENTS_METHOD_ERROR),
+    PAY023("Invalid Id", "Can not find User Preferred Payment with given invalid id", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.USER_PREFERRED_PAYMENT_ERROR),
+
     /**
      * PAYU ERROR CODES
      **/

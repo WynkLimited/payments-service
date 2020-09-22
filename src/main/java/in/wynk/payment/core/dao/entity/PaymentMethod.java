@@ -18,6 +18,9 @@ public class PaymentMethod extends MongoBaseEntity {
     private PaymentCode paymentCode;
     private int hierarchy;
 
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public static final class Builder {
         private String id;

@@ -13,7 +13,7 @@ import static in.wynk.commons.enums.PaymentGroup.CARD;
 
 @Getter
 @NoArgsConstructor
-public class Card extends Payment {
+public class Card implements Payment {
 
     private PaymentGroup group = CARD;
     private List<CardDetails> cardDetails;

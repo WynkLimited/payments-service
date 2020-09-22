@@ -10,7 +10,7 @@ import static in.wynk.commons.enums.PaymentGroup.WALLET;
 
 @Getter
 @NoArgsConstructor
-public class Wallet extends Payment {
+public class Wallet implements Payment {
 
     private PaymentGroup group = WALLET;
     private PaymentCode paymentCode;

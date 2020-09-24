@@ -40,8 +40,4 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APB_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APB_CHARGING_STATUS_VERIFICATION");
     Marker APB_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("APB_CHARGING_CALLBACK_FAILURE");
 
-    Marker ITUNES_ID_UID_MAPPING_ERROR = MarkerFactory.getMarker("ITUNES_ID_UID_MAPPING_ERROR");
-    Marker PAYMENTS_METHOD_ERROR = MarkerFactory.getMarker("PAYMENTS_METHOD_ERROR");
-    Marker USER_PREFERRED_PAYMENT_ERROR = MarkerFactory.getMarker("USER_PREFERRED_PAYMENT_ERROR");
-
 }

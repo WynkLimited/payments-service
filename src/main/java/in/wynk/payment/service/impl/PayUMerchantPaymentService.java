@@ -11,10 +11,7 @@ import in.wynk.commons.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.TransactionContext;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -23,6 +20,7 @@ import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
@@ -56,6 +54,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.commons.constants.BaseConstants.*;
+import static in.wynk.commons.enums.TransactionStatus.SUCCESS;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -165,7 +164,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     errorMessage = verificationPayUTransactionDetails.getErrorMessage();
                 } else if (payUTransactionDetails.getStatus().equals(PAYU_SI_STATUS_FAILURE)) {
                     errorMessage = payUTransactionDetails.getPayUResponseFailureMessage();
-                } else if (payUTransactionDetails.getStatus().equals(SUCCESS)) {
+                } else if (payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS)) {
                     status = true;
                 }
             }
@@ -207,7 +206,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
-        return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
+        ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
+                .tid(transaction.getIdStr());
+        if(transaction.getStatus().equals(SUCCESS)){
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+        }
+        return responseBuilder.build();
     }
 
     public void fetchAndUpdateTransactionFromSource(Transaction transaction) {
@@ -221,8 +225,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payUTransactionDetails.getPayUExternalTxnId());
             if (payUChargingVerificationResponse.getStatus() == 1) {
-                if (SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
-                    finalTransactionStatus = TransactionStatus.SUCCESS;
+                if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
+                    finalTransactionStatus = SUCCESS;
                 } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
@@ -256,9 +260,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        return ChargingStatusResponse.builder()
-                .transactionStatus(transaction.getStatus())
-                .build();
+        ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
+                .tid(transaction.getIdStr());
+        if(transaction.getStatus().equals(SUCCESS)){
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+        }
+        return responseBuilder.build();
     }
 
     private Map<String, String> startPaymentChargingForPayU(Transaction transaction) {
@@ -431,7 +438,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
-                } else if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
+                } else if (transaction.getStatus().equals(SUCCESS)) {
                     return SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.get(OS);
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);

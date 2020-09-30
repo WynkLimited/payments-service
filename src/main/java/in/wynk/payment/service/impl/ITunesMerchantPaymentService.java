@@ -20,12 +20,7 @@ import in.wynk.payment.core.dao.repository.receipts.ItunesIdUidDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.itune.ItunesCallbackRequest;
-import in.wynk.payment.dto.itune.ItunesReceipt;
-import in.wynk.payment.dto.itune.ItunesReceiptType;
-import in.wynk.payment.dto.itune.ItunesStatusCodes;
-import in.wynk.payment.dto.itune.ItunesVerificationRequest;
-import in.wynk.payment.dto.itune.LatestReceiptInfo;
+import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -59,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_ERROR;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
@@ -106,7 +102,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             returnUrl.addParameter(STATUS, transaction.getStatus().name());
             return BaseResponse.redirectResponse(returnUrl.build().toString());
         } catch (Exception e) {
-            throw new WynkRuntimeException(WynkErrorType.UT999, e.getMessage());
+            log.error(ITUNES_ERROR, e.getMessage(), e);
+            throw new WynkRuntimeException(WynkErrorType.UT999, e, e.getMessage());
         }
     }
 
@@ -130,7 +127,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                     transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateFromReceipt);
                     finalTransactionStatus = transaction.getStatus();
                 } catch (UnsupportedEncodingException e) {
-                    log.error(BaseLoggingMarkers.PAYMENT_ERROR, String.valueOf(e));
+                    log.error(BaseLoggingMarkers.PAYMENT_ERROR, e.getMessage(), e);
                 }
             }
             return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(finalTransactionStatus).build()).status(HttpStatus.OK).build();
@@ -158,7 +155,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 final ItunesIdUidMapping mapping = itunesIdUidDao.findByPlanIdAndItunesId(transaction.getPlanId(), originalITunesTrxnId);
 
                 if (mapping != null && !mapping.getUid().equals(transaction.getUid())) {
-                    log.error(BaseLoggingMarkers.PAYMENT_ERROR, "Already have subscription for the corresponding iTunes id on another account");
+                    log.error(ITUNES_ERROR, "Already have subscription for the corresponding iTunes id on another account");
                     errorMessage = "Already have subscription for the corresponding iTunes id on another account";
                     transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
                 }

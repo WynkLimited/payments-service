@@ -1,7 +1,7 @@
 spring:
   profiles:
     active: ${env}
-    include: application-coupon-core-${env}
+    include: coupon-core-${env}
   main:
     banner-mode: off
   devtools:
@@ -12,6 +12,9 @@ spring:
   jackson:
     default-property-inclusion: NON_NULL
 
+uid:
+  hash:
+    key: 81BHyAUfMgCiu9I7XqArF1Bvy0o
 
 debug: false
 

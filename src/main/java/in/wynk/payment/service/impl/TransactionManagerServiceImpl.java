@@ -17,6 +17,7 @@ import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -64,8 +65,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private Transaction initTransaction(Transaction txn){
         Transaction transaction = upsert(txn);
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        if (Objects.nonNull(sessionDTO)) {
+        Session<SessionDTO> session = SessionContextHolder.get();
+        if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
+            SessionDTO sessionDTO = session.getBody();
             sessionDTO.put(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
             sessionDTO.put(SessionKeys.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         }

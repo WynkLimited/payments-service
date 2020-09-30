@@ -7,27 +7,21 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import static in.wynk.payment.core.constant.BeanConstant.AMAZON_IAP_PAYMENT_SERVICE;
-import static in.wynk.payment.core.constant.BeanConstant.ITUNES_PAYMENT_SERVICE;
+import lombok.experimental.SuperBuilder;
 
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = ITUNES_PAYMENT_SERVICE),
-        @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = AMAZON_IAP_PAYMENT_SERVICE)
+        @JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"),
+        @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")
 })
-
-@Builder
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @AnalysedEntity
-public class IapVerificationRequest {
+@SuperBuilder
+@NoArgsConstructor
+public abstract class IapVerificationRequest {
     @Analysed
     private String uid;
     @Analysed
@@ -40,6 +34,7 @@ public class IapVerificationRequest {
     private String service;
     @Analysed
     private String sid;
-    private PaymentCode paymentCode;
+
+    public abstract PaymentCode paymentCode();
 
 }

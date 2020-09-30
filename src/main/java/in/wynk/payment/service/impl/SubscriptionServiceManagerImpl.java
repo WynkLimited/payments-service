@@ -104,6 +104,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             restTemplate.postForObject(unSubscribePlanEndPoint + sid,
                     SubscriptionUnProvisioningRequest.builder()
                             .uid(uid)
+                            .msisdn(msisdn)
                             .planId(planId)
                             .build(),
                     String.class);

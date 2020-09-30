@@ -34,6 +34,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE");
 
     Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
+    Marker ITUNES_ERROR = MarkerFactory.getMarker("ITUNES_ERROR");
 
     Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
 

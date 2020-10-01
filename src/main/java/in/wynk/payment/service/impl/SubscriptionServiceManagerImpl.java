@@ -8,8 +8,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
-import in.wynk.queue.dto.SendSQSMessageRequest;
-import in.wynk.queue.producer.ISQSMessagePublisher;
+import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
@@ -25,13 +24,7 @@ import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
 
     private final RestTemplate restTemplate;
-    private final ISQSMessagePublisher sqsMessagePublisher;
-
-    @Value("${payment.pooling.queue.subscription.name}")
-    private String subscriptionQueue;
-
-    @Value("${payment.pooling.queue.subscription.sqs.producer.delayInSecond}")
-    private int subscriptionMessageDelay;
+    private final ISqsManagerService sqsMessagePublisher;
 
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
@@ -42,7 +35,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.unSubscribePlan}")
     private String unSubscribePlanEndPoint;
 
-    public SubscriptionServiceManagerImpl(ISQSMessagePublisher sqsMessagePublisher,
+    public SubscriptionServiceManagerImpl(ISqsManagerService sqsMessagePublisher,
                                           @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate restTemplate) {
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.restTemplate = restTemplate;
@@ -114,11 +107,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     private void publishAsync(SubscriptionProvisioningMessage message) {
         try {
-            sqsMessagePublisher.publish(SendSQSMessageRequest.<SubscriptionProvisioningMessage>builder()
-                    .queueName(subscriptionQueue)
-                    .delaySeconds(subscriptionMessageDelay)
-                    .message(message)
-                    .build());
+            sqsMessagePublisher.publishSQSMessage(message);
         } catch (Exception e) {
             throw new WynkRuntimeException(QueueErrorType.SQS001, e);
         }

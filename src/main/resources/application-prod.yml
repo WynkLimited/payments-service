@@ -141,19 +141,6 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      subscription:
-        enabled: false
-        name: wcf-prod-subscription
-        sqs:
-          messages:
-            extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
-          producer:
-            delayInSecond: 20
-          consumer:
-            delay: 1
-            delayTimeUnit: MINUTES
       recurrence:
         enabled: true
         name: wcf-production-revenue-recurring
@@ -167,6 +154,17 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+
+subscription:
+  pooling:
+    queue:
+      provision:
+        enabled: true
+        name: wcf-staging-subscription
+        sqs:
+          producer:
+            delayInSecond: 1
+
   ###### webview status props #######
   status:
     web:

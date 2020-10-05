@@ -9,11 +9,7 @@ import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -48,7 +44,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private String amazonIapSecret;
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
-    @Value("${payment.status.web.url}")
+    @Value("${payment.success.page}")
     private String statusWebUrl;
 
     private final ObjectMapper mapper;

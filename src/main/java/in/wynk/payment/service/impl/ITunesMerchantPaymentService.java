@@ -302,7 +302,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         PlanDTO selectedPlan = cachingService.getPlan(productId);
         String skuId = selectedPlan.getSku().get(ITUNES);
         return receipts.stream()
-                .filter(receipt -> StringUtils.isNotEmpty(receipt.getProductId()) && receipt.getProductId().equalsIgnoreCase(skuId))
+                .filter(receipt -> StringUtils.isNotEmpty(receipt.getProductId()) && StringUtils.equalsIgnoreCase(receipt.getProductId(), skuId))
                 .sorted(Comparator.comparingLong(type::getExpireDate).reversed())
                 .collect(Collectors.toList());
     }

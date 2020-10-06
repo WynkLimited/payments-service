@@ -1,11 +1,7 @@
 package in.wynk.payment.dto.response;
 
 import in.wynk.payment.core.constant.PaymentConstants;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.ToString;
+import lombok.*;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.http.HttpHeaders;
@@ -21,7 +17,7 @@ import java.util.Map;
 
 @Getter
 @Builder
-@RequiredArgsConstructor
+@AllArgsConstructor
 @ToString
 public class BaseResponse<R> {
 

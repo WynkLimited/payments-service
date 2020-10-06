@@ -29,10 +29,7 @@ public enum PaymentErrorType implements IWynkErrorType {
      */
     PAY300("Payment Charging Callback Pending", "Transaction is still pending at source", "${payment.pending.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_PENDING),
     PAY301("Payment Charging Callback Failure", "No matching status found at source", "${payment.unknown.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE),
-    PAY302("Payment Charging Callback Failure", "Something went wrong", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE),
-    PAY303("Payment Receipt Verify Failure", "Transaction is still pending at source", "${payment.pending.page}", HttpStatus.FOUND, PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE),
-    PAY304("Payment Receipt Verify Failure", "No matching status found at source", "${payment.unknown.page}", HttpStatus.FOUND, PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE),
-    PAY305("Payment Receipt Verify Failure", "Something went wrong", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE);
+    PAY302("Payment Charging Callback Failure", "Something went wrong", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE);
 
 
     /**

@@ -1,5 +1,7 @@
 package in.wynk.payment.dto.response;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,12 +23,16 @@ import java.util.Map;
 
 @Getter
 @Builder
-@RequiredArgsConstructor
 @ToString
+@AnalysedEntity
+@RequiredArgsConstructor
 public class BaseResponse<R> {
 
+    @Analysed
     private final R body;
+    @Analysed
     private final HttpStatus status;
+    @Analysed
     private final HttpHeaders headers;
 
     public ResponseEntity<R> getResponse() {

@@ -39,7 +39,7 @@ public class RevenuePaymentHandler {
     private final PaymentManager paymentManager;
     private Gson gson;
 
-    public RevenuePaymentHandler(PaymentManager paymentManager, Gson gson){
+    public RevenuePaymentHandler(PaymentManager paymentManager, Gson gson) {
         this.paymentManager = paymentManager;
         this.gson = gson;
     }

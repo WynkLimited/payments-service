@@ -22,6 +22,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 public abstract class IapVerificationRequest {
+
     @Analysed
     private String uid;
     @Analysed

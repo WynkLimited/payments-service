@@ -1,7 +1,7 @@
 package in.wynk.payment.service;
 
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.TransactionInitRequest;

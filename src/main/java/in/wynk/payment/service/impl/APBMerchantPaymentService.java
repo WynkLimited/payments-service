@@ -1,14 +1,13 @@
 package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
-import in.wynk.commons.constants.BaseConstants;
-import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.Currency;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.utils.CommonUtils;
+import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.constant.SessionKeys;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.Currency;
+import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -38,6 +37,7 @@ import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -61,7 +61,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.UUID;
 
-import static in.wynk.commons.constants.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.APB_GATEWAY;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
@@ -228,7 +228,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
             status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(transaction.getPlanId()));
         }
-        return new BaseResponse<>(status, HttpStatus.OK, null);
+        return new BaseResponse<ChargingStatusResponse>(status, HttpStatus.OK, null);
     }
 
 

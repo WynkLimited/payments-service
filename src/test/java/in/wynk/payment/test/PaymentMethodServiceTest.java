@@ -1,7 +1,7 @@
 package in.wynk.payment.test;
 
 import com.google.gson.Gson;
-import in.wynk.commons.dto.SessionDTO;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.test.utils.PaymentTestUtils;

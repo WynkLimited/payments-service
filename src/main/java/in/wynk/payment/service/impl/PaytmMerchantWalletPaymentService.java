@@ -3,14 +3,12 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.Status;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.utils.EncryptionUtils;
-import in.wynk.commons.utils.Utils;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.Status;
+import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -54,6 +52,8 @@ import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.enums.PlanType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -81,8 +81,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-import static in.wynk.commons.constants.BaseConstants.*;
-import static in.wynk.commons.enums.Status.SUCCESS;
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.enums.Status.SUCCESS;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.HTTP_ERROR;
@@ -332,14 +332,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
             PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(tid);
             if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
-                return new BaseResponse<>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
+                return new BaseResponse<ChargingStatusResponse>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
             }
         } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-                return new BaseResponse<>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
+                return new BaseResponse<ChargingStatusResponse>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
             }
         }
-        return new BaseResponse<>(ChargingStatusResponse.failure(tid), HttpStatus.OK, null);
+        return new BaseResponse<ChargingStatusResponse>(ChargingStatusResponse.failure(tid), HttpStatus.OK, null);
     }
 
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(String txnId) {
@@ -380,7 +380,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             paytmWalletValidateLinkResponse = responseEntity.getBody();
             if (paytmWalletValidateLinkResponse != null && paytmWalletValidateLinkResponse.getStatus().equals(SUCCESS)) {
                 saveToken(paytmWalletValidateLinkResponse);
-                return new BaseResponse<>(null, HttpStatus.OK, null);
+                return new BaseResponse<Void>(null, HttpStatus.OK, null);
             }
         } catch (HttpStatusCodeException e) {
             AnalyticService.update("otpValidated", false);
@@ -450,7 +450,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             if (payTmResponse != null && payTmResponse.getBody() != null && payTmResponse.getBody().getResultInfo().getResultStatus() == SUCCESS) {
                 WalletBalanceResponse response = WalletBalanceResponse.builder().isLinked(true)
                         .deficitBalance(payTmResponse.getBody().getDeficitAmount()).fundsSufficient(payTmResponse.getBody().isFundsSufficient()).build();
-                return new BaseResponse<>(response, HttpStatus.OK, null);
+                return new BaseResponse<WalletBalanceResponse>(response, HttpStatus.OK, null);
             }
 
         } catch (HttpStatusCodeException e) {
@@ -458,7 +458,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         } catch (Exception e) {
             throw new RuntimeException("Unknown Exception Occurred");
         }
-        return new BaseResponse<>(WalletBalanceResponse.defaultUnlinkResponse(), HttpStatus.OK, null);
+        return new BaseResponse<WalletBalanceResponse>(WalletBalanceResponse.defaultUnlinkResponse(), HttpStatus.OK, null);
     }
 
     private boolean validateAccessToken(String uid, Wallet wallet) {
@@ -524,7 +524,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
             Map<String, String> params = new HashMap<>();
             params.put(INFO, payTmRequestParams);
-            return new BaseResponse<>(params, HttpStatus.OK, null);
+            return new BaseResponse<Map<String, String>>(params, HttpStatus.OK, null);
         } catch (HttpStatusCodeException e) {
             throw new WynkRuntimeException("Http Status Exception Occurred");
         } catch (Exception e) {
@@ -565,7 +565,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 errorCode = PayTmErrorCodes.resolveErrorCode(responseCode);
                 logger.error(HTTP_ERROR, "Error in sending otp. Reason: [{}]",
                         errorCode.getMessage());
-                return new BaseResponse<>(paytmWalletLinkResponse, HttpStatus.OK, responseEntity.getHeaders());
+                return new BaseResponse<PaytmWalletLinkResponse>(paytmWalletLinkResponse, HttpStatus.OK, responseEntity.getHeaders());
             }
 
             String state = paytmWalletLinkResponse.getState(); // add state in session

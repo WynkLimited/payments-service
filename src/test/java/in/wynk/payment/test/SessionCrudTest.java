@@ -1,7 +1,6 @@
 package in.wynk.payment.test;
 
-
-import in.wynk.commons.dto.SessionDTO;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.payment.test.utils.PaymentTestUtils;
 import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;

@@ -1,6 +1,6 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionEvent;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;

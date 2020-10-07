@@ -1,6 +1,6 @@
 package in.wynk.payment.dto;
 
-import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionEvent;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.Data;
 

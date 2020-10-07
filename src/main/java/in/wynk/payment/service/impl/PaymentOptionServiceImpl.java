@@ -1,7 +1,7 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PaymentGroup;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.payment.core.constant.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static in.wynk.commons.constants.BaseConstants.UID;
+import static in.wynk.common.constant.BaseConstants.UID;
 
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {

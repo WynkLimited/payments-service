@@ -1,7 +1,7 @@
 package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
-import in.wynk.commons.dto.UnSchedulePaymentRecurrenceMessage;
+import in.wynk.payment.common.messages.UnSchedulePaymentRecurrenceMessage;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.service.IRecurringPaymentManagerService;

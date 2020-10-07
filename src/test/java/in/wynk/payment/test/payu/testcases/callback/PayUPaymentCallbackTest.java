@@ -1,9 +1,8 @@
 package in.wynk.payment.test.payu.testcases.callback;
 
-import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.common.constant.SessionKeys;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -16,6 +15,7 @@ import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.payment.test.payu.data.PayUTestData;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.enums.PlanType;
 import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Before;

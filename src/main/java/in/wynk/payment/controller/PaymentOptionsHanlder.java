@@ -1,7 +1,7 @@
 package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
-import in.wynk.commons.dto.SessionDTO;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.session.aspect.advice.ManageSession;

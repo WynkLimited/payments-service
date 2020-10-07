@@ -1,13 +1,9 @@
 package in.wynk.payment.test.payu.data;
 
-import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.PlanPeriodDTO;
-import in.wynk.commons.dto.PriceDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.common.constant.SessionKeys;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -17,6 +13,10 @@ import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import in.wynk.subscription.common.dto.PriceDTO;
+import in.wynk.subscription.common.enums.PlanType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 

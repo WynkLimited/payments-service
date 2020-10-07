@@ -1,7 +1,7 @@
 package in.wynk.payment.exception.handler;
 
-import in.wynk.commons.constants.BaseConstants;
-import in.wynk.commons.dto.SessionDTO;
+import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.handler.WynkGlobalExceptionHandler;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
-import static in.wynk.commons.constants.BaseConstants.SLASH;
+import static in.wynk.common.constant.BaseConstants.SLASH;
 
 @Slf4j
 @ControllerAdvice

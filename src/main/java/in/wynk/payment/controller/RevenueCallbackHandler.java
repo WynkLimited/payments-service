@@ -2,7 +2,7 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;

@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.apb;
 
-import in.wynk.commons.enums.Currency;
+import in.wynk.common.enums.Currency;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

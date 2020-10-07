@@ -2,7 +2,7 @@ package in.wynk.payment.dto.response;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.commons.enums.PaymentGroup;
+import in.wynk.payment.core.constant.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

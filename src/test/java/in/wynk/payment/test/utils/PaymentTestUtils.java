@@ -1,18 +1,18 @@
 package in.wynk.payment.test.utils;
 
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.PlanPeriodDTO;
-import in.wynk.commons.dto.PriceDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PaymentGroup;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.State;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.data.enums.State;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentGroup;
 import in.wynk.payment.core.dao.entity.Card;
 import in.wynk.payment.core.dao.entity.Payment;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import in.wynk.subscription.common.dto.PriceDTO;
+import in.wynk.subscription.common.enums.PlanType;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,9 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.commons.constants.BaseConstants.MSISDN;
-import static in.wynk.commons.constants.BaseConstants.SERVICE;
-import static in.wynk.commons.constants.BaseConstants.UID;
+import static in.wynk.common.constant.BaseConstants.*;
 
 public class PaymentTestUtils {
 

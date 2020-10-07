@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.amazonIap;
+package in.wynk.payment.dto.response;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
@@ -10,15 +10,15 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class AmazonIapVerificationResponse extends BaseResponse<AmazonIapVerificationResponse.AmazonIapVerification> {
+public class IapVerificationResponse extends BaseResponse<IapVerificationResponse.IapVerification> {
 
     @Analysed
-    private final AmazonIapVerification data;
+    private final IapVerification data;
 
     @Getter
     @Builder
     @AnalysedEntity
-    public static class AmazonIapVerification {
+    public static class IapVerification {
         @Analysed
         private final String url;
     }

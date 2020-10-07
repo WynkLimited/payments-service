@@ -15,9 +15,9 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
-import in.wynk.payment.dto.amazonIap.AmazonIapVerificationResponse;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -66,10 +66,10 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     @Override
-    public BaseResponse<AmazonIapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
+    public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
         final String sid = SessionContextHolder.getId();
         final String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
-        final AmazonIapVerificationResponse.AmazonIapVerification.AmazonIapVerificationBuilder builder = AmazonIapVerificationResponse.AmazonIapVerification.builder();
+        final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
             final AmazonIapVerificationRequest request = (AmazonIapVerificationRequest) iapVerificationRequest;
@@ -77,14 +77,13 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             fetchAndUpdateTransaction(transaction);
             if (transaction.getStatus().equals(SUCCESS)) {
                 builder.url(SUCCESS_PAGE + sid + SLASH + os);
-                return BaseResponse.<AmazonIapVerificationResponse>builder().body(AmazonIapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
             } else {
                 builder.url(FAILURE_PAGE + sid + SLASH + os);
-                return BaseResponse.<AmazonIapVerificationResponse>builder().body(AmazonIapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
             }
+            return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
             log.error(AMAZON_IAP_VERIFICATION_FAILURE, e.getMessage(), e);
-            return BaseResponse.<AmazonIapVerificationResponse>builder().body(AmazonIapVerificationResponse.builder().success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

@@ -27,6 +27,7 @@ import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -96,10 +97,10 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public BaseResponse<ItunesVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
+    public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
         final String sid = SessionContextHolder.getId();
         final String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
-        final ItunesVerificationResponse.ItunesReceiptVerification.ItunesReceiptVerificationBuilder builder = ItunesVerificationResponse.ItunesReceiptVerification.builder();
+        final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
             final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
@@ -107,15 +108,14 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             fetchAndUpdateFromReceipt(transaction);
             if (transaction.getStatus().equals(SUCCESS)) {
                 builder.url(SUCCESS_PAGE + sid + SLASH + os);
-                return BaseResponse.<ItunesVerificationResponse>builder().body(ItunesVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
             } else {
                 builder.url(FAILURE_PAGE + sid + SLASH + os);
-                return BaseResponse.<ItunesVerificationResponse>builder().body(ItunesVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
             }
+            return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
             builder.url(FAILURE_PAGE + sid + SLASH + os);
             log.error(ITUNES_VERIFICATION_FAILURE, e.getMessage(), e);
-            return BaseResponse.<ItunesVerificationResponse>builder().body(ItunesVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

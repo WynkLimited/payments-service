@@ -1,9 +1,9 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.commons.entity.MongoBaseEntity;
-import in.wynk.commons.enums.PaymentGroup;
-import in.wynk.commons.enums.State;
+import in.wynk.data.entity.MongoBaseEntity;
+import in.wynk.data.enums.State;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentGroup;
 import lombok.Getter;
 import org.springframework.data.mongodb.core.mapping.Document;
 

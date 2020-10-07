@@ -54,7 +54,12 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>revenue-commons</artifactId>
+            <artifactId>base-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>revenue-data</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

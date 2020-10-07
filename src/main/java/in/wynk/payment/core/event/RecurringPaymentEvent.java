@@ -1,7 +1,7 @@
 package in.wynk.payment.core.event;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionEvent;
 import lombok.Builder;
 import lombok.Getter;
 

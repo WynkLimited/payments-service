@@ -1,6 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionEvent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

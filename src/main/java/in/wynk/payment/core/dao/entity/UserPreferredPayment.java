@@ -1,6 +1,5 @@
 package in.wynk.payment.core.dao.entity;
-
-import in.wynk.commons.entity.MongoBaseEntity;
+import in.wynk.data.entity.MongoBaseEntity;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;

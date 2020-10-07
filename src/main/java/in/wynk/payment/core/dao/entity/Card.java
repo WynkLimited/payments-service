@@ -1,15 +1,14 @@
 package in.wynk.payment.core.dao.entity;
 
-
-import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentGroup;
 import lombok.Data;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static in.wynk.commons.enums.PaymentGroup.CARD;
+import static in.wynk.payment.core.constant.PaymentGroup.CARD;
 
 @Getter
 public class Card implements Payment {

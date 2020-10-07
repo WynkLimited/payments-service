@@ -1,7 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;

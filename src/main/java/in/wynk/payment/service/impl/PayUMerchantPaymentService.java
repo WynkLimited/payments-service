@@ -76,10 +76,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String payUSuccessUrl;
     @Value("${payment.merchant.payu.internal.callback.failureUrl}")
     private String payUFailureUrl;
-    @Value("${payment.pooling.queue.reconciliation.name}")
-    private String reconciliationQueue;
-    @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
-    private int reconciliationMessageDelay;
 
     private final Gson gson;
     private final PaymentCachingService cachingService;
@@ -413,7 +409,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final String transactionId = transaction.getIdStr();
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-            final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
             final String errorCode = payUCallbackRequestPayload.getError();
@@ -439,7 +434,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else if (transaction.getStatus().equals(SUCCESS)) {
-                    return SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.get(OS);
+                    String successUrl = sessionDTO.get(SUCCESS_WEB_URL);
+                    if (StringUtils.isEmpty(successUrl)) {
+                        successUrl = SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.get(OS);
+                    }
+                    return successUrl;
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }

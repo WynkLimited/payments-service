@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.enums.PlanType;
@@ -28,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import static in.wynk.commons.constants.BaseConstants.SERVICE;
 
 /**
  * @author Abhishek
@@ -100,7 +103,7 @@ public class PaymentManager {
     public BaseResponse<?> doVerifyIap(IapVerificationRequest request) {
         final PaymentCode paymentCode = request.paymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
-        final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION ? true: false;
+        final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
         final Transaction transaction = initiateTransaction(request.getPlanId(), autoRenew, request.getUid(), request.getMsisdn(), null, paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
@@ -120,24 +123,41 @@ public class PaymentManager {
     }
 
     private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
-        final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        double finalPlanAmount = selectedPlan.getFinalPrice();
-        Coupon coupon = getCoupon(couponId, msisdn, uid, paymentCode, selectedPlan);
-        TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).planId(planId).paymentCode(paymentCode);
+        final Coupon coupon;
+        final double amountToBePaid;
+        final double finalAmountToBePaid;
+        final SessionDTO session = SessionContextHolder.getBody();
+        final String service = session.get(SERVICE);
+        final String itemIdToBePurchased = session.get(BaseConstants.POINT_PURCHASE_ITEM_ID);
+        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode);
+
+        if (StringUtils.isNotEmpty(itemIdToBePurchased)) {
+            builder.event(TransactionEvent.POINT_PURCHASE);
+            amountToBePaid = session.get(BaseConstants.POINT_PURCHASE_ITEM_PRICE);
+            coupon = getCoupon(couponId, msisdn, uid, service, itemIdToBePurchased, paymentCode, null);
+        } else {
+            PlanDTO selectedPlan = cachingService.getPlan(planId);
+            amountToBePaid = selectedPlan.getFinalPrice();
+            builder.event(autoRenew ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE);
+            coupon = getCoupon(couponId, msisdn, uid, service, null , paymentCode, selectedPlan);
+        }
+
         if (coupon != null) {
             builder.couponId(coupon.getId()).discount(coupon.getDiscountPercent());
-            finalPlanAmount = getFinalAmount(selectedPlan, coupon);
+            finalAmountToBePaid = getFinalAmount(amountToBePaid, coupon);
+        } else {
+            finalAmountToBePaid = amountToBePaid;
         }
-        final TransactionEvent eventType = autoRenew ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
-        builder.amount(finalPlanAmount).event(eventType).build();
+
+        builder.amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }
 
-    private Coupon getCoupon(String couponId, String msisdn, String uid, PaymentCode paymentCode, PlanDTO selectedPlan) {
+    private Coupon getCoupon(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode, PlanDTO selectedPlan) {
         if (!StringUtils.isEmpty(couponId)) {
             CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                    .couponCode(couponId).msisdn(msisdn).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             return couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
         } else {
@@ -145,10 +165,9 @@ public class PaymentManager {
         }
     }
 
-    private double getFinalAmount(PlanDTO selectedPlan, Coupon coupon) {
-        final double planAmount = selectedPlan.getFinalPrice();
+    private double getFinalAmount(double itemPrice, Coupon coupon) {
         double discount = coupon.getDiscountPercent();
-        return planAmount - (planAmount * discount) / 100;
+        return itemPrice - (itemPrice * discount) / 100;
     }
 
     private void exhaustCouponIfApplicable() {

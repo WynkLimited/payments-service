@@ -8,6 +8,7 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
+import static in.wynk.commons.constants.BaseConstants.FAILURE_WEB_URL;
 import static in.wynk.commons.constants.BaseConstants.SLASH;
 
 @Slf4j
@@ -31,10 +33,14 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
     public ResponseEntity<?> handlePaymentRuntimeException(PaymentRuntimeException ex, WebRequest request) {
         PaymentErrorType errorType = PaymentErrorType.getWynkErrorType(ex.getErrorCode());
         if (errorType.getHttpResponseStatusCode() == HttpStatus.FOUND && errorType.getRedirectUrlProp() != null) {
-            final String sid = SessionContextHolder.getId();
-            final String os = SessionContextHolder.<SessionDTO>getBody().get(BaseConstants.OS);
-            final String webViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp());
-            return BaseResponse.redirectResponse(webViewUrl + sid + SLASH + os).getResponse();
+            SessionDTO session = SessionContextHolder.getBody();
+            String failureWebViewUrl = session.get(FAILURE_WEB_URL);
+            if (StringUtils.isEmpty(failureWebViewUrl)) {
+                final String sid = SessionContextHolder.getId();
+                final String os = session.get(BaseConstants.OS);
+                failureWebViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp()) + sid + SLASH + os;
+            }
+            return BaseResponse.redirectResponse(failureWebViewUrl).getResponse();
         }
         return super.handleWynkRuntimeExceptionInternal(ex, request);
     }

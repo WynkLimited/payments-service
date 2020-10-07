@@ -70,6 +70,8 @@ service:
 
 ####### payment props #######
 payment:
+  payOption:
+    page: ${webview.host}/#/payment-option/
   success:
     page: ${webview.host}/#/subscription/success/
   failure:

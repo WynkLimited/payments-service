@@ -31,6 +31,7 @@ apb:
 
 ###### Redis Store Props #######
 session:
+  duration: 1440
   redis:
     name: session-store:local
     mode: cluster

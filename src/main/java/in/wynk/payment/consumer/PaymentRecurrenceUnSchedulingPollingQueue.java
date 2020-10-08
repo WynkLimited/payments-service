@@ -1,6 +1,7 @@
 package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.common.messages.UnSchedulePaymentRecurrenceMessage;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -32,11 +33,12 @@ public class PaymentRecurrenceUnSchedulingPollingQueue extends AbstractSQSMessag
 
     public PaymentRecurrenceUnSchedulingPollingQueue(String queueName,
                                                      AmazonSQS sqs,
+                                                     ObjectMapper objectMapper,
                                                      ISQSMessageExtractor messagesExtractor,
                                                      ThreadPoolExecutor messageHandlerThreadPool,
                                                      ScheduledThreadPoolExecutor pollingThreadPool,
                                                      @Qualifier(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager) {
-        super(queueName, sqs, messagesExtractor, messageHandlerThreadPool);
+        super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.recurringPaymentManager = recurringPaymentManager;
         this.messageHandlerThreadPool = messageHandlerThreadPool;

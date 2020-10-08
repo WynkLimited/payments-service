@@ -1,6 +1,7 @@
 package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.service.PaymentManager;
@@ -31,11 +32,12 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     private PaymentManager paymentManager;
 
     public PaymentRenewalChargingConsumerPollingQueue(String queueName,
-                                              AmazonSQS sqs,
-                                              ISQSMessageExtractor messagesExtractor,
-                                              ThreadPoolExecutor messageHandlerThreadPool,
-                                              ScheduledThreadPoolExecutor pollingThreadPool) {
-        super(queueName, sqs, messagesExtractor, messageHandlerThreadPool);
+                                                      AmazonSQS sqs,
+                                                      ObjectMapper objectMapper,
+                                                      ISQSMessageExtractor messagesExtractor,
+                                                      ThreadPoolExecutor messageHandlerThreadPool,
+                                                      ScheduledThreadPoolExecutor pollingThreadPool) {
+        super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
     }

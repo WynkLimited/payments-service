@@ -121,26 +121,28 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
         try {
-            PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
-            if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                if (transaction.getType() == TransactionEvent.SUBSCRIBE) {
-                    Calendar nextRecurringDateTime = Calendar.getInstance();
-                    nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
-                    recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
-                }
-                if (isSync) {
-                    subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
-                } else {
-                    subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
-                }
+            if(transaction.getType() != TransactionEvent.POINT_PURCHASE) {
+                PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
+                if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
+                    if (transaction.getType() == TransactionEvent.SUBSCRIBE) {
+                        Calendar nextRecurringDateTime = Calendar.getInstance();
+                        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
+                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                    }
+                    if (isSync) {
+                        subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+                    } else {
+                        subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+                    }
 
-            } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-                if (isSync) {
-                    subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
-                } else {
-                    subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
-                }
+                } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                    if (isSync) {
+                        subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
+                    } else {
+                        subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
+                    }
 
+                }
             }
         } finally {
             if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {

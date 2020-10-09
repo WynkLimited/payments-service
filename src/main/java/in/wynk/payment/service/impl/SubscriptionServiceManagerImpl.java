@@ -57,7 +57,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 .msisdn(msisdn)
                 .planId(planId)
                 .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                .transactionId(transactionId)
+                .referenceId(transactionId)
                 .transactionEvent(transactionEvent)
                 .transactionStatus(transactionStatus)
                 .build());
@@ -70,7 +70,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 .msisdn(msisdn)
                 .planId(planId)
                 .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                .transactionId(transactionId)
+                .referenceId(transactionId)
                 .transactionEvent(TransactionEvent.UNSUBSCRIBE)
                 .transactionStatus(transactionStatus)
                 .build());
@@ -97,7 +97,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
         try {
             restTemplate.postForObject(String.format("%s/%s", unSubscribePlanEndPoint, planId),
-
                     PlanUnProvisioningRequest.builder()
                             .uid(uid)
                             .referenceId(transactionId)

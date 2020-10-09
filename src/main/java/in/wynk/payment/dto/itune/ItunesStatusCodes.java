@@ -28,10 +28,18 @@ public enum ItunesStatusCodes {
     /* APPLE_21013 */
     APPLE_21013("Unable to post receipt over iTunes server", 21013),
     /* APPLE_21014 */
-    APPLE_21014("Something went wrong", 21013);
+    APPLE_21014("Something went wrong", 21014),
+    /* APPLE_21015 */
+    APPLE_21015("Latest receipt is expired", 21015),
+    /* APPLE_21016 */
+    APPLE_21016("Already have subscription for the corresponding iTunes id on another account", 21016),
+    /* APPLE_21017 */
+    APPLE_21017("Itunes transaction Id not found", 21017),
+    /* APPLE_21018 */
+    APPLE_21018("No itunes receipt found for selected plan", 21018);
 
-    private String errorTitle;
-    private int    errorCode;
+    private final String errorTitle;
+    private final int errorCode;
 
     ItunesStatusCodes(String errorTitle, int errorCode) {
         this.errorTitle = errorTitle;

@@ -19,13 +19,7 @@ import in.wynk.session.context.SessionContextHolder;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -37,9 +31,9 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 public class RevenuePaymentHandler {
 
     private final PaymentManager paymentManager;
-    private Gson gson;
+    private final Gson gson;
 
-    public RevenuePaymentHandler(PaymentManager paymentManager, Gson gson){
+    public RevenuePaymentHandler(PaymentManager paymentManager, Gson gson) {
         this.paymentManager = paymentManager;
         this.gson = gson;
     }

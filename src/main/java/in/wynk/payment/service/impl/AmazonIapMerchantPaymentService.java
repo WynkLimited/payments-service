@@ -2,15 +2,13 @@ package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.TransactionEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -20,18 +18,16 @@ import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
-import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -39,6 +35,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE;
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
@@ -48,42 +46,41 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private String amazonIapSecret;
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
-    @Value("${payment.status.web.url}")
-    private String statusWebUrl;
-
     private final ObjectMapper mapper;
-    private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
+
     @Autowired
     @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
     private RestTemplate restTemplate;
+    @Value("${payment.success.page}")
+    private String SUCCESS_PAGE;
+    @Value("${payment.failure.page}")
+    private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ApplicationEventPublisher eventPublisher) {
         this.mapper = mapper;
-        this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
-        this.transactionManager = transactionManager;
     }
 
-
     @Override
-    public BaseResponse<Void> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
+    public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
+        final String sid = SessionContextHolder.getId();
+        final String os = SessionContextHolder.<SessionDTO>getBody().get(BaseConstants.OS);
+        final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
+            final Transaction transaction = TransactionContext.get();
             final AmazonIapVerificationRequest request = (AmazonIapVerificationRequest) iapVerificationRequest;
-            AnalyticService.update(request);
-            final SessionDTO sessionDTO = SessionContextHolder.getBody();
-            final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
-            final String msisdn = sessionDTO.get(BaseConstants.MSISDN);
-
-            Transaction transaction = transactionManager.initiateTransaction(request.getUid(), msisdn, selectedPlan.getId(), selectedPlan.getPrice().getAmount(), PaymentCode.AMAZON_IAP, TransactionEvent.PURCHASE);
             transaction.putValueInPaymentMetaData("amazonIapVerificationRequest", request);
-            transactionManager.updateAndPublishSync(transaction, this::fetchAndUpdateTransaction);
-            URIBuilder returnUrl = new URIBuilder(statusWebUrl);
-            returnUrl.addParameter(PaymentConstants.STATUS, transaction.getStatus().name());
-            return BaseResponse.redirectResponse(returnUrl.build().toString());
+            fetchAndUpdateTransaction(transaction);
+            if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
+                builder.url(SUCCESS_PAGE + sid + BaseConstants.SLASH + os);
+            } else {
+                builder.url(FAILURE_PAGE + sid + BaseConstants.SLASH + os);
+            }
+            return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
+            log.error(AMAZON_IAP_VERIFICATION_FAILURE, e.getMessage(), e);
+            return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

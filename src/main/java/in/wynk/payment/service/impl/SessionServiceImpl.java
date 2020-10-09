@@ -16,8 +16,7 @@ import org.springframework.stereotype.Service;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.commons.constants.BaseConstants.QUESTION_MARK;
-import static in.wynk.commons.constants.BaseConstants.SLASH;
+import static in.wynk.commons.constants.BaseConstants.*;
 
 @Service
 public class SessionServiceImpl implements ISessionService {
@@ -39,15 +38,12 @@ public class SessionServiceImpl implements ISessionService {
         try {
             SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
             Session<SessionDTO> session = sessionManager.init(sessionDTO, duration, TimeUnit.MINUTES);
-            URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL + session.getId().toString() + SLASH + request.getOs().getValue());
-            request.getParams().forEach((key, value) -> queryBuilder.addParameter(key, value));
-            StringBuilder builder = new StringBuilder(PAYMENT_OPTION_URL);
-            builder.append(session.getId().toString())
-                    .append(SLASH)
-                    .append(request.getOs().getValue())
-                    .append(QUESTION_MARK)
-                    .append(queryBuilder.build().getQuery());
-            SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder.toString()).sid(session.getId().toString()).build();
+            URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
+            request.getParams().forEach(queryBuilder::addParameter);
+            queryBuilder.addParameter(ITEM_ID, request.getItemId());
+            queryBuilder.addParameter(AMOUNT, String.valueOf(request.getItemPrice()));
+            String builder = PAYMENT_OPTION_URL + session.getId().toString() + SLASH + request.getOs().getValue() + QUESTION_MARK + queryBuilder.build().getQuery();
+            SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(session.getId().toString()).build();
             return SessionResponse.builder().data(response).build();
         } catch (URISyntaxException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY997);

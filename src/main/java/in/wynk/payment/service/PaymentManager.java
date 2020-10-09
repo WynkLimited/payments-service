@@ -30,6 +30,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.DecimalFormat;
+
 import static in.wynk.commons.constants.BaseConstants.SERVICE;
 
 /**
@@ -54,7 +56,7 @@ public class PaymentManager {
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
         PaymentCode paymentCode = request.getPaymentCode();
-        final Transaction transaction = initiateTransaction(request.getPlanId(), request.isAutoRenew(), uid, msisdn, request.getCouponId(), paymentCode);
+        final Transaction transaction = initiateTransaction(request.getPlanId(), request.isAutoRenew(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         BaseResponse<?> baseResponse = chargingService.doCharging(request);
         PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
@@ -104,7 +106,7 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.paymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
-        final Transaction transaction = initiateTransaction(request.getPlanId(), autoRenew, request.getUid(), request.getMsisdn(), null, paymentCode);
+        final Transaction transaction = initiateTransaction(request.getPlanId(), autoRenew, request.getUid(), request.getMsisdn(), null, null, paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
@@ -122,24 +124,23 @@ public class PaymentManager {
         merchantPaymentRenewalService.doRenewal(message.getPaymentRenewalRequest());
     }
 
-    private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
+    private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
         final Coupon coupon;
         final double amountToBePaid;
         final double finalAmountToBePaid;
         final SessionDTO session = SessionContextHolder.getBody();
         final String service = session.get(SERVICE);
-        final String itemIdToBePurchased = session.get(BaseConstants.POINT_PURCHASE_ITEM_ID);
         final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode);
 
-        if (StringUtils.isNotEmpty(itemIdToBePurchased)) {
+        if (StringUtils.isNotEmpty(itemId)) {
             builder.event(TransactionEvent.POINT_PURCHASE);
             amountToBePaid = session.get(BaseConstants.POINT_PURCHASE_ITEM_PRICE);
-            coupon = getCoupon(couponId, msisdn, uid, service, itemIdToBePurchased, paymentCode, null);
+            coupon = getCoupon(couponId, msisdn, uid, service, itemId, paymentCode, null);
         } else {
             PlanDTO selectedPlan = cachingService.getPlan(planId);
             amountToBePaid = selectedPlan.getFinalPrice();
             builder.event(autoRenew ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE);
-            coupon = getCoupon(couponId, msisdn, uid, service, null , paymentCode, selectedPlan);
+            coupon = getCoupon(couponId, msisdn, uid, service, null, paymentCode, selectedPlan);
         }
 
         if (coupon != null) {
@@ -167,7 +168,8 @@ public class PaymentManager {
 
     private double getFinalAmount(double itemPrice, Coupon coupon) {
         double discount = coupon.getDiscountPercent();
-        return itemPrice - (itemPrice * discount) / 100;
+        DecimalFormat df = new DecimalFormat("#.00");
+        return Double.valueOf(df.format(itemPrice - (itemPrice * discount) / 100));
     }
 
     private void exhaustCouponIfApplicable() {

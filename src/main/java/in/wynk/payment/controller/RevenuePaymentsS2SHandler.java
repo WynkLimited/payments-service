@@ -2,11 +2,9 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.commons.utils.BeanLocatorFactory;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.http.ResponseEntity;
@@ -21,16 +19,22 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 @RequestMapping("/wynk/s2s/v1")
 public class RevenuePaymentsS2SHandler {
 
+    private final PaymentManager paymentManager;
+
+    public RevenuePaymentsS2SHandler(PaymentManager paymentManager) {
+        this.paymentManager = paymentManager;
+    }
+
     @ApiOperation("Accepts the receipt of various IAP partners." +
             "\nAn alernate API for old itunes/receipt and /amazon-iap/verification API")
     @PostMapping("/verify/receipt")
-    @ManageSession(sessionId = "#sid")
+    @ManageSession(sessionId = "#request.sid")
     @AnalyseTransaction(name = "receiptVerification")
     public ResponseEntity<?> verifyIap(@RequestBody IapVerificationRequest request) {
-        PaymentCode paymentCode = request.getPaymentCode();
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
-        BaseResponse<?> baseResponse = verificationService.verifyReceipt(request);
+        AnalyticService.update(PAYMENT_METHOD, request.paymentCode().getCode());
+        AnalyticService.update(request);
+        BaseResponse<?> baseResponse = paymentManager.doVerifyIap(request);
+        AnalyticService.update(baseResponse);
         return baseResponse.getResponse();
     }
 }

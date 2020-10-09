@@ -102,6 +102,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                             .uid(uid)
                             .referenceId(transactionId)
                             .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                            .msisdn(msisdn)
                             .build(),
                     String.class);
         } catch (Exception e) {

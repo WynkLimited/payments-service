@@ -30,7 +30,7 @@ public class MerchantTransaction {
     @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
     private Object request;
     @Type(type = "json")
-    @Column(name = "merchant_response", nullable = false, columnDefinition = "json")
+    @Column(name = "merchant_response", columnDefinition = "json")
     private Object response;
 
     public <T> T getRequest() {

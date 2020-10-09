@@ -7,9 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-import java.util.Calendar;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Getter
@@ -96,6 +94,9 @@ public class Transaction {
     }
 
     public <R> void putValueInPaymentMetaData(String key, R value) {
+        if (Objects.isNull(paymentMetaData)) {
+            paymentMetaData = new HashMap<>();
+        }
         paymentMetaData.put(key, value);
     }
 

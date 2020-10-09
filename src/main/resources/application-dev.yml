@@ -147,7 +147,6 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-<<<<<<< HEAD
 
 subscription:
   pooling:
@@ -158,12 +157,6 @@ subscription:
         sqs:
           producer:
             delayInSecond: 1
-
-  ###### webview status props #######
-#  TODO: update the status web URL in classes
-  status:
-    web:
-      url: http://localhost:4200/status
   merchant:
     ####### payu props #########
     payu:
@@ -232,7 +225,6 @@ http:
               type: both
           request:
             timeout: 1000
-
 service:
   subscription:
     api:

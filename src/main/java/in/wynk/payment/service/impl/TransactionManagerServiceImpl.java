@@ -82,6 +82,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
                 .uid(transactionInitRequest.getUid())
+                .itemId(transactionInitRequest.getItemId())
                 .msisdn(transactionInitRequest.getMsisdn())
                 .paymentChannel(transactionInitRequest.getPaymentCode().name())
                 .status(TransactionStatus.INPROGRESS.name())

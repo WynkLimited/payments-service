@@ -133,10 +133,12 @@ public class PaymentManager {
         final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode);
 
         if (StringUtils.isNotEmpty(itemId)) {
+            builder.itemId(itemId);
             builder.event(TransactionEvent.POINT_PURCHASE);
             amountToBePaid = session.get(BaseConstants.POINT_PURCHASE_ITEM_PRICE);
             coupon = getCoupon(couponId, msisdn, uid, service, itemId, paymentCode, null);
         } else {
+            builder.planId(planId);
             PlanDTO selectedPlan = cachingService.getPlan(planId);
             amountToBePaid = selectedPlan.getFinalPrice();
             builder.event(autoRenew ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE);

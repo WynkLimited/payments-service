@@ -112,7 +112,7 @@ payment:
               batchSize: 5
               waitTimeInSeconds: 20
           producer:
-            delayInSecond: 120
+            delayInSecond: 600
           consumer:
             delay: 20
             delayTimeUnit: SECONDS

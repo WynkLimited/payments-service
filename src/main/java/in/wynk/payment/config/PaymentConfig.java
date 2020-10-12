@@ -1,6 +1,5 @@
 package in.wynk.payment.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import in.wynk.data.config.WynkMongoDbFactoryBuilder;
@@ -36,11 +35,6 @@ public class PaymentConfig implements WebMvcConfigurer {
     @Bean
     public Gson gson() {
         return new GsonBuilder().disableHtmlEscaping().create();
-    }
-
-    @Bean
-    public ObjectMapper mapper() {
-        return new ObjectMapper();
     }
 
     @Override

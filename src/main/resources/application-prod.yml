@@ -110,7 +110,7 @@ payment:
           messages:
             extractor:
               batchSize: 5
-              waitTimeInSeconds: 60
+              waitTimeInSeconds: 20
           producer:
             delayInSecond: 120
           consumer:

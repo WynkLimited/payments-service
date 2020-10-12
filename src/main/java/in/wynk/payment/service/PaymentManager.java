@@ -171,7 +171,7 @@ public class PaymentManager {
     private double getFinalAmount(double itemPrice, Coupon coupon) {
         double discount = coupon.getDiscountPercent();
         DecimalFormat df = new DecimalFormat("#.00");
-        return Double.valueOf(df.format(itemPrice - (itemPrice * discount) / 100));
+        return Double.parseDouble(df.format(itemPrice - (itemPrice * discount) / 100));
     }
 
     private void exhaustCouponIfApplicable() {

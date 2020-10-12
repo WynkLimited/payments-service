@@ -50,6 +50,7 @@ cors:
     origins:
       - "https://pay.wynk.in"
       - "http://subscription.wcf.internal"
+      - "https://secure.payu.in"
 
 ##### mysql database props #####
 spring:

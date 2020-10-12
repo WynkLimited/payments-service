@@ -7,7 +7,6 @@ import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.coupon.core.constant.ProvisionSource;
 import in.wynk.coupon.core.dao.entity.Coupon;
-import in.wynk.coupon.core.dto.CouponProvisionRequest.CouponProvisionRequestBuilder;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
@@ -37,9 +36,11 @@ public class CouponController {
     public ResponseEntity<CouponResponse> applyCoupon(@PathVariable String sid, @RequestParam String couponCode, @RequestParam Integer planId, @RequestParam String itemId) {
         String uid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.MSISDN);
+        String service = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.SERVICE);
         AnalyticService.update(SessionKeys.SELECTED_PLAN_ID, planId);
         AnalyticService.update(SessionKeys.COUPON_ID, couponCode);
-        CouponProvisionRequest.CouponProvisionRequestBuilder builder = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).itemId(itemId).couponCode(couponCode).source(ProvisionSource.UNMANAGED);
+        AnalyticService.update(SessionKeys.SERVICE, couponCode);
+        CouponProvisionRequest.CouponProvisionRequestBuilder builder = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).itemId(itemId).couponCode(couponCode).service(service).source(ProvisionSource.UNMANAGED);
         if(StringUtils.isNotEmpty(itemId)) {
             builder.itemId(itemId);
         } else {

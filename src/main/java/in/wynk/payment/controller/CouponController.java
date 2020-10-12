@@ -48,6 +48,7 @@ public class CouponController {
             builder.selectedPlan(selectedPlan);
         }
         CouponResponse couponResponse = couponManager.applyCoupon(builder.build());
+        AnalyticService.update(couponResponse);
         return new ResponseEntity<>(couponResponse, HttpStatus.OK);
     }
 
@@ -57,7 +58,9 @@ public class CouponController {
     public ResponseEntity<CouponResponse> removeCoupon(@PathVariable String sid, @RequestParam String couponCode) {
         String uid = SessionContextHolder.<SessionDTO>getBody().get(SessionKeys.UID);
         AnalyticService.update(SessionKeys.COUPON_ID, couponCode);
-        return new ResponseEntity<>(couponManager.removeCoupon(uid, couponCode), HttpStatus.OK);
+        CouponResponse response = couponManager.removeCoupon(uid, couponCode);
+        AnalyticService.update(response);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/eligibility/{sid}")
@@ -70,6 +73,7 @@ public class CouponController {
         AnalyticService.update(SessionKeys.SELECTED_PLAN_ID, planId);
         CouponProvisionRequest request = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).selectedPlan(planDTO).source(ProvisionSource.UNMANAGED).build();
         List<Coupon> eligibleCoupons = couponManager.getEligibleCoupons(request);
+        AnalyticService.update(eligibleCoupons);
         return new ResponseEntity<>(eligibleCoupons, HttpStatus.OK);
     }
 

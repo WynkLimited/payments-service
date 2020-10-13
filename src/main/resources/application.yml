@@ -42,6 +42,8 @@ management:
 
 ###### log props ######
 logging:
+  level:
+    org.apache.catalina: off
   path: /data
 
 ##### resilience props for lib-queue ######

@@ -13,6 +13,7 @@ import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -22,7 +23,6 @@ import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -68,12 +68,16 @@ public class PaymentManager {
     public BaseResponse<?> handleCallback(String transactionId, CallbackRequest request, PaymentCode paymentCode) {
         Transaction transaction = TransactionContext.get();
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
-        TransactionStatus initialTxnStatus = transaction.getStatus();
-        BaseResponse<?> baseResponse = callbackService.handleCallback(request);
-        TransactionStatus finalStatus = TransactionContext.get().getStatus();
-        transactionManager.updateAndSyncPublish(transaction, initialTxnStatus, finalStatus);
-        if(finalStatus == TransactionStatus.SUCCESS){
-            exhaustCouponIfApplicable();
+        TransactionStatus existingStatus = transaction.getStatus();
+        final BaseResponse<?> baseResponse;
+        try {
+            baseResponse = callbackService.handleCallback(request);
+        } finally {
+            TransactionStatus finalStatus = TransactionContext.get().getStatus();
+            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
+            if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                exhaustCouponIfApplicable();
+            }
         }
         return baseResponse;
     }
@@ -83,15 +87,17 @@ public class PaymentManager {
         IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         final Transaction transaction = TransactionContext.get();
         TransactionStatus existingStatus = transaction.getStatus();
-        BaseResponse<?> baseResponse = statusService.status(request);
-        TransactionStatus finalStatus = ((ChargingStatusResponse) baseResponse.getBody()).getTransactionStatus();
-        if (isSync) {
-            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
-        } else {
-            transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
-        }
-        if (finalStatus == TransactionStatus.SUCCESS) {
-            exhaustCouponIfApplicable();
+        final BaseResponse<?> baseResponse;
+        try {
+            baseResponse = statusService.status(request);
+        } finally {
+            if (!isSync) {
+                TransactionStatus finalStatus = transaction.getStatus();
+                transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+                if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                    exhaustCouponIfApplicable();
+                }
+            }
         }
         return baseResponse;
     }
@@ -177,7 +183,11 @@ public class PaymentManager {
     private void exhaustCouponIfApplicable() {
         Transaction transaction = TransactionContext.get();
         if(StringUtils.isNotEmpty(transaction.getCoupon())) {
-            couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+            try {
+                couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+            } catch (WynkRuntimeException e) {
+                log.error(e.getMarker(), e.getMessage(), e);
+            }
         }
     }
 

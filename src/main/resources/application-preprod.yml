@@ -278,4 +278,4 @@ wynk:
 ######## lib-auth props #######
 security:
   exempt:
-    paths: /actuator/**,/wynk/v1/**
+    paths: /wynk/v1/**,/actuator/**/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**

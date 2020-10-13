@@ -270,7 +270,7 @@ wynk:
         username: user_coupons
         password: Sk6kzU8GU5
         database: coupons
-########### Mongo Pool Config ###########
+    ########### Mongo Pool Config ###########
     minConnectionsPerHost: 1
     maxConnectionsPerHost: 5
     threadsAllowedToBlockForConnectionMultiplier: 5
@@ -279,3 +279,8 @@ wynk:
     connectTimeout: 20000
     socketTimeout: 50000
     readPreference: secondaryPreferred
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /actuator/**,/wynk/v1/**

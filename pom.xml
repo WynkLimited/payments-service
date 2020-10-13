@@ -30,6 +30,11 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>lib-auth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>lib-aspects</artifactId>
             <version>${project.version}</version>
             <exclusions>

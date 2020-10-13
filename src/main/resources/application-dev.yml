@@ -268,3 +268,9 @@ wynk:
     connectTimeout: 2000
     socketTimeout: 5000
     readPreference: secondaryPreferred
+
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /actuator/**,/wynk/v1/**

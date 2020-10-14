@@ -47,10 +47,7 @@ session:
 ###### CORS config #####
 cors:
   allowed:
-    origins:
-      - "https://pay.wynk.in"
-      - "http://subscription.wcf.internal"
-      - "https://secure.payu.in"
+    origins: "*"
 
 ##### mysql database props #####
 spring:

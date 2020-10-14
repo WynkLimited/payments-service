@@ -47,6 +47,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction upsert(Transaction transaction) {
+        AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
         return transactionDao.save(transaction);
     }
 
@@ -152,7 +153,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
                 transaction.setExitTime(Calendar.getInstance());
             }
-            AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
             this.upsert(transaction);
         }
     }

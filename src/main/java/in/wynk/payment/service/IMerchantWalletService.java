@@ -5,14 +5,14 @@ import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantWalletService {
 
-    <T> BaseResponse<T> linkRequest(WalletRequest request);
+    BaseResponse<?> linkRequest(WalletRequest request);
 
-    <T> BaseResponse<T> validateLink(WalletRequest request);
+    BaseResponse<?> validateLink(WalletRequest request);
 
-    <T> BaseResponse<T> unlink(WalletRequest request);
+    BaseResponse<?> unlink(WalletRequest request);
 
-    <T> BaseResponse<T> balance();
+    BaseResponse<?> balance();
 
-    <T> BaseResponse<T> addMoney(WalletRequest request);
+    BaseResponse<?> addMoney(WalletRequest request);
 
 }

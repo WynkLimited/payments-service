@@ -23,33 +23,16 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.paytm.PayTmErrorCodes;
-import in.wynk.payment.dto.paytm.PaytmWalletAddMoneyRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletLinkRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletOtpRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletValidateLinkRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.ConsultBalanceRequest;
+import in.wynk.payment.dto.paytm.*;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.WalletRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.ConsultBalanceResponse;
-import in.wynk.payment.dto.response.ValidateTokenResponse;
-import in.wynk.payment.dto.response.WalletBalanceResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
-import in.wynk.payment.service.IRenewalMerchantWalletService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.IUserPaymentsManager;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -62,11 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -74,12 +53,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 import static in.wynk.commons.constants.BaseConstants.*;
 import static in.wynk.commons.enums.Status.SUCCESS;
@@ -332,14 +306,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
             PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(tid);
             if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
-                return new BaseResponse<>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()))).status(HttpStatus.OK).build();
             }
         } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-                return new BaseResponse<>(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId())), HttpStatus.OK, null);
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()))).status(HttpStatus.OK).build();
             }
         }
-        return new BaseResponse<>(ChargingStatusResponse.failure(tid), HttpStatus.OK, null);
+        return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid)).status(HttpStatus.OK).build();
     }
 
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(String txnId) {
@@ -380,7 +354,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             paytmWalletValidateLinkResponse = responseEntity.getBody();
             if (paytmWalletValidateLinkResponse != null && paytmWalletValidateLinkResponse.getStatus().equals(SUCCESS)) {
                 saveToken(paytmWalletValidateLinkResponse);
-                return new BaseResponse<>(null, HttpStatus.OK, null);
+                return  BaseResponse.<Void>builder().status(HttpStatus.OK).build();
             }
         } catch (HttpStatusCodeException e) {
             AnalyticService.update("otpValidated", false);
@@ -450,7 +424,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             if (payTmResponse != null && payTmResponse.getBody() != null && payTmResponse.getBody().getResultInfo().getResultStatus() == SUCCESS) {
                 WalletBalanceResponse response = WalletBalanceResponse.builder().isLinked(true)
                         .deficitBalance(payTmResponse.getBody().getDeficitAmount()).fundsSufficient(payTmResponse.getBody().isFundsSufficient()).build();
-                return new BaseResponse<>(response, HttpStatus.OK, null);
+                return BaseResponse.<WalletBalanceResponse>builder().body(response).status( HttpStatus.OK).build();
             }
 
         } catch (HttpStatusCodeException e) {
@@ -458,7 +432,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         } catch (Exception e) {
             throw new RuntimeException("Unknown Exception Occurred");
         }
-        return new BaseResponse<>(WalletBalanceResponse.defaultUnlinkResponse(), HttpStatus.OK, null);
+        return BaseResponse.<WalletBalanceResponse>builder().body(WalletBalanceResponse.defaultUnlinkResponse()).status(HttpStatus.OK).build();
     }
 
     private boolean validateAccessToken(String uid, Wallet wallet) {
@@ -524,7 +498,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
             Map<String, String> params = new HashMap<>();
             params.put(INFO, payTmRequestParams);
-            return new BaseResponse<>(params, HttpStatus.OK, null);
+            return BaseResponse.<Map<String, String>>builder().body(params).status( HttpStatus.OK).build();
         } catch (HttpStatusCodeException e) {
             throw new WynkRuntimeException("Http Status Exception Occurred");
         } catch (Exception e) {
@@ -565,7 +539,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 errorCode = PayTmErrorCodes.resolveErrorCode(responseCode);
                 logger.error(HTTP_ERROR, "Error in sending otp. Reason: [{}]",
                         errorCode.getMessage());
-                return new BaseResponse<>(paytmWalletLinkResponse, HttpStatus.OK, responseEntity.getHeaders());
+                return BaseResponse.<PaytmWalletLinkResponse>builder().body(paytmWalletLinkResponse).status(HttpStatus.OK).headers(requestEntity.getHeaders()).build();
             }
 
             String state = paytmWalletLinkResponse.getState(); // add state in session
@@ -574,7 +548,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             }
 
             logger.info("Otp sent successfully. Status: {}", paytmWalletLinkResponse.getStatus());
-            return new BaseResponse(paytmWalletLinkResponse, HttpStatus.OK, null);
+            return BaseResponse.<PaytmWalletLinkResponse>builder().status(HttpStatus.OK).body(paytmWalletLinkResponse).build();
         } catch (HttpStatusCodeException e) {
             logger.error(PAYTM_ERROR, "Error from paytm: {}", e.getResponseBodyAsString(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - " + e.getResponseBodyAsString());

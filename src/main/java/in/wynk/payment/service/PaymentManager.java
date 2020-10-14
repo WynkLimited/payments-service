@@ -9,7 +9,7 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.constant.CouponProvisionState;
 import in.wynk.coupon.core.constant.ProvisionSource;
-import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
@@ -27,32 +27,27 @@ import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 
 import static in.wynk.commons.constants.BaseConstants.SERVICE;
 
-/**
- * @author Abhishek
- * @created 07/08/20
- */
 @Slf4j
 @Service
 public class PaymentManager {
 
-    @Autowired
-    private ITransactionManagerService transactionManager;
+    private final ICouponManager couponManager;
+    private final PaymentCachingService cachingService;
+    private final ISqsManagerService sqsManagerService;
+    private final ITransactionManagerService transactionManager;
 
-    @Autowired
-    private PaymentCachingService cachingService;
-
-    @Autowired
-    private ISqsManagerService sqsManagerService;
-
-    @Autowired
-    private ICouponManager couponManager;
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ITransactionManagerService transactionManager) {
+        this.couponManager = couponManager;
+        this.cachingService = cachingService;
+        this.sqsManagerService = sqsManagerService;
+        this.transactionManager = transactionManager;
+    }
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
         PaymentCode paymentCode = request.getPaymentCode();
@@ -131,7 +126,7 @@ public class PaymentManager {
     }
 
     private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
-        final Coupon coupon;
+        final CouponDTO coupon;
         final double amountToBePaid;
         final double finalAmountToBePaid;
         final SessionDTO session = SessionContextHolder.getBody();
@@ -152,7 +147,7 @@ public class PaymentManager {
         }
 
         if (coupon != null) {
-            builder.couponId(coupon.getId()).discount(coupon.getDiscountPercent());
+            builder.couponId(couponId).discount(coupon.getDiscountPercent());
             finalAmountToBePaid = getFinalAmount(amountToBePaid, coupon);
         } else {
             finalAmountToBePaid = amountToBePaid;
@@ -163,7 +158,7 @@ public class PaymentManager {
         return TransactionContext.get();
     }
 
-    private Coupon getCoupon(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode, PlanDTO selectedPlan) {
+    private CouponDTO getCoupon(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode, PlanDTO selectedPlan) {
         if (!StringUtils.isEmpty(couponId)) {
             CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
                     .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
@@ -174,7 +169,7 @@ public class PaymentManager {
         }
     }
 
-    private double getFinalAmount(double itemPrice, Coupon coupon) {
+    private double getFinalAmount(double itemPrice, CouponDTO coupon) {
         double discount = coupon.getDiscountPercent();
         DecimalFormat df = new DecimalFormat("#.00");
         return Double.parseDouble(df.format(itemPrice - (itemPrice * discount) / 100));

@@ -1,14 +1,17 @@
 package in.wynk.payment.exception.handler;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.exception.handler.WynkGlobalExceptionHandler;
+import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +19,9 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
-import static in.wynk.commons.constants.BaseConstants.FAILURE_WEB_URL;
-import static in.wynk.commons.constants.BaseConstants.SLASH;
+import java.net.URISyntaxException;
+
+import static in.wynk.commons.constants.BaseConstants.*;
 
 @Slf4j
 @ControllerAdvice
@@ -30,7 +34,7 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
     }
 
     @ExceptionHandler(PaymentRuntimeException.class)
-    public ResponseEntity<?> handlePaymentRuntimeException(PaymentRuntimeException ex, WebRequest request) {
+    public ResponseEntity<?> handlePaymentRuntimeException(PaymentRuntimeException ex, WebRequest request) throws URISyntaxException {
         PaymentErrorType errorType = PaymentErrorType.getWynkErrorType(ex.getErrorCode());
         if (errorType.getHttpResponseStatusCode() == HttpStatus.FOUND && errorType.getRedirectUrlProp() != null) {
             SessionDTO session = SessionContextHolder.getBody();
@@ -39,7 +43,13 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
                 final String sid = SessionContextHolder.getId();
                 final String os = session.get(BaseConstants.OS);
                 failureWebViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp()) + sid + SLASH + os;
+            } else {
+                URIBuilder builder = new URIBuilder(FAILURE_WEB_URL);
+                builder.addParameter(TRANSACTION_ID, TransactionContext.get().getIdStr());
+                builder.addParameter(TRANSACTION_STATUS, TransactionContext.get().getStatus().getValue());
+                failureWebViewUrl = builder.toString();
             }
+            AnalyticService.update(RESPONSE_PAYLOAD, failureWebViewUrl);
             return BaseResponse.redirectResponse(failureWebViewUrl).getResponse();
         }
         return super.handleWynkRuntimeExceptionInternal(ex, request);

@@ -6,7 +6,7 @@ import in.wynk.commons.dto.SessionRequest;
 import in.wynk.commons.dto.SessionResponse;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.service.ISessionService;
+import in.wynk.payment.service.IPointPurchaseSessionService;
 import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;
 import org.apache.http.client.utils.URIBuilder;
@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import static in.wynk.commons.constants.BaseConstants.*;
 
 @Service
-public class SessionServiceImpl implements ISessionService {
+public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionService {
 
     @Value("${session.duration:15}")
     private Integer duration;
@@ -29,7 +29,7 @@ public class SessionServiceImpl implements ISessionService {
 
     private final ISessionManager sessionManager;
 
-    public SessionServiceImpl(ISessionManager sessionManager) {
+    public PointPurchaseSessionServiceImpl(ISessionManager sessionManager) {
         this.sessionManager = sessionManager;
     }
 
@@ -39,10 +39,14 @@ public class SessionServiceImpl implements ISessionService {
             SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
             Session<SessionDTO> session = sessionManager.init(sessionDTO, duration, TimeUnit.MINUTES);
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
-            request.getParams().forEach(queryBuilder::addParameter);
+            if (request.getParams() != null) {
+                queryBuilder.addParameter(TITLE, request.getParams().getTitle());
+                queryBuilder.addParameter(SUBTITLE, request.getParams().getSubtitle());
+                queryBuilder.addParameter(CLIENT, request.getParams().getClient());
+            }
             queryBuilder.addParameter(ITEM_ID, request.getItemId());
-            queryBuilder.addParameter(AMOUNT, String.valueOf(request.getItemPrice()));
             queryBuilder.addParameter(POINT_PURCHASE_FLOW, Boolean.TRUE.toString());
+            queryBuilder.addParameter(AMOUNT, String.valueOf(request.getItemPrice()));
             String builder = PAYMENT_OPTION_URL + session.getId().toString() + SLASH + request.getOs().getValue() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(session.getId().toString()).build();
             return SessionResponse.builder().data(response).build();

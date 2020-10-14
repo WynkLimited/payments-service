@@ -4,7 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.dto.SessionRequest;
 import in.wynk.commons.dto.SessionResponse;
-import in.wynk.payment.service.ISessionService;
+import in.wynk.payment.service.IPointPurchaseSessionService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/wynk/s2s/v1/point")
 public class PointPurchaseS2SController {
 
-    private final ISessionService sessionService;
+    private final IPointPurchaseSessionService sessionService;
 
-    public PointPurchaseS2SController(ISessionService sessionService) {
+    public PointPurchaseS2SController(IPointPurchaseSessionService sessionService) {
         this.sessionService = sessionService;
     }
 

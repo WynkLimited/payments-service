@@ -41,7 +41,7 @@ session:
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: 10.80.1.111:6379,10.80.0.22:6379
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -238,7 +238,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-preprod.wcf.internal
+      root: https://subscription-preprod.wynk.in
 
 cors:
   allowed:

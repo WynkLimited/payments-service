@@ -145,6 +145,9 @@
     <logger name="eligibleCoupons" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="paymentReconciliation" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
 
     <springProfile name="local">
         <root level="INFO">

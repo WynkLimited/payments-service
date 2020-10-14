@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.text.DecimalFormat;
 
 import static in.wynk.commons.constants.BaseConstants.SERVICE;
+import static in.wynk.commons.constants.BaseConstants.TRANSACTION_STATUS;
 
 @Slf4j
 @Service
@@ -73,6 +75,7 @@ public class PaymentManager {
             if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
                 exhaustCouponIfApplicable();
             }
+            AnalyticService.update(TRANSACTION_STATUS, finalStatus.getValue());
         }
         return baseResponse;
     }
@@ -86,13 +89,14 @@ public class PaymentManager {
         try {
             baseResponse = statusService.status(request);
         } finally {
+            TransactionStatus finalStatus = transaction.getStatus();
             if (!isSync) {
-                TransactionStatus finalStatus = transaction.getStatus();
                 transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
                 if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
                     exhaustCouponIfApplicable();
                 }
             }
+            AnalyticService.update(TRANSACTION_STATUS, finalStatus.getValue());
         }
         return baseResponse;
     }

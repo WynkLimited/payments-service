@@ -2,6 +2,7 @@ package in.wynk.payment.dto.response;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.*;
 import org.apache.http.NameValuePair;
@@ -16,6 +17,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static in.wynk.commons.constants.BaseConstants.HTTP_STATUS;
 
 @Getter
 @Builder
@@ -43,6 +46,8 @@ public class BaseResponse<R> {
     public static BaseResponse<Void> redirectResponse(URI uri){
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.LOCATION, uri.toString());
+        AnalyticService.update(HTTP_STATUS, HttpStatus.FOUND.value());
+        AnalyticService.update(HttpHeaders.LOCATION, uri.toString());
         return BaseResponse.<Void>builder().headers(headers).status(HttpStatus.FOUND).build();
     }
 

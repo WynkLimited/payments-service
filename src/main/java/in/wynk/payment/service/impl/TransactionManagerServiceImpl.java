@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.commons.constants.SessionKeys;
 import in.wynk.commons.dto.PlanDTO;
 import in.wynk.commons.dto.SessionDTO;
@@ -25,6 +26,8 @@ import org.springframework.stereotype.Service;
 import java.util.Calendar;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import static in.wynk.commons.constants.BaseConstants.TRANSACTION_STATUS;
 
 @Slf4j
 @Service
@@ -149,6 +152,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
                 transaction.setExitTime(Calendar.getInstance());
             }
+            AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
             this.upsert(transaction);
         }
     }

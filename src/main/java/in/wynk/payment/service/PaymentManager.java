@@ -75,7 +75,6 @@ public class PaymentManager {
             if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
                 exhaustCouponIfApplicable();
             }
-            AnalyticService.update(TRANSACTION_STATUS, finalStatus.getValue());
         }
         return baseResponse;
     }
@@ -96,7 +95,6 @@ public class PaymentManager {
                     exhaustCouponIfApplicable();
                 }
             }
-            AnalyticService.update(TRANSACTION_STATUS, finalStatus.getValue());
         }
         return baseResponse;
     }

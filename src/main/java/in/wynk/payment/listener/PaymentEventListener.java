@@ -97,9 +97,8 @@ public class PaymentEventListener {
                             .itemId(event.getItemId())
                             .planId(event.getPlanId())
                             .transactionId(event.getTransactionId())
-                            .transactionStatus(event.getTransactionEvent().getValue())
+                            .transactionStatus(event.getTransactionEvent())
                             .build();
-
                     HttpEntity<ClientCallbackRequest> requestHttpEntity = buildEntityForClient(callbackUrlOptional.get(), client.getClientId(), client.getClientSecret(), clientCallbackRequest);
                     AnalyticService.update(BaseConstants.CLIENT_REQUEST, requestHttpEntity.toString());
                     try {

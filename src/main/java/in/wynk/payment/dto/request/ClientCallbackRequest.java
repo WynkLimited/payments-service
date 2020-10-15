@@ -4,6 +4,7 @@ import lombok.*;
 
 @Getter
 @Builder
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ClientCallbackRequest {

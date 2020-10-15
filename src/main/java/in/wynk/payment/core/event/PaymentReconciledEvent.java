@@ -2,6 +2,7 @@ package in.wynk.payment.core.event;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -29,18 +30,18 @@ public class PaymentReconciledEvent {
     private final TransactionEvent transactionEvent;
     private final TransactionStatus transactionStatus;
 
-    @Analysed(name = "paymentCode")
-    private String getPaymentCode() {
+    @Analysed(name = BaseConstants.PAYMENT_CODE)
+    public String getPaymentCode() {
         return this.paymentCode.getCode();
     }
 
-    @Analysed(name = "transactionEvent")
-    private String getTransactionEvent() {
+    @Analysed(name = BaseConstants.TRANSACTION_STATUS)
+    public String getTransactionEvent() {
         return this.transactionEvent.getValue();
     }
 
-    @Analysed(name = "transactionStatus")
-    private String getTransactionStatus() {
+    @Analysed(name = BaseConstants.TRANSACTION_ID)
+    public String getTransactionStatus() {
         return this.transactionStatus.getValue();
     }
 

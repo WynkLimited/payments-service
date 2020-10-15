@@ -1,7 +1,7 @@
 spring:
   profiles:
     active: ${env}
-    include: coupon-core-${env}
+    include: coupon-core-${env}, client-core-${env}
   main:
     banner-mode: off
   devtools:

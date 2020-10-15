@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-auth</artifactId>
+            <artifactId>client-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

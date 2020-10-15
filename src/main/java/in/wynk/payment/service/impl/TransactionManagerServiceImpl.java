@@ -27,7 +27,7 @@ import java.util.Calendar;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static in.wynk.commons.constants.BaseConstants.TRANSACTION_STATUS;
+import static in.wynk.commons.constants.BaseConstants.*;
 
 @Slf4j
 @Service
@@ -47,7 +47,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction upsert(Transaction transaction) {
-        AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
+        publishAnalytics(transaction);
         return transactionDao.save(transaction);
     }
 
@@ -155,6 +155,15 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             }
             this.upsert(transaction);
         }
+    }
+
+    private void publishAnalytics(Transaction transaction) {
+        AnalyticService.update(UID, transaction.getUid());
+        AnalyticService.update(MSISDN, transaction.getMsisdn());
+        AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
+        AnalyticService.update(TRANSACTION_TYPE, transaction.getType().getValue());
+        AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
+        AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
     }
 
 }

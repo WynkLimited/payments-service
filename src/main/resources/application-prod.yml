@@ -223,6 +223,21 @@ http:
               type: both
           request:
             timeout: 1000
+    paymentClientHttpTemplate:
+      pool:
+        connection:
+          max: 500
+          maxPerHost: 200
+          timeout: 1500
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 3000
+            factory:
+              type: both
+          request:
+            timeout: 1000
     paymentGatewayHttpTemplate:
       pool:
         connection:

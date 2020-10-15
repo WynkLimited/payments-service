@@ -17,7 +17,6 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRequest;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionResponse;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionStatus;
@@ -44,12 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -59,14 +53,9 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.BaseConstants.MSISDN;
-import static in.wynk.commons.constants.BaseConstants.ONE_DAY_IN_MILLI;
-import static in.wynk.commons.constants.BaseConstants.UID;
+import static in.wynk.commons.constants.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_CALLBACK_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
@@ -137,8 +126,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 //            putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
 //            putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET.getPaymentCode());
 
-            PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
-            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
+//            PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
+//            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
 
             return BaseResponse.redirectResponse(redirectUri);
 

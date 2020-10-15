@@ -22,7 +22,6 @@ import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
@@ -184,8 +183,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         }
         finally {
             //Add reconciliation
-            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
-            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
+//            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
+//            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
         }
     }
 

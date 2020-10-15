@@ -47,8 +47,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction upsert(Transaction transaction) {
-        publishAnalytics(transaction);
-        return transactionDao.save(transaction);
+        Transaction persistedEntity = transactionDao.save(transaction);
+        publishAnalytics(persistedEntity);
+        return persistedEntity;
     }
 
 

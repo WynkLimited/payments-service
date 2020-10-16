@@ -15,7 +15,7 @@ import static in.wynk.commons.constants.BaseConstants.CLIENT_ID;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.STANDARD)
+@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", delaySeconds = "${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}", queueType = QueueType.STANDARD)
 @AnalysedEntity
 public class PaymentReconciliationMessage extends AbstractTransactionMessage {
 

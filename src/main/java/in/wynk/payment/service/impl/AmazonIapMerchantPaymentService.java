@@ -12,7 +12,6 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.repository.receipts.AmazonIdUidDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
@@ -49,7 +48,6 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private String amazonIapStatusUrl;
     private final ObjectMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
-    private final AmazonIdUidDao amazonIdUidDao;
 
     @Autowired
     @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
@@ -59,10 +57,9 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ApplicationEventPublisher eventPublisher, AmazonIdUidDao amazonIdUidDao) {
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ApplicationEventPublisher eventPublisher) {
         this.mapper = mapper;
         this.eventPublisher = eventPublisher;
-        this.amazonIdUidDao = amazonIdUidDao;
     }
 
     @Override

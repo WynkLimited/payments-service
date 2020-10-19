@@ -24,25 +24,13 @@ public class PaymentReconciledEvent {
     private final Integer planId;
     @Analysed
     private final String clientId;
-    @Analysed(name = "txnId")
-    private final String transactionId;
-    private final PaymentCode paymentCode;
-    private final TransactionEvent transactionEvent;
-    private final TransactionStatus transactionStatus;
-
-    @Analysed(name = BaseConstants.PAYMENT_CODE)
-    public String getPaymentCode() {
-        return this.paymentCode.getCode();
-    }
-
-    @Analysed(name = BaseConstants.TRANSACTION_STATUS)
-    public String getTransactionEvent() {
-        return this.transactionEvent.getValue();
-    }
-
     @Analysed(name = BaseConstants.TRANSACTION_ID)
-    public String getTransactionStatus() {
-        return this.transactionStatus.getValue();
-    }
+    private final String transactionId;
+    @Analysed(name = BaseConstants.PAYMENT_CODE)
+    private final PaymentCode paymentCode;
+    @Analysed(name = BaseConstants.TRANSACTION_STATUS)
+    private final TransactionEvent transactionEvent;
+    @Analysed(name = BaseConstants.TRANSACTION_ID)
+    private final TransactionStatus transactionStatus;
 
 }

@@ -9,6 +9,7 @@ import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
@@ -82,6 +83,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction initiateTransaction(TransactionInitRequest transactionInitRequest) {
         Transaction txn = Transaction.builder()
+                .clientId(transactionInitRequest.getClientId())
                 .planId(transactionInitRequest.getPlanId())
                 .amount(transactionInitRequest.getAmount())
                 .initTime(Calendar.getInstance())
@@ -164,7 +166,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(TRANSACTION_TYPE, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
-        AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
+        AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
 
 }

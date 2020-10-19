@@ -226,8 +226,8 @@ http:
     paymentClientHttpTemplate:
       pool:
         connection:
-          max: 500
-          maxPerHost: 200
+          max: 400
+          maxPerHost: 40
           timeout: 1500
           defaultKeepAliveTime: 30000
           closeIdleWaitTime: 1000

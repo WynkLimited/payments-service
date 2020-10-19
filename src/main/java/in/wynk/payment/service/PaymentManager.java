@@ -19,6 +19,7 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.*;
@@ -27,6 +28,7 @@ import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
@@ -41,11 +43,13 @@ public class PaymentManager {
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final ISqsManagerService sqsManagerService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
-    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ITransactionManagerService transactionManager) {
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.couponManager = couponManager;
         this.cachingService = cachingService;
+        this.eventPublisher = eventPublisher;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
     }
@@ -56,7 +60,6 @@ public class PaymentManager {
         final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         final BaseResponse<?> baseResponse = chargingService.doCharging(request);
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
-                .clientId(SessionContextHolder.<SessionDTO>getBody().get(CLIENT_ID))
                 .paymentCode(transaction.getPaymentChannel())
                 .transactionEvent(transaction.getType())
                 .transactionId(transaction.getIdStr())
@@ -68,8 +71,8 @@ public class PaymentManager {
         return baseResponse;
     }
 
-    @TransactionAware(txnId = "#transactionId")
-    public BaseResponse<?> handleCallback(String transactionId, CallbackRequest request, PaymentCode paymentCode) {
+    @TransactionAware(txnId = "#request.transactionId")
+    public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode) {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
@@ -86,7 +89,7 @@ public class PaymentManager {
         return baseResponse;
     }
 
-    @TransactionAware(txnId = "#request.getTransactionId()")
+    @TransactionAware(txnId = "#request.transactionId")
     public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode, boolean isSync) {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
@@ -100,6 +103,19 @@ public class PaymentManager {
                 transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
                 if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
                     exhaustCouponIfApplicable();
+                }
+                if (existingStatus != finalStatus) {
+                    eventPublisher.publishEvent(PaymentReconciledEvent.builder()
+                            .uid(transaction.getUid())
+                            .msisdn(transaction.getMsisdn())
+                            .itemId(transaction.getItemId())
+                            .planId(transaction.getPlanId())
+                            .clientId(transaction.getClientId())
+                            .transactionId(transaction.getIdStr())
+                            .paymentCode(transaction.getPaymentChannel())
+                            .transactionEvent(transaction.getType())
+                            .transactionStatus(transaction.getStatus())
+                            .build());
                 }
             }
         }
@@ -140,7 +156,8 @@ public class PaymentManager {
         final double finalAmountToBePaid;
         final SessionDTO session = SessionContextHolder.getBody();
         final String service = session.get(SERVICE);
-        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode);
+        final String clientId = session.get(CLIENT_ID);
+        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientId(clientId);
 
         if (StringUtils.isNotEmpty(itemId)) {
             builder.itemId(itemId);

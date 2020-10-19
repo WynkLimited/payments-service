@@ -22,14 +22,12 @@ import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.Optional;
 
 @Service
@@ -97,12 +95,12 @@ public class PaymentEventListener {
                             .itemId(event.getItemId())
                             .planId(event.getPlanId())
                             .transactionId(event.getTransactionId())
-                            .transactionStatus(event.getTransactionEvent())
+                            .transactionStatus(event.getTransactionEvent().getValue())
                             .build();
-                    HttpEntity<ClientCallbackRequest> requestHttpEntity = buildEntityForClient(callbackUrlOptional.get(), client.getClientId(), client.getClientSecret(), clientCallbackRequest);
+                    RequestEntity<ClientCallbackRequest> requestHttpEntity = buildEntityForClient(callbackUrlOptional.get(), client.getClientId(), client.getClientSecret(), clientCallbackRequest);
                     AnalyticService.update(BaseConstants.CLIENT_REQUEST, requestHttpEntity.toString());
                     try {
-                        ResponseEntity<String> partnerResponse = restTemplate.exchange(callbackUrlOptional.get(), HttpMethod.POST, requestHttpEntity, String.class);
+                        ResponseEntity<String> partnerResponse = restTemplate.exchange(requestHttpEntity, String.class);
                         AnalyticService.update(BaseConstants.CLIENT_RESPONSE, partnerResponse.toString());
                     } catch (HttpStatusCodeException exception) {
                         AnalyticService.update(BaseConstants.CLIENT_RESPONSE, exception.getResponseBodyAsString());
@@ -116,11 +114,11 @@ public class PaymentEventListener {
         }
     }
 
-    private <T> HttpEntity<T> buildEntityForClient(String endpoint, String clientId, String clientSecret, T response) {
-        String checksum = ChecksumUtils.generate(clientId, clientSecret, endpoint, HttpMethod.POST, response);
+    private <T> RequestEntity<T> buildEntityForClient(String endpoint, String clientId, String clientSecret, T body) {
+        String checksum = ChecksumUtils.generate(clientId, clientSecret, endpoint, HttpMethod.POST, body);
         HttpHeaders headers = new HttpHeaders();
         headers.add(BaseConstants.PARTNER_X_CHECKSUM_TOKEN, checksum);
-        return new HttpEntity<>(response, headers);
+        return new RequestEntity<>(body, headers, HttpMethod.POST, URI.create(endpoint)) ;
     }
 
 }

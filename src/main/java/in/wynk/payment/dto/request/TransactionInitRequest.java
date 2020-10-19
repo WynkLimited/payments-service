@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class TransactionInitRequest {
     private String uid;
     private String msisdn;
+    private String clientId;
     private int planId;
     private String itemId;
     private double amount;

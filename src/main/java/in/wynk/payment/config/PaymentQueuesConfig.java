@@ -12,7 +12,6 @@ import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,12 +23,10 @@ public class PaymentQueuesConfig {
     @Bean
     public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                               ApplicationEventPublisher eventPublisher,
                                                                                                PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor) {
         return new PaymentReconciliationConsumerPollingQueue(queueName,
                 sqsClient,
                 paymentReconciliationSQSMessageExtractor,
-                eventPublisher,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
     }

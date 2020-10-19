@@ -5,7 +5,6 @@ import in.wynk.queue.dto.QueueType;
 import in.wynk.queue.dto.WynkQueue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Getter

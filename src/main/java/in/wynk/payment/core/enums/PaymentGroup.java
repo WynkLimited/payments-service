@@ -1,4 +1,4 @@
-package in.wynk.payment.core.constant;
+package in.wynk.payment.core.enums;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;

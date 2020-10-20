@@ -1,6 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.*;
@@ -69,8 +69,8 @@ public class Transaction {
 
     private transient Map<String, Object> paymentMetaData;
 
-    public TransactionEvent getType() {
-        return TransactionEvent.valueOf(type);
+    public PaymentEvent getType() {
+        return PaymentEvent.valueOf(type);
     }
 
     public TransactionStatus getStatus() {
@@ -78,7 +78,7 @@ public class Transaction {
     }
 
     public UUID getId() {
-        return id != null ? UUID.fromString(id): null;
+        return id != null ? UUID.fromString(id) : null;
     }
 
     public String getIdStr(){

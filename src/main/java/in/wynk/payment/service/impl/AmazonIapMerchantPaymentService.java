@@ -11,7 +11,10 @@ import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.AmazonReceiptDetails;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
@@ -35,6 +38,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE;
 
@@ -47,6 +51,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
     private final ObjectMapper mapper;
+    private final ReceiptDetailsDao receiptDetailsDao;
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
@@ -57,8 +62,9 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ApplicationEventPublisher eventPublisher) {
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher) {
         this.mapper = mapper;
+        this.receiptDetailsDao = receiptDetailsDao;
         this.eventPublisher = eventPublisher;
     }
 
@@ -88,8 +94,19 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         AmazonIapVerificationRequest request = transaction.getValueFromPaymentMetaData("amazonIapVerificationRequest");
+        Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(request.getUserData().getUserId());
         try {
             builder.request(request);
+            if (!mapping.isPresent()) {
+                AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
+                        .receiptId(request.getReceipt().getReceiptId())
+                        .id(request.getUserData().getUserId())
+                        .uid(transaction.getUid())
+                        .msisdn(transaction.getMsisdn())
+                        .planId(transaction.getPlanId())
+                        .build();
+                receiptDetailsDao.save(amazonReceiptDetails);
+            }
             AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
             if (amazonIapReceipt == null) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment response received from client");

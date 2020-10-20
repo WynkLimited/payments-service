@@ -9,6 +9,7 @@ import in.wynk.payment.core.constant.BeanConstant;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
@@ -19,6 +20,8 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import static in.wynk.payment.core.constant.BeanConstant.PAYMENT_MONGO_DB_FACTORY_REF;
 
 @Configuration
 @EnableScheduling
@@ -53,11 +56,14 @@ public class PaymentConfig implements WebMvcConfigurer {
         return eventMulticaster;
     }
 
+    @Primary
+    @Bean(name = {PAYMENT_MONGO_DB_FACTORY_REF, "mongoDbFactory"})
     public MongoDbFactory paymentDbFactory(MongoProperties mongoProperties) {
         return WynkMongoDbFactoryBuilder.buildMongoDbFactory(mongoProperties, "payment");
     }
 
-    @Bean(BeanConstant.PAYMENT_MONGO_TEMPLATE_REF)
+    @Bean(name = {BeanConstant.PAYMENT_MONGO_TEMPLATE_REF, "mongoTemplate"})
+    @Primary
     public MongoTemplate paymentMongoTemplate(MongoProperties mongoProperties) {
         return new MongoTemplate(paymentDbFactory(mongoProperties));
     }

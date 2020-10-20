@@ -253,7 +253,7 @@ http:
 service:
   subscription:
     api:
-      root: https://subscription-preprod.wynk.in
+      root: http://subscription-preprod.wcf.internal
 
 cors:
   allowed:

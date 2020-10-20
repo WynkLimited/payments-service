@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+@Deprecated
 @Repository
 public interface ItunesIdUidDao extends MongoRepository<ItunesIdUidMapping, String> {
 

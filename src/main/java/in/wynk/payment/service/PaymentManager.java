@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 
-import static in.wynk.commons.constants.BaseConstants.CLIENT_ID;
+import static in.wynk.commons.constants.BaseConstants.CLIENT;
 import static in.wynk.commons.constants.BaseConstants.SERVICE;
 
 @Slf4j
@@ -110,7 +110,7 @@ public class PaymentManager {
                             .msisdn(transaction.getMsisdn())
                             .itemId(transaction.getItemId())
                             .planId(transaction.getPlanId())
-                            .clientId(transaction.getClientId())
+                            .clientAlias(transaction.getClientAlias())
                             .transactionId(transaction.getIdStr())
                             .paymentCode(transaction.getPaymentChannel())
                             .transactionEvent(transaction.getType())
@@ -156,8 +156,8 @@ public class PaymentManager {
         final double finalAmountToBePaid;
         final SessionDTO session = SessionContextHolder.getBody();
         final String service = session.get(SERVICE);
-        final String clientId = session.get(CLIENT_ID);
-        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientId(clientId);
+        final String clientAlias = session.get(CLIENT);
+        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientAlias(clientAlias);
 
         if (StringUtils.isNotEmpty(itemId)) {
             builder.itemId(itemId);

@@ -226,14 +226,14 @@ http:
     paymentClientHttpTemplate:
       pool:
         connection:
-          max: 400
+          max: 200
           maxPerHost: 40
-          timeout: 1500
+          timeout: 1000
           defaultKeepAliveTime: 30000
           closeIdleWaitTime: 1000
           validateAfterInActivity: 100
           socket:
-            timeout: 3000
+            timeout: 1000
             factory:
               type: both
           request:

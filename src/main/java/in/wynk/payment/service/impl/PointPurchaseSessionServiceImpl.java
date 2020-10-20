@@ -1,5 +1,8 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.commons.adapter.SessionDTOAdapter;
 import in.wynk.commons.dto.SessionDTO;
 import in.wynk.commons.dto.SessionRequest;
@@ -11,6 +14,7 @@ import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.net.URISyntaxException;
@@ -28,15 +32,21 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
     private String PAYMENT_OPTION_URL;
 
     private final ISessionManager sessionManager;
+    private final ClientDetailsCachingService clientDetailsCachingService;
 
-    public PointPurchaseSessionServiceImpl(ISessionManager sessionManager) {
+    public PointPurchaseSessionServiceImpl(ISessionManager sessionManager, ClientDetailsCachingService clientDetailsCachingService) {
         this.sessionManager = sessionManager;
+        this.clientDetailsCachingService = clientDetailsCachingService;
     }
 
     @Override
     public SessionResponse initSession(SessionRequest request) {
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ClientDetails clientDetails = (ClientDetails) clientDetailsCachingService.getClientById(clientId);
         try {
+            AnalyticService.update(CLIENT, clientDetails.getAlias());
             SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
+            sessionDTO.put(CLIENT, clientDetails.getAlias());
             Session<SessionDTO> session = sessionManager.init(sessionDTO, duration, TimeUnit.MINUTES);
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             if (request.getParams() != null) {

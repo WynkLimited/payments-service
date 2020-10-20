@@ -3,8 +3,8 @@ package in.wynk.payment.listener;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
-import in.wynk.auth.service.IClientDetailsService;
 import in.wynk.client.core.constant.ClientLoggingMarker;
+import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.commons.constants.BaseConstants;
 import in.wynk.commons.utils.ChecksumUtils;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -22,7 +22,10 @@ import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -37,15 +40,15 @@ public class PaymentEventListener {
     private final RestTemplate restTemplate;
     private final RetryRegistry retryRegistry;
     private final IPaymentErrorService paymentErrorService;
-    private final IClientDetailsService<Client> clientDetailsService;
     private final IMerchantTransactionService merchantTransactionService;
+    private final ClientDetailsCachingService clientDetailsCachingService;
 
-    public PaymentEventListener(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, IPaymentErrorService paymentErrorService, IClientDetailsService<Client> clientDetailsService, IMerchantTransactionService merchantTransactionService) {
+    public PaymentEventListener(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
         this.restTemplate = restTemplate;
         this.retryRegistry = retryRegistry;
         this.paymentErrorService = paymentErrorService;
-        this.clientDetailsService = clientDetailsService;
         this.merchantTransactionService = merchantTransactionService;
+        this.clientDetailsCachingService = clientDetailsCachingService;
     }
 
 
@@ -82,7 +85,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentReconciledEvent")
     public void onPaymentReconciledEvent(PaymentReconciledEvent event) {
         AnalyticService.update(event);
-        Optional<Client> clientOptional = clientDetailsService.getClientDetails(event.getClientId());
+        Optional<Client> clientOptional = Optional.ofNullable(clientDetailsCachingService.getClientByAlias(event.getClientAlias()));
         if (clientOptional.isPresent()) {
             Client client = clientOptional.get();
             Optional<Boolean> callbackOptional = client.getMeta(BaseConstants.CALLBACK_ENABLED);
@@ -105,10 +108,10 @@ public class PaymentEventListener {
                     } catch (HttpStatusCodeException exception) {
                         AnalyticService.update(BaseConstants.CLIENT_RESPONSE, exception.getResponseBodyAsString());
                     } catch (Exception exception) {
-                        log.error(ClientLoggingMarker.CLIENT_COMMUNICATION_ERROR, exception.getMessage() + " for client " + event.getClientId(), exception);
+                        log.error(ClientLoggingMarker.CLIENT_COMMUNICATION_ERROR, exception.getMessage() + " for client " + event.getClientAlias(), exception);
                     }
                 } else {
-                    log.warn(ClientLoggingMarker.INVALID_CLIENT_DETAILS, "Callback url is not provided despite callback is enabled for client {}", event.getClientId());
+                    log.warn(ClientLoggingMarker.INVALID_CLIENT_DETAILS, "Callback url is not provided despite callback is enabled for client {}", event.getClientAlias());
                 }
             }
         }

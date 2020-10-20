@@ -83,7 +83,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction initiateTransaction(TransactionInitRequest transactionInitRequest) {
         Transaction txn = Transaction.builder()
-                .clientId(transactionInitRequest.getClientId())
+                .clientAlias(transactionInitRequest.getClientAlias())
                 .planId(transactionInitRequest.getPlanId())
                 .amount(transactionInitRequest.getAmount())
                 .initTime(Calendar.getInstance())
@@ -163,6 +163,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private void publishAnalytics(Transaction transaction) {
         AnalyticService.update(UID, transaction.getUid());
         AnalyticService.update(MSISDN, transaction.getMsisdn());
+        AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(TRANSACTION_TYPE, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());

@@ -1,7 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -51,14 +51,14 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
+    public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         this.publishAsync(SubscriptionProvisioningMessage.builder()
                 .uid(uid)
                 .msisdn(msisdn)
                 .planId(planId)
                 .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .referenceId(transactionId)
-                .transactionEvent(transactionEvent)
+                .paymentEvent(paymentEvent)
                 .transactionStatus(transactionStatus)
                 .build());
     }
@@ -71,13 +71,13 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 .planId(planId)
                 .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .referenceId(transactionId)
-                .transactionEvent(TransactionEvent.UNSUBSCRIBE)
+                .paymentEvent(PaymentEvent.UNSUBSCRIBE)
                 .transactionStatus(transactionStatus)
                 .build());
     }
 
     @Override
-    public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, TransactionEvent transactionEvent) {
+    public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
             restTemplate.postForObject(String.format("%s/%s", subscribePlanEndPoint, planId),
                     PlanProvisioningRequest.builder()
@@ -85,7 +85,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                             .msisdn(msisdn)
                             .referenceId(transactionId)
                             .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                            .eventType(transactionEvent)
+                            .eventType(paymentEvent)
                             .build(),
                     String.class);
         } catch (Exception e) {

@@ -2,7 +2,7 @@ package in.wynk.payment.test.payu.data;
 
 import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.StatusMode;
@@ -26,10 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.dto.payu.PayUConstants.PAYU_COMMAND;
-import static in.wynk.payment.dto.payu.PayUConstants.PAYU_HASH;
-import static in.wynk.payment.dto.payu.PayUConstants.PAYU_MERCHANT_KEY;
-import static in.wynk.payment.dto.payu.PayUConstants.PAYU_VARIABLE1;
+import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 public class PayUTestData {
 
@@ -45,7 +42,7 @@ public class PayUTestData {
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
                 .status(TransactionStatus.INPROGRESS.name())
-                .type(TransactionEvent.PURCHASE.name())
+                .type(PaymentEvent.PURCHASE.name())
                 .build();
     }
 
@@ -60,7 +57,7 @@ public class PayUTestData {
                 .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
                 .status(TransactionStatus.INPROGRESS.name())
-                .type(TransactionEvent.PURCHASE.name())
+                .type(PaymentEvent.PURCHASE.name())
                 .build();
     }
 

@@ -4,8 +4,8 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.Status;
-import in.wynk.common.enums.TransactionEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.Utils;
@@ -21,33 +21,16 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.paytm.PayTmErrorCodes;
-import in.wynk.payment.dto.paytm.PaytmWalletAddMoneyRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletLinkRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletOtpRequest;
-import in.wynk.payment.dto.paytm.PaytmWalletValidateLinkRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.ConsultBalanceRequest;
+import in.wynk.payment.dto.paytm.*;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
 import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.WalletRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.ConsultBalanceResponse;
-import in.wynk.payment.dto.response.ValidateTokenResponse;
-import in.wynk.payment.dto.response.WalletBalanceResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.paytm.PaytmWalletValidateLinkResponse;
-import in.wynk.payment.service.IRenewalMerchantWalletService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.IUserPaymentsManager;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
@@ -62,11 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -74,12 +53,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.common.enums.Status.SUCCESS;
@@ -193,7 +167,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
 
-        final TransactionEvent eventType = request.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
+        final PaymentEvent eventType = request.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
 
         if (!walletBalanceResponse.isFundsSufficient()) {
             throw new WynkRuntimeException(WynkErrorType.UT001);
@@ -317,7 +291,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         String deviceId = "abcd"; //TODO: might need to store device id or can be fetched from merchant txn.
 
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+        final PaymentEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
 
         Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, eventType);
         PaytmChargingResponse response = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);

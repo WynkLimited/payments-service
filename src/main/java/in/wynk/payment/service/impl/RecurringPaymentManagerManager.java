@@ -1,6 +1,6 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
@@ -38,10 +38,10 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Override
     public PaymentRenewal scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime) {
         return paymentRenewalDao.save(PaymentRenewal.builder()
-                                                    .transactionId(transactionId)
-                                                    .day(nextRecurringDateTime)
-                                                    .hour(nextRecurringDateTime.getTime())
-                                                    .transactionEvent(TransactionEvent.SUBSCRIBE.name())
+                .transactionId(transactionId)
+                .day(nextRecurringDateTime)
+                .hour(nextRecurringDateTime.getTime())
+                .transactionEvent(PaymentEvent.SUBSCRIBE.name())
                                                     .createdTimestamp(Calendar.getInstance())
                                                     .build());
     }
@@ -60,12 +60,12 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Override
     public void unScheduleRecurringPayment(UUID transactionId) {
         paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
-            recurringPayment.setTransactionEvent(TransactionEvent.UNSUBSCRIBE.name());
+            recurringPayment.setTransactionEvent(PaymentEvent.UNSUBSCRIBE.name());
             recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
             paymentRenewalDao.save(recurringPayment);
             eventPublisher.publishEvent(RecurringPaymentEvent.builder()
-                          .transactionId(transactionId)
-                          .transactionEvent(TransactionEvent.UNSUBSCRIBE)
+                    .transactionId(transactionId)
+                    .paymentEvent(PaymentEvent.UNSUBSCRIBE)
                           .build());
         });
     }

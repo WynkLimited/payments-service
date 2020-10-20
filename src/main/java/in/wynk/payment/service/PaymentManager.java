@@ -1,7 +1,7 @@
 package in.wynk.payment.service;
 
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.constant.CouponProvisionState;
@@ -128,7 +128,7 @@ public class PaymentManager {
             builder.couponId(coupon.getId()).discount(coupon.getDiscountPercent());
             finalPlanAmount = getFinalAmount(selectedPlan, coupon);
         }
-        final TransactionEvent eventType = autoRenew ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
+        final PaymentEvent eventType = autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
         builder.amount(finalPlanAmount).event(eventType).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();

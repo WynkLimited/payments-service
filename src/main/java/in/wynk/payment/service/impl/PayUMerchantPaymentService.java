@@ -4,7 +4,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
@@ -277,7 +277,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> paylaod = new HashMap<>();
-        if (TransactionEvent.SUBSCRIBE.equals(transaction.getType())) {
+        if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
             reqType = PaymentRequestType.SUBSCRIBE.name();
             udf1 = PAYU_SI_KEY.toUpperCase();
             paylaod.put(PAYU_SI_KEY, "1");

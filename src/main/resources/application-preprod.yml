@@ -155,7 +155,7 @@ subscription:
     queue:
       provision:
         enabled: true
-        name: wcf-staging-subscription
+        name: wcf-preprod-revenue-subscription
         sqs:
           producer:
             delayInSecond: 1

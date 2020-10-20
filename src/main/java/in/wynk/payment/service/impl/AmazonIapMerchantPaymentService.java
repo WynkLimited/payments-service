@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.TransactionContext;
@@ -112,17 +112,17 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                 throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment response received from client");
             }
 
-            TransactionEvent transactionEvent = TransactionEvent.PURCHASE;
+            PaymentEvent paymentEvent = PaymentEvent.PURCHASE;
 
             if (amazonIapReceipt.getCancelDate() == null) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else {
-                transactionEvent = TransactionEvent.UNSUBSCRIBE;
+                paymentEvent = PaymentEvent.UNSUBSCRIBE;
             }
 
             builder.externalTransactionId(amazonIapReceipt.getReceiptID()).response(amazonIapReceipt);
 
-            transaction.setType(transactionEvent.name());
+            transaction.setType(paymentEvent.name());
         } catch (HttpStatusCodeException e) {
             builder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);

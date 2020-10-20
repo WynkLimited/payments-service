@@ -5,7 +5,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
@@ -132,7 +132,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 final String msisdn = itunesIdUidMapping.getMsisdn();
                 final String decodedReceipt = getModifiedReceipt(itunesCallbackRequest.getLatestReceipt());
                 final PlanDTO selectedPlan = cachingService.getPlan(itunesIdUidMapping.getPlanId());
-                final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE : TransactionEvent.SUBSCRIBE;
+                final PaymentEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
                 final Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, selectedPlan.getId(), selectedPlan.getPrice().getAmount(), PaymentCode.ITUNES, eventType);
                 transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
                 transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateFromReceipt);

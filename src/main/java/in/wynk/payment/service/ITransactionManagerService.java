@@ -1,6 +1,6 @@
 package in.wynk.payment.service;
 
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -15,7 +15,7 @@ public interface ITransactionManagerService {
     Transaction get(String id);
 
     @Deprecated
-    Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event);
+    Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, PaymentEvent event);
 
     Transaction initiateTransaction(TransactionInitRequest transactionInitRequest);
 

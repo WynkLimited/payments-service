@@ -18,6 +18,6 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage {
         super.setPaymentCode(transaction.getPaymentChannel());
         super.setPlanId(transaction.getPlanId());
         super.setTransactionId(transaction.getId().toString());
-        super.setTransactionEvent(transaction.getType());
+        super.setPaymentEvent(transaction.getType());
     }
 }

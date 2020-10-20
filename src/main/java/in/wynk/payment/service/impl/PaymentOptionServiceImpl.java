@@ -1,10 +1,10 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.payment.core.constant.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
+import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
 import in.wynk.payment.service.IPaymentOptionService;

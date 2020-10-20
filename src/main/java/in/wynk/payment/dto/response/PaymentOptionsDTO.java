@@ -2,8 +2,8 @@ package in.wynk.payment.dto.response;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.constant.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.enums.PaymentGroup;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,17 +16,17 @@ import java.util.Map;
 @AnalysedEntity
 public class PaymentOptionsDTO {
 
-    private List<PaymentGroupsDTO> paymentGroups;
-    private double discountedPrice;
-    private double price;
-    private boolean priceChanged;
+    private final List<PaymentGroupsDTO> paymentGroups;
+    private final double discountedPrice;
+    private final double price;
+    private final boolean priceChanged;
 
     @Builder
     @Getter
     @AnalysedEntity
     public static class PaymentGroupsDTO {
         List<PaymentMethodDTO> paymentMethods;
-        private PaymentGroup paymentGroup;
+        private final PaymentGroup paymentGroup;
     }
 
     @Getter
@@ -35,13 +35,13 @@ public class PaymentOptionsDTO {
     @AnalysedEntity
     public static class PaymentMethodDTO {
         @Analysed
-        private String group;
+        private final String group;
         @Analysed
-        private Map<String, Object> meta;
+        private final Map<String, Object> meta;
         @Analysed
-        private String displayName;
+        private final String displayName;
         @Analysed
-        private String paymentCode;
+        private final String paymentCode;
 
         public PaymentMethodDTO(PaymentMethod method) {
             this.group = method.getGroup().name();

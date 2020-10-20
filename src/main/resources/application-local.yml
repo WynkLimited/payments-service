@@ -276,7 +276,3 @@ wynk:
     connectTimeout: 20000
     socketTimeout: 50000
     readPreference: secondaryPreferred
-
-uid:
-  hash:
-    key: 81BHyAUfMgCiu9I7XqArF1Bvy0o

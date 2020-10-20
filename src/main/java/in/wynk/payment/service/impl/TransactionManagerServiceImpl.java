@@ -2,7 +2,7 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -54,8 +54,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event) {
-        log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}",uid, planId, amount, paymentCode.getCode(), event.getValue());
+    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, PaymentEvent event) {
+        log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}", uid, planId, amount, paymentCode.getCode(), event.getValue());
         Transaction txn = Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance()).uid(uid).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
@@ -123,7 +123,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         try {
             PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                if (transaction.getType() == TransactionEvent.SUBSCRIBE) {
+                if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);

@@ -2,9 +2,9 @@ package in.wynk.payment.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import in.wynk.common.properties.CorsProperties;
 import in.wynk.data.config.WynkMongoDbFactoryBuilder;
 import in.wynk.data.config.properties.MongoProperties;
-import in.wynk.payment.config.properties.CorsProperties;
 import in.wynk.payment.core.constant.BeanConstant;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

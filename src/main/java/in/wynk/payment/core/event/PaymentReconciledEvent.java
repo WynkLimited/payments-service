@@ -23,7 +23,7 @@ public class PaymentReconciledEvent {
     @Analysed
     private final Integer planId;
     @Analysed
-    private final String clientId;
+    private final String clientAlias;
     @Analysed(name = BaseConstants.TRANSACTION_ID)
     private final String transactionId;
     @Analysed(name = BaseConstants.PAYMENT_CODE)

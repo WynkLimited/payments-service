@@ -44,8 +44,8 @@ public class Transaction {
     @Column(name = "msisdn")
     private String msisdn;
 
-    @Column(name = "client_id")
-    private String clientId;
+    @Column(name = "client_alias")
+    private String clientAlias;
 
     @Column(name = "item_id")
     private String itemId;

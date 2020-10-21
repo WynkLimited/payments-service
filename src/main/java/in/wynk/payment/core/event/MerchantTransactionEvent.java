@@ -1,6 +1,8 @@
 package in.wynk.payment.core.event;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.constant.BaseConstants;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -9,9 +11,13 @@ import lombok.RequiredArgsConstructor;
 @AnalysedEntity
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class MerchantTransactionEvent {
+    @Analysed(name = BaseConstants.TRANSACTION_ID)
     private final String id;
+    @Analysed
     private final String externalTransactionId;
+    @Analysed
     private final Object request;
+    @Analysed
     private final Object response;
 
     public static Builder builder(String transactionId) {

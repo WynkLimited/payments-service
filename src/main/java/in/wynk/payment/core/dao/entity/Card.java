@@ -4,6 +4,7 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.enums.PaymentGroup;
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,15 +12,13 @@ import java.util.List;
 import static in.wynk.payment.core.enums.PaymentGroup.CARD;
 
 @Getter
+@NoArgsConstructor
 public class Card implements Payment {
 
     private PaymentGroup group = CARD;
     private List<CardDetails> cardDetails;
     private PaymentCode paymentCode;
 
-
-    private Card() {
-    }
 
     public static final class Builder {
         private final PaymentGroup group = CARD;

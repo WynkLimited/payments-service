@@ -3,11 +3,13 @@ package in.wynk.payment.core.dao.entity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.enums.PaymentGroup;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import static in.wynk.payment.core.enums.PaymentGroup.WALLET;
 
 @Getter
+@NoArgsConstructor
 public class Wallet implements Payment {
 
     private PaymentGroup group = WALLET;

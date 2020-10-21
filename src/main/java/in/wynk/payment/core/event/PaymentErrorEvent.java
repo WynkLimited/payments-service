@@ -1,15 +1,21 @@
 package in.wynk.payment.core.event;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.constant.BaseConstants;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 @AnalysedEntity
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentErrorEvent {
+    @Analysed(name = BaseConstants.TRANSACTION_ID)
     private final String id;
+    @Analysed
     private final String code;
+    @Analysed
     private final String description;
 
     public static Builder builder(String transactionId) {
@@ -18,7 +24,7 @@ public class PaymentErrorEvent {
 
     public static class Builder {
 
-        private String transactionId;
+        private final String transactionId;
         private String code;
         private String description;
 

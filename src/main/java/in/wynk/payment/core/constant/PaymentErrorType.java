@@ -23,13 +23,14 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY012("Verification Failure ", "Failure in validating transaction from amazon iap", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE),
     PAY013("Subscription Provision Failure", "Unable to subscribe plan after successful payment", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.SUBSCRIPTION_ERROR),
     PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),
+    PAY997("Point Purchase Failure", "Unable to generate session, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.POINT_PURCHASE_SESSION_INIT_FAILURE),
 
     /**
      * Payment Redirect webview code
      */
     PAY300("Payment Charging Callback Pending", "Transaction is still pending at source", "${payment.pending.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_PENDING),
     PAY301("Payment Charging Callback Failure", "No matching status found at source", "${payment.unknown.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE),
-    PAY302("Payment Charging Callback Failure", "Something went wrong", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE);
+    PAY302("Payment Charging Callback Failure", "Payment Failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYMENT_CHARGING_CALLBACK_FAILURE);
 
 
     /**

@@ -1,16 +1,17 @@
 package in.wynk.payment.core.dao.entity;
 
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
 @ToString
-@AllArgsConstructor
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.NONE)
 public class AmazonReceiptDetails extends ReceiptDetails {
 
-    private String receiptId;
+    private final String receiptId;
 
 }

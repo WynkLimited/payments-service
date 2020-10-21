@@ -1,6 +1,9 @@
 package in.wynk.payment.core.dao.entity;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
+import in.wynk.common.constant.BaseConstants;
 import lombok.*;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -14,6 +17,7 @@ import javax.persistence.Table;
 @Getter
 @Setter
 @Builder
+@AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "merchant_transaction")
@@ -21,15 +25,19 @@ import javax.persistence.Table;
 public class MerchantTransaction {
 
     @Id
+    @Analysed(name = BaseConstants.TRANSACTION_ID)
     @Column(name = "transaction_id")
     @Setter(AccessLevel.NONE)
     private String id;
+    @Analysed
     @Column(name = "merchant_transaction_reference_id")
     private String externalTransactionId;
     @Type(type = "json")
+    @Analysed
     @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
     private Object request;
     @Type(type = "json")
+    @Analysed
     @Column(name = "merchant_response", columnDefinition = "json")
     private Object response;
 

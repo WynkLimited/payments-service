@@ -41,4 +41,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APB_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APB_CHARGING_STATUS_VERIFICATION");
     Marker APB_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("APB_CHARGING_CALLBACK_FAILURE");
 
+    Marker POINT_PURCHASE_SESSION_INIT_FAILURE = MarkerFactory.getMarker("POINT_PURCHASE_SESSION_INIT_FAILURE");
+
 }

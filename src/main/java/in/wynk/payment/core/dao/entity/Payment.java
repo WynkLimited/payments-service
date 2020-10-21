@@ -11,6 +11,7 @@ import in.wynk.payment.core.enums.PaymentGroup;
         @JsonSubTypes.Type(value = Wallet.class, name = "WALLET")})
 public interface Payment {
     PaymentGroup getGroup();
+
     PaymentCode getPaymentCode();
 }
 

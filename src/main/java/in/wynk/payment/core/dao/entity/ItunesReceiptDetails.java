@@ -1,15 +1,18 @@
 package in.wynk.payment.core.dao.entity;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
 @ToString
-@AllArgsConstructor
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.NONE)
 public class ItunesReceiptDetails extends ReceiptDetails {
 
-    private String receipt;
-    private String type;
+    private final String receipt;
+    private final String type;
 
 }

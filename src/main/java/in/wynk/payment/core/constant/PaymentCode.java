@@ -1,14 +1,18 @@
 package in.wynk.payment.core.constant;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.exception.WynkRuntimeException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 import static in.wynk.payment.core.constant.BeanConstant.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @Getter
 @RequiredArgsConstructor
+@AnalysedEntity
 public enum PaymentCode {
 
     AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE),
@@ -20,6 +24,7 @@ public enum PaymentCode {
     APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE),
     SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE);
 
+    @Analysed(name = PAYMENT_METHOD)
     private final String code;
 
     public static PaymentCode getFromCode(String codeStr) {

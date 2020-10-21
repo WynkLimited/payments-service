@@ -1,99 +1,130 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.constant.CouponProvisionState;
 import in.wynk.coupon.core.constant.ProvisionSource;
-import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-/**
- * @author Abhishek
- * @created 07/08/20
- */
+import java.text.DecimalFormat;
+
+import static in.wynk.common.constant.BaseConstants.CLIENT;
+import static in.wynk.common.constant.BaseConstants.SERVICE;
+
 @Slf4j
 @Service
 public class PaymentManager {
 
-    @Autowired
-    private ITransactionManagerService transactionManager;
+    private final ICouponManager couponManager;
+    private final PaymentCachingService cachingService;
+    private final ISqsManagerService sqsManagerService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManager;
 
-    @Autowired
-    private PaymentCachingService cachingService;
-
-    @Autowired
-    private ISqsManagerService sqsManagerService;
-
-    @Autowired
-    private ICouponManager couponManager;
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+        this.couponManager = couponManager;
+        this.cachingService = cachingService;
+        this.eventPublisher = eventPublisher;
+        this.sqsManagerService = sqsManagerService;
+        this.transactionManager = transactionManager;
+    }
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
-        PaymentCode paymentCode = request.getPaymentCode();
-        final Transaction transaction = initiateTransaction(request.getPlanId(), request.isAutoRenew(), uid, msisdn, request.getCouponId(), paymentCode);
-        IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        BaseResponse<?> baseResponse = chargingService.doCharging(request);
-        PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
-        sqsManagerService.publishSQSMessage(reconciliationMessage);
+        final PaymentCode paymentCode = request.getPaymentCode();
+        final Transaction transaction = initiateTransaction(request.getPlanId(), request.isAutoRenew(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
+        final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
+        final BaseResponse<?> baseResponse = chargingService.doCharging(request);
+        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                .paymentCode(transaction.getPaymentChannel())
+                .paymentEvent(transaction.getType())
+                .transactionId(transaction.getIdStr())
+                .itemId(transaction.getItemId())
+                .planId(transaction.getPlanId())
+                .msisdn(transaction.getMsisdn())
+                .uid(transaction.getUid())
+                .build());
         return baseResponse;
     }
 
-    @TransactionAware(txnId = "#transactionId")
-    public BaseResponse<?> handleCallback(String transactionId, CallbackRequest request, PaymentCode paymentCode) {
-        Transaction transaction = TransactionContext.get();
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
-        TransactionStatus initialTxnStatus = transaction.getStatus();
-        BaseResponse<?> baseResponse = callbackService.handleCallback(request);
-        TransactionStatus finalStatus = TransactionContext.get().getStatus();
-        transactionManager.updateAndSyncPublish(transaction, initialTxnStatus, finalStatus);
-        if(finalStatus == TransactionStatus.SUCCESS){
-            exhaustCouponIfApplicable();
-        }
-        return baseResponse;
-    }
-
-    @TransactionAware(txnId = "#request.getTransactionId()")
-    public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode, boolean isSync) {
-        IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
+    @TransactionAware(txnId = "#request.transactionId")
+    public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode) {
         final Transaction transaction = TransactionContext.get();
-        TransactionStatus existingStatus = transaction.getStatus();
-        BaseResponse<?> baseResponse = statusService.status(request);
-        TransactionStatus finalStatus = ((ChargingStatusResponse) baseResponse.getBody()).getTransactionStatus();
-        if (isSync) {
+        final TransactionStatus existingStatus = transaction.getStatus();
+        final IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
+        final BaseResponse<?> baseResponse;
+        try {
+            baseResponse = callbackService.handleCallback(request);
+        } finally {
+            TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
-        } else {
-            transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+            if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                exhaustCouponIfApplicable();
+            }
         }
-        if (finalStatus == TransactionStatus.SUCCESS) {
-            exhaustCouponIfApplicable();
+        return baseResponse;
+    }
+
+    @TransactionAware(txnId = "#request.transactionId")
+    public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode, boolean isSync) {
+        final Transaction transaction = TransactionContext.get();
+        final TransactionStatus existingStatus = transaction.getStatus();
+        final IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
+        final BaseResponse<?> baseResponse;
+        try {
+            baseResponse = statusService.status(request);
+        } finally {
+            TransactionStatus finalStatus = transaction.getStatus();
+            if (!isSync) {
+                transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+                if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                    exhaustCouponIfApplicable();
+                }
+                if (existingStatus != finalStatus) {
+                    eventPublisher.publishEvent(PaymentReconciledEvent.builder()
+                            .uid(transaction.getUid())
+                            .msisdn(transaction.getMsisdn())
+                            .itemId(transaction.getItemId())
+                            .planId(transaction.getPlanId())
+                            .clientAlias(transaction.getClientAlias())
+                            .transactionId(transaction.getIdStr())
+                            .paymentCode(transaction.getPaymentChannel())
+                            .paymentEvent(transaction.getType())
+                            .transactionStatus(transaction.getStatus())
+                            .build());
+                }
+            }
         }
         return baseResponse;
     }
 
     public BaseResponse<?> doVerify(VerificationRequest request) {
-        PaymentCode paymentCode = request.getPaymentCode();
-        IMerchantVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantVerificationService.class);
+        final PaymentCode paymentCode = request.getPaymentCode();
+        final IMerchantVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantVerificationService.class);
         return verificationService.doVerify(request);
     }
 
@@ -101,7 +132,7 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.paymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
-        final Transaction transaction = initiateTransaction(request.getPlanId(), autoRenew, request.getUid(), request.getMsisdn(), null, paymentCode);
+        final Transaction transaction = initiateTransaction(request.getPlanId(), autoRenew, request.getUid(), request.getMsisdn(), null, null, paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
@@ -119,25 +150,44 @@ public class PaymentManager {
         merchantPaymentRenewalService.doRenewal(message.getPaymentRenewalRequest());
     }
 
-    private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
-        final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        double finalPlanAmount = selectedPlan.getFinalPrice();
-        Coupon coupon = getCoupon(couponId, msisdn, uid, paymentCode, selectedPlan);
-        TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).planId(planId).paymentCode(paymentCode);
+    private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
+        final CouponDTO coupon;
+        final double amountToBePaid;
+        final double finalAmountToBePaid;
+        final SessionDTO session = SessionContextHolder.getBody();
+        final String service = session.get(SERVICE);
+        final String clientAlias = session.get(CLIENT);
+        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientAlias(clientAlias);
+
+        if (StringUtils.isNotEmpty(itemId)) {
+            builder.itemId(itemId);
+            builder.event(PaymentEvent.POINT_PURCHASE);
+            amountToBePaid = session.get(BaseConstants.POINT_PURCHASE_ITEM_PRICE);
+            coupon = getCoupon(couponId, msisdn, uid, service, itemId, paymentCode, null);
+        } else {
+            builder.planId(planId);
+            PlanDTO selectedPlan = cachingService.getPlan(planId);
+            amountToBePaid = selectedPlan.getFinalPrice();
+            builder.event(autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE);
+            coupon = getCoupon(couponId, msisdn, uid, service, null, paymentCode, selectedPlan);
+        }
+
         if (coupon != null) {
-            builder.couponId(coupon.getId()).discount(coupon.getDiscountPercent());
-            finalPlanAmount = getFinalAmount(selectedPlan, coupon);
+            builder.couponId(couponId).discount(coupon.getDiscountPercent());
+            finalAmountToBePaid = getFinalAmount(amountToBePaid, coupon);
+        } else {
+            finalAmountToBePaid = amountToBePaid;
         }
         final PaymentEvent eventType = autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
-        builder.amount(finalPlanAmount).event(eventType).build();
+        builder.amount(finalAmountToBePaid).event(eventType).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }
 
-    private Coupon getCoupon(String couponId, String msisdn, String uid, PaymentCode paymentCode, PlanDTO selectedPlan) {
+    private CouponDTO getCoupon(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode, PlanDTO selectedPlan) {
         if (!StringUtils.isEmpty(couponId)) {
             CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                    .couponCode(couponId).msisdn(msisdn).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             return couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
         } else {
@@ -145,16 +195,20 @@ public class PaymentManager {
         }
     }
 
-    private double getFinalAmount(PlanDTO selectedPlan, Coupon coupon) {
-        final double planAmount = selectedPlan.getFinalPrice();
+    private double getFinalAmount(double itemPrice, CouponDTO coupon) {
         double discount = coupon.getDiscountPercent();
-        return planAmount - (planAmount * discount) / 100;
+        DecimalFormat df = new DecimalFormat("#.00");
+        return Double.parseDouble(df.format(itemPrice - (itemPrice * discount) / 100));
     }
 
     private void exhaustCouponIfApplicable() {
         Transaction transaction = TransactionContext.get();
         if (StringUtils.isNotEmpty(transaction.getCoupon())) {
-            couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+            try {
+                couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+            } catch (WynkRuntimeException e) {
+                log.error(e.getMarker(), e.getMessage(), e);
+            }
         }
     }
 

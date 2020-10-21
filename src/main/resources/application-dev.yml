@@ -31,6 +31,7 @@ apb:
 
 ###### Redis Store Props #######
 session:
+  duration: 1440
   redis:
     name: session-store:local
     mode: cluster
@@ -81,7 +82,7 @@ spring:
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
-      hibernate.jdbc.time_zone: UTC
+      hibernate.jdbc.time_zone: Asia/Kolkata
 
 
 
@@ -160,10 +161,10 @@ subscription:
   merchant:
     ####### payu props #########
     payu:
-      key: gtKFFx
-      salt: eCwWELxi
+      key: aU2Uoi
+      salt: 6vbnfVtw
       api:
-        info: https://test.payu.in/merchant/postservice.php?form=2
+        info: https://info.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
@@ -196,6 +197,21 @@ http:
   enableTemplateRegistration: true
   templates:
     paymentGatewayHttpTemplate:
+      pool:
+        connection:
+          max: 300
+          maxPerHost: 60
+          timeout: 2000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 1000
+    paymentClientHttpTemplate:
       pool:
         connection:
           max: 300
@@ -263,3 +279,9 @@ wynk:
     connectTimeout: 2000
     socketTimeout: 5000
     readPreference: secondaryPreferred
+
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /wynk/v1/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**

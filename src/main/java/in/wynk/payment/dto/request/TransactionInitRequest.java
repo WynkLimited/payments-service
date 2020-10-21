@@ -18,7 +18,9 @@ import lombok.NoArgsConstructor;
 public class TransactionInitRequest {
     private String uid;
     private String msisdn;
+    private String clientAlias;
     private int planId;
+    private String itemId;
     private double amount;
     private PaymentCode paymentCode;
     private PaymentEvent event;

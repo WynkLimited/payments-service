@@ -31,12 +31,13 @@ apb:
 
 ###### Redis Store Props #######
 session:
+  duration: 15
   redis:
     name: session-store:prod
     mode: cluster
     usePooling: true
     cluster:
-      nodes: wcf-redis-production.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -46,9 +47,7 @@ session:
 ###### CORS config #####
 cors:
   allowed:
-    origins:
-      - "https://pay.wynk.in"
-      - "http://subscription.wcf.internal"
+    origins: "*"
 
 ##### mysql database props #####
 spring:
@@ -67,8 +66,8 @@ spring:
       idleTimeout: 10000
       maxLifetime: 30000
       poolName: payment-datasource-pool-dev
-      minimum-idle: 10
-      maximumPoolSize: 100
+      minimum-idle: 50
+      maximumPoolSize: 200
 
   #### JPA props ######
   jpa:
@@ -88,7 +87,7 @@ spring:
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
-      hibernate.jdbc.time_zone: UTC
+      hibernate.jdbc.time_zone: Asia/Kolkata
 
 
 
@@ -109,9 +108,9 @@ payment:
           messages:
             extractor:
               batchSize: 5
-              waitTimeInSeconds: 10
+              waitTimeInSeconds: 20
           producer:
-            delayInSecond: 180
+            delayInSecond: 600
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
@@ -142,7 +141,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       recurrence:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-recurring
         sqs:
           messages:
@@ -222,17 +221,32 @@ http:
               type: both
           request:
             timeout: 1000
+    paymentClientHttpTemplate:
+      pool:
+        connection:
+          max: 200
+          maxPerHost: 40
+          timeout: 1000
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 1000
+            factory:
+              type: both
+          request:
+            timeout: 1000
     paymentGatewayHttpTemplate:
       pool:
         connection:
-          max: 2000
-          maxPerHost: 500
+          max: 500
+          maxPerHost: 200
           timeout: 1500
-          defaultKeepAliveTime: 500
-          closeIdleWaitTime: 500
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
           validateAfterInActivity: 100
           socket:
-            timeout: 2000
+            timeout: 3000
             factory:
               type: both
           request:
@@ -262,7 +276,7 @@ wynk:
         password: 6sSUZcp2gy
         database: coupons
     ########### Mongo Pool Config ###########
-    minConnectionsPerHost: 20
+    minConnectionsPerHost: 50
     maxConnectionsPerHost: 150
     threadsAllowedToBlockForConnectionMultiplier: 5
     serverSelectionTimeoutMs: 10000
@@ -270,3 +284,9 @@ wynk:
     connectTimeout: 2000
     socketTimeout: 5000
     readPreference: secondaryPreferred
+
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /actuator/**,/wynk/v1/**

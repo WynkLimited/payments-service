@@ -8,19 +8,15 @@ import in.wynk.payment.consumer.PaymentRenewalConsumerPollingQueue;
 import in.wynk.payment.extractor.PaymentReconciliationSQSMessageExtractor;
 import in.wynk.payment.extractor.PaymentRenewalChargingSQSMessageExtractor;
 import in.wynk.payment.extractor.PaymentRenewalSQSMessageExtractor;
-import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.BeanConstant;
+import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 @Configuration
 public class PaymentQueuesConfig {

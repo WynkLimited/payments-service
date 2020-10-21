@@ -17,7 +17,6 @@ import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.apb.ApbStatus;
 import in.wynk.payment.dto.apb.ApbTransaction;
@@ -186,9 +185,6 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             String serviceName = ApbService.NB.name();
             String formattedDate = CommonUtils.getFormattedDate(txnDate, "ddMMyyyyHHmmss");
             String chargingUrl = getReturnUri(transaction, formattedDate, serviceName);
-            //Add reconciliation
-            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
-            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
             return chargingUrl;
         } catch (Exception e) {
             throw new WynkRuntimeException(WynkErrorType.UT999, "Exception occurred while generating URL");
@@ -228,7 +224,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
             status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(transaction.getPlanId()));
         }
-        return new BaseResponse<ChargingStatusResponse>(status, HttpStatus.OK, null);
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
     }
 
 

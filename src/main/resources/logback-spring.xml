@@ -55,7 +55,8 @@
             <Pattern>%msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/logstash/%d{yyyy-MM-dd, aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
+            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/logstash/day=%d{yyyy-MM-dd,
+                aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd-HH}.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
         </rollingPolicy>
@@ -86,6 +87,10 @@
     </logger>
 
     <logger name="refreshInMemoryCache" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="pointPurchase" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
@@ -139,6 +144,12 @@
     </logger>
 
     <logger name="eligibleCoupons" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentReconciliation" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentReconciledEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 

@@ -31,6 +31,7 @@ apb:
 
 ###### Redis Store Props #######
 session:
+  duration: 1440
   redis:
     name: session-store:prepord
     mode: cluster
@@ -40,7 +41,7 @@ session:
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: 10.80.1.111:6379,10.80.0.22:6379
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -85,7 +86,7 @@ spring:
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
-      hibernate.jdbc.time_zone: UTC
+      hibernate.jdbc.time_zone: Asia/Kolkata
 
 ####### payment props #######
 payment:
@@ -204,8 +205,23 @@ http:
     paymentGatewayHttpTemplate:
       pool:
         connection:
-          max: 2000
-          maxPerHost: 500
+          max: 20
+          maxPerHost: 5
+          timeout: 2000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 1000
+    paymentClientHttpTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 5
           timeout: 2000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
@@ -220,7 +236,7 @@ http:
       pool:
         connection:
           max: 20
-          maxPerHost: 500
+          maxPerHost: 5
           validateAfterInActivity: 100
           timeout: 4000
           defaultKeepAliveTime: 500
@@ -271,3 +287,8 @@ wynk:
     connectTimeout: 2000
     socketTimeout: 5000
     readPreference: secondaryPreferred
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /wynk/v1/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**

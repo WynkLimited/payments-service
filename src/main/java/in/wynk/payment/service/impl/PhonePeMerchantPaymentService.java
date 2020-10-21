@@ -16,7 +16,6 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRequest;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionResponse;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionStatus;
@@ -127,8 +126,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 //            putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
 //            putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PHONEPE_WALLET.getPaymentCode());
 
-            PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
-            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
+//            PaymentReconciliationMessage reconciliationMessage = new PaymentReconciliationMessage(transaction);
+//            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, reconciliationMessage);
 
             return BaseResponse.redirectResponse(redirectUri);
 

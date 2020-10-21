@@ -30,6 +30,7 @@ apb:
 
 ###### Redis Store Props #######
 session:
+  duration: 1440
   redis:
     name: session-store:local
     mode: cluster
@@ -74,14 +75,14 @@ spring:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
     properties:
-      hibernate.format_sql: true
+      hibernate:format_sql: true
       hibernate.id.new_generator_mappings: true
       hibernate.connection.provider_disables_autocommit: true
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
-      hibernate.jdbc.time_zone: UTC
+      hibernate.jdbc.time_zone: Asia/Kolkata
       hibernate.enable_lazy_load_no_trans: true
       hibernate.types.print.banner: false
 
@@ -161,10 +162,10 @@ payment:
   merchant:
     ####### payu props #########
     payu:
-      key: gtKFFx
-      salt: eCwWELxi
+      key: aU2Uoi
+      salt: 6vbnfVtw
       api:
-        info: https://test.payu.in/merchant/postservice.php?form=2
+        info: https://info.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
@@ -210,6 +211,21 @@ http:
         connection:
           max: 2000
           maxPerHost: 500
+          timeout: 2000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 1000
+    paymentClientHttpTemplate:
+      pool:
+        connection:
+          max: 5
+          maxPerHost: 60
           timeout: 2000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
@@ -267,7 +283,7 @@ wynk:
         username: user_coupons
         password: Sk6kzU8GU5
         database: coupons
-########### Mongo Pool Config ###########
+    ########### Mongo Pool Config ###########
     minConnectionsPerHost: 1
     maxConnectionsPerHost: 5
     threadsAllowedToBlockForConnectionMultiplier: 5
@@ -276,3 +292,8 @@ wynk:
     connectTimeout: 20000
     socketTimeout: 50000
     readPreference: secondaryPreferred
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /wynk/v1/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**

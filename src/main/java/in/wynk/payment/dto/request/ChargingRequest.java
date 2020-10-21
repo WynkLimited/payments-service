@@ -15,6 +15,8 @@ public class ChargingRequest {
     @Analysed
     private int planId;
     @Analysed
+    private String itemId;
+    @Analysed
     private boolean autoRenew;
     @Analysed
     private String couponId;

@@ -14,11 +14,11 @@ import java.util.Map;
 @Getter
 @SuperBuilder
 @Document("payment_methods")
-@NoArgsConstructor(access = AccessLevel.NONE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentMethod extends MongoBaseEntity {
-    private final PaymentGroup group;
-    private final Map<String, Object> meta;
-    private final String displayName;
-    private final PaymentCode paymentCode;
-    private final int hierarchy;
+    private PaymentGroup group;
+    private Map<String, Object> meta;
+    private String displayName;
+    private PaymentCode paymentCode;
+    private int hierarchy;
 }

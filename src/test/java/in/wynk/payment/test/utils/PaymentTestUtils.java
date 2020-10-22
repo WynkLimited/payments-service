@@ -29,7 +29,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return new PaymentMethod.Builder().displayName("Credit / Debit Cards").group(PaymentGroup.NET_BANKING).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.NET_BANKING).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -38,7 +38,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return new PaymentMethod.Builder().displayName("Credit / Debit Cards").group(PaymentGroup.CARD).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.CARD).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -47,18 +47,18 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return new PaymentMethod.Builder().displayName("Credit / Debit Cards").group(PaymentGroup.WALLET).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.WALLET).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYTM_WALLET).state(State.ACTIVE).build();
     }
 
     public static UserPreferredPayment dummyPreferredWallet() {
         Payment payment = new Wallet.Builder().paymentCode(PaymentCode.PAYTM_WALLET).build();
-        return new UserPreferredPayment.Builder().option(payment).uid(DUMMY_UID).build();
+        return UserPreferredPayment.builder().option(payment).uid(DUMMY_UID).build();
     }
 
     public static UserPreferredPayment dummyPreferredCard() {
         Payment payment = new Card.Builder().paymentCode(PaymentCode.PAYU).build();
-        return new UserPreferredPayment.Builder().option(payment).uid(DUMMY_UID).build();
+        return UserPreferredPayment.builder().option(payment).uid(DUMMY_UID).build();
     }
 
     public static SessionDTO dummySession() {

@@ -9,9 +9,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-@NoArgsConstructor(access = AccessLevel.NONE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AmazonReceiptDetails extends ReceiptDetails {
 
-    private final String receiptId;
+    private String receiptId;
 
 }

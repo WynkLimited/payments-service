@@ -11,10 +11,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Getter
 @SuperBuilder
 @Document("user_preferred_payments")
-@NoArgsConstructor(access = AccessLevel.NONE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserPreferredPayment extends MongoBaseEntity {
 
-    private final String uid;
+    private String uid;
     @Setter
     private Payment option;
 

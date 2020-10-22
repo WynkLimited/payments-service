@@ -9,10 +9,10 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-@NoArgsConstructor(access = AccessLevel.NONE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ItunesReceiptDetails extends ReceiptDetails {
 
-    private final String receipt;
-    private final String type;
+    private String receipt;
+    private String type;
 
 }

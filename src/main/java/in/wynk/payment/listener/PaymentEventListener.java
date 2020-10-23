@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.core.constant.ClientLoggingMarker;
+import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.payment.core.constant.BeanConstant;

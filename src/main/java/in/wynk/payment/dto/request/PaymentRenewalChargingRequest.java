@@ -10,16 +10,14 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PaymentRenewalRequest {
+public class PaymentRenewalChargingRequest {
 
     private Transaction previousTransaction;
     private String uid;
     //private double amount;
     private String transactionId;
     private Integer planId;
-
-
-
+    private String msisdn;
     // Todo - Fetch all this in respective services
     private String paidPartnerProductId;
     private String subsId;

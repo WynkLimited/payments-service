@@ -21,7 +21,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.queue.service.ISqsManagerService;
@@ -145,9 +144,14 @@ public class PaymentManager {
         return response;
     }
 
-    public void doRenewal(PaymentRenewalChargingMessage message) {
-        IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(message.getPaymentCode().getCode(), IMerchantPaymentRenewalService.class);
-        merchantPaymentRenewalService.doRenewal(message.getPaymentRenewalRequest());
+    public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
+        final Transaction transaction = initiateTransaction(request.getPlanId(), true, request.getUid(), request.getMsisdn(), null, null, paymentCode);
+        final TransactionStatus initialStatus = transaction.getStatus();
+        IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
+        merchantPaymentRenewalService.doRenewal(request);
+        final TransactionStatus finalStatus = transaction.getStatus();
+        if (initialStatus != finalStatus)
+            transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
     }
 
     private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {

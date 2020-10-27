@@ -1,7 +1,7 @@
 package in.wynk.payment.dto;
 
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.queue.dto.FIFOQueueMessageMarker;
 import in.wynk.queue.dto.QueueType;
 import in.wynk.queue.dto.WynkQueue;
@@ -13,8 +13,18 @@ import lombok.Getter;
 @WynkQueue(queueName = "${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
 public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
 
+    private String id;
+    private String uid;
+    private String msisdn;
+    private String subsId;
+    private String amount;
+    private String cardToken;
+    private String cardNumber;
+    private String transactionId;
+    private String paidPartnerProductId;
+    private Integer planId;
     private PaymentCode paymentCode;
-    private PaymentRenewalRequest paymentRenewalRequest;
+    private Transaction previousTransaction;
 
     @Override
     public String getMessageGroupId() {
@@ -23,7 +33,7 @@ public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
 
     @Override
     public String getMessageDeDuplicationId() {
-        return paymentRenewalRequest.getTransactionId();
+        return transactionId;
     }
 
 }

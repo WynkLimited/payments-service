@@ -1,10 +1,9 @@
 package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
-import in.wynk.commons.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
-import in.wynk.payment.service.IMerchantPaymentRenewalService;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -66,8 +65,20 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
 
     @Override
     public void consume(PaymentRenewalChargingMessage message) {
-        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getPaymentRenewalRequest());
-        paymentManager.doRenewal(message);
+        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
+        paymentManager.doRenewal(PaymentRenewalChargingRequest.builder()
+                .uid(message.getUid())
+                .planId(message.getPlanId())
+                .msisdn(message.getMsisdn())
+                .amount(message.getAmount())
+                .cardNumber(message.getCardNumber())
+                .cardToken(message.getCardToken())
+                .id(message.getId())
+                .paidPartnerProductId(message.getPaidPartnerProductId())
+                .previousTransaction(message.getPreviousTransaction())
+                .subsId(message.getSubsId())
+                .transactionId(message.getTransactionId())
+                .build(), message.getPaymentCode());
     }
 
     @Override

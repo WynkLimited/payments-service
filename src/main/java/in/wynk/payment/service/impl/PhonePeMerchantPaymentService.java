@@ -23,7 +23,7 @@ import in.wynk.payment.dto.phonepe.PhonePeTransactionStatus;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -143,7 +143,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     @Override
-    public BaseResponse<?> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public BaseResponse<?> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         return null;
     }
 

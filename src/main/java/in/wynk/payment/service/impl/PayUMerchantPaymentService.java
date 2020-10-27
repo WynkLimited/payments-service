@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 import static in.wynk.commons.constants.BaseConstants.*;
 import static in.wynk.commons.enums.TransactionStatus.SUCCESS;
 import static in.wynk.commons.enums.TransactionStatus.TIMEDOUT;
+//import static in.wynk.commons.enums.TransactionStatus.FAILURE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -137,31 +138,18 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (StringUtils.isEmpty(paymentRenewalChargingRequest.getSubsId())) {
                 throw new WynkRuntimeException("No subId found for Subscription");
             }
-            boolean status = false;
-            String errorMessage = StringUtils.EMPTY;
-            PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
-            if (payURenewalResponse.isTimeOutFlag()) {
-                transaction.setStatus(TIMEDOUT.getValue());
-                status = true;
-            } else {
-                PayUTransactionDetails payUTransactionDetails =
-                        payURenewalResponse.getDetails().get(paymentRenewalChargingRequest.getId());
-                errorMessage = payUTransactionDetails.getErrorMessage();
-                if (payUTransactionDetails.getStatus().equals(PAYU_STATUS_CAPTURED)) {
-                    status = true;
-
-                    PayUTransactionDetails verificationPayUTransactionDetails = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), payUTransactionDetails.getTransactionId()),
-                            PayUVerificationResponse.class)
-                            .getTransactionDetails()
-                            .get(paymentRenewalChargingRequest.getId());
-
-                    errorMessage = verificationPayUTransactionDetails.getErrorMessage();
-                } else if (payUTransactionDetails.getStatus().equals(PAYU_SI_STATUS_FAILURE)) {
-                    errorMessage = payUTransactionDetails.getPayUResponseFailureMessage();
-                } else if (payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS)) {
+            try {
+                PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
+                PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getDetails().get(paymentRenewalChargingRequest.getId());
+                if (payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS))
                     transaction.setStatus(SUCCESS.getValue());
-                    status = true;
-                }
+                else
+                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            } catch (WynkRuntimeException e) {
+                if (e.getErrorCode().equals(PaymentErrorType.PAY014))
+                    transaction.setStatus(TIMEDOUT.getValue());
+                else if (e.getErrorCode().equals(PaymentErrorType.PAY009))
+                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
         } catch (Throwable throwable) {
             log.error("Exception while parsing acknowledgement response.", throwable);
@@ -337,28 +325,19 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         requestMap.add(PAYU_HASH, hash);
         requestMap.add(PAYU_VARIABLE1, variable);
         String response = null;
-        boolean timeOut = false;
         rateLimiter.acquire();
         try {
             response = restTemplate.postForObject(payUInfoApiUrl, requestMap, String.class);
         } catch (RestClientException e) {
             if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException) {
-                    timeOut = true;
+                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(
                             PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR,
                             "Socket timeout but valid for reconciliation for request : {} due to {}",
                             requestMap,
                             e.getMessage(),
                             e);
-                } else if (e.getRootCause() instanceof ConnectTimeoutException) {
-                    timeOut = true;
-                    log.error(
-                            PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR,
-                            "Connection timeout but valid for reconciliation for request : {} due to {}",
-                            requestMap,
-                            e.getMessage(),
-                            e);
+                    throw new WynkRuntimeException(PaymentErrorType.PAY014);
                 } else {
                     throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
                 }
@@ -370,7 +349,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         if (paymentResponse == null) {
             paymentResponse = new PayURenewalResponse();
         }
-        paymentResponse.setTimeOutFlag(timeOut);
         return paymentResponse;
     }
 

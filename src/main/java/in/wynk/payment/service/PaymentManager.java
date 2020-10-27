@@ -148,10 +148,23 @@ public class PaymentManager {
         final Transaction transaction = initiateTransaction(request.getPlanId(), true, request.getUid(), request.getMsisdn(), null, null, paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
-        merchantPaymentRenewalService.doRenewal(request);
-        final TransactionStatus finalStatus = transaction.getStatus();
-        if (initialStatus != finalStatus)
+        try {
+            merchantPaymentRenewalService.doRenewal(request);
+        } catch (Exception e) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+        } finally {
+            final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
+            sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                    .paymentCode(transaction.getPaymentChannel())
+                    .transactionEvent(transaction.getType())
+                    .transactionId(transaction.getIdStr())
+                    .itemId(transaction.getItemId())
+                    .planId(transaction.getPlanId())
+                    .msisdn(transaction.getMsisdn())
+                    .uid(transaction.getUid())
+                    .build());
+        }
     }
 
     private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {

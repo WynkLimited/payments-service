@@ -28,9 +28,9 @@ public class PaymentReconciledEvent {
     private final String transactionId;
     @Analysed(name = BaseConstants.PAYMENT_CODE)
     private final PaymentCode paymentCode;
-    @Analysed(name = BaseConstants.TRANSACTION_STATUS)
+    @Analysed(name = BaseConstants.PAYMENT_EVENT)
     private final PaymentEvent paymentEvent;
-    @Analysed(name = BaseConstants.TRANSACTION_ID)
+    @Analysed(name = BaseConstants.TRANSACTION_STATUS)
     private final TransactionStatus transactionStatus;
 
 }

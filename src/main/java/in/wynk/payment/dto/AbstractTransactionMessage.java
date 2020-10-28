@@ -1,6 +1,7 @@
 package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,7 @@ public abstract class AbstractTransactionMessage {
     private String itemId;
     @Analysed
     private Integer planId;
-    @Analysed(name = "txnId")
+    @Analysed(name = BaseConstants.TRANSACTION_ID)
     private String transactionId;
     @Analysed
     private PaymentEvent paymentEvent;

@@ -45,7 +45,9 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
                 failureWebViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp()) + sid + SLASH + os;
             } else {
                 URIBuilder builder = new URIBuilder(failureWebViewUrl);
-                builder.addParameter(TRANSACTION_ID, TransactionContext.get().getIdStr());
+                if (TransactionContext.get() != null && StringUtils.isNotEmpty(TransactionContext.get().getIdStr())) {
+                    builder.addParameter(TRANSACTION_ID, TransactionContext.get().getIdStr());
+                }
                 builder.addParameter(TRANSACTION_STATUS, TransactionContext.get().getStatus().getValue());
                 failureWebViewUrl = builder.toString();
             }

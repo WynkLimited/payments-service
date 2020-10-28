@@ -56,9 +56,7 @@ public class PaymentManager {
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
         final PaymentCode paymentCode = request.getPaymentCode();
-        final Transaction transaction = initiateTransaction(request.getPlanId(), request.isAutoRenew(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
-        final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        final BaseResponse<?> baseResponse = chargingService.doCharging(request);
+        final Transaction transaction = initiateTransaction(request.isAutoRenew(), request.getPlanId(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                 .paymentCode(transaction.getPaymentChannel())
                 .paymentEvent(transaction.getType())
@@ -68,7 +66,8 @@ public class PaymentManager {
                 .msisdn(transaction.getMsisdn())
                 .uid(transaction.getUid())
                 .build());
-        return baseResponse;
+        final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
+        return chargingService.doCharging(request);
     }
 
     @TransactionAware(txnId = "#request.transactionId")
@@ -132,7 +131,7 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.paymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
-        final Transaction transaction = initiateTransaction(request.getPlanId(), autoRenew, request.getUid(), request.getMsisdn(), null, null, paymentCode);
+        final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
@@ -150,7 +149,16 @@ public class PaymentManager {
         merchantPaymentRenewalService.doRenewal(message.getPaymentRenewalRequest());
     }
 
-    private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
+
+    private Transaction initiateTransactionForItem(boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
+        return initiateTransaction(false, 0, uid, msisdn, itemId, couponId, paymentCode);
+    }
+
+    private Transaction initiateTransactionForPlan(boolean autoRenew, int planId, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
+        return initiateTransaction(false, 0, uid, msisdn, null, couponId, paymentCode);
+    }
+
+    private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
         final CouponDTO coupon;
         final double amountToBePaid;
         final double finalAmountToBePaid;

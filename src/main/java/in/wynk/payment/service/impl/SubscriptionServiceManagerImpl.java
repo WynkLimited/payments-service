@@ -1,22 +1,30 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.context.WynkApplicationContext;
+import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.subscription.common.dto.AllPlansResponse;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanProvisioningRequest;
+import in.wynk.subscription.common.dto.PlanProvisioningResponse;
 import in.wynk.subscription.common.dto.PlanUnProvisioningRequest;
+import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -27,9 +35,6 @@ import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2
 @Service
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
 
-    private final RestTemplate restTemplate;
-    private final ISqsManagerService sqsMessagePublisher;
-
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
 
@@ -39,15 +44,23 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.unSubscribePlan}")
     private String unSubscribePlanEndPoint;
 
-    public SubscriptionServiceManagerImpl(ISqsManagerService sqsMessagePublisher,
-                                          @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate restTemplate) {
-        this.sqsMessagePublisher = sqsMessagePublisher;
+    private final RestTemplate restTemplate;
+    private final ISqsManagerService sqsMessagePublisher;
+    private final WynkApplicationContext myApplicationContext;
+
+    public SubscriptionServiceManagerImpl(@Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate restTemplate,
+                                          ISqsManagerService sqsMessagePublisher,
+                                          WynkApplicationContext myApplicationContext) {
         this.restTemplate = restTemplate;
+        this.sqsMessagePublisher = sqsMessagePublisher;
+        this.myApplicationContext = myApplicationContext;
     }
 
     @Override
     public List<PlanDTO> getPlans() {
-        return Objects.requireNonNull(restTemplate.exchange(allPlanApiEndPoint, HttpMethod.GET, null, AllPlansResponse.class).getBody()).getData().getPlans();
+        RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<PlanDTO>>>() {
+        }).getBody()).getData();
     }
 
     @Override
@@ -79,32 +92,52 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
-            restTemplate.postForObject(String.format("%s/%s", subscribePlanEndPoint, planId),
-                    PlanProvisioningRequest.builder()
-                            .uid(uid)
-                            .msisdn(msisdn)
-                            .referenceId(transactionId)
-                            .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                            .eventType(paymentEvent)
-                            .build(),
-                    String.class);
+            PlanProvisioningRequest planProvisioningRequest = PlanProvisioningRequest.builder()
+                    .uid(uid)
+                    .planId(planId)
+                    .msisdn(msisdn)
+                    .referenceId(transactionId)
+                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                    .eventType(paymentEvent)
+                    .build();
+            RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
+            ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
+            });
+            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+                PlanProvisioningResponse provisioningResponse = response.getBody().getData();
+                if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED) {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY013);
+                }
+            }
+        } catch (HttpStatusCodeException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
+            throw new WynkRuntimeException(e);
         }
     }
 
     @Override
     public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
         try {
-            restTemplate.postForObject(String.format("%s/%s", unSubscribePlanEndPoint, planId),
-                    PlanUnProvisioningRequest.builder()
-                            .uid(uid)
-                            .referenceId(transactionId)
-                            .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                            .build(),
-                    String.class);
+            PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder()
+                    .uid(uid)
+                    .planId(planId)
+                    .referenceId(transactionId)
+                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                    .build();
+            RequestEntity<PlanUnProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest, HttpMethod.POST);
+            ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
+            });
+            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+                PlanProvisioningResponse provisioningResponse = response.getBody().getData();
+                if (provisioningResponse.getState() != ProvisionState.UNSUBSCRIBED) {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY013);
+                }
+            }
+        } catch (HttpStatusCodeException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, "Unable to unSubscribe plan after successful payment");
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, "Unable to unSubscribe plan from payment service");
         }
     }
 

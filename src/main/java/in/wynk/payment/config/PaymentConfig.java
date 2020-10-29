@@ -2,10 +2,14 @@ package in.wynk.payment.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.properties.CorsProperties;
 import in.wynk.data.config.WynkMongoDbFactoryBuilder;
 import in.wynk.data.config.properties.MongoProperties;
 import in.wynk.payment.core.constant.BeanConstant;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +32,9 @@ import static in.wynk.payment.core.constant.BeanConstant.PAYMENT_MONGO_DB_FACTOR
 @EnableConfigurationProperties({CorsProperties.class})
 @EnableMongoRepositories(basePackages = "in.wynk.payment.core.dao", mongoTemplateRef = BeanConstant.PAYMENT_MONGO_TEMPLATE_REF)
 public class PaymentConfig implements WebMvcConfigurer {
+
+    @Value("${spring.application.name}")
+    private String applicationAlias;
 
     private final CorsProperties corsProperties;
 
@@ -66,6 +73,16 @@ public class PaymentConfig implements WebMvcConfigurer {
     @Primary
     public MongoTemplate paymentMongoTemplate(MongoProperties mongoProperties) {
         return new MongoTemplate(paymentDbFactory(mongoProperties));
+    }
+
+    @Bean
+    public WynkApplicationContext myApplicationContext(ClientDetailsCachingService cachingService) {
+        ClientDetails client = (ClientDetails) cachingService.getClientByAlias(applicationAlias);
+        return WynkApplicationContext.builder()
+                .meta(client.getMeta())
+                .clientId(client.getClientId())
+                .clientSecret(client.getClientSecret())
+                .build();
     }
 
 }

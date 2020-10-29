@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: paymentApi
   profiles:
     active: ${env}
     include: base-common,coupon-core-${env}, coupon-core-${env}, client-core-${env}
@@ -6,7 +8,7 @@ spring:
     banner-mode: off
   devtools:
     add-properties: false
-###### SPRING AUTO-CONFIG EXCLUSION
+  ###### SPRING AUTO-CONFIG EXCLUSION
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   jackson:

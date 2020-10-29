@@ -56,8 +56,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public List<PlanDTO> getPlans() {
         RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-        return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<PlanDTO>>>() {
-        }).getBody()).getData();
+        return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<AllPlansResponse>>() {
+        }).getBody()).getData().getPlans();
     }
 
     @Override

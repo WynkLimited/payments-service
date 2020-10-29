@@ -11,10 +11,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.subscription.common.dto.PlanProvisioningRequest;
-import in.wynk.subscription.common.dto.PlanProvisioningResponse;
-import in.wynk.subscription.common.dto.PlanUnProvisioningRequest;
+import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -92,7 +89,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
-            PlanProvisioningRequest planProvisioningRequest = PlanProvisioningRequest.builder()
+            PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
                     .uid(uid)
                     .planId(planId)
                     .msisdn(msisdn)

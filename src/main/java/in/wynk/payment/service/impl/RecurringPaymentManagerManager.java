@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
@@ -58,7 +57,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    public void unScheduleRecurringPayment(UUID transactionId) {
+    public void unScheduleRecurringPayment(String transactionId) {
         paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
             recurringPayment.setTransactionEvent(PaymentEvent.UNSUBSCRIBE.name());
             recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
@@ -66,7 +65,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
             eventPublisher.publishEvent(RecurringPaymentEvent.builder()
                     .transactionId(transactionId)
                     .paymentEvent(PaymentEvent.UNSUBSCRIBE)
-                          .build());
+                    .build());
         });
     }
 

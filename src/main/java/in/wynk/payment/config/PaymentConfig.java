@@ -81,7 +81,7 @@ public class PaymentConfig implements WebMvcConfigurer {
         return WynkApplicationContext.builder()
                 .meta(client.getMeta())
                 .clientId(client.getClientId())
-                .clientSecret(client.getClientSecret())
+                .clientSecret(client.getClientSecret()).clientAlias(client.getAlias())
                 .build();
     }
 

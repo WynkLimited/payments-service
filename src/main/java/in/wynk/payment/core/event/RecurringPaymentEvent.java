@@ -7,15 +7,13 @@ import in.wynk.common.enums.PaymentEvent;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.UUID;
-
 @Getter
 @Builder
 @AnalysedEntity
 public class RecurringPaymentEvent {
 
     @Analysed(name = BaseConstants.TRANSACTION_ID)
-    private final UUID transactionId;
+    private final String transactionId;
     @Analysed
     private final PaymentEvent paymentEvent;
 

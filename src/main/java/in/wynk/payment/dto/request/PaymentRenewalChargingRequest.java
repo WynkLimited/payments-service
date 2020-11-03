@@ -14,7 +14,6 @@ public class PaymentRenewalChargingRequest {
 
     private Transaction previousTransaction;
     private String uid;
-    //private double amount;
     private String transactionId;
     private Integer planId;
     private String msisdn;

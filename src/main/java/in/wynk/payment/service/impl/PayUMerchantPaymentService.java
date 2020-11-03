@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 import static in.wynk.commons.constants.BaseConstants.*;
 import static in.wynk.commons.enums.TransactionStatus.SUCCESS;
 import static in.wynk.commons.enums.TransactionStatus.TIMEDOUT;
-//import static in.wynk.commons.enums.TransactionStatus.FAILURE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -141,7 +140,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             try {
                 PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
                 PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getDetails().get(paymentRenewalChargingRequest.getId());
-                if (payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS))
+                if (payUTransactionDetails!=null && payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS))
                     transaction.setStatus(SUCCESS.getValue());
                 else
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -153,8 +152,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             }
         } catch (Throwable throwable) {
             log.error("Exception while parsing acknowledgement response.", throwable);
+            throw throwable;
         }
-        return null;
+        return new BaseResponse<Void>(null, HttpStatus.OK, null);
     }
 
     @Override

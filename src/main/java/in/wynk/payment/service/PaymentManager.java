@@ -145,7 +145,7 @@ public class PaymentManager {
     }
 
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
-        final Transaction transaction = initiateTransaction(request.getPlanId(), true, request.getUid(), request.getMsisdn(), null, null, paymentCode);
+        final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
         try {
@@ -165,6 +165,20 @@ public class PaymentManager {
                     .uid(transaction.getUid())
                     .build());
         }
+    }
+
+    private Transaction initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode) {
+        final double finalAmountToBePaid;
+        final SessionDTO session = SessionContextHolder.getBody();
+        final String clientAlias = session.get(CLIENT);
+        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientAlias(clientAlias);
+        builder.planId(planId);
+        PlanDTO selectedPlan = cachingService.getPlan(planId);
+        finalAmountToBePaid = selectedPlan.getFinalPrice();
+        builder.event(TransactionEvent.SUBSCRIBE);
+        builder.amount(finalAmountToBePaid).build();
+        TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
+        return TransactionContext.get();
     }
 
     private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {

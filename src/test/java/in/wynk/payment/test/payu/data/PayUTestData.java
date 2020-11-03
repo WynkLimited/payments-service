@@ -1,22 +1,23 @@
 package in.wynk.payment.test.payu.data;
 
 import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.PlanPeriodDTO;
-import in.wynk.commons.dto.PriceDTO;
-import in.wynk.commons.dto.SessionDTO;
+import in.wynk.commons.dto.*;
 import in.wynk.commons.enums.PlanType;
 import in.wynk.commons.enums.TransactionEvent;
 import in.wynk.commons.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.StatusMode;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static in.wynk.payment.dto.payu.PayUConstants.PAYU_COMMAND;
 import static in.wynk.payment.dto.payu.PayUConstants.PAYU_HASH;
@@ -318,5 +320,36 @@ public class PayUTestData {
     }
 
 
+    public static PaymentRenewalChargingRequest buildPaymentRenewalChargingRequest() {
+        return PaymentRenewalChargingRequest.builder()
+                .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .subsId("subsId")
+                .previousTransaction(Transaction.builder().build())
+                .paidPartnerProductId("paidPartnerProductId")
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .cardToken("cardToken")
+                .cardNumber("cardNumber")
+                .amount(String.valueOf(PayUDataConstant.SELECTED_PLAN_AMOUNT))
+                .msisdn(PayUDataConstant.MSISDN)
+                .planId(PayUDataConstant.RECURRING_PLAN_ID)
+                .uid(PayUDataConstant.UID)
+                .build();
+    }
 
+    public static Stream<PaymentRenewal> buildPaymentRenewalTestData() {
+        PaymentRenewal paymentRenewal1 = PaymentRenewal.builder().transactionEvent(TransactionEvent.POINT_PURCHASE.getValue()).transactionId("id1").build();
+        PaymentRenewal paymentRenewal2 = PaymentRenewal.builder().transactionEvent(TransactionEvent.PURCHASE.getValue()).transactionId("id2").build();
+        PaymentRenewal paymentRenewal3 = PaymentRenewal.builder().transactionEvent(TransactionEvent.RENEW.getValue()).transactionId("id3").build();
+        PaymentRenewal paymentRenewal4 = PaymentRenewal.builder().transactionEvent(TransactionEvent.SUBSCRIBE.getValue()).transactionId("id4").build();
+        PaymentRenewal paymentRenewal5 = PaymentRenewal.builder().transactionEvent(TransactionEvent.UNSUBSCRIBE.getValue()).transactionId("id5").build();
+        return Stream.of(paymentRenewal1, paymentRenewal2, paymentRenewal3, paymentRenewal4, paymentRenewal5);
+    }
+
+    public static ResponseEntity<AllPlansResponse> buildAllPlanResponse() {
+        return new ResponseEntity<>(AllPlansResponse.builder()
+                .data(AllPlansResponse.AllPlans.builder()
+                        .plans(Collections.EMPTY_LIST)
+                        .build())
+                .build(), HttpStatus.OK);
+    }
 }

@@ -279,7 +279,30 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
             reqType = PaymentRequestType.SUBSCRIBE.name();
             udf1 = PAYU_SI_KEY.toUpperCase();
-            String siDetails = new SiDetails(null, null, selectedPlan.getPrice().getAmount(), null, null).toString();
+            Calendar cal = Calendar.getInstance();
+            Date today = cal.getTime();
+            cal.add(Calendar.YEAR, 5); // 5 yrs from now
+            Date next5Year = cal.getTime();
+            Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+            BillingCycle billingCycle;
+            Integer billingInterval;
+            if (validTillDays%365 == 0) {
+                billingCycle = BillingCycle.YEARLY;
+                billingInterval = validTillDays/365;
+            }
+            else if (validTillDays%30 == 0) {
+                billingCycle = BillingCycle.MONTHLY;
+                billingInterval = validTillDays/30;
+            }
+            else if (validTillDays%7 == 0) {
+                billingCycle = BillingCycle.WEEKLY;
+                billingInterval = validTillDays/7;
+            }
+            else {
+                billingCycle = BillingCycle.DAILY;
+                billingInterval = validTillDays;
+            }
+            String siDetails = new SiDetails(billingCycle, billingInterval, selectedPlan.getPrice().getAmount(), today, next5Year).toString();
             checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
             payload.put(PAYU_API_VERSION, "7");
             payload.put(PAYU_SI_KEY, "1");

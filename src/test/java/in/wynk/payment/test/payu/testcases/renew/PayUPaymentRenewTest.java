@@ -1,15 +1,15 @@
 package in.wynk.payment.test.payu.testcases.renew;
 
-import in.wynk.payment.test.config.PaymentTestConfiguration;
+import in.wynk.http.config.HttpClientConfig;
+import in.wynk.payment.PaymentApplication;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.Order;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = PaymentTestConfiguration.class)
+@SpringBootTest(classes = {PaymentApplication.class, HttpClientConfig.class})
 public class PayUPaymentRenewTest {
 
     @Before
@@ -18,7 +18,6 @@ public class PayUPaymentRenewTest {
     }
 
     @Test
-    @Order(1)
     public void test() {
 
     }

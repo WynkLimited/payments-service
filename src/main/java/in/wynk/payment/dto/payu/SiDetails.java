@@ -1,7 +1,5 @@
 package in.wynk.payment.dto.payu;
 
-import lombok.ToString;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 

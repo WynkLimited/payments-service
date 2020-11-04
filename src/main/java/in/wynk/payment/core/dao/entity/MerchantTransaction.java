@@ -3,7 +3,7 @@ package in.wynk.payment.core.dao.entity;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
-import in.wynk.commons.constants.BaseConstants;
+import in.wynk.common.constant.BaseConstants;
 import lombok.*;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;

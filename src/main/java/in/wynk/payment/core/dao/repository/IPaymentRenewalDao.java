@@ -9,11 +9,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 @Repository(BeanConstant.PAYMENT_RENEWAL_DAO)
-public interface IPaymentRenewalDao extends JpaRepository<PaymentRenewal, UUID> {
+public interface IPaymentRenewalDao extends JpaRepository<PaymentRenewal, String> {
 
     @Query("SELECT p FROM PaymentRenewal p WHERE p.day BETWEEN :currentDay AND :currentDayWithOffset AND p.hour BETWEEN :currentTime AND :currentTimeWithOffset")
     Stream<PaymentRenewal> getRecurrentPayment(@Param("currentDay") Calendar currentDay,

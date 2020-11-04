@@ -2,7 +2,7 @@ package in.wynk.payment.core.event;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.commons.constants.BaseConstants;
+import in.wynk.common.constant.BaseConstants;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.commons.enums.PaymentGroup;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.enums.PaymentGroup;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
-import static in.wynk.commons.enums.PaymentGroup.CARD;
+import static in.wynk.payment.core.enums.PaymentGroup.CARD;
 
 @Getter
 @NoArgsConstructor
@@ -21,9 +21,9 @@ public class Card implements Payment {
 
 
     public static final class Builder {
-        private PaymentGroup group = CARD;
+        private final PaymentGroup group = CARD;
         private PaymentCode paymentCode;
-        private List<CardDetails> cardDetails = new ArrayList<>();
+        private final List<CardDetails> cardDetails = new ArrayList<>();
 
         public Builder() {
         }

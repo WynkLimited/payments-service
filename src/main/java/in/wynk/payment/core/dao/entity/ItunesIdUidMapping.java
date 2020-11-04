@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 
+@Deprecated
 @Document(collection = "ItunesIdUidMapping")
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -1,19 +1,9 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.commons.enums.TransactionEvent;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import in.wynk.common.enums.PaymentEvent;
+import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
@@ -50,8 +40,8 @@ public class PaymentRenewal implements Serializable {
     @Column(name = "updated_timestamp")
     private Calendar updatedTimestamp;
 
-    public TransactionEvent getTransactionEvent() {
-        return TransactionEvent.valueOf(transactionEvent);
+    public PaymentEvent getTransactionEvent() {
+        return PaymentEvent.valueOf(transactionEvent);
     }
 
 }

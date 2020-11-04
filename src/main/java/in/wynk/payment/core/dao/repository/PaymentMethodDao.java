@@ -1,6 +1,6 @@
 package in.wynk.payment.core.dao.repository;
 
-import in.wynk.commons.enums.State;
+import in.wynk.data.enums.State;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;

@@ -2,7 +2,7 @@ package in.wynk.payment.core.dao.entity;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.commons.constants.BaseConstants;
+import in.wynk.common.constant.BaseConstants;
 import lombok.*;
 
 import javax.persistence.Column;

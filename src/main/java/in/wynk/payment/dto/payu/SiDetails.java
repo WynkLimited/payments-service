@@ -1,0 +1,43 @@
+package in.wynk.payment.dto.payu;
+
+import lombok.ToString;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class SiDetails {
+
+    private Double billingAmount;
+    private String billingCurrency;
+    private BillingCycle billingCycle;
+    private Integer billingInterval;
+    private String paymentStartDate;
+    private String paymentEndDate;
+    private String remarks;
+
+    private SiDetails() {
+    }
+
+    public SiDetails(BillingCycle billingCycle, Double billingAmount, Date paymentStartDate, Date paymentEndDate) {
+        this();
+        this.billingCycle = billingCycle;
+        this.billingInterval = 1;
+        this.billingAmount = billingAmount <= 2000 ? Math.round(billingAmount * 100) / 100 : 2000.00;
+        this.billingCurrency = "INR";
+        this.paymentStartDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentStartDate);
+        this.paymentEndDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentEndDate);
+    }
+
+    public SiDetails(BillingCycle billingCycle, Integer billingInterval, Double billingAmount, Date paymentStartDate, Date paymentEndDate) {
+        this(billingCycle, billingAmount, paymentStartDate, paymentEndDate);
+        if (billingCycle != BillingCycle.ADHOC && billingCycle != BillingCycle.ONCE) {
+            this.billingInterval = billingInterval;
+        }
+    }
+
+    public SiDetails(BillingCycle billingCycle, Integer billingInterval, Double billingAmount, Date paymentStartDate, Date paymentEndDate, String remarks) {
+        this(billingCycle, billingInterval, billingAmount, paymentStartDate, paymentEndDate);
+        this.remarks = remarks;
+    }
+
+}

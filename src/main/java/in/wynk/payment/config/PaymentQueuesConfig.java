@@ -1,6 +1,7 @@
 package in.wynk.payment.config;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.PaymentReconciliationConsumerPollingQueue;
 import in.wynk.payment.consumer.PaymentRenewalChargingConsumerPollingQueue;
 import in.wynk.payment.consumer.PaymentRenewalConsumerPollingQueue;
@@ -23,9 +24,11 @@ public class PaymentQueuesConfig {
     @Bean
     public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                               ObjectMapper objectMapper,
                                                                                                PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor) {
         return new PaymentReconciliationConsumerPollingQueue(queueName,
                 sqsClient,
+                objectMapper,
                 paymentReconciliationSQSMessageExtractor,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
@@ -34,11 +37,13 @@ public class PaymentQueuesConfig {
     @Bean
     public PaymentRenewalConsumerPollingQueue paymentRenewalConsumerPollingQueue(@Value("${payment.pooling.queue.renewal.name}") String queueName,
                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                 ObjectMapper objectMapper,
                                                                                  PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
                                                                                  ISqsManagerService sqsManagerService,
                                                                                  ITransactionManagerService transactionManager) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
+                objectMapper,
                 paymentRenewalSQSMessageExtractor,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(), sqsManagerService, transactionManager);
@@ -47,9 +52,11 @@ public class PaymentQueuesConfig {
     @Bean
     public PaymentRenewalChargingConsumerPollingQueue paymentRenewalChargingConsumerPollingQueue(@Value("${payment.pooling.queue.charging.name}") String queueName,
                                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                 ObjectMapper objectMapper,
                                                                                                  PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor) {
         return new PaymentRenewalChargingConsumerPollingQueue(queueName,
                 sqsClient,
+                objectMapper,
                 paymentRenewalChargingSQSMessageExtractor,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());

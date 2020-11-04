@@ -3,10 +3,10 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
-import in.wynk.commons.adapter.SessionDTOAdapter;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.dto.SessionRequest;
-import in.wynk.commons.dto.SessionResponse;
+import in.wynk.common.adapter.SessionDTOAdapter;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.SessionRequest;
+import in.wynk.common.dto.SessionResponse;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.IPointPurchaseSessionService;
@@ -20,19 +20,17 @@ import org.springframework.stereotype.Service;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.commons.constants.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.*;
 
 @Service
 public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionService {
 
-    @Value("${session.duration:15}")
-    private Integer duration;
-
-    @Value("${payment.payOption.page}")
-    private String PAYMENT_OPTION_URL;
-
     private final ISessionManager sessionManager;
     private final ClientDetailsCachingService clientDetailsCachingService;
+    @Value("${session.duration:15}")
+    private Integer duration;
+    @Value("${payment.payOption.page}")
+    private String PAYMENT_OPTION_URL;
 
     public PointPurchaseSessionServiceImpl(ISessionManager sessionManager, ClientDetailsCachingService clientDetailsCachingService) {
         this.sessionManager = sessionManager;

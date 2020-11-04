@@ -2,12 +2,11 @@ package in.wynk.payment.service.impl;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
-import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.utils.EncryptionUtils;
+import in.wynk.common.constant.SessionKeys;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.TransactionContext;
@@ -33,6 +32,7 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -53,9 +53,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static in.wynk.commons.constants.BaseConstants.*;
-import static in.wynk.commons.enums.TransactionStatus.SUCCESS;
-import static in.wynk.commons.enums.TransactionStatus.TIMEDOUT;
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -141,12 +139,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
                 PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getDetails().get(paymentRenewalChargingRequest.getId());
                 if (payUTransactionDetails!=null && payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS))
-                    transaction.setStatus(SUCCESS.getValue());
+                    transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                 else
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
             } catch (WynkRuntimeException e) {
                 if (e.getErrorCode().equals(PaymentErrorType.PAY014))
-                    transaction.setStatus(TIMEDOUT.getValue());
+                    transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
                 else if (e.getErrorCode().equals(PaymentErrorType.PAY009))
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
@@ -189,7 +187,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr());
-        if(transaction.getStatus().equals(SUCCESS) && transaction.getType() != TransactionEvent.POINT_PURCHASE){
+        if (transaction.getStatus().equals(SUCCESS) && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
         return responseBuilder.build();
@@ -207,7 +205,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             merchantTransactionEventBuilder.externalTransactionId(payUTransactionDetails.getPayUExternalTxnId());
             if (payUChargingVerificationResponse.getStatus() == 1) {
                 if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
-                    finalTransactionStatus = SUCCESS;
+                    finalTransactionStatus = TransactionStatus.SUCCESS;
                 } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
@@ -243,7 +241,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr());
-        if(transaction.getStatus().equals(SUCCESS)){
+        if (transaction.getStatus().equals(SUCCESS)) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
         return responseBuilder.build();
@@ -259,7 +257,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> paylaod = new HashMap<>();
-        if (TransactionEvent.SUBSCRIBE.equals(transaction.getType())) {
+        if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
             reqType = PaymentRequestType.SUBSCRIBE.name();
             udf1 = PAYU_SI_KEY.toUpperCase();
             paylaod.put(PAYU_SI_KEY, "1");

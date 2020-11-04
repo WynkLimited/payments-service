@@ -1,6 +1,7 @@
 package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -36,10 +37,11 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
 
     public PaymentReconciliationConsumerPollingQueue(String queueName,
                                                      AmazonSQS sqs,
+                                                     ObjectMapper objectMapper,
                                                      ISQSMessageExtractor messagesExtractor,
                                                      ThreadPoolExecutor messageHandlerThreadPool,
                                                      ScheduledThreadPoolExecutor pollingThreadPool) {
-        super(queueName, sqs, messagesExtractor, messageHandlerThreadPool);
+        super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
     }

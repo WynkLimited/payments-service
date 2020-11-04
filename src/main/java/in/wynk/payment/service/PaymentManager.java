@@ -1,12 +1,10 @@
 package in.wynk.payment.service;
 
-import in.wynk.commons.constants.BaseConstants;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.constant.CouponProvisionState;
 import in.wynk.coupon.core.constant.ProvisionSource;
 import in.wynk.coupon.core.dto.CouponDTO;
@@ -25,6 +23,8 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,8 +32,8 @@ import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 
-import static in.wynk.commons.constants.BaseConstants.CLIENT;
-import static in.wynk.commons.constants.BaseConstants.SERVICE;
+import static in.wynk.common.constant.BaseConstants.CLIENT;
+import static in.wynk.common.constant.BaseConstants.SERVICE;
 
 @Slf4j
 @Service
@@ -55,19 +55,18 @@ public class PaymentManager {
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
         final PaymentCode paymentCode = request.getPaymentCode();
-        final Transaction transaction = initiateTransaction(request.getPlanId(), request.isAutoRenew(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
-        final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        final BaseResponse<?> baseResponse = chargingService.doCharging(request);
+        final Transaction transaction = initiateTransaction(request.isAutoRenew(), request.getPlanId(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                 .paymentCode(transaction.getPaymentChannel())
-                .transactionEvent(transaction.getType())
+                .paymentEvent(transaction.getType())
                 .transactionId(transaction.getIdStr())
                 .itemId(transaction.getItemId())
                 .planId(transaction.getPlanId())
                 .msisdn(transaction.getMsisdn())
                 .uid(transaction.getUid())
                 .build());
-        return baseResponse;
+        final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
+        return chargingService.doCharging(request);
     }
 
     @TransactionAware(txnId = "#request.transactionId")
@@ -112,7 +111,7 @@ public class PaymentManager {
                             .clientAlias(transaction.getClientAlias())
                             .transactionId(transaction.getIdStr())
                             .paymentCode(transaction.getPaymentChannel())
-                            .transactionEvent(transaction.getType())
+                            .paymentEvent(transaction.getType())
                             .transactionStatus(transaction.getStatus())
                             .build());
                 }
@@ -131,14 +130,14 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.paymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
-        final Transaction transaction = initiateTransaction(request.getPlanId(), autoRenew, request.getUid(), request.getMsisdn(), null, null, paymentCode);
+        final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         final BaseResponse<?> response = verificationService.verifyReceipt(request);
         final TransactionStatus finalStatus = transaction.getStatus();
         transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
-        if(finalStatus == TransactionStatus.SUCCESS){
+        if (finalStatus == TransactionStatus.SUCCESS) {
             exhaustCouponIfApplicable();
         }
         return response;
@@ -181,7 +180,16 @@ public class PaymentManager {
         return TransactionContext.get();
     }
 
-    private Transaction initiateTransaction(int planId, boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
+
+    private Transaction initiateTransactionForItem(boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
+        return initiateTransaction(false, 0, uid, msisdn, itemId, couponId, paymentCode);
+    }
+
+    private Transaction initiateTransactionForPlan(boolean autoRenew, int planId, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
+        return initiateTransaction(false, 0, uid, msisdn, null, couponId, paymentCode);
+    }
+
+    private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
         final CouponDTO coupon;
         final double amountToBePaid;
         final double finalAmountToBePaid;
@@ -192,14 +200,14 @@ public class PaymentManager {
 
         if (StringUtils.isNotEmpty(itemId)) {
             builder.itemId(itemId);
-            builder.event(TransactionEvent.POINT_PURCHASE);
+            builder.event(PaymentEvent.POINT_PURCHASE);
             amountToBePaid = session.get(BaseConstants.POINT_PURCHASE_ITEM_PRICE);
             coupon = getCoupon(couponId, msisdn, uid, service, itemId, paymentCode, null);
         } else {
             builder.planId(planId);
             PlanDTO selectedPlan = cachingService.getPlan(planId);
             amountToBePaid = selectedPlan.getFinalPrice();
-            builder.event(autoRenew ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE);
+            builder.event(autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE);
             coupon = getCoupon(couponId, msisdn, uid, service, null, paymentCode, selectedPlan);
         }
 
@@ -209,8 +217,8 @@ public class PaymentManager {
         } else {
             finalAmountToBePaid = amountToBePaid;
         }
-
-        builder.amount(finalAmountToBePaid).build();
+        final PaymentEvent eventType = autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
+        builder.amount(finalAmountToBePaid).event(eventType).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }
@@ -234,7 +242,7 @@ public class PaymentManager {
 
     private void exhaustCouponIfApplicable() {
         Transaction transaction = TransactionContext.get();
-        if(StringUtils.isNotEmpty(transaction.getCoupon())) {
+        if (StringUtils.isNotEmpty(transaction.getCoupon())) {
             try {
                 couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
             } catch (WynkRuntimeException e) {

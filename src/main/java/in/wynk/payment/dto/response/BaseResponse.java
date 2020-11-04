@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static in.wynk.commons.constants.BaseConstants.HTTP_STATUS;
+import static in.wynk.common.constant.BaseConstants.HTTP_STATUS;
 
 @Getter
 @Builder
@@ -43,7 +43,7 @@ public class BaseResponse<R> {
         return redirectResponse(uri);
     }
 
-    public static BaseResponse<Void> redirectResponse(URI uri){
+    public static BaseResponse<Void> redirectResponse(URI uri) {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.LOCATION, uri.toString());
         AnalyticService.update(HTTP_STATUS, HttpStatus.FOUND.value());

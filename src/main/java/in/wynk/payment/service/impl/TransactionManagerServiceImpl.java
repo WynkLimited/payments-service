@@ -1,11 +1,10 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.common.constant.SessionKeys;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -20,6 +19,7 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ import java.util.Calendar;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static in.wynk.commons.constants.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.*;
 
 @Slf4j
 @Service
@@ -60,8 +60,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, TransactionEvent event) {
-        log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}",uid, planId, amount, paymentCode.getCode(), event.getValue());
+    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, PaymentEvent event) {
+        log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}", uid, planId, amount, paymentCode.getCode(), event.getValue());
         Transaction txn = Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance()).uid(uid).msisdn(msisdn)
                 .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
@@ -69,7 +69,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return initTransaction(txn);
     }
 
-    private Transaction initTransaction(Transaction txn){
+    private Transaction initTransaction(Transaction txn) {
         Transaction transaction = upsert(txn);
         Session<SessionDTO> session = SessionContextHolder.get();
         if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
@@ -129,10 +129,10 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
         try {
-            if(transaction.getType() != TransactionEvent.POINT_PURCHASE) {
+            if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
                 PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                    if (transaction.getType() == TransactionEvent.SUBSCRIBE) {
+                    if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                         recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
@@ -165,7 +165,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(MSISDN, transaction.getMsisdn());
         AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
-        AnalyticService.update(TRANSACTION_TYPE, transaction.getType().getValue());
+        AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }

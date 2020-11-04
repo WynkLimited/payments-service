@@ -1,7 +1,7 @@
 package in.wynk.payment.service;
 
-import in.wynk.commons.dto.SessionRequest;
-import in.wynk.commons.dto.SessionResponse;
+import in.wynk.common.dto.SessionRequest;
+import in.wynk.common.dto.SessionResponse;
 
 public interface IPointPurchaseSessionService {
 

@@ -2,8 +2,8 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.commons.dto.SessionRequest;
-import in.wynk.commons.dto.SessionResponse;
+import in.wynk.common.dto.SessionRequest;
+import in.wynk.common.dto.SessionResponse;
 import in.wynk.payment.service.IPointPurchaseSessionService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.PostMapping;

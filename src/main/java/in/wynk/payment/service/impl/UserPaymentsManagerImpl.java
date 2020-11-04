@@ -34,7 +34,7 @@ public class UserPaymentsManagerImpl implements IUserPaymentsManager {
         if (Objects.nonNull(userPreferredPayment)) {
             userPreferredPayment.setOption(wallet);
         } else {
-            userPreferredPayment = new UserPreferredPayment.Builder().uid(uid).option(wallet).build();
+            userPreferredPayment = UserPreferredPayment.builder().uid(uid).option(wallet).build();
         }
         return preferredPaymentsDao.save(userPreferredPayment);
     }

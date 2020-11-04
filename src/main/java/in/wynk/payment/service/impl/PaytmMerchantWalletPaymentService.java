@@ -3,14 +3,12 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.Status;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.utils.EncryptionUtils;
-import in.wynk.commons.utils.Utils;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.Status;
+import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -24,8 +22,6 @@ import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestBody;
-import in.wynk.payment.dto.request.ConsultBalanceRequest.ConsultBalanceRequestHead;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.paytm.PaytmChargingResponse;
 import in.wynk.payment.dto.response.paytm.PaytmChargingStatusResponse;
@@ -36,6 +32,8 @@ import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.enums.PlanType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -54,11 +52,10 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.*;
 
-import static in.wynk.commons.constants.BaseConstants.*;
-import static in.wynk.commons.enums.Status.SUCCESS;
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
+import static in.wynk.logging.BaseLoggingMarkers.HTTP_ERROR;
 import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.HTTP_ERROR;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 
@@ -166,7 +163,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
 
-        final TransactionEvent eventType = request.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
+        final PaymentEvent eventType = request.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
 
         if (!walletBalanceResponse.isFundsSufficient()) {
             throw new WynkRuntimeException(WynkErrorType.UT001);
@@ -180,8 +177,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             return BaseResponse.redirectResponse(String.format(successPage, SessionContextHolder.get().getId().toString(), transaction.getId().toString()));
         } catch (Exception e) {
             return BaseResponse.redirectResponse(failurePage);
-        }
-        finally {
+        } finally {
             //Add reconciliation
 //            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
 //            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
@@ -290,7 +286,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         String deviceId = "abcd"; //TODO: might need to store device id or can be fetched from merchant txn.
 
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final TransactionEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? TransactionEvent.PURCHASE: TransactionEvent.SUBSCRIBE;
+        final PaymentEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
 
         Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, eventType);
         PaytmChargingResponse response = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);
@@ -351,9 +347,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
             ResponseEntity<PaytmWalletValidateLinkResponse> responseEntity = restTemplate.exchange(requestEntity, PaytmWalletValidateLinkResponse.class);
             paytmWalletValidateLinkResponse = responseEntity.getBody();
-            if (paytmWalletValidateLinkResponse != null && paytmWalletValidateLinkResponse.getStatus().equals(SUCCESS)) {
+            if (paytmWalletValidateLinkResponse != null && paytmWalletValidateLinkResponse.getStatus().equals(Status.SUCCESS)) {
                 saveToken(paytmWalletValidateLinkResponse);
-                return  BaseResponse.<Void>builder().status(HttpStatus.OK).build();
+                return BaseResponse.<Void>builder().status(HttpStatus.OK).build();
             }
         } catch (HttpStatusCodeException e) {
             AnalyticService.update("otpValidated", false);
@@ -405,12 +401,12 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
         try {
             URI uri = new URIBuilder(SERVICES_URL + "/paymentservices/pay/consult").build();
-            ConsultBalanceRequestBody body = ConsultBalanceRequestBody.builder().userToken(accessToken)
+            ConsultBalanceRequest.ConsultBalanceRequestBody body = ConsultBalanceRequest.ConsultBalanceRequestBody.builder().userToken(accessToken)
                     .totalAmount(amountInRs).mid(MID).build();
             String jsonPayload = gson.toJson(body);
             logger.debug("Generating signature for payload: {}", jsonPayload);
             String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
-            ConsultBalanceRequestHead head = ConsultBalanceRequestHead.builder().clientId(CLIENT_ID).version("v1")
+            ConsultBalanceRequest.ConsultBalanceRequestHead head = ConsultBalanceRequest.ConsultBalanceRequestHead.builder().clientId(CLIENT_ID).version("v1")
                     .requestTimestamp(System.currentTimeMillis() + "").signature(signature).channelId("WEB").build();
             ConsultBalanceRequest consultBalanceRequest = ConsultBalanceRequest.builder().head(head).body(body).build();
             RequestEntity<ConsultBalanceRequest> requestEntity = new RequestEntity<>(consultBalanceRequest, HttpMethod.POST, uri);
@@ -420,10 +416,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             AnalyticService.update("PAYTM_RESPONSE_CODE", responseEntity.getStatusCodeValue());
             ConsultBalanceResponse payTmResponse = responseEntity.getBody();
             //add a null check on body.
-            if (payTmResponse != null && payTmResponse.getBody() != null && payTmResponse.getBody().getResultInfo().getResultStatus() == SUCCESS) {
+            if (payTmResponse != null && payTmResponse.getBody() != null && payTmResponse.getBody().getResultInfo().getResultStatus() == Status.SUCCESS) {
                 WalletBalanceResponse response = WalletBalanceResponse.builder().isLinked(true)
                         .deficitBalance(payTmResponse.getBody().getDeficitAmount()).fundsSufficient(payTmResponse.getBody().isFundsSufficient()).build();
-                return BaseResponse.<WalletBalanceResponse>builder().body(response).status( HttpStatus.OK).build();
+                return BaseResponse.<WalletBalanceResponse>builder().body(response).status(HttpStatus.OK).build();
             }
 
         } catch (HttpStatusCodeException e) {
@@ -497,7 +493,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
             Map<String, String> params = new HashMap<>();
             params.put(INFO, payTmRequestParams);
-            return BaseResponse.<Map<String, String>>builder().body(params).status( HttpStatus.OK).build();
+            return BaseResponse.<Map<String, String>>builder().body(params).status(HttpStatus.OK).build();
         } catch (HttpStatusCodeException e) {
             throw new WynkRuntimeException("Http Status Exception Occurred");
         } catch (Exception e) {

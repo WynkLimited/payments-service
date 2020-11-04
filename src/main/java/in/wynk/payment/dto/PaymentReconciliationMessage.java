@@ -12,4 +12,5 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @AllArgsConstructor
 @WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", delaySeconds = "${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}", queueType = QueueType.STANDARD)
-public class PaymentReconciliationMessage extends AbstractTransactionMessage { }
+public class PaymentReconciliationMessage extends AbstractTransactionMessage {
+}

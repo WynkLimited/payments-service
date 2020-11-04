@@ -1,8 +1,8 @@
 package in.wynk.payment.exception.handler;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.commons.constants.BaseConstants;
-import in.wynk.commons.dto.SessionDTO;
+import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.handler.WynkGlobalExceptionHandler;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -21,7 +21,7 @@ import org.springframework.web.context.request.WebRequest;
 
 import java.net.URISyntaxException;
 
-import static in.wynk.commons.constants.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.*;
 
 @Slf4j
 @ControllerAdvice
@@ -45,7 +45,9 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
                 failureWebViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp()) + sid + SLASH + os;
             } else {
                 URIBuilder builder = new URIBuilder(failureWebViewUrl);
-                builder.addParameter(TRANSACTION_ID, TransactionContext.get().getIdStr());
+                if (TransactionContext.get() != null && StringUtils.isNotEmpty(TransactionContext.get().getIdStr())) {
+                    builder.addParameter(TRANSACTION_ID, TransactionContext.get().getIdStr());
+                }
                 builder.addParameter(TRANSACTION_STATUS, TransactionContext.get().getStatus().getValue());
                 failureWebViewUrl = builder.toString();
             }

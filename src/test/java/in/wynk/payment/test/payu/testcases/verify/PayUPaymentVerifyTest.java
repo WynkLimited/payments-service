@@ -1,7 +1,7 @@
 package in.wynk.payment.test.payu.testcases.verify;
 
 import com.google.gson.Gson;
-import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.VerificationType;

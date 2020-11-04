@@ -1,7 +1,7 @@
 package in.wynk.payment.test;
 
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.utils.BeanLocatorFactory;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.constant.PaymentCode;

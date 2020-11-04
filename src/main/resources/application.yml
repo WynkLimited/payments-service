@@ -1,20 +1,18 @@
 spring:
+  application:
+    name: paymentApi
   profiles:
     active: ${env}
-    include: coupon-core-${env}, client-core-${env}
+    include: base-common,coupon-core-${env}, coupon-core-${env}, client-core-${env}
   main:
     banner-mode: off
   devtools:
     add-properties: false
-###### SPRING AUTO-CONFIG EXCLUSION
+  ###### SPRING AUTO-CONFIG EXCLUSION
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   jackson:
     default-property-inclusion: non_null
-
-uid:
-  hash:
-    key: 81BHyAUfMgCiu9I7XqArF1Bvy0o
 
 debug: false
 
@@ -65,8 +63,8 @@ service:
     api:
       endpoint:
         allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
-        subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/subscription/provision/
-        unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/subscription/unprovision/
+        subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
+        unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
 

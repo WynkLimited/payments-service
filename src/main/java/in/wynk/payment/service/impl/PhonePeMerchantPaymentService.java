@@ -2,12 +2,11 @@ package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
-import in.wynk.commons.constants.SessionKeys;
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.TransactionEvent;
-import in.wynk.commons.enums.TransactionStatus;
-import in.wynk.commons.utils.Utils;
+import in.wynk.common.constant.SessionKeys;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -35,6 +34,7 @@ import in.wynk.queue.dto.SendSQSMessageRequest;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
@@ -53,7 +53,7 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.commons.constants.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
@@ -116,7 +116,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         int planId = chargingRequest.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
 
-        final TransactionEvent eventType = chargingRequest.isAutoRenew() ? TransactionEvent.SUBSCRIBE : TransactionEvent.PURCHASE;
+        final PaymentEvent eventType = chargingRequest.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
 
         try {
             final long finalPlanAmount = selectedPlan.getFinalPriceInPaise();

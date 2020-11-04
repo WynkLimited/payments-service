@@ -5,8 +5,8 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.core.constant.ClientLoggingMarker;
 import in.wynk.client.service.ClientDetailsCachingService;
-import in.wynk.commons.constants.BaseConstants;
-import in.wynk.commons.utils.ChecksumUtils;
+import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
@@ -22,7 +22,6 @@ import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
 import java.util.Optional;
 
 @Service
@@ -98,9 +96,9 @@ public class PaymentEventListener {
                             .itemId(event.getItemId())
                             .planId(event.getPlanId())
                             .transactionId(event.getTransactionId())
-                            .transactionStatus(event.getTransactionEvent().getValue())
+                            .transactionStatus(event.getTransactionStatus().getValue())
                             .build();
-                    RequestEntity<ClientCallbackRequest> requestHttpEntity = buildEntityForClient(callbackUrlOptional.get(), client.getClientId(), client.getClientSecret(), clientCallbackRequest);
+                    RequestEntity<ClientCallbackRequest> requestHttpEntity = ChecksumUtils.buildEntityWithChecksum(callbackUrlOptional.get(), client.getClientId(), client.getClientSecret(), clientCallbackRequest, HttpMethod.POST);
                     AnalyticService.update(BaseConstants.CLIENT_REQUEST, requestHttpEntity.toString());
                     try {
                         ResponseEntity<String> partnerResponse = restTemplate.exchange(requestHttpEntity, String.class);
@@ -115,13 +113,6 @@ public class PaymentEventListener {
                 }
             }
         }
-    }
-
-    private <T> RequestEntity<T> buildEntityForClient(String endpoint, String clientId, String clientSecret, T body) {
-        String checksum = ChecksumUtils.generate(clientId, clientSecret, endpoint, HttpMethod.POST, body);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(BaseConstants.PARTNER_X_CHECKSUM_TOKEN, checksum);
-        return new RequestEntity<>(body, headers, HttpMethod.POST, URI.create(endpoint)) ;
     }
 
 }

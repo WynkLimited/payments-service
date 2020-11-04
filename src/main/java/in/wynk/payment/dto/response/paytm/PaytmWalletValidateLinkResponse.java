@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.response.paytm;
 
-import in.wynk.commons.enums.Status;
+import in.wynk.common.enums.Status;
 import in.wynk.payment.dto.response.CustomResponse;
 
 public class PaytmWalletValidateLinkResponse extends CustomResponse {

@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.commons.enums.TransactionEvent;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,7 +23,7 @@ public class TransactionInitRequest {
     private String itemId;
     private double amount;
     private PaymentCode paymentCode;
-    private TransactionEvent event;
+    private PaymentEvent event;
     private String couponId;
     private double discount;
 }

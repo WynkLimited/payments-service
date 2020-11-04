@@ -137,19 +137,6 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      subscription:
-        enabled: false
-        name: wcf-staging-subscription
-        sqs:
-          messages:
-            extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
-          producer:
-            delayInSecond: 180
-          consumer:
-            delay: 20
-            delayTimeUnit: SECONDS
       recurrence:
         enabled: true
         name: wcf-staging-payment-recurring
@@ -199,6 +186,16 @@ payment:
       callback:
         url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+
+subscription:
+  pooling:
+    queue:
+      provision:
+        enabled: true
+        name: wcf-preprod-revenue-subscription
+        sqs:
+          producer:
+            delayInSecond: 1
 
 ####### Http Client Props #######
 http:

@@ -1,18 +1,14 @@
 package in.wynk.payment.test.utils;
 
-import in.wynk.commons.dto.PlanDTO;
-import in.wynk.commons.dto.PlanPeriodDTO;
-import in.wynk.commons.dto.PriceDTO;
-import in.wynk.commons.dto.SessionDTO;
-import in.wynk.commons.enums.PaymentGroup;
-import in.wynk.commons.enums.PlanType;
-import in.wynk.commons.enums.State;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.data.enums.State;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.Card;
-import in.wynk.payment.core.dao.entity.Payment;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.enums.PaymentGroup;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import in.wynk.subscription.common.dto.PriceDTO;
+import in.wynk.subscription.common.enums.PlanType;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,9 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.commons.constants.BaseConstants.MSISDN;
-import static in.wynk.commons.constants.BaseConstants.SERVICE;
-import static in.wynk.commons.constants.BaseConstants.UID;
+import static in.wynk.common.constant.BaseConstants.*;
 
 public class PaymentTestUtils {
 
@@ -35,7 +29,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return new PaymentMethod.Builder().displayName("Credit / Debit Cards").group(PaymentGroup.NET_BANKING).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.NET_BANKING).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -44,7 +38,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return new PaymentMethod.Builder().displayName("Credit / Debit Cards").group(PaymentGroup.CARD).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.CARD).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -53,18 +47,18 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return new PaymentMethod.Builder().displayName("Credit / Debit Cards").group(PaymentGroup.WALLET).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.WALLET).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYTM_WALLET).state(State.ACTIVE).build();
     }
 
     public static UserPreferredPayment dummyPreferredWallet() {
         Payment payment = new Wallet.Builder().paymentCode(PaymentCode.PAYTM_WALLET).build();
-        return new UserPreferredPayment.Builder().option(payment).uid(DUMMY_UID).build();
+        return UserPreferredPayment.builder().option(payment).uid(DUMMY_UID).build();
     }
 
     public static UserPreferredPayment dummyPreferredCard() {
         Payment payment = new Card.Builder().paymentCode(PaymentCode.PAYU).build();
-        return new UserPreferredPayment.Builder().option(payment).uid(DUMMY_UID).build();
+        return UserPreferredPayment.builder().option(payment).uid(DUMMY_UID).build();
     }
 
     public static SessionDTO dummySession() {

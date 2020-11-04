@@ -1,7 +1,7 @@
 package in.wynk.payment.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.common.enums.TransactionStatus;
 import lombok.Builder;
 import lombok.Getter;
 

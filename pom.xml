@@ -20,12 +20,12 @@
         <!--PROJECT DEPENDENCIES-->
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>revenue-commons</artifactId>
+            <artifactId>revenue-data</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>revenue-data</artifactId>
+            <artifactId>lib-exception</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -56,11 +56,6 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-logging</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>in.wynk</groupId>
             <artifactId>lib-queue</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -77,6 +72,11 @@
         <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>coupon-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>payment-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 

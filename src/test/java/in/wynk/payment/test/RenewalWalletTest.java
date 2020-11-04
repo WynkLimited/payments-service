@@ -1,6 +1,6 @@
 package in.wynk.payment.test;
 
-import in.wynk.commons.dto.SessionDTO;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.service.IRenewalMerchantWalletService;
 import in.wynk.payment.test.utils.PaymentTestUtils;

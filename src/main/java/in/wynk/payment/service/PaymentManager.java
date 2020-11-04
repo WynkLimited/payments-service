@@ -156,7 +156,7 @@ public class PaymentManager {
             transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                     .paymentCode(transaction.getPaymentChannel())
-                    .transactionEvent(transaction.getType())
+                    .paymentEvent(transaction.getType())
                     .transactionId(transaction.getIdStr())
                     .itemId(transaction.getItemId())
                     .planId(transaction.getPlanId())
@@ -174,7 +174,7 @@ public class PaymentManager {
         builder.planId(planId);
         PlanDTO selectedPlan = cachingService.getPlan(planId);
         finalAmountToBePaid = selectedPlan.getFinalPrice();
-        builder.event(TransactionEvent.SUBSCRIBE);
+        builder.event(PaymentEvent.SUBSCRIBE);
         builder.amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();

@@ -1,6 +1,6 @@
 package in.wynk.payment.test.payu.testcases.renew;
 
-import in.wynk.commons.enums.TransactionStatus;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.BeanConstant;

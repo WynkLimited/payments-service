@@ -8,11 +8,7 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.payment.test.payu.data.PayUTestData;
@@ -32,10 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentTestConfiguration.class)
@@ -71,7 +64,7 @@ public class PayUPaymentStatusTest {
             SessionContextHolder.set(PayUTestData.initSession());
         }
         Mockito.when(recurringPaymentManager.scheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID.toString()), any())).thenReturn(null);
-        Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID));
+        Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID).toString());
 
         Mockito.doNothing().when(subscriptionManager).subscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), any(), any());
         Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), any());

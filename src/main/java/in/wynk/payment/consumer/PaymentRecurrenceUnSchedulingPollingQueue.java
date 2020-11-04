@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.util.UUID;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +46,7 @@ public class PaymentRecurrenceUnSchedulingPollingQueue extends AbstractSQSMessag
     @Override
     public void consume(UnSchedulePaymentRecurrenceMessage message) {
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing UnSchedulePaymentRecurrenceMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        recurringPaymentManager.unScheduleRecurringPayment(UUID.fromString(message.getTransactionId()));
+        recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId());
     }
 
     @Override

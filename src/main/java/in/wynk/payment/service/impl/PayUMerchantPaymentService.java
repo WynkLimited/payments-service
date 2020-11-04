@@ -105,10 +105,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
-        Map<String, String> payUpayload = startPaymentChargingForPayU(TransactionContext.get());
+        Map<String, String> payUPayload = startPaymentChargingForPayU(TransactionContext.get());
         String encryptedParams;
         try {
-            encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUpayload), encryptionKey);
+            encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
         } catch (Exception e) {
             log.error(BaseLoggingMarkers.ENCRYPTION_ERROR, e.getMessage(), e);
             throw new WynkRuntimeException(e);
@@ -256,37 +256,64 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
-        Map<String, String> paylaod = new HashMap<>();
-        if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
-            reqType = PaymentRequestType.SUBSCRIBE.name();
-            udf1 = PAYU_SI_KEY.toUpperCase();
-            paylaod.put(PAYU_SI_KEY, "1");
-        }
-
+        Map<String, String> payload = new HashMap<>();
         String checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount);
         String userCredentials = payUMerchantKey + COLON + uid;
         String sid = SessionContextHolder.get().getId().toString();
-        paylaod.put(PAYU_REQUEST_TYPE, reqType);
-        paylaod.put(PAYU_MERCHANT_KEY, payUMerchantKey);
-        paylaod.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
-        paylaod.put(PAYU_TRANSACTION_AMOUNT, String.valueOf(finalPlanAmount));
-        paylaod.put(PAYU_PRODUCT_INFO, String.valueOf(planId));
-        paylaod.put(PAYU_CUSTOMER_FIRSTNAME, uid);
-        paylaod.put(PAYU_CUSTOMER_EMAIL, email);
-        paylaod.put(PAYU_CUSTOMER_MSISDN, msisdn);
-        paylaod.put(PAYU_HASH, checksumHash);
-        paylaod.put(PAYU_SUCCESS_URL, payUSuccessUrl + sid);
-        paylaod.put(PAYU_FAILURE_URL, payUFailureUrl + sid);
-//      paylaod.put(PAYU_ENFORCE_PAY_METHOD, chargingRequest.getEnforcePayment()) upto FE since it knows which option is chosen.
-        paylaod.put(PAYU_UDF1_PARAMETER, udf1);
-        paylaod.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
-        paylaod.put(ERROR, PAYU_REDIRECT_MESSAGE);
-        paylaod.put(PAYU_USER_CREDENTIALS, userCredentials);
+        if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
+            reqType = PaymentRequestType.SUBSCRIBE.name();
+            udf1 = PAYU_SI_KEY.toUpperCase();
+            Calendar cal = Calendar.getInstance();
+            Date today = cal.getTime();
+            cal.add(Calendar.YEAR, 5); // 5 yrs from now
+            Date next5Year = cal.getTime();
+            Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+            BillingCycle billingCycle;
+            Integer billingInterval;
+            if (validTillDays%365 == 0) {
+                billingCycle = BillingCycle.YEARLY;
+                billingInterval = validTillDays/365;
+            }
+            else if (validTillDays%30 == 0) {
+                billingCycle = BillingCycle.MONTHLY;
+                billingInterval = validTillDays/30;
+            }
+            else if (validTillDays%7 == 0) {
+                billingCycle = BillingCycle.WEEKLY;
+                billingInterval = validTillDays/7;
+            }
+            else {
+                billingCycle = BillingCycle.DAILY;
+                billingInterval = validTillDays;
+            }
+            String siDetails = new SiDetails(billingCycle, billingInterval, selectedPlan.getPrice().getAmount(), today, next5Year).toString();
+            checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
+            payload.put(PAYU_API_VERSION, "7");
+            payload.put(PAYU_SI_KEY, "1");
+            payload.put(PAYU_FREE_TRIAL, "false"); // ASK doubt
+            payload.put(PAYU_SI_DETAILS, siDetails);
+        }
+        // Mandatory according to document
+        payload.put(PAYU_MERCHANT_KEY, payUMerchantKey);
+        payload.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
+        payload.put(PAYU_TRANSACTION_AMOUNT, String.valueOf(finalPlanAmount));
+        payload.put(PAYU_PRODUCT_INFO, String.valueOf(planId));
+        payload.put(PAYU_CUSTOMER_FIRSTNAME, uid);
+        payload.put(PAYU_CUSTOMER_EMAIL, email);
+        payload.put(PAYU_CUSTOMER_MSISDN, msisdn);
+        payload.put(PAYU_SUCCESS_URL, payUSuccessUrl + sid);
+        payload.put(PAYU_FAILURE_URL, payUFailureUrl + sid);
+        payload.put(PAYU_HASH, checksumHash);
+        // Not in document
+        payload.put(PAYU_REQUEST_TYPE, reqType);
+        payload.put(PAYU_UDF1_PARAMETER, udf1);
+        payload.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
+        payload.put(ERROR, PAYU_REDIRECT_MESSAGE);
+        payload.put(PAYU_USER_CREDENTIALS, userCredentials);
         putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getId().toString());
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
-       return paylaod;
+        return payload;
     }
-
 
     //TODO: ( on AMAN) need to use to fetch user's saved cards.
     public List<String> getUserCards(String uid) {
@@ -431,6 +458,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         }
+    }
+
+    private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount, String siDetails) {
+        String rawChecksum = payUMerchantKey + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle +
+                PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + siDetails + PIPE_SEPARATOR + payUSalt;
+        return EncryptionUtils.generateSHA512Hash(rawChecksum);
     }
 
     private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {

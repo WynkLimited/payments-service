@@ -444,7 +444,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
-                } else if (transaction.getStatus().equals(SUCCESS)) {
+                } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     String successUrl = sessionDTO.get(SUCCESS_WEB_URL);
                     if (StringUtils.isEmpty(successUrl)) {
                         successUrl = SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.get(OS);

@@ -94,4 +94,13 @@ public class PayUPaymentChargingTest {
         Assert.assertTrue(((Map<String, String>) response.getResponse().getBody()).size() > 0);
     }
 
+    @Test
+    @Order(3)
+    public void testSiDetails() {
+        TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
+        ChargingRequest request = PayUTestData.buildRecurringChargingRequest();
+        BaseResponse<?> response = chargingService.doCharging(request);
+        Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
+    }
+
 }

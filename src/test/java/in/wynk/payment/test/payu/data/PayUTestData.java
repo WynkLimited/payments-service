@@ -64,6 +64,21 @@ public class PayUTestData {
                 .build();
     }
 
+    public static Transaction initRecurringSubscribeTransaction() {
+        return Transaction.builder()
+                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .consent(Calendar.getInstance())
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .initTime(Calendar.getInstance())
+                .msisdn(PayUDataConstant.MSISDN)
+                .paymentChannel(PaymentCode.PAYU.name())
+                .planId(PayUDataConstant.RECURRING_PLAN_ID)
+                .status(TransactionStatus.INPROGRESS.name())
+                .type(PaymentEvent.SUBSCRIBE.name())
+                .uid(PayUDataConstant.UID)
+                .build();
+    }
+
     public static Session<SessionDTO> initSession() {
         Map<String, Object> payload = new HashMap<>();
         payload.put(SessionKeys.UID, PayUDataConstant.UID);

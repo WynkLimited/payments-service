@@ -1,8 +1,11 @@
 package in.wynk.payment.dto.payu;
 
+import lombok.Getter;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+@Getter
 public class SiDetails {
 
     private Double billingAmount;

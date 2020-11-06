@@ -1,11 +1,13 @@
 package in.wynk.payment.dto.payu;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @Getter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SiDetails {
 
     private Double billingAmount;

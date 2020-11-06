@@ -1,6 +1,5 @@
 package in.wynk.payment.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
@@ -256,7 +255,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String reqType = PaymentRequestType.DEFAULT.name();
         final int planId = transaction.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final double finalPlanAmount = transaction.getAmount();
+        final double finalPlanAmount = selectedPlan.getFinalPrice();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
@@ -295,7 +294,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
                 payload.put(PAYU_API_VERSION, "7");
                 payload.put(PAYU_SI_KEY, "1");
-                payload.put(PAYU_FREE_TRIAL, String.valueOf(selectedPlan.isFreeTrial())); // ASK doubt
+                payload.put(PAYU_FREE_TRIAL, String.valueOf(selectedPlan.isFreeTrial()));
                 payload.put(PAYU_SI_DETAILS, siDetails);
             } catch (Exception e) {
                 log.error("Error Creating SiDetails Object");

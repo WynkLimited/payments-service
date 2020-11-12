@@ -11,6 +11,7 @@ import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.PaymentCachingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,15 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for(PaymentGroup group: availableMethods.keySet()){
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
+            for(PaymentMethodDTO paymentMethodDTO : methodDTOS) {
+                String paymentGroup = paymentMethodDTO.getGroup();
+                String paymentCode = paymentMethodDTO.getPaymentCode();
+                Map<String, Object> meta = paymentMethodDTO.getMeta();
+                List<UserPreferredPayment> saved_payments = preferredPayments.parallelStream().filter(x -> x.getOption().getGroup().toString().equals(paymentGroup) && x.getOption().getPaymentCode().toString().equals(paymentCode)).collect(Collectors.toList());
+                if (!CollectionUtils.isEmpty(saved_payments)) {
+                    meta.put("saved_payments", saved_payments);
+                }
+            }
             PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group).build();
             paymentGroupsDTOS.add(groupsDTO);
         }

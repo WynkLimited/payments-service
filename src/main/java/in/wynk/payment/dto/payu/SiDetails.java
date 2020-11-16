@@ -10,7 +10,7 @@ import java.util.Date;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SiDetails {
 
-    private Double billingAmount;
+    private String billingAmount;
     private String billingCurrency;
     private BillingCycle billingCycle;
     private Integer billingInterval;
@@ -25,7 +25,7 @@ public class SiDetails {
         this();
         this.billingCycle = billingCycle;
         this.billingInterval = 1;
-        this.billingAmount = billingAmount <= 2000 ? Math.round(billingAmount * 100) / 100 : 2000.00;
+        this.billingAmount = String.format("%.2f", billingAmount);
         this.billingCurrency = "INR";
         this.paymentStartDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentStartDate);
         this.paymentEndDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentEndDate);

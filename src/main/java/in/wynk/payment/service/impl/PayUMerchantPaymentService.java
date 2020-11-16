@@ -244,7 +244,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr());
-        if (transaction.getStatus().equals(SUCCESS)) {
+        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
         return responseBuilder.build();
@@ -255,7 +255,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String reqType = PaymentRequestType.DEFAULT.name();
         final int planId = transaction.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        final double finalPlanAmount = selectedPlan.getFinalPrice();
+        double finalPlanAmount = selectedPlan.getFinalPrice();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
@@ -290,7 +290,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 billingInterval = validTillDays;
             }
             try {
-                String siDetails = objectMapper.writeValueAsString(new SiDetails(billingCycle, billingInterval, selectedPlan.getPrice().getAmount(), today, next5Year));
+                finalPlanAmount = finalPlanAmount<2000 ? finalPlanAmount : 2000;
+                String siDetails = objectMapper.writeValueAsString(new SiDetails(billingCycle, billingInterval, finalPlanAmount, today, next5Year));
                 checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
                 payload.put(PAYU_API_VERSION, "7");
                 payload.put(PAYU_SI_KEY, "1");

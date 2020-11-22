@@ -21,7 +21,7 @@ public class AmazonIapVerificationRequest extends IapVerificationRequest {
     private Receipt receipt;
 
     @Override
-    public PaymentCode paymentCode() {
+    public PaymentCode getPaymentCode() {
         return PaymentCode.AMAZON_IAP;
     }
 }

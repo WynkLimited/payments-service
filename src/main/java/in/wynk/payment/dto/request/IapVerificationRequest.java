@@ -36,6 +36,6 @@ public abstract class IapVerificationRequest {
     @Analysed
     private String sid;
 
-    public abstract PaymentCode paymentCode();
+    private PaymentCode paymentCode;
 
 }

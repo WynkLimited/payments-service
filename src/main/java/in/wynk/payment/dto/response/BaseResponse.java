@@ -29,9 +29,7 @@ public class BaseResponse<R> {
 
     @Analysed
     private final R body;
-    @Analysed
     private final HttpStatus status;
-    @Analysed
     private final HttpHeaders headers;
 
     public ResponseEntity<R> getResponse() {

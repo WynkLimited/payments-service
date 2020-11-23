@@ -18,7 +18,7 @@ public class ItunesVerificationRequest extends IapVerificationRequest {
     private String receipt;
 
     @Override
-    public PaymentCode paymentCode() {
+    public PaymentCode getPaymentCode() {
         return PaymentCode.ITUNES;
     }
 }

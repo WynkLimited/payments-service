@@ -31,7 +31,7 @@ public class RevenuePaymentsS2SHandler {
     @ManageSession(sessionId = "#request.sid")
     @AnalyseTransaction(name = "receiptVerification")
     public ResponseEntity<?> verifyIap(@RequestBody IapVerificationRequest request) {
-        AnalyticService.update(PAYMENT_METHOD, request.paymentCode().getCode());
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(request);
         AnalyticService.update(baseResponse);

@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.PaymentReconciliationConsumerPollingQueue;
 import in.wynk.payment.consumer.PaymentRenewalChargingConsumerPollingQueue;
 import in.wynk.payment.consumer.PaymentRenewalConsumerPollingQueue;
+import in.wynk.payment.consumer.RenewalSubscriptionPollingQueue;
 import in.wynk.payment.extractor.PaymentReconciliationSQSMessageExtractor;
 import in.wynk.payment.extractor.PaymentRenewalChargingSQSMessageExtractor;
 import in.wynk.payment.extractor.PaymentRenewalSQSMessageExtractor;
+import in.wynk.payment.extractor.RenewalSubscriptionSQSMessageExtractor;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
@@ -58,6 +60,19 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRenewalChargingSQSMessageExtractor,
+                (ThreadPoolExecutor) threadPoolExecutor(),
+                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
+    }
+
+    @Bean
+    public RenewalSubscriptionPollingQueue renewalSubscriptionPollingQueue(@Value("${payment.pooling.queue.recurring.name}") String queueName,
+                                                                                      @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                      ObjectMapper objectMapper,
+                                                                                      RenewalSubscriptionSQSMessageExtractor renewalSubscriptionSQSMessageExtractor) {
+        return new RenewalSubscriptionPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                renewalSubscriptionSQSMessageExtractor,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
     }

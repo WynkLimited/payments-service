@@ -95,7 +95,11 @@ public class PaymentQueuesConfig {
         return new PaymentRenewalChargingSQSMessageExtractor(queueName, sqsClient);
     }
 
-
+    @Bean
+    public RenewalSubscriptionSQSMessageExtractor renewalSubscriptionSQSMessageExtractor(@Value("${payment.pooling.queue.recurring.name}") String queueName,
+                                                                                         @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new RenewalSubscriptionSQSMessageExtractor(sqsClients, queueName);
+    }
 
     private ExecutorService threadPoolExecutor() {
         return Executors.newFixedThreadPool(2);

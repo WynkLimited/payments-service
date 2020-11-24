@@ -164,7 +164,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         code = ItunesStatusCodes.APPLE_21016;
                         transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
                     }
-                    log.info("ItunesIdUidMapping found for uid, ITunesId :{} , planId: {} = {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId(), mapping);
+                    log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {} = {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId(), mapping);
                     if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                         if (mapping == null) {
                             final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()

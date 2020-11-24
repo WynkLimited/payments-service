@@ -66,7 +66,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 String paymentGroup = paymentMethodDTO.getGroup();
                 String paymentCode = paymentMethodDTO.getPaymentCode();
                 Map<String, Object> meta = paymentMethodDTO.getMeta();
-                List<UserPreferredPayment> savedPayments = preferredPayments.parallelStream().filter(x -> x.getOption().getGroup().toString().equals(paymentGroup) && x.getOption().getPaymentCode().toString().equals(paymentCode)).collect(Collectors.toList());
+                List<UserPreferredPayment> savedPayments = preferredPayments.parallelStream().filter(x -> x!=null && x.getOption().getGroup().toString().equals(paymentGroup) && x.getOption().getPaymentCode().toString().equals(paymentCode)).collect(Collectors.toList());
                 if (!CollectionUtils.isEmpty(savedPayments)) {
                     meta.put("savedPayments", savedPayments);
                 }

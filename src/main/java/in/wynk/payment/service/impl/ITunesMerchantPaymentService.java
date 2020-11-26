@@ -24,14 +24,12 @@ import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.IMerchantPaymentCallbackService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
@@ -65,7 +63,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentCallbackService {
+public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService {
 
     @Value("${payment.merchant.itunes.secret}")
     private String itunesSecret;
@@ -166,7 +164,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         code = ItunesStatusCodes.APPLE_21016;
                         transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
                     }
-                    log.info("ItunesIdUidMapping found for uid, ITunesId :{} , planId: {} = {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId(), mapping);
+                    log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {} = {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId(), mapping);
                     if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                         if (mapping == null) {
                             final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
@@ -291,4 +289,17 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
+        Transaction transaction = TransactionContext.get();
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
+                .tid(transaction.getIdStr());
+        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+        }
+        return BaseResponse.<ChargingStatusResponse>builder()
+                .status(HttpStatus.OK)
+                .body( responseBuilder.build())
+                .build();
+    }
 }

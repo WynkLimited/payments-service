@@ -2,6 +2,7 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.messages.RenewalSubscriptionMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -9,6 +10,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.TransactionInitRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,8 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
 
     private final ThreadPoolExecutor threadPoolExecutor;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
+    @Autowired
+    private PaymentCachingService paymentCachingService;
     @Autowired
     private ITransactionManagerService transactionManagerService;
     @Autowired
@@ -68,20 +72,31 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
     @Override
     public void consume(RenewalSubscriptionMessage message) {
         log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing RenewalSubscriptionMessage {}", message);
-        Transaction transaction = transactionManagerService.initiateTransaction(TransactionInitRequest.builder()
-                .amount(message.getAmount())
-                .clientAlias(message.getClientAlias())
-                .couponId(message.getCouponId())
-                .discount(message.getDiscount())
-                .event(message.getEvent())
-                .itemId(message.getItemId())
-                .msisdn(message.getMsisdn())
-                .paymentCode(PaymentCode.valueOf(message.getPaymentCode()))
-                .planId(message.getPlanId())
-                .uid(message.getUid())
-                .build());
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(message.getNextChargingDate());
+        int planId = Integer.parseInt(message.getPlanId());
+        double amount = paymentCachingService.getPlan(planId).getFinalPrice();
+        PaymentCode paymentCode;
+        switch (message.getPaymentCode()) {
+            case "payu":            paymentCode=PaymentCode.PAYU;
+                                    break;
+            case "paytm":           paymentCode=PaymentCode.PAYTM_WALLET;
+                                    break;
+            case "googleWallet":    paymentCode=PaymentCode.GOOGLE_WALLET;
+                                    break;
+            case "se":              paymentCode=PaymentCode.SE_BILLING;
+                                    break;
+            default: throw new WynkRuntimeException("Unexpected value: " + message.getPaymentCode());
+        }
+        Transaction transaction = transactionManagerService.initiateTransaction(TransactionInitRequest.builder()
+                .uid(message.getUid())
+                .msisdn(message.getMsisdn())
+                .clientAlias(message.getClientAlias())
+                .planId(planId)
+                .amount(amount)
+                .paymentCode(paymentCode)
+                .event(message.getEvent())
+                .build());
         recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), calendar);
     }
 
@@ -89,4 +104,5 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
     public Class<RenewalSubscriptionMessage> messageType() {
         return RenewalSubscriptionMessage.class;
     }
+
 }

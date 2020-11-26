@@ -19,7 +19,6 @@ public class Receipt {
     private String receiptId;
     @Analysed
     private String sku;
-    @Analysed
     private String purchaseDate;
 
 }

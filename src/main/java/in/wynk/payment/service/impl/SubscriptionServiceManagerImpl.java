@@ -107,7 +107,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
-                if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED) {
+                //TODO: remove deferred state check post IAP fixes.
+                if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED && provisioningResponse.getState() != ProvisionState.DEFERRED) {
                     throw new WynkRuntimeException(PaymentErrorType.PAY013);
                 }
             }

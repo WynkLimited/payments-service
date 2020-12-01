@@ -186,8 +186,7 @@ public class PaymentManager {
         } else {
             finalAmountToBePaid = amountToBePaid;
         }
-        final PaymentEvent eventType = autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
-        builder.amount(finalAmountToBePaid).event(eventType).build();
+        builder.amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }

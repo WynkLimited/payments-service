@@ -79,7 +79,11 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
         calendar.setTime(message.getNextChargingDate());
         int planId = Integer.parseInt(message.getPlanId());
         double amount = paymentCachingService.getPlan(planId).getFinalPrice();
-        PaymentCode paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
+        PaymentCode paymentCode;
+        if (message.getPaymentCode().equals("se"))
+            paymentCode = PaymentCode.SE_BILLING;
+        else
+            paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
         Transaction transaction = transactionManagerService.initiateTransaction(TransactionInitRequest.builder()
                 .uid(message.getUid())
                 .msisdn(message.getMsisdn())

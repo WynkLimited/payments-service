@@ -130,7 +130,7 @@ public class PaymentManager {
     }
 
     public BaseResponse<?> doVerifyIap(IapVerificationRequest request) {
-        final PaymentCode paymentCode = request.paymentCode();
+        final PaymentCode paymentCode = request.getPaymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
         final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
@@ -188,7 +188,7 @@ public class PaymentManager {
     }
 
     private Transaction initiateTransactionForPlan(boolean autoRenew, int planId, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
-        return initiateTransaction(false, 0, uid, msisdn, null, couponId, paymentCode);
+        return initiateTransaction(autoRenew, planId, uid, msisdn, null, couponId, paymentCode);
     }
 
     private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
@@ -219,8 +219,7 @@ public class PaymentManager {
         } else {
             finalAmountToBePaid = amountToBePaid;
         }
-        final PaymentEvent eventType = autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
-        builder.amount(finalAmountToBePaid).event(eventType).build();
+        builder.amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }

@@ -5,11 +5,15 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.queue.dto.FIFOQueueMessageMarker;
 import in.wynk.queue.dto.QueueType;
 import in.wynk.queue.dto.WynkQueue;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @WynkQueue(queueName = "${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
 public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
 

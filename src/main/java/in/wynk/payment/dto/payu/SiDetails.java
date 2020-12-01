@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.common.enums.BillingCycle;
 import lombok.Getter;
 
 import java.text.SimpleDateFormat;

@@ -11,6 +11,8 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.TransactionContext;
+import in.wynk.payment.common.enums.BillingCycle;
+import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
@@ -150,12 +152,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
                 else if (e.getErrorCode().equals(PaymentErrorType.PAY009))
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                throw e;
             }
         } catch (Throwable throwable) {
             log.error("Exception while parsing acknowledgement response.", throwable);
             throw throwable;
         }
-        return new BaseResponse<Void>(null, HttpStatus.OK, null);
+        return null;
     }
 
     @Override
@@ -251,61 +254,21 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private Map<String, String> startPaymentChargingForPayU(Transaction transaction) {
-        String udf1 = StringUtils.EMPTY;
-        String reqType = PaymentRequestType.DEFAULT.name();
         final int planId = transaction.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        double finalPlanAmount = selectedPlan.getFinalPrice();
+        double finalPlanAmount = transaction.getAmount();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
         Map<String, String> payload = new HashMap<>();
-        String checksumHash = null;
         String userCredentials = payUMerchantKey + COLON + uid;
         String sid = SessionContextHolder.get().getId().toString();
+        Map<String, String> payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
         if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
-            reqType = PaymentRequestType.SUBSCRIBE.name();
-            udf1 = PAYU_SI_KEY.toUpperCase();
-            Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.HOUR, 24);
-            Date today = cal.getTime();
-            cal.add(Calendar.YEAR, 5); // 5 yrs from now
-            Date next5Year = cal.getTime();
-            Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-            BillingCycle billingCycle;
-            Integer billingInterval;
-            if (validTillDays%365 == 0) {
-                billingCycle = BillingCycle.YEARLY;
-                billingInterval = validTillDays/365;
-            }
-            else if (validTillDays%30 == 0) {
-                billingCycle = BillingCycle.MONTHLY;
-                billingInterval = validTillDays/30;
-            }
-            else if (validTillDays%7 == 0) {
-                billingCycle = BillingCycle.WEEKLY;
-                billingInterval = validTillDays/7;
-            }
-            else {
-                billingCycle = BillingCycle.DAILY;
-                billingInterval = validTillDays;
-            }
-            try {
-                finalPlanAmount = finalPlanAmount<2000 ? finalPlanAmount : 2000;
-                String siDetails = objectMapper.writeValueAsString(new SiDetails(billingCycle, billingInterval, finalPlanAmount, today, next5Year));
-                checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
-                payload.put(PAYU_API_VERSION, "7");
-                payload.put(PAYU_SI_KEY, "1");
-                payload.put(PAYU_FREE_TRIAL, String.valueOf(selectedPlan.isFreeTrial()));
-                payload.put(PAYU_SI_DETAILS, siDetails);
-            } catch (Exception e) {
-                log.error("Error Creating SiDetails Object");
-            }
-        }
-        else {
-            checksumHash = getChecksumHashForPayment(transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount);
+            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan);
         }
         // Mandatory according to document
+        payload.putAll(payloadTemp);
         payload.put(PAYU_MERCHANT_KEY, payUMerchantKey);
         payload.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
         payload.put(PAYU_TRANSACTION_AMOUNT, String.valueOf(finalPlanAmount));
@@ -315,15 +278,51 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         payload.put(PAYU_CUSTOMER_MSISDN, msisdn);
         payload.put(PAYU_SUCCESS_URL, payUSuccessUrl + sid);
         payload.put(PAYU_FAILURE_URL, payUFailureUrl + sid);
-        payload.put(PAYU_HASH, checksumHash);
         // Not in document
-        payload.put(PAYU_REQUEST_TYPE, reqType);
-        payload.put(PAYU_UDF1_PARAMETER, udf1);
         payload.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         payload.put(ERROR, PAYU_REDIRECT_MESSAGE);
         payload.put(PAYU_USER_CREDENTIALS, userCredentials);
         putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getId().toString());
         putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
+        return payload;
+    }
+
+    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount) {
+        Map<String, String> payload = new HashMap<>();
+        String udf1 = StringUtils.EMPTY;
+        String reqType = PaymentRequestType.DEFAULT.name();
+        String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount);
+        payload.put(PAYU_HASH, checksumHash);
+        payload.put(PAYU_REQUEST_TYPE, reqType);
+        payload.put(PAYU_UDF1_PARAMETER, udf1);
+        return payload;
+    }
+
+    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan) {
+        Map<String, String> payload = new HashMap<>();
+        String reqType = PaymentRequestType.SUBSCRIBE.name();
+        String udf1 = PAYU_SI_KEY.toUpperCase();
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.HOUR, 24);
+        Date today = cal.getTime();
+        cal.add(Calendar.YEAR, 5); // 5 yrs from now
+        Date next5Year = cal.getTime();
+        Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+        BillingUtils billingUtils = new BillingUtils(validTillDays);
+        try {
+            finalPlanAmount = finalPlanAmount<2000 ? finalPlanAmount : 2000;
+            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), finalPlanAmount, today, next5Year));
+            String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
+            payload.put(PAYU_SI_KEY, "1");
+            payload.put(PAYU_API_VERSION, "7");
+            payload.put(PAYU_HASH, checksumHash);
+            payload.put(PAYU_UDF1_PARAMETER, udf1);
+            payload.put(PAYU_SI_DETAILS, siDetails);
+            payload.put(PAYU_REQUEST_TYPE, reqType);
+            payload.put(PAYU_FREE_TRIAL, String.valueOf(selectedPlan.isFreeTrial()));
+        } catch (Exception e) {
+            log.error("Error Creating SiDetails Object");
+        }
         return payload;
     }
 

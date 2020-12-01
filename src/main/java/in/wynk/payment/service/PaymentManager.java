@@ -27,6 +27,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +40,8 @@ import static in.wynk.common.constant.BaseConstants.SERVICE;
 @Service
 public class PaymentManager {
 
+    @Value("${spring.application.name}")
+    private String applicationAlias;
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final ISqsManagerService sqsManagerService;
@@ -168,8 +171,7 @@ public class PaymentManager {
 
     private Transaction initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode) {
         final double finalAmountToBePaid;
-        final SessionDTO session = SessionContextHolder.getBody();
-        final String clientAlias = session.get(CLIENT);
+        final String clientAlias = applicationAlias;
         final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientAlias(clientAlias);
         builder.planId(planId);
         PlanDTO selectedPlan = cachingService.getPlan(planId);

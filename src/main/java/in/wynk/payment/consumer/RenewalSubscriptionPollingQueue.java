@@ -2,7 +2,8 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.wynk.exception.WynkRuntimeException;
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.common.messages.RenewalSubscriptionMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -70,24 +71,15 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
     }
 
     @Override
+    @AnalyseTransaction(name = "RenewalSubscriptionMessage")
     public void consume(RenewalSubscriptionMessage message) {
+        AnalyticService.update(message);
         log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing RenewalSubscriptionMessage {}", message);
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(message.getNextChargingDate());
         int planId = Integer.parseInt(message.getPlanId());
         double amount = paymentCachingService.getPlan(planId).getFinalPrice();
-        PaymentCode paymentCode;
-        switch (message.getPaymentCode()) {
-            case "payu":            paymentCode=PaymentCode.PAYU;
-                                    break;
-            case "paytm":           paymentCode=PaymentCode.PAYTM_WALLET;
-                                    break;
-            case "googleWallet":    paymentCode=PaymentCode.GOOGLE_WALLET;
-                                    break;
-            case "se":              paymentCode=PaymentCode.SE_BILLING;
-                                    break;
-            default: throw new WynkRuntimeException("Unexpected value: " + message.getPaymentCode());
-        }
+        PaymentCode paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
         Transaction transaction = transactionManagerService.initiateTransaction(TransactionInitRequest.builder()
                 .uid(message.getUid())
                 .msisdn(message.getMsisdn())

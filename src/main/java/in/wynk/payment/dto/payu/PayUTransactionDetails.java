@@ -1,14 +1,19 @@
 package in.wynk.payment.dto.payu;
 
 import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
+@Getter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class PayUTransactionDetails {
+
+  @SerializedName("mode")
+  private String mode;
+
+  @SerializedName("status")
   private String status;
 
   @SerializedName("mihpayid")

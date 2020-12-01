@@ -335,7 +335,7 @@ public class PayUTestData {
     public static PaymentRenewalChargingRequest buildPaymentRenewalChargingRequest() {
         return PaymentRenewalChargingRequest.builder()
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .subsId("subsId")
+                .externalTransactionId("subsId")
                 .previousTransaction(Transaction.builder().build())
                 .paidPartnerProductId("paidPartnerProductId")
                 .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())

@@ -2,10 +2,18 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
+import in.wynk.payment.dto.payu.PayUTransactionDetails;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -20,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRenewalMessage> {
 
-
     @Value("${payment.pooling.queue.renewal.enabled}")
     private boolean renewalPollingEnabled;
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delay}")
@@ -28,23 +35,30 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delayTimeUnit}")
     private TimeUnit renewalPoolingDelayTimeUnit;
 
-
+    private final Gson gson;
+    private final ISqsManagerService sqsManagerService;
     private final ThreadPoolExecutor messageHandlerThreadPool;
     private final ScheduledThreadPoolExecutor pollingThreadPool;
-    private final ISqsManagerService sqsManagerService;
     private final ITransactionManagerService transactionManager;
+    private final IMerchantTransactionService merchantTransactionService;
 
     public PaymentRenewalConsumerPollingQueue(String queueName,
                                               AmazonSQS sqs,
                                               ObjectMapper objectMapper,
                                               ISQSMessageExtractor messagesExtractor,
+                                              Gson gson,
                                               ThreadPoolExecutor messageHandlerThreadPool,
-                                              ScheduledThreadPoolExecutor pollingThreadPool, ISqsManagerService sqsManagerService, ITransactionManagerService transactionManager) {
+                                              ScheduledThreadPoolExecutor pollingThreadPool,
+                                              ISqsManagerService sqsManagerService,
+                                              ITransactionManagerService transactionManager,
+                                              IMerchantTransactionService merchantTransactionService) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
+        this.gson = gson;
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
+        this.merchantTransactionService = merchantTransactionService;
     }
 
     @Override
@@ -69,18 +83,35 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         }
     }
 
-
     @Override
+    @AnalyseTransaction(name = "PaymentRenewalMessage")
     public void consume(PaymentRenewalMessage message) {
+        AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
-
         Transaction transaction = transactionManager.get(message.getTransactionId());
+        MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+        Boolean isUpi = false;
+        String cardNumber = null;
+        PayUVerificationResponse payUVerificationResponse = gson.fromJson((JsonElement) merchantTransaction.getResponse(), PayUVerificationResponse.class);
+        if (payUVerificationResponse!=null) {
+            PayUTransactionDetails payUTransactionDetails=payUVerificationResponse.getTransactionDetails().getOrDefault("", PayUTransactionDetails.builder().build());
+            isUpi = payUTransactionDetails.getMode().equals("UPI");
+            cardNumber = payUTransactionDetails.getResponseCardNumber();
+        }
         sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
-                .paymentCode(transaction.getPaymentChannel())
-                .planId(transaction.getPlanId())
+                .isUpi(isUpi)
+                .cardNumber(cardNumber)
                 .uid(transaction.getUid())
-                .transactionId(transaction.getId().toString())
+                .id(transaction.getIdStr())
+                .planId(transaction.getPlanId())
                 .msisdn(transaction.getMsisdn())
+                .previousTransaction(transaction)
+                .transactionId(transaction.getIdStr())
+                .paymentCode(transaction.getPaymentChannel())
+                .amount(String.valueOf(transaction.getAmount())) //TODO
+//                .cardToken(transaction.getCardToken())
+//                .paidPartnerProductId(transaction.getPaidPartnerProductId())
+                .externalTransactionId(merchantTransaction.getExternalTransactionId())
                 .build());
     }
 

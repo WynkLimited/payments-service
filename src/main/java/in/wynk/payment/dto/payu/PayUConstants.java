@@ -15,6 +15,7 @@ public interface PayUConstants {
     String PAYU_UDF1_PARAMETER = "udf1";
     String PAYU_CARD_NUMBER = "card_no";
     String PAYU_CUSTOMER_EMAIL = "email";
+    String PAYU_REQUEST_ID = "requestId";
     String PAYU_CARD_TOKEN = "card_token";
     String PAYU_CUSTOMER_MSISDN = "phone";
     String PAYU_FREE_TRIAL = "free_trial";
@@ -29,7 +30,7 @@ public interface PayUConstants {
     String PAYU_STATUS_NOT_FOUND = "Not Found";
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";
     String PAYU_REQUEST_TRANSACTION_ID = "txnid";
-    String PAYU_RESPONSE_AUTH_PAYUID = "authpayuid";
+    String PAYU_RESPONSE_AUTH_PAYUID = "authPayuId";
     String PAYU_ENFORCE_PAYMENT = "enforce_payment";
     String PAYU_USER_CREDENTIALS = "user_credentials";
     String PAYU_ENFORCE_PAY_METHOD = "enforce_paymethod";

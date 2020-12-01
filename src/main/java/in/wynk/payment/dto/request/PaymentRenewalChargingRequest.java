@@ -12,17 +12,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PaymentRenewalChargingRequest {
 
-    private Transaction previousTransaction;
     private String uid;
-    private String transactionId;
-    private Integer planId;
     private String msisdn;
+    private String transactionId;
+    private Transaction previousTransaction;
+    private Integer planId;
+    private Boolean isUpi;
     // Todo - Fetch all this in respective services
+    private String externalTransactionId;
     private String paidPartnerProductId;
-    private String subsId;
+    private String cardNumber;
     private String cardToken;
     private String amount;
-    private String cardNumber;
     private String id;
 
 }

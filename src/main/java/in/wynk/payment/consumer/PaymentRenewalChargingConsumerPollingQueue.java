@@ -2,6 +2,8 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
@@ -9,7 +11,6 @@ import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -26,19 +27,19 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     @Value("${payment.pooling.queue.charging.sqs.consumer.delayTimeUnit}")
     private TimeUnit chargingPoolingDelayTimeUnit;
 
-
+    private final PaymentManager paymentManager;
     private final ThreadPoolExecutor messageHandlerThreadPool;
     private final ScheduledThreadPoolExecutor pollingThreadPool;
-    @Autowired
-    private PaymentManager paymentManager;
 
     public PaymentRenewalChargingConsumerPollingQueue(String queueName,
                                                       AmazonSQS sqs,
                                                       ObjectMapper objectMapper,
                                                       ISQSMessageExtractor messagesExtractor,
+                                                      PaymentManager paymentManager,
                                                       ThreadPoolExecutor messageHandlerThreadPool,
                                                       ScheduledThreadPoolExecutor pollingThreadPool) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
+        this.paymentManager = paymentManager;
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
     }
@@ -66,20 +67,23 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     }
 
     @Override
+    @AnalyseTransaction(name = "PaymentRenewalChargingMessage")
     public void consume(PaymentRenewalChargingMessage message) {
+        AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
         paymentManager.doRenewal(PaymentRenewalChargingRequest.builder()
+                .id(message.getId())
                 .uid(message.getUid())
+                .isUpi(message.getIsUpi())
                 .planId(message.getPlanId())
                 .msisdn(message.getMsisdn())
                 .amount(message.getAmount())
-                .cardNumber(message.getCardNumber())
                 .cardToken(message.getCardToken())
-                .id(message.getId())
-                .paidPartnerProductId(message.getPaidPartnerProductId())
-                .previousTransaction(message.getPreviousTransaction())
-                .subsId(message.getSubsId())
+                .cardNumber(message.getCardNumber())
                 .transactionId(message.getTransactionId())
+                .externalTransactionId(message.getExternalTransactionId())
+                .previousTransaction(message.getPreviousTransaction())
+                .paidPartnerProductId(message.getPaidPartnerProductId())
                 .build(), message.getPaymentCode());
     }
 

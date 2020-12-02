@@ -11,6 +11,7 @@ import in.wynk.payment.extractor.PaymentRenewalChargingSQSMessageExtractor;
 import in.wynk.payment.extractor.PaymentRenewalSQSMessageExtractor;
 import in.wynk.payment.extractor.RenewalSubscriptionSQSMessageExtractor;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -66,13 +67,15 @@ public class PaymentQueuesConfig {
 
     @Bean
     public RenewalSubscriptionPollingQueue renewalSubscriptionPollingQueue(@Value("${payment.pooling.queue.recurring.name}") String queueName,
-                                                                                      @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                      ObjectMapper objectMapper,
-                                                                                      RenewalSubscriptionSQSMessageExtractor renewalSubscriptionSQSMessageExtractor) {
+                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                           ObjectMapper objectMapper,
+                                                                           RenewalSubscriptionSQSMessageExtractor renewalSubscriptionSQSMessageExtractor,
+                                                                           PaymentManager paymentManager) {
         return new RenewalSubscriptionPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 renewalSubscriptionSQSMessageExtractor,
+                paymentManager,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
     }

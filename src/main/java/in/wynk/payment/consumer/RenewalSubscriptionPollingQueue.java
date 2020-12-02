@@ -5,20 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.common.messages.RenewalSubscriptionMessage;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.request.TransactionInitRequest;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.util.Calendar;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -33,17 +26,13 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
     @Value("${payment.pooling.queue.recurring.sqs.consumer.delayTimeUnit}")
     private TimeUnit recurringPoolingDelayTimeUnit;
 
+    private final PaymentManager paymentManager;
     private final ThreadPoolExecutor threadPoolExecutor;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-    @Autowired
-    private PaymentCachingService paymentCachingService;
-    @Autowired
-    private ITransactionManagerService transactionManagerService;
-    @Autowired
-    private IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public RenewalSubscriptionPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, ThreadPoolExecutor handlerThreadPool, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor) {
+    public RenewalSubscriptionPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ThreadPoolExecutor handlerThreadPool, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor) {
         super(queueName, sqs, objectMapper, messagesExtractor, handlerThreadPool);
+        this.paymentManager = paymentManager;
         this.threadPoolExecutor = handlerThreadPool;
         this.scheduledThreadPoolExecutor = scheduledThreadPoolExecutor;
     }
@@ -71,29 +60,11 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
     }
 
     @Override
-    @AnalyseTransaction(name = "RenewalSubscriptionMessage")
+    @AnalyseTransaction(name = "renewalSubscriptionMessage")
     public void consume(RenewalSubscriptionMessage message) {
-        AnalyticService.update(message);
         log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing RenewalSubscriptionMessage {}", message);
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(message.getNextChargingDate());
-        int planId = Integer.parseInt(message.getPlanId());
-        double amount = paymentCachingService.getPlan(planId).getFinalPrice();
-        PaymentCode paymentCode;
-        if (message.getPaymentCode().equals("se"))
-            paymentCode = PaymentCode.SE_BILLING;
-        else
-            paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
-        Transaction transaction = transactionManagerService.initiateTransaction(TransactionInitRequest.builder()
-                .uid(message.getUid())
-                .msisdn(message.getMsisdn())
-                .clientAlias(message.getClientAlias())
-                .planId(planId)
-                .amount(amount)
-                .paymentCode(paymentCode)
-                .event(message.getEvent())
-                .build());
-        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), calendar);
+        AnalyticService.update(message);
+        paymentManager.addToPaymentRenewal(message);
     }
 
     @Override

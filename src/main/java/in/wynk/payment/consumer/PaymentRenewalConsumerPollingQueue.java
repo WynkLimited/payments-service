@@ -84,7 +84,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     }
 
     @Override
-    @AnalyseTransaction(name = "PaymentRenewalMessage")
+    @AnalyseTransaction(name = "paymentRenewalMessage")
     public void consume(PaymentRenewalMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());

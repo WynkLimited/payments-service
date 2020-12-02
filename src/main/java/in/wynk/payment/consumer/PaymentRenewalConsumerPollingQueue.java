@@ -108,7 +108,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                 .previousTransaction(transaction)
                 .transactionId(transaction.getIdStr())
                 .paymentCode(transaction.getPaymentChannel())
-                .amount(String.valueOf(transaction.getAmount())) //TODO
+                .amount(String.valueOf(transaction.getAmount()))
 //                .cardToken(transaction.getCardToken())
 //                .paidPartnerProductId(transaction.getPaidPartnerProductId())
                 .externalTransactionId(merchantTransaction.getExternalTransactionId())

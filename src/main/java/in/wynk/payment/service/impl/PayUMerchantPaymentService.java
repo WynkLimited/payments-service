@@ -435,7 +435,18 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     String successUrl = sessionDTO.get(SUCCESS_WEB_URL);
                     if (StringUtils.isEmpty(successUrl)) {
-                        successUrl = SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.get(OS);
+                        successUrl = new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
+                                .append(SLASH)
+                                .append(sessionDTO.<String>get(OS))
+                                .append(QUESTION_MARK)
+                                .append(SERVICE)
+                                .append(EQUAL)
+                                .append(sessionDTO.<String>get(SERVICE))
+                                .append(AND)
+                                .append(BUILD_NO)
+                                .append(EQUAL)
+                                .append(sessionDTO.<String>get(BUILD_NO))
+                                .toString();
                     }
                     return successUrl;
                 } else {

@@ -58,6 +58,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
@@ -96,8 +97,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     @Override
     public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
-        final String sid = SessionContextHolder.getId();
-        final String os = SessionContextHolder.<SessionDTO>getBody().get(BaseConstants.OS);
+        final SessionDTO sessionDTO = SessionContextHolder.<SessionDTO>getBody();
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
@@ -105,13 +105,46 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             transaction.putValueInPaymentMetaData(DECODED_RECEIPT, request.getReceipt());
             fetchAndUpdateFromReceipt(transaction);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                builder.url(SUCCESS_PAGE + sid + BaseConstants.SLASH + os);
+                builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
+                        .append(SLASH)
+                        .append(sessionDTO.<String>get(OS))
+                        .append(QUESTION_MARK)
+                        .append(SERVICE)
+                        .append(EQUAL)
+                        .append(sessionDTO.<String>get(SERVICE))
+                        .append(AND)
+                        .append(BUILD_NO)
+                        .append(EQUAL)
+                        .append(sessionDTO.<String>get(BUILD_NO))
+                        .toString());
             } else {
-                builder.url(FAILURE_PAGE + sid + BaseConstants.SLASH + os);
+                builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+                        .append(SLASH)
+                        .append(sessionDTO.<String>get(OS))
+                        .append(QUESTION_MARK)
+                        .append(SERVICE)
+                        .append(EQUAL)
+                        .append(sessionDTO.<String>get(SERVICE))
+                        .append(AND)
+                        .append(BUILD_NO)
+                        .append(EQUAL)
+                        .append(sessionDTO.<String>get(BUILD_NO))
+                        .toString());
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            builder.url(FAILURE_PAGE + sid + BaseConstants.SLASH + os);
+            builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+                    .append(SLASH)
+                    .append(sessionDTO.<String>get(OS))
+                    .append(QUESTION_MARK)
+                    .append(SERVICE)
+                    .append(EQUAL)
+                    .append(sessionDTO.<String>get(SERVICE))
+                    .append(AND)
+                    .append(BUILD_NO)
+                    .append(EQUAL)
+                    .append(sessionDTO.<String>get(BUILD_NO))
+                    .toString());
             log.error(ITUNES_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

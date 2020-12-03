@@ -445,7 +445,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                                 .append(AND)
                                 .append(BUILD_NO)
                                 .append(EQUAL)
-                                .append(sessionDTO.<String>get(BUILD_NO))
+                                .append(sessionDTO.<Integer>get(BUILD_NO))
                                 .toString();
                     }
                     return successUrl;

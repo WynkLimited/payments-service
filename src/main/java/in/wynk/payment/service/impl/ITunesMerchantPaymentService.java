@@ -115,7 +115,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(sessionDTO.<String>get(BUILD_NO))
+                        .append(sessionDTO.<Integer>get(BUILD_NO))
                         .toString());
             } else {
                 builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
@@ -128,7 +128,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(sessionDTO.<String>get(BUILD_NO))
+                        .append(sessionDTO.<Integer>get(BUILD_NO))
                         .toString());
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
@@ -143,7 +143,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                     .append(AND)
                     .append(BUILD_NO)
                     .append(EQUAL)
-                    .append(sessionDTO.<String>get(BUILD_NO))
+                    .append(sessionDTO.<Integer>get(BUILD_NO))
                     .toString());
             log.error(ITUNES_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();

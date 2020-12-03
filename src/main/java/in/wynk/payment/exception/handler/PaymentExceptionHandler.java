@@ -49,7 +49,7 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(session.<String>get(BUILD_NO))
+                        .append(session.<Integer>get(BUILD_NO))
                         .toString();
                 ;
             } else {

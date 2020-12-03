@@ -34,6 +34,7 @@ public interface PayUConstants {
     String PAYU_ENFORCE_PAYMENT = "enforce_payment";
     String PAYU_USER_CREDENTIALS = "user_credentials";
     String PAYU_ENFORCE_PAY_METHOD = "enforce_paymethod";
+    String PAYU_RESPONSE_AUTH_PAYUID_SMALL = "authpayuid";
     String PAYU_REDIRECT_MESSAGE = "Redirecting to PayU ";
     String PAYU_IS_FALLBACK_ATTEMPT = "isFallbackAttempt";
 }

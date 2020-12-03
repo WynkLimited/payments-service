@@ -130,36 +130,26 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
+        if (StringUtils.isEmpty(paymentRenewalChargingRequest.getExternalTransactionId())) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            throw new WynkRuntimeException("No subId found for Subscription");
+        }
         try {
-//            if (StringUtils.isEmpty(paymentRenewalChargingRequest.getCardToken())) {
-//                String userCredentials = payUMerchantKey + COLON + paymentRenewalChargingRequest.getUid();
-//                MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
-//                PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, PayUUserCardDetailsResponse.class);
-//                Map<String, String> numberTokenMap = userCardDetailsResponse.getUserCards().values().stream().collect(Collectors.toMap(CardDetails::getCardNo, CardDetails::getCardToken));
-//                paymentRenewalChargingRequest.setCardToken(numberTokenMap.get(paymentRenewalChargingRequest.getCardNumber()));
-//            }
-            if (StringUtils.isEmpty(paymentRenewalChargingRequest.getExternalTransactionId())) {
-                throw new WynkRuntimeException("No subId found for Subscription");
-            }
-            try {
-                if (!paymentRenewalChargingRequest.getIsUpi() || validateStatusForRenewal(paymentRenewalChargingRequest.getExternalTransactionId(), transaction.getIdStr())) {
-                    PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
-                    PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getDetails().get(paymentRenewalChargingRequest.getId());
-                    if (payUTransactionDetails!=null && payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS))
-                        transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+            if (!paymentRenewalChargingRequest.getIsUpi() || validateStatusForRenewal(paymentRenewalChargingRequest.getExternalTransactionId(), transaction.getIdStr())) {
+                PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
+                PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getDetails().get(paymentRenewalChargingRequest.getId());
+                if (payUTransactionDetails!=null && payUTransactionDetails.getStatus().equals(PaymentConstants.SUCCESS))
+                    transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+                else {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY002);
                 }
-                else
-                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            } catch (WynkRuntimeException e) {
-                if (e.getErrorCode().equals(PaymentErrorType.PAY014))
-                    transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
-                else if (e.getErrorCode().equals(PaymentErrorType.PAY009))
-                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                throw e;
             }
-        } catch (Throwable throwable) {
-            log.error("Exception while parsing acknowledgement response.", throwable);
-            throw throwable;
+        } catch (WynkRuntimeException e) {
+            if (e.getErrorCode().equals(PaymentErrorType.PAY014))
+                transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
+            else if (e.getErrorCode().equals(PaymentErrorType.PAY009) || e.getErrorCode().equals(PaymentErrorType.PAY002))
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            throw e;
         }
         return null;
     }
@@ -348,7 +338,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private boolean validateStatusForRenewal(String mihpayid, String transactionId) {
-        LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
+        LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
         orderedMap.put(PAYU_REQUEST_ID, transactionId);
         String variable = gson.toJson(orderedMap);
@@ -387,13 +377,15 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-        LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
-        String userCredentials = payUMerchantKey + COLON + paymentRenewalChargingRequest.getUid();
-        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, paymentRenewalChargingRequest.getExternalTransactionId());
-        orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentRenewalChargingRequest.getAmount());
+        LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
+        String uid = paymentRenewalChargingRequest.getUid();
+        String msisdn = paymentRenewalChargingRequest.getMsisdn();
+        final String email = uid + BASE_USER_EMAIL;
+        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, paymentRenewalChargingRequest.getExternalTransactionId());
+        orderedMap.put(PAYU_TRANSACTION_AMOUNT, Double.parseDouble(paymentRenewalChargingRequest.getAmount()));
         orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, paymentRenewalChargingRequest.getTransactionId());
-        orderedMap.put(PAYU_USER_CREDENTIALS, userCredentials);
-        orderedMap.put(PAYU_CARD_TOKEN, paymentRenewalChargingRequest.getCardToken());
+        orderedMap.put(PAYU_CUSTOMER_EMAIL, email);
+        orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);
         String variable = gson.toJson(orderedMap);
         String hash = generateHashForPayUApi(PayUCommand.SI_TRANSACTION.getCode(), variable);
         MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
@@ -565,4 +557,5 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
         return BaseResponse.status(false);
     }
+
 }

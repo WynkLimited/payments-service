@@ -153,7 +153,6 @@ public class PaymentManager {
         try {
             merchantPaymentRenewalService.doRenewal(request);
         } catch (Exception e) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
         } finally {
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);

@@ -42,7 +42,6 @@ public class PaymentQueuesConfig {
                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                  ObjectMapper objectMapper,
                                                                                  PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
-                                                                                 Gson gson,
                                                                                  ISqsManagerService sqsManagerService,
                                                                                  ITransactionManagerService transactionManager,
                                                                                  IMerchantTransactionService merchantTransactionService) {
@@ -50,7 +49,6 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRenewalSQSMessageExtractor,
-                gson,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(),
                 sqsManagerService,

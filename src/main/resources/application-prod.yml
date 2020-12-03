@@ -140,9 +140,22 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      recurrence:
+      schedule:
         enabled: false
-        name: wcf-production-revenue-recurring
+        name: wcf-staging-subscription-payment
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      unschedule:
+        enabled: false
+        name: wcf-staging-payment-recurring
         sqs:
           messages:
             extractor:

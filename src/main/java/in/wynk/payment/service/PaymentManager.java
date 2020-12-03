@@ -14,7 +14,7 @@ import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
-import in.wynk.payment.common.messages.RenewalSubscriptionMessage;
+import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -223,10 +223,10 @@ public class PaymentManager {
         }
     }
 
-    public void addToPaymentRenewal(RenewalSubscriptionMessage message) {
+    public void addToPaymentRenewal(PaymentRecurringSchedulingMessage message) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(message.getNextChargingDate());
-        int planId = Integer.parseInt(message.getPlanId());
+        int planId = message.getPlanId();
         PaymentCode paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
         double amount = cachingService.getPlan(planId).getFinalPrice();
         Transaction transaction = transactionManager.initiateTransaction(TransactionInitRequest.builder()

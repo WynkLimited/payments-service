@@ -3,7 +3,7 @@ package in.wynk.payment.test.utils;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.data.enums.State;
-import in.wynk.payment.common.messages.RenewalSubscriptionMessage;
+import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.enums.PaymentGroup;
@@ -90,9 +90,9 @@ public class PaymentTestUtils {
         return sessionDTO;
     }
 
-    public static RenewalSubscriptionMessage getDummyRenewalSubscriptionMessage() {
-        return RenewalSubscriptionMessage.builder()
-                .planId("1000182")
+    public static PaymentRecurringSchedulingMessage getDummyRenewalSubscriptionMessage() {
+        return PaymentRecurringSchedulingMessage.builder()
+                .planId(1000182)
                 .paymentCode("payu")
                 .msisdn("+919005334276")
                 .uid("zalKRzuDl81b_Av8T0")

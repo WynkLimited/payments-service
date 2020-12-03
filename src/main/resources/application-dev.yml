@@ -110,7 +110,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       renewal:
-        enabled: false
+        enabled: true
         name: wcf-staging-payment-renewal
         sqs:
           messages:
@@ -123,7 +123,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: false
+        enabled: true
         name: wcf-staging-payment-charging.fifo
         sqs:
           messages:
@@ -135,9 +135,9 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      recurrence:
+      schedule:
         enabled: true
-        name: wcf-staging-payment-recurring
+        name: wcf-staging-subscription-payment
         sqs:
           messages:
             extractor:
@@ -148,9 +148,9 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      recurring:
+      unschedule:
         enabled: true
-        name: wcf-staging-subscription-payment
+        name: wcf-staging-payment
         sqs:
           messages:
             extractor:

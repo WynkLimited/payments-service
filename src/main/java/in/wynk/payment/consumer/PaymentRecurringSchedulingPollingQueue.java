@@ -4,7 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.payment.common.messages.RenewalSubscriptionMessage;
+import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
@@ -17,20 +17,20 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerPollingQueue<RenewalSubscriptionMessage> {
+public class PaymentRecurringSchedulingPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRecurringSchedulingMessage> {
 
-    @Value("${payment.pooling.queue.recurring.enabled}")
+    @Value("${payment.pooling.queue.schedule.enabled}")
     private boolean recurringPollingEnabled;
-    @Value("${payment.pooling.queue.recurring.sqs.consumer.delay}")
+    @Value("${payment.pooling.queue.schedule.sqs.consumer.delay}")
     private long recurringPoolingDelay;
-    @Value("${payment.pooling.queue.recurring.sqs.consumer.delayTimeUnit}")
+    @Value("${payment.pooling.queue.schedule.sqs.consumer.delayTimeUnit}")
     private TimeUnit recurringPoolingDelayTimeUnit;
 
     private final PaymentManager paymentManager;
     private final ThreadPoolExecutor threadPoolExecutor;
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
-    public RenewalSubscriptionPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ThreadPoolExecutor handlerThreadPool, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor) {
+    public PaymentRecurringSchedulingPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ThreadPoolExecutor handlerThreadPool, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor) {
         super(queueName, sqs, objectMapper, messagesExtractor, handlerThreadPool);
         this.paymentManager = paymentManager;
         this.threadPoolExecutor = handlerThreadPool;
@@ -40,7 +40,7 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
     @Override
     public void start() {
         if (recurringPollingEnabled) {
-            log.info("Starting RenewalSubscriptionPollingQueue...");
+            log.info("Starting PaymentRecurringSchedulingPollingQueue...");
             scheduledThreadPoolExecutor.scheduleWithFixedDelay(
                     this::poll,
                     0,
@@ -53,7 +53,7 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
     @Override
     public void stop() {
         if (recurringPollingEnabled) {
-            log.info("Shutting down RenewalSubscriptionPollingQueue ...");
+            log.info("Shutting down PaymentRecurringSchedulingPollingQueue ...");
             scheduledThreadPoolExecutor.shutdownNow();
             threadPoolExecutor.shutdown();
         }
@@ -61,15 +61,15 @@ public class RenewalSubscriptionPollingQueue extends AbstractSQSMessageConsumerP
 
     @Override
     @AnalyseTransaction(name = "renewalSubscriptionMessage")
-    public void consume(RenewalSubscriptionMessage message) {
-        log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing RenewalSubscriptionMessage {}", message);
+    public void consume(PaymentRecurringSchedulingMessage message) {
+        log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing PaymentRecurringSchedulingMessage {}", message);
         AnalyticService.update(message);
         paymentManager.addToPaymentRenewal(message);
     }
 
     @Override
-    public Class<RenewalSubscriptionMessage> messageType() {
-        return RenewalSubscriptionMessage.class;
+    public Class<PaymentRecurringSchedulingMessage> messageType() {
+        return PaymentRecurringSchedulingMessage.class;
     }
 
 }

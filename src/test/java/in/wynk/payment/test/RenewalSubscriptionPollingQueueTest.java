@@ -2,7 +2,7 @@ package in.wynk.payment.test;
 
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
-import in.wynk.payment.consumer.RenewalSubscriptionPollingQueue;
+import in.wynk.payment.consumer.PaymentRecurringSchedulingPollingQueue;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.service.PaymentCachingService;
@@ -22,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class RenewalSubscriptionPollingQueueTest {
 
     @Autowired
-    private RenewalSubscriptionPollingQueue renewalSubscriptionPollingQueue;
+    private PaymentRecurringSchedulingPollingQueue paymentRecurringSchedulingPollingQueue;
 
     @MockBean
     private PaymentCachingService paymentCachingService;
@@ -35,7 +35,7 @@ public class RenewalSubscriptionPollingQueueTest {
         Mockito.when(paymentRenewalDao.save(Mockito.any(PaymentRenewal.class))).thenReturn(null);
         Mockito.when(paymentCachingService.getPlan(Mockito.anyInt())).thenReturn(PlanDTO.builder()
                 .price(PriceDTO.builder().amount(1.0).build()).build());
-        renewalSubscriptionPollingQueue.consume(PaymentTestUtils.getDummyRenewalSubscriptionMessage());
+        paymentRecurringSchedulingPollingQueue.consume(PaymentTestUtils.getDummyRenewalSubscriptionMessage());
     }
 
 }

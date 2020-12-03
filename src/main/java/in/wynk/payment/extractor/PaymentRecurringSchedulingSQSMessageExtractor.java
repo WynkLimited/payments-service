@@ -9,17 +9,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
-public class RenewalSubscriptionSQSMessageExtractor extends AbstractSQSMessageExtractor {
+public class PaymentRecurringSchedulingSQSMessageExtractor extends AbstractSQSMessageExtractor {
 
-    @Value("${payment.pooling.queue.recurring.sqs.messages.extractor.batchSize}")
+    @Value("${payment.pooling.queue.schedule.sqs.messages.extractor.batchSize}")
     private int batchSize;
 
-    @Value("${payment.pooling.queue.recurring.sqs.messages.extractor.waitTimeInSeconds}")
+    @Value("${payment.pooling.queue.schedule.sqs.messages.extractor.waitTimeInSeconds}")
     private int waitTimeInSeconds;
 
     private final String queueName;
 
-    public RenewalSubscriptionSQSMessageExtractor(@Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqs, String queueName) {
+    public PaymentRecurringSchedulingSQSMessageExtractor(String queueName, @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqs) {
         super(sqs);
         this.queueName = queueName;
     }

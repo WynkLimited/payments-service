@@ -9,11 +9,7 @@ import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.service.IMerchantPaymentCallbackService;
-import in.wynk.payment.service.IMerchantPaymentChargingService;
-import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.payment.test.utils.PaymentTestUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -26,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import java.util.concurrent.TimeUnit;
 
 import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
@@ -46,7 +44,7 @@ public class PaymentsTest {
 
     public void setup(Session<SessionDTO> session) {
         Mockito.doReturn(PaymentTestUtils.dummyPlansDTO()).when(subscriptionServiceManager).getPlans();
-        sessionManager.put(session);
+        sessionManager.put(session, 10, TimeUnit.MINUTES);
         SessionContextHolder.set(session);
         Mockito.doReturn(dummyPlanDTO()).when(cachingService).getPlan(anyInt());
     }
@@ -78,6 +76,6 @@ public class PaymentsTest {
     @After
     public void finish(){
         Session<SessionDTO> session = SessionContextHolder.get();
-        sessionManager.put(session);
+        sessionManager.put(session,  10, TimeUnit.MINUTES);
     }
 }

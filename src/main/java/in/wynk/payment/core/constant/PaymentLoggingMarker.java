@@ -45,4 +45,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker POINT_PURCHASE_SESSION_INIT_FAILURE = MarkerFactory.getMarker("POINT_PURCHASE_SESSION_INIT_FAILURE");
     Marker NOT_SUPPORTED_SERVICE = MarkerFactory.getMarker("NOT_SUPPORTED_SERVICE");
 
+    Marker PAYMENT_RENEWAL_ERROR = MarkerFactory.getMarker("PAYMENT_RENEWAL_ERROR");
+    Marker SE_PAYMENT_RENEWAL_ERROR = MarkerFactory.getMarker("SE_PAYMENT_RENEWAL_ERROR");
 }

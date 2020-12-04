@@ -213,7 +213,7 @@ http:
         connection:
           max: 300
           maxPerHost: 60
-          timeout: 2000
+          timeout: 10000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
@@ -222,7 +222,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 10000
     paymentClientHttpTemplate:
       pool:
         connection:

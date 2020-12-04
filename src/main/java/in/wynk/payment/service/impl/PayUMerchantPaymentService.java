@@ -213,15 +213,17 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payUTransactionDetails.getPayUExternalTxnId());
+            final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
+            int validity = selectedPlan.getPeriod().getValidity();
             if (payUChargingVerificationResponse.getStatus() == 1) {
                 if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.SUCCESS;
                 } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.FAILURE;
-                } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
+                } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
                         StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.INPROGRESS;
-                } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
+                } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
                         StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 }

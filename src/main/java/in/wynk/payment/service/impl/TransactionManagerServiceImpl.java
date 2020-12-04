@@ -151,8 +151,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
                     }
 
-                }
-                else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
+                } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
                         && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey("renewal")) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.HOUR, 1);

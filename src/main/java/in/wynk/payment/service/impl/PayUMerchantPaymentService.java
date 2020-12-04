@@ -138,15 +138,17 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (!paymentRenewalChargingRequest.getIsUpi() || validateStatusForRenewal(paymentRenewalChargingRequest.getExternalTransactionId(), transaction.getIdStr())) {
                 PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
                 PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
+                final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
+                int validity = selectedPlan.getPeriod().getValidity();
                 if (payURenewalResponse.getStatus() == 1) {
                     if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                     } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
+                    } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
                             StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-                    } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
+                    } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
                             StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
                     }

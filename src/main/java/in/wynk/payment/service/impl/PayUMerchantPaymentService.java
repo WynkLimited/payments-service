@@ -11,6 +11,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -25,10 +26,7 @@ import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
-import in.wynk.payment.service.IMerchantVerificationService;
-import in.wynk.payment.service.IRenewalMerchantPaymentService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -59,7 +57,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService {
+public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService {
 
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
@@ -505,5 +503,22 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
         }
         return BaseResponse.status(false);
+    }
+
+    @Override
+    public MerchantTransaction getMerchantTransactionDetails(Map<String, String> params) {
+        MerchantTransaction.MerchantTransactionBuilder builder = MerchantTransaction.builder().id(params.get(TXN_ID));
+        final String tid = params.containsKey(MIGRATED) && Boolean.valueOf(params.get(MIGRATED)) ? params.get(MIGRATED_TXN_ID) : params.get(TXN_ID);
+        try {
+            MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), tid);
+            PayUVerificationResponse payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, PayUVerificationResponse.class);
+            builder.request(payUChargingVerificationRequest);
+            builder.response(payUChargingVerificationResponse);
+            PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(tid);
+            builder.externalTransactionId(payUTransactionDetails.getPayUExternalTxnId());
+        } catch (HttpStatusCodeException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        }
+        return builder.build();
     }
 }

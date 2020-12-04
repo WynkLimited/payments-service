@@ -32,6 +32,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
+import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 import static in.wynk.common.constant.BaseConstants.SERVICE;
@@ -148,14 +149,15 @@ public class PaymentManager {
 
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
         final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
+        Map<String, Object> paymentMetaData = transaction.getPaymentMetaData();
+        paymentMetaData.put("renewal", true);
+        transaction.setPaymentMetaData(paymentMetaData);
         final TransactionStatus initialStatus = transaction.getStatus();
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
         try {
             merchantPaymentRenewalService.doRenewal(request);
         } catch (Exception e) {
         } finally {
-            final TransactionStatus finalStatus = transaction.getStatus();
-            transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                     .paymentCode(transaction.getPaymentChannel())
                     .paymentEvent(transaction.getType())
@@ -165,6 +167,8 @@ public class PaymentManager {
                     .msisdn(transaction.getMsisdn())
                     .uid(transaction.getUid())
                     .build());
+            final TransactionStatus finalStatus = transaction.getStatus();
+            transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
         }
     }
 

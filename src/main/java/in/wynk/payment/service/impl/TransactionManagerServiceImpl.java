@@ -21,6 +21,7 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -150,6 +151,12 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
                     }
 
+                }
+                else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
+                        && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey("renewal")) {
+                    Calendar nextRecurringDateTime = Calendar.getInstance();
+                    nextRecurringDateTime.add(Calendar.HOUR, 1);
+                    recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
                 }
             }
         } finally {

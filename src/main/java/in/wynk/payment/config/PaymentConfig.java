@@ -1,5 +1,7 @@
 package in.wynk.payment.config;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import in.wynk.client.core.dao.entity.ClientDetails;
@@ -9,6 +11,7 @@ import in.wynk.common.properties.CorsProperties;
 import in.wynk.data.config.WynkMongoDbFactoryBuilder;
 import in.wynk.data.config.properties.MongoProperties;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.queue.config.properties.AmazonSdkProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,9 +40,11 @@ public class PaymentConfig implements WebMvcConfigurer {
     private String applicationAlias;
 
     private final CorsProperties corsProperties;
+    private final AmazonSdkProperties sdkProperties;
 
-    public PaymentConfig(CorsProperties corsProperties) {
+    public PaymentConfig(CorsProperties corsProperties, AmazonSdkProperties amazonSdkProperties) {
         this.corsProperties = corsProperties;
+        this.sdkProperties = amazonSdkProperties;
     }
 
     @Bean
@@ -83,6 +88,12 @@ public class PaymentConfig implements WebMvcConfigurer {
                 .clientId(client.getClientId())
                 .clientSecret(client.getClientSecret())
                 .build();
+    }
+
+
+    @Bean
+    public AmazonS3 amazonS3Client(AmazonSdkProperties sdkProperties) {
+        return AmazonS3ClientBuilder.standard().withRegion(sdkProperties.getSdk().getRegions()).build();
     }
 
 }

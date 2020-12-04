@@ -36,6 +36,7 @@ import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 import static in.wynk.common.constant.BaseConstants.SERVICE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RENEWAL_ERROR;
 
 @Slf4j
 @Service
@@ -157,6 +158,7 @@ public class PaymentManager {
         try {
             merchantPaymentRenewalService.doRenewal(request);
         } catch (Exception e) {
+            log.error(PAYMENT_RENEWAL_ERROR, "Error {} occurred while renewal of request: {}",e.getMessage(), request, e);
         } finally {
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                     .paymentCode(transaction.getPaymentChannel())

@@ -22,6 +22,8 @@ public class PaymentRenewalsScheduler {
 
     @Autowired
     private ISqsManagerService sqsManagerService;
+    @Autowired
+    private SeRenewalService seRenewalService;
 
     @Scheduled(cron = "0 0 * * * ?")
     @Transactional
@@ -31,8 +33,8 @@ public class PaymentRenewalsScheduler {
                         .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == PaymentEvent.RENEW || paymentRenewal.getTransactionEvent() == PaymentEvent.SUBSCRIBE))
                     .collect(Collectors.toList());
         sendToRenewalQueue(paymentRenewals);
-
     }
+
     private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals){
         for(PaymentRenewal paymentRenewal : paymentRenewals){
             sqsManagerService.publishSQSMessage(PaymentRenewalMessage.builder()
@@ -40,6 +42,11 @@ public class PaymentRenewalsScheduler {
                     .paymentEvent(paymentRenewal.getTransactionEvent())
                     .build());
         }
+    }
+
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void startSeRenewals(){
+        seRenewalService.startSeRenewal();
     }
 
 }

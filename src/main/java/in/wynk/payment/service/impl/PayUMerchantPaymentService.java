@@ -515,6 +515,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             builder.request(payUChargingVerificationRequest);
             builder.response(payUChargingVerificationResponse);
             PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(tid);
+            if(params.containsKey(MIGRATED) && Boolean.valueOf(params.get(MIGRATED))) {
+                payUChargingVerificationResponse.getTransactionDetails().remove(tid);
+                payUChargingVerificationResponse.getTransactionDetails().put(params.get(TXN_ID), payUTransactionDetails);
+            }
             builder.externalTransactionId(payUTransactionDetails.getPayUExternalTxnId());
         } catch (HttpStatusCodeException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);

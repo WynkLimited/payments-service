@@ -92,7 +92,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 .itemId(transactionInitRequest.getItemId())
                 .msisdn(transactionInitRequest.getMsisdn())
                 .paymentChannel(transactionInitRequest.getPaymentCode().name())
-                .status(TransactionStatus.INPROGRESS.name())
+                .status(transactionInitRequest.getStatus())
                 .type(transactionInitRequest.getEvent().name())
                 .coupon(transactionInitRequest.getCouponId())
                 .discount(transactionInitRequest.getDiscount())

@@ -237,6 +237,7 @@ public class PaymentManager {
                 .amount(amount)
                 .paymentCode(paymentCode)
                 .event(message.getEvent())
+                .status(TransactionStatus.MIGRATED.getValue())
                 .build());
         recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), calendar);
     }

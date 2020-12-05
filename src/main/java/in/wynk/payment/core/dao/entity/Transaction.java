@@ -103,4 +103,11 @@ public class Transaction {
         paymentMetaData.put(key, value);
     }
 
+    public Map<String, Object> getPaymentMetaData() {
+        if(paymentMetaData == null){
+            return new HashMap<>();
+        }
+        return paymentMetaData;
+    }
+
 }

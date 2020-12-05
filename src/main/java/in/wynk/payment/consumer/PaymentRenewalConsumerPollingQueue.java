@@ -9,15 +9,12 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
-import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import in.wynk.queue.service.ISqsManagerService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -88,20 +85,14 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
-        PayUVerificationResponse payUVerificationResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayUVerificationResponse.class);
-        PayUTransactionDetails payUTransactionDetails = payUVerificationResponse.getTransactionDetails().get(transaction.getIdStr());
-        String cardNumber = payUTransactionDetails.getResponseCardNumber();
-        String mode = payUTransactionDetails.getMode();
-        Boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
         sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
-                .isUpi(isUpi)
-                .cardNumber(cardNumber)
                 .uid(transaction.getUid())
                 .id(transaction.getIdStr())
                 .planId(transaction.getPlanId())
                 .msisdn(transaction.getMsisdn())
                 .previousTransaction(transaction)
                 .transactionId(transaction.getIdStr())
+                .merchantTransaction(merchantTransaction)
                 .paymentCode(transaction.getPaymentChannel())
                 .amount(String.valueOf(transaction.getAmount()))
                 .externalTransactionId(merchantTransaction.getExternalTransactionId())

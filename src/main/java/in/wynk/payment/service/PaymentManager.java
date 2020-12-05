@@ -168,7 +168,7 @@ public class PaymentManager {
                     .uid(transaction.getUid())
                     .build());
             final TransactionStatus finalStatus = transaction.getStatus();
-            transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
+            transactionManager.updateAndAsyncPublish(transaction, initialStatus, finalStatus);
         }
     }
 

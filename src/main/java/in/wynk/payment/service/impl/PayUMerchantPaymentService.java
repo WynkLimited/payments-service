@@ -135,9 +135,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             throw new WynkRuntimeException("No subId found for Subscription");
         }
         try {
-            if (!paymentRenewalChargingRequest.getIsUpi() || validateStatusForRenewal(paymentRenewalChargingRequest.getExternalTransactionId(), transaction.getIdStr())) {
-                PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
-                PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
+            PayURenewalResponse payURenewalResponse = objectMapper.convertValue(paymentRenewalChargingRequest.getMerchantTransaction().getResponse(), PayURenewalResponse.class);
+            PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getTransactionId());
+            String mode = payUTransactionDetails.getMode();
+            Boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
+            if (!isUpi || validateStatusForRenewal(paymentRenewalChargingRequest.getExternalTransactionId(), transaction.getIdStr())) {
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
+                payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
                 final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 int validity = selectedPlan.getPeriod().getValidity();
                 if (payURenewalResponse.getStatus() == 1) {

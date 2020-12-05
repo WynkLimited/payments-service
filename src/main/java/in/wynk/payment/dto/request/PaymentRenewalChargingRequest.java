@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,8 +17,8 @@ public class PaymentRenewalChargingRequest {
     private String msisdn;
     private String transactionId;
     private Transaction previousTransaction;
+    private MerchantTransaction merchantTransaction;
     private Integer planId;
-    private Boolean isUpi;
     // Todo - Fetch all this in respective services
     private String externalTransactionId;
     private String paidPartnerProductId;

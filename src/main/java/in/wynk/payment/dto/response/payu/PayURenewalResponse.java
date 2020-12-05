@@ -13,10 +13,10 @@ public class PayURenewalResponse {
 
   private long status;
 
-  @SerializedName("msg")
+  @SerializedName("message")
   private String message;
 
-  @SerializedName("transaction_details")
+  @SerializedName("details")
   private Map<String, PayUTransactionDetails> transactionDetails;
 
 }

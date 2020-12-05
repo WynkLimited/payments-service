@@ -151,10 +151,12 @@ payment:
   merchant:
     ####### payu props #########
     payu:
-      key: aU2Uoi
-      salt: 6vbnfVtw
+      key: qFDqmx
+      salt: Zbm2ZyNe
+#      key: aU2Uoi
+#      salt: 6vbnfVtw
       api:
-        info: https://info.payu.in/merchant/postservice.php?form=2
+        info: https://test.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
@@ -200,7 +202,7 @@ http:
         connection:
           max: 300
           maxPerHost: 60
-          timeout: 2000
+          timeout: 10000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
@@ -209,7 +211,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 10000
     paymentClientHttpTemplate:
       pool:
         connection:

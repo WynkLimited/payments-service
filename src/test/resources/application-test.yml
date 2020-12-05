@@ -90,7 +90,7 @@ spring:
 logging:
   path: /tmp
   level:
-    in.wynk.*: INFO
+    in.wynk.*: DEBUG
 
 ####### payment props #######
 payment:

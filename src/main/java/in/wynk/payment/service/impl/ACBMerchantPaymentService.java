@@ -1,8 +1,11 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
@@ -25,12 +28,18 @@ public class ACBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<?> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-        throw new WynkRuntimeException(PaymentErrorType.PAY888);
+    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        Transaction transaction = TransactionContext.get();
+        transaction.setStatus(TransactionStatus.SUCCESS.getValue());
     }
 
     @Override
     public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
+
+    public boolean supportsReconciliation(){
+        return false;
+    }
+
 }

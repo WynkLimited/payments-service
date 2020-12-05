@@ -8,7 +8,10 @@ import com.opencsv.CSVReader;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -62,9 +65,9 @@ public class SeRenewalService {
     public void startSeRenewal() {
         log.info("Starting SE sync task!!");
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE, -2);
+        cal.add(Calendar.DATE, -1);
         processCsvContentForDate(cal);
-        log.info(" Done for today");
+        log.info("Done for today");
     }
 
     private void processCsvContentForDate(Calendar cal) {
@@ -115,6 +118,8 @@ public class SeRenewalService {
 
     @Autowired
     private AmazonS3 amazonS3Client;
+    @Autowired
+    private PaymentManager paymentManager;
 
 
     private List<String[]> getDownloadedContent(String filePath) {
@@ -133,7 +138,6 @@ public class SeRenewalService {
     }
 
     public boolean mismatchStatus(String[] subRecord, StringBuffer sb) {
-        boolean statusMismatch = false;
         try {
             if (subRecord.length > 0 && "TRANS_ID".equals(subRecord[0].trim())) {
                 log.info("Skipping header row in se s3 reconciliation report: {}", ArrayUtils.toString(subRecord));
@@ -150,15 +154,6 @@ public class SeRenewalService {
             String transactionDateStr = subRecord[4];
             String transactionType = subRecord[5].trim();
             String transactionStatus = subRecord[6].trim();
-            long transactionDate;
-            try {
-                SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss");
-                Date parsedDate = dateFormat.parse(transactionDateStr);
-                transactionDate = parsedDate.getTime();
-            } catch (ParseException e) {
-                log.error("Error in parsing date so setting the current date " + transactionDateStr);
-                transactionDate = System.currentTimeMillis();
-            }
             PlanDTO planDTO = cachingService.getPlanFromSku(extProductId);
             String uid = MsisdnUtils.getUidFromMsisdn(msisdn);
             if (planDTO != null) {
@@ -168,7 +163,10 @@ public class SeRenewalService {
 
                 PaymentEvent event = getSETransactionEvent(transactionType);
                 if (seTxnStatus == TransactionStatus.SUCCESS && event != null) {
-                    //TODO: generate PaymentRenewalChargingRequest request and invoke paymentManager.doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode)
+                    PaymentRenewalChargingRequest request = PaymentRenewalChargingRequest.builder().externalPlanId(extProductId).msisdn(msisdn)
+                            .planId(planDTO.getId()).amount(planDTO.getPrice().getAmount()).externalTransactionId(extTransactionId).uid(uid).build();
+                    paymentManager.doRenewal(request, PaymentCode.SE_BILLING);
+                    return true;
                 } else {
                     log.info("Not verifying the transaction as the status of transaction from SE is : {} for uid : {} and event : {} and record : {}", seTxnStatus, uid, event,
                             subRecord);
@@ -178,7 +176,7 @@ public class SeRenewalService {
             log.error(SE_PAYMENT_RENEWAL_ERROR, "Error occur while reconciling the se data:{} Error: {}", subRecord, th.getMessage(), th);
         }
 
-        return statusMismatch;
+        return false;
     }
 
     private TransactionStatus getSETransactionStatus(String transactionType, String transactionStatus) {

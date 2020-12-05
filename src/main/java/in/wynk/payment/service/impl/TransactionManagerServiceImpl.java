@@ -21,7 +21,6 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -133,7 +132,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
                 PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                    if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
+                    if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                         recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
@@ -152,7 +151,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
 
                 } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
-                        && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey("renewal")) {
+                        && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData().containsKey("renewal")) {
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.HOUR, 1);
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);

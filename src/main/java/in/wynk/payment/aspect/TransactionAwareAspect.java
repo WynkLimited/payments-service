@@ -1,9 +1,9 @@
 package in.wynk.payment.aspect;
 
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.spel.IRuleEvaluator;
 import org.aspectj.lang.JoinPoint;

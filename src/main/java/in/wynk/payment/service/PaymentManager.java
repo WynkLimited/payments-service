@@ -12,13 +12,13 @@ import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.queue.service.ISqsManagerService;
@@ -149,7 +149,7 @@ public class PaymentManager {
     }
 
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
-        final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
+        final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode, PaymentEvent.RENEW);
         Map<String, Object> paymentMetaData = transaction.getPaymentMetaData();
         paymentMetaData.put("renewal", true);
         transaction.setPaymentMetaData(paymentMetaData);
@@ -160,17 +160,19 @@ public class PaymentManager {
         } catch (Exception e) {
             log.error(PAYMENT_RENEWAL_ERROR, "Error {} occurred while renewal of request: {}",e.getMessage(), request, e);
         } finally {
-            sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
-                    .paymentCode(transaction.getPaymentChannel())
-                    .paymentEvent(transaction.getType())
-                    .transactionId(transaction.getIdStr())
-                    .itemId(transaction.getItemId())
-                    .planId(transaction.getPlanId())
-                    .msisdn(transaction.getMsisdn())
-                    .uid(transaction.getUid())
-                    .build());
+            if(merchantPaymentRenewalService.supportsReconciliation()){
+                sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                        .paymentCode(transaction.getPaymentChannel())
+                        .paymentEvent(transaction.getType())
+                        .transactionId(transaction.getIdStr())
+                        .itemId(transaction.getItemId())
+                        .planId(transaction.getPlanId())
+                        .msisdn(transaction.getMsisdn())
+                        .uid(transaction.getUid())
+                        .build());
+            }
             final TransactionStatus finalStatus = transaction.getStatus();
-            transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
+            transactionManager.updateAndAsyncPublish(transaction, initialStatus, finalStatus);
         }
     }
 
@@ -184,6 +186,17 @@ public class PaymentManager {
         builder.event(PaymentEvent.SUBSCRIBE);
         builder.amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
+        return TransactionContext.get();
+    }
+
+    private Transaction initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode, PaymentEvent paymentEvent) {
+        final String clientAlias = applicationAlias;
+        PlanDTO selectedPlan = cachingService.getPlan(planId);
+        final double finalAmountToBePaid = selectedPlan.getFinalPrice();
+        final TransactionInitRequest request = TransactionInitRequest.builder().uid(uid).msisdn(msisdn)
+                .paymentCode(paymentCode).clientAlias(clientAlias).planId(planId).event(paymentEvent)
+                .amount(finalAmountToBePaid).build();
+        TransactionContext.set(transactionManager.initiateTransaction(request));
         return TransactionContext.get();
     }
 

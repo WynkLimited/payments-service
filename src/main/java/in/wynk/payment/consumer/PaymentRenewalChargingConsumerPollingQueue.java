@@ -83,7 +83,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
                 .transactionId(message.getTransactionId())
                 .externalTransactionId(message.getExternalTransactionId())
                 .previousTransaction(message.getPreviousTransaction())
-                .paidPartnerProductId(message.getPaidPartnerProductId())
+                .externalPlanId(message.getExternalPlanId())
                 .build(), message.getPaymentCode());
     }
 

@@ -10,13 +10,13 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
-import in.wynk.payment.TransactionContext;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -128,7 +128,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         if (StringUtils.isEmpty(paymentRenewalChargingRequest.getExternalTransactionId())) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -164,7 +164,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw e;
         }
-        return null;
     }
 
     @Override
@@ -199,7 +198,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr());
-        if (transaction.getStatus().equals(SUCCESS) && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
+        if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
         return responseBuilder.build();
@@ -397,7 +396,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, paymentRenewalChargingRequest.getExternalTransactionId());
-        orderedMap.put(PAYU_TRANSACTION_AMOUNT, Double.parseDouble(paymentRenewalChargingRequest.getAmount()));
+        orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentRenewalChargingRequest.getAmount());
         orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, paymentRenewalChargingRequest.getTransactionId());
         orderedMap.put(PAYU_CUSTOMER_EMAIL, email);
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);

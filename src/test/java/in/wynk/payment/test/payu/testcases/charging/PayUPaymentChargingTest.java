@@ -3,8 +3,8 @@ package in.wynk.payment.test.payu.testcases.charging;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
-import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
@@ -33,10 +33,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {PaymentApplication.class, HttpClientConfig.class})

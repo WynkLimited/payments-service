@@ -27,7 +27,7 @@ public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
     @Analysed
     private String msisdn;
     @Analysed
-    private String amount;
+    private double amount;
     @Analysed
     private String cardToken;
     @Analysed
@@ -35,7 +35,7 @@ public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
     @Analysed
     private String transactionId;
     @Analysed
-    private String paidPartnerProductId;
+    private String externalPlanId;
     @Analysed
     private String externalTransactionId;
     @Analysed

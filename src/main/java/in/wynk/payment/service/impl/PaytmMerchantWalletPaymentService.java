@@ -275,7 +275,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         //TODO: since paytm access token is of 30 days validity, we need to integrate with paytm subscription system for renewal
         Transaction previousTransaction = paymentRenewalChargingRequest.getPreviousTransaction();
         String uid = previousTransaction.getUid();
@@ -290,8 +290,6 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
         Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, eventType);
         PaytmChargingResponse response = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);
-        // send subscription request to queue
-        return BaseResponse.<Void>builder().build();
     }
 
     @Override

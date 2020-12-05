@@ -2,8 +2,8 @@ package in.wynk.payment.test.payu.testcases.renew;
 
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.PaymentApplication;
-import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import in.wynk.payment.service.IRecurringPaymentManagerService;

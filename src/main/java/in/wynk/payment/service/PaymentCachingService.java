@@ -9,6 +9,7 @@ import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -91,8 +92,10 @@ public class PaymentCachingService {
                 plans.putAll(planDTOMap);
                 Map<String, PlanDTO> skuToPlanMap = new HashMap<>();
                 for(PlanDTO planDTO: planList){
-                    for(String sku: planDTO.getSku().values()){
-                        skuToPlanMap.putIfAbsent(sku, planDTO);
+                    if(MapUtils.isNotEmpty(planDTO.getSku())){
+                        for(String sku: planDTO.getSku().values()){
+                            skuToPlanMap.putIfAbsent(sku, planDTO);
+                        }
                     }
                 }
                 skuToPlan.clear();

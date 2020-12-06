@@ -88,6 +88,9 @@ spring:
 
 ####### payment props #######
 payment:
+  se:
+    s3:
+      bucket: wcf-logs
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:

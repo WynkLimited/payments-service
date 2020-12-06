@@ -156,7 +156,6 @@ public class PaymentManager {
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
         try {
             merchantPaymentRenewalService.doRenewal(request);
-        } catch (Exception e) {
         } finally {
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                     .paymentCode(transaction.getPaymentChannel())

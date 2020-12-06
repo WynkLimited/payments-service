@@ -142,17 +142,16 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (!isUpi || validateStatusForRenewal(paymentRenewalChargingRequest.getExternalTransactionId(), transaction.getIdStr())) {
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
                 payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
-                final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
-                int validity = selectedPlan.getPeriod().getValidity();
+                int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
                     if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                     } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
+                    } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-                    } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
+                    } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
                     }
@@ -219,17 +218,16 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payUTransactionDetails.getPayUExternalTxnId());
-            final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
-            int validity = selectedPlan.getPeriod().getValidity();
+            int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
             if (payUChargingVerificationResponse.getStatus() == 1) {
                 if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.SUCCESS;
                 } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.FAILURE;
-                } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
+                } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                         StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.INPROGRESS;
-                } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * validity &&
+                } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                         StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 }
@@ -396,13 +394,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        Transaction transaction = TransactionContext.get();
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, paymentRenewalChargingRequest.getExternalTransactionId());
         orderedMap.put(PAYU_TRANSACTION_AMOUNT, Double.parseDouble(paymentRenewalChargingRequest.getAmount()));
-        orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, paymentRenewalChargingRequest.getTransactionId());
+        orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getIdStr());
         orderedMap.put(PAYU_CUSTOMER_EMAIL, email);
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);
         String variable = gson.toJson(orderedMap);

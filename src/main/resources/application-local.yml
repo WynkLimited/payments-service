@@ -162,12 +162,12 @@ payment:
   merchant:
     ####### payu props #########
     payu:
-      key: qFDqmx
-      salt: Zbm2ZyNe
-#      key: aU2Uoi
-#      salt: 6vbnfVtw
+#      key: qFDqmx
+#      salt: Zbm2ZyNe
+      key: aU2Uoi
+      salt: 6vbnfVtw
       api:
-        info: https://test.payu.in/merchant/postservice.php?form=2
+        info: https://info.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu

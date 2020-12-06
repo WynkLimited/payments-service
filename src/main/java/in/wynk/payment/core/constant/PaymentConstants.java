@@ -11,7 +11,7 @@ public interface PaymentConstants extends BaseConstants {
     String REQUEST = "request";
     String PENDING = "pending";
     String SUCCESS = "success";
-    String FAILURE = "failure";
+    String FAILURE = "failed";
     String PIPE_SEPARATOR = "|";
     String BASE_USER_EMAIL = "@wynk.in";
 

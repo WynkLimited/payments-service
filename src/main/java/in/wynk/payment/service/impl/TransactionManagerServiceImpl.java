@@ -153,7 +153,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
 
                 } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
-                        && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey("renewal")) {
+                        && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey(PaymentConstants.RENEWAL)) {
                     int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.HOUR, retryInterval);

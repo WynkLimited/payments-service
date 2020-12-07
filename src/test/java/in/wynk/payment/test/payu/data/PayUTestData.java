@@ -334,17 +334,11 @@ public class PayUTestData {
 
     public static PaymentRenewalChargingRequest buildPaymentRenewalChargingRequest() {
         return PaymentRenewalChargingRequest.builder()
-                .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .externalTransactionId("subsId")
-                .previousTransaction(Transaction.builder().build())
-                .paidPartnerProductId("paidPartnerProductId")
-                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .cardToken("cardToken")
-                .cardNumber("cardNumber")
-                .amount(String.valueOf(PayUDataConstant.SELECTED_PLAN_AMOUNT))
+                .uid(PayUDataConstant.UID)
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.RECURRING_PLAN_ID)
-                .uid(PayUDataConstant.UID)
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .amount(String.valueOf(PayUDataConstant.SELECTED_PLAN_AMOUNT))
                 .build();
     }
 

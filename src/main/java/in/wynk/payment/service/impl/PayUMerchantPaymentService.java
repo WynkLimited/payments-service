@@ -13,6 +13,7 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.TransactionContext;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -28,11 +29,10 @@ import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
+import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
-import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
-import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -82,25 +82,22 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher sqsMessagePublisher;
     private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
+    private final IMerchantTransactionService merchantTransactionService;
 
     public PayUMerchantPaymentService(Gson gson,
-                                      PaymentCachingService paymentCachingService,
-                                      ITransactionManagerService transactionManager,
-                                      @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher,
+                                      ObjectMapper objectMapper,
                                       ApplicationEventPublisher eventPublisher,
-                                      @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate,
-                                      ObjectMapper objectMapper) {
+                                      PaymentCachingService paymentCachingService,
+                                      IMerchantTransactionService merchantTransactionService,
+                                      @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
         this.gson = gson;
+        this.objectMapper = objectMapper;
+        this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
         this.cachingService = paymentCachingService;
-        this.transactionManager = transactionManager;
-        this.sqsMessagePublisher = sqsMessagePublisher;
-        this.restTemplate = restTemplate;
-        this.objectMapper = objectMapper;
+        this.merchantTransactionService = merchantTransactionService;
     }
 
     @Override
@@ -130,17 +127,18 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
-        if (StringUtils.isEmpty(paymentRenewalChargingRequest.getExternalTransactionId())) {
+        MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(paymentRenewalChargingRequest.getId());
+        if (merchantTransaction != null) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException("No subId found for Subscription");
+            throw new WynkRuntimeException("No merchant transaction found for Subscription");
         }
         try {
-            PayURenewalResponse payURenewalResponse = objectMapper.convertValue(paymentRenewalChargingRequest.getMerchantTransaction().getResponse(), PayURenewalResponse.class);
-            PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getTransactionId());
+            PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
+            PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
             String mode = payUTransactionDetails.getMode();
             Boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
-            if (!isUpi || validateStatusForRenewal(paymentRenewalChargingRequest.getExternalTransactionId(), transaction.getIdStr())) {
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest);
+            if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transaction.getIdStr())) {
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, merchantTransaction.getExternalTransactionId());
                 payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
                 int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
@@ -393,13 +391,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return false;
     }
 
-    private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid) {
         Transaction transaction = TransactionContext.get();
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
-        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, paymentRenewalChargingRequest.getExternalTransactionId());
+        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, mihpayid);
         orderedMap.put(PAYU_TRANSACTION_AMOUNT, Double.parseDouble(paymentRenewalChargingRequest.getAmount()));
         orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getIdStr());
         orderedMap.put(PAYU_CUSTOMER_EMAIL, email);

@@ -150,7 +150,7 @@ public class PaymentManager {
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
         final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
         Map<String, Object> paymentMetaData = transaction.getPaymentMetaData();
-        paymentMetaData.put("renewal", true);
+        paymentMetaData.put(PaymentConstants.RENEWAL, true);
         transaction.setPaymentMetaData(paymentMetaData);
         final TransactionStatus initialStatus = transaction.getStatus();
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);

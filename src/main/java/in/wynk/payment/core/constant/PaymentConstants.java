@@ -8,18 +8,19 @@ public interface PaymentConstants extends BaseConstants {
     String ERROR = "error";
     String SUBSID = "subsId";
     String STATUS = "status";
+    String FAILURE = "failed";
+    String RENEWAL = "renewal";
     String REQUEST = "request";
     String PENDING = "pending";
     String SUCCESS = "success";
-    String FAILURE = "failed";
     String PIPE_SEPARATOR = "|";
     String BASE_USER_EMAIL = "@wynk.in";
 
     String PAYMENT_METHOD = "paymentMethod";
     String REQUEST_PAYLOAD = "requestPayload";
 
-    String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
+    String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
 
 

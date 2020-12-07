@@ -1,7 +1,6 @@
 package in.wynk.payment.exception.handler;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.handler.WynkGlobalExceptionHandler;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -40,9 +39,19 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
             SessionDTO session = SessionContextHolder.getBody();
             String failureWebViewUrl = session.get(FAILURE_WEB_URL);
             if (StringUtils.isEmpty(failureWebViewUrl)) {
-                final String sid = SessionContextHolder.getId();
-                final String os = session.get(BaseConstants.OS);
-                failureWebViewUrl = beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp()) + sid + SLASH + os;
+                failureWebViewUrl = new StringBuilder(beanFactory.resolveEmbeddedValue(errorType.getRedirectUrlProp())).append(SessionContextHolder.getId())
+                        .append(SLASH)
+                        .append(session.<String>get(OS))
+                        .append(QUESTION_MARK)
+                        .append(SERVICE)
+                        .append(EQUAL)
+                        .append(session.<String>get(SERVICE))
+                        .append(AND)
+                        .append(BUILD_NO)
+                        .append(EQUAL)
+                        .append(session.<Integer>get(BUILD_NO))
+                        .toString();
+                ;
             } else {
                 URIBuilder builder = new URIBuilder(failureWebViewUrl);
                 if (TransactionContext.get() != null && StringUtils.isNotEmpty(TransactionContext.get().getIdStr())) {

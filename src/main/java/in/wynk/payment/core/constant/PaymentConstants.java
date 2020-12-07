@@ -5,6 +5,7 @@ import in.wynk.common.constant.BaseConstants;
 public interface PaymentConstants extends BaseConstants {
 
     String TXN_ID = "tid";
+    String MIGRATED_TXN_ID = "transactionid";
     String ERROR = "error";
     String SUBSID = "subsId";
     String STATUS = "status";

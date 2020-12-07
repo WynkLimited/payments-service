@@ -2,14 +2,12 @@ package in.wynk.payment.config;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import in.wynk.payment.consumer.PaymentReconciliationConsumerPollingQueue;
 import in.wynk.payment.consumer.PaymentRenewalChargingConsumerPollingQueue;
 import in.wynk.payment.consumer.PaymentRenewalConsumerPollingQueue;
 import in.wynk.payment.extractor.PaymentReconciliationSQSMessageExtractor;
 import in.wynk.payment.extractor.PaymentRenewalChargingSQSMessageExtractor;
 import in.wynk.payment.extractor.PaymentRenewalSQSMessageExtractor;
-import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.BeanConstant;
@@ -43,8 +41,7 @@ public class PaymentQueuesConfig {
                                                                                  ObjectMapper objectMapper,
                                                                                  PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
                                                                                  ISqsManagerService sqsManagerService,
-                                                                                 ITransactionManagerService transactionManager,
-                                                                                 IMerchantTransactionService merchantTransactionService) {
+                                                                                 ITransactionManagerService transactionManager) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -52,8 +49,7 @@ public class PaymentQueuesConfig {
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(),
                 sqsManagerService,
-                transactionManager,
-                merchantTransactionService);
+                transactionManager);
     }
 
     @Bean

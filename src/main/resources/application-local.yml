@@ -165,6 +165,8 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+#      key: qFDqmx
+#      salt: Zbm2ZyNe
       key: aU2Uoi
       salt: 6vbnfVtw
       api:
@@ -212,9 +214,9 @@ http:
     paymentGatewayHttpTemplate:
       pool:
         connection:
-          max: 2000
+          max: 20
           maxPerHost: 500
-          timeout: 2000
+          timeout: 10000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
@@ -223,7 +225,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 10000
     paymentClientHttpTemplate:
       pool:
         connection:

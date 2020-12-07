@@ -101,7 +101,7 @@ public class PayUTestData {
                 .title(PayUDataConstant.PLAN_TITTLE)
                 .planType(planType)
                 .price(PriceDTO.builder().amount(PayUDataConstant.SELECTED_PLAN_AMOUNT).currency(PayUDataConstant.CURRENCY_TYPE).build())
-                .period(PlanPeriodDTO.builder().validity(100).timeUnit(TimeUnit.DAYS).build())
+                .period(PlanPeriodDTO.builder().validity(100).timeUnit(TimeUnit.DAYS).retryInterval(1).build())
                 .build();
     }
 
@@ -334,16 +334,10 @@ public class PayUTestData {
 
     public static PaymentRenewalChargingRequest buildPaymentRenewalChargingRequest() {
         return PaymentRenewalChargingRequest.builder()
-                .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .externalTransactionId("subsId")
-                .previousTransaction(Transaction.builder().build())
-                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .cardToken("cardToken")
-                .cardNumber("cardNumber")
-                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .uid(PayUDataConstant.UID)
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.RECURRING_PLAN_ID)
-                .uid(PayUDataConstant.UID)
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
                 .build();
     }
 

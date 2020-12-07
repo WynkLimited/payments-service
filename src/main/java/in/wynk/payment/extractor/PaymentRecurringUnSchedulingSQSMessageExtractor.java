@@ -7,17 +7,17 @@ import in.wynk.queue.extractor.AbstractSQSMessageExtractor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
-public class UnSchedulePaymentRecurrenceSQSMessageExtractor extends AbstractSQSMessageExtractor {
+public class PaymentRecurringUnSchedulingSQSMessageExtractor extends AbstractSQSMessageExtractor {
 
-    @Value("${payment.pooling.queue.recurrence.sqs.messages.extractor.batchSize}")
+    @Value("${payment.pooling.queue.unschedule.sqs.messages.extractor.batchSize}")
     private int batchSize;
 
-    @Value("${payment.pooling.queue.recurrence.sqs.messages.extractor.waitTimeInSeconds}")
+    @Value("${payment.pooling.queue.unschedule.sqs.messages.extractor.waitTimeInSeconds}")
     private int waitTimeInSeconds;
 
     private final String queueName;
 
-    public UnSchedulePaymentRecurrenceSQSMessageExtractor(String queueName,
+    public PaymentRecurringUnSchedulingSQSMessageExtractor(String queueName,
                                                     @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqs) {
         super(sqs);
         this.queueName = queueName;

@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.request;
 
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,4 +27,6 @@ public class TransactionInitRequest {
     private PaymentEvent event;
     private String couponId;
     private double discount;
+    @Builder.Default
+    private String status = TransactionStatus.INPROGRESS.getValue();
 }

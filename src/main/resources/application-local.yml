@@ -144,7 +144,20 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      recurrence:
+      schedule:
+        enabled: true
+        name: wcf-staging-subscription-payment
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      unschedule:
         enabled: true
         name: wcf-staging-payment-recurring
         sqs:
@@ -165,10 +178,10 @@ payment:
   merchant:
     ####### payu props #########
     payu:
-      key: aU2Uoi
-      salt: 6vbnfVtw
+      key: qFDqmx
+      salt: Zbm2ZyNe
       api:
-        info: https://info.payu.in/merchant/postservice.php?form=2
+        info: https://test.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
@@ -212,9 +225,9 @@ http:
     paymentGatewayHttpTemplate:
       pool:
         connection:
-          max: 2000
+          max: 20
           maxPerHost: 500
-          timeout: 2000
+          timeout: 10000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
@@ -223,7 +236,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 10000
     paymentClientHttpTemplate:
       pool:
         connection:

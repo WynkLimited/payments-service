@@ -1,7 +1,9 @@
 package in.wynk.payment.test.utils;
 
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.data.enums.State;
+import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.enums.PaymentGroup;
@@ -10,10 +12,7 @@ import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.PriceDTO;
 import in.wynk.subscription.common.enums.PlanType;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -90,4 +89,17 @@ public class PaymentTestUtils {
         sessionDTO.setSessionPayload(map);
         return sessionDTO;
     }
+
+    public static PaymentRecurringSchedulingMessage getDummyRenewalSubscriptionMessage() {
+        return PaymentRecurringSchedulingMessage.builder()
+                .planId(1000182)
+                .paymentCode("payu")
+                .msisdn("+919005334276")
+                .uid("zalKRzuDl81b_Av8T0")
+                .event(PaymentEvent.SUBSCRIBE)
+                .clientAlias("subscriptionApi")
+                .nextChargingDate(new Date(System.currentTimeMillis()))
+                .build();
+    }
+
 }

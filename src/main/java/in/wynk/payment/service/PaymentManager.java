@@ -13,8 +13,10 @@ import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
@@ -32,10 +34,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
+import java.util.Calendar;
 import java.util.Map;
 
-import static in.wynk.common.constant.BaseConstants.CLIENT;
-import static in.wynk.common.constant.BaseConstants.SERVICE;
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RENEWAL_ERROR;
 
 @Slf4j
@@ -49,13 +52,17 @@ public class PaymentManager {
     private final ISqsManagerService sqsManagerService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
+    private final IMerchantTransactionService merchantTransactionService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.couponManager = couponManager;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
+        this.merchantTransactionService = merchantTransactionService;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
@@ -270,4 +277,27 @@ public class PaymentManager {
         }
     }
 
+    public void addToPaymentRenewal(PaymentRecurringSchedulingMessage message) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(message.getNextChargingDate());
+        int planId = message.getPlanId();
+        PaymentCode paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
+        double amount = cachingService.getPlan(planId).getFinalPrice();
+        Transaction transaction = transactionManager.initiateTransaction(TransactionInitRequest.builder()
+                .uid(message.getUid())
+                .msisdn(message.getMsisdn())
+                .clientAlias(message.getClientAlias())
+                .planId(planId)
+                .amount(amount)
+                .paymentCode(paymentCode)
+                .event(message.getEvent())
+                .status(TransactionStatus.MIGRATED.getValue())
+                .build());
+        IMerchantTransactionDetailsService merchantTransactionDetailsService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantTransactionDetailsService.class);
+        message.getPaymentMetaData().put(MIGRATED, Boolean.TRUE.toString());
+        message.getPaymentMetaData().put(TXN_ID, transaction.getIdStr());
+        MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(message.getPaymentMetaData());
+        merchantTransactionService.upsert(merchantTransaction);
+        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), calendar);
+    }
 }

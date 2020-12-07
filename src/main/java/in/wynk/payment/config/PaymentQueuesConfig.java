@@ -2,14 +2,10 @@ package in.wynk.payment.config;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import in.wynk.payment.consumer.PaymentReconciliationConsumerPollingQueue;
-import in.wynk.payment.consumer.PaymentRenewalChargingConsumerPollingQueue;
-import in.wynk.payment.consumer.PaymentRenewalConsumerPollingQueue;
-import in.wynk.payment.extractor.PaymentReconciliationSQSMessageExtractor;
-import in.wynk.payment.extractor.PaymentRenewalChargingSQSMessageExtractor;
-import in.wynk.payment.extractor.PaymentRenewalSQSMessageExtractor;
+import in.wynk.payment.consumer.*;
+import in.wynk.payment.extractor.*;
 import in.wynk.payment.service.IMerchantTransactionService;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.BeanConstant;
@@ -71,6 +67,36 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
+    public PaymentRecurringSchedulingPollingQueue paymentRecurringSchedulingPollingQueue(@Value("${payment.pooling.queue.schedule.name}") String queueName,
+                                                                                         @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                         ObjectMapper objectMapper,
+                                                                                         PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor,
+                                                                                         PaymentManager paymentManager) {
+        return new PaymentRecurringSchedulingPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                paymentRecurringSchedulingSQSMessageExtractor,
+                paymentManager,
+                (ThreadPoolExecutor) threadPoolExecutor(),
+                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
+    }
+
+    @Bean
+    public PaymentRecurringUnSchedulingPollingQueue paymentRecurringUnSchedulingPollingQueue(@Value("${payment.pooling.queue.unschedule.name}") String queueName,
+                                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                             ObjectMapper objectMapper,
+                                                                                             PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor,
+                                                                                             @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager) {
+        return new PaymentRecurringUnSchedulingPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                paymentRecurringSchedulingSQSMessageExtractor,
+                (ThreadPoolExecutor) threadPoolExecutor(),
+                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(),
+                recurringPaymentManager);
+    }
+
+    @Bean
     public PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentReconciliationSQSMessageExtractor(queueName, sqsClient);
@@ -78,17 +104,27 @@ public class PaymentQueuesConfig {
 
     @Bean
     public PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor(@Value("${payment.pooling.queue.renewal.name}") String queueName,
-                                                                                      @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
+                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentRenewalSQSMessageExtractor(queueName, sqsClient);
     }
 
     @Bean
     public PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor(@Value("${payment.pooling.queue.charging.name}") String queueName,
-                                                                                       @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
+                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentRenewalChargingSQSMessageExtractor(queueName, sqsClient);
     }
 
+    @Bean
+    public PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor(@Value("${payment.pooling.queue.schedule.name}") String queueName,
+                                                                                                       @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new PaymentRecurringSchedulingSQSMessageExtractor(queueName, sqsClients);
+    }
 
+    @Bean
+    public PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor(@Value("${payment.pooling.queue.unschedule.name}") String queueName,
+                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new PaymentRecurringUnSchedulingSQSMessageExtractor(queueName, sqsClients);
+    }
 
     private ExecutorService threadPoolExecutor() {
         return Executors.newFixedThreadPool(2);

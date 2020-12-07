@@ -13,8 +13,10 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.dao.entity.Card;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -59,7 +61,8 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService {
+
+public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService {
 
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
@@ -174,7 +177,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 statusResponse = fetchChargingStatusFromPayUSource(transaction);
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource( transaction);
+                statusResponse = fetchChargingStatusFromDataSource(transaction);
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
@@ -603,5 +606,20 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         }
         return builder.build();
+    }
+
+    public UserPreferredPayment getUserPreferredPayments(String uid) {
+        String userCredentials = payUMerchantKey + COLON + uid;
+        MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
+        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, PayUUserCardDetailsResponse.class);
+        Card.Builder cardBuilder = new Card.Builder().paymentCode(PaymentCode.PAYU);
+        for (String cardToken : userCardDetailsResponse.getUserCards().keySet()) {
+            cardBuilder.cardDetails(Card.CardDetails.builder().cardToken(cardToken).build());
+        }
+        UserPreferredPayment userPreferredPayment = UserPreferredPayment.builder()
+                .uid(uid)
+                .option(cardBuilder.build())
+                .build();
+        return userPreferredPayment;
     }
 }

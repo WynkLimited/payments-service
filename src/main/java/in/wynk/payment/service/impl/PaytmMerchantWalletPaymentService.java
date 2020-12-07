@@ -12,11 +12,13 @@ import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -51,6 +53,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
@@ -60,7 +63,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
-public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService {
+public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService, IUserPreferredPaymentService {
 
     private static final Logger logger = LoggerFactory.getLogger(PaytmMerchantWalletPaymentService.class);
 
@@ -549,4 +552,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - " + e.getMessage());
         }
     }
+
+    @Override
+    public UserPreferredPayment getUserPreferredPayments(String uid) {
+        return userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
+    }
+
 }

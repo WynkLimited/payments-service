@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/wynk/v1/payment/")
-public class PaymentOptionsHanlder {
+public class PaymentOptionsController {
 
     @Autowired
     private IPaymentOptionService paymentMethodService;

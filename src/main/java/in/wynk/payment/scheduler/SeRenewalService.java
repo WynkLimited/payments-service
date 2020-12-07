@@ -169,8 +169,12 @@ public class SeRenewalService {
                 PaymentEvent event = getSETransactionEvent(transactionType);
                 AnalyticService.update(event);
                 if (seTxnStatus == TransactionStatus.SUCCESS && event != null) {
-                    PaymentRenewalChargingRequest request = PaymentRenewalChargingRequest.builder().msisdn(msisdn)
-                            .planId(planDTO.getId()).amount(planDTO.getPrice().getAmount()).externalTransactionId(extTransactionId).uid(uid).build();
+                    PaymentRenewalChargingRequest request = PaymentRenewalChargingRequest.builder()
+                            .uid(uid)
+                            .msisdn(msisdn)
+                            .id(extTransactionId)
+                            .planId(planDTO.getId())
+                            .build();
                     paymentManager.doRenewal(request, PaymentCode.SE_BILLING);
                     return true;
                 } else {

@@ -283,11 +283,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         String uid = paymentRenewalChargingRequest.getUid();
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
         Integer planId = paymentRenewalChargingRequest.getPlanId();
-        double amount = Double.parseDouble("0");
+        final PlanDTO selectedPlan = cachingService.getPlan(planId);
+        double amount = selectedPlan.getFinalPrice();
         String accessToken = getAccessToken(uid);
         String deviceId = "abcd"; //TODO: might need to store device id or can be fetched from merchant txn.
 
-        final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final PaymentEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
 
         Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, eventType);

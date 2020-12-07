@@ -74,19 +74,12 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
         paymentManager.doRenewal(PaymentRenewalChargingRequest.builder()
                 .id(message.getId())
                 .uid(message.getUid())
-                .isUpi(message.getIsUpi())
                 .planId(message.getPlanId())
                 .msisdn(message.getMsisdn())
-                .amount(message.getAmount())
-                .cardToken(message.getCardToken())
-                .cardNumber(message.getCardNumber())
-                .transactionId(message.getTransactionId())
-                .externalTransactionId(message.getExternalTransactionId())
-                .previousTransaction(message.getPreviousTransaction())
-                .externalPlanId(message.getExternalPlanId())
                 .build(), message.getPaymentCode());
     }
 
     @Override
     public Class<PaymentRenewalChargingMessage> messageType() { return PaymentRenewalChargingMessage.class; }
+
 }

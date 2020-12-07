@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Calendar;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -151,9 +152,10 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
 
                 } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
-                        && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData().containsKey("renewal")) {
+                        && transaction.getType() == PaymentEvent.SUBSCRIBE && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey(PaymentConstants.RENEWAL)) {
+                    int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
                     Calendar nextRecurringDateTime = Calendar.getInstance();
-                    nextRecurringDateTime.add(Calendar.HOUR, 1);
+                    nextRecurringDateTime.add(Calendar.HOUR, retryInterval);
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
                 }
             }

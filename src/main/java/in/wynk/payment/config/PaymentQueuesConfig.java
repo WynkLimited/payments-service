@@ -4,7 +4,6 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
-import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentManager;
@@ -39,8 +38,7 @@ public class PaymentQueuesConfig {
                                                                                  ObjectMapper objectMapper,
                                                                                  PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
                                                                                  ISqsManagerService sqsManagerService,
-                                                                                 ITransactionManagerService transactionManager,
-                                                                                 IMerchantTransactionService merchantTransactionService) {
+                                                                                 ITransactionManagerService transactionManager) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -48,8 +46,7 @@ public class PaymentQueuesConfig {
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(),
                 sqsManagerService,
-                transactionManager,
-                merchantTransactionService);
+                transactionManager);
     }
 
     @Bean

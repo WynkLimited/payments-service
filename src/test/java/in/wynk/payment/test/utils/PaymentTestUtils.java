@@ -75,7 +75,7 @@ public class PaymentTestUtils {
     }
 
     public static PlanDTO dummyPlanDTO() {
-        PlanPeriodDTO planPeriodDTO = PlanPeriodDTO.builder().timeUnit(TimeUnit.DAYS).validity(30).build();
+        PlanPeriodDTO planPeriodDTO = PlanPeriodDTO.builder().timeUnit(TimeUnit.DAYS).validity(30).retryInterval(1).build();
         PriceDTO priceDTO = PriceDTO.builder().amount(50).currency("INR").build();
         return PlanDTO.builder().planType(PlanType.ONE_TIME_SUBSCRIPTION).id(PLAN_ID).period(planPeriodDTO).price(priceDTO).title("DUMMY_PLAN").build();
     }

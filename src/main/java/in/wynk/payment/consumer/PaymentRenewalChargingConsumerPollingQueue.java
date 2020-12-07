@@ -76,7 +76,6 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
                 .uid(message.getUid())
                 .planId(message.getPlanId())
                 .msisdn(message.getMsisdn())
-                .amount(message.getAmount())
                 .build(), message.getPaymentCode());
     }
 

@@ -57,6 +57,10 @@ public class SeRenewalService {
 
     public static final List<String> GRACE_STATUS_LIST = Arrays.asList("Customer Moved to Grace", "Customer is in Grace Period");
 
+    @Autowired
+    private AmazonS3 amazonS3Client;
+    @Autowired
+    private PaymentManager paymentManager;
 
     @Value("${payment.se.s3.bucket}")
     private String bucket;
@@ -116,11 +120,6 @@ public class SeRenewalService {
         int numOfRecords = csvContent.size() - 1;
         log.info(" Found {} mismatch of {} total records in file: {}:{}", hits, numOfRecords, bucket, filePath);
     }
-
-    @Autowired
-    private AmazonS3 amazonS3Client;
-    @Autowired
-    private PaymentManager paymentManager;
 
 
     private List<String[]> getDownloadedContent(String filePath) {

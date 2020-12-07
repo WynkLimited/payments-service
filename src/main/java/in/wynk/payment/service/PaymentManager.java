@@ -160,7 +160,7 @@ public class PaymentManager {
         } catch (Exception e) {
             log.error(PAYMENT_RENEWAL_ERROR, "Error {} occurred while renewal of request: {}",e.getMessage(), request, e);
         } finally {
-            if(merchantPaymentRenewalService.supportsReconciliation()){
+            if(merchantPaymentRenewalService.supportsRenewalReconciliation()){
                 sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                         .paymentCode(transaction.getPaymentChannel())
                         .paymentEvent(transaction.getType())

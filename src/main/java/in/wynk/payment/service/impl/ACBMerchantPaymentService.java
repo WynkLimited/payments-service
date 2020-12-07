@@ -38,7 +38,7 @@ public class ACBMerchantPaymentService implements IRenewalMerchantPaymentService
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
 
-    public boolean supportsReconciliation(){
+    public boolean supportsRenewalReconciliation(){
         return false;
     }
 

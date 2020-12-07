@@ -6,7 +6,7 @@ public interface IMerchantPaymentRenewalService {
 
     void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest);
 
-    default boolean supportsReconciliation(){
+    default boolean supportsRenewalReconciliation(){
         return true;
     }
 

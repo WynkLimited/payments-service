@@ -33,7 +33,6 @@ import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
-import in.wynk.queue.producer.ISQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -83,7 +82,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher sqsMessagePublisher;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
@@ -91,7 +89,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     public PayUMerchantPaymentService(Gson gson,
                                       PaymentCachingService paymentCachingService,
                                       ITransactionManagerService transactionManager,
-                                      @Qualifier(in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher,
                                       ApplicationEventPublisher eventPublisher,
                                       @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate,
                                       ObjectMapper objectMapper) {
@@ -99,7 +96,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         this.eventPublisher = eventPublisher;
         this.cachingService = paymentCachingService;
         this.transactionManager = transactionManager;
-        this.sqsMessagePublisher = sqsMessagePublisher;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
     }

@@ -338,7 +338,6 @@ public class PayUTestData {
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.RECURRING_PLAN_ID)
                 .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .amount(String.valueOf(PayUDataConstant.SELECTED_PLAN_AMOUNT))
                 .build();
     }
 

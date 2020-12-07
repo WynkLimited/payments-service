@@ -1,6 +1,7 @@
 package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +21,13 @@ public class SchedulerController {
     @AnalyseTransaction(name = "paymentRenew")
     public void startPaymentRenew() {
         paymentRenewalsScheduler.paymentRenew();
+    }
+
+    @GetMapping("/start/seRenewal")
+    @AnalyseTransaction(name = "paymentRenew")
+    public EmptyResponse startSEPaymentRenew() {
+        paymentRenewalsScheduler.startSeRenewals();
+        return EmptyResponse.response();
     }
 
 }

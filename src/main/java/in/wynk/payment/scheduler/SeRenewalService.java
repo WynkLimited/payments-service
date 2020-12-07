@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import com.opencsv.CSVReader;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -30,6 +31,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.SE_PAYMENT_RENEWAL_ERROR;
 
 @Slf4j
@@ -61,7 +63,6 @@ public class SeRenewalService {
     @Autowired
     private PaymentCachingService cachingService;
 
-    @AnalyseTransaction(name = "seRenewal")
     public void startSeRenewal() {
         log.info("Starting SE sync task!!");
         Calendar cal = Calendar.getInstance();
@@ -137,31 +138,36 @@ public class SeRenewalService {
         }
     }
 
+    @AnalyseTransaction(name = "seRenewal")
     public boolean mismatchStatus(String[] subRecord, StringBuffer sb) {
+        String seRecord = ArrayUtils.toString(subRecord);
+        AnalyticService.update("SE_FILE_RECORD", seRecord);
         try {
             if (subRecord.length > 0 && "TRANS_ID".equals(subRecord[0].trim())) {
-                log.info("Skipping header row in se s3 reconciliation report: {}", ArrayUtils.toString(subRecord));
+                log.info("Skipping header row in se s3 reconciliation report: {}", seRecord);
                 return false;
             }
             if (subRecord.length < 8) {
-                log.error(SE_PAYMENT_RENEWAL_ERROR, "Invalid row in se s3 reconciliation report: {} ", ArrayUtils.toString(subRecord));
+                log.error(SE_PAYMENT_RENEWAL_ERROR, "Invalid row in se s3 reconciliation report: {} ", seRecord);
                 return false;
             }
             String extTransactionId = subRecord[0].trim();
             String msisdn = subRecord[1].trim();
             msisdn = MsisdnUtils.getTenDigitMsisdn(msisdn);
+            AnalyticService.update(MSISDN, msisdn);
             String extProductId = subRecord[3].trim();
+            AnalyticService.update(EXTERNAL_TRANSACTION_ID, extTransactionId);
             String transactionDateStr = subRecord[4];
             String transactionType = subRecord[5].trim();
             String transactionStatus = subRecord[6].trim();
+            AnalyticService.update(EXTERNAL_TRANSACTION_STATUS, transactionStatus);
             PlanDTO planDTO = cachingService.getPlanFromSku(extProductId);
             String uid = MsisdnUtils.getUidFromMsisdn(msisdn);
             if (planDTO != null) {
-                String service = planDTO.getService();
-                String externalSystemResponse = ArrayUtils.toString(subRecord);
                 TransactionStatus seTxnStatus = getSETransactionStatus(transactionType, transactionStatus);
-
+                AnalyticService.update(seTxnStatus);
                 PaymentEvent event = getSETransactionEvent(transactionType);
+                AnalyticService.update(event);
                 if (seTxnStatus == TransactionStatus.SUCCESS && event != null) {
                     PaymentRenewalChargingRequest request = PaymentRenewalChargingRequest.builder().externalPlanId(extProductId).msisdn(msisdn)
                             .planId(planDTO.getId()).amount(planDTO.getPrice().getAmount()).externalTransactionId(extTransactionId).uid(uid).build();

@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.common.constant.SessionKeys;
@@ -214,6 +215,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payUTransactionDetails.getPayUExternalTxnId());
+            AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUTransactionDetails.getPayUExternalTxnId());
             final PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
             int validity = selectedPlan.getPeriod().getValidity();
             if (payUChargingVerificationResponse.getStatus() == 1) {

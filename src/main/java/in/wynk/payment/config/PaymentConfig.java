@@ -28,6 +28,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import static in.wynk.payment.core.constant.BeanConstant.PAYMENT_MONGO_DB_FACTORY_REF;
 
 @Configuration
@@ -66,6 +69,11 @@ public class PaymentConfig implements WebMvcConfigurer {
         SimpleApplicationEventMulticaster eventMulticaster = new SimpleApplicationEventMulticaster();
         eventMulticaster.setTaskExecutor(new SimpleAsyncTaskExecutor("sub-event"));
         return eventMulticaster;
+    }
+
+    @Bean
+    public ExecutorService executorService() {
+        return Executors.newWorkStealingPool();
     }
 
     @Primary

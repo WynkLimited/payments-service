@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +25,8 @@ public class PaymentRenewalsScheduler {
     private ISqsManagerService sqsManagerService;
     @Autowired
     private SeRenewalService seRenewalService;
+    @Autowired
+    private ExecutorService executorService;
 
     @Scheduled(cron = "0 0 * * * ?")
     @Transactional
@@ -46,7 +49,7 @@ public class PaymentRenewalsScheduler {
 
 //    @Scheduled(cron = "0 0 2 * * ?")
     public void startSeRenewals(){
-        seRenewalService.startSeRenewal();
+        executorService.submit(()->seRenewalService.startSeRenewal());
     }
 
 }

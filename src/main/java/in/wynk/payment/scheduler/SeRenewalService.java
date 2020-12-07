@@ -160,6 +160,7 @@ public class SeRenewalService {
             String transactionType = subRecord[5].trim();
             String transactionStatus = subRecord[6].trim();
             AnalyticService.update(EXTERNAL_TRANSACTION_STATUS, transactionStatus);
+            AnalyticService.update(EXTERNAL_PRODUCT_ID, extProductId);
             PlanDTO planDTO = cachingService.getPlanFromSku(extProductId);
             String uid = MsisdnUtils.getUidFromMsisdn(msisdn);
             if (planDTO != null) {
@@ -168,7 +169,7 @@ public class SeRenewalService {
                 PaymentEvent event = getSETransactionEvent(transactionType);
                 AnalyticService.update(event);
                 if (seTxnStatus == TransactionStatus.SUCCESS && event != null) {
-                    PaymentRenewalChargingRequest request = PaymentRenewalChargingRequest.builder().externalPlanId(extProductId).msisdn(msisdn)
+                    PaymentRenewalChargingRequest request = PaymentRenewalChargingRequest.builder().msisdn(msisdn)
                             .planId(planDTO.getId()).amount(planDTO.getPrice().getAmount()).externalTransactionId(extTransactionId).uid(uid).build();
                     paymentManager.doRenewal(request, PaymentCode.SE_BILLING);
                     return true;

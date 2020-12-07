@@ -337,7 +337,6 @@ public class PayUTestData {
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
                 .externalTransactionId("subsId")
                 .previousTransaction(Transaction.builder().build())
-                .externalPlanId("paidPartnerProductId")
                 .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
                 .cardToken("cardToken")
                 .cardNumber("cardNumber")

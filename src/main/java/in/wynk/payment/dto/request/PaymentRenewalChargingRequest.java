@@ -20,7 +20,6 @@ public class PaymentRenewalChargingRequest {
     private Boolean isUpi;
     // Todo - Fetch all this in respective services
     private String externalTransactionId;
-    private String externalPlanId;
     private String cardNumber;
     private String cardToken;
     private double amount;

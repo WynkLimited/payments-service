@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
@@ -22,7 +23,7 @@ public class SessionCrudTest {
     @Test
     public void saveSessionTest() {
         SessionDTO dto = PaymentTestUtils.dummySession();
-        sessionManager.put(Session.<SessionDTO>builder().body(dto).id(UUID.randomUUID()).build());
+        sessionManager.put(Session.<SessionDTO>builder().body(dto).id(UUID.randomUUID()).build(), 10, TimeUnit.MINUTES);
 
     }
 }

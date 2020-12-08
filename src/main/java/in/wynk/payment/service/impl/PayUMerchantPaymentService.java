@@ -135,7 +135,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
         try {
             PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
-            PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
+            PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
             String mode = payUTransactionDetails.getMode();
             Boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transaction.getIdStr())) {

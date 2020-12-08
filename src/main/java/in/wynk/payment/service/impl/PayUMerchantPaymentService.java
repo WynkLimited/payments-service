@@ -140,7 +140,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             Boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transaction.getIdStr())) {
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, merchantTransaction.getExternalTransactionId());
-                payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
+                payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
                     if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {

@@ -209,7 +209,7 @@ subscription:
     queue:
       provision:
         enabled: true
-        name: wcf-preprod-revenue-subscription
+        name: wcf-preprod-subscription
         sqs:
           producer:
             delayInSecond: 1

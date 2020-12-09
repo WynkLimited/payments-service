@@ -100,7 +100,7 @@ payment:
     queue:
       reconciliation:
         enabled: true
-        name: wcf-staging-payment-reconciliation
+        name: wcf-preprod-payment-reconciliation
         sqs:
           messages:
             extractor:
@@ -112,8 +112,8 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       renewal:
-        enabled: false
-        name: wcf-staging-payment-renewal
+        enabled: true
+        name: wcf-preprod-payment-renewal
         sqs:
           messages:
             extractor:
@@ -125,8 +125,8 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: false
-        name: wcf-staging-payment-charging.fifo
+        enabled: true
+        name: wcf-preprod-payment-charging.fifo
         sqs:
           messages:
             extractor:
@@ -139,7 +139,7 @@ payment:
             delayTimeUnit: SECONDS
       recurrence:
         enabled: true
-        name: wcf-staging-payment-recurring
+        name: wcf-preprod-payment-recurring
         sqs:
           messages:
             extractor:

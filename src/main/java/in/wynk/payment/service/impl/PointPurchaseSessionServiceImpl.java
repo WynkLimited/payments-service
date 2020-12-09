@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -48,9 +49,10 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             Session<SessionDTO> session = sessionManager.init(sessionDTO, duration, TimeUnit.MINUTES);
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             if (request.getParams() != null) {
-                queryBuilder.addParameter(TITLE, request.getParams().getTitle());
-                queryBuilder.addParameter(SUBTITLE, request.getParams().getSubtitle());
-                queryBuilder.addParameter(CLIENT, request.getParams().getClient());
+                for(Map.Entry<String, String> entry: request.getParams().entrySet()){
+                    queryBuilder.addParameter(entry.getKey(),entry.getValue());
+                }
+
             }
             queryBuilder.addParameter(ITEM_ID, request.getItemId());
             queryBuilder.addParameter(POINT_PURCHASE_FLOW, Boolean.TRUE.toString());

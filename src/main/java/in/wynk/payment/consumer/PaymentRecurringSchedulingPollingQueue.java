@@ -64,7 +64,7 @@ public class PaymentRecurringSchedulingPollingQueue extends AbstractSQSMessageCo
     public void consume(PaymentRecurringSchedulingMessage message) {
         log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing PaymentRecurringSchedulingMessage {}", message);
         AnalyticService.update(message);
-        paymentManager.addToPaymentRenewal(message);
+        paymentManager.addToPaymentRenewalMigration(message);
     }
 
     @Override

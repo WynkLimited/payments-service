@@ -142,7 +142,7 @@ payment:
             delayTimeUnit: SECONDS
       schedule:
         enabled: false
-        name: wcf-staging-subscription-payment
+        name: wcf-production-revenue-subscription-payment
         sqs:
           messages:
             extractor:

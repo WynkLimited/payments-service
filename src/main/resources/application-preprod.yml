@@ -37,6 +37,7 @@ session:
     mode: cluster
     useSsl: false
     usePooling: true
+    readTimeout: 1000
     password: ##
     enableJmx: true
     jmxPrefix: session-store:preprod

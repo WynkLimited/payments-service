@@ -35,6 +35,7 @@ session:
     name: session-store:local
     mode: cluster
     usePooling: true
+    readTimeout: 1000
     cluster:
       nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:

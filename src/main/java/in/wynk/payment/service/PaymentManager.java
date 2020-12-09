@@ -226,7 +226,7 @@ public class PaymentManager {
         }
     }
 
-    public void addToPaymentRenewal(PaymentRecurringSchedulingMessage message) {
+    public void addToPaymentRenewalMigration(PaymentRecurringSchedulingMessage message) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(message.getNextChargingDate());
         int planId = message.getPlanId();

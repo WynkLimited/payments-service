@@ -290,11 +290,12 @@ public class PaymentManager {
                 .event(message.getEvent())
                 .status(TransactionStatus.MIGRATED.getValue())
                 .build());
+        transaction.putValueInPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE, calendar);
         IMerchantTransactionDetailsService merchantTransactionDetailsService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantTransactionDetailsService.class);
         message.getPaymentMetaData().put(MIGRATED, Boolean.TRUE.toString());
         message.getPaymentMetaData().put(TXN_ID, transaction.getIdStr());
         MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(message.getPaymentMetaData());
         merchantTransactionService.upsert(merchantTransaction);
-        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), calendar);
+        transactionManager.updateAndAsyncPublish(transaction, TransactionStatus.INPROGRESS, transaction.getStatus());
     }
 }

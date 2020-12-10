@@ -82,12 +82,12 @@ public class PaymentQueuesConfig {
     public PaymentRecurringUnSchedulingPollingQueue paymentRecurringUnSchedulingPollingQueue(@Value("${payment.pooling.queue.unschedule.name}") String queueName,
                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                              ObjectMapper objectMapper,
-                                                                                             PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor,
+                                                                                             PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor,
                                                                                              @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager) {
         return new PaymentRecurringUnSchedulingPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
-                paymentRecurringSchedulingSQSMessageExtractor,
+                paymentRecurringUnSchedulingSQSMessageExtractor,
                 (ThreadPoolExecutor) threadPoolExecutor(),
                 (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(),
                 recurringPaymentManager);

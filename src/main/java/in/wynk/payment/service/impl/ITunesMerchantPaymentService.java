@@ -3,6 +3,8 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -56,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -232,6 +235,11 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
+        String secret = itunesSecret;
+        Optional<Client> optionalClient = ClientContext.getClient();
+        if(optionalClient.isPresent() && optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).isPresent()) {
+            secret = optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).get();
+        }
         Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             ItunesStatusCodes statusCode;
@@ -245,7 +253,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             ResponseEntity<String> appStoreResponse;
             JSONObject requestJson = new JSONObject();
             requestJson.put(RECEIPT_DATA, encodedValue);
-            requestJson.put(PASSWORD, itunesSecret);
+            requestJson.put(PASSWORD, secret);
             merchantTransactionBuilder.request(gson.toJson(requestJson));
             RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toJSONString(), HttpMethod.POST, URI.create(itunesApiUrl));
             appStoreResponse = restTemplate.exchange(requestEntity, String.class);

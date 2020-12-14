@@ -48,9 +48,9 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             Session<SessionDTO> session = sessionManager.init(sessionDTO, duration, TimeUnit.MINUTES);
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             if (request.getParams() != null) {
-                queryBuilder.addParameter(TITLE, request.getParams().getTitle());
-                queryBuilder.addParameter(SUBTITLE, request.getParams().getSubtitle());
-                queryBuilder.addParameter(CLIENT, request.getParams().getClient());
+                queryBuilder.addParameter(TITLE, request.getParams().get(TITLE));
+                queryBuilder.addParameter(SUBTITLE, request.getParams().get(SUBTITLE));
+                queryBuilder.addParameter(CLIENT, request.getParams().get(CLIENT));
             }
             queryBuilder.addParameter(ITEM_ID, request.getItemId());
             queryBuilder.addParameter(POINT_PURCHASE_FLOW, Boolean.TRUE.toString());

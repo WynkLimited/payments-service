@@ -149,6 +149,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                         transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                     } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                        if (!StringUtils.isEmpty(payUTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUTransactionDetails.getErrorMessage())) {
+                            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUTransactionDetails.getErrorCode()).description(payUTransactionDetails.getErrorMessage()).build());
+                        }
                     } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
@@ -158,7 +161,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY002);
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUTransactionDetails.getErrorCode()).description(payUTransactionDetails.getErrorMessage()).build());
                 }
             }
         } catch (WynkRuntimeException e) {
@@ -396,6 +399,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid) {
         Transaction transaction = TransactionContext.get();
+        Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
@@ -416,8 +420,18 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String response = null;
         rateLimiter.acquire();
         try {
+            merchantTransactionEventBuilder.request(requestMap);
             response = restTemplate.postForObject(payUInfoApiUrl, requestMap, String.class);
+            PayURenewalResponse paymentResponse = gson.fromJson(response, PayURenewalResponse.class);
+            merchantTransactionEventBuilder.response(paymentResponse);
+            if (paymentResponse == null) {
+                paymentResponse = new PayURenewalResponse();
+            } else {
+                merchantTransactionEventBuilder.externalTransactionId(paymentResponse.getTransactionDetails().get(transaction.getIdStr()).getPayUExternalTxnId());
+            }
+            return paymentResponse;
         } catch (RestClientException e) {
+            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(
@@ -426,19 +440,25 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                             requestMap,
                             e.getMessage(),
                             e);
+                    errorEventBuilder.code(PaymentErrorType.PAY014.getErrorCode());
+                    errorEventBuilder.description(PaymentErrorType.PAY014.getErrorMessage());
+                    eventPublisher.publishEvent(errorEventBuilder.build());
                     throw new WynkRuntimeException(PaymentErrorType.PAY014);
                 } else {
+                    errorEventBuilder.code(PaymentErrorType.PAY009.getErrorCode());
+                    errorEventBuilder.description(PaymentErrorType.PAY009.getErrorMessage());
+                    eventPublisher.publishEvent(errorEventBuilder.build());
                     throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
                 }
             } else {
+                errorEventBuilder.code(PaymentErrorType.PAY009.getErrorCode());
+                errorEventBuilder.description(PaymentErrorType.PAY009.getErrorMessage());
+                eventPublisher.publishEvent(errorEventBuilder.build());
                 throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
             }
+        } finally {
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
-        PayURenewalResponse paymentResponse = gson.fromJson(response, PayURenewalResponse.class);
-        if (paymentResponse == null) {
-            paymentResponse = new PayURenewalResponse();
-        }
-        return paymentResponse;
     }
 
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, Class<T> target) {

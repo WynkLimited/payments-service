@@ -30,7 +30,7 @@ public class PaymentRenewalsScheduler {
     @Autowired
     private ExecutorService executorService;
 
-    @Scheduled(cron = "0 0 * * * ?")
+    //@Scheduled(cron = "0 0 * * * ?")
     @Transactional
     public void paymentRenew() {
         List<PaymentRenewal> paymentRenewals =

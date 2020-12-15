@@ -1,5 +1,7 @@
 package in.wynk.payment.scheduler;
 
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
@@ -30,26 +32,32 @@ public class PaymentRenewalsScheduler {
 
     @Scheduled(cron = "0 0 * * * ?")
     @Transactional
-    public void paymentRenew(){
+    public void paymentRenew() {
         List<PaymentRenewal> paymentRenewals =
                 recurringPaymentManager.getCurrentDueRecurringPayments()
                         .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == PaymentEvent.RENEW || paymentRenewal.getTransactionEvent() == PaymentEvent.SUBSCRIBE))
-                    .collect(Collectors.toList());
+                        .collect(Collectors.toList());
         sendToRenewalQueue(paymentRenewals);
     }
 
-    private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals){
-        for(PaymentRenewal paymentRenewal : paymentRenewals){
-            sqsManagerService.publishSQSMessage(PaymentRenewalMessage.builder()
+    private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals) {
+        for (PaymentRenewal paymentRenewal : paymentRenewals) {
+            publishRenewalMessage(PaymentRenewalMessage.builder()
                     .transactionId(paymentRenewal.getTransactionId())
                     .paymentEvent(paymentRenewal.getTransactionEvent())
                     .build());
         }
     }
 
-//    @Scheduled(cron = "0 0 2 * * ?")
-    public void startSeRenewals(){
-        executorService.submit(()->seRenewalService.startSeRenewal());
+    @AnalyseTransaction(name = "scheduleRenewalMessage")
+    private void publishRenewalMessage(PaymentRenewalMessage message) {
+        AnalyticService.update(message);
+        sqsManagerService.publishSQSMessage(message);
+    }
+
+    //    @Scheduled(cron = "0 0 2 * * ?")
+    public void startSeRenewals() {
+        executorService.submit(() -> seRenewalService.startSeRenewal());
     }
 
 }

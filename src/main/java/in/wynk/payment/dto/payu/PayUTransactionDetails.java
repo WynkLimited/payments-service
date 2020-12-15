@@ -43,4 +43,6 @@ public class PayUTransactionDetails {
   @SerializedName("field9")
   private String payUResponseFailureMessage;
 
+  private String migratedTransactionId;
+
 }

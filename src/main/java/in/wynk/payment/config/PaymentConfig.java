@@ -52,7 +52,7 @@ public class PaymentConfig implements WebMvcConfigurer {
 
     @Bean
     public Gson gson() {
-        return new GsonBuilder().disableHtmlEscaping().create();
+        return new GsonBuilder().disableHtmlEscaping().serializeNulls().create();
     }
 
     @Override

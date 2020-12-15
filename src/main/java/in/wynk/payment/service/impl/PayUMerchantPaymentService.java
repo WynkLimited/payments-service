@@ -138,7 +138,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
             String mode = payUTransactionDetails.getMode();
             Boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
-            if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transaction.getIdStr())) {
+            // TODO:: Remove it once migration is completed
+            String transactionId = StringUtils.isNotEmpty(payUTransactionDetails.getMigratedTransactionId()) ? payUTransactionDetails.getMigratedTransactionId() : paymentRenewalChargingRequest.getId();
+            if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transactionId)) {
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, merchantTransaction.getExternalTransactionId());
                 payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
@@ -597,6 +599,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             builder.request(payUChargingVerificationRequest);
             builder.response(payUChargingVerificationResponse);
             PayUTransactionDetails payUTransactionDetails = payUChargingVerificationResponse.getTransactionDetails().get(tid);
+            payUTransactionDetails.setMigratedTransactionId(tid);
             if (params.containsKey(MIGRATED) && Boolean.valueOf(params.get(MIGRATED))) {
                 payUChargingVerificationResponse.getTransactionDetails().remove(tid);
                 payUChargingVerificationResponse.getTransactionDetails().put(params.get(TXN_ID), payUTransactionDetails);

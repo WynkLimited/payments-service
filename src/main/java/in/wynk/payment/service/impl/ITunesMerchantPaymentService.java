@@ -186,7 +186,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             final List<LatestReceiptInfo> userLatestReceipts = getReceiptObjForUser(decodedReceipt, receiptType, transaction);
             if (CollectionUtils.isNotEmpty(userLatestReceipts)) {
                 final LatestReceiptInfo latestReceiptInfo = userLatestReceipts.get(0);
-                AnalyticService.update(LATEST_RECEIPT, latestReceiptInfo.toString());
+                AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
                 final long expireTimestamp = receiptType.getExpireDate(latestReceiptInfo);
                 if (expireTimestamp == 0 || expireTimestamp < System.currentTimeMillis()) {
                     code = ItunesStatusCodes.APPLE_21015;

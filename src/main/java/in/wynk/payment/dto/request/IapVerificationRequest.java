@@ -26,7 +26,11 @@ public abstract class IapVerificationRequest {
     @Analysed
     private String uid;
     @Analysed
+    private String os;
+    @Analysed
     private int planId;
+    @Analysed
+    private int buildNo;
     @Analysed
     private String deviceId;
     @Analysed

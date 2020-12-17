@@ -6,7 +6,6 @@ import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
@@ -32,7 +31,6 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.service.*;
-import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
@@ -100,7 +98,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     @Override
     public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
-        final SessionDTO sessionDTO = SessionContextHolder.<SessionDTO>getBody();
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
@@ -108,45 +105,45 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             transaction.putValueInPaymentMetaData(DECODED_RECEIPT, request.getReceipt());
             fetchAndUpdateFromReceipt(transaction);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
+                builder.url(new StringBuilder(SUCCESS_PAGE).append(request.getSid())
                         .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
+                        .append(request.getOs())
                         .append(QUESTION_MARK)
                         .append(SERVICE)
                         .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
+                        .append(request.getService())
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
+                        .append(request.getBuildNo())
                         .toString());
             } else {
-                builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+                builder.url(new StringBuilder(FAILURE_PAGE).append(request.getSid())
                         .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
+                        .append(request.getOs())
                         .append(QUESTION_MARK)
                         .append(SERVICE)
                         .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
+                        .append(request.getService())
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
+                        .append(request.getOs())
                         .toString());
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+            builder.url(new StringBuilder(FAILURE_PAGE).append(iapVerificationRequest.getSid())
                     .append(SLASH)
-                    .append(sessionDTO.<String>get(OS))
+                    .append(iapVerificationRequest.getOs())
                     .append(QUESTION_MARK)
                     .append(SERVICE)
                     .append(EQUAL)
-                    .append(sessionDTO.<String>get(SERVICE))
+                    .append(iapVerificationRequest.getService())
                     .append(AND)
                     .append(BUILD_NO)
                     .append(EQUAL)
-                    .append(sessionDTO.<Integer>get(BUILD_NO))
+                    .append(iapVerificationRequest.getBuildNo())
                     .toString());
             log.error(ITUNES_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();

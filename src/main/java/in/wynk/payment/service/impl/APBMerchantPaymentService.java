@@ -216,13 +216,13 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     @Override
     public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
-        ChargingStatusResponse status = ChargingStatusResponse.failure(chargingStatusRequest.getTransactionId());
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
+        ChargingStatusResponse status = ChargingStatusResponse.failure(chargingStatusRequest.getTransactionId(),transaction.getPlanId());
         if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {
             transactionManager.updateAndPublishAsync(transaction, this::fetchAPBTxnStatus);
             status = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-            status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(transaction.getPlanId()));
+            status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId());
         }
         return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
     }

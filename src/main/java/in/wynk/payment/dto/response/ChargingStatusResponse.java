@@ -20,7 +20,7 @@ public class ChargingStatusResponse {
     }
 
     public static ChargingStatusResponse failure(String tid, int planId){
-        return ChargingStatusResponse.builder().tid(tid).transactionStatus(TransactionStatus.FAILURE).build();
+        return ChargingStatusResponse.builder().tid(tid).planId(planId).transactionStatus(TransactionStatus.FAILURE).build();
     }
 
     public static ChargingStatusResponse inProgress(String tid){

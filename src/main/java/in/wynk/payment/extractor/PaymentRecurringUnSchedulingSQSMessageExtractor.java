@@ -7,6 +7,8 @@ import in.wynk.queue.extractor.AbstractSQSMessageExtractor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
+import static in.wynk.queue.constant.BeanConstant.ALL;
+
 public class PaymentRecurringUnSchedulingSQSMessageExtractor extends AbstractSQSMessageExtractor {
 
     @Value("${payment.pooling.queue.unschedule.sqs.messages.extractor.batchSize}")
@@ -26,6 +28,7 @@ public class PaymentRecurringUnSchedulingSQSMessageExtractor extends AbstractSQS
     @Override
     public ReceiveMessageRequest buildReceiveMessageRequest() {
         return new ReceiveMessageRequest()
+                .withMessageAttributeNames(ALL)
                 .withMaxNumberOfMessages(batchSize)
                 .withQueueUrl(getSqs().getQueueUrl(queueName).getQueueUrl())
                 .withWaitTimeSeconds(waitTimeInSeconds);

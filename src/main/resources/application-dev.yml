@@ -154,7 +154,7 @@ payment:
             delayTimeUnit: SECONDS
       unschedule:
         enabled: true
-        name: wcf-staging-payment
+        name: wcf-staging-payment-recurring
         sqs:
           messages:
             extractor:

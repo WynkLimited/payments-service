@@ -7,6 +7,8 @@ import in.wynk.client.core.constant.ClientLoggingMarker;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.utils.ChecksumUtils;
+import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
+import in.wynk.payment.common.messages.PaymentRecurringUnSchedulingMessage;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
@@ -15,6 +17,9 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
+import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
@@ -49,6 +54,35 @@ public class PaymentEventListener {
         this.clientDetailsCachingService = clientDetailsCachingService;
     }
 
+    @EventListener
+    @AnalyseTransaction(name = "paymentRenewalErrorMessage")
+    public void paymentRenewalErrorMessage(PaymentRenewalMessage paymentRenewalMessage) {
+        AnalyticService.update(paymentRenewalMessage);
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentRenewalChargingErrorMessage")
+    public void paymentRenewalChargingErrorMessage(PaymentRenewalChargingMessage paymentRenewalChargingMessage) {
+        AnalyticService.update(paymentRenewalChargingMessage);
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentRecurringSchedulingErrorMessage")
+    public void paymentRecurringSchedulingErrorMessage(PaymentRecurringSchedulingMessage paymentRecurringSchedulingMessage) {
+        AnalyticService.update(paymentRecurringSchedulingMessage);
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentRecurringUnSchedulingErrorMessage")
+    public void paymentRecurringUnSchedulingErrorMessage(PaymentRecurringUnSchedulingMessage paymentRecurringUnSchedulingMessage) {
+        AnalyticService.update(paymentRecurringUnSchedulingMessage);
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentReconciliationErrorMessage")
+    public void paymentReconciliationErrorMessage(PaymentReconciliationMessage paymentReconciliationMessage) {
+        AnalyticService.update(paymentReconciliationMessage);
+    }
 
     @EventListener
     @AnalyseTransaction(name = "recurringPaymentEvent")

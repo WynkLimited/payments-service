@@ -21,5 +21,5 @@ public interface ItunesConstant {
     String ALL_ITUNES_RECEIPT = "allItunesReceipt";
 
     List<ItunesStatusCodes> FAILURE_CODES = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005, ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008, ItunesStatusCodes.APPLE_21009, ItunesStatusCodes.APPLE_21010);
-
+    List<ItunesStatusCodes> ALTERNATE_URL_FAILURE_CODES = Arrays.asList(ItunesStatusCodes.APPLE_21007,ItunesStatusCodes.APPLE_21008);
 }

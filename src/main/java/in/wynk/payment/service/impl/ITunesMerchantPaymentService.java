@@ -268,7 +268,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 return receiptInfoList;
             } else {
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
-                    if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
+                    if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode) && cachingService.isTestingByPassNumber(transaction.getMsisdn())) {
                         statusAndAppResponse = getStatusAndAppStoreResponse(requestJson,itunesReceiptType,merchantTransactionBuilder,itunesApiAltUrl,receiptObj);
                         status = statusAndAppResponse.getLeft();
                         appStoreResponse = statusAndAppResponse.getRight();

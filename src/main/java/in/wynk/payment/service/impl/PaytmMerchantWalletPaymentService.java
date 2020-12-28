@@ -12,13 +12,11 @@ import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
-import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -53,7 +51,6 @@ import org.springframework.web.client.RestTemplate;
 import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
@@ -301,14 +298,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
             PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(tid);
             if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()))).status(HttpStatus.OK).build();
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId())).status(HttpStatus.OK).build();
             }
         } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()))).status(HttpStatus.OK).build();
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId())).status(HttpStatus.OK).build();
             }
         }
-        return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid)).status(HttpStatus.OK).build();
+        return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid, transaction.getPlanId())).status(HttpStatus.OK).build();
     }
 
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(String txnId) {

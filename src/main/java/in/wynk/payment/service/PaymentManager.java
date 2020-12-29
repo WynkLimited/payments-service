@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -137,7 +138,8 @@ public class PaymentManager {
         return verificationService.doVerify(request);
     }
 
-    public BaseResponse<?> doVerifyIap(IapVerificationRequest request) {
+    @ClientAware(clientId="#clientId")
+    public BaseResponse<?> doVerifyIap(String clientId,IapVerificationRequest request) {
         final PaymentCode paymentCode = request.getPaymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;

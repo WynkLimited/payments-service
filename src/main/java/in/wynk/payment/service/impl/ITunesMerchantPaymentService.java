@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.core.constant.ClientErrorType;
+import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -234,8 +237,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
-       // ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
-        String secret = "820ea8abe1374b369eaa564dcfa6391c";//clientDetails.getSecret();
+        ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+        String secret = clientDetails.getSecret();
         Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             ItunesStatusCodes statusCode;

@@ -4,9 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
-import in.wynk.client.context.ClientContext;
-import in.wynk.client.core.constant.ClientErrorType;
-import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -41,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -238,8 +234,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
-        ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
-        String secret = clientDetails.getSecret();
+       // ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+        String secret = "820ea8abe1374b369eaa564dcfa6391c";//clientDetails.getSecret();
         Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             ItunesStatusCodes statusCode;
@@ -253,10 +249,9 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             requestJson.put(RECEIPT_DATA, encodedValue);
             requestJson.put(PASSWORD, secret);
             merchantTransactionBuilder.request(gson.toJson(requestJson));
-            ItunesReceipt receiptObj = new ItunesReceipt();
-            Pair<Integer,ResponseEntity<String>> statusAndAppResponse = getStatusAndAppStoreResponse(requestJson,itunesReceiptType,merchantTransactionBuilder,itunesApiUrl,receiptObj);
-            int status = statusAndAppResponse.getLeft();
-            ResponseEntity<String> appStoreResponse = statusAndAppResponse.getRight();
+            ResponseEntity<String> appStoreResponse = getAppStoreResponse(requestJson,merchantTransactionBuilder,itunesApiUrl);
+            ItunesReceipt receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(),itunesReceiptType);
+            int status = Integer.parseInt(receiptObj.getStatus());
             ItunesStatusCodes responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
             if (status == 0) {
                 List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(transaction.getPlanId(), itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
@@ -269,9 +264,9 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             } else {
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
                     if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode) && cachingService.isTestingByPassNumber(transaction.getMsisdn())) {
-                        statusAndAppResponse = getStatusAndAppStoreResponse(requestJson,itunesReceiptType,merchantTransactionBuilder,itunesApiAltUrl,receiptObj);
-                        status = statusAndAppResponse.getLeft();
-                        appStoreResponse = statusAndAppResponse.getRight();
+                        appStoreResponse = getAppStoreResponse(requestJson,merchantTransactionBuilder,itunesApiAltUrl);
+                        receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(),itunesReceiptType);
+                        status = Integer.parseInt(receiptObj.getStatus());
                         responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
                         if (status == 0) {
                             List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(transaction.getPlanId(), itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
@@ -305,13 +300,17 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         }
     }
 
-    private Pair<Integer,ResponseEntity<String>> getStatusAndAppStoreResponse(JSONObject requestJson, ItunesReceiptType itunesReceiptType, Builder merchantTransactionBuilder, String url, ItunesReceipt receiptObj) throws JsonProcessingException, ParseException {
+    private ResponseEntity<String> getAppStoreResponse(JSONObject requestJson, Builder merchantTransactionBuilder, String url) {
         ResponseEntity<String> appStoreResponse;
         RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toJSONString(), HttpMethod.POST, URI.create(url));
         appStoreResponse = restTemplate.exchange(requestEntity, String.class);
         merchantTransactionBuilder.response(gson.toJson(appStoreResponse));
 
-        String appStoreResponseBody = appStoreResponse.getBody();
+        return appStoreResponse;
+    }
+
+    private ItunesReceipt fetchReceiptObjFromAppResponse(String appStoreResponseBody, ItunesReceiptType itunesReceiptType) throws JsonProcessingException, ParseException {
+        ItunesReceipt receiptObj = new ItunesReceipt();
         if (itunesReceiptType.equals(ItunesReceiptType.SEVEN)) {
             receiptObj = mapper.readValue(appStoreResponseBody, ItunesReceipt.class);
         } else {
@@ -327,8 +326,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             log.error("Receipt Object returned for response {} is not complete!", appStoreResponseBody);
             throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
         }
-
-        return Pair.of(Integer.parseInt(receiptObj.getStatus()),appStoreResponse);
+        return receiptObj;
     }
 
     private String getModifiedReceipt(String receipt) {

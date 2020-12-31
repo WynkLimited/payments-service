@@ -277,7 +277,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
                     if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
                         Set<String> testingByPassNumbersSet = testingByPassNumbersDao.findAll().stream().map(testingByPassNumbers -> Utils.getTenDigitMsisdn(testingByPassNumbers.getPhoneNo())).collect(Collectors.toSet());
-                        if (testingByPassNumbersSet.contains(transaction.getMsisdn())) {
+                        if (testingByPassNumbersSet.contains(Utils.getTenDigitMsisdn(transaction.getMsisdn()))) {
                             appStoreResponse = getAppStoreResponse(requestJson, merchantTransactionBuilder, itunesApiAltUrl);
                             receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(), itunesReceiptType);
                             status = Integer.parseInt(receiptObj.getStatus());

@@ -11,6 +11,7 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
@@ -21,6 +22,7 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -58,10 +60,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -91,14 +90,16 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
+    private final TestingByPassNumbersDao testingByPassNumbersDao;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager,TestingByPassNumbersDao testingByPassNumbersDao) {
         this.gson = gson;
         this.mapper = mapper;
         this.receiptDetailsDao = receiptDetailsDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;
+        this.testingByPassNumbersDao = testingByPassNumbersDao;
     }
 
     @Override
@@ -274,19 +275,22 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 return receiptInfoList;
             } else {
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
-                    if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode) && cachingService.isTestingByPassNumber(transaction.getMsisdn())) {
-                        appStoreResponse = getAppStoreResponse(requestJson,merchantTransactionBuilder,itunesApiAltUrl);
-                        receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(),itunesReceiptType);
-                        status = Integer.parseInt(receiptObj.getStatus());
-                        responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
-                        if (status == 0) {
-                            List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(transaction.getPlanId(), itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
-                            if (CollectionUtils.isNotEmpty(receiptInfoList)) {
-                                merchantTransactionBuilder.externalTransactionId(receiptInfoList.get(0).getOriginalTransactionId());
-                            } else {
-                                merchantTransactionBuilder.externalTransactionId("not found");
+                    if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
+                        Set<String> testingByPassNumbersSet = testingByPassNumbersDao.findAll().stream().map(testingByPassNumbers -> Utils.getTenDigitMsisdn(testingByPassNumbers.getPhoneNo())).collect(Collectors.toSet());
+                        if (testingByPassNumbersSet.contains(transaction.getMsisdn())) {
+                            appStoreResponse = getAppStoreResponse(requestJson, merchantTransactionBuilder, itunesApiAltUrl);
+                            receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(), itunesReceiptType);
+                            status = Integer.parseInt(receiptObj.getStatus());
+                            responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
+                            if (status == 0) {
+                                List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(transaction.getPlanId(), itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
+                                if (CollectionUtils.isNotEmpty(receiptInfoList)) {
+                                    merchantTransactionBuilder.externalTransactionId(receiptInfoList.get(0).getOriginalTransactionId());
+                                } else {
+                                    merchantTransactionBuilder.externalTransactionId("not found");
+                                }
+                                return receiptInfoList;
                             }
-                            return receiptInfoList;
                         }
                     }
                     statusCode = responseITunesCode;

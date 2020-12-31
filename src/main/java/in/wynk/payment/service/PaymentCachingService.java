@@ -2,12 +2,9 @@ package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.TestingByPassNumbers;
 import in.wynk.payment.core.dao.repository.PaymentMethodDao;
-import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Getter;
@@ -19,7 +16,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -40,17 +40,15 @@ public class PaymentCachingService {
     private final Lock writeLock = lock.writeLock();
     private final PaymentMethodDao paymentMethodDao;
     private final ISubscriptionServiceManager subscriptionServiceManager;
-    private final TestingByPassNumbersDao testingByPassNumbersDao;
 
     private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
-    private Set<String> testingByPassNumbers = new HashSet<>();
 
-    public PaymentCachingService(PaymentMethodDao paymentMethodDao, ISubscriptionServiceManager subscriptionServiceManager,TestingByPassNumbersDao testingByPassNumbersDao) {
+
+    public PaymentCachingService(PaymentMethodDao paymentMethodDao, ISubscriptionServiceManager subscriptionServiceManager) {
         this.paymentMethodDao = paymentMethodDao;
         this.subscriptionServiceManager = subscriptionServiceManager;
-        this.testingByPassNumbersDao = testingByPassNumbersDao;
     }
 
     @Scheduled(fixedDelay = 30 * 60 * 1000L,  initialDelay = 30 * 60 * 1000L )
@@ -61,7 +59,6 @@ public class PaymentCachingService {
         AnalyticService.update("cacheLoadInit", true);
         loadPayments();
         loadPlans();
-        loadTestingByPassNumbers();
         AnalyticService.update("cacheLoadCompleted", true);
     }
 
@@ -83,37 +80,6 @@ public class PaymentCachingService {
             } finally {
                 writeLock.unlock();
             }
-        }
-    }
-
-    private void loadTestingByPassNumbers() {
-        if(writeLock.tryLock()) {
-            try {
-                logger.info("I am loading all Testing Config in my cache!!");
-                List<TestingByPassNumbers> numbers = testingByPassNumbersDao.findAll();
-                testingByPassNumbers.clear();
-
-                testingByPassNumbers = new HashSet<>();
-                for(TestingByPassNumbers no : numbers) {
-                    testingByPassNumbers.add(Utils.getTenDigitMsisdn(no.getPhoneNo()));
-                }
-            }
-            catch (Throwable th) {
-                logger.error(APPLICATION_ERROR, "Error while loading Testing config in the cache, th: {}", th.getMessage(), th);
-            }
-            finally {
-                writeLock.unlock();
-            }
-        }
-    }
-
-    public boolean isTestingByPassNumber(String msisdn) {
-        readLock.lock();
-        try {
-            return testingByPassNumbers.contains(msisdn);
-        }
-        finally {
-            readLock.unlock();
         }
     }
 

@@ -21,6 +21,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
+import in.wynk.payment.core.dao.entity.TestingByPassNumbers;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
@@ -243,10 +244,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         Optional<Client> optionalClient = ClientContext.getClient();
         if(optionalClient.isPresent() && optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).isPresent()) {
             secret = optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).get();
-        } else if(!optionalClient.isPresent()){
-           throw new WynkRuntimeException(ClientErrorType.CLIENT001);
         } else {
-            throw new WynkRuntimeException(ClientErrorType.CLIENT002);
+            throw new WynkRuntimeException(ClientErrorType.CLIENT003);
         }
         Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
@@ -276,8 +275,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             } else {
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
                     if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
-                        Set<String> testingByPassNumbersSet = testingByPassNumbersDao.findAll().stream().map(testingByPassNumbers -> Utils.getTenDigitMsisdn(testingByPassNumbers.getPhoneNo())).collect(Collectors.toSet());
-                        if (testingByPassNumbersSet.contains(Utils.getTenDigitMsisdn(transaction.getMsisdn()))) {
+                        Optional<TestingByPassNumbers> optionalTestingByPassNumbers = testingByPassNumbersDao.findById(transaction.getMsisdn());
+                        if (optionalTestingByPassNumbers.isPresent()) {
                             appStoreResponse = getAppStoreResponse(requestJson, merchantTransactionBuilder, itunesApiAltUrl);
                             receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(), itunesReceiptType);
                             status = Integer.parseInt(receiptObj.getStatus());

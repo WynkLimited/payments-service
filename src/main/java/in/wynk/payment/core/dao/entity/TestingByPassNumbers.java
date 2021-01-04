@@ -5,9 +5,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
-@Document(collection = "TestingByPassNumbers")
+@Document(collection = "testing_bypass_numbers")
 public class TestingByPassNumbers {
     @Id
-    private String id;
-    private String phoneNo;
+    private String msisdn;
 }

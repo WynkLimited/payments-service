@@ -9,6 +9,7 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.data.enums.State;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
@@ -100,7 +101,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     @Override
     public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
-        final SessionDTO sessionDTO = SessionContextHolder.<SessionDTO>getBody();
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
@@ -194,15 +195,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 } else {
                     final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                     final String itunesTrxnId = latestReceiptInfo.getTransactionId();
-                    final ReceiptDetails mapping = receiptDetailsDao.findByPlanIdAndUserId(transaction.getPlanId(), originalITunesTrxnId);
-
-                    if (mapping != null && !mapping.getUid().equals(transaction.getUid())) {
+                    final ReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndUserId(transaction.getPlanId(), originalITunesTrxnId);
+                    if (receiptDetails != null & receiptDetails.getState() == State.ACTIVE) {
+                        log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                         code = ItunesStatusCodes.APPLE_21016;
                         transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
-                    }
-                    log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {} = {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId(), mapping);
-                    if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
-                        if (mapping == null) {
+                    } else {
+                        if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                             final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
                                     .uid(transaction.getUid())
                                     .msisdn(transaction.getMsisdn())
@@ -212,11 +211,11 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                                     .id(originalITunesTrxnId)
                                     .build();
                             receiptDetailsDao.save(itunesIdUidMapping);
+                            transaction.setStatus(TransactionStatus.SUCCESS.name());
+                        } else {
+                            code = ItunesStatusCodes.APPLE_21017;
+                            transaction.setStatus(TransactionStatus.FAILURE.name());
                         }
-                        transaction.setStatus(TransactionStatus.SUCCESS.name());
-                    } else {
-                        code = ItunesStatusCodes.APPLE_21017;
-                        transaction.setStatus(TransactionStatus.FAILURE.name());
                     }
                 }
             } else {
@@ -227,6 +226,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             if (transaction.getStatus() != TransactionStatus.SUCCESS) {
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(code.getErrorCode())).description(code.getErrorTitle()).build());
             }
+
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
             log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), decodedReceipt, e);

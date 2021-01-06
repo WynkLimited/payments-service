@@ -7,26 +7,31 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.concurrent.ExecutorService;
+
 @RestController
-@RequestMapping("wynk/v1/scheduler")
+@RequestMapping("wynk/s2s/v1/scheduler")
 public class SchedulerController {
 
     private final PaymentRenewalsScheduler paymentRenewalsScheduler;
+    private final ExecutorService executorService;
 
-    public SchedulerController(PaymentRenewalsScheduler paymentRenewalsScheduler) {
+    public SchedulerController(PaymentRenewalsScheduler paymentRenewalsScheduler, ExecutorService executorService) {
         this.paymentRenewalsScheduler = paymentRenewalsScheduler;
+        this.executorService = executorService;
     }
 
-    @GetMapping("/start")
+    @GetMapping("/start/renewals")
     @AnalyseTransaction(name = "paymentRenew")
-    public void startPaymentRenew() {
-        paymentRenewalsScheduler.paymentRenew();
+    public EmptyResponse startPaymentRenew() {
+        executorService.submit(()-> paymentRenewalsScheduler.paymentRenew());
+        return EmptyResponse.response();
     }
 
     @GetMapping("/start/seRenewal")
-    @AnalyseTransaction(name = "paymentRenew")
+    @AnalyseTransaction(name = "sePaymentRenew")
     public EmptyResponse startSEPaymentRenew() {
-        paymentRenewalsScheduler.startSeRenewals();
+        executorService.submit(()-> paymentRenewalsScheduler.startSeRenewals());
         return EmptyResponse.response();
     }
 

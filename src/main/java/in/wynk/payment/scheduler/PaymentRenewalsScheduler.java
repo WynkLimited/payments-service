@@ -8,12 +8,10 @@ import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,17 +25,19 @@ public class PaymentRenewalsScheduler {
     private ISqsManagerService sqsManagerService;
     @Autowired
     private SeRenewalService seRenewalService;
-    @Autowired
-    private ExecutorService executorService;
 
     //@Scheduled(cron = "0 0 * * * ?")
     @Transactional
+    @AnalyseTransaction(name = "paymentRenewals")
     public void paymentRenew() {
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("paymentRenewalsInit", true);
         List<PaymentRenewal> paymentRenewals =
                 recurringPaymentManager.getCurrentDueRecurringPayments()
                         .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == PaymentEvent.RENEW || paymentRenewal.getTransactionEvent() == PaymentEvent.SUBSCRIBE))
                         .collect(Collectors.toList());
         sendToRenewalQueue(paymentRenewals);
+        AnalyticService.update("paymentRenewalsCompleted", true);
     }
 
     private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals) {
@@ -56,8 +56,12 @@ public class PaymentRenewalsScheduler {
     }
 
     //    @Scheduled(cron = "0 0 2 * * ?")
+    @AnalyseTransaction(name = "sePaymentRenewals")
     public void startSeRenewals() {
-        executorService.submit(() -> seRenewalService.startSeRenewal());
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("sePaymentRenewalsInit", true);
+        seRenewalService.startSeRenewal();
+        AnalyticService.update("sePaymentRenewalsCompleted", true);
     }
 
 }

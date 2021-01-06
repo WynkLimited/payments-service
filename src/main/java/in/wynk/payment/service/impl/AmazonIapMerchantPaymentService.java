@@ -6,6 +6,7 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.data.enums.State;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -101,7 +102,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         try {
             AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
             builder.request(request).externalTransactionId(request.getReceipt().getReceiptId()).response(amazonIapReceipt);
-            if (!mapping.isPresent()) {
+            if (!mapping.isPresent() || (mapping.isPresent() && mapping.get().getState() != State.ACTIVE)) {
                 AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                         .receiptId(request.getReceipt().getReceiptId())
                         .id(request.getUserData().getUserId())

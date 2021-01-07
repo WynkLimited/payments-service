@@ -462,7 +462,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, Class<T> target) {
-        String response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
+        String response;
+        try {
+        response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
+        } catch (HttpStatusCodeException ex) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY015, ex);
+        } catch (Exception ex) {
+            throw ex;
+        }
         return gson.fromJson(response, target);
     }
 
@@ -607,8 +614,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                         payUCardInfo.setValid(true);
                     return BaseResponse. < PayUCardInfo > builder().body(payUCardInfo).status(HttpStatus.OK).build();
             }
-        } catch (HttpStatusCodeException ex) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY015, ex);
+        } catch (Exception ex) {
+            throw ex;
         }
         return BaseResponse.status(false);
     }

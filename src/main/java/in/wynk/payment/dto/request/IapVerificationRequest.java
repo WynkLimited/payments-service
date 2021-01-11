@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"),
@@ -24,17 +23,21 @@ import lombok.experimental.SuperBuilder;
 public abstract class IapVerificationRequest {
 
     @Analysed
+    private String os;
+    @Analysed
     private String uid;
     @Analysed
-    private int planId;
+    private String sid;
     @Analysed
-    private String deviceId;
+    private int planId;
     @Analysed
     private String msisdn;
     @Analysed
     private String service;
     @Analysed
-    private String sid;
+    private String deviceId;
+    @Analysed
+    private String buildNumber;
 
     private PaymentCode paymentCode;
 

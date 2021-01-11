@@ -27,14 +27,16 @@ public class SchedulerController {
     @GetMapping("/start/renewals")
     @AnalyseTransaction(name = "paymentRenew")
     public EmptyResponse startPaymentRenew() {
-        executorService.submit(()-> paymentRenewalsScheduler.paymentRenew(MDC.get(REQUEST_ID)));
+        String requestId = MDC.get(REQUEST_ID);
+        executorService.submit(()-> paymentRenewalsScheduler.paymentRenew(requestId));
         return EmptyResponse.response();
     }
 
     @GetMapping("/start/seRenewal")
     @AnalyseTransaction(name = "sePaymentRenew")
     public EmptyResponse startSEPaymentRenew() {
-        executorService.submit(()-> paymentRenewalsScheduler.startSeRenewals(MDC.get(REQUEST_ID)));
+        String requestId = MDC.get(REQUEST_ID);
+        executorService.submit(()-> paymentRenewalsScheduler.startSeRenewals(requestId));
         return EmptyResponse.response();
     }
 

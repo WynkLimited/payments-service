@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
+
 @Service
 public class PaymentRenewalsScheduler {
 
@@ -29,7 +31,8 @@ public class PaymentRenewalsScheduler {
     //@Scheduled(cron = "0 0 * * * ?")
     @Transactional
     @AnalyseTransaction(name = "paymentRenewals")
-    public void paymentRenew() {
+    public void paymentRenew(String requestId) {
+        AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("paymentRenewalsInit", true);
         List<PaymentRenewal> paymentRenewals =
@@ -57,7 +60,8 @@ public class PaymentRenewalsScheduler {
 
     //    @Scheduled(cron = "0 0 2 * * ?")
     @AnalyseTransaction(name = "sePaymentRenewals")
-    public void startSeRenewals() {
+    public void startSeRenewals(String requestId) {
+        AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("sePaymentRenewalsInit", true);
         seRenewalService.startSeRenewal();

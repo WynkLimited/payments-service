@@ -230,6 +230,10 @@
                             <groupId>in.wynk</groupId>
                             <artifactId>lib-session</artifactId>
                         </aspectLibrary>
+                        <aspectLibrary>
+                            <groupId>in.wynk</groupId>
+                            <artifactId>client-api</artifactId>
+                        </aspectLibrary>
                     </aspectLibraries>
                 </configuration>
                 <dependencies>

@@ -105,18 +105,19 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     @Override
     public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
-        String sid, os, service, bn;
+        String sid, os, service;
+        int buildNo;
         if (StringUtils.isEmpty(iapVerificationRequest.getOs()) ) {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
             sid = SessionContextHolder.getId();
             os = sessionDTO.get(OS);
             service = sessionDTO.get(SERVICE);
-            bn = sessionDTO.get(BUILD_NO);
+            buildNo = sessionDTO.get(BUILD_NO);
         } else {
             sid = iapVerificationRequest.getSid();
             os = Os.getOsFromValue(iapVerificationRequest.getOs()).getValue();
             service = iapVerificationRequest.getService();
-            bn = iapVerificationRequest.getBuildNumber();
+            buildNo = iapVerificationRequest.getBuildNo();
         }
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
@@ -136,7 +137,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(bn)
+                        .append(buildNo)
                         .toString());
             } else {
                 builder.url(new StringBuilder(FAILURE_PAGE)
@@ -150,7 +151,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(bn)
+                        .append(buildNo)
                         .toString());
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
@@ -166,7 +167,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                     .append(AND)
                     .append(BUILD_NO)
                     .append(EQUAL)
-                    .append(bn)
+                    .append(buildNo)
                     .toString());
             log.error(ITUNES_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();

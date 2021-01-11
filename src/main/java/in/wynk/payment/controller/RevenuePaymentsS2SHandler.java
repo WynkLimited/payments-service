@@ -36,8 +36,7 @@ public class RevenuePaymentsS2SHandler {
         return baseResponse.getResponse();
     }
 
-    @ApiOperation("Accepts the receipt of various IAP partners." +
-            "\nAn alernate API for old itunes/receipt and /amazon-iap/verification API")
+    @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alernate API for old itunes/receipt and /amazon-iap/verification API")
     @PostMapping("/v1/verify/receipt")
     @ManageSession(sessionId = "#request.sid")
     @AnalyseTransaction(name = "receiptVerification")

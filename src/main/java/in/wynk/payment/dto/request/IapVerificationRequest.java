@@ -31,13 +31,13 @@ public abstract class IapVerificationRequest {
     @Analysed
     private int planId;
     @Analysed
+    private int buildNo;
+    @Analysed
     private String msisdn;
     @Analysed
     private String service;
     @Analysed
     private String deviceId;
-    @Analysed
-    private String buildNumber;
 
     private PaymentCode paymentCode;
 

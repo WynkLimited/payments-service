@@ -98,14 +98,14 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         PaymentErrorEvent.Builder errorBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
         AmazonIapVerificationRequest request = transaction.getValueFromPaymentMetaData("amazonIapVerificationRequest");
-        Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(request.getUserData().getUserId());
+        Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(request.getReceipt().getReceiptId());
         try {
             AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
             builder.request(request).externalTransactionId(request.getReceipt().getReceiptId()).response(amazonIapReceipt);
-            if (!mapping.isPresent() || (mapping.isPresent() && mapping.get().getState() != State.ACTIVE)) {
+            if (!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) {
                 AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                         .receiptId(request.getReceipt().getReceiptId())
-                        .id(request.getUserData().getUserId())
+                        .id(request.getReceipt().getReceiptId())
                         .uid(transaction.getUid())
                         .msisdn(transaction.getMsisdn())
                         .planId(transaction.getPlanId())

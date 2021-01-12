@@ -71,7 +71,7 @@ public class PayUPaymentRenewTest {
     public void paymentRenewalsSchedulerTest() {
         // This test case is run in debugger mode and seen that whether only 2 paymentRenewal messages are pushed into queue or not?
         // And this test case passes successfully
-        paymentRenewalsScheduler.paymentRenew();
+        paymentRenewalsScheduler.paymentRenew("requestId");
     }
 
     @Test

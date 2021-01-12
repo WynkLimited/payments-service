@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -462,7 +463,16 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, Class<T> target) {
-        String response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
+        String response;
+        try {
+        response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
+        } catch (HttpStatusCodeException ex) {
+            log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
+            throw new WynkRuntimeException(PaymentErrorType.PAY015, ex);
+        } catch (Exception ex) {
+            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
+            throw ex;
+        }
         return gson.fromJson(response, target);
     }
 
@@ -592,19 +602,23 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<?> doVerify(VerificationRequest verificationRequest) {
         VerificationType verificationType = verificationRequest.getVerificationType();
-        switch (verificationType) {
-            case VPA:
-                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
-                PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
-                if (verificationResponse.getIsVPAValid() == 1)
-                    verificationResponse.setValid(true);
-                return BaseResponse.<PayuVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
-            case BIN:
-                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
-                PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
-                if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
-                    payUCardInfo.setValid(true);
-                return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
+        try {
+            switch (verificationType) {
+                case VPA:
+                    MultiValueMap < String, String > verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
+                    PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
+                    if (verificationResponse.getIsVPAValid() == 1)
+                        verificationResponse.setValid(true);
+                    return BaseResponse. < PayuVpaVerificationResponse > builder().body(verificationResponse).status(HttpStatus.OK).build();
+                case BIN:
+                    MultiValueMap < String, String > verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
+                    PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
+                    if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
+                        payUCardInfo.setValid(true);
+                    return BaseResponse. < PayUCardInfo > builder().body(payUCardInfo).status(HttpStatus.OK).build();
+            }
+        } catch (Exception ex) {
+            throw ex;
         }
         return BaseResponse.status(false);
     }

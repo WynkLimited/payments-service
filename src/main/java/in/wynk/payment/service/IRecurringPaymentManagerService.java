@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 
 import java.util.Calendar;
@@ -11,6 +12,6 @@ public interface IRecurringPaymentManagerService {
 
     Stream<PaymentRenewal> getCurrentDueRecurringPayments();
 
-    void unScheduleRecurringPayment(String transactionId);
+    void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validTillDate);
 
 }

@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -466,8 +467,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         try {
         response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
         } catch (HttpStatusCodeException ex) {
+            log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
             throw new WynkRuntimeException(PaymentErrorType.PAY015, ex);
         } catch (Exception ex) {
+            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw ex;
         }
         return gson.fromJson(response, target);

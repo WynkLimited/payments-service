@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.enums.PaymentEvent.*;
+import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 
 @Service
 public class PaymentRenewalsScheduler {
@@ -25,16 +25,19 @@ public class PaymentRenewalsScheduler {
     private ISqsManagerService sqsManagerService;
     @Autowired
     private SeRenewalService seRenewalService;
-    @Autowired
-    private ExecutorService executorService;
 
     @Transactional
-    public void paymentRenew() {
+    @AnalyseTransaction(name = "paymentRenewals")
+    public void paymentRenew(String requestId) {
+        AnalyticService.update(REQUEST_ID, requestId);
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("paymentRenewalsInit", true);
         List<PaymentRenewal> paymentRenewals =
                 recurringPaymentManager.getCurrentDueRecurringPayments()
                         .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                         .collect(Collectors.toList());
         sendToRenewalQueue(paymentRenewals);
+        AnalyticService.update("paymentRenewalsCompleted", true);
     }
 
     private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals) {
@@ -52,8 +55,13 @@ public class PaymentRenewalsScheduler {
         sqsManagerService.publishSQSMessage(message);
     }
 
-    public void startSeRenewals() {
-        executorService.submit(() -> seRenewalService.startSeRenewal());
+    @AnalyseTransaction(name = "sePaymentRenewals")
+    public void startSeRenewals(String requestId) {
+        AnalyticService.update(REQUEST_ID, requestId);
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("sePaymentRenewalsInit", true);
+        seRenewalService.startSeRenewal();
+        AnalyticService.update("sePaymentRenewalsCompleted", true);
     }
 
 }

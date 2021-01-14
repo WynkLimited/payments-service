@@ -42,7 +42,7 @@ public class RevenuePaymentsS2SHandler {
     @AnalyseTransaction(name = "receiptVerification")
     public ResponseEntity<?> verifyIap(@RequestBody IapVerificationRequest request) {
         if (StringUtils.isNotBlank(request.getOs()))
-            throw new WynkRuntimeException(PaymentErrorType.PAY555);
+            throw new WynkRuntimeException(PaymentErrorType.PAY556);
         return doVerifyIap(request);
     }
 
@@ -52,7 +52,7 @@ public class RevenuePaymentsS2SHandler {
     @AnalyseTransaction(name = "receiptVerification2")
     public ResponseEntity<?> verifyIap2(@RequestBody IapVerificationRequest request) {
         if (StringUtils.isBlank(request.getOs()))
-            throw new WynkRuntimeException(PaymentErrorType.PAY556);
+            throw new WynkRuntimeException(PaymentErrorType.PAY555);
         return doVerifyIap(request);
     }
 

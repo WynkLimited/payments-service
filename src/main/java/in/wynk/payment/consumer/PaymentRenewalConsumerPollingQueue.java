@@ -2,11 +2,12 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -21,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRenewalMessage> {
 
-
     @Value("${payment.pooling.queue.renewal.enabled}")
     private boolean renewalPollingEnabled;
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delay}")
@@ -29,10 +29,10 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delayTimeUnit}")
     private TimeUnit renewalPoolingDelayTimeUnit;
 
-
+    private final ObjectMapper objectMapper;
+    private final ISqsManagerService sqsManagerService;
     private final ThreadPoolExecutor messageHandlerThreadPool;
     private final ScheduledThreadPoolExecutor pollingThreadPool;
-    private final ISqsManagerService sqsManagerService;
     private final ITransactionManagerService transactionManager;
 
     public PaymentRenewalConsumerPollingQueue(String queueName,
@@ -40,8 +40,11 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                                               ObjectMapper objectMapper,
                                               ISQSMessageExtractor messagesExtractor,
                                               ThreadPoolExecutor messageHandlerThreadPool,
-                                              ScheduledThreadPoolExecutor pollingThreadPool, ISqsManagerService sqsManagerService, ITransactionManagerService transactionManager) {
+                                              ScheduledThreadPoolExecutor pollingThreadPool,
+                                              ISqsManagerService sqsManagerService,
+                                              ITransactionManagerService transactionManager) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
+        this.objectMapper = objectMapper;
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.sqsManagerService = sqsManagerService;
@@ -70,21 +73,19 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         }
     }
 
-
     @Override
+    @AnalyseTransaction(name = "paymentRenewalMessage")
     public void consume(PaymentRenewalMessage message) {
+        AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
-
         Transaction transaction = transactionManager.get(message.getTransactionId());
         sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
+                .uid(transaction.getUid())
+                .id(transaction.getIdStr())
+                .planId(transaction.getPlanId())
+                .msisdn(transaction.getMsisdn())
                 .paymentCode(transaction.getPaymentChannel())
-                .paymentRenewalRequest(PaymentRenewalRequest.builder()
-                        .planId(transaction.getPlanId())
-                        .uid(transaction.getUid())
-                        .transactionId(transaction.getId().toString())
-                        .build())
                 .build());
-
     }
 
     @Override

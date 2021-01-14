@@ -1,10 +1,8 @@
 package in.wynk.payment.dto.response.payu;
 
+import com.google.gson.annotations.SerializedName;
 import in.wynk.payment.dto.payu.PayUTransactionDetails;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Map;
 
@@ -12,7 +10,13 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PayURenewalResponse {
-  private Map<String, PayUTransactionDetails> details;
-  @Setter
-  private boolean timeOutFlag;
+
+  private long status;
+
+  @SerializedName("message")
+  private String message;
+
+  @SerializedName("details")
+  private Map<String, PayUTransactionDetails> transactionDetails;
+
 }

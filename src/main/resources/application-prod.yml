@@ -36,6 +36,7 @@ session:
     name: session-store:prod
     mode: cluster
     usePooling: true
+    readTimeout: 1000
     cluster:
       nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
@@ -93,6 +94,9 @@ spring:
 
 ####### payment props #######
 payment:
+  se:
+    s3:
+      bucket: wcf-logs
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:
@@ -115,7 +119,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       renewal:
-        enabled: false
+        enabled: true
         name: wcf-production-revenue-renewal
         sqs:
           messages:
@@ -128,7 +132,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: false
+        enabled: true
         name: wcf-production-revenue-payment-charging.fifo
         sqs:
           messages:
@@ -140,8 +144,21 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      recurrence:
-        enabled: false
+      schedule:
+        enabled: true
+        name: wcf-production-revenue-subscription-payment
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      unschedule:
+        enabled: true
         name: wcf-production-revenue-recurring
         sqs:
           messages:
@@ -172,9 +189,10 @@ payment:
           failureUrl: https://payments.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
-      secret: 820ea8abe1374b369eaa564dcfa6391c
       api:
         url: https://buy.itunes.apple.com/verifyReceipt
+        alt:
+          url: https://sandbox.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
     amazonIap:
       secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==

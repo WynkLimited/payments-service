@@ -1,11 +1,7 @@
-package in.wynk.payment;
+package in.wynk.payment.dto;
 
 import in.wynk.payment.core.dao.entity.Transaction;
 
-/**
- * @author Abhishek
- * @created 13/08/20
- */
 public class TransactionContext {
     private static final ThreadLocal<Transaction> transactionThreadLocal = new ThreadLocal<>();
 

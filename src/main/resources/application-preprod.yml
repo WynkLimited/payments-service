@@ -37,6 +37,7 @@ session:
     mode: cluster
     useSsl: false
     usePooling: true
+    readTimeout: 1000
     password: ##
     enableJmx: true
     jmxPrefix: session-store:preprod
@@ -90,6 +91,9 @@ spring:
 
 ####### payment props #######
 payment:
+  se:
+    s3:
+      bucket: wcf-logs
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:
@@ -100,7 +104,7 @@ payment:
     queue:
       reconciliation:
         enabled: true
-        name: wcf-staging-payment-reconciliation
+        name: wcf-preprod-payment-reconciliation
         sqs:
           messages:
             extractor:
@@ -112,8 +116,8 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       renewal:
-        enabled: false
-        name: wcf-staging-payment-renewal
+        enabled: true
+        name: wcf-preprod-payment-renewal
         sqs:
           messages:
             extractor:
@@ -125,21 +129,8 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: false
-        name: wcf-staging-payment-charging.fifo
-        sqs:
-          messages:
-            extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
-          producer:
-            delayInSecond: 180
-          consumer:
-            delay: 20
-            delayTimeUnit: SECONDS
-      recurrence:
         enabled: true
-        name: wcf-staging-payment-recurring
+        name: wcf-preprod-payment-charging.fifo
         sqs:
           messages:
             extractor:
@@ -150,6 +141,33 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      schedule:
+        enabled: true
+        name: wcf-preprod-subscription-payment
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      unschedule:
+        enabled: true
+        name: wcf-preprod-payment-recurring
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+
   ###### webview status props #######
   status:
     web:
@@ -169,14 +187,15 @@ payment:
           failureUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
-      secret: 820ea8abe1374b369eaa564dcfa6391c
       api:
-        url: https://buy.itunes.apple.com/verifyReceipt
+        url: https://sandbox.itunes.apple.com/verifyReceipt
+        alt:
+          url: https://buy.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
     amazonIap:
       secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
       status:
-        baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
+        baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
       id: WYNK
@@ -192,7 +211,7 @@ subscription:
     queue:
       provision:
         enabled: true
-        name: wcf-preprod-revenue-subscription
+        name: wcf-preprod-subscription
         sqs:
           producer:
             delayInSecond: 1

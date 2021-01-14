@@ -8,12 +8,14 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -30,6 +32,7 @@ import java.util.Objects;
 import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
 
 @Service
+@Slf4j
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
 
     @Value("${service.subscription.api.endpoint.allPlans}")
@@ -104,13 +107,15 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
-                if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED) {
+                //TODO: remove deferred state check post IAP fixes.
+                if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED && provisioningResponse.getState() != ProvisionState.DEFERRED) {
                     throw new WynkRuntimeException(PaymentErrorType.PAY013);
                 }
             }
         } catch (HttpStatusCodeException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
             throw new WynkRuntimeException(e);
         }
     }

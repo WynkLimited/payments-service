@@ -152,6 +152,51 @@
     <logger name="paymentReconciledEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="paymentRenewalMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRenewalChargingMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="seRenewal" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRenew" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="renewalSubscriptionMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="scheduleRenewalMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRenewalErrorMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRenewalChargingErrorMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRecurringSchedulingErrorMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRecurringUnSchedulingErrorMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentReconciliationErrorMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRenew" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="sePaymentRenew" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="paymentRenewals" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="sePaymentRenewals" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
 
     <springProfile name="local">
         <root level="INFO">
@@ -159,6 +204,11 @@
             <appender-ref ref="ASYNC_FILE"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
+        <logger name="in.wynk" additivity="false" level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERRORLOG" />
+        </logger>
     </springProfile>
 
     <springProfile name="dev,preprod">

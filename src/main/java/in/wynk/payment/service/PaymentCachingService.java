@@ -9,6 +9,7 @@ import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +43,8 @@ public class PaymentCachingService {
 
     private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
+    private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
+
 
     public PaymentCachingService(PaymentMethodDao paymentMethodDao, ISubscriptionServiceManager subscriptionServiceManager) {
         this.paymentMethodDao = paymentMethodDao;
@@ -86,7 +90,16 @@ public class PaymentCachingService {
                 Map<Integer, PlanDTO> planDTOMap = planList.stream().collect(Collectors.toMap(PlanDTO::getId, Function.identity()));
                 plans.clear();
                 plans.putAll(planDTOMap);
-
+                Map<String, PlanDTO> skuToPlanMap = new HashMap<>();
+                for(PlanDTO planDTO: planList){
+                    if(MapUtils.isNotEmpty(planDTO.getSku())){
+                        for(String sku: planDTO.getSku().values()){
+                            skuToPlanMap.putIfAbsent(sku, planDTO);
+                        }
+                    }
+                }
+                skuToPlan.clear();
+                skuToPlan.putAll(skuToPlanMap);
             } catch (Throwable th) {
                 logger.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
                 throw th;
@@ -104,6 +117,10 @@ public class PaymentCachingService {
 
     public PlanDTO getPlan(int planId) {
         return plans.get(planId);
+    }
+
+    public PlanDTO getPlanFromSku(String sku){
+        return skuToPlan.get(sku);
     }
 
     public Long validTillDate(int planId) {

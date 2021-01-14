@@ -92,7 +92,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 .itemId(transactionInitRequest.getItemId())
                 .msisdn(transactionInitRequest.getMsisdn())
                 .paymentChannel(transactionInitRequest.getPaymentCode().name())
-                .status(TransactionStatus.INPROGRESS.name())
+                .status(transactionInitRequest.getStatus())
                 .type(transactionInitRequest.getEvent().name())
                 .coupon(transactionInitRequest.getCouponId())
                 .discount(transactionInitRequest.getDiscount())
@@ -132,7 +132,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
                 PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                    if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
+                    if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
                         recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
@@ -150,6 +150,23 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
                     }
 
+                } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED) {
+                    if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
+                        Calendar nextRecurringDateTime =  transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE);
+                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                    }
+                    if (isSync) {
+                        subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
+                    } else {
+                        subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
+                    }
+                } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
+                        && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)
+                        && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey(PaymentConstants.RENEWAL)) {
+                    int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
+                    Calendar nextRecurringDateTime = Calendar.getInstance();
+                    nextRecurringDateTime.add(Calendar.HOUR, retryInterval);
+                    recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
                 }
             }
         } finally {

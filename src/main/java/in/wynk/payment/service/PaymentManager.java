@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -12,14 +13,15 @@ import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.TransactionContext;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.queue.service.ISqsManagerService;
@@ -28,30 +30,39 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
+import java.util.Calendar;
+import java.util.Map;
 
-import static in.wynk.common.constant.BaseConstants.CLIENT;
-import static in.wynk.common.constant.BaseConstants.SERVICE;
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 
 @Slf4j
 @Service
 public class PaymentManager {
 
+    @Value("${spring.application.name}")
+    private String applicationAlias;
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final ISqsManagerService sqsManagerService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
+    private final IMerchantTransactionService merchantTransactionService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.couponManager = couponManager;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
+        this.merchantTransactionService = merchantTransactionService;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
@@ -127,8 +138,9 @@ public class PaymentManager {
         return verificationService.doVerify(request);
     }
 
-    public BaseResponse<?> doVerifyIap(IapVerificationRequest request) {
-        final PaymentCode paymentCode = request.paymentCode();
+    @ClientAware(clientId="#clientId")
+    public BaseResponse<?> doVerifyIap(String clientId,IapVerificationRequest request) {
+        final PaymentCode paymentCode = request.getPaymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
         final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
@@ -144,9 +156,54 @@ public class PaymentManager {
         return response;
     }
 
-    public void doRenewal(PaymentRenewalChargingMessage message) {
-        IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(message.getPaymentCode().getCode(), IMerchantPaymentRenewalService.class);
-        merchantPaymentRenewalService.doRenewal(message.getPaymentRenewalRequest());
+    public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
+        final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode, PaymentEvent.RENEW);
+        Map<String, Object> paymentMetaData = transaction.getPaymentMetaData();
+        paymentMetaData.put(PaymentConstants.RENEWAL, true);
+        transaction.setPaymentMetaData(paymentMetaData);
+        final TransactionStatus initialStatus = transaction.getStatus();
+        IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
+        try {
+            merchantPaymentRenewalService.doRenewal(request);
+        } finally {
+            if(merchantPaymentRenewalService.supportsRenewalReconciliation()){
+                sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                        .paymentCode(transaction.getPaymentChannel())
+                        .paymentEvent(transaction.getType())
+                        .transactionId(transaction.getIdStr())
+                        .itemId(transaction.getItemId())
+                        .planId(transaction.getPlanId())
+                        .msisdn(transaction.getMsisdn())
+                        .uid(transaction.getUid())
+                        .build());
+            }
+            final TransactionStatus finalStatus = transaction.getStatus();
+            transactionManager.updateAndAsyncPublish(transaction, initialStatus, finalStatus);
+        }
+    }
+
+    private Transaction initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode) {
+        final double finalAmountToBePaid;
+        final String clientAlias = applicationAlias;
+        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientAlias(clientAlias);
+        builder.planId(planId);
+        PlanDTO selectedPlan = cachingService.getPlan(planId);
+        finalAmountToBePaid = selectedPlan.getFinalPrice();
+        builder.event(PaymentEvent.SUBSCRIBE);
+        builder.amount(finalAmountToBePaid).build();
+        TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
+        return TransactionContext.get();
+    }
+
+    private Transaction initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode, PaymentEvent paymentEvent) {
+        final String clientAlias = applicationAlias;
+        PlanDTO selectedPlan = cachingService.getPlan(planId);
+        final double finalAmountToBePaid = selectedPlan.getFinalPrice();
+        final TransactionInitRequest request = TransactionInitRequest.builder().uid(uid).msisdn(msisdn)
+                .paymentCode(paymentCode).clientAlias(clientAlias).planId(planId).event(paymentEvent)
+                .amount(finalAmountToBePaid).build();
+        TransactionContext.set(transactionManager.initiateTransaction(request));
+        return TransactionContext.get();
     }
 
 
@@ -155,7 +212,7 @@ public class PaymentManager {
     }
 
     private Transaction initiateTransactionForPlan(boolean autoRenew, int planId, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
-        return initiateTransaction(false, 0, uid, msisdn, null, couponId, paymentCode);
+        return initiateTransaction(autoRenew, planId, uid, msisdn, null, couponId, paymentCode);
     }
 
     private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
@@ -186,8 +243,7 @@ public class PaymentManager {
         } else {
             finalAmountToBePaid = amountToBePaid;
         }
-        final PaymentEvent eventType = autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
-        builder.amount(finalAmountToBePaid).event(eventType).build();
+        builder.amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }
@@ -220,4 +276,28 @@ public class PaymentManager {
         }
     }
 
+    public void addToPaymentRenewalMigration(PaymentRecurringSchedulingMessage message) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(message.getNextChargingDate());
+        int planId = message.getPlanId();
+        PaymentCode paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
+        double amount = cachingService.getPlan(planId).getFinalPrice();
+        Transaction transaction = transactionManager.initiateTransaction(TransactionInitRequest.builder()
+                .uid(message.getUid())
+                .msisdn(message.getMsisdn())
+                .clientAlias(message.getClientAlias())
+                .planId(planId)
+                .amount(amount)
+                .paymentCode(paymentCode)
+                .event(message.getEvent())
+                .status(TransactionStatus.MIGRATED.getValue())
+                .build());
+        transaction.putValueInPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE, calendar);
+        IMerchantTransactionDetailsService merchantTransactionDetailsService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantTransactionDetailsService.class);
+        message.getPaymentMetaData().put(MIGRATED, Boolean.TRUE.toString());
+        message.getPaymentMetaData().put(TXN_ID, transaction.getIdStr());
+        MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(message.getPaymentMetaData());
+        merchantTransactionService.upsert(merchantTransaction);
+        transactionManager.updateAndAsyncPublish(transaction, TransactionStatus.INPROGRESS, transaction.getStatus());
+    }
 }

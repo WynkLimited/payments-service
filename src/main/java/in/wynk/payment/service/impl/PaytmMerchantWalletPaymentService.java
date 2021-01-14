@@ -60,7 +60,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
-public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService {
+public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWalletService, IUserPreferredPaymentService {
 
     private static final Logger logger = LoggerFactory.getLogger(PaytmMerchantWalletPaymentService.class);
 
@@ -275,23 +275,20 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Void> doRenewal(PaymentRenewalRequest paymentRenewalRequest) {
+    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         //TODO: since paytm access token is of 30 days validity, we need to integrate with paytm subscription system for renewal
-        Transaction previousTransaction = paymentRenewalRequest.getPreviousTransaction();
-        String uid = previousTransaction.getUid();
-        String msisdn = previousTransaction.getMsisdn();
-        Integer planId = previousTransaction.getPlanId();
-        double amount = previousTransaction.getAmount();
+        String uid = paymentRenewalChargingRequest.getUid();
+        String msisdn = paymentRenewalChargingRequest.getMsisdn();
+        Integer planId = paymentRenewalChargingRequest.getPlanId();
+        final PlanDTO selectedPlan = cachingService.getPlan(planId);
+        double amount = selectedPlan.getFinalPrice();
         String accessToken = getAccessToken(uid);
         String deviceId = "abcd"; //TODO: might need to store device id or can be fetched from merchant txn.
 
-        final PlanDTO selectedPlan = cachingService.getPlan(planId);
         final PaymentEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
 
         Transaction transaction = transactionManager.initiateTransaction(uid, msisdn, planId, amount, PAYTM_WALLET, eventType);
         PaytmChargingResponse response = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);
-        // send subscription request to queue
-        return BaseResponse.<Void>builder().build();
     }
 
     @Override
@@ -301,14 +298,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
             PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(tid);
             if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()))).status(HttpStatus.OK).build();
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId())).status(HttpStatus.OK).build();
             }
         } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()))).status(HttpStatus.OK).build();
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId())).status(HttpStatus.OK).build();
             }
         }
-        return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid)).status(HttpStatus.OK).build();
+        return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid, transaction.getPlanId())).status(HttpStatus.OK).build();
     }
 
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(String txnId) {
@@ -552,4 +549,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - " + e.getMessage());
         }
     }
+
+    @Override
+    public UserPreferredPayment getUserPreferredPayments(String uid) {
+        return userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
+    }
+
 }

@@ -6,8 +6,8 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.data.enums.State;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.TransactionContext;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -17,7 +17,10 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
+import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
+import in.wynk.payment.dto.amazonIap.AmazonIapStatusCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -93,45 +96,49 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private void fetchAndUpdateTransaction(Transaction transaction) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        PaymentErrorEvent.Builder errorBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
         AmazonIapVerificationRequest request = transaction.getValueFromPaymentMetaData("amazonIapVerificationRequest");
-        Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(request.getUserData().getUserId());
+        Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(request.getReceipt().getReceiptId());
         try {
-            builder.request(request);
-            if (!mapping.isPresent()) {
+            AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
+            builder.request(request).externalTransactionId(request.getReceipt().getReceiptId()).response(amazonIapReceipt);
+            if (!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) {
                 AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                         .receiptId(request.getReceipt().getReceiptId())
-                        .id(request.getUserData().getUserId())
+                        .id(request.getReceipt().getReceiptId())
                         .uid(transaction.getUid())
                         .msisdn(transaction.getMsisdn())
                         .planId(transaction.getPlanId())
                         .build();
                 receiptDetailsDao.save(amazonReceiptDetails);
-            }
-            AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
-            if (amazonIapReceipt == null) {
-                throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment response received from client");
-            }
-
-            PaymentEvent paymentEvent = PaymentEvent.PURCHASE;
-
-            if (amazonIapReceipt.getCancelDate() == null) {
-                finalTransactionStatus = TransactionStatus.SUCCESS;
+                if (amazonIapReceipt != null) {
+                    if (amazonIapReceipt.getCancelDate() == null) {
+                        finalTransactionStatus = TransactionStatus.SUCCESS;
+                    } else {
+                        transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                    }
+                } else {
+                    errorBuilder.code(AmazonIapStatusCode.ERR_002.getCode()).description(AmazonIapStatusCode.ERR_002.getDescription());
+                    throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment response received from client");
+                }
             } else {
-                paymentEvent = PaymentEvent.UNSUBSCRIBE;
+                log.warn("Receipt is already present for uid: {}, planId: {} and receiptUserId: {}", transaction.getUid(), transaction.getPlanId(), mapping.get().getUserId());
+                errorBuilder.code(AmazonIapStatusCode.ERR_001.getCode()).description(AmazonIapStatusCode.ERR_001.getDescription());
+                finalTransactionStatus = TransactionStatus.FAILUREALREADYSUBSCRIBED;
             }
-
-            builder.externalTransactionId(amazonIapReceipt.getReceiptID()).response(amazonIapReceipt);
-
-            transaction.setType(paymentEvent.name());
         } catch (HttpStatusCodeException e) {
             builder.response(e.getResponseBodyAsString());
+            errorBuilder.code(AmazonIapStatusCode.ERR_003.getCode()).description(AmazonIapStatusCode.ERR_003.getDescription());
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE, "failed to execute fetchAndUpdateTransaction for amazonIap due to ", e);
+            errorBuilder.code(AmazonIapStatusCode.ERR_004.getCode()).description(AmazonIapStatusCode.ERR_004.getDescription());
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         } finally {
             transaction.setStatus(finalTransactionStatus.name());
             eventPublisher.publishEvent(builder.build());
+            if (transaction.getStatus() != TransactionStatus.SUCCESS)
+                eventPublisher.publishEvent(errorBuilder.build());
         }
     }
 

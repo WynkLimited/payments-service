@@ -6,25 +6,28 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.StatusMode;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.dto.AllPlansResponse;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.PriceDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -61,6 +64,21 @@ public class PayUTestData {
                 .build();
     }
 
+    public static Transaction initRecurringSubscribeTransaction() {
+        return Transaction.builder()
+                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .consent(Calendar.getInstance())
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .initTime(Calendar.getInstance())
+                .msisdn(PayUDataConstant.MSISDN)
+                .paymentChannel(PaymentCode.PAYU.name())
+                .planId(PayUDataConstant.RECURRING_PLAN_ID)
+                .status(TransactionStatus.INPROGRESS.name())
+                .type(PaymentEvent.SUBSCRIBE.name())
+                .uid(PayUDataConstant.UID)
+                .build();
+    }
+
     public static Session<SessionDTO> initSession() {
         Map<String, Object> payload = new HashMap<>();
         payload.put(SessionKeys.UID, PayUDataConstant.UID);
@@ -83,7 +101,7 @@ public class PayUTestData {
                 .title(PayUDataConstant.PLAN_TITTLE)
                 .planType(planType)
                 .price(PriceDTO.builder().amount(PayUDataConstant.SELECTED_PLAN_AMOUNT).currency(PayUDataConstant.CURRENCY_TYPE).build())
-                .period(PlanPeriodDTO.builder().validity(100).timeUnit(TimeUnit.DAYS).build())
+                .period(PlanPeriodDTO.builder().validity(100).timeUnit(TimeUnit.DAYS).retryInterval(1).build())
                 .build();
     }
 
@@ -314,5 +332,25 @@ public class PayUTestData {
     }
 
 
+    public static PaymentRenewalChargingRequest buildPaymentRenewalChargingRequest() {
+        return PaymentRenewalChargingRequest.builder()
+                .uid(PayUDataConstant.UID)
+                .msisdn(PayUDataConstant.MSISDN)
+                .planId(PayUDataConstant.RECURRING_PLAN_ID)
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .build();
+    }
 
+    public static Stream<PaymentRenewal> buildPaymentRenewalTestData() {
+        PaymentRenewal paymentRenewal1 = PaymentRenewal.builder().transactionEvent(PaymentEvent.POINT_PURCHASE.getValue()).transactionId("id1").build();
+        PaymentRenewal paymentRenewal2 = PaymentRenewal.builder().transactionEvent(PaymentEvent.PURCHASE.getValue()).transactionId("id2").build();
+        PaymentRenewal paymentRenewal3 = PaymentRenewal.builder().transactionEvent(PaymentEvent.RENEW.getValue()).transactionId("id3").build();
+        PaymentRenewal paymentRenewal4 = PaymentRenewal.builder().transactionEvent(PaymentEvent.SUBSCRIBE.getValue()).transactionId("id4").build();
+        PaymentRenewal paymentRenewal5 = PaymentRenewal.builder().transactionEvent(PaymentEvent.UNSUBSCRIBE.getValue()).transactionId("id5").build();
+        return Stream.of(paymentRenewal1, paymentRenewal2, paymentRenewal3, paymentRenewal4, paymentRenewal5);
+    }
+
+    public static ResponseEntity<AllPlansResponse> buildAllPlanResponse() {
+        return new ResponseEntity<>(AllPlansResponse.builder().plans(Collections.EMPTY_LIST).build(), HttpStatus.OK);
+    }
 }

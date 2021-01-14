@@ -11,15 +11,16 @@ import lombok.Getter;
 public class ChargingStatusResponse {
     private TransactionStatus transactionStatus;
     private String tid;
+    private int planId;
     private Long validity;
 
 
-    public static ChargingStatusResponse success(String tid, Long validity){
-        return ChargingStatusResponse.builder().tid(tid).validity(validity).transactionStatus(TransactionStatus.SUCCESS).build();
+    public static ChargingStatusResponse success(String tid, Long validity, int planId){
+        return ChargingStatusResponse.builder().tid(tid).validity(validity).planId(planId).transactionStatus(TransactionStatus.SUCCESS).build();
     }
 
-    public static ChargingStatusResponse failure(String tid){
-        return ChargingStatusResponse.builder().tid(tid).transactionStatus(TransactionStatus.FAILURE).build();
+    public static ChargingStatusResponse failure(String tid, int planId){
+        return ChargingStatusResponse.builder().tid(tid).planId(planId).transactionStatus(TransactionStatus.FAILURE).build();
     }
 
     public static ChargingStatusResponse inProgress(String tid){

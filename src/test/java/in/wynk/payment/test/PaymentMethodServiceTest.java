@@ -2,6 +2,8 @@ package in.wynk.payment.test;
 
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.http.config.HttpClientConfig;
+import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.test.utils.PaymentTestUtils;
@@ -11,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-@SpringBootTest
+@SpringBootTest(classes = {PaymentApplication.class, HttpClientConfig.class})
 @RunWith(SpringRunner.class)
 public class PaymentMethodServiceTest {
 
@@ -21,10 +23,10 @@ public class PaymentMethodServiceTest {
     private Gson gson;
 
     @Test
-    public void testPaymentOptions(){
+    public void testPaymentOptions() {
         SessionDTO dummySession = PaymentTestUtils.dummySession();
         PaymentOptionsDTO dto  = paymentOptionService.getPaymentOptions(dummySession, "123");
         System.out.println(gson.toJson(dto));
-
     }
+
 }

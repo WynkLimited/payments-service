@@ -35,6 +35,7 @@ session:
     name: session-store:local
     mode: cluster
     usePooling: true
+    readTimeout: 1000
     cluster:
       nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
@@ -94,6 +95,9 @@ logging:
 
 ####### payment props #######
 payment:
+  se:
+    s3:
+      bucket: wcf-logs
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:
@@ -116,7 +120,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       renewal:
-        enabled: false
+        enabled: true
         name: wcf-staging-payment-renewal
         sqs:
           messages:
@@ -129,7 +133,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: false
+        enabled: true
         name: wcf-staging-payment-charging.fifo
         sqs:
           messages:
@@ -141,7 +145,20 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-      recurrence:
+      schedule:
+        enabled: true
+        name: wcf-staging-subscription-payment
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      unschedule:
         enabled: true
         name: wcf-staging-payment-recurring
         sqs:
@@ -162,10 +179,10 @@ payment:
   merchant:
     ####### payu props #########
     payu:
-      key: aU2Uoi
-      salt: 6vbnfVtw
+      key: qFDqmx
+      salt: Zbm2ZyNe
       api:
-        info: https://info.payu.in/merchant/postservice.php?form=2
+        info: https://test.payu.in/merchant/postservice.php?form=2
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu
@@ -183,9 +200,10 @@ payment:
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
     #### Itunes props ######
     itunes:
-      secret: 820ea8abe1374b369eaa564dcfa6391c
       api:
         url: https://buy.itunes.apple.com/verifyReceipt
+        alt:
+          url: https://sandbox.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
     amazonIap:
       secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
@@ -209,9 +227,9 @@ http:
     paymentGatewayHttpTemplate:
       pool:
         connection:
-          max: 2000
+          max: 20
           maxPerHost: 500
-          timeout: 2000
+          timeout: 10000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
@@ -220,7 +238,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 10000
     paymentClientHttpTemplate:
       pool:
         connection:

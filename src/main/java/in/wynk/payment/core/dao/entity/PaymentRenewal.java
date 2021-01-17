@@ -40,6 +40,9 @@ public class PaymentRenewal implements Serializable {
     @Column(name = "updated_timestamp")
     private Calendar updatedTimestamp;
 
+    @Column(name = "attempt_sequence")
+    private int attemptSequence;
+
     public PaymentEvent getTransactionEvent() {
         return PaymentEvent.valueOf(transactionEvent);
     }

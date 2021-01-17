@@ -35,14 +35,16 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    public PaymentRenewal scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime) {
+    public PaymentRenewal scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, Integer attemptSequence) {
         return paymentRenewalDao.save(PaymentRenewal.builder()
-                .transactionId(transactionId)
                 .day(nextRecurringDateTime)
+                .transactionId(transactionId)
+                .attemptSequence(attemptSequence)
                 .hour(nextRecurringDateTime.getTime())
+                .createdTimestamp(Calendar.getInstance())
+                .updatedTimestamp(Calendar.getInstance())
                 .transactionEvent(PaymentEvent.SUBSCRIBE.name())
-                                                    .createdTimestamp(Calendar.getInstance())
-                                                    .build());
+                .build());
     }
 
     @Override

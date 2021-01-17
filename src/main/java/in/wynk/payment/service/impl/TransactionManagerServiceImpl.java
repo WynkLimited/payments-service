@@ -135,7 +135,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
-                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
                     }
                     if (isSync) {
                         subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
@@ -153,7 +153,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED) {
                     if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
                         Calendar nextRecurringDateTime =  transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE);
-                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
                     }
                     if (isSync) {
                         subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), SessionContextHolder.getId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
@@ -166,7 +166,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
                     Calendar nextRecurringDateTime = Calendar.getInstance();
                     nextRecurringDateTime.add(Calendar.HOUR, retryInterval);
-                    recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                    recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
                 }
             }
         } finally {

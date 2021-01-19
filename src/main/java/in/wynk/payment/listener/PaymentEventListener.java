@@ -1,15 +1,14 @@
 package in.wynk.payment.listener;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.core.constant.ClientLoggingMarker;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.utils.ChecksumUtils;
-import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
-import in.wynk.payment.common.messages.PaymentRecurringUnSchedulingMessage;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
@@ -18,12 +17,11 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PaymentRenewalChargingMessage;
-import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
+import in.wynk.queue.constant.QueueConstant;
+import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,15 +41,15 @@ import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 @Slf4j
 public class PaymentEventListener {
 
-    private final Gson gson;
+    private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
     private final RetryRegistry retryRegistry;
     private final IPaymentErrorService paymentErrorService;
     private final IMerchantTransactionService merchantTransactionService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 
-    public PaymentEventListener(Gson gson, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
-        this.gson = gson;
+    public PaymentEventListener(ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
+        this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.retryRegistry = retryRegistry;
         this.paymentErrorService = paymentErrorService;
@@ -60,33 +58,10 @@ public class PaymentEventListener {
     }
 
     @EventListener
-    @AnalyseTransaction(name = "paymentRenewalErrorMessage")
-    public void paymentRenewalErrorMessage(PaymentRenewalMessage paymentRenewalMessage) {
-        AnalyticService.update(MESSAGE_PAYLOAD, gson.toJson(paymentRenewalMessage));
-    }
-
-    @EventListener
-    @AnalyseTransaction(name = "paymentRenewalChargingErrorMessage")
-    public void paymentRenewalChargingErrorMessage(PaymentRenewalChargingMessage paymentRenewalChargingMessage) {
-        AnalyticService.update(MESSAGE_PAYLOAD, gson.toJson(paymentRenewalChargingMessage));
-    }
-
-    @EventListener
-    @AnalyseTransaction(name = "paymentRecurringSchedulingErrorMessage")
-    public void paymentRecurringSchedulingErrorMessage(PaymentRecurringSchedulingMessage paymentRecurringSchedulingMessage) {
-        AnalyticService.update(MESSAGE_PAYLOAD, gson.toJson(paymentRecurringSchedulingMessage));
-    }
-
-    @EventListener
-    @AnalyseTransaction(name = "paymentRecurringUnSchedulingErrorMessage")
-    public void paymentRecurringUnSchedulingErrorMessage(PaymentRecurringUnSchedulingMessage paymentRecurringUnSchedulingMessage) {
-        AnalyticService.update(MESSAGE_PAYLOAD, gson.toJson(paymentRecurringUnSchedulingMessage));
-    }
-
-    @EventListener
-    @AnalyseTransaction(name = "paymentReconciliationErrorMessage")
-    public void paymentReconciliationErrorMessage(PaymentReconciliationMessage paymentReconciliationMessage) {
-        AnalyticService.update(MESSAGE_PAYLOAD, gson.toJson(paymentReconciliationMessage));
+    @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
+    public void onAnyOrderMessageThresholdExceedEvent(MessageThresholdExceedEvent event) throws JsonProcessingException {
+        AnalyticService.update(event);
+        AnalyticService.update(MESSAGE_PAYLOAD, mapper.writeValueAsString(event));
     }
 
     @EventListener

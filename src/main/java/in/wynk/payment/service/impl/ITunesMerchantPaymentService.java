@@ -9,7 +9,6 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.Os;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
@@ -44,7 +43,7 @@ import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -109,20 +108,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     @Override
     public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
-        String sid, os, service;
-        int buildNo;
-        if (StringUtils.isEmpty(iapVerificationRequest.getOs())) {
-            final SessionDTO sessionDTO = SessionContextHolder.getBody();
-            sid = SessionContextHolder.getId();
-            os = sessionDTO.get(OS);
-            service = sessionDTO.get(SERVICE);
-            buildNo = sessionDTO.get(BUILD_NO);
-        } else {
-            sid = iapVerificationRequest.getSid();
-            os = Os.getOsFromValue(iapVerificationRequest.getOs()).getValue();
-            service = iapVerificationRequest.getService();
-            buildNo = iapVerificationRequest.getBuildNo();
-        }
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
@@ -130,48 +116,45 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             transaction.putValueInPaymentMetaData(DECODED_RECEIPT, request.getReceipt());
             fetchAndUpdateFromReceipt(transaction);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                builder.url(new StringBuilder(SUCCESS_PAGE)
-                        .append(sid)
+                builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
                         .append(SLASH)
-                        .append(os)
+                        .append(sessionDTO.<String>get(OS))
                         .append(QUESTION_MARK)
                         .append(SERVICE)
                         .append(EQUAL)
-                        .append(service)
+                        .append(sessionDTO.<String>get(SERVICE))
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(buildNo)
+                        .append(sessionDTO.<Integer>get(BUILD_NO))
                         .toString());
             } else {
-                builder.url(new StringBuilder(FAILURE_PAGE)
-                        .append(sid)
+                builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
                         .append(SLASH)
-                        .append(os)
+                        .append(sessionDTO.<String>get(OS))
                         .append(QUESTION_MARK)
                         .append(SERVICE)
                         .append(EQUAL)
-                        .append(service)
+                        .append(sessionDTO.<String>get(SERVICE))
                         .append(AND)
                         .append(BUILD_NO)
                         .append(EQUAL)
-                        .append(buildNo)
+                        .append(sessionDTO.<Integer>get(BUILD_NO))
                         .toString());
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            builder.url(new StringBuilder(FAILURE_PAGE)
-                    .append(sid)
+            builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
                     .append(SLASH)
-                    .append(os)
+                    .append(sessionDTO.<String>get(OS))
                     .append(QUESTION_MARK)
                     .append(SERVICE)
                     .append(EQUAL)
-                    .append(service)
+                    .append(sessionDTO.<String>get(SERVICE))
                     .append(AND)
                     .append(BUILD_NO)
                     .append(EQUAL)
-                    .append(buildNo)
+                    .append(sessionDTO.<Integer>get(BUILD_NO))
                     .toString());
             log.error(ITUNES_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -394,5 +377,4 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 .body( responseBuilder.build())
                 .build();
     }
-
 }

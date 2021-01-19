@@ -113,45 +113,45 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             fetchAndUpdateFromReceipt(transaction);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                 builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
-                                .append(SLASH)
-                                .append(sessionDTO.<String>get(OS))
-                                .append(QUESTION_MARK)
-                                .append(SERVICE)
-                                .append(EQUAL)
-                                .append(sessionDTO.<String>get(SERVICE))
-                                .append(AND)
-                                .append(BUILD_NO)
-                                .append(EQUAL)
-                                .append(sessionDTO.<Integer>get(BUILD_NO))
-                                .toString());
+                        .append(SLASH)
+                        .append(sessionDTO.<String>get(OS))
+                        .append(QUESTION_MARK)
+                        .append(SERVICE)
+                        .append(EQUAL)
+                        .append(sessionDTO.<String>get(SERVICE))
+                        .append(AND)
+                        .append(BUILD_NO)
+                        .append(EQUAL)
+                        .append(sessionDTO.<Integer>get(BUILD_NO))
+                        .toString());
             } else {
                 builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
-                                .append(SLASH)
-                                .append(sessionDTO.<String>get(OS))
-                                .append(QUESTION_MARK)
-                                .append(SERVICE)
-                                .append(EQUAL)
-                                .append(sessionDTO.<String>get(SERVICE))
-                                .append(AND)
-                                .append(BUILD_NO)
-                                .append(EQUAL)
-                                .append(sessionDTO.<Integer>get(BUILD_NO))
-                                .toString());
+                        .append(SLASH)
+                        .append(sessionDTO.<String>get(OS))
+                        .append(QUESTION_MARK)
+                        .append(SERVICE)
+                        .append(EQUAL)
+                        .append(sessionDTO.<String>get(SERVICE))
+                        .append(AND)
+                        .append(BUILD_NO)
+                        .append(EQUAL)
+                        .append(sessionDTO.<Integer>get(BUILD_NO))
+                        .toString());
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
             builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
-                            .append(SLASH)
-                            .append(sessionDTO.<String>get(OS))
-                            .append(QUESTION_MARK)
-                            .append(SERVICE)
-                            .append(EQUAL)
-                            .append(sessionDTO.<String>get(SERVICE))
-                            .append(AND)
-                            .append(BUILD_NO)
-                            .append(EQUAL)
-                            .append(sessionDTO.<Integer>get(BUILD_NO))
-                            .toString());
+                    .append(SLASH)
+                    .append(sessionDTO.<String>get(OS))
+                    .append(QUESTION_MARK)
+                    .append(SERVICE)
+                    .append(EQUAL)
+                    .append(sessionDTO.<String>get(SERVICE))
+                    .append(AND)
+                    .append(BUILD_NO)
+                    .append(EQUAL)
+                    .append(sessionDTO.<Integer>get(BUILD_NO))
+                    .toString());
             log.error(ITUNES_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().message(e.getMessage()).success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

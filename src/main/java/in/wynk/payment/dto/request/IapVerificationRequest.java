@@ -9,6 +9,7 @@ import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
@@ -26,6 +27,7 @@ public abstract class IapVerificationRequest {
     private String os;
     @Analysed
     private String uid;
+    @Setter
     @Analysed
     private String sid;
     @Analysed

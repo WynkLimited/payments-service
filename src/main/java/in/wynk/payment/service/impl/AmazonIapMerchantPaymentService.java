@@ -72,14 +72,8 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
 
     @Override
     public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
-        String sid, os;
-        if (StringUtils.isEmpty(iapVerificationRequest.getOs())) {
-            sid = SessionContextHolder.getId();
-            os = SessionContextHolder.<SessionDTO>getBody().get(BaseConstants.OS);
-        } else {
-            sid = iapVerificationRequest.getSid();
-            os = Os.getOsFromValue(iapVerificationRequest.getOs()).getValue();
-        }
+        final String sid = SessionContextHolder.getId();
+        final String os = SessionContextHolder.<SessionDTO>getBody().get(BaseConstants.OS);
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();

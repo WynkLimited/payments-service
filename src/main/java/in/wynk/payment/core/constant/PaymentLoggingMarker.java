@@ -49,4 +49,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYMENT_RENEWAL_ERROR = MarkerFactory.getMarker("PAYMENT_RENEWAL_ERROR");
     Marker SE_PAYMENT_RENEWAL_ERROR = MarkerFactory.getMarker("SE_PAYMENT_RENEWAL_ERROR");
+    Marker OS_REQUIRED = MarkerFactory.getMarker("OS_REQUIRED");
+    Marker OS_NOT_REQUIRED = MarkerFactory.getMarker("OS_NOT_REQUIRED");
+
 }

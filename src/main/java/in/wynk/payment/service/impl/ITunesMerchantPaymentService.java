@@ -377,5 +377,4 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 .body( responseBuilder.build())
                 .build();
     }
-
 }

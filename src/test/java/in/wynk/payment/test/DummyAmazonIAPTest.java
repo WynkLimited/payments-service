@@ -16,7 +16,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.UUID;
@@ -57,7 +56,7 @@ public class DummyAmazonIAPTest {
 
     @Test
     public void test1() {
-        paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),getDummyData());
+        paymentManager.doVerifyIap(getDummyData());
         Assert.assertTrue(true);
     }
 

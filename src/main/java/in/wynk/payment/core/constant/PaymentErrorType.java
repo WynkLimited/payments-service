@@ -27,8 +27,6 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),
     PAY997("Point Purchase Failure", "Unable to generate session, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.POINT_PURCHASE_SESSION_INIT_FAILURE),
     PAY888("Not Supported", "This service is currently not supported", HttpStatus.NOT_FOUND, PaymentLoggingMarker.NOT_SUPPORTED_SERVICE),
-    PAY555("Os Required", "Os is required for v2 of verify receipt", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.OS_REQUIRED),
-    PAY556("Os Not Required", "Os is strictly not required for v1 of verify receipt", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.OS_NOT_REQUIRED),
 
     /**
      * Payment Redirect webview code

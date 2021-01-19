@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
+import static in.wynk.queue.constant.BeanConstant.ALL;
+
 @Slf4j
 public class PaymentReconciliationSQSMessageExtractor extends AbstractSQSMessageExtractor {
 
@@ -28,9 +30,10 @@ public class PaymentReconciliationSQSMessageExtractor extends AbstractSQSMessage
     @Override
     public ReceiveMessageRequest buildReceiveMessageRequest() {
         return new ReceiveMessageRequest()
-                                          .withMaxNumberOfMessages(batchSize)
-                                          .withQueueUrl(getSqs().getQueueUrl(queueName).getQueueUrl())
-                                          .withWaitTimeSeconds(waitTimeInSeconds);
+                .withMessageAttributeNames(ALL)
+                .withMaxNumberOfMessages(batchSize)
+                .withWaitTimeSeconds(waitTimeInSeconds)
+                .withQueueUrl(getSqs().getQueueUrl(queueName).getQueueUrl());
     }
 
 }

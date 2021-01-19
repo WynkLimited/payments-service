@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
+import static in.wynk.queue.constant.BeanConstant.ALL;
+
 @Slf4j
 public class PaymentRenewalChargingSQSMessageExtractor extends AbstractSQSMessageExtractor {
     @Value("${payment.pooling.queue.charging.sqs.messages.extractor.batchSize}")
@@ -27,6 +29,7 @@ public class PaymentRenewalChargingSQSMessageExtractor extends AbstractSQSMessag
     @Override
     public ReceiveMessageRequest buildReceiveMessageRequest() {
         return new ReceiveMessageRequest()
+                .withMessageAttributeNames(ALL)
                 .withMaxNumberOfMessages(batchSize)
                 .withQueueUrl(getSqs().getQueueUrl(queueName).getQueueUrl())
                 .withWaitTimeSeconds(waitTimeInSeconds);

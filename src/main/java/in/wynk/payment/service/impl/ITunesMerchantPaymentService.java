@@ -90,17 +90,17 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final ReceiptDetailsDao receiptDetailsDao;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManager;
     private final TestingByPassNumbersDao testingByPassNumbersDao;
+    private final PaymentCachingService paymentCachingService;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager,TestingByPassNumbersDao testingByPassNumbersDao) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao, PaymentCachingService paymentCachingService) {
         this.gson = gson;
         this.mapper = mapper;
         this.receiptDetailsDao = receiptDetailsDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
-        this.transactionManager = transactionManager;
         this.testingByPassNumbersDao = testingByPassNumbersDao;
+        this.paymentCachingService = paymentCachingService;
     }
 
     @Override
@@ -348,9 +348,16 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         PlanDTO selectedPlan = cachingService.getPlan(productId);
         String skuId = selectedPlan.getSku().get(BaseConstants.ITUNES);
         return receipts.stream()
-                .filter(receipt -> StringUtils.isNotEmpty(receipt.getProductId()) && StringUtils.equalsIgnoreCase(receipt.getProductId(), skuId))
+                .filter(receipt -> filterBySku(receipt, skuId))
                 .sorted(Comparator.comparingLong(type::getExpireDate).reversed())
                 .collect(Collectors.toList());
+    }
+
+    private boolean filterBySku(LatestReceiptInfo receipt, String skuId) {
+        return StringUtils.isNotEmpty(receipt.getProductId())
+                && (paymentCachingService.containsSku(receipt.getProductId()) ?
+                StringUtils.equalsIgnoreCase(paymentCachingService.getNewSku(receipt.getProductId()), skuId) :
+                StringUtils.equalsIgnoreCase(receipt.getProductId(), skuId));
     }
 
     @Override

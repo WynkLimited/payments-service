@@ -190,8 +190,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 } else {
                     final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                     final String itunesTrxnId = latestReceiptInfo.getTransactionId();
-                    final ReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                    if (receiptDetails != null && receiptDetails.getState() == State.ACTIVE) {
+                    final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
+                    if (receiptDetails != null && receiptDetails.getState() == State.ACTIVE && receiptDetails.getExpiry() > System.currentTimeMillis()) {
                         log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                         code = ItunesStatusCodes.APPLE_21016;
                         transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
@@ -204,6 +204,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                                     .type(receiptType.name())
                                     .receipt(decodedReceipt)
                                     .id(originalITunesTrxnId)
+                                    .expiry(receiptType.getExpireDate(latestReceiptInfo))
                                     .build();
                             receiptDetailsDao.save(itunesIdUidMapping);
                             transaction.setStatus(TransactionStatus.SUCCESS.name());
@@ -370,14 +371,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getLatestReceiptInfo() != null) {
+            if (itunesCallbackRequest.getLatestReceiptInfo() != null && StringUtils.equals(itunesCallbackRequest.getNotificationType(), "DID_RENEW")) {
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
                 return receiptDetailsDao.findById(iTunesId);
             }
-        } finally {
-            return Optional.empty();
-        }
+        } catch (Exception e) {}
+        return Optional.empty();
     }
 
 }

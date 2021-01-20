@@ -13,4 +13,8 @@ public class ItunesCallbackRequest {
 
     @JsonProperty("latest_receipt")
     private String latestReceipt;
+
+    @JsonProperty("notification_type")
+    private String notificationType;
+
 }

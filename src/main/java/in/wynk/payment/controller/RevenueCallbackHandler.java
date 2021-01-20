@@ -7,6 +7,7 @@ import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,8 @@ public class RevenueCallbackHandler {
 
     @Autowired
     private PaymentManager paymentManager;
+    @Value("${spring.application.name}")
+    private String applicationAlias;
 
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
@@ -27,7 +30,7 @@ public class RevenueCallbackHandler {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        BaseResponse<?> baseResponse = paymentManager.handleNotification(request, paymentCode);
+        BaseResponse<?> baseResponse = paymentManager.handleNotification(applicationAlias, request, paymentCode);
         return baseResponse.getResponse();
     }
 

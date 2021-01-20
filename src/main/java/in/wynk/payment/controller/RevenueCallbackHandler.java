@@ -27,7 +27,7 @@ public class RevenueCallbackHandler {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        BaseResponse<?> baseResponse = paymentManager.handleCallback2(request, paymentCode);
+        BaseResponse<?> baseResponse = paymentManager.handleNotification(request, paymentCode);
         return baseResponse.getResponse();
     }
 

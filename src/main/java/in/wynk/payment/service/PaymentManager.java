@@ -101,7 +101,7 @@ public class PaymentManager {
         return baseResponse;
     }
 
-    public BaseResponse<?> handleCallback2(CallbackRequest callbackRequest, PaymentCode paymentCode) {
+    public BaseResponse<?> handleNotification(CallbackRequest callbackRequest, PaymentCode paymentCode) {
         final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
         Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailService.getReceiptDetails(callbackRequest);
         if (optionalReceiptDetails.isPresent()) {

@@ -57,7 +57,7 @@ public class DummyAmazonIAPTest {
 
     @Test
     public void test1() {
-        paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),getDummyData());
+        paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), getDummyData());
         Assert.assertTrue(true);
     }
 

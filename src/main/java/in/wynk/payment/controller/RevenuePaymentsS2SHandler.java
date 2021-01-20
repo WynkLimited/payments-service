@@ -36,7 +36,7 @@ public class RevenuePaymentsS2SHandler {
     public ResponseEntity<?> verifyIap(@RequestBody IapVerificationRequest request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),request);
+        BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();
     }

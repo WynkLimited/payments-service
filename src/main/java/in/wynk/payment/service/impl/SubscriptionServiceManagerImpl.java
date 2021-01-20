@@ -91,7 +91,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void subscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
+    public void subscribePlanSync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
             PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
                     .uid(uid)
@@ -121,7 +121,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void unSubscribePlanSync(int planId, String sid, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
+    public void unSubscribePlanSync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
         try {
             PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder()
                     .uid(uid)

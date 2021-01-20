@@ -18,6 +18,7 @@ import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Service;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
@@ -94,6 +96,18 @@ public class PaymentManager {
             }
         }
         return baseResponse;
+    }
+
+    @ClientAware(clientAlias = "#clientAlias")
+    public BaseResponse<?> handleNotification(String clientAlias, CallbackRequest callbackRequest, PaymentCode paymentCode) {
+        final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
+        Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailService.getReceiptDetails(callbackRequest);
+        if (optionalReceiptDetails.isPresent()) {
+            ReceiptDetails receiptDetails = optionalReceiptDetails.get();
+            String txnId = initiateTransaction(receiptDetails.getPlanId(), receiptDetails.getUid(), receiptDetails.getMsisdn(), paymentCode);
+            return handleCallback(CallbackRequest.builder().body(callbackRequest.getBody()).transactionId(txnId).build(), paymentCode);
+        }
+        return BaseResponse.status(false);
     }
 
     @TransactionAware(txnId = "#request.transactionId")
@@ -179,16 +193,27 @@ public class PaymentManager {
         }
     }
 
-    private Transaction initiateTransaction(int planId, String uid, String msisdn, String clientAlias, PaymentCode paymentCode, PaymentEvent paymentEvent) {
+    private String initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode) {
+        PlanDTO selectedPlan = cachingService.getPlan(planId);
         TransactionContext.set(transactionManager.initiateTransaction(TransactionInitRequest.builder()
                 .uid(uid)
                 .msisdn(msisdn)
                 .planId(planId)
-                .event(paymentEvent)
                 .paymentCode(paymentCode)
-                .clientAlias(clientAlias)
-                .amount(cachingService.getPlan(planId).getFinalPrice())
+                .amount(selectedPlan.getFinalPrice())
+                .status(TransactionStatus.FAILURE.getValue())
+                .event(selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE)
                 .build()));
+        return TransactionContext.get().getId().toString();
+    }
+
+    private Transaction initiateTransaction(int planId, String uid, String msisdn, String clientAlias, PaymentCode paymentCode, PaymentEvent paymentEvent) {
+        PlanDTO selectedPlan = cachingService.getPlan(planId);
+        final double finalAmountToBePaid = selectedPlan.getFinalPrice();
+        final TransactionInitRequest request = TransactionInitRequest.builder().uid(uid).msisdn(msisdn)
+                .paymentCode(paymentCode).clientAlias(clientAlias).planId(planId).event(paymentEvent)
+                .amount(finalAmountToBePaid).build();
+        TransactionContext.set(transactionManager.initiateTransaction(request));
         return TransactionContext.get();
     }
 

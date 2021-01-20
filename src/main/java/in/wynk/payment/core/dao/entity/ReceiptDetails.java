@@ -18,7 +18,7 @@ public abstract class ReceiptDetails extends MongoBaseEntity implements Serializ
     private String uid;
     private int planId;
     @Builder.Default
-    private final long expiry = -1;
+    private long expiry = -1;
 
     public String getUserId() {
         return super.getId();

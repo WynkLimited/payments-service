@@ -1,9 +1,6 @@
 package in.wynk.payment.service;
 
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.client.context.ClientContext;
-import in.wynk.client.core.constant.ClientErrorType;
-import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -34,7 +31,6 @@ import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
@@ -139,37 +135,22 @@ public class PaymentManager {
         return verificationService.doVerify(request);
     }
 
-    public BaseResponse<?> doVerifyIap(IapVerificationRequest request) {
+    @ClientAware(clientId = "#clientId")
+    public BaseResponse<?> doVerifyIap(String clientId, IapVerificationRequest request) {
         final PaymentCode paymentCode = request.getPaymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
-        final Transaction transaction;
-        if (StringUtils.isEmpty(request.getOs())) {
-            transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
-            SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
-        } else {
-            String clientAlias = getClientAlias(SecurityContextHolder.getContext().getAuthentication().getName());
-            transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), clientAlias, paymentCode, autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE);
-        }
+        final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
+        SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         final BaseResponse<?> response = verificationService.verifyReceipt(request);
         final TransactionStatus finalStatus = transaction.getStatus();
-        if (StringUtils.isEmpty(request.getOs())) {
-            transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
-        } else {
-            transactionManager.updateAndAsyncPublish(transaction, initialStatus, finalStatus);
-        }
+        transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
         if (finalStatus == TransactionStatus.SUCCESS) {
             exhaustCouponIfApplicable();
         }
         return response;
-    }
-
-    @ClientAware(clientId = "#clientId")
-    private String getClientAlias(String clientId) {
-        ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
-        return clientDetails.getAlias();
     }
 
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {

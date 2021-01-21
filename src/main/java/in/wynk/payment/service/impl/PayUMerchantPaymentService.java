@@ -62,7 +62,6 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService {
 
     @Value("${payment.merchant.payu.salt}")
@@ -322,7 +321,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Date today = cal.getTime();
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
-        Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+        Integer validTillDays = selectedPlan.isFreeTrial() ? -1 : Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
         BillingUtils billingUtils = new BillingUtils(validTillDays);
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), finalPlanAmount, today, next5Year));
@@ -659,4 +658,5 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
         return userPreferredPayment;
     }
+
 }

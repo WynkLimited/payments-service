@@ -132,10 +132,16 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
                 PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                    if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
+                    if (transaction.getPaymentChannel().isInternalRecurring()) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
-                        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
-                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                        if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
+                            nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getFreeTrialDays());
+                            recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                        }
+                        else if (transaction.getType() == PaymentEvent.RENEW) {
+                            nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
+                            recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                        }
                     }
                     if (isSync) {
                         subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());

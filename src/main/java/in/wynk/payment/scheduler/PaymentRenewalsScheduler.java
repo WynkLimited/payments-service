@@ -6,6 +6,7 @@ import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.queue.service.ISqsManagerService;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class PaymentRenewalsScheduler {
     @Transactional
     @AnalyseTransaction(name = "paymentRenewals")
     public void paymentRenew(String requestId) {
+        MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("paymentRenewalsInit", true);
@@ -57,6 +59,7 @@ public class PaymentRenewalsScheduler {
 
     @AnalyseTransaction(name = "sePaymentRenewals")
     public void startSeRenewals(String requestId) {
+        MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("sePaymentRenewalsInit", true);

@@ -12,8 +12,8 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -27,10 +27,10 @@ public class PaymentRecurringSchedulingPollingQueue extends AbstractSQSMessageCo
     private TimeUnit recurringPoolingDelayTimeUnit;
 
     private final PaymentManager paymentManager;
-    private final ThreadPoolExecutor threadPoolExecutor;
-    private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
+    private final ExecutorService threadPoolExecutor;
+    private final ScheduledExecutorService scheduledThreadPoolExecutor;
 
-    public PaymentRecurringSchedulingPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ThreadPoolExecutor handlerThreadPool, ScheduledThreadPoolExecutor scheduledThreadPoolExecutor) {
+    public PaymentRecurringSchedulingPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ExecutorService handlerThreadPool, ScheduledExecutorService scheduledThreadPoolExecutor) {
         super(queueName, sqs, objectMapper, messagesExtractor, handlerThreadPool);
         this.paymentManager = paymentManager;
         this.threadPoolExecutor = handlerThreadPool;

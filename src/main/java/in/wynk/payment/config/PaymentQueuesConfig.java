@@ -14,7 +14,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Configuration
 public class PaymentQueuesConfig {
@@ -28,8 +30,8 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentReconciliationSQSMessageExtractor,
-                (ThreadPoolExecutor) threadPoolExecutor(),
-                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
+                threadPoolExecutor(),
+                scheduledThreadPoolExecutor());
     }
 
     @Bean
@@ -43,8 +45,8 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRenewalSQSMessageExtractor,
-                (ThreadPoolExecutor) threadPoolExecutor(),
-                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(),
+                threadPoolExecutor(),
+                scheduledThreadPoolExecutor(),
                 sqsManagerService,
                 transactionManager);
     }
@@ -59,8 +61,8 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRenewalChargingSQSMessageExtractor,
-                paymentManager, (ThreadPoolExecutor) threadPoolExecutor(),
-                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
+                paymentManager, threadPoolExecutor(),
+                scheduledThreadPoolExecutor());
     }
 
     @Bean
@@ -74,8 +76,8 @@ public class PaymentQueuesConfig {
                 objectMapper,
                 paymentRecurringSchedulingSQSMessageExtractor,
                 paymentManager,
-                (ThreadPoolExecutor) threadPoolExecutor(),
-                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor());
+                threadPoolExecutor(),
+                scheduledThreadPoolExecutor());
     }
 
     @Bean
@@ -88,8 +90,8 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRecurringUnSchedulingSQSMessageExtractor,
-                (ThreadPoolExecutor) threadPoolExecutor(),
-                (ScheduledThreadPoolExecutor) scheduledThreadPoolExecutor(),
+                threadPoolExecutor(),
+                scheduledThreadPoolExecutor(),
                 recurringPaymentManager);
     }
 

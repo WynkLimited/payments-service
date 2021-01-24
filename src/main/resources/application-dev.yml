@@ -101,7 +101,7 @@ payment:
   pooling:
     queue:
       reconciliation:
-        enabled: false
+        enabled: true
         name: wcf-staging-payment-reconciliation
         sqs:
           messages:

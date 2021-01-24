@@ -193,7 +193,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
     }
 
-
     private ChargingStatusResponse fetchChargingStatusFromPayUSource(Transaction transaction) {
         fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
@@ -257,7 +256,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
     }
 
-
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(transaction.getPlanId());
@@ -278,8 +276,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String userCredentials = payUMerchantKey + COLON + uid;
         String sid = SessionContextHolder.get().getId().toString();
         Map<String, String> payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
-        if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
-            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan);
+        if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
         }
         // Mandatory according to document
         payload.putAll(payloadTemp);
@@ -312,7 +310,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return payload;
     }
 
-    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan) {
+    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
         Map<String, String> payload = new HashMap<>();
         String reqType = PaymentRequestType.SUBSCRIBE.name();
         String udf1 = PAYU_SI_KEY.toUpperCase();
@@ -321,7 +319,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Date today = cal.getTime();
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
-        Integer validTillDays = selectedPlan.isFreeTrial() ? -1 : Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+        Boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
+        Integer validTillDays = isFreeTrial ? -1 : Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
         BillingUtils billingUtils = new BillingUtils(validTillDays);
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), finalPlanAmount, today, next5Year));
@@ -332,7 +331,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
-            payload.put(PAYU_FREE_TRIAL, String.valueOf(selectedPlan.isFreeTrial()));
+            payload.put(PAYU_FREE_TRIAL, String.valueOf(isFreeTrial));
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");
         }

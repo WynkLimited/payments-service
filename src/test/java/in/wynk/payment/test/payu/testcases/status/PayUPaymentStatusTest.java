@@ -69,7 +69,7 @@ public class PayUPaymentStatusTest {
         Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID).toString(), Mockito.any(PaymentEvent.class), Mockito.anyLong());
 
         Mockito.doNothing().when(subscriptionManager).subscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), anyString(), any(), any());
-        Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), any());
+        Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), any(), any());
 
         Mockito.when(transactionManager.upsert(any())).thenReturn(null);
         Mockito.when(transactionManager.get(eq(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString()))).thenReturn(PayUTestData.initOneTimePaymentTransaction());

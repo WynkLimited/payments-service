@@ -10,6 +10,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.*;
@@ -47,13 +48,16 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private final RestTemplate restTemplate;
     private final ISqsManagerService sqsMessagePublisher;
     private final WynkApplicationContext myApplicationContext;
+    private final PaymentCachingService paymentCachingService;
 
     public SubscriptionServiceManagerImpl(@Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate restTemplate,
                                           ISqsManagerService sqsMessagePublisher,
-                                          WynkApplicationContext myApplicationContext) {
+                                          WynkApplicationContext myApplicationContext,
+                                          PaymentCachingService paymentCachingService) {
         this.restTemplate = restTemplate;
         this.sqsMessagePublisher = sqsMessagePublisher;
         this.myApplicationContext = myApplicationContext;
+        this.paymentCachingService = paymentCachingService;
     }
 
     @Override
@@ -65,6 +69,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
+        if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
+            planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
+        }
         this.publishAsync(SubscriptionProvisioningMessage.builder()
                 .uid(uid)
                 .msisdn(msisdn)
@@ -78,7 +85,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
+    public void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
+        if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
+            planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
+        }
         this.publishAsync(SubscriptionProvisioningMessage.builder()
                 .uid(uid)
                 .msisdn(msisdn)
@@ -93,6 +103,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void subscribePlanSync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
+            if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
+                planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
+            }
             PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
                     .uid(uid)
                     .planId(planId)
@@ -121,8 +134,11 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void unSubscribePlanSync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
+    public void unSubscribePlanSync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
+            if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
+                planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
+            }
             PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder()
                     .uid(uid)
                     .planId(planId)

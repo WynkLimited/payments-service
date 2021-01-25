@@ -320,8 +320,17 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
         Boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
-        Integer validTillDays = isFreeTrial ? -1 : Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        BillingUtils billingUtils = new BillingUtils(validTillDays);
+        Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+        Integer freeTrialValidity = validTillDays;
+        BillingUtils billingUtils;
+        if (isFreeTrial) {
+            freeTrialValidity = cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity();
+        }
+        if (freeTrialValidity == validTillDays) {
+            billingUtils = new BillingUtils(validTillDays);
+        } else {
+            billingUtils = new BillingUtils(true);
+        }
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), finalPlanAmount, today, next5Year));
             String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);

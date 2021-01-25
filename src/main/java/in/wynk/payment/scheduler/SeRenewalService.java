@@ -193,7 +193,7 @@ public class SeRenewalService {
         if (NEW_SUBS_SUCCESS_STATUS.equals(transactionStatus)) {
             return TransactionStatus.SUCCESS;
         } else if ((DEPROVISIONING_TRANS_TYPE_LIST.contains(transactionType) || DEPROVISIONING_STATUS_LIST.contains(transactionType))) {
-            return TransactionStatus.SUCCESS;
+            return TransactionStatus.FAILURE;
         } else if (RENEW_SUBS_SUCCESS_STATUS.contains(transactionStatus)) {
             return TransactionStatus.SUCCESS;
         } else {

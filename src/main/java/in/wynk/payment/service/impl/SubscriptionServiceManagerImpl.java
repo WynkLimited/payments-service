@@ -17,6 +17,7 @@ import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -45,20 +46,15 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.unSubscribePlan}")
     private String unSubscribePlanEndPoint;
 
-    private final RestTemplate restTemplate;
-    private final ISqsManagerService sqsMessagePublisher;
-    private final WynkApplicationContext myApplicationContext;
-    private final PaymentCachingService paymentCachingService;
-
-    public SubscriptionServiceManagerImpl(@Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE) RestTemplate restTemplate,
-                                          ISqsManagerService sqsMessagePublisher,
-                                          WynkApplicationContext myApplicationContext,
-                                          PaymentCachingService paymentCachingService) {
-        this.restTemplate = restTemplate;
-        this.sqsMessagePublisher = sqsMessagePublisher;
-        this.myApplicationContext = myApplicationContext;
-        this.paymentCachingService = paymentCachingService;
-    }
+    @Autowired
+    @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
+    private RestTemplate restTemplate;
+    @Autowired
+    private ISqsManagerService sqsMessagePublisher;
+    @Autowired
+    private WynkApplicationContext myApplicationContext;
+    @Autowired
+    private PaymentCachingService paymentCachingService;
 
     @Override
     public List<PlanDTO> getPlans() {
@@ -69,49 +65,40 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
-        if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
-            planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
-        }
         this.publishAsync(SubscriptionProvisioningMessage.builder()
                 .uid(uid)
                 .msisdn(msisdn)
-                .planId(planId)
                 .paymentCode(paymentCode)
-                .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .referenceId(transactionId)
                 .paymentEvent(paymentEvent)
                 .transactionStatus(transactionStatus)
+                .planId(getUpdatedPlanId(planId, paymentEvent))
+                .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .build());
     }
 
     @Override
     public void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
-        if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
-            planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
-        }
         this.publishAsync(SubscriptionProvisioningMessage.builder()
                 .uid(uid)
                 .msisdn(msisdn)
-                .planId(planId)
-                .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .referenceId(transactionId)
-                .paymentEvent(PaymentEvent.UNSUBSCRIBE)
                 .transactionStatus(transactionStatus)
+                .paymentEvent(PaymentEvent.UNSUBSCRIBE)
+                .planId(getUpdatedPlanId(planId, paymentEvent))
+                .paymentPartner(BaseConstants.WYNK.toLowerCase())
                 .build());
     }
 
     @Override
     public void subscribePlanSync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
-            if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
-                planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
-            }
             PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
                     .uid(uid)
-                    .planId(planId)
                     .msisdn(msisdn)
                     .paymentCode(paymentCode)
                     .referenceId(transactionId)
+                    .planId(getUpdatedPlanId(planId, paymentEvent))
                     .paymentPartner(BaseConstants.WYNK.toLowerCase())
                     .eventType(paymentEvent)
                     .build();
@@ -136,13 +123,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void unSubscribePlanSync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
         try {
-            if (paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION) {
-                planId = paymentCachingService.getPlan(planId).getLinkedFreePlanId();
-            }
             PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder()
                     .uid(uid)
-                    .planId(planId)
                     .referenceId(transactionId)
+                    .planId(getUpdatedPlanId(planId, paymentEvent))
                     .paymentPartner(BaseConstants.WYNK.toLowerCase())
                     .build();
             RequestEntity<PlanUnProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest, HttpMethod.POST);
@@ -167,6 +151,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         } catch (Exception e) {
             throw new WynkRuntimeException(QueueErrorType.SQS001, e);
         }
+    }
+
+    private int getUpdatedPlanId(int planId, PaymentEvent paymentEvent) {
+        return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? paymentCachingService.getPlan(planId).getLinkedFreePlanId() : planId;
     }
 
 }

@@ -14,6 +14,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -36,24 +37,21 @@ import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 @Getter
 public class PaymentCachingService {
 
-    private final SkuDao skuDao;
+    @Autowired
+    private SkuDao skuDao;
+    @Autowired
+    private PaymentMethodDao paymentMethodDao;
+    @Autowired
+    private ISubscriptionServiceManager subscriptionServiceManager;
+
     private static final Logger logger = LoggerFactory.getLogger(PaymentCachingService.class);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
-    private final PaymentMethodDao paymentMethodDao;
-    private final ISubscriptionServiceManager subscriptionServiceManager;
-
     private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
-
-    public PaymentCachingService(PaymentMethodDao paymentMethodDao, SkuDao skuDao, ISubscriptionServiceManager subscriptionServiceManager) {
-        this.paymentMethodDao = paymentMethodDao;
-        this.skuDao = skuDao;
-        this.subscriptionServiceManager = subscriptionServiceManager;
-    }
 
     @Scheduled(fixedDelay = 30 * 60 * 1000L,  initialDelay = 30 * 60 * 1000L )
     @PostConstruct

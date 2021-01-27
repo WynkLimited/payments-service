@@ -22,10 +22,14 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.dto.amazonIap.AmazonIapStatusCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
+import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
+import in.wynk.payment.service.IMerchantPaymentStatusService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +51,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService {
+public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService {
 
     @Value("${payment.merchant.amazonIap.secret}")
     private String amazonIapSecret;
@@ -56,6 +60,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private final ObjectMapper mapper;
     private final ReceiptDetailsDao receiptDetailsDao;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentCachingService cachingService;
 
     @Autowired
     @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
@@ -65,10 +70,11 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher) {
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
         this.mapper = mapper;
         this.receiptDetailsDao = receiptDetailsDao;
         this.eventPublisher = eventPublisher;
+        this.cachingService = cachingService;
     }
 
     @Override
@@ -91,6 +97,16 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             log.error(AMAZON_IAP_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction) {
+        fetchAndUpdateTransaction(transaction);
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
+                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+        }
+        return responseBuilder.build();
     }
 
     private void fetchAndUpdateTransaction(Transaction transaction) {
@@ -155,5 +171,35 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         }
     }
+
+    @Override
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        ChargingStatusResponse statusResponse;
+        Transaction transaction = TransactionContext.get();
+        switch (chargingStatusRequest.getMode()) {
+            case SOURCE:
+                statusResponse = fetchChargingStatusFromAmazonIapSource(transaction);
+                break;
+            case LOCAL:
+                statusResponse = fetchChargingStatusFromDataSource(transaction);
+                break;
+            default:
+                throw new WynkRuntimeException(PaymentErrorType.PAY008);
+        }
+        return BaseResponse.<ChargingStatusResponse>builder()
+                .status(HttpStatus.OK)
+                .body(statusResponse)
+                .build();
+    }
+
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
+                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+        }
+        return responseBuilder.build();
+    }
+
 
 }

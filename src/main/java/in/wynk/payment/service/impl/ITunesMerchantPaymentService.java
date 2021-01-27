@@ -9,12 +9,14 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
@@ -91,16 +93,14 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final TestingByPassNumbersDao testingByPassNumbersDao;
-    private final PaymentCachingService paymentCachingService;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao, PaymentCachingService paymentCachingService) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
         this.gson = gson;
         this.mapper = mapper;
         this.receiptDetailsDao = receiptDetailsDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.testingByPassNumbersDao = testingByPassNumbersDao;
-        this.paymentCachingService = paymentCachingService;
     }
 
     @Override
@@ -174,6 +174,16 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         }
     }
 
+    private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction) {
+        fetchAndUpdateFromReceipt(transaction);
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
+                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+        }
+        return responseBuilder.build();
+    }
+
     private void fetchAndUpdateFromReceipt(Transaction transaction) {
         final String decodedReceipt = transaction.getValueFromPaymentMetaData(DECODED_RECEIPT);
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(decodedReceipt);
@@ -226,7 +236,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
             log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), decodedReceipt, e);
-            throw e;
         }
     }
 
@@ -355,23 +364,38 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     private boolean filterBySku(LatestReceiptInfo receipt, String skuId) {
         return StringUtils.isNotEmpty(receipt.getProductId())
-                && (paymentCachingService.containsSku(receipt.getProductId()) ?
-                StringUtils.equalsIgnoreCase(paymentCachingService.getNewSku(receipt.getProductId()), skuId) :
+                && (cachingService.containsSku(receipt.getProductId()) ?
+                StringUtils.equalsIgnoreCase(cachingService.getNewSku(receipt.getProductId()), skuId) :
                 StringUtils.equalsIgnoreCase(receipt.getProductId(), skuId));
     }
 
     @Override
-    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        ChargingStatusResponse statusResponse;
         Transaction transaction = TransactionContext.get();
+        switch (chargingStatusRequest.getMode()) {
+            case SOURCE:
+                statusResponse = fetchChargingStatusFromItunesSource(transaction);
+                break;
+            case LOCAL:
+                statusResponse = fetchChargingStatusFromDataSource(transaction);
+                break;
+            default:
+                throw new WynkRuntimeException(PaymentErrorType.PAY008);
+        }
+        return BaseResponse.<ChargingStatusResponse>builder()
+                .status(HttpStatus.OK)
+                .body(statusResponse)
+                .build();
+    }
+
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
-        return BaseResponse.<ChargingStatusResponse>builder()
-                .status(HttpStatus.OK)
-                .body(responseBuilder.build())
-                .build();
+        return responseBuilder.build();
     }
 
     @Override

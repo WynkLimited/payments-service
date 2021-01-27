@@ -256,7 +256,7 @@ public class PaymentManager {
         Set<Integer> eligiblePlans = session.get(ELIGIBLE_PLANS);
         if (autoRenew && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
             paymentEvent = PaymentEvent.TRIAL_SUBSCRIPTION;
-            finalAmountToBePaid = 0;
+//            finalAmountToBePaid = 0;
         }
         builder.event(paymentEvent).amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));

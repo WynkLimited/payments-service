@@ -16,6 +16,7 @@ public interface PaymentConstants extends BaseConstants {
     String SUCCESS = "success";
     String PIPE_SEPARATOR = "|";
     String BASE_USER_EMAIL = "@wynk.in";
+    String IS_RECONCILIATION = "isReconciliation";
 
     String PAYMENT_METHOD = "paymentMethod";
     String REQUEST_PAYLOAD = "requestPayload";

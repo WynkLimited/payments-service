@@ -11,6 +11,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
+import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Card;
@@ -329,7 +330,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         if (freeTrialValidity == validTillDays) {
             billingUtils = new BillingUtils(validTillDays);
         } else {
-            billingUtils = new BillingUtils(true);
+            billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
         }
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), finalPlanAmount, today, next5Year));

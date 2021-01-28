@@ -65,6 +65,13 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService {
 
+    private final Gson gson;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+    private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
+    private final IMerchantTransactionService merchantTransactionService;
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
     @Value("${payment.encKey}")
@@ -79,14 +86,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String payUSuccessUrl;
     @Value("${payment.merchant.payu.internal.callback.failureUrl}")
     private String payUFailureUrl;
-
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
-    private final PaymentCachingService cachingService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
-    private final IMerchantTransactionService merchantTransactionService;
 
     public PayUMerchantPaymentService(Gson gson,
                                       ObjectMapper objectMapper,
@@ -215,7 +214,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     public void fetchAndUpdateTransactionFromSource(Transaction transaction) {
         Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
+            TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
             MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
             PayUVerificationResponse payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, PayUVerificationResponse.class);
@@ -225,19 +224,17 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUTransactionDetails.getPayUExternalTxnId());
             int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
             if (payUChargingVerificationResponse.getStatus() == 1) {
-                if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
+                if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus()) && StringUtils.isNotBlank(payUTransactionDetails.getPayUExternalTxnId())) {
                     finalTransactionStatus = TransactionStatus.SUCCESS;
-                } else if (FAILURE.equalsIgnoreCase(payUTransactionDetails.getStatus()) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
-                    finalTransactionStatus = TransactionStatus.FAILURE;
+                    if ((transaction.getType() == PaymentEvent.SUBSCRIBE) &&
+                            (StringUtils.isBlank(payUTransactionDetails.getCardToken())
+                                    || !StringUtils.equalsIgnoreCase(payUTransactionDetails.getPaymentSource(), PAYU_PAYMENT_SOURCE_SIST))) {
+                        transaction.setType(PaymentEvent.PURCHASE.name());
+                    }
                 } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                         StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
                     finalTransactionStatus = TransactionStatus.INPROGRESS;
-                } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
-                        StringUtils.equalsIgnoreCase(PENDING, payUTransactionDetails.getStatus())) {
-                    finalTransactionStatus = TransactionStatus.FAILURE;
                 }
-            } else {
-                finalTransactionStatus = TransactionStatus.FAILURE;
             }
 
             if (finalTransactionStatus == TransactionStatus.FAILURE) {
@@ -392,10 +389,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             }
         }
         PayUMandateUpiStatusResponse paymentResponse = gson.fromJson(response, PayUMandateUpiStatusResponse.class);
-        if (paymentResponse != null && paymentResponse.getStatus().equals("active")) {
-            return true;
-        }
-        return false;
+        return paymentResponse != null && paymentResponse.getStatus().equals("active");
     }
 
     private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid) {
@@ -465,7 +459,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, Class<T> target) {
         String response;
         try {
-        response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
+            response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
         } catch (HttpStatusCodeException ex) {
             log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
             throw new WynkRuntimeException(PaymentErrorType.PAY015, ex);
@@ -605,17 +599,17 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         try {
             switch (verificationType) {
                 case VPA:
-                    MultiValueMap < String, String > verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
+                    MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
                     PayuVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, PayuVpaVerificationResponse.class);
                     if (verificationResponse.getIsVPAValid() == 1)
                         verificationResponse.setValid(true);
-                    return BaseResponse. < PayuVpaVerificationResponse > builder().body(verificationResponse).status(HttpStatus.OK).build();
+                    return BaseResponse.<PayuVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
                 case BIN:
-                    MultiValueMap < String, String > verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
+                    MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
                     PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, PayUCardInfo.class);
                     if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
                         payUCardInfo.setValid(true);
-                    return BaseResponse. < PayUCardInfo > builder().body(payUCardInfo).status(HttpStatus.OK).build();
+                    return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
             }
         } catch (Exception ex) {
             throw ex;

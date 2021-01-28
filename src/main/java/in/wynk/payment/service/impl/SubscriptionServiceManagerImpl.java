@@ -65,29 +65,37 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
-        this.publishAsync(SubscriptionProvisioningMessage.builder()
-                .uid(uid)
-                .msisdn(msisdn)
-                .planId(planId)
-                .paymentCode(paymentCode)
-                .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                .referenceId(transactionId)
-                .paymentEvent(paymentEvent)
-                .transactionStatus(transactionStatus)
-                .build());
+        try {
+            this.publishAsync(SubscriptionProvisioningMessage.builder()
+                    .uid(uid)
+                    .msisdn(msisdn)
+                    .planId(planId)
+                    .paymentCode(paymentCode)
+                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                    .referenceId(transactionId)
+                    .paymentEvent(paymentEvent)
+                    .transactionStatus(transactionStatus)
+                    .build());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
+        }
     }
 
     @Override
     public void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus) {
-        this.publishAsync(SubscriptionProvisioningMessage.builder()
-                .uid(uid)
-                .msisdn(msisdn)
-                .planId(planId)
-                .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                .referenceId(transactionId)
-                .paymentEvent(PaymentEvent.UNSUBSCRIBE)
-                .transactionStatus(transactionStatus)
-                .build());
+        try {
+            this.publishAsync(SubscriptionProvisioningMessage.builder()
+                    .uid(uid)
+                    .msisdn(msisdn)
+                    .planId(planId)
+                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                    .referenceId(transactionId)
+                    .paymentEvent(PaymentEvent.UNSUBSCRIBE)
+                    .transactionStatus(transactionStatus)
+                    .build());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY016, e);
+        }
     }
 
     @Override
@@ -116,7 +124,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
-            throw new WynkRuntimeException(e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
         }
     }
 
@@ -135,13 +143,13 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
                 if (provisioningResponse.getState() != ProvisionState.UNSUBSCRIBED) {
-                    throw new WynkRuntimeException(PaymentErrorType.PAY013);
+                    throw new WynkRuntimeException(PaymentErrorType.PAY016);
                 }
             }
         } catch (HttpStatusCodeException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY016, e, e.getResponseBodyAsString());
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, "Unable to unSubscribe plan from payment service");
+            throw new WynkRuntimeException(PaymentErrorType.PAY016, e, "Unable to unSubscribe plan from payment service");
         }
     }
 

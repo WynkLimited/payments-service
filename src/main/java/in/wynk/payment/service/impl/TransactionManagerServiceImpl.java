@@ -169,6 +169,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
                 }
             }
+        } catch (WynkRuntimeException e) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            throw e;
         } finally {
             if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
                 transaction.setExitTime(Calendar.getInstance());

@@ -9,9 +9,11 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.AmazonReceiptDetails;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
@@ -107,6 +109,12 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
         return responseBuilder.build();
+    }
+
+    private void reconcileReceipt(Transaction transaction) {
+        final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
+        final String receiptId = merchantTransaction.getExternalTransactionId();
+        final String userId = merchantTransaction.<AmazonIapVerificationRequest>getRequest().getUserData().getUserId();
     }
 
     private void fetchAndUpdateTransaction(Transaction transaction) {

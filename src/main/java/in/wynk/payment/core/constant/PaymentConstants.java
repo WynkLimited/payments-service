@@ -16,10 +16,10 @@ public interface PaymentConstants extends BaseConstants {
     String SUCCESS = "success";
     String PIPE_SEPARATOR = "|";
     String BASE_USER_EMAIL = "@wynk.in";
-    String IS_RECONCILIATION = "isReconciliation";
 
     String PAYMENT_METHOD = "paymentMethod";
     String REQUEST_PAYLOAD = "requestPayload";
+    String MERCHANT_TRANSACTION = "merchantTransaction";
 
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";

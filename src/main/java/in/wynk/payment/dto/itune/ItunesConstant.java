@@ -10,6 +10,7 @@ public interface ItunesConstant {
     String TRANSACTION_ID = "transaction_id";
     String STATUS = "status";
     String RECEIPT_DATA = "receipt-data";
+    String RECEIPT_TYPE = "receipt-type";
     String PASSWORD = "password";
     String LATEST_RECEIPT_INFO = "latest_receipt_info";
     String PURCHASE_DATE_MS = "purchase_date_ms";

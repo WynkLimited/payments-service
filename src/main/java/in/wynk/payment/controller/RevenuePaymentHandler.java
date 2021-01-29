@@ -6,7 +6,9 @@ import com.google.gson.Gson;
 import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.Utils;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
@@ -16,6 +18,7 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -45,9 +48,12 @@ public class RevenuePaymentHandler {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(SessionKeys.UID);
         final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
+        if (request.getPlanId() == 0 && StringUtils.isBlank(request.getItemId())) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid planId or itemId");
+        }
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse =  paymentManager.doCharging(uid, msisdn, request);
+        BaseResponse<?> baseResponse = paymentManager.doCharging(uid, msisdn, request);
         return baseResponse.getResponse();
     }
 

@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -86,7 +87,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     private PaymentOptionsDTO.PlanDetails buildPlanDetails(String planId) {
         boolean isFreeTrail = false;
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        List<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
+        Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
         PlanDTO plan = paymentCachingService.getPlan(planId);
         if(plan.getLinkedFreePlanId() != null && !CollectionUtils.isEmpty(eligiblePlanIds)) {
             isFreeTrail = eligiblePlanIds.contains(plan.getLinkedFreePlanId());

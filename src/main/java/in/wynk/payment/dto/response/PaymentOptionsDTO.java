@@ -29,6 +29,7 @@ public class PaymentOptionsDTO {
         private final int perMonthValue;
         private final double price;
         private final double discountedPrice;
+        private final boolean freeTrialAvailable;
     }
 
     @Builder

@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -390,6 +391,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             } else {
                 throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
             }
+        } catch (Exception ex){
+            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
+            throw new WynkRuntimeException(PAY015, ex);
         }
         PayUMandateUpiStatusResponse paymentResponse = gson.fromJson(response, PayUMandateUpiStatusResponse.class);
         if (paymentResponse != null && paymentResponse.getStatus().equals("active")) {
@@ -468,10 +472,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         response = restTemplate.postForObject(payUInfoApiUrl, request, String.class);
         } catch (HttpStatusCodeException ex) {
             log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY015, ex);
+            throw new WynkRuntimeException(PAY015, ex);
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
-            throw ex;
+            throw new WynkRuntimeException(PAY015, ex);
         }
         return gson.fromJson(response, target);
     }

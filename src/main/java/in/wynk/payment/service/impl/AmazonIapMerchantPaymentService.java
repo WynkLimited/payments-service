@@ -47,6 +47,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE;
@@ -102,7 +103,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction) {
-        fetchAndUpdateTransaction(transaction);
+        reconcileReceipt(transaction);
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
@@ -113,8 +114,8 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
 
     private void reconcileReceipt(Transaction transaction) {
         final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
-        final String receiptId = merchantTransaction.getExternalTransactionId();
-        final String userId = merchantTransaction.<AmazonIapVerificationRequest>getRequest().getUserData().getUserId();
+        transaction.putValueInPaymentMetaData("amazonIapVerificationRequest", merchantTransaction.<AmazonIapVerificationRequest>getRequest());
+        fetchAndUpdateTransaction(transaction);
     }
 
     private void fetchAndUpdateTransaction(Transaction transaction) {
@@ -126,7 +127,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         try {
             AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
             builder.request(request).externalTransactionId(request.getReceipt().getReceiptId()).response(amazonIapReceipt);
-            if (!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) {
+            if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
                 AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                         .receiptId(request.getReceipt().getReceiptId())
                         .id(request.getReceipt().getReceiptId())

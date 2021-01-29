@@ -91,7 +91,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 .discountedPrice(plan.getPrice().getAmount())
                 .price(plan.getPrice().getDisplayAmount())
                 .discount(plan.getPrice().getSavings())
-                .partnerLogo(partner.getLogo())
+                .partnerLogo(partner.getPartnerLogo())
                 .partnerName(partner.getName())
                 .build();
     }

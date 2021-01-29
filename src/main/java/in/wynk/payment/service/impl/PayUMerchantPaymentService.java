@@ -341,7 +341,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
-            payload.put(PAYU_FREE_TRIAL, String.valueOf(isFreeTrial));
+            payload.put(PAYU_FREE_TRIAL, isFreeTrial?"1":"0");
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");
         }

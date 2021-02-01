@@ -17,6 +17,7 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -99,7 +100,7 @@ public class PaymentManager {
                 }
             } catch (WynkRuntimeException e) {
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
-                throw new PaymentRuntimeException(e.getMarker(), e.getMessage(), e);
+                throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
             }
         }
         return baseResponse;
@@ -194,7 +195,7 @@ public class PaymentManager {
             }
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
-            throw e;
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         }
         return response;
     }

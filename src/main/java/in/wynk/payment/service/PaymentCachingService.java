@@ -4,7 +4,9 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.data.enums.State;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.SkuMapping;
 import in.wynk.payment.core.dao.repository.PaymentMethodDao;
+import in.wynk.payment.core.dao.repository.SkuDao;
 import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Getter;
@@ -34,6 +36,7 @@ import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 @Getter
 public class PaymentCachingService {
 
+    private final SkuDao skuDao;
     private static final Logger logger = LoggerFactory.getLogger(PaymentCachingService.class);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
@@ -44,10 +47,11 @@ public class PaymentCachingService {
     private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
+    private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
 
-
-    public PaymentCachingService(PaymentMethodDao paymentMethodDao, ISubscriptionServiceManager subscriptionServiceManager) {
+    public PaymentCachingService(PaymentMethodDao paymentMethodDao, SkuDao skuDao, ISubscriptionServiceManager subscriptionServiceManager) {
         this.paymentMethodDao = paymentMethodDao;
+        this.skuDao = skuDao;
         this.subscriptionServiceManager = subscriptionServiceManager;
     }
 
@@ -59,6 +63,7 @@ public class PaymentCachingService {
         AnalyticService.update("cacheLoadInit", true);
         loadPayments();
         loadPlans();
+        loadSku();
         AnalyticService.update("cacheLoadCompleted", true);
     }
 
@@ -109,6 +114,22 @@ public class PaymentCachingService {
         }
     }
 
+    private void loadSku() {
+        List<SkuMapping> skuMappings = skuDao.findAll();
+        if (CollectionUtils.isNotEmpty(skuMappings) && writeLock.tryLock()) {
+            try {
+                Map<String, String> skuToSkuMap = skuMappings.stream().collect(Collectors.toMap(SkuMapping::getOldSku, SkuMapping::getNewSku));
+                skuToSku.clear();
+                skuToSku.putAll(skuToSkuMap);
+            } catch (Throwable th) {
+                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing old sku to new sku cache. Exception: {}", th.getMessage(), th);
+                throw th;
+            } finally {
+                writeLock.unlock();
+            }
+        }
+    }
+
 
     private List<PaymentMethod> getActivePaymentMethods() {
         return paymentMethodDao.findAllByState(State.ACTIVE);
@@ -119,7 +140,15 @@ public class PaymentCachingService {
         return plans.get(planId);
     }
 
-    public PlanDTO getPlanFromSku(String sku){
+    public String getNewSku(String oldSku) {
+        return skuToSku.get(oldSku);
+    }
+
+    public boolean containsSku(String oldSku) {
+        return skuToSku.containsKey(oldSku);
+    }
+
+    public PlanDTO getPlanFromSku(String sku) {
         return skuToPlan.get(sku);
     }
 

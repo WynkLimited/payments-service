@@ -10,8 +10,8 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -24,16 +24,16 @@ public class PaymentRecurringUnSchedulingPollingQueue extends AbstractSQSMessage
     @Value("${payment.pooling.queue.unschedule.sqs.consumer.delayTimeUnit}")
     private TimeUnit paymentRecurringUnSchedulePollingDelayTimeUnit;
 
-    private final ThreadPoolExecutor messageHandlerThreadPool;
-    private final ScheduledThreadPoolExecutor pollingThreadPool;
+    private final ExecutorService messageHandlerThreadPool;
+    private final ScheduledExecutorService pollingThreadPool;
     private final IRecurringPaymentManagerService recurringPaymentManager;
 
     public PaymentRecurringUnSchedulingPollingQueue(String queueName,
                                                     AmazonSQS sqs,
                                                     ObjectMapper objectMapper,
                                                     ISQSMessageExtractor messagesExtractor,
-                                                    ThreadPoolExecutor messageHandlerThreadPool,
-                                                    ScheduledThreadPoolExecutor pollingThreadPool,
+                                                    ExecutorService messageHandlerThreadPool,
+                                                    ScheduledExecutorService pollingThreadPool,
                                                     IRecurringPaymentManagerService recurringPaymentManager) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
@@ -44,7 +44,7 @@ public class PaymentRecurringUnSchedulingPollingQueue extends AbstractSQSMessage
     @Override
     public void consume(PaymentRecurringUnSchedulingMessage message) {
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentRecurringUnSchedulingMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId());
+        recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId(), message.getPaymentEvent(), message.getGetValidTillDate());
     }
 
     @Override
@@ -73,4 +73,5 @@ public class PaymentRecurringUnSchedulingPollingQueue extends AbstractSQSMessage
             messageHandlerThreadPool.shutdown();
         }
     }
+
 }

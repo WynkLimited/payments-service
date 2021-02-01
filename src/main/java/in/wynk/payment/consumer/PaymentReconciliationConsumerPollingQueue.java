@@ -15,8 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -29,8 +29,8 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
 
-    private final ThreadPoolExecutor messageHandlerThreadPool;
-    private final ScheduledThreadPoolExecutor pollingThreadPool;
+    private final ExecutorService messageHandlerThreadPool;
+    private final ScheduledExecutorService pollingThreadPool;
 
     @Autowired
     private PaymentManager paymentManager;
@@ -39,8 +39,8 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                                                      AmazonSQS sqs,
                                                      ObjectMapper objectMapper,
                                                      ISQSMessageExtractor messagesExtractor,
-                                                     ThreadPoolExecutor messageHandlerThreadPool,
-                                                     ScheduledThreadPoolExecutor pollingThreadPool) {
+                                                     ExecutorService messageHandlerThreadPool,
+                                                     ScheduledExecutorService pollingThreadPool) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;

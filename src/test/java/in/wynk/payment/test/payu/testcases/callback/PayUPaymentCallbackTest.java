@@ -63,8 +63,7 @@ public class PayUPaymentCallbackTest {
             SessionContextHolder.set(PayUTestData.initSession());
         }
         Mockito.when(recurringPaymentManager.scheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID.toString()), any(), anyInt())).thenReturn(null);
-        Mockito.doNothing().when(subscriptionManager).subscribePlanSync(anyInt(), anyString(), anyString(), anyString(), anyString(), anyString(), any(), any());
-
+        Mockito.doNothing().when(subscriptionManager).subscribePlanSync(anyInt(), anyString(), anyString(), anyString(), anyString(), any(), any());
         Mockito.when(transactionManager.upsert(any())).thenReturn(null);
         Mockito.when(transactionManager.get(eq(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString()))).thenReturn(PayUTestData.initOneTimePaymentTransaction());
         Mockito.when(transactionManager.get(eq(PayUDataConstant.RECURRING_TRANSACTION_ID.toString()))).thenReturn(PayUTestData.initRecurringPaymentTransaction());

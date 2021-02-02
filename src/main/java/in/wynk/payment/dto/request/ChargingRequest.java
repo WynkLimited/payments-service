@@ -20,7 +20,7 @@ public class ChargingRequest {
     private boolean autoRenew;
     @Analysed
     private String couponId;
-    @Analysed(name = "paymentGateway")
+    @Analysed
     private PaymentCode paymentCode;
     @Analysed(name = "paymentMode")
     private String paymentMode;

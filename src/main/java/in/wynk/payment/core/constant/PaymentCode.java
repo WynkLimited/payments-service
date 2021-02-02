@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 import static in.wynk.payment.core.constant.BeanConstant.*;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 
 @Getter
 @RequiredArgsConstructor
@@ -24,7 +24,7 @@ public enum PaymentCode {
     APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, true),
     SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false);
 
-    @Analysed(name = PAYMENT_METHOD)
+    @Analysed(name = PAYMENT_GATEWAY)
     private final String code;
     private final boolean isInternalRecurring;
 

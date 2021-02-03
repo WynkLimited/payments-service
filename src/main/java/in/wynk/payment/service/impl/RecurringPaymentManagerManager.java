@@ -1,7 +1,9 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
@@ -36,13 +38,17 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
 
     @Override
     public PaymentRenewal scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime) {
-        return paymentRenewalDao.save(PaymentRenewal.builder()
-                .day(nextRecurringDateTime)
-                .transactionId(transactionId)
-                .hour(nextRecurringDateTime.getTime())
-                .createdTimestamp(Calendar.getInstance())
-                .transactionEvent(PaymentEvent.SUBSCRIBE.name())
-                .build());
+        try {
+            return paymentRenewalDao.save(PaymentRenewal.builder()
+                    .day(nextRecurringDateTime)
+                    .transactionId(transactionId)
+                    .hour(nextRecurringDateTime.getTime())
+                    .createdTimestamp(Calendar.getInstance())
+                    .transactionEvent(PaymentEvent.SUBSCRIBE.name())
+                    .build());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
+        }
     }
 
     @Override
@@ -58,19 +64,23 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
 
     @Override
     public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validTillDate) {
-        paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
-            recurringPayment.setTransactionEvent(paymentEvent.name());
-            Calendar calendar = Calendar.getInstance();
-            recurringPayment.setUpdatedTimestamp(calendar);
-            calendar.setTimeInMillis(validTillDate);
-            recurringPayment.setDay(calendar);
-            recurringPayment.setHour(calendar.getTime());
-            paymentRenewalDao.save(recurringPayment);
-            eventPublisher.publishEvent(RecurringPaymentEvent.builder()
-                    .transactionId(transactionId)
-                    .paymentEvent(PaymentEvent.UNSUBSCRIBE)
-                    .build());
-        });
+        try {
+            paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
+                recurringPayment.setTransactionEvent(paymentEvent.name());
+                Calendar calendar = Calendar.getInstance();
+                recurringPayment.setUpdatedTimestamp(calendar);
+                calendar.setTimeInMillis(validTillDate);
+                recurringPayment.setDay(calendar);
+                recurringPayment.setHour(calendar.getTime());
+                paymentRenewalDao.save(recurringPayment);
+                eventPublisher.publishEvent(RecurringPaymentEvent.builder()
+                        .transactionId(transactionId)
+                        .paymentEvent(PaymentEvent.UNSUBSCRIBE)
+                        .build());
+            });
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
+        }
     }
 
 }

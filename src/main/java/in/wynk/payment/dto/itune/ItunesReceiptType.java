@@ -21,7 +21,7 @@ public enum ItunesReceiptType {
                 throw new WynkRuntimeException("Error while parsing itunes subscription data " + itunesData);
             }
             StringBuilder desiredJsonRep = new StringBuilder("{");
-            for(Object key : jsonObj.keySet()) {
+            for (Object key : jsonObj.keySet()) {
                 String param = (String) key;
                 String value = (String) jsonObj.get(key);
                 desiredJsonRep.append(encloseInDoubleQuotes(param)).append("=").append(encloseInDoubleQuotes(value)).append(";");
@@ -30,8 +30,22 @@ public enum ItunesReceiptType {
         }
 
         @Override
+        public String getDecodedItunesData(String itunesData) {
+            String decodeStr = new String(Base64.decodeBase64(itunesData));
+            decodeStr.replace("{", "");
+            decodeStr.replace("{", "");
+            decodeStr.replace("\"", "");
+            String[] pairs = decodeStr.split(";");
+            JSONObject jsonObject = new JSONObject();
+            for (int i = 0; i < pairs.length - 1; i = +2) {
+                jsonObject.put(pairs[i], pairs[i + 1]);
+            }
+            return jsonObject.toJSONString();
+        }
+
+        @Override
         public List<LatestReceiptInfo> getSubscriptionDetailJson(ItunesReceipt itunesReceipt) {
-            if(itunesReceipt.getLatestReceiptInfoList()!=null){
+            if (itunesReceipt.getLatestReceiptInfoList() != null) {
                 return itunesReceipt.getLatestReceiptInfoList();
             }
             return null;
@@ -58,22 +72,28 @@ public enum ItunesReceiptType {
         }
     },
     SEVEN {
-
         @Override
         public String getEncodedItunesData(String itunesData) {
             JSONObject jsonObj;
             try {
                 jsonObj = (JSONObject) JSONValue.parseWithException(itunesData);
-            }
-            catch (ParseException e) {
+            } catch (ParseException e) {
                 throw new WynkRuntimeException("Error while parsing itunes subscription data " + itunesData);
             }
             return (String) jsonObj.get(ItunesConstant.RECEIPT_DATA);
         }
 
         @Override
+        public String getDecodedItunesData(String itunesData) {
+            JSONObject jsonObj = new JSONObject();
+            jsonObj.put(ItunesConstant.RECEIPT_DATA, itunesData);
+            return JSONValue.toJSONString(jsonObj);
+        }
+
+
+        @Override
         public List<LatestReceiptInfo> getSubscriptionDetailJson(ItunesReceipt itunesReceipt) {
-            if(itunesReceipt.getLatestReceiptInfoList()!=null){
+            if (itunesReceipt.getLatestReceiptInfoList() != null) {
                 return itunesReceipt.getLatestReceiptInfoList();
             }
             return null;
@@ -104,6 +124,8 @@ public enum ItunesReceiptType {
     }
 
     public abstract String getEncodedItunesData(String iTunesData);
+
+    public abstract String getDecodedItunesData(String itunesData);
 
     public abstract List<LatestReceiptInfo> getSubscriptionDetailJson(ItunesReceipt itunesReceipt);
 

@@ -9,18 +9,17 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.core.dao.entity.TestingByPassNumbers;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
@@ -91,16 +90,14 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final TestingByPassNumbersDao testingByPassNumbersDao;
-    private final PaymentCachingService paymentCachingService;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao, PaymentCachingService paymentCachingService) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
         this.gson = gson;
         this.mapper = mapper;
         this.receiptDetailsDao = receiptDetailsDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.testingByPassNumbersDao = testingByPassNumbersDao;
-        this.paymentCachingService = paymentCachingService;
     }
 
     @Override
@@ -174,6 +171,20 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         }
     }
 
+    private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction) {
+        final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
+        JSONObject request = gson.fromJson(merchantTransaction.<String>getRequest(), JSONObject.class);
+        ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(merchantTransaction.getRequest());
+        String decodedReceipt = receiptType.getDecodedItunesData((String) request.get(RECEIPT_DATA));
+        transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
+        fetchAndUpdateFromReceipt(transaction);
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+        }
+        return responseBuilder.build();
+    }
+
     private void fetchAndUpdateFromReceipt(Transaction transaction) {
         final String decodedReceipt = transaction.getValueFromPaymentMetaData(DECODED_RECEIPT);
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(decodedReceipt);
@@ -191,7 +202,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                     final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                     final String itunesTrxnId = latestReceiptInfo.getTransactionId();
                     final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                    if (receiptDetails != null && receiptDetails.getState() == State.ACTIVE && receiptDetails.getExpiry() > System.currentTimeMillis()) {
+                    if (receiptDetails != null && receiptDetails.getState() == State.ACTIVE && receiptDetails.getExpiry() > System.currentTimeMillis() && transaction.getStatus() != TransactionStatus.FAILURE) {
                         log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                         code = ItunesStatusCodes.APPLE_21016;
                         transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
@@ -226,33 +237,37 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
             log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), decodedReceipt, e);
-            throw e;
         }
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
+        String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
+        return getReceiptObjForUserInternal(encodedValue, itunesReceiptType, transaction);
+    }
+
+    private List<LatestReceiptInfo> getReceiptObjForUserInternal(String encodedValue, ItunesReceiptType itunesReceiptType, Transaction transaction) {
         String secret;
+        ItunesStatusCodes statusCode;
+        Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         Optional<Client> optionalClient = ClientContext.getClient();
-        if(optionalClient.isPresent() && optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).isPresent()) {
+        if (optionalClient.isPresent() && optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).isPresent()) {
             secret = optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).get();
         } else {
             throw new WynkRuntimeException(ClientErrorType.CLIENT003);
         }
-        Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        if (StringUtils.isBlank(encodedValue)) {
+            statusCode = ItunesStatusCodes.APPLE_21011;
+            log.error(BaseLoggingMarkers.PAYMENT_ERROR, "Encoded iTunes receipt data is empty! for iTunesData {}", encodedValue);
+            throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
+        }
+
         try {
-            ItunesStatusCodes statusCode;
-            String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
-            if (StringUtils.isBlank(encodedValue)) {
-                statusCode = ItunesStatusCodes.APPLE_21011;
-                log.error(BaseLoggingMarkers.PAYMENT_ERROR, "Encoded iTunes receipt data is empty! for iTunesData {}", receipt);
-                throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
-            }
             JSONObject requestJson = new JSONObject();
             requestJson.put(RECEIPT_DATA, encodedValue);
             requestJson.put(PASSWORD, secret);
             merchantTransactionBuilder.request(gson.toJson(requestJson));
-            ResponseEntity<String> appStoreResponse = getAppStoreResponse(requestJson,merchantTransactionBuilder,itunesApiUrl);
-            ItunesReceipt receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(),itunesReceiptType);
+            ResponseEntity<String> appStoreResponse = getAppStoreResponse(requestJson, merchantTransactionBuilder, itunesApiUrl);
+            ItunesReceipt receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(), itunesReceiptType);
             int status = Integer.parseInt(receiptObj.getStatus());
             ItunesStatusCodes responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
             if (status == 0) {
@@ -265,7 +280,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 return receiptInfoList;
             } else {
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
-                    if(ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
+                    if (ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
                         Optional<TestingByPassNumbers> optionalTestingByPassNumbers = testingByPassNumbersDao.findById(transaction.getMsisdn());
                         if (optionalTestingByPassNumbers.isPresent()) {
                             appStoreResponse = getAppStoreResponse(requestJson, merchantTransactionBuilder, itunesApiAltUrl);
@@ -291,10 +306,9 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 log.error(BaseLoggingMarkers.PAYMENT_ERROR, "Failed to subscribe to iTunes: response {} request!! status : {} error {}", appStoreResponse, status, statusCode.getErrorTitle());
                 throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
             }
-
         } catch (HttpStatusCodeException e) {
             merchantTransactionBuilder.response(e.getResponseBodyAsString());
-            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE,"Exception while posting data to iTunes for uid {} ", transaction.getUid());
+            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "Exception while posting data to iTunes for uid {} ", transaction.getUid());
             throw new WynkRuntimeException(PaymentErrorType.PAY011, e);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to ", e);
@@ -355,23 +369,38 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     private boolean filterBySku(LatestReceiptInfo receipt, String skuId) {
         return StringUtils.isNotEmpty(receipt.getProductId())
-                && (paymentCachingService.containsSku(receipt.getProductId()) ?
-                StringUtils.equalsIgnoreCase(paymentCachingService.getNewSku(receipt.getProductId()), skuId) :
+                && (cachingService.containsSku(receipt.getProductId()) ?
+                StringUtils.equalsIgnoreCase(cachingService.getNewSku(receipt.getProductId()), skuId) :
                 StringUtils.equalsIgnoreCase(receipt.getProductId(), skuId));
     }
 
     @Override
-    public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+        ChargingStatusResponse statusResponse;
         Transaction transaction = TransactionContext.get();
+        switch (chargingStatusRequest.getMode()) {
+            case SOURCE:
+                statusResponse = fetchChargingStatusFromItunesSource(transaction);
+                break;
+            case LOCAL:
+                statusResponse = fetchChargingStatusFromDataSource(transaction);
+                break;
+            default:
+                throw new WynkRuntimeException(PaymentErrorType.PAY008);
+        }
+        return BaseResponse.<ChargingStatusResponse>builder()
+                .status(HttpStatus.OK)
+                .body(statusResponse)
+                .build();
+    }
+
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
-        return BaseResponse.<ChargingStatusResponse>builder()
-                .status(HttpStatus.OK)
-                .body(responseBuilder.build())
-                .build();
+        return responseBuilder.build();
     }
 
     @Override

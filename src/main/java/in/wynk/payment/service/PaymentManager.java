@@ -17,14 +17,17 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -36,10 +39,12 @@ import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 import java.util.Calendar;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_TRANSACTION;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 
 @Slf4j
@@ -52,16 +57,14 @@ public class PaymentManager {
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
-    private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService) {
         this.couponManager = couponManager;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
         this.merchantTransactionService = merchantTransactionService;
-        this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
@@ -90,9 +93,14 @@ public class PaymentManager {
             baseResponse = callbackService.handleCallback(request);
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
-            if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-                exhaustCouponIfApplicable();
+            try {
+                transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
+                if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                    exhaustCouponIfApplicable();
+                }
+            } catch (WynkRuntimeException e) {
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+                throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
             }
         }
         return baseResponse;
@@ -117,26 +125,37 @@ public class PaymentManager {
         final IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         final BaseResponse<?> baseResponse;
         try {
+            if(!isSync) {
+                if (EnumSet.of(PaymentCode.AMAZON_IAP, PaymentCode.ITUNES).contains(transaction.getPaymentChannel())) {
+                    MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+                    transaction.putValueInPaymentMetaData(MERCHANT_TRANSACTION, merchantTransaction);
+                }
+            }
             baseResponse = statusService.status(request);
         } finally {
             TransactionStatus finalStatus = transaction.getStatus();
             if (!isSync) {
-                transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
-                if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-                    exhaustCouponIfApplicable();
-                }
-                if (existingStatus != finalStatus) {
-                    eventPublisher.publishEvent(PaymentReconciledEvent.builder()
-                            .uid(transaction.getUid())
-                            .msisdn(transaction.getMsisdn())
-                            .itemId(transaction.getItemId())
-                            .planId(transaction.getPlanId())
-                            .clientAlias(transaction.getClientAlias())
-                            .transactionId(transaction.getIdStr())
-                            .paymentCode(transaction.getPaymentChannel())
-                            .paymentEvent(transaction.getType())
-                            .transactionStatus(transaction.getStatus())
-                            .build());
+                try {
+                    transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+                    if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                        exhaustCouponIfApplicable();
+                    }
+                    if (existingStatus != finalStatus) {
+                        eventPublisher.publishEvent(PaymentReconciledEvent.builder()
+                                .uid(transaction.getUid())
+                                .msisdn(transaction.getMsisdn())
+                                .itemId(transaction.getItemId())
+                                .planId(transaction.getPlanId())
+                                .clientAlias(transaction.getClientAlias())
+                                .transactionId(transaction.getIdStr())
+                                .paymentCode(transaction.getPaymentChannel())
+                                .paymentEvent(transaction.getType())
+                                .transactionStatus(transaction.getStatus())
+                                .build());
+                    }
+                } catch (WynkRuntimeException e) {
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+                    throw e;
                 }
             }
         }
@@ -154,21 +173,35 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.getPaymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
-        final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
+        final Transaction transaction = initiateTransactionForIap(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
+        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                .paymentCode(transaction.getPaymentChannel())
+                .paymentEvent(transaction.getType())
+                .transactionId(transaction.getIdStr())
+                .itemId(transaction.getItemId())
+                .planId(transaction.getPlanId())
+                .msisdn(transaction.getMsisdn())
+                .uid(transaction.getUid())
+                .build());
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         final BaseResponse<?> response = verificationService.verifyReceipt(request);
         final TransactionStatus finalStatus = transaction.getStatus();
-        transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
-        if (finalStatus == TransactionStatus.SUCCESS) {
-            exhaustCouponIfApplicable();
+        try {
+            transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
+            if (finalStatus == TransactionStatus.SUCCESS) {
+                exhaustCouponIfApplicable();
+            }
+        } catch (WynkRuntimeException e) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         }
         return response;
     }
 
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
-        final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), request.getClientAlias(), paymentCode, PaymentEvent.RENEW);
+        final Transaction transaction = initiateTransactionForRenew(request.getPlanId(), request.getUid(), request.getMsisdn(), request.getClientAlias(), paymentCode);
         Map<String, Object> paymentMetaData = transaction.getPaymentMetaData();
         paymentMetaData.put(PaymentConstants.RENEWAL, true);
         transaction.setPaymentMetaData(paymentMetaData);
@@ -207,22 +240,18 @@ public class PaymentManager {
         return TransactionContext.get().getId().toString();
     }
 
-    private Transaction initiateTransaction(int planId, String uid, String msisdn, String clientAlias, PaymentCode paymentCode, PaymentEvent paymentEvent) {
+    private Transaction initiateTransactionForRenew(int planId, String uid, String msisdn, String clientAlias, PaymentCode paymentCode) {
         PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalAmountToBePaid = selectedPlan.getFinalPrice();
         final TransactionInitRequest request = TransactionInitRequest.builder().uid(uid).msisdn(msisdn)
-                .paymentCode(paymentCode).clientAlias(clientAlias).planId(planId).event(paymentEvent)
+                .paymentCode(paymentCode).clientAlias(clientAlias).planId(planId).event(PaymentEvent.RENEW)
                 .amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(request));
         return TransactionContext.get();
     }
 
-    private Transaction initiateTransactionForItem(boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
-        return initiateTransaction(false, 0, uid, msisdn, itemId, couponId, paymentCode);
-    }
-
-    private Transaction initiateTransactionForPlan(boolean autoRenew, int planId, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
-        return initiateTransaction(autoRenew, planId, uid, msisdn, null, couponId, paymentCode);
+    private Transaction initiateTransactionForIap(boolean autoRenew, int planId, String uid, String msisdn, PaymentCode paymentCode) {
+        return initiateTransaction(autoRenew, planId, uid, msisdn, null, null, paymentCode);
     }
 
     private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {

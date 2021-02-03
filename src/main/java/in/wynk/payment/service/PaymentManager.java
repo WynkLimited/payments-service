@@ -38,11 +38,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.Set;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_TRANSACTION;
-import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Slf4j
 @Service
@@ -199,15 +201,14 @@ public class PaymentManager {
 
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
         final Transaction transaction = initiateTransactionForRenew(request.getPlanId(), request.getUid(), request.getMsisdn(), request.getClientAlias(), paymentCode);
-        Map<String, Object> paymentMetaData = transaction.getPaymentMetaData();
-        paymentMetaData.put(PaymentConstants.RENEWAL, true);
-        transaction.setPaymentMetaData(paymentMetaData);
+        transaction.putValueInPaymentMetaData(RENEWAL, true);
+        transaction.putValueInPaymentMetaData(ATTEMPT_SEQUENCE, request.getAttemptSequence() + 1);
         final TransactionStatus initialStatus = transaction.getStatus();
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
         try {
             merchantPaymentRenewalService.doRenewal(request);
         } finally {
-            if(merchantPaymentRenewalService.supportsRenewalReconciliation()){
+            if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                         .paymentCode(transaction.getPaymentChannel())
                         .paymentEvent(transaction.getType())

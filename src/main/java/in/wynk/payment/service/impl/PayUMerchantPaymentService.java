@@ -37,6 +37,7 @@ import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -134,6 +135,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException("No merchant transaction found for Subscription");
         }
+        PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
+        if (planPeriodDTO.getMaxRetryCount() < paymentRenewalChargingRequest.getAttemptSequence()) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
+        }
         try {
             PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUTransactionDetails payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
@@ -144,7 +150,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transactionId)) {
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, merchantTransaction.getExternalTransactionId());
                 payUTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
-                int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
+                int retryInterval = planPeriodDTO.getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
                     if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.SUCCESS.getValue());
@@ -251,7 +257,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)
+                eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }
 
@@ -396,7 +403,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             } else {
                 throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
             }
-        } catch (Exception ex){
+        } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
         }

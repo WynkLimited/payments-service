@@ -67,8 +67,10 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : availableMethods.keySet()) {
             PlanDTO paidPlan = paymentCachingService.getPlan(planId);
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
             Optional<Integer> freePlanOption = Optional.ofNullable(paidPlan.getLinkedFreePlanId());
-            if (freePlanOption.isPresent() && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && group != PaymentGroup.CARD) {
+            if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && group != PaymentGroup.CARD) {
                 continue;
             }
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());

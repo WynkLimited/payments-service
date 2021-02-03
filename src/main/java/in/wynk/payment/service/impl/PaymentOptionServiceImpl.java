@@ -12,6 +12,7 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.enums.PlanType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -68,6 +69,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     private PaymentOptionsDTO paymentPaymentOptions(String planId, Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : availableMethods.keySet()) {
+            if(paymentCachingService.containsPlan(planId) && paymentCachingService.getPlan(planId).getPlanType() == PlanType.FREE && group != PaymentGroup.CARD) {
+                continue;
+            }
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
             for (PaymentMethodDTO paymentMethodDTO : methodDTOS) {
                 String paymentGroup = paymentMethodDTO.getGroup();

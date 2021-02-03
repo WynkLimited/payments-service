@@ -20,6 +20,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_GATEWAY = "paymentGateway";
     String PAYMENT_METHOD = "paymentMethod";
     String REQUEST_PAYLOAD = "requestPayload";
+    String MERCHANT_TRANSACTION = "merchantTransaction";
 
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";

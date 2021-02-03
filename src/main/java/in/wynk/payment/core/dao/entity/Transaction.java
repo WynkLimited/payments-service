@@ -103,8 +103,8 @@ public class Transaction {
     }
 
     public Map<String, Object> getPaymentMetaData() {
-        if(Objects.isNull(paymentMetaData)){
-            return new HashMap<>();
+        if(Objects.isNull(paymentMetaData)) {
+            paymentMetaData = new HashMap<>();
         }
         return paymentMetaData;
     }

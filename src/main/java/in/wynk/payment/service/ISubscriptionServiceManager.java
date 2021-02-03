@@ -2,6 +2,8 @@ package in.wynk.payment.service;
 
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.subscription.common.dto.OfferDTO;
+import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 
 import java.util.List;
@@ -18,6 +20,8 @@ public interface ISubscriptionServiceManager {
 
     List<PlanDTO> getPlans();
 
-    
+    List<OfferDTO> getOffers();
+
+   List<PartnerDTO> getPartners();
 
 }

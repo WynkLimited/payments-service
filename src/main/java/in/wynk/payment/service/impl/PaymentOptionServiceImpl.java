@@ -69,7 +69,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     private PaymentOptionsDTO paymentPaymentOptions(String planId, Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : availableMethods.keySet()) {
-            if(paymentCachingService.containsPlan(planId) && paymentCachingService.getPlan(planId).getPlanType() == PlanType.FREE && group != PaymentGroup.CARD) {
+            if(paymentCachingService.containsPlan(planId) && paymentCachingService.getPlan(planId).getPlanType() == PlanType.FREE_TRIAL && group != PaymentGroup.CARD) {
                 continue;
             }
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());

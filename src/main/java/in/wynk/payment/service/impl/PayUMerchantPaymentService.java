@@ -11,6 +11,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
+import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Card;
@@ -63,7 +64,6 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService {
 
     private final Gson gson;
@@ -194,7 +194,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
     }
 
-
     private ChargingStatusResponse fetchChargingStatusFromPayUSource(Transaction transaction) {
         fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
@@ -256,7 +255,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
     }
 
-
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(transaction.getPlanId());
@@ -277,8 +275,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         String userCredentials = payUMerchantKey + COLON + uid;
         String sid = SessionContextHolder.get().getId().toString();
         Map<String, String> payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
-        if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
-            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan);
+        if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
         }
         // Mandatory according to document
         payload.putAll(payloadTemp);
@@ -311,7 +309,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return payload;
     }
 
-    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan) {
+    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
         Map<String, String> payload = new HashMap<>();
         String reqType = PaymentRequestType.SUBSCRIBE.name();
         String udf1 = PAYU_SI_KEY.toUpperCase();
@@ -320,8 +318,18 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Date today = cal.getTime();
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
+        Boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
         Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        BillingUtils billingUtils = new BillingUtils(validTillDays);
+        Integer freeTrialValidity = validTillDays;
+        BillingUtils billingUtils;
+        if (isFreeTrial) {
+            freeTrialValidity = cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity();
+        }
+        if (freeTrialValidity == validTillDays) {
+            billingUtils = new BillingUtils(validTillDays);
+        } else {
+            billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
+        }
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), finalPlanAmount, today, next5Year));
             String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
@@ -331,7 +339,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
-            payload.put(PAYU_FREE_TRIAL, String.valueOf(selectedPlan.isFreeTrial()));
+            payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");
         }
@@ -657,4 +665,5 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
         return userPreferredPayment;
     }
+
 }

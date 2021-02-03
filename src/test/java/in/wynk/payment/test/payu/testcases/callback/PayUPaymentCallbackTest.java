@@ -4,6 +4,7 @@ import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.*;
@@ -62,7 +63,7 @@ public class PayUPaymentCallbackTest {
         if(SessionContextHolder.<SessionDTO>get() == null || SessionContextHolder.<SessionDTO>get().getBody() == null) {
             SessionContextHolder.set(PayUTestData.initSession());
         }
-        Mockito.when(recurringPaymentManager.scheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID.toString()), any())).thenReturn(null);
+        Mockito.doNothing().when(recurringPaymentManager).schedulePaymentRenewal(any(Transaction.class));
         Mockito.doNothing().when(subscriptionManager).subscribePlanSync(anyInt(), anyString(), anyString(), anyString(), anyString(), any(), any());
 
         Mockito.when(transactionManager.upsert(any())).thenReturn(null);

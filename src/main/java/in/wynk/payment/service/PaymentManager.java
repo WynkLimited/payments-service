@@ -38,10 +38,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
-import java.util.Calendar;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_TRANSACTION;
@@ -257,32 +254,36 @@ public class PaymentManager {
     private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
         final CouponDTO coupon;
         final double amountToBePaid;
-        final double finalAmountToBePaid;
+        double finalAmountToBePaid;
         final SessionDTO session = SessionContextHolder.getBody();
         final String service = session.get(SERVICE);
         final String clientAlias = session.get(CLIENT);
         final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder().uid(uid).msisdn(msisdn).paymentCode(paymentCode).clientAlias(clientAlias);
-
+        PlanDTO selectedPlan = cachingService.getPlan(planId);
+        PaymentEvent paymentEvent;
         if (StringUtils.isNotEmpty(itemId)) {
             builder.itemId(itemId);
-            builder.event(PaymentEvent.POINT_PURCHASE);
+            paymentEvent = PaymentEvent.POINT_PURCHASE;
             amountToBePaid = session.get(BaseConstants.POINT_PURCHASE_ITEM_PRICE);
             coupon = getCoupon(couponId, msisdn, uid, service, itemId, paymentCode, null);
         } else {
             builder.planId(planId);
-            PlanDTO selectedPlan = cachingService.getPlan(planId);
             amountToBePaid = selectedPlan.getFinalPrice();
-            builder.event(autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE);
+            paymentEvent = autoRenew ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
             coupon = getCoupon(couponId, msisdn, uid, service, null, paymentCode, selectedPlan);
         }
-
         if (coupon != null) {
             builder.couponId(couponId).discount(coupon.getDiscountPercent());
             finalAmountToBePaid = getFinalAmount(amountToBePaid, coupon);
         } else {
             finalAmountToBePaid = amountToBePaid;
         }
-        builder.amount(finalAmountToBePaid).build();
+        Set<Integer> eligiblePlans = session.get(ELIGIBLE_PLANS);
+        if (autoRenew && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
+            paymentEvent = PaymentEvent.TRIAL_SUBSCRIPTION;
+//            finalAmountToBePaid = 0;
+        }
+        builder.event(paymentEvent).amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }

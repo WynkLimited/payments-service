@@ -16,10 +16,8 @@ import in.wynk.payment.dto.request.TransactionInitRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
-import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -35,13 +33,11 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
     private final ITransactionDao transactionDao;
-    private final PaymentCachingService cachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, PaymentCachingService cachingService, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.transactionDao = transactionDao;
-        this.cachingService = cachingService;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
@@ -52,7 +48,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         publishAnalytics(persistedEntity);
         return persistedEntity;
     }
-
 
     @Override
     public Transaction get(String id) {
@@ -130,12 +125,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
         try {
             if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-                PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
                     if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
-                        Calendar nextRecurringDateTime = Calendar.getInstance();
-                        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
-                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                        recurringPaymentManagerService.schedulePaymentRenewal(transaction);
+                    } else if (transaction.getPaymentChannel().isInternalRecurring() && transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+                        recurringPaymentManagerService.schedulePaymentRenewalForFreeTrial(transaction);
                     }
                     if (isSync) {
                         subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
@@ -145,15 +139,14 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
                 } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
                     if (isSync) {
-                        subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
+                        subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
                     } else {
-                        subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus);
+                        subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
                     }
 
                 } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED) {
                     if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
-                        Calendar nextRecurringDateTime =  transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE);
-                        recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                        recurringPaymentManagerService.schedulePaymentRenewalForMigration(transaction);
                     }
                     if (isSync) {
                         subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
@@ -163,10 +156,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
                         && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)
                         && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey(PaymentConstants.RENEWAL)) {
-                    int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
-                    Calendar nextRecurringDateTime = Calendar.getInstance();
-                    nextRecurringDateTime.add(Calendar.HOUR, retryInterval);
-                    recurringPaymentManagerService.scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+                    recurringPaymentManagerService.schedulePaymentRenewalForNextRetry(transaction);
                 }
             }
         } catch (WynkRuntimeException e) {

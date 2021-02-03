@@ -18,10 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -69,7 +66,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     private PaymentOptionsDTO paymentPaymentOptions(String planId, Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : availableMethods.keySet()) {
-            if(paymentCachingService.containsPlan(planId) && paymentCachingService.getPlan(planId).getPlanType() == PlanType.FREE && group != PaymentGroup.CARD) {
+            PlanDTO paidPlan = paymentCachingService.getPlan(planId);
+            Optional<Integer> freePlanOption = Optional.ofNullable(paidPlan.getLinkedFreePlanId());
+            if (freePlanOption.isPresent() && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && group != PaymentGroup.CARD) {
                 continue;
             }
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());

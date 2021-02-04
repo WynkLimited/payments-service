@@ -10,6 +10,7 @@ import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,8 +79,12 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
 
     @Override
     public void schedulePaymentRenewalForNextRetry(Transaction transaction) {
+        PlanPeriodDTO planPeriodDTO = paymentCachingService.getPlan(transaction.getPlanId()).getPeriod();
+        if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
+            return;
+        }
         Calendar nextRecurringDateTime = Calendar.getInstance();
-        nextRecurringDateTime.add(Calendar.HOUR, paymentCachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval());
+        nextRecurringDateTime.add(Calendar.HOUR, planPeriodDTO.getRetryInterval());
         scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 

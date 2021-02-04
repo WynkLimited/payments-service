@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -85,6 +86,8 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
             return;
         }
         nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toSeconds(planPeriodDTO.getRetryInterval()));
+        AnalyticService.update(planPeriodDTO);
+        AnalyticService.update(nextRecurringDateTime);
         scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 

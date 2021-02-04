@@ -83,6 +83,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         Calendar nextRecurringDateTime = Calendar.getInstance();
         PlanPeriodDTO planPeriodDTO = paymentCachingService.getPlan(transaction.getPlanId()).getPeriod();
         if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
+            AnalyticService.update("Maximum Attempts Reached. No More Entry In Payment Renewal");
             return;
         }
         nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));

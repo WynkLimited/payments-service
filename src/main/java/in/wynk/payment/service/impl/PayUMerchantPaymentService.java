@@ -264,7 +264,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(selectedPlanId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
         }
         return responseBuilder.build();
     }

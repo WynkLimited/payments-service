@@ -304,7 +304,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
                 int planId = transaction.getPlanId();
                 int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(selectedPlanId), transaction.getPlanId())).status(HttpStatus.OK).build();
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(selectedPlanId), selectedPlanId)).status(HttpStatus.OK).build();
             }
         }
         return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid, transaction.getPlanId())).status(HttpStatus.OK).build();

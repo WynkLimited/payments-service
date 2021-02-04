@@ -224,7 +224,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
             int planId = transaction.getPlanId();
             int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-            status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(selectedPlanId), transaction.getPlanId());
+            status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(selectedPlanId), selectedPlanId);
         }
         return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
     }

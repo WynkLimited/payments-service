@@ -369,7 +369,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(selectedPlanId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
         }
         return BaseResponse.<ChargingStatusResponse>builder()
                 .status(HttpStatus.OK)

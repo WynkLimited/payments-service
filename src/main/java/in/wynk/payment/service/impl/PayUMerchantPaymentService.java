@@ -259,8 +259,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
+        int planId = transaction.getPlanId();
+        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+                .tid(transaction.getIdStr()).planId(selectedPlanId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }

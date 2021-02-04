@@ -9,6 +9,7 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkErrorType;
@@ -363,8 +364,10 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     @Override
     public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
         Transaction transaction = TransactionContext.get();
+        int planId = transaction.getPlanId();
+        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+                .tid(transaction.getIdStr()).planId(selectedPlanId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }

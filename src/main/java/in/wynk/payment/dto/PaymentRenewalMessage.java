@@ -18,6 +18,8 @@ import lombok.NoArgsConstructor;
 public class PaymentRenewalMessage {
 
     @Analysed
+    private int attemptSequence;
+    @Analysed
     private String transactionId;
     @Analysed
     private PaymentEvent paymentEvent;

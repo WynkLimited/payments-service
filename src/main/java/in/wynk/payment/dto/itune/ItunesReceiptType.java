@@ -30,20 +30,6 @@ public enum ItunesReceiptType {
         }
 
         @Override
-        public String getDecodedItunesData(String itunesData) {
-            String decodeStr = new String(Base64.decodeBase64(itunesData));
-            decodeStr.replace("{", "");
-            decodeStr.replace("{", "");
-            decodeStr.replace("\"", "");
-            String[] pairs = decodeStr.split(";");
-            JSONObject jsonObject = new JSONObject();
-            for (int i = 0; i < pairs.length - 1; i = +2) {
-                jsonObject.put(pairs[i], pairs[i + 1]);
-            }
-            return jsonObject.toJSONString();
-        }
-
-        @Override
         public List<LatestReceiptInfo> getSubscriptionDetailJson(ItunesReceipt itunesReceipt) {
             if (itunesReceipt.getLatestReceiptInfoList() != null) {
                 return itunesReceipt.getLatestReceiptInfoList();
@@ -84,14 +70,6 @@ public enum ItunesReceiptType {
         }
 
         @Override
-        public String getDecodedItunesData(String itunesData) {
-            JSONObject jsonObj = new JSONObject();
-            jsonObj.put(ItunesConstant.RECEIPT_DATA, itunesData);
-            return JSONValue.toJSONString(jsonObj);
-        }
-
-
-        @Override
         public List<LatestReceiptInfo> getSubscriptionDetailJson(ItunesReceipt itunesReceipt) {
             if (itunesReceipt.getLatestReceiptInfoList() != null) {
                 return itunesReceipt.getLatestReceiptInfoList();
@@ -124,8 +102,6 @@ public enum ItunesReceiptType {
     }
 
     public abstract String getEncodedItunesData(String iTunesData);
-
-    public abstract String getDecodedItunesData(String itunesData);
 
     public abstract List<LatestReceiptInfo> getSubscriptionDetailJson(ItunesReceipt itunesReceipt);
 

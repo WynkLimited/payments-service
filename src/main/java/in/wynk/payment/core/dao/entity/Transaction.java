@@ -9,6 +9,8 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.*;
 import java.util.*;
 
+import static in.wynk.payment.core.constant.PaymentConstants.ATTEMPT_SEQUENCE;
+
 @Entity
 @Getter
 @Setter
@@ -93,21 +95,25 @@ public class Transaction {
     }
 
     public <R> R getValueFromPaymentMetaData(String key) {
-        return (R) paymentMetaData.get(key);
+        return (R) getPaymentMetaData().get(key);
     }
 
     public <R> void putValueInPaymentMetaData(String key, R value) {
-        if (Objects.isNull(paymentMetaData)) {
-            paymentMetaData = new HashMap<>();
-        }
-        paymentMetaData.put(key, value);
+        getPaymentMetaData().put(key, value);
     }
 
     public Map<String, Object> getPaymentMetaData() {
-        if(paymentMetaData == null){
-            return new HashMap<>();
+        if (Objects.isNull(paymentMetaData)) {
+            paymentMetaData = new HashMap<>();
         }
         return paymentMetaData;
+    }
+
+    public Integer getAttemptSequence() {
+        Integer attemptSequence = getValueFromPaymentMetaData(ATTEMPT_SEQUENCE);
+        if (attemptSequence == null)
+            attemptSequence = 0;
+        return attemptSequence;
     }
 
 }

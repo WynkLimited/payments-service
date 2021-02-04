@@ -42,14 +42,15 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         this.paymentCachingService = paymentCachingService;
     }
 
-    private PaymentRenewal scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime) {
+    private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
         try {
-            return paymentRenewalDao.save(PaymentRenewal.builder()
+            paymentRenewalDao.save(PaymentRenewal.builder()
                     .day(nextRecurringDateTime)
                     .transactionId(transactionId)
                     .hour(nextRecurringDateTime.getTime())
                     .createdTimestamp(Calendar.getInstance())
                     .transactionEvent(PaymentEvent.SUBSCRIBE.name())
+                    .attemptSequence(attemptSequence)
                     .build());
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
@@ -60,26 +61,26 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     public void schedulePaymentRenewal(Transaction transaction) {
         Calendar nextRecurringDateTime = Calendar.getInstance();
         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, paymentCachingService.getPlan(transaction.getPlanId()).getPeriod().getValidity());
-        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 
     @Override
     public void schedulePaymentRenewalForFreeTrial(Transaction transaction) {
         Calendar nextRecurringDateTime = Calendar.getInstance();
         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, paymentCachingService.getPlan(paymentCachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId()).getPeriod().getValidity());
-        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 
     @Override
     public void schedulePaymentRenewalForMigration(Transaction transaction) {
-        scheduleRecurringPayment(transaction.getIdStr(), transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE));
+        scheduleRecurringPayment(transaction.getIdStr(), transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE), transaction.getAttemptSequence());
     }
 
     @Override
     public void schedulePaymentRenewalForNextRetry(Transaction transaction) {
         Calendar nextRecurringDateTime = Calendar.getInstance();
         nextRecurringDateTime.add(Calendar.HOUR, paymentCachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval());
-        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime);
+        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 
     @Override

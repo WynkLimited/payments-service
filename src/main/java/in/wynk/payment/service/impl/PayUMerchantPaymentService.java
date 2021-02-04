@@ -443,7 +443,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();
             } else {
-                merchantTransactionEventBuilder.externalTransactionId(paymentResponse.getTransactionDetails().get(transaction.getIdStr()).getPayUExternalTxnId());
+                String newMihPayId = paymentResponse.getTransactionDetails().get(transaction.getIdStr()).getPayUExternalTxnId();
+                merchantTransactionEventBuilder.externalTransactionId(StringUtils.isNotEmpty(newMihPayId) ? newMihPayId: mihpayid);
             }
             return paymentResponse;
         } catch (RestClientException e) {

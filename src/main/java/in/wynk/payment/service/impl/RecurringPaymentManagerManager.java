@@ -79,12 +79,12 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
 
     @Override
     public void schedulePaymentRenewalForNextRetry(Transaction transaction) {
+        Calendar nextRecurringDateTime = Calendar.getInstance();
         PlanPeriodDTO planPeriodDTO = paymentCachingService.getPlan(transaction.getPlanId()).getPeriod();
         if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
             return;
         }
-        Calendar nextRecurringDateTime = Calendar.getInstance();
-        nextRecurringDateTime.add(Calendar.HOUR, planPeriodDTO.getRetryInterval());
+        nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toSeconds(planPeriodDTO.getRetryInterval()));
         scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 

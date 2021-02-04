@@ -85,9 +85,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
             return;
         }
-        nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toSeconds(planPeriodDTO.getRetryInterval()));
-        AnalyticService.update(planPeriodDTO);
-        AnalyticService.update(nextRecurringDateTime);
+        nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
         scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 

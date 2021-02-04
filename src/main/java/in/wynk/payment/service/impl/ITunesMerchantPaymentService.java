@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
@@ -62,6 +63,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
@@ -168,14 +170,17 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         }
     }
 
+    @ClientAware(clientAlias = "#transaction.clientAlias")
     private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction) {
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
             final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
-            JSONObject request = gson.fromJson(merchantTransaction.<String>getRequest(), JSONObject.class);
-            ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(merchantTransaction.getRequest());
-            String decodedReceipt = receiptType.getDecodedItunesData((String) request.get(RECEIPT_DATA));
-            transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
-            fetchAndUpdateFromReceipt(transaction);
+            final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), merchantTransaction.getExternalTransactionId());
+            if(Objects.nonNull(receiptDetails)) {
+                transaction.putValueInPaymentMetaData(DECODED_RECEIPT, receiptDetails.getReceipt());
+                fetchAndUpdateFromReceipt(transaction);
+            } else {
+                log.error(PAYMENT_RECONCILIATION_FAILURE, "unable to reconcile since receipt is not present for original itunes id {}", merchantTransaction.getExternalTransactionId());
+            }
         }
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
@@ -262,6 +267,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
         try {
             JSONObject requestJson = new JSONObject();
+            requestJson.put("RECEIPT_TYPE", itunesReceiptType.name());
             requestJson.put(RECEIPT_DATA, encodedValue);
             requestJson.put(PASSWORD, secret);
             merchantTransactionBuilder.request(gson.toJson(requestJson));

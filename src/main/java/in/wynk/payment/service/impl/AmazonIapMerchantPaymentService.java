@@ -103,7 +103,9 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction) {
-        reconcileReceipt(transaction);
+        if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
+            reconcileReceipt(transaction);
+        }
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
                 .tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
@@ -114,7 +116,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
 
     private void reconcileReceipt(Transaction transaction) {
         final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
-        transaction.putValueInPaymentMetaData("amazonIapVerificationRequest", merchantTransaction.<AmazonIapVerificationRequest>getRequest());
+        transaction.putValueInPaymentMetaData("amazonIapVerificationRequest", mapper.convertValue(merchantTransaction.getRequest(), AmazonIapVerificationRequest.class));
         fetchAndUpdateTransaction(transaction);
     }
 
@@ -127,7 +129,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         try {
             AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
             builder.request(request).externalTransactionId(request.getReceipt().getReceiptId()).response(amazonIapReceipt);
-            if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
+            if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
                 AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                         .receiptId(request.getReceipt().getReceiptId())
                         .id(request.getReceipt().getReceiptId())
@@ -146,6 +148,8 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                     errorBuilder.code(AmazonIapStatusCode.ERR_002.getCode()).description(AmazonIapStatusCode.ERR_002.getDescription());
                     throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment response received from client");
                 }
+            } else if (((mapping.isPresent() && mapping.get().getState() == State.ACTIVE) & EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus()))) { // added for recon
+                finalTransactionStatus = TransactionStatus.SUCCESS;
             } else {
                 log.warn("Receipt is already present for uid: {}, planId: {} and receiptUserId: {}", transaction.getUid(), transaction.getPlanId(), mapping.get().getUserId());
                 errorBuilder.code(AmazonIapStatusCode.ERR_001.getCode()).description(AmazonIapStatusCode.ERR_001.getDescription());

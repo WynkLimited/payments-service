@@ -57,10 +57,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -172,12 +169,14 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction) {
-        final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
-        JSONObject request = gson.fromJson(merchantTransaction.<String>getRequest(), JSONObject.class);
-        ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(merchantTransaction.getRequest());
-        String decodedReceipt = receiptType.getDecodedItunesData((String) request.get(RECEIPT_DATA));
-        transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
-        fetchAndUpdateFromReceipt(transaction);
+        if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
+            final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
+            JSONObject request = gson.fromJson(merchantTransaction.<String>getRequest(), JSONObject.class);
+            ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(merchantTransaction.getRequest());
+            String decodedReceipt = receiptType.getDecodedItunesData((String) request.get(RECEIPT_DATA));
+            transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
+            fetchAndUpdateFromReceipt(transaction);
+        }
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));

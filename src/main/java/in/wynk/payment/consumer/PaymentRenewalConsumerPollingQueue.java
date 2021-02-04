@@ -15,8 +15,8 @@ import in.wynk.queue.service.ISqsManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -31,16 +31,16 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
 
     private final ObjectMapper objectMapper;
     private final ISqsManagerService sqsManagerService;
-    private final ThreadPoolExecutor messageHandlerThreadPool;
-    private final ScheduledThreadPoolExecutor pollingThreadPool;
+    private final ExecutorService messageHandlerThreadPool;
+    private final ScheduledExecutorService pollingThreadPool;
     private final ITransactionManagerService transactionManager;
 
     public PaymentRenewalConsumerPollingQueue(String queueName,
                                               AmazonSQS sqs,
                                               ObjectMapper objectMapper,
                                               ISQSMessageExtractor messagesExtractor,
-                                              ThreadPoolExecutor messageHandlerThreadPool,
-                                              ScheduledThreadPoolExecutor pollingThreadPool,
+                                              ExecutorService messageHandlerThreadPool,
+                                              ScheduledExecutorService pollingThreadPool,
                                               ISqsManagerService sqsManagerService,
                                               ITransactionManagerService transactionManager) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
@@ -86,6 +86,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                 .msisdn(transaction.getMsisdn())
                 .clientAlias(transaction.getClientAlias())
                 .paymentCode(transaction.getPaymentChannel())
+                .attemptSequence(transaction.getAttemptSequence())
                 .build());
     }
 

@@ -126,7 +126,7 @@ public class PaymentManager {
         final BaseResponse<?> baseResponse;
         try {
             if(!isSync) {
-                if (EnumSet.of(PaymentCode.AMAZON_IAP, PaymentCode.ITUNES).contains(transaction.getPaymentChannel())) {
+                if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus()) && EnumSet.of(PaymentCode.AMAZON_IAP, PaymentCode.ITUNES).contains(transaction.getPaymentChannel())) {
                     MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
                     transaction.putValueInPaymentMetaData(MERCHANT_TRANSACTION, merchantTransaction);
                 }

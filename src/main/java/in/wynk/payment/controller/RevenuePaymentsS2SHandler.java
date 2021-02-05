@@ -43,7 +43,6 @@ public class RevenuePaymentsS2SHandler {
 
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     @PostMapping("/v2/verify/receipt")
-    @AnalyseTransaction(name = "receiptVerification")
     public ResponseEntity<?> verifyIap2(@RequestBody IapVerificationRequest request) {
         return verifyIap(dummySessionGenerator.initSession(request));
     }

@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.stream.Stream;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED_NEXT_CHARGING_DATE;
+import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
 
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
 public class RecurringPaymentManagerManager implements IRecurringPaymentManagerService {
@@ -83,7 +84,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         Calendar nextRecurringDateTime = Calendar.getInstance();
         PlanPeriodDTO planPeriodDTO = paymentCachingService.getPlan(transaction.getPlanId()).getPeriod();
         if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
-            AnalyticService.update("Maximum Attempts Reached. No More Entry In Payment Renewal");
+            AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
             return;
         }
         nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));

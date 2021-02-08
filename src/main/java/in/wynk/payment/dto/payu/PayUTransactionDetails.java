@@ -43,6 +43,12 @@ public class PayUTransactionDetails {
   @SerializedName("field9")
   private String payUResponseFailureMessage;
 
+  @SerializedName("payment_source")
+  private String paymentSource;
+
+  @SerializedName("card_token")
+  private String cardToken;
+
   private String migratedTransactionId;
 
 }

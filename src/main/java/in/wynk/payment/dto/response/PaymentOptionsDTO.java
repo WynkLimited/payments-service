@@ -16,10 +16,21 @@ import java.util.Map;
 @AnalysedEntity
 public class PaymentOptionsDTO {
 
+    private final PlanDetails planDetails;
     private final List<PaymentGroupsDTO> paymentGroups;
-    private final double discountedPrice;
-    private final double price;
-    private final boolean priceChanged;
+
+    @Builder
+    @Getter
+    @AnalysedEntity
+    public static class PlanDetails {
+        private final String partnerName;
+        private final String partnerLogo;
+        private final String discount;
+        private final int perMonthValue;
+        private final double price;
+        private final double discountedPrice;
+        private final boolean freeTrialAvailable;
+    }
 
     @Builder
     @Getter

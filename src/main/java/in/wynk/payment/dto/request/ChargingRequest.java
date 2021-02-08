@@ -20,6 +20,11 @@ public class ChargingRequest {
     private boolean autoRenew;
     @Analysed
     private String couponId;
+    @Analysed
     private PaymentCode paymentCode;
+    @Analysed(name = "paymentMode")
+    private String paymentMode;
+    @Analysed(name = "bankName")
+    private String merchantName;
 
 }

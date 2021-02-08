@@ -28,6 +28,7 @@ public interface PayUConstants {
     String PAYU_TRANSACTION_AMOUNT = "amount";
     String PAYU_NETBANKING_MODE = "netbanking";
     String PAYU_STATUS_NOT_FOUND = "Not Found";
+    String PAYU_PAYMENT_SOURCE_SIST = "sist";
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";
     String PAYU_REQUEST_TRANSACTION_ID = "txnid";
     String PAYU_RESPONSE_AUTH_PAYUID = "authPayuId";

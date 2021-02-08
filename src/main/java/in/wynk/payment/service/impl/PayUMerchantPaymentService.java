@@ -37,6 +37,7 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -64,7 +65,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
 
-public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService {
+public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
@@ -480,26 +481,40 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return gson.fromJson(response, target);
     }
 
-    private MultiValueMap<String, String> buildPayUInfoRequest(String command, String var1) {
-        String hash = generateHashForPayUApi(command, var1);
+    private MultiValueMap<String, String> buildPayUInfoRequest(String command, String var1, String... vars) {
+        String hash = generateHashForPayUApi(command, var1, vars);
         MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
         requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
         requestMap.add(PAYU_COMMAND, command);
         requestMap.add(PAYU_HASH, hash);
         requestMap.add(PAYU_VARIABLE1, var1);
+        if (!ArrayUtils.isEmpty(vars)) {
+            for (int i = 0; i < vars.length; i++) {
+                if (StringUtils.isNotEmpty(vars[i])) {
+                    requestMap.add(PAYU_VARIABLE.concat(String.valueOf(i + 1)), vars[i]);
+                }
+            }
+        }
         return requestMap;
     }
 
-    private String generateHashForPayUApi(String command, String var1) {
-        String finalString =
-                payUMerchantKey
-                        + PIPE_SEPARATOR
-                        + command
-                        + PIPE_SEPARATOR
-                        + var1
-                        + PIPE_SEPARATOR
-                        + payUSalt;
-        return EncryptionUtils.generateSHA512Hash(finalString);
+    private String generateHashForPayUApi(String command, String var1, String... vars) {
+        StringBuilder builder = new StringBuilder(payUMerchantKey);
+        builder.append(PIPE_SEPARATOR)
+                .append(command)
+                .append(PIPE_SEPARATOR)
+                .append(var1)
+                .append(PIPE_SEPARATOR);
+        if (!ArrayUtils.isEmpty(vars)) {
+            for (String var : vars) {
+                if (StringUtils.isNotEmpty(var)) {
+                    builder.append(var)
+                            .append(PIPE_SEPARATOR);
+                }
+            }
+            builder.append(payUSalt);
+        }
+        return EncryptionUtils.generateSHA512Hash(builder.toString());
     }
 
     private String processCallback(CallbackRequest callbackRequest) {
@@ -662,5 +677,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .option(cardBuilder.build())
                 .build();
         return userPreferredPayment;
+    }
+
+    @Override
+    public BaseResponse<?> refund(AbstractRefundRequest request) {
+        PayURefundRequest refundRequest = (PayURefundRequest) request;
+        String userCredentials = payUMerchantKey + COLON + refundRequest.getUid();
+        MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), userCredentials, refundRequest.getAuthPayUId(), refundRequest.getTxnId().concat(String.valueOf(request.getPlanId())), String.valueOf(refundRequest.getAmount()));
+        return null;
     }
 }

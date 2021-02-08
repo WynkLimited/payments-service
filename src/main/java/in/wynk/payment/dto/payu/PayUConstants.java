@@ -5,6 +5,7 @@ public interface PayUConstants {
     String PAYU_SI_KEY = "si";
     String PAYU_HASH = "hash";
     String PAYU_VARIABLE1 = "var1";
+    String PAYU_VARIABLE = "var";
     String PAYU_BSYS_PARAM = "bsys";
     String PAYU_REQUEST_TYPE = "rt";
     String PAYU_COMMAND = "command";

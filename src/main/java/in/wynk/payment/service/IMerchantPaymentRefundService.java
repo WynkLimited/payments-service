@@ -1,10 +1,10 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.dto.request.AbstractRefundRequest;
+import in.wynk.payment.dto.request.AbstractPaymentRefundRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantPaymentRefundService {
 
-    BaseResponse<?> refund(AbstractRefundRequest request);
+    BaseResponse<?> refund(AbstractPaymentRefundRequest request);
 
 }

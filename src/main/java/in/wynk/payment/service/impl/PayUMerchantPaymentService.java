@@ -680,10 +680,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<?> refund(AbstractRefundRequest request) {
-        PayURefundRequest refundRequest = (PayURefundRequest) request;
+    public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
+        PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
         String userCredentials = payUMerchantKey + COLON + refundRequest.getUid();
-        MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), userCredentials, refundRequest.getAuthPayUId(), refundRequest.getTxnId().concat(String.valueOf(request.getPlanId())), String.valueOf(refundRequest.getAmount()));
+        MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), userCredentials, refundRequest.getAuthPayUId(), refundRequest.getRefundTransactionId(), String.valueOf(refundRequest.getAmount()));
+        getInfoFromPayU(refundDetails, )
         return null;
     }
 }

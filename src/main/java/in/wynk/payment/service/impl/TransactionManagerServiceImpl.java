@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Calendar;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -129,7 +130,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
         try {
-            if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
+            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
                 PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
                     if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {

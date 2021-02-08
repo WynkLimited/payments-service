@@ -24,6 +24,8 @@ public class PaymentRefundEvent {
     @Analysed
     private final double amount;
     @Analysed
+    private final String externalReferenceId;
+    @Analysed
     private final String clientAlias;
     @Analysed(name = BaseConstants.TRANSACTION_ID)
     private final String transactionId;

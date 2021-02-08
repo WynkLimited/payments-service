@@ -16,7 +16,7 @@ public class PayUPaymentRefundResponse extends AbstractPaymentRefundResponse {
     @Analysed
     private final String authPayUId;
     @Analysed(name = BaseConstants.PAYMENT_CODE)
-    private final PaymentCode paymentCode;
+    private final PaymentCode paymentCode = PaymentCode.PAYU;
 
     @Override
     public PaymentRefundEvent toRefundEvent() {
@@ -30,6 +30,7 @@ public class PayUPaymentRefundResponse extends AbstractPaymentRefundResponse {
                 .paymentCode(getPaymentCode())
                 .paymentEvent(getPaymentEvent())
                 .transactionId(getTransactionId())
+                .externalReferenceId(getAuthPayUId())
                 .transactionStatus(getTransactionStatus())
                 .build();
     }

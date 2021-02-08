@@ -14,7 +14,9 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractPaymentRefundRequest {
 
     private final String uid;
+    private final String msisdn;
     private final String itemId;
+    private final String clientAlias;
     private final String refundTransactionId;
 
     private final int planId;

@@ -109,7 +109,6 @@ public class PaymentEventListener {
 
         if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(event.getPaymentEvent()) && EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus())) {
             paymentManager.initRefund(event.getTransactionId());
-            return;
         }
 
         Optional<Client> clientOptional = Optional.ofNullable(clientDetailsCachingService.getClientByAlias(event.getClientAlias()));

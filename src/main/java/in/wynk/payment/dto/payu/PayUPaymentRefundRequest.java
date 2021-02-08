@@ -14,14 +14,16 @@ public class PayUPaymentRefundRequest extends AbstractPaymentRefundRequest {
 
     private final String authPayUId;
 
-    public static AbstractPaymentRefundRequest from(Transaction mainTransaction, Transaction refundTransaction) {
+    public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction) {
         return PayUPaymentRefundRequest.builder()
-                .uid(mainTransaction.getUid())
-                .planId(mainTransaction.getPlanId())
-                .itemId(mainTransaction.getItemId())
+                .uid(originalTransaction.getUid())
+                .planId(originalTransaction.getPlanId())
+                .itemId(originalTransaction.getItemId())
+                .msisdn(refundTransaction.getMsisdn())
                 .amount(refundTransaction.getAmount())
+                .clientAlias(refundTransaction.getClientAlias())
                 .refundTransactionId(refundTransaction.getIdStr())
-                .authPayUId(mainTransaction.getValueFromPaymentMetaData(BaseConstants.EXTERNAL_TRANSACTION_ID))
+                .authPayUId(originalTransaction.getValueFromPaymentMetaData(BaseConstants.EXTERNAL_TRANSACTION_ID))
                 .build();
     }
 }

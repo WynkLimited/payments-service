@@ -27,10 +27,7 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
-import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
-import in.wynk.payment.dto.response.payu.PayURenewalResponse;
-import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.dto.response.payu.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
@@ -681,10 +678,30 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
-        PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
-        String userCredentials = payUMerchantKey + COLON + refundRequest.getUid();
-        MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), userCredentials, refundRequest.getAuthPayUId(), refundRequest.getRefundTransactionId(), String.valueOf(refundRequest.getAmount()));
-        getInfoFromPayU(refundDetails, )
-        return null;
+        Transaction refundTransaction = TransactionContext.get();
+        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+        PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(request.getRefundTransactionId()).uid(request.getUid()).planId(request.getPlanId()).itemId(request.getItemId()).clientAlias(request.getClientAlias()).amount(request.getAmount()).msisdn(request.getMsisdn()).paymentEvent(PaymentEvent.REFUND);
+        try {
+            PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
+            String userCredentials = payUMerchantKey + COLON + refundRequest.getUid();
+            MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder().id(request.getRefundTransactionId());
+            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), userCredentials, refundRequest.getAuthPayUId(), refundRequest.getRefundTransactionId(), String.valueOf(refundRequest.getAmount()));
+            merchantTransactionBuilder.request(refundDetails);
+            PayURefundResponse refundResponse = getInfoFromPayU(refundDetails, PayURefundResponse.class);
+            if (refundResponse.getStatus() == 0) {
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(request.getRefundTransactionId()).code(String.valueOf(refundResponse.getStatus())).description(refundResponse.getMessage()).build());
+            } else {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+                refundResponseBuilder.authPayUId(refundResponse.getAuthPayUId());
+                merchantTransactionBuilder.externalTransactionId(refundResponse.getAuthPayUId()).response(refundResponse).build();
+                eventPublisher.publishEvent(merchantTransactionBuilder.build());
+            }
+        } catch (WynkRuntimeException ex) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(request.getRefundTransactionId()).code(ex.getErrorCode()).description(ex.getErrorTitle()).build());
+        } finally {
+            refundTransaction.setStatus(finalTransactionStatus.getValue());
+            refundResponseBuilder.transactionStatus(finalTransactionStatus);
+        }
+        return BaseResponse.builder().body(refundResponseBuilder.build()).build();
     }
 }

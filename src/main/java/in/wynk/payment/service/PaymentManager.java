@@ -53,35 +53,24 @@ public class PaymentManager {
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
-    private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService) {
         this.couponManager = couponManager;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
         this.merchantTransactionService = merchantTransactionService;
-        this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
 
     @TransactionAware(txnId = "#transactionId")
     public BaseResponse<?> initRefund(String transactionId) {
-        Transaction transaction = TransactionContext.get();
-        final Transaction refundTransaction = initiateRefundTransaction(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), transaction.getItemId(), transaction.getClientAlias(), transaction.getAmount(), transaction.getPaymentChannel(), transaction.getType());
+        Transaction originalTransaction = TransactionContext.get();
+        final Transaction refundTransaction = initiateRefundTransaction(originalTransaction.getUid(), originalTransaction.getMsisdn(), originalTransaction.getPlanId(), originalTransaction.getItemId(), originalTransaction.getClientAlias(), originalTransaction.getAmount(), originalTransaction.getPaymentChannel(), originalTransaction.getType());
         String externalReferenceId = merchantTransactionService.getPartnerReferenceId(transactionId);
-        transaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
-        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
-                .paymentCode(transaction.getPaymentChannel())
-                .paymentEvent(transaction.getType())
-                .transactionId(transaction.getIdStr())
-                .itemId(transaction.getItemId())
-                .planId(transaction.getPlanId())
-                .msisdn(transaction.getMsisdn())
-                .uid(transaction.getUid())
-                .build());
-        final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
-        AbstractPaymentRefundRequest request = AbstractPaymentRefundRequest.from(transaction, refundTransaction);
+        originalTransaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
+        final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(originalTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
+        AbstractPaymentRefundRequest request = AbstractPaymentRefundRequest.from(originalTransaction, refundTransaction);
         BaseResponse<?> response = refundService.refund(request);
         AbstractPaymentRefundResponse refundResponse = (AbstractPaymentRefundResponse) response.getBody();
         eventPublisher.publishEvent(refundResponse.toRefundEvent());
@@ -259,7 +248,17 @@ public class PaymentManager {
                 .amount(amount)
                 .paymentCode(paymentCode)
                 .clientAlias(clientAlias);
-        TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
+        Transaction originalTransaction = transactionManager.initiateTransaction(builder.build());
+        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                .paymentCode(originalTransaction.getPaymentChannel())
+                .paymentEvent(originalTransaction.getType())
+                .transactionId(originalTransaction.getIdStr())
+                .itemId(originalTransaction.getItemId())
+                .planId(originalTransaction.getPlanId())
+                .msisdn(originalTransaction.getMsisdn())
+                .uid(originalTransaction.getUid())
+                .build());
+        TransactionContext.set(originalTransaction);
         return TransactionContext.get();
     }
 

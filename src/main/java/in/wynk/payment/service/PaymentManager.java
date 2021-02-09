@@ -258,13 +258,13 @@ public class PaymentManager {
     private Transaction initiateRefundTransaction(String uid, String msisdn, int planId, String itemId, String clientAlias, double amount, PaymentCode paymentCode, PaymentEvent event) {
         final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder()
                 .uid(uid)
-                .event(event)
                 .msisdn(msisdn)
                 .planId(planId)
                 .itemId(itemId)
                 .amount(amount)
                 .paymentCode(paymentCode)
-                .clientAlias(clientAlias);
+                .clientAlias(clientAlias)
+                .event(PaymentEvent.REFUND);
         Transaction originalTransaction = transactionManager.initiateTransaction(builder.build());
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                 .paymentCode(originalTransaction.getPaymentChannel())

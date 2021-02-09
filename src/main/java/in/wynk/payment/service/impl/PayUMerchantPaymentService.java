@@ -479,7 +479,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     private MultiValueMap<String, String> buildPayUInfoRequest(String command, String var1, String... vars) {
-        String hash = generateHashForPayUApi(command, var1, vars);
+        String hash = generateHashForPayUApi(command, var1);
         MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
         requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
         requestMap.add(PAYU_COMMAND, command);
@@ -495,22 +495,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return requestMap;
     }
 
-    private String generateHashForPayUApi(String command, String var1, String... vars) {
+    private String generateHashForPayUApi(String command, String var1) {
         StringBuilder builder = new StringBuilder(payUMerchantKey);
         builder.append(PIPE_SEPARATOR)
                 .append(command)
                 .append(PIPE_SEPARATOR)
                 .append(var1)
-                .append(PIPE_SEPARATOR);
-        if (!ArrayUtils.isEmpty(vars)) {
-            for (String var : vars) {
-                if (StringUtils.isNotEmpty(var)) {
-                    builder.append(var)
-                            .append(PIPE_SEPARATOR);
-                }
-            }
-        }
-        builder.append(payUSalt);
+                .append(PIPE_SEPARATOR)
+                .append(payUSalt);
         return EncryptionUtils.generateSHA512Hash(builder.toString());
     }
 

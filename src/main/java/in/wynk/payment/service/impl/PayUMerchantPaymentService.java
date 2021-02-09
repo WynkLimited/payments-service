@@ -509,8 +509,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                             .append(PIPE_SEPARATOR);
                 }
             }
-            builder.append(payUSalt);
         }
+        builder.append(payUSalt);
         return EncryptionUtils.generateSHA512Hash(builder.toString());
     }
 

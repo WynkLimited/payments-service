@@ -488,7 +488,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         if (!ArrayUtils.isEmpty(vars)) {
             for (int i = 0; i < vars.length; i++) {
                 if (StringUtils.isNotEmpty(vars[i])) {
-                    requestMap.add(PAYU_VARIABLE.concat(String.valueOf(i + 1)), vars[i]);
+                    requestMap.add(PAYU_VARIABLE.concat(String.valueOf(i + 2)), vars[i]);
                 }
             }
         }

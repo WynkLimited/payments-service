@@ -683,9 +683,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(request.getRefundTransactionId()).uid(request.getUid()).planId(request.getPlanId()).itemId(request.getItemId()).clientAlias(request.getClientAlias()).amount(request.getAmount()).msisdn(request.getMsisdn()).paymentEvent(PaymentEvent.REFUND);
         try {
             PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
-            String userCredentials = payUMerchantKey + COLON + refundRequest.getUid();
             MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder().id(request.getRefundTransactionId());
-            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), userCredentials, refundRequest.getAuthPayUId(), refundRequest.getRefundTransactionId(), String.valueOf(refundRequest.getAmount()));
+            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), refundRequest.getAuthPayUId(), refundRequest.getRefundTransactionId(), String.valueOf(refundRequest.getAmount()));
             merchantTransactionBuilder.request(refundDetails);
             PayURefundResponse refundResponse = getInfoFromPayU(refundDetails, PayURefundResponse.class);
             if (refundResponse.getStatus() == 0) {

@@ -9,7 +9,6 @@ import in.wynk.client.core.constant.ClientLoggingMarker;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
-import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -17,6 +16,7 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
+import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
 import in.wynk.payment.service.PaymentManager;
@@ -25,6 +25,7 @@ import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -46,15 +47,17 @@ public class PaymentEventListener {
     private final RestTemplate restTemplate;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
+    private final ApplicationEventPublisher eventPublisher;
     private final IPaymentErrorService paymentErrorService;
     private final IMerchantTransactionService merchantTransactionService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 
-    public PaymentEventListener(ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, PaymentManager paymentManager, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
+    public PaymentEventListener(ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, PaymentManager paymentManager, ApplicationEventPublisher eventPublisher, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
         this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.retryRegistry = retryRegistry;
         this.paymentManager = paymentManager;
+        this.eventPublisher = eventPublisher;
         this.paymentErrorService = paymentErrorService;
         this.merchantTransactionService = merchantTransactionService;
         this.clientDetailsCachingService = clientDetailsCachingService;
@@ -97,8 +100,16 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @AnalyseTransaction(name = "paymentRefundInitEvent")
+    public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
+        AnalyticService.update(event);
+        AbstractPaymentRefundResponse response = (AbstractPaymentRefundResponse) paymentManager.initRefund(event.getTransactionId()).getBody();
+        eventPublisher.publishEvent(response.toRefundEvent());
+    }
+
+    @EventListener
     @AnalyseTransaction(name = "paymentRefundEvent")
-    public void onPaymentRefundEvent(PaymentRefundEvent event) {
+    public void onPaymentRefundEvent(PaymentRefundedEvent event) {
         AnalyticService.update(event);
     }
 
@@ -107,8 +118,9 @@ public class PaymentEventListener {
     public void onPaymentReconciledEvent(PaymentReconciledEvent event) {
         AnalyticService.update(event);
 
-        if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(event.getPaymentEvent()) && EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus())) {
-            paymentManager.initRefund(event.getTransactionId());
+        if (EnumSet.of(PaymentEvent.REFUND).contains(event.getPaymentEvent())) {
+            eventPublisher.publishEvent(PaymentRefundedEvent.from(event));
+            return;
         }
 
         Optional<Client> clientOptional = Optional.ofNullable(clientDetailsCachingService.getClientByAlias(event.getClientAlias()));

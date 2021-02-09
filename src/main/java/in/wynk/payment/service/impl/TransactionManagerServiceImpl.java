@@ -12,6 +12,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.request.TransactionInitRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
@@ -22,6 +23,7 @@ import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Calendar;
@@ -37,12 +39,14 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private final ITransactionDao transactionDao;
     private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, PaymentCachingService cachingService, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.transactionDao = transactionDao;
         this.cachingService = cachingService;
+        this.eventPublisher = eventPublisher;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
@@ -133,6 +137,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
                 PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
+                    refundIfApplicable(transaction);
                     if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
@@ -175,6 +180,14 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 transaction.setExitTime(Calendar.getInstance());
             }
             this.upsert(transaction);
+        }
+    }
+
+    private void refundIfApplicable(Transaction transaction) {
+        if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(transaction.getType()) && EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus())) {
+            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                    .transactionId(transaction.getIdStr())
+                    .build());
         }
     }
 

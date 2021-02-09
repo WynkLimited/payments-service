@@ -144,6 +144,7 @@ public class PaymentManager {
                             .msisdn(transaction.getMsisdn())
                             .itemId(transaction.getItemId())
                             .planId(transaction.getPlanId())
+                            .amount(transaction.getAmount())
                             .clientAlias(transaction.getClientAlias())
                             .transactionId(transaction.getIdStr())
                             .paymentCode(transaction.getPaymentChannel())

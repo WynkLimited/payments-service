@@ -4,7 +4,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.event.PaymentRefundEvent;
+import in.wynk.payment.core.event.PaymentRefundedEvent;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -19,8 +19,8 @@ public class PayUPaymentRefundResponse extends AbstractPaymentRefundResponse {
     private final PaymentCode paymentCode = PaymentCode.PAYU;
 
     @Override
-    public PaymentRefundEvent toRefundEvent() {
-        return PaymentRefundEvent.builder()
+    public PaymentRefundedEvent toRefundEvent() {
+        return PaymentRefundedEvent.builder()
                 .uid(getUid())
                 .amount(getAmount())
                 .itemId(getItemId())

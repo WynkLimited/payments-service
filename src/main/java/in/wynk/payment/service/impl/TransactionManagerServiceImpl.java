@@ -137,7 +137,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
                 PlanDTO selectedPlan = cachingService.getPlan(transaction.getPlanId());
                 if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                    refundIfApplicable(transaction);
                     if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
                         Calendar nextRecurringDateTime = Calendar.getInstance();
                         nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, selectedPlan.getPeriod().getValidity());
@@ -180,14 +179,17 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 transaction.setExitTime(Calendar.getInstance());
             }
             this.upsert(transaction);
+            this.refundIfApplicable(transaction, existingTransactionStatus, finalTransactionStatus);
         }
     }
 
-    private void refundIfApplicable(Transaction transaction) {
-        if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(transaction.getType()) && EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus())) {
-            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
-                    .originalTransactionId(transaction.getIdStr())
-                    .build());
+    private void refundIfApplicable(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
+        if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
+            if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(transaction.getType()) && EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus())) {
+                eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                        .originalTransactionId(transaction.getIdStr())
+                        .build());
+            }
         }
     }
 

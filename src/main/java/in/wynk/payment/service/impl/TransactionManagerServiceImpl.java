@@ -185,7 +185,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void refundIfApplicable(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
         if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-            if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(transaction.getType()) && EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus())) {
+            if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(transaction.getType())) {
                 eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
                         .originalTransactionId(transaction.getIdStr())
                         .build());

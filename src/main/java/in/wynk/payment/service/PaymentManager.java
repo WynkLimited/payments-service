@@ -21,6 +21,7 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.PaymentRefundedEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 import java.util.Calendar;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 
@@ -139,6 +141,20 @@ public class PaymentManager {
                     exhaustCouponIfApplicable();
                 }
                 if (existingStatus != finalStatus) {
+                    if (EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType())) {
+                        eventPublisher.publishEvent(PaymentRefundedEvent.builder()
+                                .uid(transaction.getUid())
+                                .msisdn(transaction.getMsisdn())
+                                .itemId(transaction.getItemId())
+                                .planId(transaction.getPlanId())
+                                .amount(transaction.getAmount())
+                                .clientAlias(transaction.getClientAlias())
+                                .transactionId(transaction.getIdStr())
+                                .paymentCode(transaction.getPaymentChannel())
+                                .paymentEvent(transaction.getType())
+                                .transactionStatus(transaction.getStatus())
+                                .build());
+                    }
                     eventPublisher.publishEvent(PaymentReconciledEvent.builder()
                             .uid(transaction.getUid())
                             .msisdn(transaction.getMsisdn())

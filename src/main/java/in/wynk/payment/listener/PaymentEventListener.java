@@ -99,7 +99,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
         AnalyticService.update(event);
-        paymentManager.initRefund(event.getTransactionId());
+        paymentManager.initRefund(event.getOriginalTransactionId());
     }
 
     @EventListener

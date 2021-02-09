@@ -65,11 +65,11 @@ public class PaymentManager {
         this.merchantTransactionService = merchantTransactionService;
     }
 
-    @TransactionAware(txnId = "#transactionId")
-    public BaseResponse<?> initRefund(String transactionId) {
+    @TransactionAware(txnId = "#originalTransactionId")
+    public BaseResponse<?> initRefund(String originalTransactionId) {
         Transaction originalTransaction = TransactionContext.get();
         final Transaction refundTransaction = initiateRefundTransaction(originalTransaction.getUid(), originalTransaction.getMsisdn(), originalTransaction.getPlanId(), originalTransaction.getItemId(), originalTransaction.getClientAlias(), originalTransaction.getAmount(), originalTransaction.getPaymentChannel(), originalTransaction.getType());
-        String externalReferenceId = merchantTransactionService.getPartnerReferenceId(transactionId);
+        String externalReferenceId = merchantTransactionService.getPartnerReferenceId(originalTransactionId);
         originalTransaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
         final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(originalTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
         AbstractPaymentRefundRequest request = AbstractPaymentRefundRequest.from(originalTransaction, refundTransaction);

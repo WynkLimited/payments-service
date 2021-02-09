@@ -21,6 +21,8 @@ public class PaymentReconciledEvent {
     @Analysed
     private final String itemId;
     @Analysed
+    private final double amount;
+    @Analysed
     private final Integer planId;
     @Analysed
     private final String clientAlias;

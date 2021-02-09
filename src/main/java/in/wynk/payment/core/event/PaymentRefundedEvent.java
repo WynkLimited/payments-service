@@ -36,19 +36,4 @@ public class PaymentRefundedEvent {
     @Analysed(name = BaseConstants.TRANSACTION_STATUS)
     private final TransactionStatus transactionStatus;
 
-    public static PaymentRefundedEvent from(PaymentReconciledEvent event) {
-        return PaymentRefundedEvent.builder()
-                .uid(event.getUid())
-                .amount(event.getAmount())
-                .itemId(event.getItemId())
-                .planId(event.getPlanId())
-                .msisdn(event.getMsisdn())
-                .clientAlias(event.getClientAlias())
-                .paymentCode(event.getPaymentCode())
-                .paymentEvent(event.getPaymentEvent())
-                .transactionId(event.getTransactionId())
-                .transactionStatus(event.getTransactionStatus())
-                .build();
-    }
-
 }

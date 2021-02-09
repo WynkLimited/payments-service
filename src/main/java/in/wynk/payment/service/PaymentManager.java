@@ -266,15 +266,15 @@ public class PaymentManager {
                 .clientAlias(clientAlias)
                 .event(PaymentEvent.REFUND);
         Transaction originalTransaction = transactionManager.initiateTransaction(builder.build());
-        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
-                .paymentCode(originalTransaction.getPaymentChannel())
-                .paymentEvent(originalTransaction.getType())
-                .transactionId(originalTransaction.getIdStr())
-                .itemId(originalTransaction.getItemId())
-                .planId(originalTransaction.getPlanId())
-                .msisdn(originalTransaction.getMsisdn())
-                .uid(originalTransaction.getUid())
-                .build());
+//        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+//                .paymentCode(originalTransaction.getPaymentChannel())
+//                .paymentEvent(originalTransaction.getType())
+//                .transactionId(originalTransaction.getIdStr())
+//                .itemId(originalTransaction.getItemId())
+//                .planId(originalTransaction.getPlanId())
+//                .msisdn(originalTransaction.getMsisdn())
+//                .uid(originalTransaction.getUid())
+//                .build());
         TransactionContext.set(originalTransaction);
         return TransactionContext.get();
     }

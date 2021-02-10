@@ -20,7 +20,7 @@ public abstract class AbstractTransactionStatusRequest {
     @Analysed
     private String transactionId;
 
-    @Analysed(name = "")
+    @Analysed
     public abstract StatusMode getMode();
 
 }

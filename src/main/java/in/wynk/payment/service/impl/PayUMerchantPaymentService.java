@@ -174,10 +174,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse;
         Transaction transaction = TransactionContext.get();
-        switch (chargingStatusRequest.getMode()) {
+        switch (transactionStatusRequest.getMode()) {
             case SOURCE:
                 statusResponse = fetchChargingStatusFromPayUSource(transaction);
                 break;
@@ -191,6 +191,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .status(HttpStatus.OK)
                 .body(statusResponse)
                 .build();
+    }
+
+    private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction) {
+
     }
 
 

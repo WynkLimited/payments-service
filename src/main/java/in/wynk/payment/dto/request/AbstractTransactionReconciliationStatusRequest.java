@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public abstract class ReconcileAbstractTransactionStatusRequest extends AbstractTransactionStatusRequest {
+public abstract class AbstractTransactionReconciliationStatusRequest extends AbstractTransactionStatusRequest {
 
     @Override
     public StatusMode getMode() {

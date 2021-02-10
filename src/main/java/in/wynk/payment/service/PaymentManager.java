@@ -21,6 +21,7 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.core.event.PaymentRefundedEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.TransactionContext;
@@ -137,6 +138,7 @@ public class PaymentManager {
             TransactionStatus finalStatus = transaction.getStatus();
             if (!isSync) {
                 transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+                initRefundIfApplicable(transaction);
                 if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
                     exhaustCouponIfApplicable();
                 }
@@ -363,6 +365,14 @@ public class PaymentManager {
         MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(message.getPaymentMetaData());
         merchantTransactionService.upsert(merchantTransaction);
         transactionManager.updateAndAsyncPublish(transaction, TransactionStatus.INPROGRESS, transaction.getStatus());
+    }
+
+    private void initRefundIfApplicable(Transaction transaction) {
+        if (EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus()) && EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(transaction.getType())) {
+            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                    .originalTransactionId(transaction.getIdStr())
+                    .build());
+        }
     }
 
 }

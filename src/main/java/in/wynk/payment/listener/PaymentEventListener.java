@@ -9,7 +9,6 @@ import in.wynk.client.core.constant.ClientLoggingMarker;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
-import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -25,7 +24,6 @@ import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -48,16 +46,14 @@ public class PaymentEventListener {
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
     private final IPaymentErrorService paymentErrorService;
-    private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 
-    public PaymentEventListener(ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, PaymentManager paymentManager, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
+    public PaymentEventListener(ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, PaymentManager paymentManager, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
         this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.retryRegistry = retryRegistry;
         this.paymentManager = paymentManager;
-        this.eventPublisher = eventPublisher;
         this.paymentErrorService = paymentErrorService;
         this.merchantTransactionService = merchantTransactionService;
         this.clientDetailsCachingService = clientDetailsCachingService;
@@ -116,12 +112,6 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentReconciledEvent")
     public void onPaymentReconciledEvent(PaymentReconciledEvent event) {
         AnalyticService.update(event);
-
-        if(EnumSet.of(PaymentEvent.REFUND).contains(event.getPaymentEvent())) {
-            return;
-        }
-
-        initRefundIfApplicable(event);
         Optional<Client> clientOptional = Optional.ofNullable(clientDetailsCachingService.getClientByAlias(event.getClientAlias()));
         if (clientOptional.isPresent()) {
             Client client = clientOptional.get();
@@ -151,14 +141,6 @@ public class PaymentEventListener {
                     log.warn(ClientLoggingMarker.INVALID_CLIENT_DETAILS, "Callback url is not provided despite callback is enabled for client {}", event.getClientAlias());
                 }
             }
-        }
-    }
-
-    private void initRefundIfApplicable(PaymentReconciledEvent event) {
-        if (EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus()) && EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(event.getPaymentEvent())) {
-            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
-                    .originalTransactionId(event.getTransactionId())
-                    .build());
         }
     }
 

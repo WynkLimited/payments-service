@@ -60,10 +60,10 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 preferredPayments.add(preferredPaymentsWallet.get());
             } catch (Exception e) { }
         }
-        return paymentPaymentOptions(planId, availableMethods, preferredPayments);
+        return buildPaymentOptions(planId, availableMethods, preferredPayments);
     }
 
-    private PaymentOptionsDTO paymentPaymentOptions(String planId, Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
+    private PaymentOptionsDTO buildPaymentOptions(String planId, Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : availableMethods.keySet()) {
             PlanDTO paidPlan = paymentCachingService.getPlan(planId);

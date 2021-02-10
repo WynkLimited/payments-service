@@ -684,7 +684,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             } else {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
                 refundResponseBuilder.authPayUId(refundResponse.getAuthPayUId());
-                merchantTransactionBuilder.externalTransactionId(refundResponse.getAuthPayUId()).response(refundResponse).build();
+                merchantTransactionBuilder.externalTransactionId(refundResponse.getRequestId()).response(refundResponse).build();
                 eventPublisher.publishEvent(merchantTransactionBuilder.build());
             }
         } catch (WynkRuntimeException ex) {

@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -179,6 +180,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Transaction transaction = TransactionContext.get();
         switch (transactionStatusRequest.getMode()) {
             case SOURCE:
+
                 statusResponse = fetchChargingStatusFromPayUSource(transaction);
                 break;
             case LOCAL:
@@ -193,8 +195,20 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
     }
 
+    private ChargingStatusResponse doReconcileTransactionStatus(AbstractTransactionStatusRequest transactionStatusRequest) {
+        Transaction transaction = TransactionContext.get();
+        if (transactionStatusRequest instanceof ChargingTransactionReconciliationStatusRequest) {
+            return fetchChargingStatusFromPayUSource(transaction);
+        } else if (transactionStatusRequest instanceof RefundTransactionReconciliationStatusRequest) {
+            return fetchRefundStatusFromPayUSource(transaction);
+        } else {
+            throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
+        }
+    }
+
     private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction) {
 
+        return null;
     }
 
 
@@ -675,7 +689,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     @Override
     public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
         Transaction refundTransaction = TransactionContext.get();
-        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+        TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(request.getRefundTransactionId()).uid(request.getUid()).planId(request.getPlanId()).itemId(request.getItemId()).clientAlias(request.getClientAlias()).amount(request.getAmount()).msisdn(request.getMsisdn()).paymentEvent(PaymentEvent.REFUND);
         try {
             PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
@@ -684,9 +698,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             merchantTransactionBuilder.request(refundDetails);
             PayURefundResponse refundResponse = getInfoFromPayU(refundDetails, PayURefundResponse.class);
             if (refundResponse.getStatus() == 0) {
+                finalTransactionStatus = TransactionStatus.FAILURE;
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(request.getRefundTransactionId()).code(String.valueOf(refundResponse.getStatus())).description(refundResponse.getMessage()).build());
             } else {
-                finalTransactionStatus = TransactionStatus.SUCCESS;
                 refundResponseBuilder.authPayUId(refundResponse.getAuthPayUId());
                 merchantTransactionBuilder.externalTransactionId(refundResponse.getRequestId()).response(refundResponse).build();
                 eventPublisher.publishEvent(merchantTransactionBuilder.build());

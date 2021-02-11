@@ -49,4 +49,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYMENT_RENEWAL_ERROR = MarkerFactory.getMarker("PAYMENT_RENEWAL_ERROR");
     Marker SE_PAYMENT_RENEWAL_ERROR = MarkerFactory.getMarker("SE_PAYMENT_RENEWAL_ERROR");
+
+    Marker PAYMENT_REFUND_ERROR = MarkerFactory.getMarker("PAYMENT_REFUND_ERROR");
+
+
 }

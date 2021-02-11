@@ -12,18 +12,19 @@ import lombok.Getter;
 @Getter
 @Builder
 @AnalysedEntity
-public class PaymentReconciledEvent {
-
+public class PaymentRefundedEvent {
     @Analysed
     private final String uid;
     @Analysed
     private final String msisdn;
     @Analysed
+    private final int planId;
+    @Analysed
     private final String itemId;
     @Analysed
     private final double amount;
     @Analysed
-    private final Integer planId;
+    private final String externalReferenceId;
     @Analysed
     private final String clientAlias;
     @Analysed(name = BaseConstants.TRANSACTION_ID)

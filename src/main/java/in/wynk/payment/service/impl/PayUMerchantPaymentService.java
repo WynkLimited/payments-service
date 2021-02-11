@@ -28,10 +28,7 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
 import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
-import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
-import in.wynk.payment.dto.response.payu.PayURenewalResponse;
-import in.wynk.payment.dto.response.payu.PayUUserCardDetailsResponse;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.dto.response.payu.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
@@ -39,6 +36,7 @@ import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -65,7 +63,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService {
+public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -492,26 +490,32 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return gson.fromJson(response, target);
     }
 
-    private MultiValueMap<String, String> buildPayUInfoRequest(String command, String var1) {
+    private MultiValueMap<String, String> buildPayUInfoRequest(String command, String var1, String... vars) {
         String hash = generateHashForPayUApi(command, var1);
         MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
         requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
         requestMap.add(PAYU_COMMAND, command);
         requestMap.add(PAYU_HASH, hash);
         requestMap.add(PAYU_VARIABLE1, var1);
+        if (!ArrayUtils.isEmpty(vars)) {
+            for (int i = 0; i < vars.length; i++) {
+                if (StringUtils.isNotEmpty(vars[i])) {
+                    requestMap.add(PAYU_VARIABLE.concat(String.valueOf(i + 2)), vars[i]);
+                }
+            }
+        }
         return requestMap;
     }
 
     private String generateHashForPayUApi(String command, String var1) {
-        String finalString =
-                payUMerchantKey
-                        + PIPE_SEPARATOR
-                        + command
-                        + PIPE_SEPARATOR
-                        + var1
-                        + PIPE_SEPARATOR
-                        + payUSalt;
-        return EncryptionUtils.generateSHA512Hash(finalString);
+        StringBuilder builder = new StringBuilder(payUMerchantKey);
+        builder.append(PIPE_SEPARATOR)
+                .append(command)
+                .append(PIPE_SEPARATOR)
+                .append(var1)
+                .append(PIPE_SEPARATOR)
+                .append(payUSalt);
+        return EncryptionUtils.generateSHA512Hash(builder.toString());
     }
 
     private String processCallback(CallbackRequest callbackRequest) {
@@ -674,6 +678,34 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .option(cardBuilder.build())
                 .build();
         return userPreferredPayment;
+    }
+
+    @Override
+    public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
+        Transaction refundTransaction = TransactionContext.get();
+        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+        PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(request.getRefundTransactionId()).uid(request.getUid()).planId(request.getPlanId()).itemId(request.getItemId()).clientAlias(request.getClientAlias()).amount(request.getAmount()).msisdn(request.getMsisdn()).paymentEvent(PaymentEvent.REFUND);
+        try {
+            PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
+            MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder().id(request.getRefundTransactionId());
+            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), refundRequest.getAuthPayUId(), refundRequest.getRefundTransactionId(), String.valueOf(refundRequest.getAmount()));
+            merchantTransactionBuilder.request(refundDetails);
+            PayURefundResponse refundResponse = getInfoFromPayU(refundDetails, PayURefundResponse.class);
+            if (refundResponse.getStatus() == 0) {
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(request.getRefundTransactionId()).code(String.valueOf(refundResponse.getStatus())).description(refundResponse.getMessage()).build());
+            } else {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+                refundResponseBuilder.authPayUId(refundResponse.getAuthPayUId());
+                merchantTransactionBuilder.externalTransactionId(refundResponse.getAuthPayUId()).response(refundResponse).build();
+                eventPublisher.publishEvent(merchantTransactionBuilder.build());
+            }
+        } catch (WynkRuntimeException ex) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(request.getRefundTransactionId()).code(ex.getErrorCode()).description(ex.getErrorTitle()).build());
+        } finally {
+            refundTransaction.setStatus(finalTransactionStatus.getValue());
+            refundResponseBuilder.transactionStatus(finalTransactionStatus);
+        }
+        return BaseResponse.builder().body(refundResponseBuilder.build()).build();
     }
 
 }

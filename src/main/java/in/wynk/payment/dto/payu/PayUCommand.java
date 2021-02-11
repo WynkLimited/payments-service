@@ -12,6 +12,7 @@ public enum PayUCommand {
     USER_CARD_DETAILS("get_user_cards"),
     SI_TRANSACTION("si_transaction"),
     VERIFY_VPA("validateVPA"),
+    CANCEL_REFUND_TRANSACTION("cancel_refund_transaction"),
     UPI_MANDATE_STATUS("upi_mandate_status");
 
 

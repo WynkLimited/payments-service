@@ -103,7 +103,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
-    @AnalyseTransaction(name = "paymentRefundEvent")
+    @AnalyseTransaction(name = "paymentRefundedEvent")
     public void onPaymentRefundEvent(PaymentRefundedEvent event) {
         AnalyticService.update(event);
     }

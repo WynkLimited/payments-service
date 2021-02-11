@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PayuVpaVerificationResponse {
+public class PayUVpaVerificationResponse {
 
     String status;
     String vpa;

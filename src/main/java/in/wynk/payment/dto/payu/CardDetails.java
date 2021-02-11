@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.payu;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,44 +10,46 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CardDetails {
-  @SerializedName("card_type")
+
+  @JsonProperty("card_type")
   private String cardType;
 
-  @SerializedName("expiry_year")
+  @JsonProperty("expiry_year")
   private String expiryYear;
 
-  @SerializedName("is_domestic")
+  @JsonProperty("is_domestic")
   private String isDomestic;
 
-  @SerializedName("expiry_month")
+  @JsonProperty("expiry_month")
   private String expiryMonth;
 
-  @SerializedName("is_expired")
+  @JsonProperty("is_expired")
   private String isExpired;
 
-  @SerializedName("card_mode")
+  @JsonProperty("card_mode")
   private String cardMode;
 
-  @SerializedName("card_cvv")
+  @JsonProperty("card_cvv")
   private String cardCVV;
 
-  @SerializedName("card_no")
+  @JsonProperty("card_no")
   private String cardNo;
 
-  @SerializedName("card_token")
+  @JsonProperty("card_token")
   private String cardToken;
 
-  @SerializedName("card_name")
+  @JsonProperty("card_name")
   private String cardName;
 
-  @SerializedName("card_brand")
+  @JsonProperty("card_brand")
   private String cardBrand;
 
-  @SerializedName("name_on_card")
+  @JsonProperty("name_on_card")
   private String nameOnCard;
 
-  @SerializedName("card_bin")
+  @JsonProperty("card_bin")
   private String cardBin;
 
+  @JsonProperty("issuingBank")
   private String issuingBank;
 }

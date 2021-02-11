@@ -19,10 +19,7 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRequest;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionResponse;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionStatus;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -147,14 +144,14 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
         ChargingStatusResponse chargingStatus;
-        switch (chargingStatusRequest.getMode()) {
+        switch (transactionStatusRequest.getMode()) {
             case SOURCE:
-                chargingStatus = getStatusFromPhonePe(chargingStatusRequest);
+                chargingStatus = getStatusFromPhonePe(transactionStatusRequest);
                 break;
             case LOCAL:
-                chargingStatus = fetchChargingStatusFromDataSource(chargingStatusRequest);
+                chargingStatus = fetchChargingStatusFromDataSource(transactionStatusRequest);
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
@@ -189,8 +186,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         transaction.setStatus(finalTransactionStatus.name());
     }
 
-    private ChargingStatusResponse getStatusFromPhonePe(ChargingStatusRequest chargingStatusRequest) {
-        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
+    private ChargingStatusResponse getStatusFromPhonePe(AbstractTransactionStatusRequest transactionStatusRequest) {
+        Transaction transaction = transactionManager.get(transactionStatusRequest.getTransactionId());
         try {
             transactionManager.updateAndPublishAsync(transaction, this::fetchAndUpdateTransactionFromSource);
 
@@ -209,7 +206,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     }
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(ChargingStatusRequest chargingStatusRequest) {
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(AbstractTransactionStatusRequest chargingStatusRequest) {
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         return ChargingStatusResponse.builder()
                 .transactionStatus(transaction.getStatus())

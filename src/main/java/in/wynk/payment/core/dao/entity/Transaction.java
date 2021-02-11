@@ -4,6 +4,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.*;
+import org.apache.commons.lang.math.NumberUtils;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -110,10 +111,7 @@ public class Transaction {
     }
 
     public Integer getAttemptSequence() {
-        Integer attemptSequence = getValueFromPaymentMetaData(ATTEMPT_SEQUENCE);
-        if (attemptSequence == null)
-            attemptSequence = 0;
-        return attemptSequence;
+        return NumberUtils.toInt(getValueFromPaymentMetaData(ATTEMPT_SEQUENCE));
     }
 
 }

@@ -22,6 +22,9 @@ public abstract class AbstractTransactionStatusRequest {
     private String transactionId;
 
     @Analysed
+    private String paymentCode;
+
+    @Analysed
     public abstract StatusMode getMode();
 
 }

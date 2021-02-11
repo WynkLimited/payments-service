@@ -17,6 +17,7 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -126,16 +127,16 @@ public class PaymentManager {
     }
 
     @TransactionAware(txnId = "#request.transactionId")
-    public BaseResponse<?> status(ChargingStatusRequest request, PaymentCode paymentCode, boolean isSync) {
+    public BaseResponse<?> status(AbstractTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
-        final IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
+        final IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(request.getPaymentCode(), IMerchantPaymentStatusService.class);
         final BaseResponse<?> baseResponse;
         try {
             baseResponse = statusService.status(request);
         } finally {
             TransactionStatus finalStatus = transaction.getStatus();
-            if (!isSync) {
+            if (request.getMode() == StatusMode.SOURCE) {
                 transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
                 if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
                     exhaustCouponIfApplicable();

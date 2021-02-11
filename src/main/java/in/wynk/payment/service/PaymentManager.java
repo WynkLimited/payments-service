@@ -74,10 +74,20 @@ public class PaymentManager {
         originalTransaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
         final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(originalTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
         AbstractPaymentRefundRequest request = AbstractPaymentRefundRequest.from(originalTransaction, refundTransaction);
-        BaseResponse<?> response = refundService.refund(request);
-        AbstractPaymentRefundResponse refundResponse = (AbstractPaymentRefundResponse) response.getBody();
-        eventPublisher.publishEvent(refundResponse.toRefundEvent());
-        return response;
+        BaseResponse<?> refundInitResponse = refundService.refund(request);
+        AbstractPaymentRefundResponse refundResponse = (AbstractPaymentRefundResponse) refundInitResponse.getBody();
+        if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
+            sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                    .paymentCode(refundTransaction.getPaymentChannel())
+                    .paymentEvent(refundTransaction.getType())
+                    .transactionId(refundTransaction.getIdStr())
+                    .itemId(refundTransaction.getItemId())
+                    .planId(refundTransaction.getPlanId())
+                    .msisdn(refundTransaction.getMsisdn())
+                    .uid(refundTransaction.getUid())
+                    .build());
+        }
+        return refundInitResponse;
     }
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
@@ -133,17 +143,32 @@ public class PaymentManager {
         final IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(request.getPaymentCode(), IMerchantPaymentStatusService.class);
         final BaseResponse<?> baseResponse;
         try {
+            if (EnumSet.of(PaymentCode.PAYU).contains(transaction.getPaymentChannel())) {
+                String extRefId = merchantTransactionService.getPartnerReferenceId(transaction.getIdStr());
+                transaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, extRefId);
+            }
             baseResponse = statusService.status(request);
         } finally {
-            TransactionStatus finalStatus = transaction.getStatus();
             if (request.getMode() == StatusMode.SOURCE) {
+                TransactionStatus finalStatus = transaction.getStatus();
                 transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
-                if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-                    exhaustCouponIfApplicable();
-                }
-                if (existingStatus != finalStatus) {
-                    if (EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType())) {
-                        eventPublisher.publishEvent(PaymentRefundedEvent.builder()
+                if (EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType())) {
+                    eventPublisher.publishEvent(PaymentRefundedEvent.builder()
+                            .paymentCode(transaction.getPaymentChannel())
+                            .transactionStatus(transaction.getStatus())
+                            .clientAlias(transaction.getClientAlias())
+                            .transactionId(transaction.getIdStr())
+                            .paymentEvent(transaction.getType())
+                            .msisdn(transaction.getMsisdn())
+                            .itemId(transaction.getItemId())
+                            .planId(transaction.getPlanId())
+                            .amount(transaction.getAmount())
+                            .uid(transaction.getUid())
+                            .build());
+                } else {
+                    if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                        exhaustCouponIfApplicable();
+                        eventPublisher.publishEvent(PaymentReconciledEvent.builder()
                                 .uid(transaction.getUid())
                                 .msisdn(transaction.getMsisdn())
                                 .itemId(transaction.getItemId())
@@ -156,18 +181,6 @@ public class PaymentManager {
                                 .transactionStatus(transaction.getStatus())
                                 .build());
                     }
-                    eventPublisher.publishEvent(PaymentReconciledEvent.builder()
-                            .uid(transaction.getUid())
-                            .msisdn(transaction.getMsisdn())
-                            .itemId(transaction.getItemId())
-                            .planId(transaction.getPlanId())
-                            .amount(transaction.getAmount())
-                            .clientAlias(transaction.getClientAlias())
-                            .transactionId(transaction.getIdStr())
-                            .paymentCode(transaction.getPaymentChannel())
-                            .paymentEvent(transaction.getType())
-                            .transactionStatus(transaction.getStatus())
-                            .build());
                 }
             }
         }
@@ -266,17 +279,7 @@ public class PaymentManager {
                 .paymentCode(paymentCode)
                 .clientAlias(clientAlias)
                 .event(PaymentEvent.REFUND);
-        Transaction originalTransaction = transactionManager.initiateTransaction(builder.build());
-//        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
-//                .paymentCode(originalTransaction.getPaymentChannel())
-//                .paymentEvent(originalTransaction.getType())
-//                .transactionId(originalTransaction.getIdStr())
-//                .itemId(originalTransaction.getItemId())
-//                .planId(originalTransaction.getPlanId())
-//                .msisdn(originalTransaction.getMsisdn())
-//                .uid(originalTransaction.getUid())
-//                .build());
-        TransactionContext.set(originalTransaction);
+        TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }
 

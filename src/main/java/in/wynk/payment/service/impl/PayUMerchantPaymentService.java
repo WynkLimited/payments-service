@@ -142,7 +142,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
             String mode = payUChargingTransactionDetails.getMode();
-            Boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
+            boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             // TODO:: Remove it once migration is completed
             String transactionId = StringUtils.isNotEmpty(payUChargingTransactionDetails.getMigratedTransactionId()) ? payUChargingTransactionDetails.getMigratedTransactionId() : paymentRenewalChargingRequest.getId();
             if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transactionId)) {
@@ -722,27 +722,28 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
         Transaction refundTransaction = TransactionContext.get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
-        PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(request.getRefundTransactionId()).uid(request.getUid()).planId(request.getPlanId()).itemId(request.getItemId()).clientAlias(request.getClientAlias()).amount(request.getAmount()).msisdn(request.getMsisdn()).paymentEvent(PaymentEvent.REFUND);
+        MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder().id(refundTransaction.getIdStr());
+        PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder<?,?> refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId()).itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn()).paymentEvent(refundTransaction.getType());
         try {
             PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
-            MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder().id(request.getRefundTransactionId());
-            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), refundRequest.getAuthPayUId(), refundRequest.getRefundTransactionId(), String.valueOf(refundRequest.getAmount()));
+            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), refundRequest.getAuthPayUId(), refundTransaction.getIdStr(), String.valueOf(refundTransaction.getAmount()));
             merchantTransactionBuilder.request(refundDetails);
             PayURefundInitResponse refundResponse = getInfoFromPayU(refundDetails, new ParameterizedTypeReference<PayURefundInitResponse>() {
             });
             if (refundResponse.getStatus() == 0) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(request.getRefundTransactionId()).code(String.valueOf(refundResponse.getStatus())).description(refundResponse.getMessage()).build());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(String.valueOf(refundResponse.getStatus())).description(refundResponse.getMessage()).build());
             } else {
-                refundResponseBuilder.authPayUId(refundResponse.getAuthPayUId());
+                refundResponseBuilder.authPayUId(refundResponse.getAuthPayUId()).requestId(refundResponse.getRequestId());
                 merchantTransactionBuilder.externalTransactionId(refundResponse.getRequestId()).response(refundResponse).build();
-                eventPublisher.publishEvent(merchantTransactionBuilder.build());
+
             }
         } catch (WynkRuntimeException ex) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(request.getRefundTransactionId()).code(ex.getErrorCode()).description(ex.getErrorTitle()).build());
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(ex.getErrorCode()).description(ex.getErrorTitle()).build());
         } finally {
             refundTransaction.setStatus(finalTransactionStatus.getValue());
             refundResponseBuilder.transactionStatus(finalTransactionStatus);
+            eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }
         return BaseResponse.builder().body(refundResponseBuilder.build()).build();
     }

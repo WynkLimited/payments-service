@@ -17,6 +17,7 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
+import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
 import in.wynk.payment.service.PaymentManager;
@@ -103,7 +104,8 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
         AnalyticService.update(event);
-        paymentManager.initRefund(event.getOriginalTransactionId());
+        BaseResponse<?> response = paymentManager.initRefund(event.getOriginalTransactionId());
+        AnalyticService.update(response.getBody());
     }
 
     @EventListener

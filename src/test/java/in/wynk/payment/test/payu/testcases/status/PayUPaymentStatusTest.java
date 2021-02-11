@@ -6,7 +6,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.service.*;
@@ -87,7 +87,7 @@ public class PayUPaymentStatusTest {
     @Order(1)
     public void handleOneTimePaymentStatusTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
-        ChargingStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest();
+        AbstractTransactionStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest(PaymentCode.PAYU);
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getResponse().getBody());
@@ -98,7 +98,7 @@ public class PayUPaymentStatusTest {
     @Order(2)
     public void handleRecurringPaymentStatusTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
-        ChargingStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest();
+        AbstractTransactionStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest(PaymentCode.PAYU);
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getResponse().getBody());

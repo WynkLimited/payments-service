@@ -8,10 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Getter
@@ -22,6 +19,9 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @Table(name = "merchant_transaction")
 @TypeDef(name = "json", typeClass = JsonStringType.class)
+@NamedQueries({
+        @NamedQuery(name = "MerchantTransaction.findPartnerReferenceById", query = "SELECT m.externalTransactionId FROM MerchantTransaction m WHERE m.id=:txnId", hints = @QueryHint(name = "javax.persistence.query.timeout", value = "300"))
+})
 public class MerchantTransaction {
 
     @Id

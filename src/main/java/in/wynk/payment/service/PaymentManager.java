@@ -72,7 +72,7 @@ public class PaymentManager {
     @TransactionAware(txnId = "#originalTransactionId")
     public BaseResponse<?> initRefund(String originalTransactionId) {
         Transaction originalTransaction = TransactionContext.get();
-        final Transaction refundTransaction = initiateRefundTransaction(originalTransaction.getUid(), originalTransaction.getMsisdn(), originalTransaction.getPlanId(), originalTransaction.getItemId(), originalTransaction.getClientAlias(), originalTransaction.getAmount(), originalTransaction.getPaymentChannel(), originalTransaction.getType());
+        final Transaction refundTransaction = initiateRefundTransaction(originalTransaction.getUid(), originalTransaction.getMsisdn(), originalTransaction.getPlanId(), originalTransaction.getItemId(), originalTransaction.getClientAlias(), originalTransaction.getAmount(), originalTransaction.getPaymentChannel());
         String externalReferenceId = merchantTransactionService.getPartnerReferenceId(originalTransactionId);
         originalTransaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
         final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(originalTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
@@ -242,7 +242,7 @@ public class PaymentManager {
         return initiateTransaction(autoRenew, planId, uid, msisdn, null, null, paymentCode);
     }
 
-    private Transaction initiateRefundTransaction(String uid, String msisdn, int planId, String itemId, String clientAlias, double amount, PaymentCode paymentCode, PaymentEvent event) {
+    private Transaction initiateRefundTransaction(String uid, String msisdn, int planId, String itemId, String clientAlias, double amount, PaymentCode paymentCode) {
         final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder()
                 .uid(uid)
                 .msisdn(msisdn)
@@ -251,7 +251,7 @@ public class PaymentManager {
                 .amount(amount)
                 .paymentCode(paymentCode)
                 .clientAlias(clientAlias)
-                .event(event);
+                .event(PaymentEvent.REFUND);
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }

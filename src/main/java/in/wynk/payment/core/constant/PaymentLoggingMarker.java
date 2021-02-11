@@ -53,5 +53,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYMENT_REFUND_ERROR = MarkerFactory.getMarker("PAYMENT_REFUND_ERROR");
 
+    Marker CLIENT_CALLBACK_INFO = MarkerFactory.getMarker("CLIENT_CALLBACK_INFO");
+
 
 }

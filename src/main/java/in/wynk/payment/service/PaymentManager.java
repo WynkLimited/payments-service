@@ -143,7 +143,7 @@ public class PaymentManager {
         final IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(request.getPaymentCode(), IMerchantPaymentStatusService.class);
         final BaseResponse<?> baseResponse;
         try {
-            if (EnumSet.of(PaymentCode.PAYU).contains(transaction.getPaymentChannel())) {
+            if (EnumSet.of(PaymentCode.PAYU).contains(transaction.getPaymentChannel()) && EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType())) {
                 String extRefId = merchantTransactionService.getPartnerReferenceId(transaction.getIdStr());
                 transaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, extRefId);
             }

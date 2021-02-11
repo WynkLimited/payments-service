@@ -26,4 +26,9 @@ public class MerchantTransactionImpl implements IMerchantTransactionService {
         return merchantTransactionDao.findById(id).get();
     }
 
+    @Override
+    public String getPartnerReferenceId(String id) {
+        return merchantTransactionDao.findPartnerReferenceById(id).get();
+    }
+
 }

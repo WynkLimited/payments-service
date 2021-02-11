@@ -23,9 +23,11 @@ import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.queue.service.ISqsManagerService;
@@ -61,6 +63,20 @@ public class PaymentManager {
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
         this.merchantTransactionService = merchantTransactionService;
+    }
+
+    @TransactionAware(txnId = "#originalTransactionId")
+    public BaseResponse<?> initRefund(String originalTransactionId) {
+        Transaction originalTransaction = TransactionContext.get();
+        final Transaction refundTransaction = initiateRefundTransaction(originalTransaction.getUid(), originalTransaction.getMsisdn(), originalTransaction.getPlanId(), originalTransaction.getItemId(), originalTransaction.getClientAlias(), originalTransaction.getAmount(), originalTransaction.getPaymentChannel(), originalTransaction.getType());
+        String externalReferenceId = merchantTransactionService.getPartnerReferenceId(originalTransactionId);
+        originalTransaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
+        final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(originalTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
+        AbstractPaymentRefundRequest request = AbstractPaymentRefundRequest.from(originalTransaction, refundTransaction);
+        BaseResponse<?> response = refundService.refund(request);
+        AbstractPaymentRefundResponse refundResponse = (AbstractPaymentRefundResponse) response.getBody();
+        eventPublisher.publishEvent(refundResponse.toRefundEvent());
+        return response;
     }
 
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
@@ -136,6 +152,7 @@ public class PaymentManager {
                     if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
                         exhaustCouponIfApplicable();
                     }
+                    initRefundIfApplicable(transaction);
                     if (existingStatus != finalStatus) {
                         eventPublisher.publishEvent(PaymentReconciledEvent.builder()
                                 .uid(transaction.getUid())
@@ -245,11 +262,38 @@ public class PaymentManager {
         return TransactionContext.get();
     }
 
-    private Transaction initiateTransactionForIap(boolean autoRenew, int planId, String uid, String msisdn, PaymentCode paymentCode) {
+    private Transaction initiateTransactionForIap(boolean autoRenew, int planId, String uid, String
+            msisdn, PaymentCode paymentCode) {
         return initiateTransaction(autoRenew, planId, uid, msisdn, null, null, paymentCode);
     }
 
-    private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
+    private Transaction initiateRefundTransaction(String uid, String msisdn, int planId, String itemId, String
+            clientAlias, double amount, PaymentCode paymentCode, PaymentEvent event) {
+        final TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder()
+                .uid(uid)
+                .msisdn(msisdn)
+                .planId(planId)
+                .itemId(itemId)
+                .amount(amount)
+                .paymentCode(paymentCode)
+                .clientAlias(clientAlias)
+                .event(PaymentEvent.REFUND);
+        Transaction originalTransaction = transactionManager.initiateTransaction(builder.build());
+//        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+//                .paymentCode(originalTransaction.getPaymentChannel())
+//                .paymentEvent(originalTransaction.getType())
+//                .transactionId(originalTransaction.getIdStr())
+//                .itemId(originalTransaction.getItemId())
+//                .planId(originalTransaction.getPlanId())
+//                .msisdn(originalTransaction.getMsisdn())
+//                .uid(originalTransaction.getUid())
+//                .build());
+        TransactionContext.set(originalTransaction);
+        return TransactionContext.get();
+    }
+
+    private Transaction initiateTransaction(boolean autoRenew, int planId, String uid, String msisdn, String
+            itemId, String couponId, PaymentCode paymentCode) {
         final CouponDTO coupon;
         final double amountToBePaid;
         double finalAmountToBePaid;
@@ -339,6 +383,14 @@ public class PaymentManager {
         MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(message.getPaymentMetaData());
         merchantTransactionService.upsert(merchantTransaction);
         transactionManager.updateAndAsyncPublish(transaction, TransactionStatus.INPROGRESS, transaction.getStatus());
+    }
+
+    private void initRefundIfApplicable(Transaction transaction) {
+        if (EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus()) && EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(transaction.getType())) {
+            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                    .originalTransactionId(transaction.getIdStr())
+                    .build());
+        }
     }
 
 }

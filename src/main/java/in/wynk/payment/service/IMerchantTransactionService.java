@@ -8,4 +8,6 @@ public interface IMerchantTransactionService {
 
     MerchantTransaction getMerchantTransaction(String id);
 
+    String getPartnerReferenceId(String id);
+
 }

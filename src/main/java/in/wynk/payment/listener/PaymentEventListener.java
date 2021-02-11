@@ -8,18 +8,17 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.core.constant.ClientLoggingMarker;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.core.event.RecurringPaymentEvent;
+import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import io.github.resilience4j.retry.RetryRegistry;
@@ -33,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.EnumSet;
 import java.util.Optional;
 
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
@@ -44,14 +44,16 @@ public class PaymentEventListener {
     private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
     private final RetryRegistry retryRegistry;
+    private final PaymentManager paymentManager;
     private final IPaymentErrorService paymentErrorService;
     private final IMerchantTransactionService merchantTransactionService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 
-    public PaymentEventListener(ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
+    public PaymentEventListener(ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, RetryRegistry retryRegistry, PaymentManager paymentManager, IPaymentErrorService paymentErrorService, IMerchantTransactionService merchantTransactionService, ClientDetailsCachingService clientDetailsCachingService) {
         this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.retryRegistry = retryRegistry;
+        this.paymentManager = paymentManager;
         this.paymentErrorService = paymentErrorService;
         this.merchantTransactionService = merchantTransactionService;
         this.clientDetailsCachingService = clientDetailsCachingService;
@@ -94,6 +96,19 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @AnalyseTransaction(name = "paymentRefundInitEvent")
+    public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
+        AnalyticService.update(event);
+        paymentManager.initRefund(event.getOriginalTransactionId());
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentRefundedEvent")
+    public void onPaymentRefundEvent(PaymentRefundedEvent event) {
+        AnalyticService.update(event);
+    }
+
+    @EventListener
     @AnalyseTransaction(name = "paymentReconciledEvent")
     public void onPaymentReconciledEvent(PaymentReconciledEvent event) {
         AnalyticService.update(event);
@@ -103,7 +118,7 @@ public class PaymentEventListener {
             Optional<Boolean> callbackOptional = client.getMeta(BaseConstants.CALLBACK_ENABLED);
             if (callbackOptional.isPresent() && callbackOptional.get()) {
                 Optional<String> callbackUrlOptional = client.getMeta(BaseConstants.CALLBACK_URL);
-                if (callbackUrlOptional.isPresent()) {
+                if (callbackUrlOptional.isPresent() && !EnumSet.of(PaymentEvent.REFUND).contains(event.getPaymentEvent())) {
                     ClientCallbackRequest clientCallbackRequest = ClientCallbackRequest.builder()
                             .uid(event.getUid())
                             .msisdn(event.getMsisdn())

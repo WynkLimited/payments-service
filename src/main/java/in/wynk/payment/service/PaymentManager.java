@@ -21,8 +21,9 @@ import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.core.event.PaymentRefundedEvent;
+import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
@@ -54,15 +55,17 @@ public class PaymentManager {
     private final PaymentCachingService cachingService;
     private final ISqsManagerService sqsManagerService;
     private final ApplicationEventPublisher eventPublisher;
+    private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
 
-    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService) {
+    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, IClientCallbackService clientCallbackService, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService) {
         this.couponManager = couponManager;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
+        this.clientCallbackService = clientCallbackService;
         this.merchantTransactionService = merchantTransactionService;
     }
 
@@ -117,9 +120,7 @@ public class PaymentManager {
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
-            if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-                exhaustCouponIfApplicable();
-            }
+            exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
         }
         return baseResponse;
     }
@@ -152,36 +153,10 @@ public class PaymentManager {
             if (request.getMode() == StatusMode.SOURCE) {
                 TransactionStatus finalStatus = transaction.getStatus();
                 transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
-                if (EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType())) {
-                    eventPublisher.publishEvent(PaymentRefundedEvent.builder()
-                            .paymentCode(transaction.getPaymentChannel())
-                            .transactionStatus(transaction.getStatus())
-                            .clientAlias(transaction.getClientAlias())
-                            .transactionId(transaction.getIdStr())
-                            .paymentEvent(transaction.getType())
-                            .msisdn(transaction.getMsisdn())
-                            .itemId(transaction.getItemId())
-                            .planId(transaction.getPlanId())
-                            .amount(transaction.getAmount())
-                            .uid(transaction.getUid())
-                            .build());
-                } else {
-                    if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-                        exhaustCouponIfApplicable();
-                        eventPublisher.publishEvent(PaymentReconciledEvent.builder()
-                                .uid(transaction.getUid())
-                                .msisdn(transaction.getMsisdn())
-                                .itemId(transaction.getItemId())
-                                .planId(transaction.getPlanId())
-                                .amount(transaction.getAmount())
-                                .clientAlias(transaction.getClientAlias())
-                                .transactionId(transaction.getIdStr())
-                                .paymentCode(transaction.getPaymentChannel())
-                                .paymentEvent(transaction.getType())
-                                .transactionStatus(transaction.getStatus())
-                                .build());
-                    }
+                if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+                    exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
                 }
+                publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
             }
         }
         return baseResponse;
@@ -198,21 +173,19 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.getPaymentCode();
         final PlanDTO selectedPlan = cachingService.getPlan(request.getPlanId());
         final boolean autoRenew = selectedPlan.getPlanType() == PlanType.SUBSCRIPTION;
-        final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), null, paymentCode);
+        final Transaction transaction = initiateTransactionForPlan(autoRenew, request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         final BaseResponse<?> response = verificationService.verifyReceipt(request);
         final TransactionStatus finalStatus = transaction.getStatus();
         transactionManager.updateAndSyncPublish(transaction, initialStatus, finalStatus);
-        if (finalStatus == TransactionStatus.SUCCESS) {
-            exhaustCouponIfApplicable();
-        }
+        exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
         return response;
     }
 
     public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
-        final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), request.getClientAlias(), paymentCode, PaymentEvent.RENEW);
+        final Transaction transaction = initiateTransaction(request.getPlanId(), request.getUid(), request.getMsisdn(), request.getClientAlias(), paymentCode);
         Map<String, Object> paymentMetaData = transaction.getPaymentMetaData();
         paymentMetaData.put(PaymentConstants.RENEWAL, true);
         transaction.setPaymentMetaData(paymentMetaData);
@@ -237,6 +210,10 @@ public class PaymentManager {
         }
     }
 
+    public void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
+        clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
+    }
+
     private String initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode) {
         PlanDTO selectedPlan = cachingService.getPlan(planId);
         TransactionContext.set(transactionManager.initiateTransaction(TransactionInitRequest.builder()
@@ -251,22 +228,18 @@ public class PaymentManager {
         return TransactionContext.get().getId().toString();
     }
 
-    private Transaction initiateTransaction(int planId, String uid, String msisdn, String clientAlias, PaymentCode paymentCode, PaymentEvent paymentEvent) {
+    private Transaction initiateTransaction(int planId, String uid, String msisdn, String clientAlias, PaymentCode paymentCode) {
         PlanDTO selectedPlan = cachingService.getPlan(planId);
         final double finalAmountToBePaid = selectedPlan.getFinalPrice();
         final TransactionInitRequest request = TransactionInitRequest.builder().uid(uid).msisdn(msisdn)
-                .paymentCode(paymentCode).clientAlias(clientAlias).planId(planId).event(paymentEvent)
+                .paymentCode(paymentCode).clientAlias(clientAlias).planId(planId).event(PaymentEvent.RENEW)
                 .amount(finalAmountToBePaid).build();
         TransactionContext.set(transactionManager.initiateTransaction(request));
         return TransactionContext.get();
     }
 
-    private Transaction initiateTransactionForItem(boolean autoRenew, String uid, String msisdn, String itemId, String couponId, PaymentCode paymentCode) {
-        return initiateTransaction(false, 0, uid, msisdn, itemId, couponId, paymentCode);
-    }
-
-    private Transaction initiateTransactionForPlan(boolean autoRenew, int planId, String uid, String msisdn, String couponId, PaymentCode paymentCode) {
-        return initiateTransaction(autoRenew, planId, uid, msisdn, null, couponId, paymentCode);
+    private Transaction initiateTransactionForPlan(boolean autoRenew, int planId, String uid, String msisdn, PaymentCode paymentCode) {
+        return initiateTransaction(autoRenew, planId, uid, msisdn, null, null, paymentCode);
     }
 
     private Transaction initiateRefundTransaction(String uid, String msisdn, int planId, String itemId, String clientAlias, double amount, PaymentCode paymentCode, PaymentEvent event) {
@@ -278,7 +251,7 @@ public class PaymentManager {
                 .amount(amount)
                 .paymentCode(paymentCode)
                 .clientAlias(clientAlias)
-                .event(PaymentEvent.REFUND);
+                .event(event);
         TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }
@@ -333,13 +306,14 @@ public class PaymentManager {
         return Double.parseDouble(df.format(itemPrice - (itemPrice * discount) / 100));
     }
 
-    private void exhaustCouponIfApplicable() {
-        Transaction transaction = TransactionContext.get();
-        if (StringUtils.isNotEmpty(transaction.getCoupon())) {
-            try {
-                couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
-            } catch (WynkRuntimeException e) {
-                log.error(e.getMarker(), e.getMessage(), e);
+    private void exhaustCouponIfApplicable(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
+        if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+            if (StringUtils.isNotEmpty(transaction.getCoupon())) {
+                try {
+                    couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+                } catch (WynkRuntimeException e) {
+                    log.error(e.getMarker(), e.getMessage(), e);
+                }
             }
         }
     }
@@ -367,6 +341,13 @@ public class PaymentManager {
         MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(message.getPaymentMetaData());
         merchantTransactionService.upsert(merchantTransaction);
         transactionManager.updateAndAsyncPublish(transaction, TransactionStatus.INPROGRESS, transaction.getStatus());
+    }
+
+    private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
+        eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
+        if (!EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType())  && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+            eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
+        }
     }
 
 }

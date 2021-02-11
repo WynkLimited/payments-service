@@ -414,7 +414,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getLatestReceiptInfo() != null && StringUtils.equals(itunesCallbackRequest.getNotificationType(), "DID_RENEW")) {
+            if (itunesCallbackRequest.getLatestReceiptInfo() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
                 return receiptDetailsDao.findById(iTunesId);

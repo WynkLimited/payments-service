@@ -12,6 +12,6 @@ import java.util.Optional;
 @Repository(BeanConstant.MERCHANT_TRANSACTION_DAO)
 public interface IMerchantTransactionDao extends JpaRepository<MerchantTransaction, String> {
 
-     Optional<String> findPartnerReferenceById(@Param(BaseConstants.TRANSACTION_ID) String id);
+    Optional<String> findPartnerReferenceById(@Param(BaseConstants.TRANSACTION_ID) String id);
 
 }

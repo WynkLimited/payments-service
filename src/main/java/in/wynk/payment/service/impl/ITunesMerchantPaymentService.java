@@ -388,7 +388,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 statusResponse = fetchChargingStatusFromItunesSource(transaction);
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction);
+                statusResponse = fetchChargingStatusFromDataSource(transaction, chargingStatusRequest.getPlanId());
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
@@ -399,13 +399,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 .build();
     }
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        int planId = transaction.getPlanId();
-        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(selectedPlanId);
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder()
+                .tid(transaction.getIdStr())
+                .planId(planId)
+                .transactionStatus(transaction.getStatus());
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
+            responseBuilder.validity(cachingService.validTillDate(planId));
         }
         return responseBuilder.build();
     }

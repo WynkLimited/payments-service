@@ -65,7 +65,7 @@ public class PayUPaymentStatusTest {
         if (SessionContextHolder.<SessionDTO>get() == null || SessionContextHolder.<SessionDTO>get().getBody() == null) {
             SessionContextHolder.set(PayUTestData.initSession());
         }
-        Mockito.doNothing().when(recurringPaymentManager).schedulePaymentRenewal(any(Transaction.class));
+        Mockito.doNothing().when(recurringPaymentManager).scheduleRecurringPayment(any(Transaction.class), any(TransactionStatus.class), any(TransactionStatus.class));
         Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID).toString(), Mockito.any(PaymentEvent.class), Mockito.anyLong());
         Mockito.doNothing().when(subscriptionManager).subscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), anyString(), any(), any());
         Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), any(), any());

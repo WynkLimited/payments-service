@@ -1,17 +1,17 @@
 package in.wynk.payment.dto.request;
 
 import in.wynk.payment.core.constant.StatusMode;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 @Getter
 @Builder
-@RequiredArgsConstructor
 @AllArgsConstructor
+@RequiredArgsConstructor
 public class ChargingStatusRequest {
 
-    private String transactionId;
+    @Setter
+    private int planId;
     private StatusMode mode;
+    private String transactionId;
+
 }

@@ -111,7 +111,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
-        Map<String, String> payUPayload = startPaymentChargingForPayU(TransactionContext.get());
+        Map<String, String> payUPayload = getPayload(TransactionContext.get());
         String encryptedParams;
         try {
             encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
@@ -184,7 +184,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 statusResponse = fetchChargingStatusFromPayUSource(transaction);
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction);
+                statusResponse = fetchChargingStatusFromDataSource(transaction, chargingStatusRequest.getPlanId());
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
@@ -258,18 +258,18 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
     }
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        int planId = transaction.getPlanId();
-        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-        ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(selectedPlanId);
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int selectedPlanId) {
+        ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder()
+                .planId(selectedPlanId)
+                .tid(transaction.getIdStr())
+                .transactionStatus(transaction.getStatus());
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
         }
         return responseBuilder.build();
     }
 
-    private Map<String, String> startPaymentChargingForPayU(Transaction transaction) {
+    private Map<String, String> getPayload(Transaction transaction) {
         final int planId = transaction.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
         double finalPlanAmount = transaction.getAmount();
@@ -279,9 +279,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Map<String, String> payload = new HashMap<>();
         String userCredentials = payUMerchantKey + COLON + uid;
         String sid = SessionContextHolder.get().getId().toString();
-        Map<String, String> payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
+        Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
             payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+        } else {
+            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
         }
         // Mandatory according to document
         payload.putAll(payloadTemp);
@@ -324,17 +326,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
         Boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
-        Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        Integer freeTrialValidity = validTillDays;
-        BillingUtils billingUtils;
-        if (isFreeTrial) {
-            freeTrialValidity = cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity();
-        }
-        if (freeTrialValidity == validTillDays) {
-            billingUtils = new BillingUtils(validTillDays);
-        } else {
-            billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
-        }
+        BillingUtils billingUtils = getBillingUtils(selectedPlan, isFreeTrial);
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getFinalPrice(), today, next5Year));
             String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
@@ -349,6 +341,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             log.error("Error Creating SiDetails Object");
         }
         return payload;
+    }
+
+    private BillingUtils getBillingUtils(PlanDTO selectedPlan, Boolean isFreeTrial) {
+        Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+        Integer freeTrialValidity = isFreeTrial ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity() : validTillDays;
+        return freeTrialValidity == validTillDays ? new BillingUtils(validTillDays) : new BillingUtils(1, BillingCycle.ADHOC);
     }
 
     //TODO: ( on AMAN) need to use to fetch user's saved cards.

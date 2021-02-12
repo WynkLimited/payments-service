@@ -117,6 +117,7 @@ public class PaymentManager {
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentStatusService statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         final BaseResponse<?> baseResponse;
+        request.setPlanId(transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
         try {
             baseResponse = statusService.status(request);
         } finally {

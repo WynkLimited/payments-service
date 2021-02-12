@@ -125,39 +125,14 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
         try {
             if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-                if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                    if (transaction.getPaymentChannel().isInternalRecurring() && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)) {
-                        recurringPaymentManagerService.schedulePaymentRenewal(transaction);
+                if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                    unsubscribePlan(transaction, finalTransactionStatus, isSync);
+                } else {
+                    recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
+                    if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
+                            (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED)) {
+                        subscribePlan(transaction, finalTransactionStatus, isSync);
                     }
-                    else if (transaction.getPaymentChannel().isInternalRecurring() && transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-                        recurringPaymentManagerService.schedulePaymentRenewalForFreeTrial(transaction);
-                    }
-                    if (isSync) {
-                        subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
-                    } else {
-                        subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
-                    }
-
-                } else if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-                    if (isSync) {
-                        subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
-                    } else {
-                        subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
-                    }
-
-                } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED) {
-                    if (transaction.getType() == PaymentEvent.SUBSCRIBE) {
-                        recurringPaymentManagerService.schedulePaymentRenewalForMigration(transaction);
-                    }
-                    if (isSync) {
-                        subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
-                    } else {
-                        subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
-                    }
-                } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
-                        && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)
-                        && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey(PaymentConstants.RENEWAL)) {
-                    recurringPaymentManagerService.schedulePaymentRenewalForNextRetry(transaction);
                 }
             }
         } finally {
@@ -165,6 +140,22 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 transaction.setExitTime(Calendar.getInstance());
             }
             this.upsert(transaction);
+        }
+    }
+
+    private void subscribePlan(Transaction transaction, TransactionStatus finalTransactionStatus, boolean isSync) {
+        if (isSync) {
+            subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
+        } else {
+            subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
+        }
+    }
+
+    private void unsubscribePlan(Transaction transaction, TransactionStatus finalTransactionStatus, boolean isSync) {
+        if (isSync) {
+            subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+        } else {
+            subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
         }
     }
 

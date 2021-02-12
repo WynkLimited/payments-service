@@ -364,12 +364,12 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     @Override
     public BaseResponse<?> status(ChargingStatusRequest chargingStatusRequest) {
         Transaction transaction = TransactionContext.get();
-        int planId = transaction.getPlanId();
-        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(selectedPlanId);
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder()
+                .tid(transaction.getIdStr())
+                .planId(chargingStatusRequest.getPlanId())
+                .transactionStatus(transaction.getStatus());
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
+            responseBuilder.validity(cachingService.validTillDate(chargingStatusRequest.getPlanId()));
         }
         return BaseResponse.<ChargingStatusResponse>builder()
                 .status(HttpStatus.OK)

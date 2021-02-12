@@ -45,6 +45,7 @@ public class PaymentRenewalsScheduler {
     private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals) {
         for (PaymentRenewal paymentRenewal : paymentRenewals) {
             publishRenewalMessage(PaymentRenewalMessage.builder()
+                    .attemptSequence(paymentRenewal.getAttemptSequence())
                     .transactionId(paymentRenewal.getTransactionId())
                     .paymentEvent(paymentRenewal.getTransactionEvent())
                     .build());

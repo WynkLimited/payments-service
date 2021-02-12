@@ -8,12 +8,16 @@ import in.wynk.payment.core.dao.entity.SkuMapping;
 import in.wynk.payment.core.dao.repository.PaymentMethodDao;
 import in.wynk.payment.core.dao.repository.SkuDao;
 import in.wynk.payment.core.enums.PaymentGroup;
+import in.wynk.subscription.common.dto.OfferDTO;
+import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -36,26 +40,25 @@ import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 @Getter
 public class PaymentCachingService {
 
-    private final SkuDao skuDao;
+    private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
+    private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
+    @Autowired
+    private SkuDao skuDao;
+
     private static final Logger logger = LoggerFactory.getLogger(PaymentCachingService.class);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
-    private final PaymentMethodDao paymentMethodDao;
-    private final ISubscriptionServiceManager subscriptionServiceManager;
-
     private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
+    @Autowired
+    private PaymentMethodDao paymentMethodDao;
+    @Autowired
+    private ISubscriptionServiceManager subscriptionServiceManager;
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
 
-    public PaymentCachingService(PaymentMethodDao paymentMethodDao, SkuDao skuDao, ISubscriptionServiceManager subscriptionServiceManager) {
-        this.paymentMethodDao = paymentMethodDao;
-        this.skuDao = skuDao;
-        this.subscriptionServiceManager = subscriptionServiceManager;
-    }
-
-    @Scheduled(fixedDelay = 30 * 60 * 1000L,  initialDelay = 30 * 60 * 1000L )
+    @Scheduled(fixedDelay = 30 * 60 * 1000L, initialDelay = 30 * 60 * 1000L)
     @PostConstruct
     @AnalyseTransaction(name = "refreshInMemoryCache")
     public void init() {
@@ -64,6 +67,8 @@ public class PaymentCachingService {
         loadPayments();
         loadPlans();
         loadSku();
+        loadOffers();
+        loadPartners();
         AnalyticService.update("cacheLoadCompleted", true);
     }
 
@@ -114,6 +119,38 @@ public class PaymentCachingService {
         }
     }
 
+    private void loadOffers() {
+        List<OfferDTO> offerList = subscriptionServiceManager.getOffers();
+        if (CollectionUtils.isNotEmpty(offerList) && writeLock.tryLock()) {
+            try {
+                Map<Integer, OfferDTO> offerMap = offerList.stream().collect(Collectors.toMap(OfferDTO::getId, Function.identity()));
+                offers.clear();
+                offers.putAll(offerMap);
+            } catch (Throwable th) {
+                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
+                throw th;
+            } finally {
+                writeLock.unlock();
+            }
+        }
+    }
+
+    private void loadPartners() {
+        List<PartnerDTO> partnerList = subscriptionServiceManager.getPartners();
+        if (CollectionUtils.isNotEmpty(partnerList) && writeLock.tryLock()) {
+            try {
+                Map<String, PartnerDTO> partnerMap = partnerList.stream().collect(Collectors.toMap(PartnerDTO::getPackGroup, Function.identity()));
+                partners.clear();
+                partners.putAll(partnerMap);
+            } catch (Throwable th) {
+                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
+                throw th;
+            } finally {
+                writeLock.unlock();
+            }
+        }
+    }
+
     private void loadSku() {
         List<SkuMapping> skuMappings = skuDao.findAll();
         if (CollectionUtils.isNotEmpty(skuMappings) && writeLock.tryLock()) {
@@ -138,6 +175,22 @@ public class PaymentCachingService {
 
     public PlanDTO getPlan(int planId) {
         return plans.get(planId);
+    }
+
+    public boolean containsPlan(String planId) {
+        return plans.containsKey(NumberUtils.toInt(planId));
+    }
+
+    public PlanDTO getPlan(String planId) {
+        return plans.get(NumberUtils.toInt(planId));
+    }
+
+    public OfferDTO getOffer(int offerId) {
+        return offers.get(offerId);
+    }
+
+    public PartnerDTO getPartner(String packGroup) {
+        return partners.get(packGroup);
     }
 
     public String getNewSku(String oldSku) {

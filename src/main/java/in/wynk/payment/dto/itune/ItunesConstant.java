@@ -10,6 +10,7 @@ public interface ItunesConstant {
     String TRANSACTION_ID = "transaction_id";
     String STATUS = "status";
     String RECEIPT_DATA = "receipt-data";
+    String RECEIPT_TYPE = "receipt-type";
     String PASSWORD = "password";
     String LATEST_RECEIPT_INFO = "latest_receipt_info";
     String PURCHASE_DATE_MS = "purchase_date_ms";
@@ -19,7 +20,9 @@ public interface ItunesConstant {
     String DECODED_RECEIPT = "decodedReceipt";
     String LATEST_RECEIPT = "latestReceipt";
     String ALL_ITUNES_RECEIPT = "allItunesReceipt";
+    List<String> NOTIFICATIONS_TYPE_ALLOWED = Arrays.asList("DID_RENEW", "DID_CHANGE_RENEWAL_STATUS"
+            , "INTERACTIVE_RENEWAL", "DID_RECOVER");
 
     List<ItunesStatusCodes> FAILURE_CODES = Arrays.asList(ItunesStatusCodes.APPLE_21000, ItunesStatusCodes.APPLE_21002, ItunesStatusCodes.APPLE_21003, ItunesStatusCodes.APPLE_21004, ItunesStatusCodes.APPLE_21005, ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008, ItunesStatusCodes.APPLE_21009, ItunesStatusCodes.APPLE_21010);
-    List<ItunesStatusCodes> ALTERNATE_URL_FAILURE_CODES = Arrays.asList(ItunesStatusCodes.APPLE_21007,ItunesStatusCodes.APPLE_21008);
+    List<ItunesStatusCodes> ALTERNATE_URL_FAILURE_CODES = Arrays.asList(ItunesStatusCodes.APPLE_21007, ItunesStatusCodes.APPLE_21008);
 }

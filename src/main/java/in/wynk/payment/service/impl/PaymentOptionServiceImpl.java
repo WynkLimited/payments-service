@@ -8,17 +8,21 @@ import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.OfferDTO;
+import in.wynk.subscription.common.dto.PartnerDTO;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.enums.PlanType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static in.wynk.common.constant.BaseConstants.UID;
+import static in.wynk.common.constant.BaseConstants.*;
 
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
@@ -32,7 +36,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     private PaytmMerchantWalletPaymentService paytmMerchantWalletPaymentService;
 
     @Override
-    public PaymentOptionsDTO getPaymentOptions(SessionDTO sessionDTO, String planId) {
+    public PaymentOptionsDTO getPaymentOptions(String planId) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
         String uid = sessionDTO.get(UID);
         Map<PaymentGroup, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<UserPreferredPayment> preferredPayments = new ArrayList<>();
@@ -55,18 +60,25 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 preferredPayments.add(preferredPaymentsWallet.get());
             } catch (Exception e) { }
         }
-        return paymentMethods(availableMethods, preferredPayments);
+        return buildPaymentOptions(planId, availableMethods, preferredPayments);
     }
 
-    private PaymentOptionsDTO paymentMethods(Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments){
+    private PaymentOptionsDTO buildPaymentOptions(String planId, Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
-        for(PaymentGroup group: availableMethods.keySet()){
+        for (PaymentGroup group : availableMethods.keySet()) {
+            PlanDTO paidPlan = paymentCachingService.getPlan(planId);
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
+            Optional<Integer> freePlanOption = Optional.ofNullable(paidPlan.getLinkedFreePlanId());
+            if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && group != PaymentGroup.CARD) {
+                continue;
+            }
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
-            for(PaymentMethodDTO paymentMethodDTO : methodDTOS) {
+            for (PaymentMethodDTO paymentMethodDTO : methodDTOS) {
                 String paymentGroup = paymentMethodDTO.getGroup();
                 String paymentCode = paymentMethodDTO.getPaymentCode();
                 Map<String, Object> meta = paymentMethodDTO.getMeta();
-                List<UserPreferredPayment> savedPayments = preferredPayments.parallelStream().filter(x -> x!=null && x.getOption().getGroup().toString().equals(paymentGroup) && x.getOption().getPaymentCode().toString().equals(paymentCode)).collect(Collectors.toList());
+                List<UserPreferredPayment> savedPayments = preferredPayments.parallelStream().filter(x -> x != null && x.getOption().getGroup().toString().equals(paymentGroup) && x.getOption().getPaymentCode().toString().equals(paymentCode)).collect(Collectors.toList());
                 if (!CollectionUtils.isEmpty(savedPayments)) {
                     meta.put("savedPayments", savedPayments);
                 }
@@ -74,7 +86,28 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
             PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group).build();
             paymentGroupsDTOS.add(groupsDTO);
         }
-        return PaymentOptionsDTO.builder().paymentGroups(paymentGroupsDTOS).build();
+        return PaymentOptionsDTO.builder().planDetails(buildPlanDetails(planId)).paymentGroups(paymentGroupsDTOS).build();
+    }
+
+    private PaymentOptionsDTO.PlanDetails buildPlanDetails(String planId) {
+        boolean isFreeTrail = false;
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
+        PlanDTO plan = paymentCachingService.getPlan(planId);
+        if (plan.getLinkedFreePlanId() != null && !CollectionUtils.isEmpty(eligiblePlanIds)) {
+            isFreeTrail = eligiblePlanIds.contains(plan.getLinkedFreePlanId());
+        }
+        OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());
+        PartnerDTO partner = paymentCachingService.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
+        return PaymentOptionsDTO.PlanDetails.builder()
+                .perMonthValue(plan.getPrice().getMonthlyAmount())
+                .discountedPrice(plan.getPrice().getAmount())
+                .price(plan.getPrice().getDisplayAmount())
+                .discount(plan.getPrice().getSavings())
+                .partnerLogo(partner.getPartnerLogo())
+                .freeTrialAvailable(isFreeTrail)
+                .partnerName(partner.getName())
+                .build();
     }
 
 }

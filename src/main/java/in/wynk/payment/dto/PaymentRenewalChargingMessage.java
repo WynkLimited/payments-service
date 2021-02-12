@@ -28,6 +28,8 @@ public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
     @Analysed
     private Integer planId;
     @Analysed
+    private int attemptSequence;
+    @Analysed
     private String clientAlias;
     @Analysed
     private PaymentCode paymentCode;

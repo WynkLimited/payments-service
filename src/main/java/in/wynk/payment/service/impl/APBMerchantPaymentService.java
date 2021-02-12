@@ -21,7 +21,10 @@ import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.apb.ApbStatus;
 import in.wynk.payment.dto.apb.ApbTransaction;
 import in.wynk.payment.dto.apb.ApbTransactionInquiryRequest;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -219,7 +222,9 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
             transactionManager.updateAndPublishAsync(transaction, this::fetchAPBTxnStatus);
             status = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-            status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId());
+            int planId = transaction.getPlanId();
+            int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
+            status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(selectedPlanId), selectedPlanId);
         }
         return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
     }

@@ -11,6 +11,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
+import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Card;
@@ -33,6 +34,7 @@ import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -66,9 +68,15 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-
 public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
+    private final Gson gson;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+    private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
+    private final IMerchantTransactionService merchantTransactionService;
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
     @Value("${payment.encKey}")
@@ -83,14 +91,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private String payUSuccessUrl;
     @Value("${payment.merchant.payu.internal.callback.failureUrl}")
     private String payUFailureUrl;
-
-    private final Gson gson;
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
-    private final PaymentCachingService cachingService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
-    private final IMerchantTransactionService merchantTransactionService;
 
     public PayUMerchantPaymentService(Gson gson,
                                       ObjectMapper objectMapper,
@@ -138,6 +138,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException("No merchant transaction found for Subscription");
         }
+        PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
+        if (planPeriodDTO.getMaxRetryCount() < paymentRenewalChargingRequest.getAttemptSequence()) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
+        }
         try {
             PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
@@ -148,7 +153,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transactionId)) {
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, merchantTransaction.getExternalTransactionId());
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
-                int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
+                int retryInterval = planPeriodDTO.getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
                     if (PaymentConstants.SUCCESS.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.SUCCESS.getValue());
@@ -289,7 +294,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)
+                eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }
 
@@ -316,12 +322,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         transaction.setStatus(finalTransactionStatus.getValue());
     }
 
-
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
+        int planId = transaction.getPlanId();
+        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
         ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+                .tid(transaction.getIdStr()).planId(selectedPlanId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
         }
         return responseBuilder.build();
     }
@@ -329,15 +336,15 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     private Map<String, String> startPaymentChargingForPayU(Transaction transaction) {
         final int planId = transaction.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
-        double finalPlanAmount = selectedPlan.getFinalPrice();
+        double finalPlanAmount = transaction.getAmount();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;
         String userCredentials = payUMerchantKey + COLON + uid;
         String sid = SessionContextHolder.get().getId().toString();
         Map<String, String> payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
-        if (PaymentEvent.SUBSCRIBE.equals(transaction.getType())) {
-            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan);
+        if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
         }
         // Mandatory according to document
         Map<String, String> payload = new HashMap<>(payloadTemp);
@@ -370,7 +377,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return payload;
     }
 
-    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan) {
+    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
         Map<String, String> payload = new HashMap<>();
         String reqType = PaymentRequestType.SUBSCRIBE.name();
         String udf1 = PAYU_SI_KEY.toUpperCase();
@@ -379,10 +386,20 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Date today = cal.getTime();
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
+        boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
         int validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        BillingUtils billingUtils = new BillingUtils(validTillDays);
+        int freeTrialValidity = validTillDays;
+        BillingUtils billingUtils;
+        if (isFreeTrial) {
+            freeTrialValidity = cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity();
+        }
+        if (freeTrialValidity == validTillDays) {
+            billingUtils = new BillingUtils(validTillDays);
+        } else {
+            billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
+        }
         try {
-            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), finalPlanAmount, today, next5Year));
+            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getFinalPrice(), today, next5Year));
             String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
             payload.put(PAYU_SI_KEY, "1");
             payload.put(PAYU_API_VERSION, "7");
@@ -390,7 +407,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
-            payload.put(PAYU_FREE_TRIAL, String.valueOf(selectedPlan.isFreeTrial()));
+            payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");
         }
@@ -449,7 +466,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             } else {
                 throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
             }
-        } catch (Exception ex){
+        } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
         }
@@ -487,7 +504,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();
             } else {
-                merchantTransactionEventBuilder.externalTransactionId(paymentResponse.getTransactionDetails().get(transaction.getIdStr()).getPayUExternalTxnId());
+                String newMihPayId = paymentResponse.getTransactionDetails().get(transaction.getIdStr()).getPayUExternalTxnId();
+                merchantTransactionEventBuilder.externalTransactionId(StringUtils.isNotEmpty(newMihPayId) ? newMihPayId : mihpayid);
             }
             return paymentResponse;
         } catch (RestClientException e) {
@@ -747,4 +765,5 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
         return BaseResponse.builder().body(refundResponseBuilder.build()).build();
     }
+
 }

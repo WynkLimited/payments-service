@@ -42,14 +42,15 @@ public class PaymentEventListener {
         this.mapper = mapper;
         this.retryRegistry = retryRegistry;
         this.paymentManager = paymentManager;
-        this.eventPublisher = eventPublisher;
         this.paymentErrorService = paymentErrorService;
+        this.eventPublisher = eventPublisher;
         this.merchantTransactionService = merchantTransactionService;
     }
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
-    public void onAnyOrderMessageThresholdExceedEvent(MessageThresholdExceedEvent event) throws JsonProcessingException {
+    public void onAnyOrderMessageThresholdExceedEvent(MessageThresholdExceedEvent event) throws
+            JsonProcessingException {
         AnalyticService.update(event);
         AnalyticService.update(MESSAGE_PAYLOAD, mapper.writeValueAsString(event));
     }
@@ -117,5 +118,4 @@ public class PaymentEventListener {
                     .build());
         }
     }
-
 }

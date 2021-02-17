@@ -149,7 +149,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void subscribePlan(Transaction transaction, TransactionStatus finalTransactionStatus, boolean isSync) {
         if (isSync) {
-            subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
+            try {
+                subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
+            } catch (Exception e) {
+                subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
+            }
         } else {
             subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
         }
@@ -157,7 +161,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void unsubscribePlan(Transaction transaction, TransactionStatus finalTransactionStatus, boolean isSync) {
         if (isSync) {
-            subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+            try {
+                subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+            } catch (Exception e) {
+                subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
+            }
         } else {
             subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
         }

@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
@@ -42,7 +43,6 @@ import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -237,7 +237,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             String refundRequestId = transaction.getValueFromPaymentMetaData(EXTERNAL_TRANSACTION_ID);
             MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CANCEL_ACTION_STATUS.getCode(), refundRequestId);
             merchantTransactionEventBuilder.request(payURefundStatusRequest);
-            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new ParameterizedTypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {
+            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {
             });
             merchantTransactionEventBuilder.response(payUPaymentRefundResponse);
             PayURefundTransactionDetails payURefundTransactionDetails = (PayURefundTransactionDetails) payUPaymentRefundResponse.getTransactionDetails(transaction.getId().toString());
@@ -277,7 +277,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         try {
             MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new ParameterizedTypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             PayUChargingTransactionDetails payUChargingTransactionDetails = (PayUChargingTransactionDetails) payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
@@ -420,7 +420,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     public List<String> getUserCards(String uid) {
         String userCredentials = payUMerchantKey + COLON + uid;
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
-        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new ParameterizedTypeReference<PayUUserCardDetailsResponse>() {
+        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {
         });
         return userCardDetailsResponse.getUserCards()
                 .entrySet()
@@ -429,7 +429,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                     CardDetails cardDetails = cardEntry.getValue();
                     PayUCardInfo payUCardInfo = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(),
                             cardDetails.getCardBin()),
-                            new ParameterizedTypeReference<PayUCardInfo>() {
+                            new TypeReference<PayUCardInfo>() {
                             });
                     cardDetails.setIssuingBank(String.valueOf(payUCardInfo.getIssuingBank()));
                     return gson.toJson(cardDetails);
@@ -442,16 +442,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
         orderedMap.put(PAYU_REQUEST_ID, transactionId);
         String variable = gson.toJson(orderedMap);
-        String hash = generateHashForPayUApi(PayUCommand.UPI_MANDATE_STATUS.getCode(), variable);
-        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
-        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
-        requestMap.add(PAYU_COMMAND, PayUCommand.UPI_MANDATE_STATUS.getCode());
-        requestMap.add(PAYU_VARIABLE1, variable);
-        requestMap.add(PAYU_HASH, hash);
-        String response;
+        PayUMandateUpiStatusResponse paymentResponse;
         rateLimiter.acquire();
+        final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(PayUCommand.UPI_MANDATE_STATUS.getCode(), variable);
         try {
-            response = restTemplate.postForObject(payUInfoApiUrl, requestMap, String.class);
+            paymentResponse = getInfoFromPayU(requestMap, new TypeReference<PayUMandateUpiStatusResponse>() {});
         } catch (RestClientException e) {
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
@@ -472,7 +467,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
         }
-        PayUMandateUpiStatusResponse paymentResponse = gson.fromJson(response, PayUMandateUpiStatusResponse.class);
         return paymentResponse != null && paymentResponse.getStatus().equals("active");
     }
 
@@ -541,9 +535,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         }
     }
 
-    private <T> T getInfoFromPayU(MultiValueMap<String, String> request, ParameterizedTypeReference<T> target) {
+    private <T> T getInfoFromPayU(MultiValueMap<String, String> request, TypeReference<T> target) {
         try {
-            return restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUInfoApiUrl)).body(request), target).getBody();
+            final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUInfoApiUrl)).body(request), String.class).getBody();
+            return objectMapper.readValue(response, target);
         } catch (HttpStatusCodeException ex) {
             log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
             throw new WynkRuntimeException(PAY015, ex);
@@ -679,14 +674,14 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         switch (verificationType) {
             case VPA:
                 MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
-                PayUVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, new ParameterizedTypeReference<PayUVpaVerificationResponse>() {
+                PayUVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
                 });
                 if (verificationResponse.getIsVPAValid() == 1)
                     verificationResponse.setValid(true);
                 return BaseResponse.<PayUVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
-                PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, new ParameterizedTypeReference<PayUCardInfo>() {
+                PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUCardInfo>() {
                 });
                 if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
                     payUCardInfo.setValid(true);
@@ -701,7 +696,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         final String tid = params.containsKey(MIGRATED) && Boolean.parseBoolean(params.get(MIGRATED)) ? params.get(MIGRATED_TXN_ID) : params.get(TXN_ID);
         try {
             MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), tid);
-            PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new ParameterizedTypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
             builder.request(payUChargingVerificationRequest);
             builder.response(payUChargingVerificationResponse);
@@ -721,7 +716,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     public UserPreferredPayment getUserPreferredPayments(String uid) {
         String userCredentials = payUMerchantKey + COLON + uid;
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
-        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new ParameterizedTypeReference<PayUUserCardDetailsResponse>() {
+        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {
         });
         Card.Builder cardBuilder = new Card.Builder().paymentCode(PaymentCode.PAYU);
         for (String cardToken : userCardDetailsResponse.getUserCards().keySet()) {
@@ -743,7 +738,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
             MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), refundRequest.getAuthPayUId(), refundTransaction.getIdStr(), String.valueOf(refundTransaction.getAmount()));
             merchantTransactionBuilder.request(refundDetails);
-            PayURefundInitResponse refundResponse = getInfoFromPayU(refundDetails, new ParameterizedTypeReference<PayURefundInitResponse>() {
+            PayURefundInitResponse refundResponse = getInfoFromPayU(refundDetails, new TypeReference<PayURefundInitResponse>() {
             });
             if (refundResponse.getStatus() == 0) {
                 finalTransactionStatus = TransactionStatus.FAILURE;

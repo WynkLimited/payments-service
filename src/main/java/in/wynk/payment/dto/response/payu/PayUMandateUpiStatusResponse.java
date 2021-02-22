@@ -1,12 +1,8 @@
 package in.wynk.payment.dto.response.payu;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public class PayUMandateUpiStatusResponse {
 
     private String status;

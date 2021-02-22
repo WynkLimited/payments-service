@@ -237,7 +237,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             String refundRequestId = transaction.getValueFromPaymentMetaData(EXTERNAL_TRANSACTION_ID);
             MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CANCEL_ACTION_STATUS.getCode(), refundRequestId);
             merchantTransactionEventBuilder.request(payURefundStatusRequest);
-            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new ParameterizedTypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {});
+            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new ParameterizedTypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {
+            });
             merchantTransactionEventBuilder.response(payUPaymentRefundResponse);
             PayURefundTransactionDetails payURefundTransactionDetails = (PayURefundTransactionDetails) payUPaymentRefundResponse.getTransactionDetails(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payURefundTransactionDetails.getRequestId());
@@ -276,7 +277,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         try {
             MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new ParameterizedTypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {});
+            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new ParameterizedTypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            });
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             PayUChargingTransactionDetails payUChargingTransactionDetails = (PayUChargingTransactionDetails) payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
@@ -666,11 +668,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return generatedHash.equals(payUResponseHash);
     }
 
-    private <T> T getValueFromSession(String key) {
-        Session<SessionDTO> session = SessionContextHolder.get();
-        return session.getBody().get(key);
-    }
-
     private <T> void putValueInSession(String key, T value) {
         Session<SessionDTO> session = SessionContextHolder.get();
         session.getBody().put(key, value);
@@ -741,7 +738,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Transaction refundTransaction = TransactionContext.get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder().id(refundTransaction.getIdStr());
-        PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder<?,?> refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId()).itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn()).paymentEvent(refundTransaction.getType());
+        PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder<?, ?> refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId()).itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn()).paymentEvent(refundTransaction.getType());
         try {
             PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;
             MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), refundRequest.getAuthPayUId(), refundTransaction.getIdStr(), String.valueOf(refundTransaction.getAmount()));

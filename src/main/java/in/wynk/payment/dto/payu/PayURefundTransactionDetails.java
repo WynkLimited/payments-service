@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
 public class PayURefundTransactionDetails extends AbstractPayUTransactionDetails {
 
     @JsonProperty("request_id")

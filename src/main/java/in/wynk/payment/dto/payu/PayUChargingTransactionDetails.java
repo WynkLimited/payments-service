@@ -6,7 +6,6 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
 public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetails {
 
   @JsonProperty("addedon")

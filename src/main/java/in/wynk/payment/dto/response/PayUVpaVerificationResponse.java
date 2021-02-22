@@ -1,17 +1,15 @@
 package in.wynk.payment.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
 public class PayUVpaVerificationResponse {
 
-    String status;
-    String vpa;
-    int isVPAValid;
-    String payerAccountName;
-    boolean isValid;
+    private String status;
+    private String vpa;
+    private int isVPAValid;
+    private String payerAccountName;
+    @Setter
+    private boolean isValid;
 }

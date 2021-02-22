@@ -2,13 +2,9 @@ package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
 public class CardDetails {
 
   @JsonProperty("card_type")
@@ -51,5 +47,6 @@ public class CardDetails {
   private String cardBin;
 
   @JsonProperty("issuingBank")
+  @Setter
   private String issuingBank;
 }

@@ -1,26 +1,22 @@
 package in.wynk.payment.dto.response.payu;
 
-import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public class PayURefundInitResponse {
 
-    @SerializedName("status")
+    @JsonProperty("status")
     private long status;
-    @SerializedName("msg")
+    @JsonProperty("msg")
     private String message;
-    @SerializedName("request_id")
+    @JsonProperty("request_id")
     private String requestId;
-    @SerializedName("txn_update_id")
+    @JsonProperty("txn_update_id")
     private String txnUpdateId;
-    @SerializedName("bank_ref_num")
+    @JsonProperty("bank_ref_num")
     private String bankReferenceNumber;
-    @SerializedName("mihpayid")
+    @JsonProperty("mihpayid")
     private String authPayUId;
 
 }

@@ -388,7 +388,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 statusResponse = fetchChargingStatusFromItunesSource(transaction);
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction, chargingStatusRequest.getPlanId());
+                statusResponse = fetchChargingStatusFromDataSource(transaction, transactionStatusRequest.getPlanId());
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);

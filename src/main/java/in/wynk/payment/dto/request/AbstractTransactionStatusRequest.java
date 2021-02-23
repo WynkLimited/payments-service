@@ -4,10 +4,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.StatusMode;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 
@@ -23,6 +20,10 @@ public abstract class AbstractTransactionStatusRequest {
 
     @Analysed
     private String paymentCode;
+
+    @Analysed
+    @Setter
+    private int planId;
 
     @Analysed
     public abstract StatusMode getMode();

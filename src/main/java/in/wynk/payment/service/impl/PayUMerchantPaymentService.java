@@ -243,6 +243,8 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             Map<String, PayURefundTransactionDetails> payURefundTransactionDetails = payUPaymentRefundResponse.getTransactionDetails(refundRequestId);
             merchantTransactionEventBuilder.externalTransactionId(payURefundTransactionDetails.get(refundRequestId).getRequestId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.get(refundRequestId).getRequestId());
+            payURefundTransactionDetails.put(transaction.getIdStr(), payURefundTransactionDetails.get(refundRequestId));
+            payURefundTransactionDetails.remove(refundRequestId);
             syncTransactionWithSourceResponse(PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());

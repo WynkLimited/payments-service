@@ -235,7 +235,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             String refundRequestId = transaction.getValueFromPaymentMetaData(EXTERNAL_TRANSACTION_ID);
-            MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CANCEL_ACTION_STATUS.getCode(), refundRequestId);
+            MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CHECK_ACTION_STATUS.getCode(), refundRequestId);
             merchantTransactionEventBuilder.request(payURefundStatusRequest);
             PayUVerificationResponse<PayURefundTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {
             });

@@ -6,13 +6,16 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
-import lombok.Builder;
+import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
+
+import java.util.EnumSet;
 
 @Getter
-@Builder
+@SuperBuilder
 @AnalysedEntity
-public class PaymentReconciledEvent {
+public abstract class PaymentReconciledEvent {
 
     @Analysed
     private final String uid;
@@ -30,9 +33,20 @@ public class PaymentReconciledEvent {
     private final String transactionId;
     @Analysed(name = BaseConstants.PAYMENT_CODE)
     private final PaymentCode paymentCode;
-    @Analysed(name = BaseConstants.PAYMENT_EVENT)
-    private final PaymentEvent paymentEvent;
     @Analysed(name = BaseConstants.TRANSACTION_STATUS)
     private final TransactionStatus transactionStatus;
+
+    @Analysed(name = BaseConstants.PAYMENT_EVENT)
+    public abstract PaymentEvent getPaymentCode();
+
+    public static PaymentReconciledEvent from(Transaction transaction) {
+        final PaymentReconciledEvent paymentReconciledEvent;
+        if(EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType())) {
+            paymentReconciledEvent = PaymentRefundReconciledEvent.from(transaction);
+        } else {
+            paymentReconciledEvent = PaymentChargingReconciledEvent.from(transaction);
+        }
+        return paymentReconciledEvent;
+    }
 
 }

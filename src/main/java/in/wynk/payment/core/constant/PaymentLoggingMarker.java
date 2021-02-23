@@ -28,6 +28,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYU_RENEWAL_TIMEOUT_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_TIMEOUT_ERROR");
     Marker PAYU_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_CALLBACK_FAILURE");
     Marker PAYU_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION");
+    Marker PAYU_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_REFUND_STATUS_VERIFICATION");
     Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
     Marker PAYU_API_FAILURE = MarkerFactory.getMarker("PAYU_API_FAILURE");
 
@@ -51,6 +52,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker SE_PAYMENT_RENEWAL_ERROR = MarkerFactory.getMarker("SE_PAYMENT_RENEWAL_ERROR");
 
     Marker PAYMENT_REFUND_ERROR = MarkerFactory.getMarker("PAYMENT_REFUND_ERROR");
+
+    Marker CLIENT_CALLBACK_INFO = MarkerFactory.getMarker("CLIENT_CALLBACK_INFO");
 
 
 }

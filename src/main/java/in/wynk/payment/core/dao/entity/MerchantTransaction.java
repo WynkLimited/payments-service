@@ -22,7 +22,7 @@ import javax.persistence.*;
 @NamedQueries({
         @NamedQuery(name = "MerchantTransaction.findPartnerReferenceById", query = "SELECT m.externalTransactionId FROM MerchantTransaction m WHERE m.id=:txnId", hints = @QueryHint(name = "javax.persistence.query.timeout", value = "300"))
 })
-public class MerchantTransaction {
+public class MerchantTransaction<I,O> {
 
     @Id
     @Analysed(name = BaseConstants.TRANSACTION_ID)
@@ -35,18 +35,18 @@ public class MerchantTransaction {
     @Type(type = "json")
     @Analysed
     @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
-    private Object request;
+    private I request;
     @Type(type = "json")
     @Analysed
     @Column(name = "merchant_response", columnDefinition = "json")
-    private Object response;
+    private O response;
 
-    public <T> T getRequest() {
-        return (T) request;
+    public I getRequest() {
+        return request;
     }
 
-    public <T> T getResponse() {
-        return (T) response;
+    public O getResponse() {
+        return response;
     }
 
 }

@@ -2,7 +2,6 @@ package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 @Getter
 public class PayURefundTransactionDetails extends AbstractPayUTransactionDetails {

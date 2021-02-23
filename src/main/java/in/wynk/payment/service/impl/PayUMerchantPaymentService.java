@@ -237,10 +237,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             String refundRequestId = transaction.getValueFromPaymentMetaData(EXTERNAL_TRANSACTION_ID);
             MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CANCEL_ACTION_STATUS.getCode(), refundRequestId);
             merchantTransactionEventBuilder.request(payURefundStatusRequest);
-            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {
+            PayUVerificationResponse<PayURefundTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {
             });
             merchantTransactionEventBuilder.response(payUPaymentRefundResponse);
-            PayURefundTransactionDetails payURefundTransactionDetails = (PayURefundTransactionDetails) payUPaymentRefundResponse.getTransactionDetails(transaction.getId().toString());
+            PayURefundTransactionDetails payURefundTransactionDetails = payUPaymentRefundResponse.getTransactionDetails(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payURefundTransactionDetails.getRequestId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.getRequestId());
             syncTransactionWithSourceResponse(payUPaymentRefundResponse);
@@ -277,10 +277,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         try {
             MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            PayUVerificationResponse<? extends AbstractPayUTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
-            PayUChargingTransactionDetails payUChargingTransactionDetails = (PayUChargingTransactionDetails) payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
+            PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);

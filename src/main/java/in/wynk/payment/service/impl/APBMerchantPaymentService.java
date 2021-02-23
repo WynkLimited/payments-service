@@ -21,9 +21,9 @@ import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.apb.ApbStatus;
 import in.wynk.payment.dto.apb.ApbTransaction;
 import in.wynk.payment.dto.apb.ApbTransactionInquiryRequest;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -215,7 +215,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         ChargingStatusResponse status = ChargingStatusResponse.failure(chargingStatusRequest.getTransactionId(),transaction.getPlanId());
         if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {

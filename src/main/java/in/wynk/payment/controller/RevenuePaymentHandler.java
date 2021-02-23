@@ -9,11 +9,7 @@ import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.StatusMode;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
@@ -62,10 +58,10 @@ public class RevenuePaymentHandler {
     @AnalyseTransaction(name = "paymentStatus")
     public ResponseEntity<?> status(@PathVariable String sid) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        ChargingStatusRequest request = ChargingStatusRequest.builder().mode(StatusMode.LOCAL).transactionId(sessionDTO.get(SessionKeys.TRANSACTION_ID)).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(SessionKeys.PAYMENT_CODE));
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        BaseResponse<?> baseResponse = paymentManager.status(request, paymentCode, true);
+        AbstractTransactionStatusRequest request = ChargingTransactionStatusRequest.builder().transactionId(sessionDTO.get(SessionKeys.TRANSACTION_ID)).paymentCode(paymentCode.getCode()).build();
+        BaseResponse<?> baseResponse = paymentManager.status(request);
         return baseResponse.getResponse();
     }
 

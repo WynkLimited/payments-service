@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import in.wynk.payment.core.event.ClientCallbackEvent;
 import lombok.*;
 
 @Getter
@@ -15,5 +16,16 @@ public class ClientCallbackRequest {
     private Integer planId;
     private String transactionId;
     private String transactionStatus;
+
+    public static ClientCallbackRequest from(ClientCallbackEvent event) {
+        return ClientCallbackRequest.builder()
+                .uid(event.getUid())
+                .msisdn(event.getMsisdn())
+                .itemId(event.getItemId())
+                .planId(event.getPlanId())
+                .transactionId(event.getTransactionId())
+                .transactionStatus(event.getTransactionStatus())
+                .build();
+    }
 
 }

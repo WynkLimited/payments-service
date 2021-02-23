@@ -292,7 +292,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
         final String tid = chargingStatusRequest.getTransactionId();
         final Transaction transaction = transactionManager.get(tid);
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {

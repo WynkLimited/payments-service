@@ -28,8 +28,8 @@ import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.itune.*;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -175,7 +175,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
             final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
             final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), merchantTransaction.getExternalTransactionId());
-            if(Objects.nonNull(receiptDetails)) {
+            if (Objects.nonNull(receiptDetails)) {
                 transaction.putValueInPaymentMetaData(DECODED_RECEIPT, receiptDetails.getReceipt());
                 fetchAndUpdateFromReceipt(transaction);
             } else {
@@ -380,10 +380,10 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<?> status(AbstractTransactionStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse;
         Transaction transaction = TransactionContext.get();
-        switch (chargingStatusRequest.getMode()) {
+        switch (transactionStatusRequest.getMode()) {
             case SOURCE:
                 statusResponse = fetchChargingStatusFromItunesSource(transaction);
                 break;

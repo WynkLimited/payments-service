@@ -30,4 +30,10 @@ public class PayURefundTransactionDetails extends AbstractPayUTransactionDetails
     @JsonProperty("value_date")
     private String valueDate;
 
+    private String type = PayUConstants.PAYU_REFUND_TRANSACTION_TYPE;
+
+    @Override
+    public String getType() {
+        return "REFUND";
+    }
 }

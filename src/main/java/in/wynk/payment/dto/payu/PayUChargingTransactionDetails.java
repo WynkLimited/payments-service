@@ -31,6 +31,8 @@ public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetai
   @JsonProperty("field9")
   private String payUResponseFailureMessage;
 
+  private String type = PayUConstants.PAYU_CHARGING_TRANSACTION_TYPE;
+
   @Setter
   private String migratedTransactionId;
 

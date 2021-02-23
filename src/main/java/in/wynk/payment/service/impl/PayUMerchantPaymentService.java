@@ -732,7 +732,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
         Transaction refundTransaction = TransactionContext.get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
-        MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder().id(refundTransaction.getIdStr());
+        Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(refundTransaction.getIdStr());
         PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder<?, ?> refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId()).itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn()).paymentEvent(refundTransaction.getType());
         try {
             PayUPaymentRefundRequest refundRequest = (PayUPaymentRefundRequest) request;

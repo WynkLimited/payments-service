@@ -39,6 +39,5 @@ public interface PayUConstants {
     String PAYU_RESPONSE_AUTH_PAYUID_SMALL = "authpayuid";
     String PAYU_REDIRECT_MESSAGE = "Redirecting to PayU ";
     String PAYU_IS_FALLBACK_ATTEMPT = "isFallbackAttempt";
-    String PAYU_REFUND_TRANSACTION_TYPE = "REFUND";
-    String PAYU_CHARGING_TRANSACTION_TYPE = "CHARGE";
+
 }

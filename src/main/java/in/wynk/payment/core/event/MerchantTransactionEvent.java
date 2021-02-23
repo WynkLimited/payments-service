@@ -10,26 +10,26 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @AnalysedEntity
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class MerchantTransactionEvent<I, O> {
+public class MerchantTransactionEvent {
     @Analysed(name = BaseConstants.TRANSACTION_ID)
     private final String id;
     @Analysed
     private final String externalTransactionId;
     @Analysed
-    private final I request;
+    private final Object request;
     @Analysed
-    private final O response;
+    private final Object response;
 
     public static Builder builder(String transactionId) {
         return new Builder(transactionId);
     }
 
-    public static class Builder<I, O> {
+    public static class Builder {
 
         private final String transactionId;
         private String externalTransactionId;
-        private I request;
-        private O response;
+        private Object request;
+        private Object response;
 
         private Builder(String transactionId) {
             this.transactionId = transactionId;
@@ -40,12 +40,12 @@ public class MerchantTransactionEvent<I, O> {
             return this;
         }
 
-        public Builder request(I request) {
+        public Builder request(Object request) {
             this.request = request;
             return this;
         }
 
-        public Builder response(O response) {
+        public Builder response(Object response) {
             this.response = response;
             return this;
         }

@@ -1,13 +1,18 @@
 package in.wynk.payment.dto.response.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Getter
-public class PayUVerificationResponse<T extends AbstractPayUTransactionDetails> {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PayUVerificationResponse<T> {
 
     private long status;
 

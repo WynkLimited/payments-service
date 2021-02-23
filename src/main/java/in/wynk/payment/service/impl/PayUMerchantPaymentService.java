@@ -237,13 +237,13 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
             String refundRequestId = transaction.getValueFromPaymentMetaData(EXTERNAL_TRANSACTION_ID);
             MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CHECK_ACTION_STATUS.getCode(), refundRequestId);
             merchantTransactionEventBuilder.request(payURefundStatusRequest);
-            PayUVerificationResponse<PayURefundTransactionDetails> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<PayURefundTransactionDetails>>() {
+            PayUVerificationResponse<Map<String, PayURefundTransactionDetails>> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<Map<String, PayURefundTransactionDetails>>>() {
             });
             merchantTransactionEventBuilder.response(payUPaymentRefundResponse);
-            PayURefundTransactionDetails payURefundTransactionDetails = payUPaymentRefundResponse.getTransactionDetails(transaction.getId().toString());
-            merchantTransactionEventBuilder.externalTransactionId(payURefundTransactionDetails.getRequestId());
-            AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.getRequestId());
-            syncTransactionWithSourceResponse(payUPaymentRefundResponse);
+            Map<String, PayURefundTransactionDetails> payURefundTransactionDetails = payUPaymentRefundResponse.getTransactionDetails(refundRequestId);
+            merchantTransactionEventBuilder.externalTransactionId(payURefundTransactionDetails.get(refundRequestId).getRequestId());
+            AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.get(refundRequestId).getRequestId());
+            syncTransactionWithSourceResponse(PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);

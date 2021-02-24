@@ -485,18 +485,12 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);
         orderedMap.put(PAYU_CUSTOMER_EMAIL, email);
         String variable = gson.toJson(orderedMap);
-        String hash = generateHashForPayUApi(PayUCommand.SI_TRANSACTION.getCode(), variable);
-        MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
-        requestMap.add(PAYU_MERCHANT_KEY, payUMerchantKey);
-        requestMap.add(PAYU_COMMAND, PayUCommand.SI_TRANSACTION.getCode());
-        requestMap.add(PAYU_HASH, hash);
-        requestMap.add(PAYU_VARIABLE1, variable);
-        String response;
+        MultiValueMap<String, String> requestMap = buildPayUInfoRequest(PayUCommand.SI_TRANSACTION.getCode(), variable);
         rateLimiter.acquire();
         try {
             merchantTransactionEventBuilder.request(requestMap);
-            response = restTemplate.postForObject(payUInfoApiUrl, requestMap, String.class);
-            PayURenewalResponse paymentResponse = gson.fromJson(response, PayURenewalResponse.class);
+            PayURenewalResponse paymentResponse = getInfoFromPayU(requestMap, new TypeReference<PayURenewalResponse>() {
+            });
             merchantTransactionEventBuilder.response(paymentResponse);
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();

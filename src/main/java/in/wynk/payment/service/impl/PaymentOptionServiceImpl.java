@@ -100,6 +100,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());
         PartnerDTO partner = paymentCachingService.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
         return PaymentOptionsDTO.PlanDetails.builder()
+                .validityUnit(plan.getPeriod().getValidityUnit())
                 .perMonthValue(plan.getPrice().getMonthlyAmount())
                 .discountedPrice(plan.getPrice().getAmount())
                 .price(plan.getPrice().getDisplayAmount())

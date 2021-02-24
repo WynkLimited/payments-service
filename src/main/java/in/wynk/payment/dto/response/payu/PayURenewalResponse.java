@@ -2,9 +2,10 @@ package in.wynk.payment.dto.response.payu;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.annotations.SerializedName;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
@@ -19,7 +20,7 @@ public class PayURenewalResponse {
   @JsonAlias("message")
   private String message;
 
-  @JsonAlias("transactionDetails")
+  @JsonAlias({"transactionDetails", "details"})
   @JsonProperty("transaction_details")
   private Map<String, PayUChargingTransactionDetails> transactionDetails;
 

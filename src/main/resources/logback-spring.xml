@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false" scan="true" scanPeriod="30 seconds">
+    <springProperty name="ANALYTICS_LOG_PATH" source="logging.path.analytics"/>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>
@@ -19,7 +20,7 @@
                 ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd, aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
-            <maxFileSize>500MB</maxFileSize>
+            <maxFileSize>200MB</maxFileSize>
         </rollingPolicy>
     </appender>
     <appender name="ASYNC_ERRORLOG"
@@ -39,7 +40,7 @@
             <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd, aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
-            <maxFileSize>500MB</maxFileSize>
+            <maxFileSize>200MB</maxFileSize>
         </rollingPolicy>
     </appender>
     <appender name="ASYNC_FILE"
@@ -57,11 +58,11 @@
             <Pattern>%msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/logstash/day=%d{yyyy-MM-dd,
+            <fileNamePattern>${ANALYTICS_LOG_PATH:-/tmp}/logs/payment/logstash/day=%d{yyyy-MM-dd,
                 aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
-            <maxFileSize>500MB</maxFileSize>
+            <maxFileSize>200MB</maxFileSize>
         </rollingPolicy>
     </appender>
     <appender name="ASYNC_ANALYTIC_LOG_FILE"

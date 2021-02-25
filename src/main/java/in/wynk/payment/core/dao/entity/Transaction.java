@@ -111,7 +111,7 @@ public class Transaction {
     }
 
     public int getAttemptSequence() {
-        return NumberUtils.toInt(getValueFromPaymentMetaData(ATTEMPT_SEQUENCE));
+        return getValueFromPaymentMetaData(ATTEMPT_SEQUENCE);
     }
 
 }

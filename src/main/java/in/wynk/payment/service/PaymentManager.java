@@ -250,7 +250,7 @@ public class PaymentManager {
                 .planId(planId)
                 .paymentCode(paymentCode)
                 .amount(selectedPlan.getFinalPrice())
-                .status(TransactionStatus.FAILURE.getValue())
+                .status(TransactionStatus.INPROGRESS.getValue())
                 .event(selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE)
                 .build()));
         return TransactionContext.get().getId().toString();

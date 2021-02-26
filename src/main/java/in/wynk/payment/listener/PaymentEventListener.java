@@ -108,6 +108,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "clientCallback")
     public void onClientCallbackEvent(ClientCallbackEvent callbackEvent) {
+        AnalyticService.update(callbackEvent);
         paymentManager.sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
     }
 

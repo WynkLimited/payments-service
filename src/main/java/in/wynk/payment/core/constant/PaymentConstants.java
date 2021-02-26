@@ -8,7 +8,8 @@ public interface PaymentConstants extends BaseConstants {
     String ERROR = "error";
     String SUBSID = "subsId";
     String STATUS = "status";
-    String FAILURE = "failed";
+    String FAILED = "failed";
+    String FAILURE = "failure";
     String RENEWAL = "renewal";
     String REQUEST = "request";
     String PENDING = "pending";

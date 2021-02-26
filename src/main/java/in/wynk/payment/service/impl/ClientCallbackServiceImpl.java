@@ -35,7 +35,7 @@ public class ClientCallbackServiceImpl implements IClientCallbackService {
     }
 
     @Override
-    @ClientAware(clientAlias = "#payload.clientAlias")
+    @ClientAware(clientAlias = "#callbackPayloadWrapper.clientAlias")
     public <T> void sendCallback(ClientCallbackPayloadWrapper<T> callbackPayloadWrapper) {
         AnalyticService.update(callbackPayloadWrapper.getPayload());
         Client client = ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));

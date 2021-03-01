@@ -40,12 +40,10 @@ import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 @Getter
 public class PaymentCachingService {
 
+    private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
+    private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
     @Autowired
     private SkuDao skuDao;
-    @Autowired
-    private PaymentMethodDao paymentMethodDao;
-    @Autowired
-    private ISubscriptionServiceManager subscriptionServiceManager;
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentCachingService.class);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -53,12 +51,14 @@ public class PaymentCachingService {
     private final Lock writeLock = lock.writeLock();
     private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
-    private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
-    private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
+    @Autowired
+    private PaymentMethodDao paymentMethodDao;
+    @Autowired
+    private ISubscriptionServiceManager subscriptionServiceManager;
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
 
-    @Scheduled(fixedDelay = 30 * 60 * 1000L,  initialDelay = 30 * 60 * 1000L )
+    @Scheduled(fixedDelay = 30 * 60 * 1000L, initialDelay = 30 * 60 * 1000L)
     @PostConstruct
     @AnalyseTransaction(name = "refreshInMemoryCache")
     public void init() {
@@ -176,7 +176,7 @@ public class PaymentCachingService {
     public PlanDTO getPlan(int planId) {
         return plans.get(planId);
     }
-    
+
     public boolean containsPlan(String planId) {
         return plans.containsKey(NumberUtils.toInt(planId));
     }

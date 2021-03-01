@@ -7,7 +7,7 @@ import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.PayuVpaVerificationResponse;
+import in.wynk.payment.dto.response.PayUVpaVerificationResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.data.PayUTestData;
@@ -57,9 +57,9 @@ public class PayUPaymentVerifyTest {
     @Test
     @Order(1)
     public void verifyValidVPA() {
-        PayuVpaVerificationResponse payuVpaVerificationResponse = gson.fromJson(PayUTestData.buildValidVPAPayUTransactionStatusResponse(), PayuVpaVerificationResponse.class);
+        PayUVpaVerificationResponse payuVpaVerificationResponse = gson.fromJson(PayUTestData.buildValidVPAPayUTransactionStatusResponse(), PayUVpaVerificationResponse.class);
         BaseResponse<?> response = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.VPA).verifyValue("valid_random_vpa").build());
-        PayuVpaVerificationResponse payUResponse = gson.fromJson((String) response.getBody(), PayuVpaVerificationResponse.class);
+        PayUVpaVerificationResponse payUResponse = gson.fromJson((String) response.getBody(), PayUVpaVerificationResponse.class);
         Assert.assertNotNull(payUResponse);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertEquals(payUResponse.getPayerAccountName(), payuVpaVerificationResponse.getPayerAccountName());
@@ -73,9 +73,9 @@ public class PayUPaymentVerifyTest {
     @Test
     @Order(2)
     public void verifyInValidVPA() {
-        PayuVpaVerificationResponse payuVpaVerificationResponse = gson.fromJson(PayUTestData.buildInvalidVPAPayUTransactionStatusResponse(), PayuVpaVerificationResponse.class);
+        PayUVpaVerificationResponse payuVpaVerificationResponse = gson.fromJson(PayUTestData.buildInvalidVPAPayUTransactionStatusResponse(), PayUVpaVerificationResponse.class);
         BaseResponse<?> response = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.VPA).verifyValue("invalid_random_vpa").build());
-        PayuVpaVerificationResponse payUResponse = gson.fromJson((String) response.getBody(), PayuVpaVerificationResponse.class);
+        PayUVpaVerificationResponse payUResponse = gson.fromJson((String) response.getBody(), PayUVpaVerificationResponse.class);
         Assert.assertNotNull(payUResponse);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertEquals(payUResponse.getPayerAccountName(), payuVpaVerificationResponse.getPayerAccountName());

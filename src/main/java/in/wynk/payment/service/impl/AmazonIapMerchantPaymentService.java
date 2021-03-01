@@ -24,7 +24,7 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.dto.amazonIap.AmazonIapStatusCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -186,7 +186,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
         ChargingStatusResponse statusResponse;
         Transaction transaction = TransactionContext.get();
         switch (chargingStatusRequest.getMode()) {

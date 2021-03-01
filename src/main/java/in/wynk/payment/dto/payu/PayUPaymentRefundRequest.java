@@ -16,13 +16,7 @@ public class PayUPaymentRefundRequest extends AbstractPaymentRefundRequest {
 
     public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction) {
         return PayUPaymentRefundRequest.builder()
-                .uid(originalTransaction.getUid())
-                .planId(originalTransaction.getPlanId())
-                .itemId(originalTransaction.getItemId())
-                .msisdn(refundTransaction.getMsisdn())
-                .amount(refundTransaction.getAmount())
-                .clientAlias(refundTransaction.getClientAlias())
-                .refundTransactionId(refundTransaction.getIdStr())
+                .originalTransactionId(originalTransaction.getIdStr())
                 .authPayUId(originalTransaction.getValueFromPaymentMetaData(BaseConstants.EXTERNAL_TRANSACTION_ID))
                 .build();
     }

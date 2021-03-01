@@ -292,7 +292,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(ChargingStatusRequest chargingStatusRequest) {
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
         final String tid = chargingStatusRequest.getTransactionId();
         final Transaction transaction = transactionManager.get(tid);
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
@@ -302,9 +302,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             }
         } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-                int planId = transaction.getPlanId();
-                int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(selectedPlanId), selectedPlanId)).status(HttpStatus.OK).build();
+                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(chargingStatusRequest.getPlanId()), chargingStatusRequest.getPlanId())).status(HttpStatus.OK).build();
             }
         }
         return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid, transaction.getPlanId())).status(HttpStatus.OK).build();

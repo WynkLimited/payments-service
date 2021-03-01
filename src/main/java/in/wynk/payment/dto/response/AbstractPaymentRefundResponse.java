@@ -5,7 +5,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.event.PaymentRefundedEvent;
+import in.wynk.payment.core.constant.PaymentCode;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -18,7 +18,6 @@ public abstract class AbstractPaymentRefundResponse {
     private final double amount;
     @Analysed
     private final int planId;
-
     @Analysed
     private final String uid;
     @Analysed
@@ -34,6 +33,6 @@ public abstract class AbstractPaymentRefundResponse {
     @Analysed(name = BaseConstants.TRANSACTION_STATUS)
     private final TransactionStatus transactionStatus;
 
-    public abstract PaymentRefundedEvent toRefundEvent();
+    public abstract PaymentCode getPaymentCode();
 
 }

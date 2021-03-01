@@ -94,12 +94,13 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
         PlanDTO plan = paymentCachingService.getPlan(planId);
-        if(plan.getLinkedFreePlanId() != null && !CollectionUtils.isEmpty(eligiblePlanIds)) {
+        if (plan.getLinkedFreePlanId() != null && !CollectionUtils.isEmpty(eligiblePlanIds)) {
             isFreeTrail = eligiblePlanIds.contains(plan.getLinkedFreePlanId());
         }
         OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());
         PartnerDTO partner = paymentCachingService.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
         return PaymentOptionsDTO.PlanDetails.builder()
+                .validityUnit(plan.getPeriod().getValidityUnit())
                 .perMonthValue(plan.getPrice().getMonthlyAmount())
                 .discountedPrice(plan.getPrice().getAmount())
                 .price(plan.getPrice().getDisplayAmount())

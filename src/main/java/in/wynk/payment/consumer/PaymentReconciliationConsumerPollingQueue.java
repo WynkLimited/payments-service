@@ -4,10 +4,12 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
+import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -51,7 +53,13 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     public void consume(PaymentReconciliationMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        paymentManager.status(ChargingStatusRequest.builder().transactionId(message.getTransactionId()).mode(StatusMode.SOURCE).build(), message.getPaymentCode(), false).getBody();
+        final AbstractTransactionStatusRequest transactionStatusRequest;
+        if (message.getPaymentEvent() == PaymentEvent.REFUND) {
+            transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder().transactionId(message.getTransactionId()).paymentCode(message.getPaymentCode().getCode()).build();
+        } else {
+            transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder().transactionId(message.getTransactionId()).paymentCode(message.getPaymentCode().getCode()).build();
+        }
+        paymentManager.status(transactionStatusRequest);
     }
 
     @Override

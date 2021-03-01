@@ -12,15 +12,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public abstract class AbstractPaymentRefundRequest {
-
-    private final String uid;
-    private final String msisdn;
-    private final String itemId;
-    private final String clientAlias;
-    private final String refundTransactionId;
-
-    private final int planId;
-    private final double amount;
+    
+    private final String originalTransactionId;
 
     public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction) {
         switch (originalTransaction.getPaymentChannel()) {

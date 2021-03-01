@@ -9,10 +9,7 @@ import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.payu.PayUCommand;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.AllPlansResponse;
@@ -317,17 +314,17 @@ public class PayUTestData {
         return PayUDataConstant.UNKNOWN_PAYU_TRANSACTION_STATUS;
     }
 
-    public static ChargingStatusRequest buildOneTimePaymentStatusRequest() {
-        return ChargingStatusRequest.builder()
+    public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentCode code) {
+        return ChargingTransactionReconciliationStatusRequest.builder()
                                     .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
-                                    .mode(StatusMode.SOURCE)
+                                    .paymentCode(code.getCode())
                                     .build();
     }
 
-    public static ChargingStatusRequest buildRecurringPaymentStatusRequest() {
-        return ChargingStatusRequest.builder()
+    public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentCode code) {
+        return ChargingTransactionReconciliationStatusRequest.builder()
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .mode(StatusMode.SOURCE)
+                .paymentCode(code.getCode())
                 .build();
     }
 

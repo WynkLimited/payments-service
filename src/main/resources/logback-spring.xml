@@ -17,7 +17,8 @@
         <encoder class="in.wynk.logging.WynkErrorEncoder"/>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd, aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
+                ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd,
+                aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
             <maxFileSize>200MB</maxFileSize>
@@ -37,7 +38,8 @@
             <Pattern>%level %date [%thread] [%X{rid}] [%file:%line] %msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd, aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
+            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd,
+                aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>90</maxHistory>
             <maxFileSize>200MB</maxFileSize>
@@ -140,6 +142,10 @@
     </logger>
 
     <logger name="paymentRefundInitEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="clientCallback" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 

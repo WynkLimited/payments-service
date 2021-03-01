@@ -4,9 +4,10 @@ import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.StatusMode;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.session.context.SessionContextHolder;
@@ -63,8 +64,8 @@ public class ApbPaymentsTest extends PaymentsTest {
         return CallbackRequest.builder().body(map).build();
     }
 
-    private static ChargingStatusRequest dummyLocalChargingStatusRequest(){
-        return ChargingStatusRequest.builder().mode(StatusMode.LOCAL).transactionId(TXN_ID).build();
+    private static AbstractTransactionStatusRequest dummyLocalChargingStatusRequest(PaymentCode code) {
+        return ChargingTransactionStatusRequest.builder().transactionId(TXN_ID).paymentCode(code.getCode()).build();
     }
 
     @Before
@@ -91,15 +92,15 @@ public class ApbPaymentsTest extends PaymentsTest {
 
     @Test
     public void apbLocalFailedStatusTest(){
-        BaseResponse<?> response = statusTest(CODE, dummyLocalChargingStatusRequest());
+        BaseResponse<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(CODE));
         System.out.println(response);
         ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
     @Test
-    public void apbLocalSuccessStatusTest(){
-        BaseResponse<?> response = statusTest(CODE, dummyLocalChargingStatusRequest());
+    public void apbLocalSuccessStatusTest(PaymentCode code) {
+        BaseResponse<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(code));
         System.out.println(response);
         ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
@@ -107,22 +108,22 @@ public class ApbPaymentsTest extends PaymentsTest {
 
     @Test
     public void apbSourceStatusFailureTest(){
-        BaseResponse<?> response = statusTest(CODE, dummyChargingStatusSourceRequest());
+        BaseResponse<?> response = statusTest(CODE, dummyChargingStatusSourceRequest(CODE));
         System.out.println(response);
         ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
     @Test
-    public void apbSourceStatusSuccessTest(){
-        BaseResponse<?> response = statusTest(CODE, dummyChargingStatusSourceRequest());
+    public void apbSourceStatusSuccessTest() {
+        BaseResponse<?> response = statusTest(CODE, dummyChargingStatusSourceRequest(CODE));
         System.out.println(response);
         ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
-    private ChargingStatusRequest dummyChargingStatusSourceRequest() {
-        return ChargingStatusRequest.builder().mode(StatusMode.SOURCE).transactionId(TXN_ID).build();
+    private AbstractTransactionStatusRequest dummyChargingStatusSourceRequest(PaymentCode code) {
+        return ChargingTransactionReconciliationStatusRequest.builder().paymentCode(code.getCode()).transactionId(TXN_ID).build();
     }
 
     @Test

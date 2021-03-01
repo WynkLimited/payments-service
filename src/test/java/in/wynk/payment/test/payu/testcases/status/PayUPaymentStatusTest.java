@@ -7,7 +7,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.service.*;
@@ -65,7 +65,7 @@ public class PayUPaymentStatusTest {
         if (SessionContextHolder.<SessionDTO>get() == null || SessionContextHolder.<SessionDTO>get().getBody() == null) {
             SessionContextHolder.set(PayUTestData.initSession());
         }
-        Mockito.doNothing().when(recurringPaymentManager).schedulePaymentRenewal(any(Transaction.class));
+        Mockito.doNothing().when(recurringPaymentManager).scheduleRecurringPayment(any(Transaction.class), any(TransactionStatus.class), any(TransactionStatus.class));
         Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID).toString(), Mockito.any(PaymentEvent.class), Mockito.anyLong());
         Mockito.doNothing().when(subscriptionManager).subscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), anyString(), any(), any());
         Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), any(), any());
@@ -87,7 +87,7 @@ public class PayUPaymentStatusTest {
     @Order(1)
     public void handleOneTimePaymentStatusTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
-        ChargingStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest();
+        AbstractTransactionStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest(PaymentCode.PAYU);
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getResponse().getBody());
@@ -98,7 +98,7 @@ public class PayUPaymentStatusTest {
     @Order(2)
     public void handleRecurringPaymentStatusTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
-        ChargingStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest();
+        AbstractTransactionStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest(PaymentCode.PAYU);
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getResponse().getBody());

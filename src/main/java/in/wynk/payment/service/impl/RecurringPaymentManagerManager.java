@@ -2,8 +2,10 @@ package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -11,6 +13,7 @@ import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -61,34 +64,32 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    public void schedulePaymentRenewal(Transaction transaction) {
-        Calendar nextRecurringDateTime = Calendar.getInstance();
-        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, paymentCachingService.getPlan(transaction.getPlanId()).getPeriod().getValidity());
-        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
-    }
-
-    @Override
-    public void schedulePaymentRenewalForFreeTrial(Transaction transaction) {
-        Calendar nextRecurringDateTime = Calendar.getInstance();
-        nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, paymentCachingService.getPlan(paymentCachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId()).getPeriod().getValidity());
-        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
-    }
-
-    @Override
-    public void schedulePaymentRenewalForMigration(Transaction transaction) {
-        scheduleRecurringPayment(transaction.getIdStr(), transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE), transaction.getAttemptSequence());
-    }
-
-    @Override
-    public void schedulePaymentRenewalForNextRetry(Transaction transaction) {
-        Calendar nextRecurringDateTime = Calendar.getInstance();
-        PlanPeriodDTO planPeriodDTO = paymentCachingService.getPlan(transaction.getPlanId()).getPeriod();
-        if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
-            AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
-            return;
+    public void scheduleRecurringPayment(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
+        if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED && transaction.getType() == PaymentEvent.SUBSCRIBE) {
+            scheduleRecurringPayment(transaction.getIdStr(), transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE), transaction.getAttemptSequence());
+        } else {
+            Calendar nextRecurringDateTime = Calendar.getInstance();
+            PlanDTO planDTO = paymentCachingService.getPlan(transaction.getPlanId());
+            if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS && transaction.getPaymentChannel().isInternalRecurring()) {
+                if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW) {
+                    nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, planDTO.getPeriod().getValidity());
+                    scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
+                } else if (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+                    nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, paymentCachingService.getPlan(planDTO.getLinkedFreePlanId()).getPeriod().getValidity());
+                    scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
+                }
+            } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
+                    && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)
+                    && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey(PaymentConstants.RENEWAL)) {
+                PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
+                if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
+                    AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
+                    return;
+                }
+                nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
+                scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
+            }
         }
-        nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
-        scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
     }
 
     @Override

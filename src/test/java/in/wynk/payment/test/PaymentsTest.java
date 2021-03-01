@@ -5,6 +5,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.ChargingStatusRequest;
@@ -68,7 +69,7 @@ public class PaymentsTest {
         return callbackService.handleCallback(request);
     }
 
-    protected BaseResponse<?> statusTest(PaymentCode paymentCode, ChargingStatusRequest statusRequest){
+    protected BaseResponse<?> statusTest(PaymentCode paymentCode, AbstractTransactionStatusRequest statusRequest){
         IMerchantPaymentStatusService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         return callbackService.status(statusRequest);
     }

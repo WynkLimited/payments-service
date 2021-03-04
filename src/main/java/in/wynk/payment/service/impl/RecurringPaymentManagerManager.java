@@ -114,7 +114,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                 paymentRenewalDao.save(recurringPayment);
                 eventPublisher.publishEvent(RecurringPaymentEvent.builder()
                         .transactionId(transactionId)
-                        .paymentEvent(PaymentEvent.UNSUBSCRIBE)
+                        .paymentEvent(paymentEvent)
                         .build());
             });
         } catch (Exception e) {

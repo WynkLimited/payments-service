@@ -104,15 +104,13 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validTillDate) {
+    public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long deferredUntil) {
         try {
             paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
                 recurringPayment.setTransactionEvent(paymentEvent.name());
-                Calendar calendar = Calendar.getInstance();
-                recurringPayment.setUpdatedTimestamp(calendar);
-                calendar.setTimeInMillis(validTillDate);
-                recurringPayment.setDay(calendar);
-                recurringPayment.setHour(calendar.getTime());
+                recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
+                recurringPayment.getDay().setTimeInMillis(recurringPayment.getDay().getTimeInMillis() + deferredUntil);
+                recurringPayment.setHour(recurringPayment.getDay().getTime());
                 paymentRenewalDao.save(recurringPayment);
                 eventPublisher.publishEvent(RecurringPaymentEvent.builder()
                         .transactionId(transactionId)

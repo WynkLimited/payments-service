@@ -13,5 +13,5 @@ public interface IRecurringPaymentManagerService {
 
     Stream<PaymentRenewal> getCurrentDueRecurringPayments();
 
-    void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validTillDate);
+    void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long deferredUntil);
 }

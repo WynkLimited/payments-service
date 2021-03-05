@@ -118,7 +118,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                 day.set(Calendar.HOUR_OF_DAY, hour.get(Calendar.HOUR_OF_DAY));
 
                 final long deferredUntilNow = day.getTimeInMillis() - validUntil;
-                final long furtherDeferUntil = deferredUntilNow - deferredUntil;
+                final long furtherDeferUntil = deferredUntil - deferredUntilNow;
 
                 if (furtherDeferUntil > 0) {
                     day.setTimeInMillis(recurringPayment.getDay().getTimeInMillis() + furtherDeferUntil);

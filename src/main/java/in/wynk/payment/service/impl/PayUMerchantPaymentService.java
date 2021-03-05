@@ -68,7 +68,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -95,14 +95,15 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     public PayUMerchantPaymentService(Gson gson,
                                       ObjectMapper objectMapper,
                                       ApplicationEventPublisher eventPublisher,
-                                      PaymentCachingService paymentCachingService,
+                                      PaymentCachingService cachingService,
                                       IMerchantTransactionService merchantTransactionService,
                                       @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+        super(cachingService);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
-        this.cachingService = paymentCachingService;
+        this.cachingService = cachingService;
         this.merchantTransactionService = merchantTransactionService;
     }
 
@@ -184,23 +185,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse statusResponse;
-        Transaction transaction = TransactionContext.get();
-        switch (transactionStatusRequest.getMode()) {
-            case SOURCE:
-                statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest);
-                break;
-            case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction);
-                break;
-            default:
-                throw new WynkRuntimeException(PaymentErrorType.PAY008);
-        }
-        return BaseResponse.<ChargingStatusResponse>builder()
-                .status(HttpStatus.OK)
-                .body(statusResponse)
-                .build();
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+        ChargingStatusResponse statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest);
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
     private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest transactionStatusRequest) {
@@ -326,17 +313,6 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         transaction.setStatus(finalTransactionStatus.getValue());
     }
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        int planId = transaction.getPlanId();
-        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-        ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(selectedPlanId);
-        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
-        }
-        return responseBuilder.build();
-    }
-
     private Map<String, String> getPayload(Transaction transaction) {
         final int planId = transaction.getPlanId();
         final PlanDTO selectedPlan = cachingService.getPlan(planId);
@@ -392,7 +368,7 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Date today = cal.getTime();
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
-        Boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
+        boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
         BillingUtils billingUtils = getBillingUtils(selectedPlan, isFreeTrial);
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getFinalPrice(), today, next5Year));
@@ -410,9 +386,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return payload;
     }
 
-    private BillingUtils getBillingUtils(PlanDTO selectedPlan, Boolean isFreeTrial) {
-        Integer validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        Integer freeTrialValidity = isFreeTrial ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity() : validTillDays;
+    private BillingUtils getBillingUtils(PlanDTO selectedPlan, boolean isFreeTrial) {
+        int validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
+        int freeTrialValidity = isFreeTrial ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity() : validTillDays;
         return freeTrialValidity == validTillDays ? new BillingUtils(validTillDays) : new BillingUtils(1, BillingCycle.ADHOC);
     }
 

@@ -23,6 +23,7 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
+import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -58,7 +59,7 @@ import static in.wynk.queue.constant.BeanConstant.SQS_EVENT_PRODUCER;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
-public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService {
+public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantPaymentService {
 
     private static final String DEBIT_API = "/v3/debit";
 
@@ -90,6 +91,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                                          PaymentCachingService cachingService,
                                          ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager,
                                          @Qualifier(SQS_EVENT_PRODUCER) ISQSMessagePublisher sqsMessagePublisher) {
+        super(cachingService);
         this.gson = gson;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
@@ -142,24 +144,10 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     @Override
     public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) { }
 
-
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse chargingStatus;
-        switch (transactionStatusRequest.getMode()) {
-            case SOURCE:
-                chargingStatus = getStatusFromPhonePe(transactionStatusRequest);
-                break;
-            case LOCAL:
-                chargingStatus = fetchChargingStatusFromDataSource(transactionStatusRequest);
-                break;
-            default:
-                throw new WynkRuntimeException(PaymentErrorType.PAY008);
-        }
-        return BaseResponse.<ChargingStatusResponse>builder()
-                .status(HttpStatus.OK)
-                .body(chargingStatus)
-                .build();
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+        ChargingStatusResponse chargingStatus = getStatusFromPhonePe(transactionStatusRequest);
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(chargingStatus).build();
     }
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
@@ -204,13 +192,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             transactionManager.upsert(transaction);
         }
 
-    }
-
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(AbstractTransactionStatusRequest chargingStatusRequest) {
-        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
-        return ChargingStatusResponse.builder()
-                .transactionStatus(transaction.getStatus())
-                .build();
     }
 
     private URI processCallback(CallbackRequest callbackRequest) {

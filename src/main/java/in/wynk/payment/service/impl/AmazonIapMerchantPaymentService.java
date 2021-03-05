@@ -24,17 +24,18 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
 import in.wynk.payment.dto.amazonIap.AmazonIapStatusCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
+import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -54,30 +55,29 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService {
 
+    private final RestTemplate restTemplate;
+    @Value("${payment.success.page}")
+    private String SUCCESS_PAGE;
     @Value("${payment.merchant.amazonIap.secret}")
     private String amazonIapSecret;
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
     private final ObjectMapper mapper;
+    @Value("${payment.failure.page}")
+    private String FAILURE_PAGE;
     private final ReceiptDetailsDao receiptDetailsDao;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
 
-    @Autowired
-    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
-    private RestTemplate restTemplate;
-    @Value("${payment.success.page}")
-    private String SUCCESS_PAGE;
-    @Value("${payment.failure.page}")
-    private String FAILURE_PAGE;
-
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+        super(cachingService);
         this.mapper = mapper;
         this.receiptDetailsDao = receiptDetailsDao;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
+        this.restTemplate = restTemplate;
     }
 
     @Override
@@ -203,6 +203,12 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                 .status(HttpStatus.OK)
                 .body(statusResponse)
                 .build();
+    }
+
+    @Override
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+        ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get());
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {

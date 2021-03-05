@@ -28,7 +28,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.itune.*;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -44,7 +44,6 @@ import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -68,7 +67,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService, IReceiptDetailService {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService, IReceiptDetailService {
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -79,23 +78,22 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    @Autowired
-    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
-    private RestTemplate restTemplate;
-
     private final Gson gson;
     private final ObjectMapper mapper;
+    private final RestTemplate restTemplate;
     private final ReceiptDetailsDao receiptDetailsDao;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final TestingByPassNumbersDao testingByPassNumbersDao;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
+    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
+        super(cachingService);
         this.gson = gson;
         this.mapper = mapper;
-        this.receiptDetailsDao = receiptDetailsDao;
+        this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
+        this.receiptDetailsDao = receiptDetailsDao;
         this.testingByPassNumbersDao = testingByPassNumbersDao;
     }
 
@@ -380,23 +378,9 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public BaseResponse<?> status(AbstractTransactionStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse statusResponse;
-        Transaction transaction = TransactionContext.get();
-        switch (transactionStatusRequest.getMode()) {
-            case SOURCE:
-                statusResponse = fetchChargingStatusFromItunesSource(transaction);
-                break;
-            case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction, transactionStatusRequest.getPlanId());
-                break;
-            default:
-                throw new WynkRuntimeException(PaymentErrorType.PAY008);
-        }
-        return BaseResponse.<ChargingStatusResponse>builder()
-                .status(HttpStatus.OK)
-                .body(statusResponse)
-                .build();
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+        ChargingStatusResponse statusResponse = fetchChargingStatusFromItunesSource(TransactionContext.get());
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {

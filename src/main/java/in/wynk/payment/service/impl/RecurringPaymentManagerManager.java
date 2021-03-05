@@ -15,6 +15,7 @@ import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 import static in.wynk.common.constant.BaseConstants.MIGRATED_NEXT_CHARGING_DATE;
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
 
+@Slf4j
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
 public class RecurringPaymentManagerManager implements IRecurringPaymentManagerService {
 
@@ -104,18 +106,34 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long deferredUntil) {
+    public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
         try {
             paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
-                recurringPayment.setTransactionEvent(paymentEvent.name());
-                recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
-                recurringPayment.getDay().setTimeInMillis(recurringPayment.getDay().getTimeInMillis() + deferredUntil);
-                recurringPayment.setHour(recurringPayment.getDay().getTime());
-                paymentRenewalDao.save(recurringPayment);
-                eventPublisher.publishEvent(RecurringPaymentEvent.builder()
-                        .transactionId(transactionId)
-                        .paymentEvent(paymentEvent)
-                        .build());
+                final Calendar hour = Calendar.getInstance();
+                final Calendar day = recurringPayment.getDay();
+
+                hour.setTime(recurringPayment.getHour());
+                day.set(Calendar.SECOND, hour.get(Calendar.SECOND));
+                day.set(Calendar.MINUTE, hour.get(Calendar.MINUTE));
+                day.set(Calendar.HOUR_OF_DAY, hour.get(Calendar.HOUR_OF_DAY));
+
+                final long deferredUntilNow = day.getTimeInMillis() - validUntil;
+                final long furtherDeferUntil = deferredUntilNow - deferredUntil;
+
+                if (furtherDeferUntil > 0) {
+                    day.setTimeInMillis(recurringPayment.getDay().getTimeInMillis() + furtherDeferUntil);
+                    hour.setTime(day.getTime());
+
+                    recurringPayment.setDay(day);
+                    recurringPayment.setHour(hour.getTime());
+                    recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
+                    recurringPayment.setTransactionEvent(paymentEvent.name());
+
+                    paymentRenewalDao.save(recurringPayment);
+                    eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(transactionId).paymentEvent(paymentEvent).build());
+                } else {
+                    log.info("recurring can not be deferred further for transaction id {}, since offset {} is less than zero", transactionId, furtherDeferUntil);
+                }
             });
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY017, e);

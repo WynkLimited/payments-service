@@ -17,6 +17,7 @@ import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import org.springframework.http.HttpStatus;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -54,22 +55,22 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 PlanDTO paidPlan = cachingService.getPlan(transaction.getPlanId());
                 TrialPack.TrialPackBuilder<?, ?> trialPackBuilder = TrialPack.builder().title(offer.getTitle());
                 if (offer.isCombo()) {
-                    BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().title(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo());
-                    List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().title(channelPartner.getName()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
+                    BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                    List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
                     trialPackBuilder.benefits(bundleBenefitsBuilder.channelsBenefits(channelBenefits).build());
                 } else {
-                    ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().title(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo());
+                    ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
                     trialPackBuilder.benefits(channelBenefitsBuilder.build());
                 }
                 builder.packDetails(trialPackBuilder.paidPack(PaidPack.builder().title(paidPlan.getTitle()).amount(paidPlan.getFinalPrice()).build()).build());
             } else {
                 PaidPack.PaidPackBuilder<?, ?> paidPackBuilder = PaidPack.builder().title(offer.getTitle());
                 if (offer.isCombo()) {
-                    BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().title(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo());
-                    List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(chnanelPartner -> ChannelBenefits.builder().title(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).build()).collect(Collectors.toList());
+                    BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                    List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(chnanelPartner -> ChannelBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).build()).collect(Collectors.toList());
                     paidPackBuilder.benefits(benefitsBuilder.channelsBenefits(channelBenefits).build());
                 } else {
-                    ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().title(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo());
+                    ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
                     paidPackBuilder.benefits(channelBenefitsBuilder.build());
                 }
                 builder.packDetails(paidPackBuilder.build());

@@ -251,7 +251,7 @@ public class PaymentManager {
                 .paymentCode(paymentCode)
                 .amount(selectedPlan.getFinalPrice())
                 .status(TransactionStatus.INPROGRESS.getValue())
-                .event(selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE)
+                .event(PaymentEvent.RENEW)
                 .build()));
         return TransactionContext.get().getId().toString();
     }

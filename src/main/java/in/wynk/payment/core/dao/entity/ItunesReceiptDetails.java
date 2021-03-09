@@ -14,5 +14,10 @@ public class ItunesReceiptDetails extends ReceiptDetails {
 
     private String receipt;
     private String type;
+    private long transactionId = -1;
+
+    public boolean isTransactionIdPresent() {
+        return transactionId > 0L;
+    }
 
 }

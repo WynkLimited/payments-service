@@ -8,8 +8,12 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public abstract class AbstractPack {
 
-    private final String title;
+    private final long period;
     private final double amount;
+
+    private final String title;
+    private final String timeUnit;
+
     private final AbstractPartnerBenefits benefits;
 
     public abstract ProvisionType getType();

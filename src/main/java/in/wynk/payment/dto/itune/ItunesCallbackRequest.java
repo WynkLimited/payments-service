@@ -8,8 +8,8 @@ import lombok.Getter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ItunesCallbackRequest {
 
-    @JsonProperty("latest_receipt_info")
-    private LatestReceiptInfo latestReceiptInfo;
+    @JsonProperty("unified_receipt")
+    private UnifiedReceipt unifiedReceipt;
 
     @JsonProperty("latest_receipt")
     private String latestReceipt;

@@ -429,10 +429,12 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getLatestReceiptInfo() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
-                final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
-                final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                return receiptDetailsDao.findById(iTunesId);
+            if (itunesCallbackRequest.getUnifiedReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+                if(itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfo() != null) {
+                    final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfo();
+                    final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
+                    return receiptDetailsDao.findById(iTunesId);
+                }
             }
         } catch (Exception e) {
         }

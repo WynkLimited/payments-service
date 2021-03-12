@@ -12,7 +12,7 @@ public class PhonePePaymentRequest {
         private String merchantId;
         private String transactionId;
         private String merchantUserId;
-        private Double amount;
+        private double amount;
         private String merchantOrderId;
         private String mobileNumber;
         private String message;

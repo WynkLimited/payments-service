@@ -159,10 +159,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         Transaction transaction = TransactionContext.get();
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (StringUtils.isNotBlank(itunesCallbackRequest.getLatestReceipt())) {
-                final String decodedReceipt = getModifiedReceipt(itunesCallbackRequest.getLatestReceipt());
-                transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
-                fetchAndUpdateFromReceipt(transaction);
+            if (itunesCallbackRequest.getUnifiedReceipt()!=null ) {
+                String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
+                if(StringUtils.isNotBlank(latestReceipt)){
+                    final String decodedReceipt = getModifiedReceipt(latestReceipt);
+                    transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
+                    fetchAndUpdateFromReceipt(transaction);
+                }
             }
             return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
@@ -430,8 +433,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
             if (itunesCallbackRequest.getUnifiedReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
-                if(itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfo() != null) {
-                    final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfo();
+                if(itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null) {
+                    final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                     final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
                     return receiptDetailsDao.findById(iTunesId);
                 }

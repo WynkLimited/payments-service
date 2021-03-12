@@ -7,6 +7,8 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.List;
+
 /**
  * An object that contains information about the most-recent, in-app purchase transactions for the app.
  */
@@ -17,8 +19,17 @@ import lombok.ToString;
 @ToString
 public class UnifiedReceipt {
     @JsonProperty("latest_receipt_info")
-    private LatestReceiptInfo latestReceiptInfo;
+    private List<LatestReceiptInfo> latestReceiptInfoList;
 
     @JsonProperty("pending_renewal_info")
-    private PendingRenewalInfo pendingRenewalInfo;
+    private List<PendingRenewalInfo> pendingRenewalInfoList;
+
+    @JsonProperty("latest_receipt")
+    private String latestReceipt;
+
+    @JsonProperty("environment")
+    private String environment;
+
+    @JsonProperty("status")
+    private Integer status;
 }

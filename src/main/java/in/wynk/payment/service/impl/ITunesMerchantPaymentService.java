@@ -162,8 +162,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             if (itunesCallbackRequest.getUnifiedReceipt()!=null ) {
                 String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
                 if(StringUtils.isNotBlank(latestReceipt)){
-                    final String decodedReceipt = getModifiedReceipt(latestReceipt);
-                    transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
+                    //final String decodedReceipt = getModifiedReceipt(latestReceipt);
+                    transaction.putValueInPaymentMetaData(DECODED_RECEIPT, latestReceipt);
                     fetchAndUpdateFromReceipt(transaction);
                 }
             }
@@ -194,7 +194,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
 
     private void fetchAndUpdateFromReceipt(Transaction transaction) {
         final String decodedReceipt = transaction.getValueFromPaymentMetaData(DECODED_RECEIPT);
-        final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(decodedReceipt);
+        final ItunesReceiptType receiptType = ItunesReceiptType.SEVEN;
         try {
             ItunesStatusCodes code = null;
             final List<LatestReceiptInfo> userLatestReceipts = getReceiptObjForUser(decodedReceipt, receiptType, transaction);
@@ -263,8 +263,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
-        String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
-        return getReceiptObjForUserInternal(encodedValue, itunesReceiptType, transaction);
+        //String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
+        return getReceiptObjForUserInternal(receipt, itunesReceiptType, transaction);
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUserInternal(String encodedValue, ItunesReceiptType itunesReceiptType, Transaction transaction) {

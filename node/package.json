@@ -1,0 +1,40 @@
+{
+  "name": "recon",
+  "version": "1.0.0",
+  "description": "recon job is designed to manually process itunes receipts for renewal",
+  "main": "index.js",
+  "scripts": {
+    "start:dev": "env-cmd -f ./env/.env.preprod nodemon",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:prod": "rimraf ./build && env-cmd -f ./env/.env.prod tsc",
+    "build:preprod": "rimraf ./build && env-cmd -f ./env/.env.preprod tsc",
+    "prettier:format": "prettier --config .prettierrc 'src/**/*.ts' --write",
+    "prettier:watch": "onchange 'src/**/*.ts' -- prettier --write {{changed}}"
+  },
+  "keywords": [],
+  "author": "zuber1.khan@wynk.in",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mongodb": "^3.6.9",
+    "@types/mongoose": "^5.10.3",
+    "@types/node": "^14.14.34",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-shopify": "^35.1.0",
+    "nodemon": "^2.0.7",
+    "onchange": "^7.1.0",
+    "prettier": "^2.2.1",
+    "rimraf": "^3.0.2",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "env-cmd": "^10.1.0",
+    "js-base64": "^3.6.0",
+    "log4js": "^6.3.0",
+    "mongoose": "^5.12.0"
+  }
+}

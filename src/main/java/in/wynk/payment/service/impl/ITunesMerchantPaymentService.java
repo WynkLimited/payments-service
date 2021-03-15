@@ -106,7 +106,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         try {
             final Transaction transaction = TransactionContext.get();
             final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
-            transaction.putValueInPaymentMetaData(DECODED_RECEIPT, request.getReceipt());
+            transaction.putValueInPaymentMetaData(LATEST_RECEIPT, request.getReceipt());
             fetchAndUpdateFromReceipt(transaction);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                 builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
@@ -162,8 +162,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             if (itunesCallbackRequest.getUnifiedReceipt()!=null ) {
                 String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
                 if(StringUtils.isNotBlank(latestReceipt)){
-                    //final String decodedReceipt = getModifiedReceipt(latestReceipt);
-                    transaction.putValueInPaymentMetaData(DECODED_RECEIPT, latestReceipt);
+                    transaction.putValueInPaymentMetaData(LATEST_RECEIPT, latestReceipt);
                     fetchAndUpdateFromReceipt(transaction);
                 }
             }
@@ -179,7 +178,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
             final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), merchantTransaction.getExternalTransactionId());
             if (Objects.nonNull(receiptDetails)) {
-                transaction.putValueInPaymentMetaData(DECODED_RECEIPT, receiptDetails.getReceipt());
+                transaction.putValueInPaymentMetaData(LATEST_RECEIPT, receiptDetails.getReceipt());
                 fetchAndUpdateFromReceipt(transaction);
             } else {
                 log.error(PAYMENT_RECONCILIATION_FAILURE, "unable to reconcile since receipt is not present for original itunes id {}", merchantTransaction.getExternalTransactionId());
@@ -193,7 +192,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     private void fetchAndUpdateFromReceipt(Transaction transaction) {
-        final String decodedReceipt = transaction.getValueFromPaymentMetaData(DECODED_RECEIPT);
+        final String decodedReceipt = transaction.getValueFromPaymentMetaData(LATEST_RECEIPT);
         final ItunesReceiptType receiptType = ItunesReceiptType.SEVEN;
         try {
             ItunesStatusCodes code = null;

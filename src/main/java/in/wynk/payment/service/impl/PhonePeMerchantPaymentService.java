@@ -2,6 +2,7 @@ package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
@@ -44,7 +45,7 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
@@ -186,7 +187,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                     log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                    return new URIBuilder(SUCCESS_PAGE + SessionContextHolder.getId()).build();
+                    SessionDTO sessionDTO = SessionContextHolder.getBody();
+                    return new URIBuilder(SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.<String>get(OS)).addParameter(SERVICE, sessionDTO.<String>get(SERVICE)).addParameter(BUILD_NO, String.valueOf(sessionDTO.<Integer>get(BUILD_NO))).build();
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }

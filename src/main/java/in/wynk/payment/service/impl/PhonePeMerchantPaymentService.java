@@ -224,7 +224,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             if (response.getBody() != null && response.getBody().isSuccess()) {
                 return new URI(response.getBody().getData().getRedirectURL());
             } else {
-                throw new WynkRuntimeException(PaymentErrorType.PAY008, response.getBody().getMessage());
+                throw new WynkRuntimeException(PaymentErrorType.PAY008);
             }
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());

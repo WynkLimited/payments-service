@@ -17,7 +17,7 @@ function reconReceipts() {
   const receiptDao: IReceiptDao<ITunesReceiptDoc> = new ITunesReceiptDao();
   logger.info('starting recon process...');
   receiptDao
-    .find({$and: [{_class: 'in.wynk.payment.core.dao.entity.ItunesReceiptDetails'}, {$or: [{'expiry': {$lt: new Date()}}, {'expiry': {$exists: false}}]}]})
+    .find({$and: [{_class: 'in.wynk.payment.core.dao.entity.ItunesReceiptDetails'}, {$or: [{'expiry': {$lt: new Date().getTime()}}, {'expiry': {$exists: false}}]}]})
     .then((receipts) => {
       logger.info(`found total ${receipts.length} receipts`);
       receipts

@@ -106,7 +106,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         try {
             final Transaction transaction = TransactionContext.get();
             final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
-            transaction.putValueInPaymentMetaData(LATEST_RECEIPT, request.getReceipt());
+            String encodedValue = ItunesReceiptType.SEVEN.getEncodedItunesData(request.getReceipt());
+            transaction.putValueInPaymentMetaData(LATEST_RECEIPT, encodedValue);
             fetchAndUpdateFromReceipt(transaction);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                 builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
@@ -261,11 +262,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         return true;
     }
 
-    private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
-        return getReceiptObjForUserInternal(receipt, itunesReceiptType, transaction);
-    }
-
-    private List<LatestReceiptInfo> getReceiptObjForUserInternal(String encodedValue, ItunesReceiptType itunesReceiptType, Transaction transaction) {
+    private List<LatestReceiptInfo> getReceiptObjForUser(String encodedValue, ItunesReceiptType itunesReceiptType, Transaction transaction) {
         String secret;
         ItunesStatusCodes statusCode;
         Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());

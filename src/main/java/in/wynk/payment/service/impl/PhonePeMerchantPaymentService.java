@@ -89,12 +89,14 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     @Override
-    public BaseResponse<Void> doCharging(ChargingRequest chargingRequest) {
+    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
             final double finalPlanAmount = transaction.getAmount();
             final String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
-            return BaseResponse.redirectResponse(redirectUri);
+            Map<String, String> response = new HashMap<>();
+            response.put("redirectUrl", redirectUri);
+            return BaseResponse.<Map<String, String>>builder().body(response).status(HttpStatus.OK).build();
         } catch (Exception e) {
             throw new WynkRuntimeException(PHONEPE_CHARGING_FAILURE, e.getMessage(), e);
         }

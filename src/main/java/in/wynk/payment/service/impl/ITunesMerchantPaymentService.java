@@ -262,7 +262,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
-        //String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
         return getReceiptObjForUserInternal(receipt, itunesReceiptType, transaction);
     }
 

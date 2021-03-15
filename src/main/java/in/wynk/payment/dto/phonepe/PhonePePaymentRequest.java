@@ -9,15 +9,15 @@ import lombok.Getter;
 @Builder
 public class PhonePePaymentRequest {
 
-        private String merchantId;
-        private String transactionId;
-        private String merchantUserId;
-        private double amount;
-        private String merchantOrderId;
-        private String mobileNumber;
-        private String message;
-        private String subMerchant;
-        private String email;
-        private String shortName;
+        private final String merchantId;
+        private final String transactionId;
+        private final String merchantUserId;
+        private final long amount;
+        private final String merchantOrderId;
+        private final String mobileNumber;
+        private final String message;
+        private final String subMerchant;
+        private final String email;
+        private final String shortName;
 
 }

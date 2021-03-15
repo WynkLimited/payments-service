@@ -99,7 +99,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private String getUrlFromPhonePe(double amount, Transaction transaction) {
-        PhonePePaymentRequest phonePePaymentRequest = PhonePePaymentRequest.builder().amount(amount).merchantId(merchantId).merchantUserId(transaction.getUid()).transactionId(transaction.getIdStr()).build();
+        PhonePePaymentRequest phonePePaymentRequest = PhonePePaymentRequest.builder().amount(Double.valueOf(amount).longValue()).merchantId(merchantId).merchantUserId(transaction.getUid()).transactionId(transaction.getIdStr()).build();
         return getRedirectionUri(phonePePaymentRequest).toString();
     }
 
@@ -249,7 +249,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             if (phonePeTransactionResponse != null && phonePeTransactionResponse.getCode() != null) {
                 log.info("PhonePe txn response for transaction Id {} :: {}", txn.getIdStr(), phonePeTransactionResponse);
             }
-            merchantTransactionEventBuilder.externalTransactionId(phonePeTransactionResponse.getData().providerReferenceId);
+            if (phonePeTransactionResponse.getData() != null)
+                merchantTransactionEventBuilder.externalTransactionId(phonePeTransactionResponse.getData().providerReferenceId);
             merchantTransactionEventBuilder.response(phonePeTransactionResponse);
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             return phonePeTransactionResponse;

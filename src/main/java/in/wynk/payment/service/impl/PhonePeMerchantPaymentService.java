@@ -13,6 +13,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.phonepe.PhonePeChargingResponse;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRequest;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionResponse;
 import in.wynk.payment.dto.phonepe.PhonePeTransactionStatus;
@@ -52,7 +53,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
 public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService {
 
-    private static final String DEBIT_API = "/v3/debit";
+    private static final String DEBIT_API = "/v4/debit";
 
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
@@ -99,7 +100,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private String getUrlFromPhonePe(double amount, Transaction transaction) {
-        PhonePePaymentRequest phonePePaymentRequest = PhonePePaymentRequest.builder().amount(Double.valueOf(amount).longValue()).merchantId(merchantId).merchantUserId(transaction.getUid()).transactionId(transaction.getIdStr()).build();
+        PhonePePaymentRequest phonePePaymentRequest = PhonePePaymentRequest.builder().amount(Double.valueOf(amount * 100).longValue()).merchantId(merchantId).merchantUserId(transaction.getUid()).transactionId(transaction.getIdStr()).build();
         return getRedirectionUri(phonePePaymentRequest).toString();
     }
 
@@ -219,8 +220,12 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             headers.add(X_REDIRECT_URL, phonePeCallBackURL + SessionContextHolder.getId());
             headers.add(X_REDIRECT_MODE, HttpMethod.POST.name());
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
-            URI uri = restTemplate.postForLocation(phonePeBaseUrl + DEBIT_API, requestEntity);
-            return new URI(phonePeBaseUrl + uri);
+            ResponseEntity<PhonePeChargingResponse> response = restTemplate.postForEntity(phonePeBaseUrl + DEBIT_API, requestEntity, PhonePeChargingResponse.class);
+            if (response.getBody() != null && response.getBody().isSuccess()) {
+                return new URI(response.getBody().getData().getRedirectURL());
+            } else {
+                throw new WynkRuntimeException(PaymentErrorType.PAY008, response.getBody().getMessage());
+            }
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
             log.error(PHONEPE_CHARGING_FAILURE, "Error from phonepe: {}", hex.getResponseBodyAsString(), hex);

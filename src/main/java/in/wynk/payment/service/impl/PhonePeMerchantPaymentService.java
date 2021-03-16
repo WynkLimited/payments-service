@@ -16,12 +16,15 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PhonePePaymentRefundRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.AbstractPaymentRefundRequest;
+import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.IMerchantPaymentRefundService;
-import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.service.IOTCMerchantPaymentService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +53,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
-public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentService, IMerchantPaymentRefundService {
+public class PhonePeMerchantPaymentService implements IOTCMerchantPaymentService, IMerchantPaymentRefundService {
 
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
@@ -102,11 +105,6 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-    }
-
-
-    @Override
     public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
         ChargingStatusResponse chargingStatus;
         Transaction transaction = TransactionContext.get();
@@ -125,13 +123,13 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
         TransactionStatus finalTransactionStatus;
-        PhonePeTransactionResponse phonePeTransactionStatusResponse = getTransactionStatus(transaction);
-        if (phonePeTransactionStatusResponse.getSuccess()) {
-            PhonePeTransactionStatus statusCode = phonePeTransactionStatusResponse.getCode();
-            if (statusCode == PhonePeTransactionStatus.PAYMENT_SUCCESS) {
+        PhonePeResponse<PhonePeTransactionResponseWrapper> response = getTransactionStatus(transaction);
+        if (response.isSuccess()) {
+            PhonePeStatusEnum statusCode = response.getCode();
+            if (statusCode == PhonePeStatusEnum.PAYMENT_SUCCESS) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                    statusCode == PhonePeTransactionStatus.PAYMENT_PENDING) {
+                    statusCode == PhonePeStatusEnum.PAYMENT_PENDING) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
@@ -141,7 +139,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         }
 
         if (finalTransactionStatus == TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(phonePeTransactionStatusResponse.getCode().name()).description(phonePeTransactionStatusResponse.getMessage()).build());
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(response.getCode().name()).description(response.getMessage()).build());
         }
 
         transaction.setStatus(finalTransactionStatus.name());
@@ -168,13 +166,8 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         final Transaction transaction = TransactionContext.get();
         try {
             Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();
-            PhonePeTransactionResponse phonePeTransactionResponse = new PhonePeTransactionResponse(requestPayload);
-
-            String errorCode = phonePeTransactionResponse.getCode().name();
-            String errorMessage = phonePeTransactionResponse.getMessage();
-
             Boolean validChecksum = validateChecksum(requestPayload);
-            if (validChecksum && phonePeTransactionResponse.getCode() != null) {
+            if (validChecksum) {
                 this.fetchAndUpdateTransactionFromSource(transaction);
                 if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
@@ -189,13 +182,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }
             } else {
-                log.error(PHONEPE_CHARGING_CALLBACK_FAILURE,
-                        "Invalid checksum found with Wynk transactionId: {}, PhonePe transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
-                        transaction.getIdStr(),
-                        phonePeTransactionResponse.getData().getProviderReferenceId(),
-                        errorCode,
-                        errorMessage,
-                        transaction.getUid());
+                log.error(PHONEPE_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with Wynk transactionId: {} and uid: {}", transaction.getIdStr(), transaction.getUid());
                 throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found for transactionId:" + transaction.getIdStr());
             }
         } catch (PaymentRuntimeException e) {
@@ -235,7 +222,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         }
     }
 
-    private PhonePeTransactionResponse getTransactionStatus(Transaction txn) {
+    private PhonePeResponse<PhonePeTransactionResponseWrapper> getTransactionStatus(Transaction txn) {
         Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(txn.getIdStr());
         try {
             String prefixStatusApi = "/v3/transaction/" + merchantId + "/";
@@ -248,16 +235,14 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
             merchantTransactionEventBuilder.request(entity);
-            ResponseEntity<PhonePeTransactionResponse> responseEntity = restTemplate.exchange(phonePeBaseUrl + apiPath, HttpMethod.GET, entity, PhonePeTransactionResponse.class, new HashMap<>());
-            PhonePeTransactionResponse phonePeTransactionResponse = responseEntity.getBody();
-            if (phonePeTransactionResponse != null && phonePeTransactionResponse.getCode() != null) {
-                log.info("PhonePe txn response for transaction Id {} :: {}", txn.getIdStr(), phonePeTransactionResponse);
+            ResponseEntity<PhonePeResponse<PhonePeTransactionResponseWrapper>> responseEntity = restTemplate.exchange(phonePeBaseUrl + apiPath, HttpMethod.GET, entity, new ParameterizedTypeReference<PhonePeResponse<PhonePeTransactionResponseWrapper>>() {
+            });
+            PhonePeResponse<PhonePeTransactionResponseWrapper> response = responseEntity.getBody();
+            if (response != null && response.getData() != null) {
+                merchantTransactionEventBuilder.externalTransactionId(response.getData().getProviderReferenceId());
             }
-            if (phonePeTransactionResponse != null && phonePeTransactionResponse.getData() != null) {
-                merchantTransactionEventBuilder.externalTransactionId(phonePeTransactionResponse.getData().getProviderReferenceId());
-            }
-            merchantTransactionEventBuilder.response(phonePeTransactionResponse);
-            return phonePeTransactionResponse;
+            merchantTransactionEventBuilder.response(gson.toJson(response));
+            return response;
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Error from phonepe: {}", e.getResponseBodyAsString(), e);

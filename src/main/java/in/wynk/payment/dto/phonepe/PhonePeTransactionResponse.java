@@ -43,12 +43,12 @@ public class PhonePeTransactionResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     static public class Data {
 
-        public String transactionId;
-        public String merchantId;
-        public String providerReferenceId;
-        public Long amount;
-        public String paymentState;
-        public String payResponseCode;
+        private String transactionId;
+        private String merchantId;
+        private String providerReferenceId;
+        private Long amount;
+        private String paymentState;
+        private String payResponseCode;
 
 
     }

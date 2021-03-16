@@ -13,15 +13,16 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public abstract class AbstractPaymentRefundRequest {
-    
+
+    private final String reason;
     private final String originalTransactionId;
 
-    public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction) {
+    public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction, String reason) {
         switch (originalTransaction.getPaymentChannel()) {
             case PAYU:
-                return PayUPaymentRefundRequest.from(originalTransaction, refundTransaction);
+                return PayUPaymentRefundRequest.from(originalTransaction, refundTransaction, reason);
             case PHONEPE_WALLET:
-                return PhonePePaymentRefundRequest.from(originalTransaction, refundTransaction);
+                return PhonePePaymentRefundRequest.from(originalTransaction, refundTransaction, reason);
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY889);
         }

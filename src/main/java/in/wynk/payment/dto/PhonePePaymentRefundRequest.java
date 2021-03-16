@@ -13,8 +13,9 @@ import lombok.experimental.SuperBuilder;
 public class PhonePePaymentRefundRequest extends AbstractPaymentRefundRequest {
     private final String ppId;
 
-    public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction) {
+    public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction, String reason) {
         return PhonePePaymentRefundRequest.builder()
+                .reason(reason)
                 .originalTransactionId(originalTransaction.getIdStr())
                 .ppId(originalTransaction.getValueFromPaymentMetaData(BaseConstants.EXTERNAL_TRANSACTION_ID))
                 .build();

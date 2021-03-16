@@ -194,7 +194,7 @@ payment:
       id: WYNKUAT
       api:
         base:
-          url: https://mercury-t2.phonepe.com
+          url: https://mercury-uat.phonepe.com
       callback:
         url: http://localhost:8081/wynk/v1/payment/callback
       salt: 8289e078-be0b-484d-ae60-052f117f8deb

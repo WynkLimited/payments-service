@@ -314,7 +314,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
             merchantTransactionBuilder.request(requestEntity);
             ResponseEntity<PhonePeResponse<PhonePeRefundResponseWrapper>> response = restTemplate.exchange(phonePeBaseUrl + REFUND_API, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<PhonePeResponse<PhonePeRefundResponseWrapper>>() {
             });
-            merchantTransactionBuilder.response(response.getBody());
+            merchantTransactionBuilder.response(gson.toJson(response.getBody()));
             if (response.getBody() != null && response.getBody().isSuccess()) {
                 if (response.getBody().getCode() == PhonePeStatusEnum.PAYMENT_SUCCESS) {
                     finalTransactionStatus = TransactionStatus.SUCCESS;
@@ -328,13 +328,14 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                 merchantTransactionBuilder.externalTransactionId(response.getBody().getData().getProviderReferenceId());
                 refundResponseBuilder.providerReferenceId(response.getBody().getData().getProviderReferenceId());
             }
-        } catch (WynkRuntimeException ex) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(ex.getErrorCode()).description(ex.getErrorTitle()).build());
+        } catch (Exception ex) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY018, ex, ex.getMessage());
         } finally {
             refundTransaction.setStatus(finalTransactionStatus.getValue());
             refundResponseBuilder.transactionStatus(finalTransactionStatus);
             eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }
-        return BaseResponse.builder().body(refundResponseBuilder.build()).build();
+        return BaseResponse.builder().body(refundResponseBuilder.build()).status(HttpStatus.OK).build();
     }
+
 }

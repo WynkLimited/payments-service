@@ -16,7 +16,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 
 @RestController
 @RequestMapping("wynk/v1/callback")
-public class RevenueCallbackHandler {
+public class RevenueNotificationHandler {
 
     @Autowired
     private PaymentManager paymentManager;
@@ -30,7 +30,7 @@ public class RevenueCallbackHandler {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        BaseResponse<?> baseResponse = paymentManager.handleNotification(applicationAlias, request, paymentCode);
+        BaseResponse<?> baseResponse = paymentManager.handleNotification(applicationAlias, payload, paymentCode);
         return baseResponse.getResponse();
     }
 

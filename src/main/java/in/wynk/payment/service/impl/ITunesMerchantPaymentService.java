@@ -27,9 +27,9 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -68,7 +68,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService, IReceiptDetailService {
+public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IPaymentNotificationService, IReceiptDetailService {
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -155,16 +155,16 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest) {
+    public void handleNotification(String txnId, UserPlanMapping mapping) {
         Transaction transaction = TransactionContext.get();
         try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
+            final ItunesCallbackRequest itunesCallbackRequest = (ItunesCallbackRequest) mapping.getMessage();
             if (StringUtils.isNotBlank(itunesCallbackRequest.getLatestReceipt())) {
                 final String decodedReceipt = getModifiedReceipt(itunesCallbackRequest.getLatestReceipt());
                 transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
                 fetchAndUpdateFromReceipt(transaction);
             }
-            return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).status(HttpStatus.OK).build();
+//            return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
             throw new WynkRuntimeException(WynkErrorType.UT999, "Error while handling iTunes callback");
         }
@@ -426,17 +426,39 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
-        try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getLatestReceiptInfo() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+    public UserPlanMapping getUserPlanMapping(String requestPayload) {
+        ItunesCallbackRequest itunesCallbackRequest = getCallbackRequest(requestPayload);
+        if (itunesCallbackRequest.getLatestReceiptInfo() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                return receiptDetailsDao.findById(iTunesId);
+                Optional<ReceiptDetails> optDetails = receiptDetailsDao.findById(iTunesId);
+                if(optDetails.isPresent()){
+                    ReceiptDetails details = optDetails.get();
+                    return UserPlanMapping.builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
+                            .uid(details.getUid()).build();
+                }
             }
-        } catch (Exception e) {
+        throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid Request");
+    }
+
+    @Override
+    public boolean isNotificationEligible(String callbackRequest) {
+        final ItunesCallbackRequest itunesCallbackRequest = getCallbackRequest(callbackRequest);
+        if (itunesCallbackRequest.getLatestReceiptInfo() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+            final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
+            final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
+            return receiptDetailsDao.existsById(iTunesId);
         }
-        return Optional.empty();
+        return false;
+    }
+
+
+    private ItunesCallbackRequest getCallbackRequest(String payload){
+        try {
+            return mapper.readValue(payload, ItunesCallbackRequest.class);
+        } catch (JsonProcessingException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid receipt");
+        }
     }
 
 }

@@ -12,32 +12,29 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.AmazonReceiptDetails;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.amazonIap.AmazonIapReceiptResponse;
-import in.wynk.payment.dto.amazonIap.AmazonIapStatusCode;
-import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
+import in.wynk.payment.dto.UserPlanMapping;
+import in.wynk.payment.dto.amazonIap.*;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -46,25 +43,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
+import java.security.Signature;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE;
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService {
+public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService, IUserMapping, IPaymentNotificationService {
 
-    @Value("${payment.merchant.amazonIap.secret}")
-    private String amazonIapSecret;
-    @Value("${payment.merchant.amazonIap.status.baseUrl}")
-    private String amazonIapStatusUrl;
     private final ObjectMapper mapper;
     private final ReceiptDetailsDao receiptDetailsDao;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
-
+    private final WynkUserExtUserDao userMappingDao;
+    @Value("${payment.merchant.amazonIap.secret}")
+    private String amazonIapSecret;
+    @Value("${payment.merchant.amazonIap.status.baseUrl}")
+    private String amazonIapStatusUrl;
     @Autowired
     @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
     private RestTemplate restTemplate;
@@ -73,11 +76,71 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
+    public AmazonIapMerchantPaymentService(ObjectMapper mapper, WynkUserExtUserDao userMappingDao, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
         this.mapper = mapper;
         this.receiptDetailsDao = receiptDetailsDao;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
+        this.userMappingDao = userMappingDao;
+    }
+
+    private static String buildNotificationStringToSign(AmazonNotificationRequest msg) {
+        String stringToSign = "Message\n";
+        stringToSign += msg.getMessage() + "\n";
+        stringToSign += "MessageId\n";
+        stringToSign += msg.getMessageId() + "\n";
+        if (msg.getSubject() != null) {
+            stringToSign += "Subject\n";
+            stringToSign += msg.getSubject() + "\n";
+        }
+        stringToSign += "Timestamp\n";
+        stringToSign += msg.getTimestamp() + "\n";
+        stringToSign += "TopicArn\n";
+        stringToSign += msg.getTopicArn() + "\n";
+        stringToSign += "Type\n";
+        stringToSign += msg.getType() + "\n";
+        return stringToSign;
+    }
+
+    private boolean isMessageSignatureValid(AmazonNotificationRequest msg) {
+        try {
+            URL url = new URL(msg.getSigningCertURL());
+            verifyMessageSignatureURL(msg, url);
+//            InputStream inStream = url.openStream();
+            RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, url.toURI());
+            ResponseEntity<Resource> responseEntity = restTemplate.exchange(requestEntity, Resource.class);
+            InputStream inStream = Objects.requireNonNull(responseEntity.getBody()).getInputStream();;
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            X509Certificate cert = (X509Certificate) cf.generateCertificate(inStream);
+            inStream.close();
+
+            Signature sig = Signature.getInstance("SHA1withRSA");
+            sig.initVerify(cert.getPublicKey());
+            sig.update(getMessageBytesToSign(msg));
+            return sig.verify(Base64.decodeBase64(msg.getSignature()));
+        } catch (Exception e) {
+            throw new SecurityException("Verify method failed.", e);
+        }
+    }
+
+    private static byte[] getMessageBytesToSign(AmazonNotificationRequest msg) {
+        return buildNotificationStringToSign(msg).getBytes();
+    }
+
+    private static void verifyMessageSignatureURL(AmazonNotificationRequest msg, URL endpoint) {
+        URI certUri = URI.create(msg.getSigningCertURL());
+
+        if (!"https".equals(certUri.getScheme())) {
+            throw new SecurityException("SigningCertURL was not using HTTPS: " + certUri.toString());
+        }
+
+        if (!endpoint.toString().equals(certUri.getHost())) {
+            throw new SecurityException(
+                    String.format("SigningCertUrl does not match expected endpoint. " +
+                                    "Expected %s but received endpoint was %s.",
+                            endpoint, certUri.getHost()));
+
+        }
     }
 
     @Override
@@ -214,5 +277,44 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         return responseBuilder.build();
     }
 
+    @Override
+    public void addUserMapping(String uid, String externalUserId) {
+        WynkUserExtUserMapping mapping = WynkUserExtUserMapping.builder().id(uid).externalUserId(externalUserId).build();
+        userMappingDao.save(mapping);
+    }
 
+    @Override
+    public UserPlanMapping getUserPlanMapping(String requestPayload) {
+        return null;
+    }
+
+    @Override
+    public boolean isNotificationEligible(String requestPayload) {
+        AmazonNotificationRequest request = getNotificationDetails(requestPayload);
+        if (isMessageSignatureValid(request)) {
+            try {
+                AmazonNotificationMessage message = mapper.readValue(request.getMessage(), AmazonNotificationMessage.class);
+                if (receiptDetailsDao.existsById(message.getReceiptId())
+                        || userMappingDao.countByExternalUserId(message.getAppUserId()) == 1) {
+                    return true;
+                }
+            } catch (Exception e) {
+                throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid message");
+            }
+        }
+        return false;
+    }
+
+    private AmazonNotificationRequest getNotificationDetails(String payload) {
+        try {
+            return mapper.readValue(payload, AmazonNotificationRequest.class);
+        } catch (JsonProcessingException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid receipt");
+        }
+    }
+
+    @Override
+    public void handleNotification(String txnId, UserPlanMapping mapping) {
+
+    }
 }

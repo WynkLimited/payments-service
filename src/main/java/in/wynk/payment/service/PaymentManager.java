@@ -20,7 +20,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -28,6 +27,7 @@ import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -128,14 +128,30 @@ public class PaymentManager {
         return baseResponse;
     }
 
+    @TransactionAware(txnId = "#request.transactionId")
+    private void handleNotification(PaymentCode paymentCode, String txnId, UserPlanMapping mapping) {
+        final Transaction transaction = TransactionContext.get();
+        final TransactionStatus existingStatus = transaction.getStatus();
+        final IPaymentNotificationService notificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IPaymentNotificationService.class);
+        try {
+            notificationService.handleNotification(txnId, mapping);
+        } catch (WynkRuntimeException e) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+        } finally {
+            TransactionStatus finalStatus = TransactionContext.get().getStatus();
+            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
+        }
+    }
+
     @ClientAware(clientAlias = "#clientAlias")
-    public BaseResponse<?> handleNotification(String clientAlias, CallbackRequest callbackRequest, PaymentCode paymentCode) {
+    public BaseResponse<?> handleNotification(String clientAlias, String requestPayload, PaymentCode paymentCode) {
         final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
-        Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailService.getReceiptDetails(callbackRequest);
-        if (optionalReceiptDetails.isPresent()) {
-            ReceiptDetails receiptDetails = optionalReceiptDetails.get();
-            String txnId = initiateTransaction(receiptDetails.getPlanId(), receiptDetails.getUid(), receiptDetails.getMsisdn(), paymentCode);
-            return handleCallback(CallbackRequest.builder().body(callbackRequest.getBody()).transactionId(txnId).build(), paymentCode);
+        if (receiptDetailService.isNotificationEligible(requestPayload)) {
+            UserPlanMapping mapping = receiptDetailService.getUserPlanMapping(requestPayload);
+            String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode);
+            handleNotification(paymentCode, txnId, mapping);
+            return BaseResponse.status(true);
         }
         return BaseResponse.status(false);
     }

@@ -1,12 +1,11 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.dto.request.CallbackRequest;
-
-import java.util.Optional;
+import in.wynk.payment.dto.UserPlanMapping;
 
 public interface IReceiptDetailService {
 
-    Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest);
+    UserPlanMapping getUserPlanMapping(String requestPayload);
+
+    boolean isNotificationEligible(String requestPayload);
 
 }

@@ -11,19 +11,19 @@ import java.util.Map;
 public class AmazonNotificationMessage {
 
     @JsonProperty("appPackageName")
-    public String appPackageName;
+    private String appPackageName;
     @JsonProperty("notificationType")
-    public String notificationType;
+    private String notificationType;
     @JsonProperty("appUserId")
-    public String appUserId;
+    private String appUserId;
     @JsonProperty("receiptId")
-    public String receiptId;
+    private String receiptId;
     @JsonProperty("relatedReceipts")
-    public Map<String, String> relatedReceipts;
+    private Map<String, String> relatedReceipts;
     @JsonProperty("timestamp")
-    public int timestamp;
+    private int timestamp;
     @JsonProperty("betaProductTransaction")
-    public boolean betaProductTransaction;
+    private boolean betaProductTransaction;
 
 }
 

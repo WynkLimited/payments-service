@@ -155,8 +155,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public void handleNotification(String txnId, UserPlanMapping mapping) {
-        Transaction transaction = TransactionContext.get();
+    public void handleNotification(Transaction transaction, UserPlanMapping mapping) {
         try {
             final ItunesCallbackRequest itunesCallbackRequest = (ItunesCallbackRequest) mapping.getMessage();
             if (StringUtils.isNotBlank(itunesCallbackRequest.getLatestReceipt())) {

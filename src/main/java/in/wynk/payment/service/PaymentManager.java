@@ -2,6 +2,7 @@ package in.wynk.payment.service;
 
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.EmptyResponse;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -134,26 +135,26 @@ public class PaymentManager {
         final TransactionStatus existingStatus = transaction.getStatus();
         final IPaymentNotificationService notificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IPaymentNotificationService.class);
         try {
-            notificationService.handleNotification(txnId, mapping);
+            notificationService.handleNotification(transaction, mapping);
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
+            transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
         }
     }
 
     @ClientAware(clientAlias = "#clientAlias")
-    public BaseResponse<?> handleNotification(String clientAlias, String requestPayload, PaymentCode paymentCode) {
+    public EmptyResponse handleNotification(String clientAlias, String requestPayload, PaymentCode paymentCode) {
         final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
         if (receiptDetailService.isNotificationEligible(requestPayload)) {
             UserPlanMapping mapping = receiptDetailService.getUserPlanMapping(requestPayload);
             String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode);
             handleNotification(paymentCode, txnId, mapping);
-            return BaseResponse.status(true);
+            return EmptyResponse.response(true);
         }
-        return BaseResponse.status(false);
+        return EmptyResponse.response(false);
     }
 
     @TransactionAware(txnId = "#request.transactionId")

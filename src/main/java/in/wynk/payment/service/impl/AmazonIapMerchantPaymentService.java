@@ -1,11 +1,11 @@
 package in.wynk.payment.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -28,6 +28,7 @@ import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +50,7 @@ import java.net.URL;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE;
 
@@ -59,6 +58,10 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
 public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService, IUserMapping, IPaymentNotificationService {
 
+    private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_RENEWED", "SUBSCRIPTION_PURCHASED");
+    private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
+    private static final List<String> UNSUBSCRIBE_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_AUTO_RENEWAL_OFF", "SUBSCRIPTION_EXPIRED");
+    private static final List<String> CANCELLED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_CANCELLED", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
     private final ObjectMapper mapper;
     private final ReceiptDetailsDao receiptDetailsDao;
     private final ApplicationEventPublisher eventPublisher;
@@ -102,27 +105,6 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         return stringToSign;
     }
 
-    private boolean isMessageSignatureValid(AmazonNotificationRequest msg) {
-        try {
-            URL url = new URL(msg.getSigningCertURL());
-            verifyMessageSignatureURL(msg, url);
-//            InputStream inStream = url.openStream();
-            RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, url.toURI());
-            ResponseEntity<Resource> responseEntity = restTemplate.exchange(requestEntity, Resource.class);
-            InputStream inStream = Objects.requireNonNull(responseEntity.getBody()).getInputStream();;
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            X509Certificate cert = (X509Certificate) cf.generateCertificate(inStream);
-            inStream.close();
-
-            Signature sig = Signature.getInstance("SHA1withRSA");
-            sig.initVerify(cert.getPublicKey());
-            sig.update(getMessageBytesToSign(msg));
-            return sig.verify(Base64.decodeBase64(msg.getSignature()));
-        } catch (Exception e) {
-            throw new SecurityException("Verify method failed.", e);
-        }
-    }
-
     private static byte[] getMessageBytesToSign(AmazonNotificationRequest msg) {
         return buildNotificationStringToSign(msg).getBytes();
     }
@@ -140,6 +122,27 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                                     "Expected %s but received endpoint was %s.",
                             endpoint, certUri.getHost()));
 
+        }
+    }
+
+    private boolean isMessageSignatureValid(AmazonNotificationRequest msg) {
+        try {
+            URL url = new URL(msg.getSigningCertURL());
+            verifyMessageSignatureURL(msg, url);
+//            InputStream inStream = url.openStream();
+            RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, url.toURI());
+            ResponseEntity<Resource> responseEntity = restTemplate.exchange(requestEntity, Resource.class);
+            InputStream inStream = Objects.requireNonNull(responseEntity.getBody()).getInputStream();
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            X509Certificate cert = (X509Certificate) cf.generateCertificate(inStream);
+            inStream.close();
+
+            Signature sig = Signature.getInstance("SHA1withRSA");
+            sig.initVerify(cert.getPublicKey());
+            sig.update(getMessageBytesToSign(msg));
+            return sig.verify(Base64.decodeBase64(msg.getSignature()));
+        } catch (Exception e) {
+            throw new SecurityException("Verify method failed.", e);
         }
     }
 
@@ -193,19 +196,12 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
             builder.request(request).externalTransactionId(request.getReceipt().getReceiptId()).response(amazonIapReceipt);
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
-                        .receiptId(request.getReceipt().getReceiptId())
-                        .id(request.getReceipt().getReceiptId())
-                        .uid(transaction.getUid())
-                        .msisdn(transaction.getMsisdn())
-                        .planId(transaction.getPlanId())
-                        .build();
-                receiptDetailsDao.save(amazonReceiptDetails);
+                saveReceipt(transaction, request.getReceipt().getReceiptId(), request.getUserData().getUserId());
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                     } else {
-                        transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                        transaction.setType(PaymentEvent.CANCELLED.getValue());
                     }
                 } else {
                     errorBuilder.code(AmazonIapStatusCode.ERR_002.getCode()).description(AmazonIapStatusCode.ERR_002.getDescription());
@@ -234,18 +230,25 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         }
     }
 
+    private void saveReceipt(Transaction transaction, String receiptId, String amzUserId) {
+        AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
+                .receiptId(receiptId)
+                .id(receiptId).amzUserId(amzUserId)
+                .uid(transaction.getUid())
+                .msisdn(transaction.getMsisdn())
+                .planId(transaction.getPlanId())
+                .build();
+        receiptDetailsDao.save(amazonReceiptDetails);
+    }
+
     private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
-        try {
-            String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
-            RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
-            ResponseEntity<String> responseEntity = restTemplate.exchange(requestEntity, String.class);
-            if (responseEntity.getBody() != null)
-                return mapper.readValue(responseEntity.getBody(), AmazonIapReceiptResponse.class);
-            else
-                throw new WynkRuntimeException(PaymentErrorType.PAY012);
-        } catch (JsonProcessingException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-        }
+        String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
+        RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
+        ResponseEntity<AmazonIapReceiptResponse> responseEntity = restTemplate.exchange(requestEntity, AmazonIapReceiptResponse.class);
+        if (responseEntity.getBody() != null)
+            return responseEntity.getBody();
+        else
+            throw new WynkRuntimeException(PaymentErrorType.PAY012);
     }
 
     @Override
@@ -285,15 +288,23 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
 
     @Override
     public UserPlanMapping getUserPlanMapping(String requestPayload) {
-        return null;
+        AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
+        AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
+        AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
+        PlanDTO planDTO = cachingService.getPlanFromSku(receiptResponse.getTermSku());
+        if (Objects.isNull(planDTO)) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
+        }
+        WynkUserExtUserMapping mapping = userMappingDao.findByExternalUserId(message.getAppUserId());
+        return UserPlanMapping.builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).planId(planDTO.getId()).build();
     }
 
     @Override
     public boolean isNotificationEligible(String requestPayload) {
-        AmazonNotificationRequest request = getNotificationDetails(requestPayload);
+        AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
         if (isMessageSignatureValid(request)) {
             try {
-                AmazonNotificationMessage message = mapper.readValue(request.getMessage(), AmazonNotificationMessage.class);
+                AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
                 if (receiptDetailsDao.existsById(message.getReceiptId())
                         || userMappingDao.countByExternalUserId(message.getAppUserId()) == 1) {
                     return true;
@@ -305,16 +316,20 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         return false;
     }
 
-    private AmazonNotificationRequest getNotificationDetails(String payload) {
-        try {
-            return mapper.readValue(payload, AmazonNotificationRequest.class);
-        } catch (JsonProcessingException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid receipt");
-        }
-    }
-
     @Override
-    public void handleNotification(String txnId, UserPlanMapping mapping) {
-
+    public void handleNotification(Transaction transaction, UserPlanMapping mapping) {
+        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+        AmazonNotificationMessage amazonIapReceipt = (AmazonNotificationMessage) mapping.getMessage();
+        saveReceipt(TransactionContext.get(), amazonIapReceipt.getReceiptId(), amazonIapReceipt.getAppUserId());
+        if (SUBSCRIBED_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType()) || PURCHASE_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType())) {
+            finalTransactionStatus = TransactionStatus.SUCCESS;
+        } else if (CANCELLED_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType())) {
+            transaction.setType(PaymentEvent.CANCELLED.name());
+            finalTransactionStatus = TransactionStatus.SUCCESS;
+        } else if (UNSUBSCRIBE_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType())) {
+            transaction.setType(PaymentEvent.UNSUBSCRIBE.name());
+            finalTransactionStatus = TransactionStatus.SUCCESS;
+        }
+        transaction.setStatus(finalTransactionStatus.name());
     }
 }

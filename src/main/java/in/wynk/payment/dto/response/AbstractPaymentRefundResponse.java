@@ -32,7 +32,7 @@ public abstract class AbstractPaymentRefundResponse {
     private final PaymentEvent paymentEvent;
     @Analysed(name = BaseConstants.TRANSACTION_STATUS)
     private final TransactionStatus transactionStatus;
-
+    @Analysed
     public abstract PaymentCode getPaymentCode();
 
 }

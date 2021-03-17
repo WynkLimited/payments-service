@@ -31,8 +31,12 @@ public class RevenuePaymentsS2SHandler {
     }
 
     @PostMapping("/v1/payment/refund")
+    @AnalyseTransaction(name = "initRefund")
     public ResponseEntity<?> doRefund(@RequestBody PaymentRefundInitRequest request) {
-        return paymentManager.initRefund(request).getResponse();
+        AnalyticService.update(request);
+        BaseResponse<?> baseResponse = paymentManager.initRefund(request);
+        AnalyticService.update(baseResponse.getBody());
+        return baseResponse.getResponse();
     }
 
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")

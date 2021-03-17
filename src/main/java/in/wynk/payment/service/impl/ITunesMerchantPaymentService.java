@@ -228,7 +228,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                 final String itunesTrxnId = latestReceiptInfo.getTransactionId();
                 final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                if (receiptDetails != null && receiptDetails.getState() == State.ACTIVE && receiptDetails.getExpiry() > System.currentTimeMillis() && transaction.getStatus() != TransactionStatus.FAILURE) {
+                    if (!isReceiptEligible(Arrays.asList(latestReceiptInfo), receiptType, receiptDetails) && transaction.getStatus() != TransactionStatus.FAILURE) {
                     log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                     code = ItunesStatusCodes.APPLE_21016;
                     transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
@@ -258,6 +258,20 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             transaction.setStatus(TransactionStatus.FAILURE.name());
             log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), itunesLatestReceiptResponse.getDecodedReceipt(), e);
         }
+    }
+
+    private boolean isReceiptEligible(List<LatestReceiptInfo> allReceipt, ItunesReceiptType newReceiptType, ItunesReceiptDetails oldReceipt) {
+        if (oldReceipt != null && oldReceipt.getState() == State.ACTIVE) {
+            ItunesReceiptType oldReceiptType = ItunesReceiptType.valueOf(oldReceipt.getType());
+            Optional<LatestReceiptInfo> oldReceiptOption = allReceipt.stream().filter(receipt -> (((oldReceipt.isTransactionIdPresent() && oldReceipt.getTransactionId() == oldReceiptType.getTransactionId(receipt)) || oldReceiptType.getExpireDate(receipt) == oldReceipt.getExpiry()))).findAny();
+            if (oldReceiptOption.isPresent()) {
+                LatestReceiptInfo oldReceiptInfo = oldReceiptOption.get();
+                if (!oldReceipt.isTransactionIdPresent())
+                    receiptDetailsDao.save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).transactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
+                return allReceipt.stream().anyMatch(receipt -> newReceiptType.getTransactionId(receipt) != oldReceiptType.getTransactionId(oldReceiptInfo) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
+            }
+        }
+        return true;
     }
 
     private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String msisdn, String uid, int planId) {

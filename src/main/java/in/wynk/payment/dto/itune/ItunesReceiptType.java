@@ -101,6 +101,14 @@ public enum ItunesReceiptType {
         throw new IllegalArgumentException("Illegal value for payload : " + payload);
     }
 
+    public long getTransactionId(LatestReceiptInfo receiptInfo) {
+        return Long.parseLong(receiptInfo.getTransactionId());
+    }
+
+    public long getOriginalTransactionId(LatestReceiptInfo receiptInfo) {
+        return Long.parseLong(receiptInfo.getOriginalTransactionId());
+    }
+
     public abstract String getEncodedItunesData(String iTunesData);
 
     public abstract List<LatestReceiptInfo> getSubscriptionDetailJson(ItunesReceipt itunesReceipt);

@@ -44,7 +44,7 @@ public class PaymentRecurringUnSchedulingPollingQueue extends AbstractSQSMessage
     @Override
     public void consume(PaymentRecurringUnSchedulingMessage message) {
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentRecurringUnSchedulingMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId(), message.getPaymentEvent(), message.getGetValidTillDate());
+        recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId(), message.getPaymentEvent(), message.getValidUntil(), message.getDeferredUntil());
     }
 
     @Override

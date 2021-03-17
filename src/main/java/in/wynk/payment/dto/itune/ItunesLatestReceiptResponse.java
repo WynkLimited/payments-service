@@ -6,6 +6,8 @@ import in.wynk.payment.dto.response.LatestReceiptResponse;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -16,6 +18,6 @@ public class ItunesLatestReceiptResponse extends LatestReceiptResponse {
     @Analysed
     private ItunesReceiptType itunesReceiptType;
     @Analysed
-    private LatestReceiptInfo latestReceiptInfo;
+    private List<LatestReceiptInfo> latestReceiptInfo;
 
 }

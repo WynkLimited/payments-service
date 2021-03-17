@@ -163,7 +163,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
             ItunesLatestReceiptResponse itunesLatestReceiptResponse = ItunesLatestReceiptResponse.builder()
                     .itunesReceiptType(receiptType)
-                    .latestReceiptInfo(latestReceiptInfo)
+                    .latestReceiptInfo(userLatestReceipts)
                     .decodedReceipt(request.getReceipt())
                     .extTxnId(latestReceiptInfo.getOriginalTransactionId())
                     .freeTrial(Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod()))
@@ -218,7 +218,8 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         try {
             ItunesStatusCodes code = null;
             final ItunesReceiptType receiptType = itunesLatestReceiptResponse.getItunesReceiptType();
-            final LatestReceiptInfo latestReceiptInfo = itunesLatestReceiptResponse.getLatestReceiptInfo();
+            final List<LatestReceiptInfo> latestReceiptInfoList = itunesLatestReceiptResponse.getLatestReceiptInfo();
+            LatestReceiptInfo latestReceiptInfo = latestReceiptInfoList.get(0);
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
             final long expireTimestamp = receiptType.getExpireDate(latestReceiptInfo);
             if (expireTimestamp == 0 || expireTimestamp < System.currentTimeMillis()) {
@@ -228,7 +229,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
                 final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                 final String itunesTrxnId = latestReceiptInfo.getTransactionId();
                 final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                    if (!isReceiptEligible(Arrays.asList(latestReceiptInfo), receiptType, receiptDetails) && transaction.getStatus() != TransactionStatus.FAILURE) {
+                    if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails) && transaction.getStatus() != TransactionStatus.FAILURE) {
                     log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                     code = ItunesStatusCodes.APPLE_21016;
                     transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());

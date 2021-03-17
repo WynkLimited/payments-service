@@ -43,7 +43,6 @@ import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -79,20 +78,18 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    @Autowired
-    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
-    private RestTemplate restTemplate;
-
     private final Gson gson;
     private final ObjectMapper mapper;
+    private final RestTemplate restTemplate;
     private final ReceiptDetailsDao receiptDetailsDao;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final TestingByPassNumbersDao testingByPassNumbersDao;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
+    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
         this.gson = gson;
         this.mapper = mapper;
+        this.restTemplate = restTemplate;
         this.receiptDetailsDao = receiptDetailsDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
@@ -161,14 +158,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         if (CollectionUtils.isNotEmpty(userLatestReceipts)) {
             final LatestReceiptInfo latestReceiptInfo = userLatestReceipts.get(0);
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
-            ItunesLatestReceiptResponse itunesLatestReceiptResponse = ItunesLatestReceiptResponse.builder()
+            return ItunesLatestReceiptResponse.builder()
                     .itunesReceiptType(receiptType)
                     .latestReceiptInfo(userLatestReceipts)
                     .decodedReceipt(request.getReceipt())
                     .extTxnId(latestReceiptInfo.getOriginalTransactionId())
                     .freeTrial(Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod()))
                     .build();
-            return itunesLatestReceiptResponse;
         }
         throw new WynkRuntimeException(PAY011);
     }
@@ -178,9 +174,13 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         Transaction transaction = TransactionContext.get();
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (StringUtils.isNotBlank(itunesCallbackRequest.getLatestReceipt())) {
-                final String decodedReceipt = getModifiedReceipt(itunesCallbackRequest.getLatestReceipt());
-                fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, decodedReceipt));
+            if (itunesCallbackRequest.getUnifiedReceipt()!=null ) {
+                String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
+                if(StringUtils.isNotBlank(latestReceipt)){
+                    Map<String, String> map = new HashMap<>();
+                    map.put(RECEIPT_DATA, latestReceipt);
+                    fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, JSONValue.toJSONString(map)));
+                }
             }
             return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
@@ -361,6 +361,7 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         return receiptObj;
     }
 
+    @Deprecated
     private String getModifiedReceipt(String receipt) {
         String decodedReceipt;
         decodedReceipt = new String(Base64.decodeBase64(receipt), StandardCharsets.UTF_8);
@@ -368,7 +369,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
         decodedReceipt = decodedReceipt.replaceAll(";", ",");
         decodedReceipt = decodedReceipt.replaceAll("\" = \"", "\" : \"");
         return decodedReceipt;
-
     }
 
     private List<LatestReceiptInfo> getLatestITunesReceiptForProduct(int productId, ItunesReceiptType type, List<LatestReceiptInfo> receipts) {
@@ -423,10 +423,12 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getLatestReceiptInfo() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
-                final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
-                final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                return receiptDetailsDao.findById(iTunesId);
+            if (itunesCallbackRequest.getUnifiedReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+                if(itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null) {
+                    final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
+                    final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
+                    return receiptDetailsDao.findById(iTunesId);
+                }
             }
         } catch (Exception e) {
         }

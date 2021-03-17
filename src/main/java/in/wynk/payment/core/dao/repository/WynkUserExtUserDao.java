@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 public interface WynkUserExtUserDao extends MongoRepository<WynkUserExtUserMapping, String> {
 
     Long countByExternalUserId(String externalUserId);
+
+    WynkUserExtUserMapping findByExternalUserId(String externalUserId);
 }

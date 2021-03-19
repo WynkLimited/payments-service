@@ -186,15 +186,15 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
 
     @Override
     public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
-        AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) chargingStatusRequest;
         ChargingStatusResponse statusResponse;
         Transaction transaction = TransactionContext.get();
         switch (chargingStatusRequest.getMode()) {
             case SOURCE:
+                AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) chargingStatusRequest;
                 statusResponse = fetchChargingStatusFromAmazonIapSource(transaction, request.getExtTxnId());
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction, request.getPlanId());
+                statusResponse = fetchChargingStatusFromDataSource(transaction, chargingStatusRequest.getPlanId());
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);

@@ -185,15 +185,15 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
 
     @Override
     public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
-        AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) transactionStatusRequest;
         ChargingStatusResponse statusResponse;
         Transaction transaction = TransactionContext.get();
         switch (transactionStatusRequest.getMode()) {
             case SOURCE:
+                AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) transactionStatusRequest;
                 statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest, request.getExtTxnId());
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction, request.getPlanId());
+                statusResponse = fetchChargingStatusFromDataSource(transaction, transactionStatusRequest.getPlanId());
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);

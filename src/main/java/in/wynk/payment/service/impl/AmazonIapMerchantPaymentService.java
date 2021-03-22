@@ -23,6 +23,7 @@ import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.amazonIap.*;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
+import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
@@ -56,7 +57,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService, IUserMapping, IPaymentNotificationService {
+public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService, IUserMappingService, IPaymentNotificationService {
 
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_RENEWED", "SUBSCRIPTION_PURCHASED");
     private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
@@ -210,7 +211,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             } else if (((mapping.isPresent() && mapping.get().getState() == State.ACTIVE) & EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus()))) { // added for recon
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else {
-                log.warn("Receipt is already present for uid: {}, planId: {} and receiptUserId: {}", transaction.getUid(), transaction.getPlanId(), mapping.get().getUserId());
+                log.warn("Receipt is already present for uid: {}, planId: {} and receiptId: {}", transaction.getUid(), transaction.getPlanId(), mapping.get().getId());
                 errorBuilder.code(AmazonIapStatusCode.ERR_001.getCode()).description(AmazonIapStatusCode.ERR_001.getDescription());
                 finalTransactionStatus = TransactionStatus.FAILUREALREADYSUBSCRIBED;
             }
@@ -281,8 +282,10 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     @Override
-    public void addUserMapping(String uid, String externalUserId) {
-        WynkUserExtUserMapping mapping = WynkUserExtUserMapping.builder().id(uid).externalUserId(externalUserId).build();
+    public void addUserMapping(UserMappingRequest request) {
+        WynkUserExtUserMapping mapping = WynkUserExtUserMapping.builder().id(request.getWynkUserId())
+                .externalUserId(request.getExternalUserId())
+                .msisdn(request.getMsisdn()).build();
         userMappingDao.save(mapping);
     }
 

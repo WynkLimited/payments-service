@@ -3,11 +3,12 @@ package in.wynk.payment.service;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.data.enums.State;
+import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.SkuMapping;
+import in.wynk.payment.core.dao.repository.IPaymentGroupDao;
 import in.wynk.payment.core.dao.repository.PaymentMethodDao;
 import in.wynk.payment.core.dao.repository.SkuDao;
-import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -54,6 +55,8 @@ public class PaymentCachingService {
     @Autowired
     private PaymentMethodDao paymentMethodDao;
     @Autowired
+    private IPaymentGroupDao paymentGroupDao;
+    @Autowired
     private ISubscriptionServiceManager subscriptionServiceManager;
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
@@ -73,14 +76,15 @@ public class PaymentCachingService {
     }
 
     private void loadPayments() {
-        List<PaymentMethod> activePaymentMethods = getActivePaymentMethods();
-        if (CollectionUtils.isNotEmpty(activePaymentMethods) && writeLock.tryLock()) {
+        final Map<String, PaymentGroup> groupsMap = paymentGroupDao.findAllByState(State.ACTIVE).stream().collect(Collectors.toMap(PaymentGroup::getId, Function.identity()));
+        if (CollectionUtils.isNotEmpty(groupsMap.values()) && writeLock.tryLock()) {
             Map<PaymentGroup, List<PaymentMethod>> methods = new ConcurrentHashMap<>();
             try {
-                for (PaymentMethod method : activePaymentMethods) {
-                    List<PaymentMethod> paymentMethods = methods.getOrDefault(method.getGroup(), new ArrayList<>());
-                    paymentMethods.add(method);
-                    methods.put(method.getGroup(), paymentMethods);
+                List<PaymentMethod> paymentMethods = paymentMethodDao.findByGroupInAndState(groupsMap.keySet(), State.ACTIVE);
+                for (PaymentMethod method : paymentMethods) {
+                    List<PaymentMethod> paymentMethodsInternal = methods.getOrDefault(method.getGroup(), new ArrayList<>());
+                    paymentMethodsInternal.add(method);
+                    methods.put(groupsMap.get(method.getGroup()), paymentMethods);
                 }
                 groupedPaymentMethods.clear();
                 groupedPaymentMethods.putAll(methods);

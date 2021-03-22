@@ -1,9 +1,9 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -69,8 +69,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
             PlanDTO paidPlan = paymentCachingService.getPlan(planId);
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
-            Optional<Integer> freePlanOption = Optional.ofNullable(paidPlan.getLinkedFreePlanId());
-            if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && group != PaymentGroup.CARD) {
+            Optional<Integer> freePlanOption = Optional.of(paidPlan.getLinkedFreePlanId());
+            if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && group.getId() != CARD) {
                 continue;
             }
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
@@ -83,7 +83,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                     meta.put("savedPayments", savedPayments);
                 }
             }
-            PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group).build();
+            PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
             paymentGroupsDTOS.add(groupsDTO);
         }
         return PaymentOptionsDTO.builder().planDetails(buildPlanDetails(planId)).paymentGroups(paymentGroupsDTOS).build();

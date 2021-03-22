@@ -1,14 +1,12 @@
 package in.wynk.payment.dto.request;
 
 import in.wynk.payment.core.constant.PaymentCode;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor
 public class UserMappingRequest {
 
     private String wynkUserId;

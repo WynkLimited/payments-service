@@ -1,22 +1,18 @@
-package in.wynk.payment.dto.request;
+package in.wynk.payment.dto.response;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.constant.StatusMode;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public abstract class AbstractTransactionReconciliationStatusRequest extends AbstractTransactionStatusRequest {
+public abstract class LatestReceiptResponse {
 
     @Analysed
     private final String extTxnId;
-
-    @Override
-    public StatusMode getMode() {
-        return StatusMode.SOURCE;
-    }
+    @Analysed
+    private final boolean freeTrial;
 
 }

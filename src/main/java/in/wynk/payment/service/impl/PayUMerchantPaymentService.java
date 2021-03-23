@@ -186,23 +186,24 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     @Override
     public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest);
+        ChargingStatusResponse statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest, transactionStatusRequest.getExtTxnId());
         return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
-    private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest transactionStatusRequest) {
+    private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest
+                                                                               transactionStatusRequest, String extTxnId) {
         Transaction transaction = TransactionContext.get();
         if (transactionStatusRequest instanceof ChargingTransactionReconciliationStatusRequest) {
             return fetchChargingStatusFromPayUSource(transaction);
         } else if (transactionStatusRequest instanceof RefundTransactionReconciliationStatusRequest) {
-            return fetchRefundStatusFromPayUSource(transaction);
+            return fetchRefundStatusFromPayUSource(transaction, extTxnId);
         } else {
             throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
         }
     }
 
-    private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction) {
-        syncRefundTransactionFromSource(transaction);
+    private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction, String extTxnId) {
+        syncRefundTransactionFromSource(transaction, extTxnId);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.error(PaymentLoggingMarker.PAYU_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
@@ -218,10 +219,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return responseBuilder.build();
     }
 
-    private void syncRefundTransactionFromSource(Transaction transaction) {
+    private void syncRefundTransactionFromSource(Transaction transaction, String refundRequestId) {
         Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            String refundRequestId = transaction.getValueFromPaymentMetaData(EXTERNAL_TRANSACTION_ID);
             MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CHECK_ACTION_STATUS.getCode(), refundRequestId);
             merchantTransactionEventBuilder.request(payURefundStatusRequest);
             PayUVerificationResponse<Map<String, PayURefundTransactionDetails>> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<Map<String, PayURefundTransactionDetails>>>() {

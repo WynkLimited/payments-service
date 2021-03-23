@@ -17,14 +17,13 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
+import in.wynk.payment.core.dao.entity.TestingByPassNumbers;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
-import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.itune.*;
@@ -34,6 +33,7 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
+import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -61,6 +61,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY011;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
@@ -98,14 +99,13 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
+    public BaseResponse<IapVerificationResponse> verifyReceipt(LatestReceiptResponse latestReceiptResponse) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
-            final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
-            transaction.putValueInPaymentMetaData(DECODED_RECEIPT, request.getReceipt());
-            fetchAndUpdateFromReceipt(transaction);
+            final ItunesLatestReceiptResponse response = (ItunesLatestReceiptResponse) latestReceiptResponse;
+            fetchAndUpdateFromReceipt(transaction, response);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                 builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
                         .append(SLASH)
@@ -153,14 +153,36 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
+    public LatestReceiptResponse getLatestReceiptResponse(IapVerificationRequest iapVerificationRequest) {
+        final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
+        final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(request.getReceipt());
+        final List<LatestReceiptInfo> userLatestReceipts = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn(), request.getUid(), request.getPlanId());
+        if (CollectionUtils.isNotEmpty(userLatestReceipts)) {
+            final LatestReceiptInfo latestReceiptInfo = userLatestReceipts.get(0);
+            AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
+            return ItunesLatestReceiptResponse.builder()
+                    .itunesReceiptType(receiptType)
+                    .latestReceiptInfo(userLatestReceipts)
+                    .decodedReceipt(request.getReceipt())
+                    .extTxnId(latestReceiptInfo.getOriginalTransactionId())
+                    .freeTrial(Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod()))
+                    .build();
+        }
+        throw new WynkRuntimeException(PAY011);
+    }
+
+    @Override
     public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest) {
         Transaction transaction = TransactionContext.get();
         try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (StringUtils.isNotBlank(itunesCallbackRequest.getLatestReceipt())) {
-                final String decodedReceipt = getModifiedReceipt(itunesCallbackRequest.getLatestReceipt());
-                transaction.putValueInPaymentMetaData(DECODED_RECEIPT, decodedReceipt);
-                fetchAndUpdateFromReceipt(transaction);
+            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
+            if (itunesCallbackRequest.getUnifiedReceipt() != null) {
+                String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
+                if (StringUtils.isNotBlank(latestReceipt)) {
+                    Map<String, String> map = new HashMap<>();
+                    map.put(RECEIPT_DATA, latestReceipt);
+                    fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, JSONValue.toJSONString(map)));
+                }
             }
             return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
@@ -168,89 +190,97 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         }
     }
 
+    private ItunesLatestReceiptResponse getItunesLatestReceiptResponse(Transaction transaction, String decodedReceipt) {
+        return (ItunesLatestReceiptResponse) this.getLatestReceiptResponse(ItunesVerificationRequest.builder()
+                .receipt(decodedReceipt)
+                .uid(transaction.getUid())
+                .msisdn(transaction.getMsisdn())
+                .planId(transaction.getPlanId())
+                .build());
+    }
+
     @ClientAware(clientAlias = "#transaction.clientAlias")
-    private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction) {
-        if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
-            final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
-            final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), merchantTransaction.getExternalTransactionId());
+    private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction, String extTxnId, int planId) {
+        if (transaction.getStatus() == TransactionStatus.FAILURE) {
+            final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), extTxnId);
             if (Objects.nonNull(receiptDetails)) {
-                transaction.putValueInPaymentMetaData(DECODED_RECEIPT, receiptDetails.getReceipt());
-                fetchAndUpdateFromReceipt(transaction);
+                fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, receiptDetails.getReceipt()));
             } else {
-                log.error(PAYMENT_RECONCILIATION_FAILURE, "unable to reconcile since receipt is not present for original itunes id {}", merchantTransaction.getExternalTransactionId());
+                log.error(PAYMENT_RECONCILIATION_FAILURE, "unable to reconcile since receipt is not present for original itunes id {}", extTxnId);
             }
         }
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(planId));
         }
         return responseBuilder.build();
     }
 
-    private void fetchAndUpdateFromReceipt(Transaction transaction) {
-        final String decodedReceipt = transaction.getValueFromPaymentMetaData(DECODED_RECEIPT);
-        final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(decodedReceipt);
+    private void fetchAndUpdateFromReceipt(Transaction transaction, ItunesLatestReceiptResponse itunesLatestReceiptResponse) {
         try {
             ItunesStatusCodes code = null;
-            final List<LatestReceiptInfo> userLatestReceipts = getReceiptObjForUser(decodedReceipt, receiptType, transaction);
-            if (CollectionUtils.isNotEmpty(userLatestReceipts)) {
-                final LatestReceiptInfo latestReceiptInfo = userLatestReceipts.get(0);
-                AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
-                final long expireTimestamp = receiptType.getExpireDate(latestReceiptInfo);
-                if (expireTimestamp == 0 || expireTimestamp < System.currentTimeMillis()) {
-                    code = ItunesStatusCodes.APPLE_21015;
-                    transaction.setStatus(TransactionStatus.FAILURE.name());
+            final ItunesReceiptType receiptType = itunesLatestReceiptResponse.getItunesReceiptType();
+            final List<LatestReceiptInfo> latestReceiptInfoList = itunesLatestReceiptResponse.getLatestReceiptInfo();
+            LatestReceiptInfo latestReceiptInfo = latestReceiptInfoList.get(0);
+            AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
+            final long expireTimestamp = receiptType.getExpireDate(latestReceiptInfo);
+            if (expireTimestamp == 0 || expireTimestamp < System.currentTimeMillis()) {
+                code = ItunesStatusCodes.APPLE_21015;
+                transaction.setStatus(TransactionStatus.FAILURE.name());
+            } else {
+                final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
+                final String itunesTrxnId = latestReceiptInfo.getTransactionId();
+                final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
+                if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails) && transaction.getStatus() != TransactionStatus.FAILURE) {
+                    log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
+                    code = ItunesStatusCodes.APPLE_21016;
+                    transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
                 } else {
-                    final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
-                    final String itunesTrxnId = latestReceiptInfo.getTransactionId();
-                    final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                    if (receiptDetails != null && receiptDetails.getState() == State.ACTIVE && receiptDetails.getExpiry() > System.currentTimeMillis() && transaction.getStatus() != TransactionStatus.FAILURE) {
-                        log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
-                        code = ItunesStatusCodes.APPLE_21016;
-                        transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
+                    if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
+                        final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
+                                .type(receiptType.name())
+                                .id(originalITunesTrxnId)
+                                .uid(transaction.getUid())
+                                .msisdn(transaction.getMsisdn())
+                                .planId(transaction.getPlanId())
+                                .expiry(receiptType.getExpireDate(latestReceiptInfo))
+                                .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
+                                .build();
+                        receiptDetailsDao.save(itunesIdUidMapping);
+                        transaction.setStatus(TransactionStatus.SUCCESS.name());
                     } else {
-                        if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
-                            final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
-                                    .uid(transaction.getUid())
-                                    .msisdn(transaction.getMsisdn())
-                                    .planId(transaction.getPlanId())
-                                    .type(receiptType.name())
-                                    .receipt(decodedReceipt)
-                                    .id(originalITunesTrxnId)
-                                    .expiry(receiptType.getExpireDate(latestReceiptInfo))
-                                    .build();
-                            receiptDetailsDao.save(itunesIdUidMapping);
-                            transaction.setStatus(TransactionStatus.SUCCESS.name());
-                        } else {
-                            code = ItunesStatusCodes.APPLE_21017;
-                            transaction.setStatus(TransactionStatus.FAILURE.name());
-                        }
+                        code = ItunesStatusCodes.APPLE_21017;
+                        transaction.setStatus(TransactionStatus.FAILURE.name());
                     }
                 }
-            } else {
-                code = ItunesStatusCodes.APPLE_21018;
-                transaction.setStatus(TransactionStatus.FAILURE.name());
             }
-
             if (transaction.getStatus() != TransactionStatus.SUCCESS) {
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(code.getErrorCode())).description(code.getErrorTitle()).build());
             }
-
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
-            log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), decodedReceipt, e);
+            log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} receipt : {} ", transaction.getUid(), itunesLatestReceiptResponse.getDecodedReceipt(), e);
         }
     }
 
-    private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, Transaction transaction) {
-        String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
-        return getReceiptObjForUserInternal(encodedValue, itunesReceiptType, transaction);
+    private boolean isReceiptEligible(List<LatestReceiptInfo> allReceipt, ItunesReceiptType newReceiptType, ItunesReceiptDetails oldReceipt) {
+        if (oldReceipt != null && oldReceipt.getState() == State.ACTIVE) {
+            ItunesReceiptType oldReceiptType = ItunesReceiptType.valueOf(oldReceipt.getType());
+            Optional<LatestReceiptInfo> oldReceiptOption = allReceipt.stream().filter(receipt -> (((oldReceipt.isTransactionIdPresent() && oldReceipt.getTransactionId() == oldReceiptType.getTransactionId(receipt)) || oldReceiptType.getExpireDate(receipt) == oldReceipt.getExpiry()))).findAny();
+            if (oldReceiptOption.isPresent()) {
+                LatestReceiptInfo oldReceiptInfo = oldReceiptOption.get();
+                if (!oldReceipt.isTransactionIdPresent())
+                    receiptDetailsDao.save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).transactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
+                return allReceipt.stream().anyMatch(receipt -> newReceiptType.getTransactionId(receipt) != oldReceiptType.getTransactionId(oldReceiptInfo) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
+            }
+        }
+        return true;
     }
 
-    private List<LatestReceiptInfo> getReceiptObjForUserInternal(String encodedValue, ItunesReceiptType itunesReceiptType, Transaction transaction) {
+    private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String msisdn, String uid, int planId) {
+        String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
         String secret;
         ItunesStatusCodes statusCode;
-        Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         Optional<Client> optionalClient = ClientContext.getClient();
         if (optionalClient.isPresent() && optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).isPresent()) {
             secret = optionalClient.get().<String>getMeta(CLIENT_ITUNES_SECRET).get();
@@ -260,43 +290,31 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         if (StringUtils.isBlank(encodedValue)) {
             statusCode = ItunesStatusCodes.APPLE_21011;
             log.error(BaseLoggingMarkers.PAYMENT_ERROR, "Encoded iTunes receipt data is empty! for iTunesData {}", encodedValue);
-            throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
+            throw new WynkRuntimeException(PAY011, statusCode.getErrorTitle());
         }
-
         try {
             JSONObject requestJson = new JSONObject();
-            requestJson.put("RECEIPT_TYPE", itunesReceiptType.name());
+            requestJson.put(RECEIPT_TYPE, itunesReceiptType.name());
             requestJson.put(RECEIPT_DATA, encodedValue);
             requestJson.put(PASSWORD, secret);
-            merchantTransactionBuilder.request(gson.toJson(requestJson));
-            ResponseEntity<String> appStoreResponse = getAppStoreResponse(requestJson, merchantTransactionBuilder, itunesApiUrl);
+            ResponseEntity<String> appStoreResponse = getAppStoreResponse(requestJson, itunesApiUrl);
             ItunesReceipt receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(), itunesReceiptType);
             int status = Integer.parseInt(receiptObj.getStatus());
             ItunesStatusCodes responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
             if (status == 0) {
-                List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(transaction.getPlanId(), itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
-                if (CollectionUtils.isNotEmpty(receiptInfoList)) {
-                    merchantTransactionBuilder.externalTransactionId(receiptInfoList.get(0).getOriginalTransactionId());
-                } else {
-                    merchantTransactionBuilder.externalTransactionId("not found");
-                }
+                List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(planId, itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
                 return receiptInfoList;
             } else {
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
                     if (ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
-                        Optional<TestingByPassNumbers> optionalTestingByPassNumbers = testingByPassNumbersDao.findById(transaction.getMsisdn());
+                        Optional<TestingByPassNumbers> optionalTestingByPassNumbers = testingByPassNumbersDao.findById(msisdn);
                         if (optionalTestingByPassNumbers.isPresent()) {
-                            appStoreResponse = getAppStoreResponse(requestJson, merchantTransactionBuilder, itunesApiAltUrl);
+                            appStoreResponse = getAppStoreResponse(requestJson, itunesApiAltUrl);
                             receiptObj = fetchReceiptObjFromAppResponse(appStoreResponse.getBody(), itunesReceiptType);
                             status = Integer.parseInt(receiptObj.getStatus());
                             responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
                             if (status == 0) {
-                                List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(transaction.getPlanId(), itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
-                                if (CollectionUtils.isNotEmpty(receiptInfoList)) {
-                                    merchantTransactionBuilder.externalTransactionId(receiptInfoList.get(0).getOriginalTransactionId());
-                                } else {
-                                    merchantTransactionBuilder.externalTransactionId("not found");
-                                }
+                                List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(planId, itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
                                 return receiptInfoList;
                             }
                         }
@@ -305,29 +323,23 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 } else {
                     statusCode = ItunesStatusCodes.APPLE_21009;
                 }
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(statusCode.toString()).description(statusCode.getErrorTitle()).build());
+                AnalyticService.update(statusCode.toString(), statusCode.getErrorTitle());
                 log.error(BaseLoggingMarkers.PAYMENT_ERROR, "Failed to subscribe to iTunes: response {} request!! status : {} error {}", appStoreResponse, status, statusCode.getErrorTitle());
-                throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
+                throw new WynkRuntimeException(PAY011, statusCode.getErrorTitle());
             }
         } catch (HttpStatusCodeException e) {
-            merchantTransactionBuilder.response(e.getResponseBodyAsString());
-            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "Exception while posting data to iTunes for uid {} ", transaction.getUid());
-            throw new WynkRuntimeException(PaymentErrorType.PAY011, e);
+            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "Exception while posting data to iTunes for uid {} ", uid);
+            throw new WynkRuntimeException(PAY011, e);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to ", e);
-            transaction.setStatus(TransactionStatus.FAILURE.name());
             throw new WynkRuntimeException(WynkErrorType.UT999, e);
-        } finally {
-            eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }
     }
 
-    private ResponseEntity<String> getAppStoreResponse(JSONObject requestJson, Builder merchantTransactionBuilder, String url) {
+    private ResponseEntity<String> getAppStoreResponse(JSONObject requestJson, String url) {
         ResponseEntity<String> appStoreResponse;
         RequestEntity<String> requestEntity = new RequestEntity<>(requestJson.toJSONString(), HttpMethod.POST, URI.create(url));
         appStoreResponse = restTemplate.exchange(requestEntity, String.class);
-        merchantTransactionBuilder.response(gson.toJson(appStoreResponse));
-
         return appStoreResponse;
     }
 
@@ -346,11 +358,12 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         if (receiptObj == null || receiptObj.getStatus() == null) {
             ItunesStatusCodes statusCode = ItunesStatusCodes.APPLE_21012;
             log.error("Receipt Object returned for response {} is not complete!", appStoreResponseBody);
-            throw new WynkRuntimeException(PaymentErrorType.PAY011, statusCode.getErrorTitle());
+            throw new WynkRuntimeException(PAY011, statusCode.getErrorTitle());
         }
         return receiptObj;
     }
 
+    @Deprecated
     private String getModifiedReceipt(String receipt) {
         String decodedReceipt;
         decodedReceipt = new String(Base64.decodeBase64(receipt), StandardCharsets.UTF_8);
@@ -358,7 +371,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         decodedReceipt = decodedReceipt.replaceAll(";", ",");
         decodedReceipt = decodedReceipt.replaceAll("\" = \"", "\" : \"");
         return decodedReceipt;
-
     }
 
     private List<LatestReceiptInfo> getLatestITunesReceiptForProduct(int productId, ItunesReceiptType type, List<LatestReceiptInfo> receipts) {
@@ -379,7 +391,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     @Override
     public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse statusResponse = fetchChargingStatusFromItunesSource(TransactionContext.get());
+        ChargingStatusResponse statusResponse = fetchChargingStatusFromItunesSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId(), transactionStatusRequest.getPlanId());
         return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
@@ -398,8 +410,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getLatestReceiptInfo() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
-                final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getLatestReceiptInfo();
+            if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+                final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
                 return receiptDetailsDao.findById(iTunesId);
             }

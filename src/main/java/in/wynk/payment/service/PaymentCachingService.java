@@ -50,7 +50,8 @@ public class PaymentCachingService {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
-    private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
+    private final Map<String, PaymentGroup> paymentGroups = new ConcurrentHashMap<>();
+    private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
     @Autowired
     private PaymentMethodDao paymentMethodDao;
@@ -76,18 +77,26 @@ public class PaymentCachingService {
     }
 
     private void loadPayments() {
-        final Map<String, PaymentGroup> groupsMap = paymentGroupDao.findAllByState(State.ACTIVE).stream().collect(Collectors.toMap(PaymentGroup::getId, Function.identity()));
-        if (CollectionUtils.isNotEmpty(groupsMap.values()) && writeLock.tryLock()) {
-            Map<PaymentGroup, List<PaymentMethod>> methods = new ConcurrentHashMap<>();
+        final Map<String, PaymentGroup> groupsMap = paymentGroupDao.findAllByState(State.ACTIVE).stream().collect(Collectors.toConcurrentMap(PaymentGroup::getId, Function.identity()));
+        if (MapUtils.isNotEmpty(groupsMap) && writeLock.tryLock()) {
+            Map<String, List<PaymentMethod>> newPaymentMethods = new ConcurrentHashMap<>();
             try {
                 List<PaymentMethod> paymentMethods = paymentMethodDao.findByGroupInAndState(groupsMap.keySet(), State.ACTIVE);
                 for (PaymentMethod method : paymentMethods) {
-                    List<PaymentMethod> paymentMethodsInternal = methods.getOrDefault(method.getGroup(), new ArrayList<>());
-                    paymentMethodsInternal.add(method);
-                    methods.put(groupsMap.get(method.getGroup()), paymentMethods);
+                    if(groupsMap.containsKey(method.getGroup())) {
+                        List<PaymentMethod> paymentMethodsInternal = newPaymentMethods.getOrDefault(method.getGroup(), new ArrayList<>());
+                        paymentMethodsInternal.add(method);
+                        newPaymentMethods.put(method.getGroup(), paymentMethodsInternal);
+                    }
                 }
+                for(String group : groupsMap.keySet()) {
+                   if(!newPaymentMethods.containsKey(group))
+                       groupsMap.remove(group);
+                }
+                paymentGroups.clear();
+                paymentGroups.putAll(groupsMap);
                 groupedPaymentMethods.clear();
-                groupedPaymentMethods.putAll(methods);
+                groupedPaymentMethods.putAll(newPaymentMethods);
             } catch (Throwable th) {
                 logger.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
                 throw th;

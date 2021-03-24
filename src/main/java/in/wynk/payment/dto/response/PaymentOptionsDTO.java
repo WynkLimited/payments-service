@@ -39,6 +39,7 @@ public class PaymentOptionsDTO {
         private final List<PaymentMethodDTO> paymentMethods;
         private final int hierarchy;
         private final String paymentGroup;
+        private final String displayName;
     }
 
     @Getter

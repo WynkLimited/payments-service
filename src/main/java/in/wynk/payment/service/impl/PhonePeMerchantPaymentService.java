@@ -31,7 +31,6 @@ import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -83,7 +82,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
 
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
-        URI returnUrl = processCallback(callbackRequest);
+        String returnUrl = processCallback(callbackRequest);
         return BaseResponse.redirectResponse(returnUrl);
 
     }
@@ -170,7 +169,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
         return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).validity(cachingService.validTillDate(transaction.getPlanId())).build();
     }
 
-    private URI processCallback(CallbackRequest callbackRequest) {
+    private String processCallback(CallbackRequest callbackRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
             Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();
@@ -190,7 +189,17 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                     SessionDTO sessionDTO = SessionContextHolder.getBody();
-                    return new URIBuilder(SUCCESS_PAGE + SessionContextHolder.getId() + SLASH + sessionDTO.<String>get(OS)).addParameter(SERVICE, sessionDTO.<String>get(SERVICE)).addParameter(BUILD_NO, String.valueOf(sessionDTO.<Integer>get(BUILD_NO))).build();
+                    return SUCCESS_PAGE + SessionContextHolder.getId() +
+                            SLASH +
+                            sessionDTO.<String>get(OS) +
+                            QUESTION_MARK +
+                            SERVICE +
+                            EQUAL +
+                            sessionDTO.<String>get(SERVICE) +
+                            AND +
+                            BUILD_NO +
+                            EQUAL +
+                            sessionDTO.<Integer>get(BUILD_NO);
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }

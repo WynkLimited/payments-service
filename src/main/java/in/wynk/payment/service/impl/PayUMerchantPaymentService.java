@@ -189,10 +189,11 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         Transaction transaction = TransactionContext.get();
         switch (transactionStatusRequest.getMode()) {
             case SOURCE:
-                statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest);
+                AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) transactionStatusRequest;
+                statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest, request.getExtTxnId());
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction);
+                statusResponse = fetchChargingStatusFromDataSource(transaction, transactionStatusRequest.getPlanId());
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
@@ -203,19 +204,19 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
                 .build();
     }
 
-    private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest transactionStatusRequest) {
+    private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest transactionStatusRequest, String extTxnId) {
         Transaction transaction = TransactionContext.get();
         if (transactionStatusRequest instanceof ChargingTransactionReconciliationStatusRequest) {
             return fetchChargingStatusFromPayUSource(transaction);
         } else if (transactionStatusRequest instanceof RefundTransactionReconciliationStatusRequest) {
-            return fetchRefundStatusFromPayUSource(transaction);
+            return fetchRefundStatusFromPayUSource(transaction, extTxnId);
         } else {
             throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
         }
     }
 
-    private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction) {
-        syncRefundTransactionFromSource(transaction);
+    private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction, String extTxnId) {
+        syncRefundTransactionFromSource(transaction, extTxnId);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.error(PaymentLoggingMarker.PAYU_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
@@ -231,10 +232,9 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         return responseBuilder.build();
     }
 
-    private void syncRefundTransactionFromSource(Transaction transaction) {
+    private void syncRefundTransactionFromSource(Transaction transaction, String refundRequestId) {
         Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            String refundRequestId = transaction.getValueFromPaymentMetaData(EXTERNAL_TRANSACTION_ID);
             MultiValueMap<String, String> payURefundStatusRequest = this.buildPayUInfoRequest(PayUCommand.CHECK_ACTION_STATUS.getCode(), refundRequestId);
             merchantTransactionEventBuilder.request(payURefundStatusRequest);
             PayUVerificationResponse<Map<String, PayURefundTransactionDetails>> payUPaymentRefundResponse = this.getInfoFromPayU(payURefundStatusRequest, new TypeReference<PayUVerificationResponse<Map<String, PayURefundTransactionDetails>>>() {
@@ -326,13 +326,10 @@ public class PayUMerchantPaymentService implements IRenewalMerchantPaymentServic
         transaction.setStatus(finalTransactionStatus.getValue());
     }
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        int planId = transaction.getPlanId();
-        int selectedPlanId = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(planId).getLinkedFreePlanId() : planId;
-        ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(selectedPlanId);
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {
+        ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(selectedPlanId));
+            responseBuilder.validity(cachingService.validTillDate(planId));
         }
         return responseBuilder.build();
     }

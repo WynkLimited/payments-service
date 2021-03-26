@@ -166,7 +166,7 @@ public class PhonePeMerchantPaymentService implements IRenewalMerchantPaymentSer
     }
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).validity(cachingService.validTillDate(transaction.getPlanId())).build();
+        return ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(transaction.getPlanId()).validity(cachingService.validTillDate(transaction.getPlanId())).build();
     }
 
     private String processCallback(CallbackRequest callbackRequest) {

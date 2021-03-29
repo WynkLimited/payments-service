@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -18,6 +19,10 @@ public class PaymentMethod extends MongoBaseEntity {
     private String group;
     private Map<String, Object> meta;
     private String displayName;
+    private String subtitle;
+    private String iconUrl;
     private PaymentCode paymentCode;
     private int hierarchy;
+    private boolean autoRenewSupported;
+    private List<String> suffixes;
 }

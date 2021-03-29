@@ -57,6 +57,10 @@ public class PaymentOptionsDTO {
         private final String displayName;
         @Analysed
         private final String paymentCode;
+        private final String subtitle;
+        private final String iconUrl;
+        private final boolean autoRenewSupported;
+        private final List<String> suffixes;
 
         public PaymentMethodDTO(PaymentMethod method) {
             this.group = method.getGroup();
@@ -64,6 +68,10 @@ public class PaymentOptionsDTO {
             this.hierarchy = method.getHierarchy();
             this.displayName = method.getDisplayName();
             this.paymentCode = method.getPaymentCode().name();
+            this.subtitle = method.getSubtitle();
+            this.iconUrl = method.getIconUrl();
+            this.autoRenewSupported = method.isAutoRenewSupported();
+            this.suffixes = method.getSuffixes();
         }
     }
 }

@@ -9,24 +9,24 @@ import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
-import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.amazonIap.*;
+import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
+import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -148,15 +148,14 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     }
 
     @Override
-    public BaseResponse<IapVerificationResponse> verifyReceipt(IapVerificationRequest iapVerificationRequest) {
+    public BaseResponse<IapVerificationResponse> verifyReceipt(LatestReceiptResponse latestReceiptResponse) {
         final String sid = SessionContextHolder.getId();
         final String os = SessionContextHolder.<SessionDTO>getBody().get(BaseConstants.OS);
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
-            final AmazonIapVerificationRequest request = (AmazonIapVerificationRequest) iapVerificationRequest;
-            transaction.putValueInPaymentMetaData("amazonIapVerificationRequest", request);
-            fetchAndUpdateTransaction(transaction);
+            final AmazonLatestReceiptResponse response = (AmazonLatestReceiptResponse) latestReceiptResponse;
+            fetchAndUpdateTransaction(transaction, response);
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                 builder.url(SUCCESS_PAGE + sid + BaseConstants.SLASH + os);
             } else {
@@ -169,33 +168,34 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         }
     }
 
-    private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction) {
+    @Override
+    public LatestReceiptResponse getLatestReceiptResponse(IapVerificationRequest iapVerificationRequest) {
+        AmazonIapVerificationRequest amazonIapVerificationRequest = (AmazonIapVerificationRequest) iapVerificationRequest;
+        AmazonIapReceiptResponse amazonIapReceiptResponse = getReceiptStatus(amazonIapVerificationRequest.getReceipt().getReceiptId(), amazonIapVerificationRequest.getUserData().getUserId());
+        return AmazonLatestReceiptResponse.builder()
+                .freeTrial(false)
+                .amazonIapReceiptResponse(amazonIapReceiptResponse)
+                .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
+                .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
+                .build();
+    }
+
+    private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction, String extTxnId) {
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
-            reconcileReceipt(transaction);
+            fetchAndUpdateTransaction(transaction, AmazonLatestReceiptResponse.builder().extTxnId(extTxnId).build());
         }
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
         return responseBuilder.build();
     }
 
-    private void reconcileReceipt(Transaction transaction) {
-        final MerchantTransaction merchantTransaction = transaction.getValueFromPaymentMetaData(PaymentConstants.MERCHANT_TRANSACTION);
-        transaction.putValueInPaymentMetaData("amazonIapVerificationRequest", mapper.convertValue(merchantTransaction.getRequest(), AmazonIapVerificationRequest.class));
-        fetchAndUpdateTransaction(transaction);
-    }
-
-    private void fetchAndUpdateTransaction(Transaction transaction) {
+    private void fetchAndUpdateTransaction(Transaction transaction, AmazonLatestReceiptResponse amazonLatestReceiptResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
-        Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         PaymentErrorEvent.Builder errorBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
-        AmazonIapVerificationRequest request = transaction.getValueFromPaymentMetaData("amazonIapVerificationRequest");
-        Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(request.getReceipt().getReceiptId());
+        Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
-            AmazonIapReceiptResponse amazonIapReceipt = getReceiptStatus(request.getReceipt().getReceiptId(), request.getUserData().getUserId());
-            builder.request(request).externalTransactionId(request.getReceipt().getReceiptId()).response(amazonIapReceipt);
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
                 saveReceipt(transaction, request.getReceipt().getReceiptId(), request.getUserData().getUserId());
                 if (amazonIapReceipt != null) {
@@ -216,7 +216,6 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                 finalTransactionStatus = TransactionStatus.FAILUREALREADYSUBSCRIBED;
             }
         } catch (HttpStatusCodeException e) {
-            builder.response(e.getResponseBodyAsString());
             errorBuilder.code(AmazonIapStatusCode.ERR_003.getCode()).description(AmazonIapStatusCode.ERR_003.getDescription());
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         } catch (Exception e) {
@@ -225,7 +224,6 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
         } finally {
             transaction.setStatus(finalTransactionStatus.name());
-            eventPublisher.publishEvent(builder.build());
             if (transaction.getStatus() != TransactionStatus.SUCCESS)
                 eventPublisher.publishEvent(errorBuilder.build());
         }
@@ -258,10 +256,11 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         Transaction transaction = TransactionContext.get();
         switch (chargingStatusRequest.getMode()) {
             case SOURCE:
-                statusResponse = fetchChargingStatusFromAmazonIapSource(transaction);
+                AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) chargingStatusRequest;
+                statusResponse = fetchChargingStatusFromAmazonIapSource(transaction, request.getExtTxnId());
                 break;
             case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction);
+                statusResponse = fetchChargingStatusFromDataSource(transaction, chargingStatusRequest.getPlanId());
                 break;
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY008);
@@ -272,11 +271,10 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
                 .build();
     }
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {
+        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(planId));
         }
         return responseBuilder.build();
     }

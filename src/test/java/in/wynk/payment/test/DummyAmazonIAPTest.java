@@ -7,7 +7,6 @@ import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.amazonIap.Receipt;
 import in.wynk.payment.dto.amazonIap.UserData;
 import in.wynk.payment.service.PaymentManager;
-import in.wynk.payment.service.impl.AmazonIapMerchantPaymentService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import org.apache.commons.collections4.map.HashedMap;
@@ -27,9 +26,6 @@ public class DummyAmazonIAPTest {
 
     @Autowired
     private PaymentManager paymentManager;
-
-    @Autowired
-    private AmazonIapMerchantPaymentService paymentService;
 
     public AmazonIapVerificationRequest getDummyData() {
         SessionContextHolder.set(Session.builder()
@@ -58,12 +54,6 @@ public class DummyAmazonIAPTest {
     @Test
     public void test1() {
         paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), getDummyData());
-        Assert.assertTrue(true);
-    }
-
-    @Test
-    public void test2() {
-        paymentService.verifyReceipt(getDummyData());
         Assert.assertTrue(true);
     }
 

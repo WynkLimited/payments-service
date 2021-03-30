@@ -19,7 +19,10 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
+import in.wynk.payment.core.dao.entity.TestingByPassNumbers;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -421,19 +424,6 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
             responseBuilder.validity(cachingService.validTillDate(planId));
         }
         return responseBuilder.build();
-    }
-
-    @Override
-    public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
-        try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
-                final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
-                final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                return receiptDetailsDao.findById(iTunesId);
-            }
-        }
-        throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid Request");
     }
 
     @Override

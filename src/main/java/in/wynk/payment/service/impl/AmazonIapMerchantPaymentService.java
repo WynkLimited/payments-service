@@ -11,14 +11,16 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.AmazonReceiptDetails;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.WynkUserExtUserMapping;
 import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.amazonIap.*;
-import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
@@ -197,7 +199,8 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
         Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction, request.getReceipt().getReceiptId(), request.getUserData().getUserId());
+                saveReceipt(transaction, amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
+                AmazonIapReceiptResponse amazonIapReceipt= amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
@@ -232,7 +235,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
     private void saveReceipt(Transaction transaction, String receiptId, String amzUserId) {
         AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                 .receiptId(receiptId)
-                .id(receiptId).amzUserId(amzUserId)
+                .id(receiptId).amazonUserId(amzUserId)
                 .uid(transaction.getUid())
                 .msisdn(transaction.getMsisdn())
                 .planId(transaction.getPlanId())

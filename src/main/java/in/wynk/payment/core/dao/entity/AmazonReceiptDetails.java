@@ -13,6 +13,6 @@ import lombok.experimental.SuperBuilder;
 public class AmazonReceiptDetails extends ReceiptDetails {
 
     private String receiptId;
-    private String amzUserId;
+    private String amazonUserId;
 
 }

@@ -143,10 +143,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         this.fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
+            throw new WynkRuntimeException(PaymentErrorType.PAY018, "Transaction is still pending at phonepe");
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY008, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
+            throw new WynkRuntimeException(PaymentErrorType.PAY019, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
         }
 
         return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
@@ -210,7 +210,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
             if (response.getBody() != null && response.getBody().isSuccess()) {
                 return new URI(response.getBody().getData().getRedirectURL());
             } else {
-                throw new WynkRuntimeException(PaymentErrorType.PAY008);
+                throw new WynkRuntimeException(PaymentErrorType.PAY002);
             }
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
@@ -314,7 +314,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
                 refundResponseBuilder.providerReferenceId(response.getBody().getData().getProviderReferenceId());
             }
         } catch (Exception ex) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY018, ex, ex.getMessage());
+            throw new WynkRuntimeException(PaymentErrorType.PAY020, ex, ex.getMessage());
         } finally {
             refundTransaction.setStatus(finalTransactionStatus.getValue());
             refundResponseBuilder.transactionStatus(finalTransactionStatus);

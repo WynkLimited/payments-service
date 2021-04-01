@@ -55,9 +55,17 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
         final AbstractTransactionStatusRequest transactionStatusRequest;
         if (message.getPaymentEvent() == PaymentEvent.REFUND) {
-            transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder().transactionId(message.getTransactionId()).paymentCode(message.getPaymentCode().getCode()).build();
+            transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder()
+                    .extTxnId(message.getExtTxnId())
+                    .transactionId(message.getTransactionId())
+                    .paymentCode(message.getPaymentCode().getCode())
+                    .build();
         } else {
-            transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder().transactionId(message.getTransactionId()).paymentCode(message.getPaymentCode().getCode()).build();
+            transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder()
+                    .extTxnId(message.getExtTxnId())
+                    .transactionId(message.getTransactionId())
+                    .paymentCode(message.getPaymentCode().getCode())
+                    .build();
         }
         paymentManager.status(transactionStatusRequest);
     }
@@ -88,4 +96,5 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
             messageHandlerThreadPool.shutdown();
         }
     }
+
 }

@@ -10,6 +10,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.event.*;
+import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
@@ -88,7 +89,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
         AnalyticService.update(event);
-        BaseResponse<?> response = paymentManager.initRefund(event.getOriginalTransactionId());
+        BaseResponse<?> response = paymentManager.initRefund(PaymentRefundInitRequest.builder().originalTransactionId(event.getOriginalTransactionId()).reason(event.getReason()).build());
         AnalyticService.update(response.getBody());
     }
 
@@ -115,6 +116,7 @@ public class PaymentEventListener {
     private void initRefundIfApplicable(PaymentChargingReconciledEvent event) {
         if (EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus()) && EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(event.getPaymentEvent())) {
             eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                    .reason("trial plan amount refund")
                     .originalTransactionId(event.getTransactionId())
                     .build());
         }

@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.payu;
+package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
@@ -10,15 +10,14 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class PayUPaymentRefundRequest extends AbstractPaymentRefundRequest {
-
-    private final String authPayUId;
+public class PhonePePaymentRefundRequest extends AbstractPaymentRefundRequest {
+    private final String ppId;
 
     public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction, String reason) {
-        return PayUPaymentRefundRequest.builder()
+        return PhonePePaymentRefundRequest.builder()
                 .reason(reason)
                 .originalTransactionId(originalTransaction.getIdStr())
-                .authPayUId(originalTransaction.getValueFromPaymentMetaData(BaseConstants.EXTERNAL_TRANSACTION_ID))
+                .ppId(originalTransaction.getValueFromPaymentMetaData(BaseConstants.EXTERNAL_TRANSACTION_ID))
                 .build();
     }
 }

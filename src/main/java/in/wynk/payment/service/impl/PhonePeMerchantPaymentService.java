@@ -241,7 +241,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
             if (response != null && response.getData() != null) {
                 merchantTransactionEventBuilder.externalTransactionId(response.getData().getProviderReferenceId());
             }
-            merchantTransactionEventBuilder.response(gson.toJson(response));
+            merchantTransactionEventBuilder.response(response);
             return response;
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());

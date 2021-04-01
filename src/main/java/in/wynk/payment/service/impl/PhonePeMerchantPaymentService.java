@@ -17,12 +17,13 @@ import in.wynk.payment.dto.PhonePePaymentRefundRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.AbstractPaymentRefundRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
+import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.IMerchantPaymentRefundService;
 import in.wynk.payment.service.IOTCMerchantPaymentService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -52,7 +53,9 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
-public class PhonePeMerchantPaymentService implements IOTCMerchantPaymentService, IMerchantPaymentRefundService {
+public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IOTCMerchantPaymentService, IMerchantPaymentRefundService {
+
+    private static final String DEBIT_API = "/v4/debit";
 
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
@@ -67,13 +70,15 @@ public class PhonePeMerchantPaymentService implements IOTCMerchantPaymentService
 
     private final Gson gson;
     private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
 
-    public PhonePeMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+    public PhonePeMerchantPaymentService(Gson gson,
+                                         PaymentCachingService cachingService,
+                                         ApplicationEventPublisher eventPublisher,
+                                         @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+        super(cachingService);
         this.gson = gson;
         this.restTemplate = restTemplate;
-        this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -104,19 +109,9 @@ public class PhonePeMerchantPaymentService implements IOTCMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse chargingStatus;
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         Transaction transaction = TransactionContext.get();
-        switch (transactionStatusRequest.getMode()) {
-            case SOURCE:
-                chargingStatus = getStatusFromPhonePe(transaction);
-                break;
-            case LOCAL:
-                chargingStatus = fetchChargingStatusFromDataSource(transaction);
-                break;
-            default:
-                throw new WynkRuntimeException(PaymentErrorType.PAY008);
-        }
+        ChargingStatusResponse chargingStatus = getStatusFromPhonePe(transaction);
         return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(chargingStatus).build();
     }
 
@@ -155,10 +150,6 @@ public class PhonePeMerchantPaymentService implements IOTCMerchantPaymentService
         }
 
         return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
-    }
-
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction) {
-        return ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(transaction.getPlanId()).validity(cachingService.validTillDate(transaction.getPlanId())).build();
     }
 
     private String processCallback(CallbackRequest callbackRequest) {

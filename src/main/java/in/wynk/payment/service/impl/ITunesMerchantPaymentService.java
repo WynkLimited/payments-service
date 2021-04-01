@@ -17,16 +17,17 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
+import in.wynk.payment.core.dao.entity.TestingByPassNumbers;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -67,7 +68,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService, IReceiptDetailService {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService, IReceiptDetailService {
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -86,13 +87,14 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     private final ApplicationEventPublisher eventPublisher;
     private final TestingByPassNumbersDao testingByPassNumbersDao;
 
-    public ITunesMerchantPaymentService(Gson gson, ObjectMapper mapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
+    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
+        super(cachingService);
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;
-        this.receiptDetailsDao = receiptDetailsDao;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
+        this.receiptDetailsDao = receiptDetailsDao;
         this.testingByPassNumbersDao = testingByPassNumbersDao;
     }
 
@@ -173,10 +175,10 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest) {
         Transaction transaction = TransactionContext.get();
         try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String)callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getUnifiedReceipt()!=null ) {
+            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
+            if (itunesCallbackRequest.getUnifiedReceipt() != null) {
                 String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
-                if(StringUtils.isNotBlank(latestReceipt)){
+                if (StringUtils.isNotBlank(latestReceipt)) {
                     Map<String, String> map = new HashMap<>();
                     map.put(RECEIPT_DATA, latestReceipt);
                     fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, JSONValue.toJSONString(map)));
@@ -388,24 +390,9 @@ public class ITunesMerchantPaymentService implements IMerchantIapPaymentVerifica
     }
 
     @Override
-    public BaseResponse<?> status(AbstractTransactionStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse statusResponse;
-        Transaction transaction = TransactionContext.get();
-        switch (transactionStatusRequest.getMode()) {
-            case SOURCE:
-                AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) transactionStatusRequest;
-                statusResponse = fetchChargingStatusFromItunesSource(transaction, request.getExtTxnId(), request.getPlanId());
-                break;
-            case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction, transactionStatusRequest.getPlanId());
-                break;
-            default:
-                throw new WynkRuntimeException(PaymentErrorType.PAY008);
-        }
-        return BaseResponse.<ChargingStatusResponse>builder()
-                .status(HttpStatus.OK)
-                .body(statusResponse)
-                .build();
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+        ChargingStatusResponse statusResponse = fetchChargingStatusFromItunesSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId(), transactionStatusRequest.getPlanId());
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {

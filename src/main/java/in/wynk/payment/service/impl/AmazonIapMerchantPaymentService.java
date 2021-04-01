@@ -119,7 +119,7 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             throw new SecurityException("SigningCertURL was not using HTTPS: " + certUri.toString());
         }
 
-        if (!endpoint.toString().equals(certUri.getHost())) {
+        if (!endpoint.getHost().equals(certUri.getHost())) {
             throw new SecurityException(
                     String.format("SigningCertUrl does not match expected endpoint. " +
                                     "Expected %s but received endpoint was %s.",

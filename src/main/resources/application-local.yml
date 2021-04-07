@@ -191,13 +191,13 @@ payment:
           failureUrl: http://localhost:8081/wynk/v1/payment/callback/
     #### PhonePe props ######
     phonepe:
-      id: WYNK
+      id: WYNKUAT
       api:
         base:
-          url: https://mercury-t2.phonepe.com
+          url: https://mercury-uat.phonepe.com
       callback:
         url: http://localhost:8081/wynk/v1/payment/callback/
-      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      salt: 8289e078-be0b-484d-ae60-052f117f8deb
     #### Itunes props ######
     itunes:
       api:

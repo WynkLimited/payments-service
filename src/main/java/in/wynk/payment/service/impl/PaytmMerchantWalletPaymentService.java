@@ -330,14 +330,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Void> validateLink(WalletRequest request) {
-        PaytmWalletValidateLinkRequest paytmWalletValidateLinkRequest = (PaytmWalletValidateLinkRequest) request;
+    public BaseResponse<Void> validateLink(WalletValidateLinkRequest request) {
+        WalletValidateLinkRequest paytmWalletValidateLinkRequest =  request;
         try {
             URI uri = new URIBuilder(ACCOUNTS_URL + "/signin/validate/otp").build();
             String authHeader = String.format("Basic %s", Utils.encodeBase64(CLIENT_ID + ":" + SECRET));
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", authHeader);
-            RequestEntity<PaytmWalletValidateLinkRequest> requestEntity = new RequestEntity<>(paytmWalletValidateLinkRequest, headers, HttpMethod.POST, uri);
+            RequestEntity<WalletValidateLinkRequest> requestEntity = new RequestEntity<>(paytmWalletValidateLinkRequest, headers, HttpMethod.POST, uri);
             PaytmWalletValidateLinkResponse paytmWalletValidateLinkResponse = null;
 
             logger.info("Validate paytm otp request: {}", requestEntity);
@@ -370,7 +370,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Object> unlink(WalletRequest request) {
+    public BaseResponse<Object> unlink() {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         String uid = sessionDTO.get(UID);
         userPaymentsManager.deletePaymentDetails(uid, PAYTM_WALLET);
@@ -457,8 +457,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Map<String, String>> addMoney(WalletRequest request) {
-        PaytmWalletAddMoneyRequest paytmWalletAddMoneyRequest = (PaytmWalletAddMoneyRequest) request;
+    public BaseResponse<Map<String, String>> addMoney(WalletAddMoneyRequest request) {
+        WalletAddMoneyRequest walletAddMoneyRequest =  request;
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         String uid = sessionDTO.get(UID);
         String accessToken = "3f1fdc96-49e7-4046-b234-321d1fc92300"; //fetch from session
@@ -467,8 +467,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             throw new WynkRuntimeException("Access token is not present");
         }
         String sessionId = SessionContextHolder.get().getId().toString();
-        sessionDTO.put(PLAN_ID, paytmWalletAddMoneyRequest.getPlanId());
-        return addMoney(sessionId, uid, accessToken, String.valueOf(paytmWalletAddMoneyRequest.getAmountToCredit()));
+        sessionDTO.put(PLAN_ID, walletAddMoneyRequest.getPlanId());
+        return addMoney(sessionId, uid, accessToken, String.valueOf(walletAddMoneyRequest.getAmountToCredit()));
     }
 
     private BaseResponse<Map<String, String>> addMoney(String sid, String uid, String accessToken, String amount) {
@@ -499,8 +499,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<PaytmWalletLinkResponse> linkRequest(WalletRequest walletRequest) {
-        PaytmWalletLinkRequest paytmWalletLinkRequest = (PaytmWalletLinkRequest) walletRequest;
+    public BaseResponse<PaytmWalletLinkResponse> linkRequest(WalletLinkRequest walletRequest) {
+        WalletLinkRequest paytmWalletLinkRequest =  walletRequest;
         String phone = paytmWalletLinkRequest.getEncSi();
         logger.info("Sending OTP to {} via PayTM", phone);
         try {

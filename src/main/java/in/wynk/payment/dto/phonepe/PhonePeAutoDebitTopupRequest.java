@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PhonePeAutoDebitTopupRequest extends PhonePeAutoDebitRequest{
-    private long txnAmount;
+    private long amount;
     private boolean adjustAmount;
     private String linkType;
     private DeviceContext deviceContext;

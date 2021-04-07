@@ -108,7 +108,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService {
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = Utils.encodeBase64(requestJson) + UNLINK_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
@@ -158,7 +158,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService {
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = Utils.encodeBase64(requestJson) + TRIGGER_OTP_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
@@ -196,7 +196,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService {
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = Utils.encodeBase64(requestJson) + VERIFY_OTP_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_DEVICE_ID, deviceId);
             headers.add(X_VERIFY, xVerifyHeader);
@@ -231,7 +231,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService {
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = Utils.encodeBase64(requestJson) + BALANCE_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_DEVICE_ID, deviceId);
             headers.add(X_VERIFY, xVerifyHeader);
@@ -264,14 +264,14 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService {
         String deviceId = sessionDTO.get(DEVICE_ID);
         PhonePeAutoDebitTopupRequest phonePePaymentRequest = PhonePeAutoDebitTopupRequest.builder()
                 .merchantId(merchantId).userAuthToken(userAuthToken)
-                .txnAmount(txnAmount).adjustAmount(true).linkType("WALLET_TOPUP_DEEPLINK")
+                .amount(txnAmount).adjustAmount(true).linkType("WALLET_TOPUP_DEEPLINK")
                 .deviceContext(new DeviceContext(phonePeVersionCode)).build();
         try {
             String requestJson = gson.toJson(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = Utils.encodeBase64(requestJson) + TOPUP_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_DEVICE_ID, deviceId);
             headers.add(X_VERIFY, xVerifyHeader);
@@ -302,13 +302,13 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService {
     private String debit(String userAuthToken, long txnAmount,long phonePeVersionCode) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         String deviceId = sessionDTO.get(DEVICE_ID);
-        PhonePeAutoDebitTopupRequest phonePePaymentRequest = PhonePeAutoDebitTopupRequest.builder().merchantId(merchantId).userAuthToken(userAuthToken).txnAmount(txnAmount).deviceContext(new DeviceContext(phonePeVersionCode)).build();
+        PhonePeAutoDebitTopupRequest phonePePaymentRequest = PhonePeAutoDebitTopupRequest.builder().merchantId(merchantId).userAuthToken(userAuthToken).amount(txnAmount).deviceContext(new DeviceContext(phonePeVersionCode)).build();
         try {
             String requestJson = gson.toJson(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = Utils.encodeBase64(requestJson) + DEBIT_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_DEVICE_ID, deviceId);
             headers.add(X_VERIFY, xVerifyHeader);

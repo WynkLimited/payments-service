@@ -14,7 +14,7 @@ public class PaymentChargingReconciledEvent extends PaymentReconciledEvent {
     private final PaymentEvent paymentEvent;
 
     @Override
-    public PaymentEvent getPaymentCode() {
+    public PaymentEvent getPaymentEvent() {
         return paymentEvent;
     }
 

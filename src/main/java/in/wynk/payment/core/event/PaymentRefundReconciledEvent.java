@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 public class PaymentRefundReconciledEvent extends PaymentReconciledEvent {
     @Override
-    public PaymentEvent getPaymentCode() {
+    public PaymentEvent getPaymentEvent() {
         return PaymentEvent.REFUND;
     }
 

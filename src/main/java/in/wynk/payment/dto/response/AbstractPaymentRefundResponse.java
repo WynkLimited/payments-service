@@ -35,4 +35,6 @@ public abstract class AbstractPaymentRefundResponse {
 
     public abstract PaymentCode getPaymentCode();
 
+    public abstract String getExternalReferenceId();
+
 }

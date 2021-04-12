@@ -417,7 +417,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 PlanDTO plan = cachingService.getPlanFromSku(skuCode);
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                return receiptDetailsDao.findById(iTunesId).map(receiptDetails -> ItunesReceiptDetails.builder().planId(plan.getId()).receipt(((ItunesReceiptDetails)receiptDetails).getReceipt()).build());
+                return receiptDetailsDao.findById(iTunesId).map(receiptDetails -> ItunesReceiptDetails.builder().planId(plan.getId()).receipt(((ItunesReceiptDetails)receiptDetails).getReceipt()).type(((ItunesReceiptDetails) receiptDetails).getType()).transactionId(((ItunesReceiptDetails) receiptDetails).getTransactionId()).id(receiptDetails.getId()).state(receiptDetails.getState()).msisdn(receiptDetails.getMsisdn()).expiry(receiptDetails.getExpiry()).build());
             }
         } catch (Exception e) {
         }

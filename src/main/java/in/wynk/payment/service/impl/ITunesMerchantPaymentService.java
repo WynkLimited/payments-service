@@ -412,9 +412,12 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
             if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+                LatestReceiptInfo receiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().stream().sorted(Comparator.comparingLong(ItunesReceiptType.SEVEN::getExpireDate).reversed()).collect(Collectors.toList()).get(0);
+                String skuCode = StringUtils.isNotEmpty(receiptInfo.getProductId()) && cachingService.containsSku(receiptInfo.getProductId()) ? cachingService.getNewSku(receiptInfo.getProductId()) : receiptInfo.getProductId();
+                PlanDTO plan = cachingService.getPlanFromSku(skuCode);
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                return receiptDetailsDao.findById(iTunesId);
+                return receiptDetailsDao.findById(iTunesId).map(receiptDetails -> ItunesReceiptDetails.builder().planId(plan.getId()).receipt(((ItunesReceiptDetails)receiptDetails).getReceipt()).build());
             }
         } catch (Exception e) {
         }

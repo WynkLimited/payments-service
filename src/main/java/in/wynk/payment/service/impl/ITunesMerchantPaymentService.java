@@ -231,7 +231,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                 final String itunesTrxnId = latestReceiptInfo.getTransactionId();
                 final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails) && transaction.getStatus() != TransactionStatus.FAILURE) {
+                if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails)) {
                     log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                     code = ItunesStatusCodes.APPLE_21016;
                     transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());

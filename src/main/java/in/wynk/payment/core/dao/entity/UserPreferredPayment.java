@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @SuperBuilder
 @Document("user_preferred_payments")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class UserPreferredPayment extends MongoBaseEntity {
+public class UserPreferredPayment extends MongoBaseEntity<String> {
 
     private String uid;
     @Setter

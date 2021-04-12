@@ -15,7 +15,7 @@ import java.io.Serializable;
 @SuperBuilder
 @Document(collection = "SkuMapping")
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
-public class SkuMapping extends MongoBaseEntity implements Serializable {
+public class SkuMapping extends MongoBaseEntity<String> implements Serializable {
     private String oldSku;
     private String newSku;
 }

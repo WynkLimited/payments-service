@@ -8,7 +8,6 @@ import lombok.Getter;
 public class WalletAddMoneyRequest {
     private PaymentCode paymentCode;
     private int planId;
-    private double amountToCredit;
-    private long txnAmount;
+    private double amountToCredit;;
     private long phonePeVersionCode;
 }

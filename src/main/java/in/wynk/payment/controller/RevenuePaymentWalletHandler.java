@@ -2,15 +2,22 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.constant.SessionKeys;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.paytm.WalletAddMoneyRequest;
 import in.wynk.payment.dto.paytm.WalletLinkRequest;
 import in.wynk.payment.dto.paytm.WalletValidateLinkRequest;
+import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantWalletService;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
+import in.wynk.session.context.SessionContextHolder;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
@@ -23,9 +30,11 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 public class RevenuePaymentWalletHandler {
 
     private final ApplicationContext context;
+    private final PaymentManager paymentManager;
 
-    public RevenuePaymentWalletHandler(ApplicationContext context) {
+    public RevenuePaymentWalletHandler(ApplicationContext context, PaymentManager paymentManager) {
         this.context = context;
+        this.paymentManager = paymentManager;
     }
 
     @PostMapping("/link/request/{sid}")
@@ -102,23 +111,4 @@ public class RevenuePaymentWalletHandler {
         BaseResponse<?> baseResponse = walletService.addMoney(request);
         return baseResponse.getResponse();
     }
-
-
-    @PostMapping("/debit/{sid}")
-    @ManageSession(sessionId = "#sid")
-    @AnalyseTransaction(name = "walletAddMoney")
-    public ResponseEntity<?> debit(@PathVariable String sid, @RequestParam  String paymentCode) {
-        IMerchantWalletService walletService;
-        try {
-            AnalyticService.update(PAYMENT_METHOD, paymentCode);
-            walletService = this.context.getBean(PaymentCode.valueOf(paymentCode).getCode(), IMerchantWalletService.class);
-        } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY005);
-        }
-        BaseResponse<?> baseResponse = walletService.addMoney(null);
-        return baseResponse.getResponse();
-    }
-
-
-
 }

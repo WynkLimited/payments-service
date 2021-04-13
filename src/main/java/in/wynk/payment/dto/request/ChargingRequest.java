@@ -1,15 +1,26 @@
 package in.wynk.payment.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.phonepe.PhonePeAutoDebitChargeRequest;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode",defaultImpl = ChargingRequest.class,visible=true)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = PhonePeAutoDebitChargeRequest.class, name = "PHONEPE_AUTO_DEBIT")
+
+
+})
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@AllArgsConstructor
+@SuperBuilder
+@NoArgsConstructor
 @AnalysedEntity
 public class ChargingRequest {
     @Analysed

@@ -31,5 +31,15 @@ public class PhonePeResponseData{
     @Analysed
     String redirectUrl;
     @Analysed
+    String responseType;
+    @Analysed
+    String  transactionId;
+    @Analysed
+    long   amount;
+    @Analysed
+    String  paymentState;
+    @Analysed
+    String  providerReferenceId;
+    @Analysed
     private PhonePeWallet wallet;
 }

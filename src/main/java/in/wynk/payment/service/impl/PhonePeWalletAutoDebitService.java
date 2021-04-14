@@ -182,7 +182,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             PhonePeWalletResponse response1 = response.getBody();
             SessionDTO sessionDTO = session.getBody();
             sessionDTO.put(SessionKeys.PHONEPE_OTP_TOKEN, response1.getData().getOtpToken());
-            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
 
@@ -191,7 +191,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             log.error(PHONEPE_OTP_SEND_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse response1 = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
         } catch (Exception e) {
@@ -219,7 +219,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + VERIFY_OTP_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse response1 = response.getBody();
             saveToken(response1.getData().getUserAuthToken());
-            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
         } catch (HttpStatusCodeException hex) {
@@ -227,7 +227,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             log.error(PHONEPE_OTP_VERIFICATION_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse response1 = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
         } catch (Exception e) {
@@ -253,7 +253,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + BALANCE_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse response1 = response.getBody();
-            PhonePeResponseData data = PhonePeResponseData.builder().wallet(response1.getData().getWallet()).linkedUser(response1.getData().getLinkedUser()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().wallet(response1.getData().getWallet()).linkedUser(response1.getData().getLinkedUser()).code(response1.getCode()).message(response1.getMessage()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
 
@@ -262,7 +262,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             log.error(PHONEPE_GET_BALANCE_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse response1 = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
 
@@ -293,7 +293,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + TOPUP_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse response1 = response.getBody();
-            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).redirectUrl(response1.getData().getRedirectUrl()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).redirectUrl(response1.getData().getRedirectUrl()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
 
@@ -302,7 +302,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             log.error(PHONEPE_ADD_MONEY_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse response1 = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
 
@@ -368,11 +368,11 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             PhonePeWalletResponse response1 = response.getBody();
             PhonePeWalletResponse response2=null;
             if(response1.isSuccess() && response1.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())){
-                PhonePeResponseData data = PhonePeResponseData.builder().redirectUrl(response1.getData().getRedirectUrl()).responseType(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name()).build();
+                PhonePeResponseData data = PhonePeResponseData.builder().redirectUrl(response1.getData().getRedirectUrl()).responseType(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name()).message(response1.getMessage()).code(response1.getCode()).build();
                 response2=PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             }
             else if(response1.isSuccess() && response1.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())){
-                PhonePeResponseData data = PhonePeResponseData.builder().redirectUrl(response1.getData().getRedirectUrl()).responseType(PhonePeResponseType.PAYMENT.name()).transactionId(response1.getData().getTransactionId()).amount(response1.getData()
+                PhonePeResponseData data = PhonePeResponseData.builder().redirectUrl(response1.getData().getRedirectUrl()).responseType(PhonePeResponseType.PAYMENT.name()).transactionId(response1.getData().getTransactionId()).message(response1.getMessage()).code(response1.getCode()).amount(response1.getData()
                         .getAmount()).paymentState(response1.getData().getPaymentState()).providerReferenceId(response1.getData().getProviderReferenceId()).build();
                 response2=PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             }
@@ -384,7 +384,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             log.error(PHONEPE_CHARGING_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse response1 = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = response1.getData();
+            PhonePeResponseData data = response1.getData().builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return new BaseResponse<>(response2, HttpStatus.OK, null);
         } catch (Exception e) {

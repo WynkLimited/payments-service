@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PhonePeWalletResponse extends BaseResponse<PhonePeResponseData> {
+    private String code;
     private PhonePeResponseData data;
 
 

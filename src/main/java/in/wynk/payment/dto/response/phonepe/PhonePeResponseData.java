@@ -17,6 +17,8 @@ public class PhonePeResponseData{
     @Analysed
     private String message;
     @Analysed
+    private String code;
+    @Analysed
     private String merchantId;
     @Analysed
     private String otpToken;
@@ -35,7 +37,7 @@ public class PhonePeResponseData{
     @Analysed
     String  transactionId;
     @Analysed
-    long   amount;
+    Long   amount;
     @Analysed
     String  paymentState;
     @Analysed

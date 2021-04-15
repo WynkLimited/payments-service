@@ -4,9 +4,11 @@ import in.wynk.data.entity.MongoBaseEntity;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @SuperBuilder
 @Getter
+@Document("wynk_user_ext_user_mapping")
 public class WynkUserExtUserMapping extends MongoBaseEntity {
 
     @Setter

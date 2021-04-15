@@ -9,6 +9,7 @@ ENV JMX_OPTS="-Xmx2g -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -XX:MaxGCPause
 ADD $JAR_NAME /opt/
 WORKDIR /opt/
 RUN mkdir -p /data
+RUN mkdir -p /logs
 RUN echo $JAVA_OPTS
 EXPOSE 8081
 CMD exec java $JMX_OPTS $JAVA_OPTS -jar /opt/$JAR_NAME

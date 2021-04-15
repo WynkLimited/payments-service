@@ -6,7 +6,6 @@ import in.wynk.data.enums.State;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.PriceDTO;
@@ -28,7 +27,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.NET_BANKING).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("NET_BANKING").hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -37,7 +36,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.CARD).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("CARD").hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -46,7 +45,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.WALLET).hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("WALLET").hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYTM_WALLET).state(State.ACTIVE).build();
     }
 

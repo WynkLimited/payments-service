@@ -2,6 +2,7 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IDummySessionGenerator;
@@ -27,6 +28,15 @@ public class RevenuePaymentsS2SHandler {
     public RevenuePaymentsS2SHandler(PaymentManager paymentManager, IDummySessionGenerator dummySessionGenerator) {
         this.paymentManager = paymentManager;
         this.dummySessionGenerator = dummySessionGenerator;
+    }
+
+    @PostMapping("/v1/payment/refund")
+    @AnalyseTransaction(name = "initRefund")
+    public ResponseEntity<?> doRefund(@RequestBody PaymentRefundInitRequest request) {
+        AnalyticService.update(request);
+        BaseResponse<?> baseResponse = paymentManager.initRefund(request);
+        AnalyticService.update(baseResponse.getBody());
+        return baseResponse.getResponse();
     }
 
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")

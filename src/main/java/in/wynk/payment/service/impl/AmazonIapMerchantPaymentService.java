@@ -22,13 +22,13 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.amazonIap.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
+import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -59,7 +59,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService, IUserMappingService, IPaymentNotificationService {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService, IUserMappingService, IPaymentNotificationService {
 
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_RENEWED", "SUBSCRIPTION_PURCHASED");
     private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
@@ -253,33 +253,11 @@ public class AmazonIapMerchantPaymentService implements IMerchantIapPaymentVerif
             throw new WynkRuntimeException(PaymentErrorType.PAY012);
     }
 
-    @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
-        ChargingStatusResponse statusResponse;
-        Transaction transaction = TransactionContext.get();
-        switch (chargingStatusRequest.getMode()) {
-            case SOURCE:
-                AbstractTransactionReconciliationStatusRequest request = (AbstractTransactionReconciliationStatusRequest) chargingStatusRequest;
-                statusResponse = fetchChargingStatusFromAmazonIapSource(transaction, request.getExtTxnId());
-                break;
-            case LOCAL:
-                statusResponse = fetchChargingStatusFromDataSource(transaction, chargingStatusRequest.getPlanId());
-                break;
-            default:
-                throw new WynkRuntimeException(PaymentErrorType.PAY008);
-        }
-        return BaseResponse.<ChargingStatusResponse>builder()
-                .status(HttpStatus.OK)
-                .body(statusResponse)
-                .build();
-    }
 
-    private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
-        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            responseBuilder.validity(cachingService.validTillDate(planId));
-        }
-        return responseBuilder.build();
+    @Override
+    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+        ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
     @Override

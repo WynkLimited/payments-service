@@ -1,9 +1,9 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -39,7 +39,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     public PaymentOptionsDTO getPaymentOptions(String planId) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         String uid = sessionDTO.get(UID);
-        Map<PaymentGroup, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
+        Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<UserPreferredPayment> preferredPayments = new ArrayList<>();
         ExecutorService executorService = Executors.newFixedThreadPool(N);
         Callable<UserPreferredPayment> task1 = () -> paytmMerchantWalletPaymentService.getUserPreferredPayments(uid);
@@ -63,14 +63,14 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         return buildPaymentOptions(planId, availableMethods, preferredPayments);
     }
 
-    private PaymentOptionsDTO buildPaymentOptions(String planId, Map<PaymentGroup, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
+    private PaymentOptionsDTO buildPaymentOptions(String planId, Map<String, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
-        for (PaymentGroup group : availableMethods.keySet()) {
+        for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             PlanDTO paidPlan = paymentCachingService.getPlan(planId);
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
-            Optional<Integer> freePlanOption = Optional.ofNullable(paidPlan.getLinkedFreePlanId());
-            if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && group != PaymentGroup.CARD) {
+            Optional<Integer> freePlanOption = Optional.of(paidPlan.getLinkedFreePlanId());
+            if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && !group.getId().equalsIgnoreCase(CARD)) {
                 continue;
             }
             List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
@@ -83,7 +83,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                     meta.put("savedPayments", savedPayments);
                 }
             }
-            PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group).build();
+            PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
             paymentGroupsDTOS.add(groupsDTO);
         }
         return PaymentOptionsDTO.builder().planDetails(buildPlanDetails(planId)).paymentGroups(paymentGroupsDTOS).build();

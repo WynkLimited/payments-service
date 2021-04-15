@@ -12,7 +12,7 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractTransactionReconciliationStatusRequest extends AbstractTransactionStatusRequest {
 
     @Analysed
-    private String extTxnId;
+    private final String extTxnId;
 
     @Override
     public StatusMode getMode() {

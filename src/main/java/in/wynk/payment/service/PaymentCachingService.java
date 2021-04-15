@@ -3,11 +3,12 @@ package in.wynk.payment.service;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.data.enums.State;
+import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.SkuMapping;
+import in.wynk.payment.core.dao.repository.IPaymentGroupDao;
 import in.wynk.payment.core.dao.repository.PaymentMethodDao;
 import in.wynk.payment.core.dao.repository.SkuDao;
-import in.wynk.payment.core.enums.PaymentGroup;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -49,10 +50,13 @@ public class PaymentCachingService {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
-    private final Map<PaymentGroup, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
+    private final Map<String, PaymentGroup> paymentGroups = new ConcurrentHashMap<>();
+    private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
     @Autowired
     private PaymentMethodDao paymentMethodDao;
+    @Autowired
+    private IPaymentGroupDao paymentGroupDao;
     @Autowired
     private ISubscriptionServiceManager subscriptionServiceManager;
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
@@ -73,17 +77,26 @@ public class PaymentCachingService {
     }
 
     private void loadPayments() {
-        List<PaymentMethod> activePaymentMethods = getActivePaymentMethods();
-        if (CollectionUtils.isNotEmpty(activePaymentMethods) && writeLock.tryLock()) {
-            Map<PaymentGroup, List<PaymentMethod>> methods = new ConcurrentHashMap<>();
+        final Map<String, PaymentGroup> groupsMap = paymentGroupDao.findAllByState(State.ACTIVE).stream().collect(Collectors.toConcurrentMap(PaymentGroup::getId, Function.identity()));
+        if (MapUtils.isNotEmpty(groupsMap) && writeLock.tryLock()) {
+            Map<String, List<PaymentMethod>> newPaymentMethods = new ConcurrentHashMap<>();
             try {
-                for (PaymentMethod method : activePaymentMethods) {
-                    List<PaymentMethod> paymentMethods = methods.getOrDefault(method.getGroup(), new ArrayList<>());
-                    paymentMethods.add(method);
-                    methods.put(method.getGroup(), paymentMethods);
+                List<PaymentMethod> paymentMethods = paymentMethodDao.findByGroupInAndState(groupsMap.keySet(), State.ACTIVE);
+                for (PaymentMethod method : paymentMethods) {
+                    if(groupsMap.containsKey(method.getGroup())) {
+                        List<PaymentMethod> paymentMethodsInternal = newPaymentMethods.getOrDefault(method.getGroup(), new ArrayList<>());
+                        paymentMethodsInternal.add(method);
+                        newPaymentMethods.put(method.getGroup(), paymentMethodsInternal);
+                    }
                 }
+                for(String group : groupsMap.keySet()) {
+                   if(!newPaymentMethods.containsKey(group))
+                       groupsMap.remove(group);
+                }
+                paymentGroups.clear();
+                paymentGroups.putAll(groupsMap);
                 groupedPaymentMethods.clear();
-                groupedPaymentMethods.putAll(methods);
+                groupedPaymentMethods.putAll(newPaymentMethods);
             } catch (Throwable th) {
                 logger.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
                 throw th;

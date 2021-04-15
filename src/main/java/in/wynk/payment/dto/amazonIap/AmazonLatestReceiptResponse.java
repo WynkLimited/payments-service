@@ -12,8 +12,8 @@ import lombok.experimental.SuperBuilder;
 public class AmazonLatestReceiptResponse extends LatestReceiptResponse {
 
     @Analysed
-    private String amazonUserId;
+    private final String amazonUserId;
     @Analysed
-    private AmazonIapReceiptResponse amazonIapReceiptResponse;
+    private final AmazonIapReceiptResponse amazonIapReceiptResponse;
 
 }

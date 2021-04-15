@@ -8,5 +8,7 @@ import lombok.Getter;
 @Builder
 public class PaymentRefundInitEvent {
     @Analysed
+    private final String reason;
+    @Analysed
     private final String originalTransactionId;
 }

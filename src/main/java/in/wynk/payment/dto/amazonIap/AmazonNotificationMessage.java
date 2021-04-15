@@ -21,7 +21,7 @@ public class AmazonNotificationMessage {
     @JsonProperty("relatedReceipts")
     private Map<String, String> relatedReceipts;
     @JsonProperty("timestamp")
-    private int timestamp;
+    private long timestamp;
     @JsonProperty("betaProductTransaction")
     private boolean betaProductTransaction;
 

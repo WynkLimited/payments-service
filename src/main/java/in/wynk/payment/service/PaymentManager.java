@@ -25,11 +25,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PaymentRefundInitRequest;
-import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.UserPlanMapping;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -133,10 +129,10 @@ public class PaymentManager {
     }
 
     @TransactionAware(txnId = "#request.transactionId")
-    private void handleNotification(PaymentCode paymentCode, String txnId, UserPlanMapping mapping) {
+    private <T> void handleNotification(PaymentCode paymentCode, String txnId, UserPlanMapping<T> mapping) {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
-        final IPaymentNotificationService notificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IPaymentNotificationService.class);
+        final IPaymentNotificationService<T> notificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IPaymentNotificationService.class);
         try {
             notificationService.handleNotification(transaction, mapping);
         } catch (WynkRuntimeException e) {
@@ -150,9 +146,9 @@ public class PaymentManager {
 
     @ClientAware(clientAlias = "#clientAlias")
     public EmptyResponse handleNotification(String clientAlias, String requestPayload, PaymentCode paymentCode) {
-        final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
+        final IReceiptDetailService<?> receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
         if (receiptDetailService.isNotificationEligible(requestPayload)) {
-            UserPlanMapping mapping = receiptDetailService.getUserPlanMapping(requestPayload);
+            UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(requestPayload);
             String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode);
             handleNotification(paymentCode, txnId, mapping);
             return EmptyResponse.response(true);

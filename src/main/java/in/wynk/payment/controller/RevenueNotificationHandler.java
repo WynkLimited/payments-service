@@ -4,7 +4,6 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.service.PaymentManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +24,6 @@ public class RevenueNotificationHandler {
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
-        CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);

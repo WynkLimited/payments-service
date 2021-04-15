@@ -12,6 +12,7 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
@@ -69,7 +70,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IPaymentNotificationService, IReceiptDetailService {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IPaymentNotificationService<ItunesCallbackRequest>, IReceiptDetailService<ItunesCallbackRequest> {
 
     private final Gson gson;
     private final ObjectMapper mapper;
@@ -172,9 +173,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public void handleNotification(Transaction transaction, UserPlanMapping mapping) {
+    public void handleNotification(Transaction transaction, UserPlanMapping<ItunesCallbackRequest> mapping) {
         try {
-            final ItunesCallbackRequest itunesCallbackRequest = (ItunesCallbackRequest) mapping.getMessage();
+            final ItunesCallbackRequest itunesCallbackRequest = mapping.getMessage();
             if (itunesCallbackRequest.getUnifiedReceipt() != null) {
                 String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
                 if (StringUtils.isNotBlank(latestReceipt)) {
@@ -412,16 +413,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public UserPlanMapping getUserPlanMapping(String requestPayload) {
-        ItunesCallbackRequest itunesCallbackRequest = getCallbackRequest(requestPayload);
+    public UserPlanMapping<ItunesCallbackRequest> getUserPlanMapping(String requestPayload) {
+        ItunesCallbackRequest itunesCallbackRequest = Utils.getData(requestPayload, ItunesCallbackRequest.class);
         if (itunesCallbackRequest.getUnifiedReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+            //verify the receipt from server and then add txnType to mapping
             if (itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null) {
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
                 Optional<ReceiptDetails> optDetails = receiptDetailsDao.findById(iTunesId);
                 if (optDetails.isPresent()) {
                     ReceiptDetails details = optDetails.get();
-                    return UserPlanMapping.builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
+                    return UserPlanMapping.<ItunesCallbackRequest>builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
                             .uid(details.getUid()).message(itunesCallbackRequest).build();
                 }
             }
@@ -431,22 +433,13 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     @Override
     public boolean isNotificationEligible(String callbackRequest) {
-        final ItunesCallbackRequest itunesCallbackRequest = getCallbackRequest(callbackRequest);
+        final ItunesCallbackRequest itunesCallbackRequest = Utils.getData(callbackRequest, ItunesCallbackRequest.class);
         if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
             final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
             final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
             return receiptDetailsDao.existsById(iTunesId);
         }
         return false;
-    }
-
-
-    private ItunesCallbackRequest getCallbackRequest(String payload) {
-        try {
-            return mapper.readValue(payload, ItunesCallbackRequest.class);
-        } catch (JsonProcessingException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid receipt");
-        }
     }
 
 }

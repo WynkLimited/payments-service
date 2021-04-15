@@ -2,9 +2,9 @@ package in.wynk.payment.service;
 
 import in.wynk.payment.dto.UserPlanMapping;
 
-public interface IReceiptDetailService {
+public interface IReceiptDetailService<T> {
 
-    UserPlanMapping getUserPlanMapping(String requestPayload);
+    UserPlanMapping<T> getUserPlanMapping(String requestPayload);
 
     boolean isNotificationEligible(String requestPayload);
 

@@ -57,7 +57,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService, IUserMappingService, IPaymentNotificationService {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService<AmazonNotificationMessage>, IUserMappingService, IPaymentNotificationService<AmazonNotificationMessage> {
 
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_RENEWED", "SUBSCRIPTION_PURCHASED");
     private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
@@ -287,7 +287,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @Override
-    public UserPlanMapping getUserPlanMapping(String requestPayload) {
+    public UserPlanMapping<AmazonNotificationMessage> getUserPlanMapping(String requestPayload) {
         AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
         AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
         AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
@@ -296,7 +296,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         WynkUserExtUserMapping mapping = userMappingDao.findByExternalUserId(message.getAppUserId());
-        return UserPlanMapping.builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).planId(planDTO.getId()).build();
+        return UserPlanMapping.<AmazonNotificationMessage>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).planId(planDTO.getId()).build();
     }
 
     @Override
@@ -325,9 +325,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @Override
-    public void handleNotification(Transaction transaction, UserPlanMapping mapping) {
+    public void handleNotification(Transaction transaction, UserPlanMapping<AmazonNotificationMessage> mapping) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
-        AmazonNotificationMessage amazonIapReceipt = (AmazonNotificationMessage) mapping.getMessage();
+        AmazonNotificationMessage amazonIapReceipt = mapping.getMessage();
         saveReceipt(TransactionContext.get(), amazonIapReceipt.getReceiptId(), amazonIapReceipt.getAppUserId());
         if (SUBSCRIBED_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType()) || PURCHASE_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;

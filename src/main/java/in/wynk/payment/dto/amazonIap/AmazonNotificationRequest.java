@@ -28,5 +28,9 @@ public class AmazonNotificationRequest {
     public String signingCertURL;
     @JsonProperty("UnsubscribeURL")
     public String unsubscribeURL;
+    @JsonProperty("SubscribeURL")
+    private String subscribeUrl;
+    @JsonProperty("Token")
+    private String token;
 
 }

@@ -17,6 +17,7 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
@@ -29,7 +30,6 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -71,6 +71,13 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
 public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IPaymentNotificationService, IReceiptDetailService {
 
+    private final Gson gson;
+    private final ObjectMapper mapper;
+    private final RestTemplate restTemplate;
+    private final ReceiptDetailsDao receiptDetailsDao;
+    private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final TestingByPassNumbersDao testingByPassNumbersDao;
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
     @Value("${payment.merchant.itunes.api.alt.url}")
@@ -79,14 +86,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private String SUCCESS_PAGE;
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
-
-    private final Gson gson;
-    private final ObjectMapper mapper;
-    private final RestTemplate restTemplate;
-    private final ReceiptDetailsDao receiptDetailsDao;
-    private final PaymentCachingService cachingService;
-    private final ApplicationEventPublisher eventPublisher;
-    private final TestingByPassNumbersDao testingByPassNumbersDao;
 
     public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
         super(cachingService);
@@ -433,7 +432,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     @Override
     public boolean isNotificationEligible(String callbackRequest) {
         final ItunesCallbackRequest itunesCallbackRequest = getCallbackRequest(callbackRequest);
-        if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt()!=null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+        if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
             final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
             final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
             return receiptDetailsDao.existsById(iTunesId);

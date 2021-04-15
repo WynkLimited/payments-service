@@ -1,6 +1,5 @@
 package in.wynk.payment.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -28,7 +27,6 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.IapVerificationResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
-import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -65,7 +63,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
     private static final List<String> UNSUBSCRIBE_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_AUTO_RENEWAL_OFF", "SUBSCRIPTION_EXPIRED");
     private static final List<String> CANCELLED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_CANCELLED", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
-    private final ObjectMapper mapper;
+    private static final List<String> AMAZON_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
     private final ReceiptDetailsDao receiptDetailsDao;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
@@ -82,8 +80,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(ObjectMapper mapper, WynkUserExtUserDao userMappingDao, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
-        this.mapper = mapper;
+    public AmazonIapMerchantPaymentService(WynkUserExtUserDao userMappingDao, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
+        super(cachingService);
         this.receiptDetailsDao = receiptDetailsDao;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
@@ -109,6 +107,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private static byte[] getMessageBytesToSign(AmazonNotificationRequest msg) {
+        if (AMAZON_SNS_CONFIRMATION.contains(msg.getType())) {
+            return buildSubscriptionStringToSign(msg).getBytes();
+        }
         return buildNotificationStringToSign(msg).getBytes();
     }
 
@@ -116,7 +117,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         URI certUri = URI.create(msg.getSigningCertURL());
 
         if (!"https".equals(certUri.getScheme())) {
-            throw new SecurityException("SigningCertURL was not using HTTPS: " + certUri.toString());
+            throw new SecurityException("SigningCertURL was not using HTTPS: " + certUri);
         }
 
         if (!endpoint.getHost().equals(certUri.getHost())) {
@@ -126,6 +127,24 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                             endpoint, certUri.getHost()));
 
         }
+    }
+
+    public static String buildSubscriptionStringToSign(AmazonNotificationRequest msg) {
+        String stringToSign = "Message\n";
+        stringToSign += msg.getMessage() + "\n";
+        stringToSign += "MessageId\n";
+        stringToSign += msg.getMessageId() + "\n";
+        stringToSign += "SubscribeURL\n";
+        stringToSign += msg.getSubscribeUrl() + "\n";
+        stringToSign += "Timestamp\n";
+        stringToSign += msg.getTimestamp() + "\n";
+        stringToSign += "Token\n";
+        stringToSign += msg.getToken() + "\n";
+        stringToSign += "TopicArn\n";
+        stringToSign += msg.getTopicArn() + "\n";
+        stringToSign += "Type\n";
+        stringToSign += msg.getType() + "\n";
+        return stringToSign;
     }
 
     private boolean isMessageSignatureValid(AmazonNotificationRequest msg) {
@@ -200,7 +219,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
                 saveReceipt(transaction, amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
-                AmazonIapReceiptResponse amazonIapReceipt= amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
+                AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
@@ -253,7 +272,6 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY012);
     }
 
-
     @Override
     public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
@@ -285,17 +303,25 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     public boolean isNotificationEligible(String requestPayload) {
         AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
         if (isMessageSignatureValid(request)) {
-            try {
-                AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
-                if (receiptDetailsDao.existsById(message.getReceiptId())
-                        || userMappingDao.countByExternalUserId(message.getAppUserId()) == 1) {
-                    return true;
+            if (AMAZON_SNS_CONFIRMATION.contains(request.getType())) {
+                subscribeToSns(request);
+            } else {
+                try {
+                    AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
+                    if (receiptDetailsDao.existsById(message.getReceiptId())
+                            || userMappingDao.countByExternalUserId(message.getAppUserId()) == 1) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid message");
                 }
-            } catch (Exception e) {
-                throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid message");
             }
         }
         return false;
+    }
+
+    private void subscribeToSns(AmazonNotificationRequest request) {
+        restTemplate.getForEntity(request.getSubscribeUrl(), String.class);
     }
 
     @Override

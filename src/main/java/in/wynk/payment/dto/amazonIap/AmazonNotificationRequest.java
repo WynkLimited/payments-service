@@ -2,14 +2,15 @@ package in.wynk.payment.dto.amazonIap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import in.wynk.payment.dto.IAPNotification;
 import lombok.Getter;
 
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AmazonNotificationRequest {
+public class AmazonNotificationRequest implements IAPNotification {
 
     @JsonProperty("Type")
-    public String type;
+    public String notificationType;
     @JsonProperty("MessageId")
     public String messageId;
     @JsonProperty("Subject")

@@ -129,7 +129,7 @@ public class PaymentManager {
     }
 
     @TransactionAware(txnId = "#request.transactionId")
-    private <T> void handleNotification(PaymentCode paymentCode, String txnId, UserPlanMapping<T> mapping) {
+    private <T, R extends IAPNotification> void handleNotification(PaymentCode paymentCode, String txnId, UserPlanMapping<T> mapping, DecodedNotificationWrapper<R> wrapper) {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IPaymentNotificationService<T> notificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IPaymentNotificationService.class);
@@ -146,11 +146,13 @@ public class PaymentManager {
 
     @ClientAware(clientAlias = "#clientAlias")
     public EmptyResponse handleNotification(String clientAlias, String requestPayload, PaymentCode paymentCode) {
-        final IReceiptDetailService<?> receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
-        if (receiptDetailService.isNotificationEligible(requestPayload)) {
-            UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(requestPayload);
-            String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode);
-            handleNotification(paymentCode, txnId, mapping);
+        final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
+        DecodedNotificationWrapper<IAPNotification> wrapper = receiptDetailService.isNotificationEligible(requestPayload);
+        if (wrapper.isEligible()) {
+            UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
+            PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper.getDecodedNotification().getNotificationType());
+            String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode, event);
+            handleNotification(paymentCode, txnId, mapping, wrapper);
             return EmptyResponse.response(true);
         }
         return EmptyResponse.response(false);
@@ -246,7 +248,7 @@ public class PaymentManager {
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
 
-    private String initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode) {
+    private String initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode, PaymentEvent event) {
         PlanDTO selectedPlan = cachingService.getPlan(planId);
         TransactionContext.set(transactionManager.initiateTransaction(TransactionInitRequest.builder()
                 .uid(uid)
@@ -255,7 +257,7 @@ public class PaymentManager {
                 .paymentCode(paymentCode)
                 .amount(selectedPlan.getFinalPrice())
                 .status(TransactionStatus.INPROGRESS.getValue())
-                .event(PaymentEvent.RENEW)
+                .event(event)
                 .build()));
         return TransactionContext.get().getId().toString();
     }

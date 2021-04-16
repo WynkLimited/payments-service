@@ -6,6 +6,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
+import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -17,6 +18,7 @@ import in.wynk.payment.core.dao.entity.WynkUserExtUserMapping;
 import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.DecodedNotificationWrapper;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.amazonIap.*;
@@ -57,12 +59,15 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService<AmazonNotificationMessage>, IUserMappingService, IPaymentNotificationService<AmazonNotificationMessage> {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
 
-    private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_RENEWED", "SUBSCRIPTION_PURCHASED");
-    private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
+    private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_PURCHASED");
+    private static final List<String> RENEW_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID");
+    private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED");
+    private static final List<String> FIRST_TIME_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
     private static final List<String> UNSUBSCRIBE_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_AUTO_RENEWAL_OFF", "SUBSCRIPTION_EXPIRED");
     private static final List<String> CANCELLED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_CANCELLED", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
+    private static final List<String> SUB_MODIFICATION_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID", "SUBSCRIPTION_CANCELLED","SUBSCRIPTION_AUTO_RENEWAL_OFF","SUBSCRIPTION_EXPIRED", "SUBSCRIPTION_MODIFIED_IMMEDIATE", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
     private static final List<String> AMAZON_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
     private final ReceiptDetailsDao receiptDetailsDao;
     private final ApplicationEventPublisher eventPublisher;
@@ -102,12 +107,12 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         stringToSign += "TopicArn\n";
         stringToSign += msg.getTopicArn() + "\n";
         stringToSign += "Type\n";
-        stringToSign += msg.getType() + "\n";
+        stringToSign += msg.getNotificationType() + "\n";
         return stringToSign;
     }
 
     private static byte[] getMessageBytesToSign(AmazonNotificationRequest msg) {
-        if (AMAZON_SNS_CONFIRMATION.contains(msg.getType())) {
+        if (AMAZON_SNS_CONFIRMATION.contains(msg.getNotificationType())) {
             return buildSubscriptionStringToSign(msg).getBytes();
         }
         return buildNotificationStringToSign(msg).getBytes();
@@ -143,7 +148,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         stringToSign += "TopicArn\n";
         stringToSign += msg.getTopicArn() + "\n";
         stringToSign += "Type\n";
-        stringToSign += msg.getType() + "\n";
+        stringToSign += msg.getNotificationType() + "\n";
         return stringToSign;
     }
 
@@ -287,57 +292,83 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @Override
-    public UserPlanMapping<AmazonNotificationMessage> getUserPlanMapping(String requestPayload) {
-        AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
-        AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
+    public UserPlanMapping<AmazonIapReceiptResponse> getUserPlanMapping(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
+        AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
         AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
         PlanDTO planDTO = cachingService.getPlanFromSku(receiptResponse.getTermSku());
         if (Objects.isNull(planDTO)) {
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         WynkUserExtUserMapping mapping = userMappingDao.findByExternalUserId(message.getAppUserId());
-        return UserPlanMapping.<AmazonNotificationMessage>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).planId(planDTO.getId()).build();
+        saveReceipt(TransactionContext.get(), message.getReceiptId(), message.getAppUserId());
+        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(receiptResponse).planId(planDTO.getId()).build();
     }
 
     @Override
-    public boolean isNotificationEligible(String requestPayload) {
+    public DecodedNotificationWrapper<AmazonNotificationRequest> isNotificationEligible(String requestPayload) {
         AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
         if (isMessageSignatureValid(request)) {
-            if (AMAZON_SNS_CONFIRMATION.contains(request.getType())) {
+            if (AMAZON_SNS_CONFIRMATION.contains(request.getNotificationType())) {
                 subscribeToSns(request);
             } else {
                 try {
                     AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
-                    if (receiptDetailsDao.existsById(message.getReceiptId())
-                            || userMappingDao.countByExternalUserId(message.getAppUserId()) == 1) {
-                        return true;
+                    //TODO: check for eligibility cases.
+                    if ((!receiptDetailsDao.existsById(message.getReceiptId()) && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && userMappingDao.countByExternalUserId(message.getAppUserId()) == 1)
+                    || (receiptDetailsDao.existsById(message.getReceiptId()) && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
+                        return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
                     }
                 } catch (Exception e) {
                     throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid message");
                 }
             }
         }
-        return false;
+        return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(false).decodedNotification(request).build();
     }
+
+//
+//    @Override
+//    public UserPlanMapping<AmazonIapReceiptResponse> getUserPlanMapping(DecodedNotificationWrapper<IAPNotification> wrapper) {
+//        AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
+//        AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
+//        PlanDTO planDTO = cachingService.getPlanFromSku(receiptResponse.getTermSku());
+//        if (Objects.isNull(planDTO)) {
+//            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
+//        }
+//        WynkUserExtUserMapping mapping = userMappingDao.findByExternalUserId(message.getAppUserId());
+//        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(receiptResponse).planId(planDTO.getId()).build();
+//    }
 
     private void subscribeToSns(AmazonNotificationRequest request) {
         restTemplate.getForEntity(request.getSubscribeUrl(), String.class);
     }
 
     @Override
-    public void handleNotification(Transaction transaction, UserPlanMapping<AmazonNotificationMessage> mapping) {
+    public void handleNotification(Transaction transaction, UserPlanMapping<AmazonIapReceiptResponse> mapping) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
-        AmazonNotificationMessage amazonIapReceipt = mapping.getMessage();
-        saveReceipt(TransactionContext.get(), amazonIapReceipt.getReceiptId(), amazonIapReceipt.getAppUserId());
-        if (SUBSCRIBED_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType()) || PURCHASE_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType())) {
-            finalTransactionStatus = TransactionStatus.SUCCESS;
-        } else if (CANCELLED_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType())) {
-            transaction.setType(PaymentEvent.CANCELLED.name());
-            finalTransactionStatus = TransactionStatus.SUCCESS;
-        } else if (UNSUBSCRIBE_NOTIFICATIONS.contains(amazonIapReceipt.getNotificationType())) {
-            transaction.setType(PaymentEvent.UNSUBSCRIBE.name());
+        AmazonIapReceiptResponse amazonIapReceipt = mapping.getMessage();
+        if(amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED ) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
         transaction.setStatus(finalTransactionStatus.name());
+    }
+
+    @Override
+    public PaymentEvent getPaymentEvent(String notificationType) {
+        PaymentEvent event;
+        if (SUBSCRIBED_NOTIFICATIONS.contains(notificationType)) {
+            event = PaymentEvent.SUBSCRIBE;
+        } else if (PURCHASE_NOTIFICATIONS.contains(notificationType)) {
+            event = PaymentEvent.PURCHASE;
+        } else if (CANCELLED_NOTIFICATIONS.contains(notificationType)) {
+            event = PaymentEvent.CANCELLED;
+        } else if (UNSUBSCRIBE_NOTIFICATIONS.contains(notificationType)) {
+            event = PaymentEvent.UNSUBSCRIBE;
+        } else if (RENEW_NOTIFICATIONS.contains(notificationType)) {
+            event = PaymentEvent.RENEW;
+        }  else {
+            throw new WynkRuntimeException(WynkErrorType.UT001);
+        }
+        return event;
     }
 }

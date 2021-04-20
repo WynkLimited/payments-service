@@ -84,13 +84,13 @@ public class PaymentManager {
         if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                     .paymentCode(refundTransaction.getPaymentChannel())
+                    .extTxnId(refundResponse.getExternalReferenceId())
                     .transactionId(refundTransaction.getIdStr())
                     .paymentEvent(refundTransaction.getType())
                     .itemId(refundTransaction.getItemId())
                     .planId(refundTransaction.getPlanId())
                     .msisdn(refundTransaction.getMsisdn())
                     .uid(refundTransaction.getUid())
-                    .extTxnId(externalReferenceId)
                     .build());
         }
         return refundInitResponse;

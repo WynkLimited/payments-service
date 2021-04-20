@@ -21,4 +21,9 @@ public class PayUPaymentRefundResponse extends AbstractPaymentRefundResponse {
     public PaymentCode getPaymentCode() {
         return PaymentCode.PAYU;
     }
+
+    @Override
+    public String getExternalReferenceId() {
+        return requestId;
+    }
 }

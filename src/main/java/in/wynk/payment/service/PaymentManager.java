@@ -322,7 +322,7 @@ public class PaymentManager {
             finalAmountToBePaid = amountToBePaid;
         }
         Set<Integer> eligiblePlans = session.get(ELIGIBLE_PLANS);
-        if (autoRenew && Objects.nonNull(eligiblePlans) && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
+        if (Objects.nonNull(eligiblePlans) && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
             paymentEvent = PaymentEvent.TRIAL_SUBSCRIPTION;
             PlanDTO trialPlan = cachingService.getPlan(selectedPlan.getLinkedFreePlanId());
             finalAmountToBePaid = trialPlan.getFinalPrice();

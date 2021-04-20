@@ -71,6 +71,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
 public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
 
+    private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
     private final Gson gson;
     private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
@@ -395,7 +396,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         return responseBuilder.build();
     }
 
-
     @Override
     public UserPlanMapping<LatestReceiptInfo> getUserPlanMapping(DecodedNotificationWrapper<ItunesCallbackRequest> wrapper) {
         ItunesCallbackRequest itunesCallbackRequest = wrapper.getDecodedNotification();
@@ -433,8 +433,21 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public PaymentEvent getPaymentEvent(String notificationType) {
-        return null;
+    public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<ItunesCallbackRequest> wrapper) {
+        String notificationType = wrapper.getDecodedNotification().getNotificationType();
+        PaymentEvent event;
+        if (RENEWAL_NOTIFICATION.contains(notificationType)) {
+            event = PaymentEvent.RENEW;
+        } else if ("DID_CHANGE_RENEWAL_STATUS".equalsIgnoreCase(notificationType)) {
+            if (Boolean.parseBoolean(wrapper.getDecodedNotification().getAutoRenewStatus())) {
+                event = PaymentEvent.SUBSCRIBE;
+            } else {
+                event = PaymentEvent.UNSUBSCRIBE;
+            }
+        } else {
+            throw new WynkRuntimeException(WynkErrorType.UT001, "Invalid notification type");
+        }
+        return event;
     }
 
 }

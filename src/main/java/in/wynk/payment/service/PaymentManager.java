@@ -150,7 +150,7 @@ public class PaymentManager {
         DecodedNotificationWrapper<IAPNotification> wrapper = receiptDetailService.isNotificationEligible(requestPayload);
         if (wrapper.isEligible()) {
             UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
-            PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper.getDecodedNotification().getNotificationType());
+            PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
             String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode, event);
             handleNotification(paymentCode, txnId, mapping, wrapper);
             return EmptyResponse.response(true);

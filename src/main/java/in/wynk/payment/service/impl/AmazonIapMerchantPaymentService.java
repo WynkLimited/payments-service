@@ -354,7 +354,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @Override
-    public PaymentEvent getPaymentEvent(String notificationType) {
+    public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
+        String notificationType = wrapper.getDecodedNotification().getNotificationType();
         PaymentEvent event;
         if (SUBSCRIBED_NOTIFICATIONS.contains(notificationType)) {
             event = PaymentEvent.SUBSCRIBE;

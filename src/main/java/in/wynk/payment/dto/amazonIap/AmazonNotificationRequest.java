@@ -10,25 +10,25 @@ import lombok.Getter;
 public class AmazonNotificationRequest implements IAPNotification {
 
     @JsonProperty("Type")
-    public String notificationType;
+    private String notificationType;
     @JsonProperty("MessageId")
-    public String messageId;
+    private String messageId;
     @JsonProperty("Subject")
-    public String subject;
+    private String subject;
     @JsonProperty("TopicArn")
-    public String topicArn;
+    private String topicArn;
     @JsonProperty("Message")
-    public String message;
+    private String message;
     @JsonProperty("Timestamp")
-    public String timestamp;
+    private String timestamp;
     @JsonProperty("SignatureVersion")
-    public String signatureVersion;
+    private String signatureVersion;
     @JsonProperty("Signature")
-    public String signature;
+    private String signature;
     @JsonProperty("SigningCertURL")
-    public String signingCertURL;
+    private String signingCertURL;
     @JsonProperty("UnsubscribeURL")
-    public String unsubscribeURL;
+    private String unsubscribeURL;
     @JsonProperty("SubscribeURL")
     private String subscribeUrl;
     @JsonProperty("Token")

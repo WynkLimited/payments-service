@@ -11,5 +11,5 @@ public interface IReceiptDetailService<T, R extends IAPNotification> {
 
     DecodedNotificationWrapper<R> isNotificationEligible(String requestPayload);
 
-    PaymentEvent getPaymentEvent(String notificationType);
+    PaymentEvent getPaymentEvent(DecodedNotificationWrapper<R> wrapper);
 }

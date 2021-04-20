@@ -352,7 +352,7 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
         String deviceId = sessionDTO.get(DEVICE_ID);
         String userAuthToken = getAccessToken(uid);
         PhonePeAutoDebitChargeRequest payload= (PhonePeAutoDebitChargeRequest) chargingRequest;
-        PhonePeAutoDebitChargeRequest peAutoDebitChargeRequest = PhonePeAutoDebitChargeRequest.builder().merchantId(merchantId).userAuthToken(userAuthToken).amount(Double.valueOf(transaction.getAmount()).longValue()).deviceContext(payload.getDeviceContext()).build();
+        PhonePeAutoDebitChargeRequest peAutoDebitChargeRequest = PhonePeAutoDebitChargeRequest.builder().merchantId(merchantId).userAuthToken(userAuthToken).amount(Double.valueOf(transaction.getAmount()*100).longValue()).deviceContext(payload.getDeviceContext()).transactionId(transaction.getId().toString()).build();
         try {
             String requestJson = gson.toJson(peAutoDebitChargeRequest);
             Map<String, String> requestMap = new HashMap<>();

@@ -379,7 +379,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
-            payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
+            payload.put(PAYU_FREE_TRIAL, "0");
+            //payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");
         }

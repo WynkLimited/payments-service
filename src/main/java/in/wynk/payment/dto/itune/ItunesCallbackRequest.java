@@ -27,4 +27,5 @@ public class ItunesCallbackRequest implements IAPNotification {
     @Analysed
     private String autoRenewStatus;
 
+    private String password;
 }

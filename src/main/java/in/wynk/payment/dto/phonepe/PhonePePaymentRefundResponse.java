@@ -19,4 +19,9 @@ public class PhonePePaymentRefundResponse extends AbstractPaymentRefundResponse 
     public PaymentCode getPaymentCode() {
         return PaymentCode.PHONEPE_WALLET;
     }
+
+    @Override
+    public String getExternalReferenceId() {
+        return providerReferenceId;
+    }
 }

@@ -114,7 +114,7 @@ public class PaymentEventListener {
     }
 
     private void initRefundIfApplicable(PaymentChargingReconciledEvent event) {
-        if (EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus()) && EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(event.getPaymentEvent())) {
+        if (EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus()) && EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION).contains(event.getPaymentEvent()) && event.getPaymentCode().isTrialRefundSupported()) {
             eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
                     .reason("trial plan amount refund")
                     .originalTransactionId(event.getTransactionId())

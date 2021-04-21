@@ -1,9 +1,11 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.dto.response.PaymentDetailsWrapper;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -61,6 +63,11 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
             } catch (Exception e) { }
         }
         return buildPaymentOptions(planId, availableMethods, preferredPayments);
+    }
+
+    @Override
+    public PaymentDetailsWrapper getPaymentDetails(PaymentCode... codes) {
+        return null;
     }
 
     private PaymentOptionsDTO buildPaymentOptions(String planId, Map<String, List<PaymentMethod>> availableMethods, List<UserPreferredPayment> preferredPayments) {

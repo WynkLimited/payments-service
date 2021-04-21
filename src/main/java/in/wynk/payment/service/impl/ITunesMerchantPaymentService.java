@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -174,7 +175,14 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     @Override
     public void handleNotification(Transaction transaction, UserPlanMapping<LatestReceiptInfo> mapping) {
-
+        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+        LatestReceiptInfo receiptInfo = mapping.getMessage();
+        //Need to add check for itunes txn Id in merchant transaction table to achieve idempotency
+        final long expireTimestamp = NumberUtils.toLong(receiptInfo.getExpiresDateMs());
+        if (expireTimestamp > System.currentTimeMillis() || transaction.getType() == PaymentEvent.CANCELLED) {
+            finalTransactionStatus = TransactionStatus.SUCCESS;
+        }
+        transaction.setStatus(finalTransactionStatus.name());
     }
 
     private ItunesLatestReceiptResponse getItunesLatestReceiptResponse(Transaction transaction, String decodedReceipt) {
@@ -327,8 +335,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         return restTemplate.exchange(requestEntity, String.class);
     }
 
-    private ItunesReceipt fetchReceiptObjFromAppResponse(String appStoreResponseBody, ItunesReceiptType
-            itunesReceiptType) {
+    private ItunesReceipt fetchReceiptObjFromAppResponse(String appStoreResponseBody, ItunesReceiptType itunesReceiptType) {
         try {
             ItunesReceipt receiptObj = new ItunesReceipt();
             if (itunesReceiptType.equals(ItunesReceiptType.SEVEN)) {
@@ -403,6 +410,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             //verify the receipt from server and then add txnType to mapping
             if (itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null) {
                 String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
+                Map<String, String> map = new HashMap<>();
+                map.put(RECEIPT_DATA, latestReceipt);
+                latestReceipt = JSONValue.toJSONString(map);
                 final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(latestReceipt);
                 ItunesReceipt receipt = itunesResponse(latestReceipt, itunesCallbackRequest.getPassword(), receiptType, itunesApiUrl);
                 if (Integer.parseInt(receipt.getStatus()) == 0) {

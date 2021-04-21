@@ -128,7 +128,7 @@ public class PaymentManager {
         return baseResponse;
     }
 
-    @TransactionAware(txnId = "#request.transactionId")
+    @TransactionAware(txnId = "#txnId")
     private <T, R extends IAPNotification> void handleNotification(PaymentCode paymentCode, String txnId, UserPlanMapping<T> mapping, DecodedNotificationWrapper<R> wrapper) {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();

@@ -9,4 +9,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public class PaytmWalletDetails extends AbstractWalletDetails {
+
 }

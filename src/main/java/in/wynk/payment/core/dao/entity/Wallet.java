@@ -17,6 +17,8 @@ public class Wallet implements Payment {
     @Setter
     private String accessToken;
     @Setter
+    private String refreshToken;
+    @Setter
     private String walletUserId;
     @Setter
     private long tokenValidity;
@@ -26,6 +28,7 @@ public class Wallet implements Payment {
         private final PaymentGroup group = WALLET;
         private PaymentCode paymentCode;
         private String accessToken;
+        private String refreshToken;
         private String walletUserId;
         private long tokenValidity;
 
@@ -53,10 +56,16 @@ public class Wallet implements Payment {
             return this;
         }
 
+        public Builder refreshToken(String refreshToken) {
+            this.refreshToken = refreshToken;
+            return this;
+        }
+
         public Wallet build() {
             Wallet wallet = new Wallet();
             wallet.paymentCode = this.paymentCode;
             wallet.accessToken = this.accessToken;
+            wallet.refreshToken = this.refreshToken;
             wallet.walletUserId = this.walletUserId;
             wallet.tokenValidity = this.tokenValidity;
             wallet.group = this.group;

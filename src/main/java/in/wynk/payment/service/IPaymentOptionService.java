@@ -8,6 +8,6 @@ public interface IPaymentOptionService {
 
     PaymentOptionsDTO getPaymentOptions(String planId);
 
-    PaymentDetailsWrapper getPaymentDetails(PaymentCode... codes);
+    PaymentDetailsWrapper getPaymentDetails(int planId, PaymentCode... codes);
 
 }

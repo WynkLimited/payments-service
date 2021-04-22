@@ -66,7 +66,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     }
 
     @Override
-    public PaymentDetailsWrapper getPaymentDetails(PaymentCode... codes) {
+    public PaymentDetailsWrapper getPaymentDetails(int planId, PaymentCode... codes) {
         return null;
     }
 

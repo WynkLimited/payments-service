@@ -11,8 +11,8 @@ import lombok.experimental.SuperBuilder;
 public abstract class LatestReceiptResponse {
 
     @Analysed
-    private String extTxnId;
+    private final String extTxnId;
     @Analysed
-    private boolean freeTrial;
+    private final boolean freeTrial;
 
 }

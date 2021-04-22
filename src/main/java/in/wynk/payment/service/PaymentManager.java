@@ -27,6 +27,7 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
@@ -70,15 +71,15 @@ public class PaymentManager {
         this.merchantTransactionService = merchantTransactionService;
     }
 
-    @TransactionAware(txnId = "#originalTransactionId")
-    public BaseResponse<?> initRefund(String originalTransactionId) {
+    @TransactionAware(txnId = "#request.originalTransactionId")
+    public BaseResponse<?> initRefund(PaymentRefundInitRequest request) {
         Transaction originalTransaction = TransactionContext.get();
         final Transaction refundTransaction = initiateRefundTransaction(originalTransaction.getUid(), originalTransaction.getMsisdn(), originalTransaction.getPlanId(), originalTransaction.getItemId(), originalTransaction.getClientAlias(), originalTransaction.getAmount(), originalTransaction.getPaymentChannel());
-        String externalReferenceId = merchantTransactionService.getPartnerReferenceId(originalTransactionId);
+        String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
         originalTransaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
         final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(originalTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
-        AbstractPaymentRefundRequest request = AbstractPaymentRefundRequest.from(originalTransaction, refundTransaction);
-        BaseResponse<?> refundInitResponse = refundService.refund(request);
+        AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, refundTransaction, request.getReason());
+        BaseResponse<?> refundInitResponse = refundService.refund(refundRequest);
         AbstractPaymentRefundResponse refundResponse = (AbstractPaymentRefundResponse) refundInitResponse.getBody();
         if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
@@ -260,7 +261,7 @@ public class PaymentManager {
         final SessionDTO session = SessionContextHolder.getBody();
         PlanDTO selectedPlan = cachingService.getPlan(planId);
         PaymentEvent paymentEvent = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
-        double finalAmountToBePaid = selectedPlan.getFinalPrice();;
+        double finalAmountToBePaid = selectedPlan.getFinalPrice();
         if (freeTrial) {
             paymentEvent = PaymentEvent.TRIAL_SUBSCRIPTION;
             PlanDTO trialPlan = cachingService.getPlan(selectedPlan.getLinkedFreePlanId());
@@ -321,7 +322,7 @@ public class PaymentManager {
             finalAmountToBePaid = amountToBePaid;
         }
         Set<Integer> eligiblePlans = session.get(ELIGIBLE_PLANS);
-        if (autoRenew && Objects.nonNull(eligiblePlans) && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
+        if (Objects.nonNull(eligiblePlans) && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
             paymentEvent = PaymentEvent.TRIAL_SUBSCRIPTION;
             PlanDTO trialPlan = cachingService.getPlan(selectedPlan.getLinkedFreePlanId());
             finalAmountToBePaid = trialPlan.getFinalPrice();

@@ -191,13 +191,13 @@ payment:
         baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
-      id: WYNK
+      id: WYNKUAT
       api:
         base:
-          url: https://mercury-t2.phonepe.com
+          url: https://mercury-uat.phonepe.com
       callback:
         url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
-      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      salt: 8289e078-be0b-484d-ae60-052f117f8deb
 
 subscription:
   pooling:

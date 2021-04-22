@@ -14,8 +14,9 @@ public class PaytmPaymentRefundRequest extends AbstractPaymentRefundRequest {
 
     private final String authPayUId;
 
-    public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction) {
+    public static AbstractPaymentRefundRequest from(Transaction originalTransaction, Transaction refundTransaction, String reason) {
         return PaytmPaymentRefundRequest.builder()
+                .reason(reason)
                 .originalTransactionId(originalTransaction.getIdStr())
                 .authPayUId(originalTransaction.getValueFromPaymentMetaData(BaseConstants.EXTERNAL_TRANSACTION_ID))
                 .build();

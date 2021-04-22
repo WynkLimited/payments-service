@@ -2,7 +2,6 @@ package in.wynk.payment.dto.itune;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.ToString;

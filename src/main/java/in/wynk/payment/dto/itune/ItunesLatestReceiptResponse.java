@@ -14,10 +14,10 @@ import java.util.List;
 public class ItunesLatestReceiptResponse extends LatestReceiptResponse {
 
     @Analysed
-    private String decodedReceipt;
+    private final String decodedReceipt;
     @Analysed
-    private ItunesReceiptType itunesReceiptType;
+    private final ItunesReceiptType itunesReceiptType;
     @Analysed
-    private List<LatestReceiptInfo> latestReceiptInfo;
+    private final List<LatestReceiptInfo> latestReceiptInfo;
 
 }

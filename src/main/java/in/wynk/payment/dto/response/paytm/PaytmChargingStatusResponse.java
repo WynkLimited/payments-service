@@ -1,54 +1,54 @@
 package in.wynk.payment.dto.response.paytm;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @Getter
-@AllArgsConstructor
-@RequiredArgsConstructor
+@NoArgsConstructor
 public class PaytmChargingStatusResponse {
-    @JsonProperty("MID")
-    private String mid;
 
-    @JsonProperty("TXNID")
-    private String txnId;
+    private PaytmResponseHead head;
+    private Body body;
 
-    @JsonProperty("ORDERID")
-    private String orderId;
+    @Getter
+    @NoArgsConstructor
+    private static class Body {
 
-    @JsonProperty("BANKTXNID")
-    private String bankTxnId;
+        private PaytmResultInfo resultInfo;
+        private String txnId;
+        private String bankTxnId;
+        private String orderId;
+        private String txnAmount;
+        private String txnType;
+        private String gatewayName;
+        private String bankName;
+        private String mid;
+        private String paymentMode;
+        private String refundAmt;
+        private String txnDate;
+        private String subsId;
+        private String payableAmount;
+        private String paymentPromoCheckoutData;
+        private Object vanInfo;
+        private Object sourceAccountDetails;
+        private String transferMode;
+        private String utr;
+        private String bankTransactionDate;
+        private String rrnCode;
+        private String authCode;
+        private String merchantUniqueReference;
+        private String cardScheme;
+        private String bin;
+        private String lastFourDigit;
+        private Object dccPaymentDetail;
+        private boolean internationalCardPayment;
+        private String baseCurrency;
+        private Object feeRateFactors;
 
-    @JsonProperty("TXNAMOUNT")
-    private String txnAmount;
+    }
 
-    @JsonProperty("STATUS")
-    private String status;
-
-    @JsonProperty("RESPCODE")
-    private String responseCode;
-
-    @JsonProperty("RESPMSG")
-    private String respMsg;
-
-    @JsonProperty("TXNDATE")
-    private String txnDate;
-
-    @JsonProperty("GATEWAYNAME")
-    private String gatewayName;
-
-    @JsonProperty("BANKNAME")
-    private String bankName;
-
-    @JsonProperty("PAYMENTMODE")
-    private String paymentMode;
-
-    @JsonProperty("TXNTYPE")
-    private String txnType;
-
-    @JsonProperty("REFUNDAMT")
-    private String refundAmt;
+    public String getStatus() {
+        return getBody().getResultInfo().getResultStatus();
+    }
 
 }

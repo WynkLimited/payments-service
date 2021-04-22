@@ -1,18 +1,20 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.dto.request.WalletRequest;
+import in.wynk.payment.dto.request.WalletAddMoneyRequest;
+import in.wynk.payment.dto.request.WalletLinkRequest;
+import in.wynk.payment.dto.request.WalletValidateLinkRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 
 public interface IMerchantWalletService {
 
-    BaseResponse<?> linkRequest(WalletRequest request);
+    BaseResponse<?> linkRequest(WalletLinkRequest request);
 
-    BaseResponse<?> validateLink(WalletRequest request);
+    BaseResponse<?> validateLink(WalletValidateLinkRequest request);
 
-    BaseResponse<?> unlink(WalletRequest request);
+    BaseResponse<?> unlink();
 
     BaseResponse<?> balance();
 
-    BaseResponse<?> addMoney(WalletRequest request);
+    BaseResponse<?> addMoney(WalletAddMoneyRequest request);
 
 }

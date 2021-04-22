@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.paytm;
 
 public interface PayTmConstants {
+
     String PAYTM_CHECKSUMHASH = "CHECKSUMHASH";
     String PAYTM_STATUS = "STATUS";
     String ADD_MONEY = "ADD_MONEY";
@@ -13,10 +14,10 @@ public interface PayTmConstants {
     String PAYTM_CHANNEL_ID = "CHANNEL_ID";
     String PAYTM_INDUSTRY_TYPE_ID = "INDUSTRY_TYPE_ID";
     String PAYTM_REQUESTING_WEBSITE = "WEBSITE";
-    String PAYTM_WEB = "WAP";
+    String PAYTM_WEB = "WEB";
     String PAYTM_STATUS_SUCCESS = "TXN_SUCCESS";
     String PAYTM_SSO_TOKEN = "SSO_TOKEN";
     String PAYTM_SESSION_TOKEN = "session_token";
     String PAYTM_REQUEST_CALLBACK = "CALLBACK_URL";
-    String WALLET_USER_ID = "walletUserId";
+
 }

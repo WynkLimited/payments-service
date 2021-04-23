@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_AUTO_DEBIT;
 import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
@@ -182,6 +184,8 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             PhonePeWalletResponse response1 = response.getBody();
             SessionDTO sessionDTO = session.getBody();
             sessionDTO.put(SessionKeys.PHONEPE_OTP_TOKEN, response1.getData().getOtpToken());
+            sessionDTO.put(WALLET_USER_ID,mobileNumber);
+            sessionDTO.put(UID,MsisdnUtils.getUidFromMsisdn(mobileNumber));
             PhonePeResponseData data = PhonePeResponseData.builder().message(response1.getMessage()).code(response1.getCode()).build();
             PhonePeWalletResponse response2 = PhonePeWalletResponse.builder().success(response1.isSuccess()).data(data).build();
             return response2;
@@ -318,14 +322,14 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             String walletUserId = sessionDTO.get(WALLET_USER_ID);
             String uid = sessionDTO.get(UID);
-            Wallet wallet = new Wallet.Builder().paymentCode(PHONEPE_WALLET).walletUserId(walletUserId).accessToken(userAuthToken).build();
+            Wallet wallet = new Wallet.Builder().paymentCode(PHONEPE_AUTO_DEBIT).walletUserId(walletUserId).accessToken(userAuthToken).build();
             userPaymentsManager.saveWalletToken(uid, wallet);
         }
     }
 
     private String getAccessToken(String uid) {
         String accessToken;
-        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PHONEPE_WALLET);
+        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PHONEPE_AUTO_DEBIT);
         if (Objects.nonNull(userPreferredPayment)) {
             Wallet wallet = (Wallet) userPreferredPayment.getOption();
             accessToken = wallet.getAccessToken();
@@ -340,8 +344,11 @@ public class PhonePeWalletAutoDebitService implements IMerchantWalletService, IR
 
     @Override
     public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
-        String returnUrl = processCallback(callbackRequest);
-        return BaseResponse.redirectResponse(returnUrl);
+
+        // String returnUrl = processCallback(callbackRequest); //call do charging
+       // PhonePeAutoDebitChargeRequest request= (PhonePeAutoDebitChargeRequest) callbackRequest.getBody();
+        PhonePeAutoDebitChargeRequest request =PhonePeAutoDebitChargeRequest.builder().deviceContext(new DeviceContext(400698)).build();
+        return doCharging(request);
     }
 
     @Override

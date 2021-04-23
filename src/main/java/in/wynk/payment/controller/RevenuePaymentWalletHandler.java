@@ -17,12 +17,14 @@ import in.wynk.payment.service.IMerchantWalletService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.session.dto.Session;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import static in.wynk.common.constant.BaseConstants.PLAN_ID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @RestController
@@ -101,14 +103,17 @@ public class RevenuePaymentWalletHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletAddMoney")
     public ResponseEntity<?> addMoney(@PathVariable String sid, @RequestBody WalletAddMoneyRequest request) {
-        IMerchantWalletService walletService;
-        try {
-            AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
-            walletService = this.context.getBean(request.getPaymentCode().getCode(), IMerchantWalletService.class);
-        } catch (BeansException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY005);
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final String uid = sessionDTO.get(SessionKeys.UID);
+        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
+        if (request.getPlanId() == 0 && StringUtils.isBlank(request.getItemId())) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid planId or itemId");
         }
-        BaseResponse<?> baseResponse = walletService.addMoney(request);
+        sessionDTO.put(PLAN_ID, request.getPlanId());
+        sessionDTO.put(SessionKeys.PAYMENT_CODE,request.getPaymentCode().getCode());
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
+        AnalyticService.update(request);
+        BaseResponse<?> baseResponse = paymentManager.addMoney(uid, msisdn, request);
         return baseResponse.getResponse();
     }
 }

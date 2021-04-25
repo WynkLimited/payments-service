@@ -6,6 +6,7 @@ import lombok.*;
 
 @Getter
 @Builder
+@Deprecated
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class ChargingStatusRequest {

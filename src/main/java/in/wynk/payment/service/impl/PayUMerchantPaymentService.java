@@ -29,7 +29,7 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
-import in.wynk.payment.dto.response.PayUVpaVerificationResponse;
+import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
@@ -325,7 +325,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         String sid = SessionContextHolder.get().getId().toString();
         Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+           //payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
         } else {
             payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
         }
@@ -380,6 +381,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
+            payload.put(PAYU_FREE_TRIAL, "0");
             payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");

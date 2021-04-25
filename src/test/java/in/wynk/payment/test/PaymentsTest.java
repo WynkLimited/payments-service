@@ -8,7 +8,6 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.request.ChargingStatusRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.*;
 import in.wynk.payment.test.utils.PaymentTestUtils;
@@ -30,8 +29,8 @@ import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
 import static org.mockito.ArgumentMatchers.anyInt;
 
-@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 @RunWith(SpringRunner.class)
+@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 public class PaymentsTest {
 
     @MockBean
@@ -79,4 +78,5 @@ public class PaymentsTest {
         Session<SessionDTO> session = SessionContextHolder.get();
         sessionManager.put(session,  10, TimeUnit.MINUTES);
     }
+
 }

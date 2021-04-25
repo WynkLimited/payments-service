@@ -322,7 +322,7 @@ public class PaymentManager {
             finalAmountToBePaid = amountToBePaid;
         }
         Set<Integer> eligiblePlans = session.get(ELIGIBLE_PLANS);
-        if (autoRenew && Objects.nonNull(eligiblePlans) && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
+        if (Objects.nonNull(eligiblePlans) && eligiblePlans.contains(selectedPlan.getLinkedFreePlanId())) {
             paymentEvent = PaymentEvent.TRIAL_SUBSCRIPTION;
             PlanDTO trialPlan = cachingService.getPlan(selectedPlan.getLinkedFreePlanId());
             finalAmountToBePaid = trialPlan.getFinalPrice();
@@ -393,6 +393,21 @@ public class PaymentManager {
         if (!EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
         }
+    }
+
+    public BaseResponse addMoney(String uid, String msisdn, WalletAddMoneyRequest request) {
+        final PaymentCode paymentCode = request.getPaymentCode();
+        final Transaction transaction = initiateTransaction(false, request.getPlanId(), uid, msisdn, request.getItemId(), null, paymentCode);
+        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                .paymentCode(transaction.getPaymentChannel())
+                .transactionId(transaction.getIdStr())
+                .paymentEvent(transaction.getType())
+                .itemId(transaction.getItemId())
+                .planId(transaction.getPlanId())
+                .msisdn(transaction.getMsisdn())
+                .uid(transaction.getUid())
+                .build());
+        return BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantWalletService.class).addMoney(request);
     }
 
 }

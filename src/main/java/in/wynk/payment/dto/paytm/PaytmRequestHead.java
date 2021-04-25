@@ -1,19 +1,14 @@
 package in.wynk.payment.dto.paytm;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
+import lombok.experimental.SuperBuilder;
 
 @Getter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaytmWalletOtpRequest {
-
-    private String phone;
-    private List<String> scopes;
-
+public class PaytmRequestHead extends PaytmHead {
+    private String requestTimestamp;
 }

@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
 
 @RestController
 @RequestMapping("/wynk/v1/wallet")
@@ -49,8 +48,6 @@ public class RevenuePaymentWalletHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletLink")
     public ResponseEntity<?> linkRequest(@PathVariable String sid, @RequestBody WalletLinkRequest request) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(WALLET_USER_ID, request.getEncSi());
         return getMerchantWalletService(request.getPaymentCode()).linkRequest(request).getResponse();
     }
 

@@ -307,6 +307,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     public BaseResponse<?> linkRequest(WalletLinkRequest walletLinkRequest) {
         try {
             String phone = walletLinkRequest.getEncSi();
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            sessionDTO.put(WALLET_USER_ID, phone);
             log.info("Sending OTP to {} via PayTM", phone);
             URI uri = new URIBuilder(SEND_OTP).build();
             HttpHeaders headers = getHttpHeaders();
@@ -327,6 +329,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 throw new RuntimeException("Paytm responded with empty state for OTP response");
             }
             log.info("Otp sent successfully. Status: {}", paytmWalletLinkResponse.getStatus());
+            sessionDTO.put(STATE_TOKEN, paytmWalletLinkResponse.getState_token());
             return BaseResponse.<PaytmWalletLinkResponsePaytm>builder().status(HttpStatus.OK).body(paytmWalletLinkResponse).headers(requestEntity.getHeaders()).build();
         } catch (URISyntaxException e) {
             log.error(PAYTM_ERROR, "Error from paytm: {}", e.getMessage(), e);
@@ -339,6 +342,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         try {
             URI uri = new URIBuilder(VALIDATE_OTP).build();
             HttpHeaders headers = getHttpHeaders();
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            walletValidateLinkRequest.setState_token(sessionDTO.get(STATE_TOKEN));
             RequestEntity<WalletValidateLinkRequest> requestEntity = new RequestEntity<>(walletValidateLinkRequest, headers, HttpMethod.POST, uri);
             log.info("Validate paytm otp request: {}", requestEntity);
             ResponseEntity<PaytmWalletValidateLinkResponsePaytm> responseEntity = restTemplate.exchange(requestEntity, PaytmWalletValidateLinkResponsePaytm.class);

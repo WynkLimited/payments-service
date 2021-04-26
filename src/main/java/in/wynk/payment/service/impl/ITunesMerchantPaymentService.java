@@ -426,12 +426,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     private boolean isAutoRenewalOff(ItunesCallbackRequest itunesCallbackRequest) {
-        return itunesCallbackRequest.getUnifiedReceipt().getPendingRenewalInfoList().stream().filter(pendingRenew -> pendingRenew.getAutoRenewProductId().equals(itunesCallbackRequest.getAutoRenewProductId())).anyMatch(pendingInfo -> {
-            if(pendingInfo.getAutoRenewStatus().equalsIgnoreCase("0")) {
-                return true;
-            }
-            return false;
-        });
+        return itunesCallbackRequest.getUnifiedReceipt().getPendingRenewalInfoList().stream().filter(pendingRenew -> pendingRenew.getAutoRenewProductId().equals(itunesCallbackRequest.getAutoRenewProductId())).anyMatch(pendingInfo -> pendingInfo.getAutoRenewStatus().equalsIgnoreCase("0"));
     }
 
 }

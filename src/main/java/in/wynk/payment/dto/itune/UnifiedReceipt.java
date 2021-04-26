@@ -6,7 +6,9 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.commons.collections4.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,4 +36,8 @@ public class UnifiedReceipt {
 
     @JsonProperty("status")
     private Integer status;
+
+    public List<PendingRenewalInfo> getPendingRenewalInfoList() {
+        return CollectionUtils.isNotEmpty(pendingRenewalInfoList) ? pendingRenewalInfoList : Collections.EMPTY_LIST;
+    }
 }

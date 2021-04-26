@@ -411,7 +411,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     public Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest) {
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+            if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType()) && !isAutoRenewalOff(itunesCallbackRequest)) {
+                AnalyticService.update(itunesCallbackRequest);
                 LatestReceiptInfo receiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().stream().sorted(Comparator.comparingLong(ItunesReceiptType.SEVEN::getExpireDate).reversed()).collect(Collectors.toList()).get(0);
                 String skuCode = StringUtils.isNotEmpty(receiptInfo.getProductId()) && cachingService.containsSku(receiptInfo.getProductId()) ? cachingService.getNewSku(receiptInfo.getProductId()) : receiptInfo.getProductId();
                 PlanDTO plan = cachingService.getPlanFromSku(skuCode);
@@ -422,6 +423,15 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         } catch (Exception e) {
         }
         return Optional.empty();
+    }
+
+    private boolean isAutoRenewalOff(ItunesCallbackRequest itunesCallbackRequest) {
+        return itunesCallbackRequest.getUnifiedReceipt().getPendingRenewalInfoList().stream().filter(pendingRenew -> pendingRenew.getAutoRenewProductId().equals(itunesCallbackRequest.getAutoRenewProductId())).anyMatch(pendingInfo -> {
+            if(pendingInfo.getAutoRenewStatus().equalsIgnoreCase("0")) {
+                return true;
+            }
+            return false;
+        });
     }
 
 }

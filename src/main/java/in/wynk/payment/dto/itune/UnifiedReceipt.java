@@ -2,6 +2,7 @@ package in.wynk.payment.dto.itune;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.ToString;
@@ -17,9 +18,11 @@ import java.util.List;
 @AnalysedEntity
 @ToString
 public class UnifiedReceipt {
+    @Analysed
     @JsonProperty("latest_receipt_info")
     private List<LatestReceiptInfo> latestReceiptInfoList;
 
+    @Analysed
     @JsonProperty("pending_renewal_info")
     private List<PendingRenewalInfo> pendingRenewalInfoList;
 

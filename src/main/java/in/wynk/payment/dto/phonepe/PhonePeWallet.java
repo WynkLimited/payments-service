@@ -10,9 +10,9 @@ import lombok.*;
 @AllArgsConstructor
 @Data
 public class PhonePeWallet {
-    Long availableBalance;
-    Long usableBalance;
-    Long maxTopupAllowed;
-    Boolean walletActive;
-    Boolean walletTopupSuggested;
+    private Long availableBalance;
+    private Long usableBalance;
+    private Long maxTopupAllowed;
+    private Boolean walletActive;
+    private Boolean walletTopupSuggested;
 }

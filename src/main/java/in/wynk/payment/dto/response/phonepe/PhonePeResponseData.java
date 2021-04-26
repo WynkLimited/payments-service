@@ -25,23 +25,23 @@ public class PhonePeResponseData{
     @Analysed
     private String userAuthToken;
     @Analysed
-    Boolean linkedUser;
+    private Boolean linkedUser;
     @Analysed
-    String userIdHash;
+    private String userIdHash;
     @Analysed
-    String maskedMobileNumber;
+    private String maskedMobileNumber;
     @Analysed
-    String redirectUrl;
+    private String redirectUrl;
     @Analysed
-    String responseType;
+    private String responseType;
     @Analysed
-    String  transactionId;
+    private String  transactionId;
     @Analysed
-    Long   amount;
+    private Long   amount;
     @Analysed
-    String  paymentState;
+    private String  paymentState;
     @Analysed
-    String  providerReferenceId;
+    private String  providerReferenceId;
     @Analysed
     private PhonePeWallet wallet;
 }

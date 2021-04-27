@@ -156,13 +156,14 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     public LatestReceiptResponse getLatestReceiptResponse(IapVerificationRequest iapVerificationRequest) {
         final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(request.getReceipt());
-        final List<LatestReceiptInfo> userLatestReceipts = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn(), request.getUid(), request.getPlanId());
-        if (CollectionUtils.isNotEmpty(userLatestReceipts)) {
-            final LatestReceiptInfo latestReceiptInfo = userLatestReceipts.get(0);
+        final ItunesReceipt itunesReceipt = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn(), request.getUid(), request.getPlanId());
+        if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
+            final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
             return ItunesLatestReceiptResponse.builder()
                     .itunesReceiptType(receiptType)
-                    .latestReceiptInfo(userLatestReceipts)
+                    .latestReceiptInfo(itunesReceipt.getLatestReceiptInfoList())
+                    .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())
                     .decodedReceipt(request.getReceipt())
                     .extTxnId(latestReceiptInfo.getOriginalTransactionId())
                     .freeTrial(Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod()))
@@ -282,7 +283,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         return true;
     }
 
-    private List<LatestReceiptInfo> getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String msisdn, String uid, int planId) {
+    private ItunesReceipt getReceiptObjForUser(String receipt, ItunesReceiptType itunesReceiptType, String msisdn, String uid, int planId) {
         String encodedValue = itunesReceiptType.getEncodedItunesData(receipt);
         String secret;
         ItunesStatusCodes statusCode;
@@ -308,7 +309,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             ItunesStatusCodes responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
             if (status == 0) {
                 List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(planId, itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
-                return receiptInfoList;
+                receiptObj.setLatestReceiptInfoList(receiptInfoList);
+                return receiptObj;
             } else {
                 if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
                     if (ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
@@ -320,7 +322,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                             responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
                             if (status == 0) {
                                 List<LatestReceiptInfo> receiptInfoList = getLatestITunesReceiptForProduct(planId, itunesReceiptType, itunesReceiptType.getSubscriptionDetailJson(receiptObj));
-                                return receiptInfoList;
+                                receiptObj.setLatestReceiptInfoList(receiptInfoList);
+                                return receiptObj;
                             }
                         }
                     }

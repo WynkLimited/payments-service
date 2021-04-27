@@ -18,6 +18,9 @@ public class ItunesReceipt {
     @JsonProperty("latest_receipt")
     String latestReceipt;
 
+    @JsonProperty("pending_renewal_info")
+    List<PendingRenewalInfo> pendingRenewalInfo;
+
     String environment;
 
 

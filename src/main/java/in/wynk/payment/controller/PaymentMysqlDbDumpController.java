@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/wynk/s2s/v1/mysql/")
-public class MysqlDbDumpController {
+@RequestMapping("/wynk/s2s/v1/mysqldump/")
+public class PaymentMysqlDbDumpController {
     @Autowired
     private PaymentMysqlDumpService paymentMysqlDumpService;
     @GetMapping("/transaction")

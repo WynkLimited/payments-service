@@ -12,7 +12,6 @@ import lombok.Getter;
 public class ItunesCallbackRequest {
 
     @JsonProperty("unified_receipt")
-    @Analysed
     private UnifiedReceipt unifiedReceipt;
 
     @JsonProperty("notification_type")

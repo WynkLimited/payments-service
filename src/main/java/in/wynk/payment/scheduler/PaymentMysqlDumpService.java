@@ -32,8 +32,6 @@ public class PaymentMysqlDumpService {
 
     @Value("${payment.se.s3.bucket}")
     private String bucket;
-  //  private String bucket="wynk-framework-dev";
-
     @Autowired
     private IPaymentMysqlDbDumpService paymentMysqlDbDumpService;
 

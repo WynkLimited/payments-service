@@ -27,10 +27,4 @@ public class ItunesLatestReceiptResponse extends LatestReceiptResponse {
     public List<PendingRenewalInfo> getPendingRenewalInfo() {
         return CollectionUtils.isNotEmpty(pendingRenewalInfo) ?  pendingRenewalInfo: Collections.EMPTY_LIST;
     }
-
-    public boolean isAutoRenewalOff() {
-        LatestReceiptInfo receiptInfo = latestReceiptInfo.get(0);
-        return this.pendingRenewalInfo.stream().filter(pendingRenew -> pendingRenew.getAutoRenewProductId().equals(receiptInfo.getProductId())).anyMatch(pendingInfo -> pendingInfo.getAutoRenewStatus().equalsIgnoreCase("0"));
-    }
-
 }

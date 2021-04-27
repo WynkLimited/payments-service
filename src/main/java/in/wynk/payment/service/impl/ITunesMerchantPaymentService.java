@@ -231,14 +231,14 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                 final String itunesTrxnId = latestReceiptInfo.getTransactionId();
                 final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails)) {
-                    log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
-                    code = ItunesStatusCodes.APPLE_21016;
-                    transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
-                } else if (isAutoRenewalOff(latestReceiptInfo.getProductId(), itunesLatestReceiptResponse.getPendingRenewalInfo())) {
+                if (isAutoRenewalOff(latestReceiptInfo.getProductId(), itunesLatestReceiptResponse.getPendingRenewalInfo())) {
                     log.info("User has unsubscribed the plan from app store for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                     code = ItunesStatusCodes.APPLE_21019;
                     transaction.setStatus(TransactionStatus.CANCELLED.name());
+                } else if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails)) {
+                    log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
+                    code = ItunesStatusCodes.APPLE_21016;
+                    transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
                 } else {
                     if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                         final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()

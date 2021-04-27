@@ -3,7 +3,9 @@ package in.wynk.payment.dto.itune;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.apache.commons.collections4.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
 
 @Data
@@ -23,6 +25,9 @@ public class ItunesReceipt {
 
     String environment;
 
+    public List<PendingRenewalInfo> getPendingRenewalInfo() {
+        return CollectionUtils.isNotEmpty(pendingRenewalInfo) ? pendingRenewalInfo : Collections.EMPTY_LIST;
+    }
 
 }
 

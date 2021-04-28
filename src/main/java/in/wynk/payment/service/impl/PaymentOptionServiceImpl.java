@@ -87,7 +87,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         Callable<AbstractPaymentDetails> task;
         for (PaymentCode paymentCode : codes) {
             IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(paymentCode.getCode(), IUserPreferredPaymentService.class);
-            task = () -> userPreferredPaymentService.getUserPreferredPayments(sessionDTO.get(UID), planId);
+            task = () -> userPreferredPaymentService.getUserPreferredPayments(sessionDTO.get(UID), planId, sessionDTO.get(DEVICE_ID));
             map.put(paymentCode.getCode(), executorService.submit(task));
         }
         executorService.shutdown();

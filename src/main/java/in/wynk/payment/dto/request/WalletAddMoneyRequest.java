@@ -16,5 +16,6 @@ public class WalletAddMoneyRequest {
     private String itemId;
     private double amountToCredit;
     private PaymentCode paymentCode;
+    private long phonePeVersionCode;
 
 }

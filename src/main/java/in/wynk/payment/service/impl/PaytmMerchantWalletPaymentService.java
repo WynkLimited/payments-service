@@ -22,6 +22,9 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.WalletAddMoneyRequest;
+import in.wynk.payment.dto.request.WalletLinkRequest;
+import in.wynk.payment.dto.request.WalletValidateLinkRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.paytm.*;
 import in.wynk.payment.service.*;
@@ -143,7 +146,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         Transaction transaction = TransactionContext.get();
         final String uid = transaction.getUid();
         final String msisdn = transaction.getMsisdn();
-        PaytmWalletDetails paytmWalletDetails = this.getUserPreferredPayments(uid, transaction.getPlanId().toString());
+        PaytmWalletDetails paytmWalletDetails = this.getUserPreferredPayments(uid, transaction.getPlanId().toString(), "");
 
         final PlanDTO selectedPlan = paymentCachingService.getPlan(chargingRequest.getPlanId());
 
@@ -408,13 +411,13 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<PaytmWalletDetails> balance(String uid, String planId) {
+    public BaseResponse<PaytmWalletDetails> balance(String uid, String planId, String deviceId) {
         PlanDTO planDTO = paymentCachingService.getPlan(planId);
         UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
         if (Objects.nonNull(userPreferredPayment)) {
             Wallet wallet = (Wallet) userPreferredPayment.getOption();
             String accessToken = wallet.getAccessToken();
-            if (validateAccessToken(uid, wallet) || refreshAccessToken(uid, wallet)) {
+            if (validateAccessToken(uid, wallet) || refreshAccessToken(uid, wallet, deviceId)) {
                 try {
                     URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
                     PaytmConsultBalanceRequest.ConsultBalanceRequestBody body = PaytmConsultBalanceRequest.ConsultBalanceRequestBody.builder().userToken(accessToken).mid(MID).txnAmount(planDTO.getFinalPrice()).build();
@@ -478,13 +481,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         return false;
     }
 
-    private boolean refreshAccessToken(String uid, Wallet wallet) {
+    private boolean refreshAccessToken(String uid, Wallet wallet, String deviceId) {
         try {
             String refreshToken = wallet.getRefreshToken();
             String msisdn = wallet.getWalletUserId();
             log.info("Validating access token for msisdn: {}, uid: {} with PayTM", msisdn, uid);
             URI uri = new URIBuilder(REFRESH_TOKEN).build();
             HttpHeaders headers = getHttpHeaders();
+            headers.add("x-device-identifier", deviceId);
             PaytmRefreshTokenRequest paytmRefreshTokenRequest = PaytmRefreshTokenRequest.builder().deviceId(headers.getFirst("x-device-identifier")).grantType("refresh_token").refreshToken(refreshToken).build();
             RequestEntity<PaytmRefreshTokenRequest> requestEntity = new RequestEntity<>(paytmRefreshTokenRequest, headers, HttpMethod.POST, uri);
             log.info("Validate paytm access token request: {}", requestEntity);
@@ -531,8 +535,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public PaytmWalletDetails getUserPreferredPayments(String uid, String planId) {
-        return balance(uid, planId).getBody();
+    public PaytmWalletDetails getUserPreferredPayments(String uid, String planId, String deviceId) {
+        return this.balance(uid, planId, deviceId).getBody();
     }
 
 }

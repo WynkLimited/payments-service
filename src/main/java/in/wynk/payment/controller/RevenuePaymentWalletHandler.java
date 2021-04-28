@@ -2,7 +2,6 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.Utils;
@@ -12,7 +11,6 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.WalletAddMoneyRequest;
 import in.wynk.payment.dto.request.WalletLinkRequest;
 import in.wynk.payment.dto.request.WalletValidateLinkRequest;
-import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantWalletService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
@@ -70,7 +68,7 @@ public class RevenuePaymentWalletHandler {
     @AnalyseTransaction(name = "walletBalance")
     public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam PaymentCode paymentCode) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return getMerchantWalletService(paymentCode).balance(sessionDTO.get(UID), sessionDTO.get(PLAN_ID)).getResponse();
+        return getMerchantWalletService(paymentCode).balance(sessionDTO.get(UID), sessionDTO.get(PLAN_ID), sessionDTO.get(DEVICE_ID)).getResponse();
     }
 
     @PostMapping("/addMoney/{sid}")
@@ -78,8 +76,8 @@ public class RevenuePaymentWalletHandler {
     @AnalyseTransaction(name = "walletAddMoney")
     public ResponseEntity<?> addMoney(@PathVariable String sid, @RequestBody WalletAddMoneyRequest request) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String uid = sessionDTO.get(SessionKeys.UID);
-        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(SessionKeys.MSISDN));
+        final String uid = sessionDTO.get(UID);
+        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(MSISDN));
         if (request.getPlanId() == 0 && StringUtils.isBlank(request.getItemId())) {
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid planId or itemId");
         }
@@ -87,8 +85,7 @@ public class RevenuePaymentWalletHandler {
         sessionDTO.put(PAYMENT_CODE, request.getPaymentCode().getCode());
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.addMoney(uid, msisdn, request);
-        return baseResponse.getResponse();
+        return paymentManager.addMoney(uid, msisdn, request).getResponse();
     }
 
 }

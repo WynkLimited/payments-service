@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -343,8 +342,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         payload.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         payload.put(ERROR, PAYU_REDIRECT_MESSAGE);
         payload.put(PAYU_USER_CREDENTIALS, userCredentials);
-        putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getId().toString());
-        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
+        putValueInSession(TRANSACTION_ID, transaction.getId().toString());
+        putValueInSession(PAYMENT_CODE, PaymentCode.PAYU.getCode());
         return payload;
     }
 
@@ -685,7 +684,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return builder.build();
     }
 
-    public UserCardDetails getUserPreferredPayments(String uid, String planId) {
+    public UserCardDetails getUserPreferredPayments(String uid, String planId, String deviceId) {
         String userCredentials = payUMerchantKey + COLON + uid;
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
         PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});

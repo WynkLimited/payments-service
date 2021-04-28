@@ -13,7 +13,7 @@ public interface IMerchantWalletService {
 
     BaseResponse<?> unlink();
 
-    BaseResponse<?> balance(String uid, String planId);
+    BaseResponse<?> balance(String uid, String planId, String deviceId);
 
     BaseResponse<?> addMoney(WalletAddMoneyRequest request);
 

@@ -19,7 +19,5 @@ import lombok.Setter;
 @Setter
 @Deprecated
 public class WalletRequest {
-
     private PaymentCode paymentCode;
-
 }

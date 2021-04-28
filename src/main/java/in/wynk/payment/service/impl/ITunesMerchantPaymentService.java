@@ -231,7 +231,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                 final String itunesTrxnId = latestReceiptInfo.getTransactionId();
                 final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails) && transaction.getStatus() != TransactionStatus.FAILURE) {
+                if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails)) {
                     log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                     code = ItunesStatusCodes.APPLE_21016;
                     transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
@@ -412,9 +412,12 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
             if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
+                LatestReceiptInfo receiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().stream().sorted(Comparator.comparingLong(ItunesReceiptType.SEVEN::getExpireDate).reversed()).collect(Collectors.toList()).get(0);
+                String skuCode = StringUtils.isNotEmpty(receiptInfo.getProductId()) && cachingService.containsSku(receiptInfo.getProductId()) ? cachingService.getNewSku(receiptInfo.getProductId()) : receiptInfo.getProductId();
+                PlanDTO plan = cachingService.getPlanFromSku(skuCode);
                 final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                 final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                return receiptDetailsDao.findById(iTunesId);
+                return receiptDetailsDao.findById(iTunesId).map(receiptDetails -> ItunesReceiptDetails.builder().planId(plan.getId()).receipt(((ItunesReceiptDetails)receiptDetails).getReceipt()).type(((ItunesReceiptDetails) receiptDetails).getType()).transactionId(((ItunesReceiptDetails) receiptDetails).getTransactionId()).id(receiptDetails.getId()).state(receiptDetails.getState()).msisdn(receiptDetails.getMsisdn()).uid(receiptDetails.getUid()).expiry(receiptDetails.getExpiry()).build());
             }
         } catch (Exception e) {
         }

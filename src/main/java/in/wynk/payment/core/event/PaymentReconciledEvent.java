@@ -37,7 +37,7 @@ public abstract class PaymentReconciledEvent {
     private final TransactionStatus transactionStatus;
 
     @Analysed(name = BaseConstants.PAYMENT_EVENT)
-    public abstract PaymentEvent getPaymentCode();
+    public abstract PaymentEvent getPaymentEvent();
 
     public static PaymentReconciledEvent from(Transaction transaction) {
         final PaymentReconciledEvent paymentReconciledEvent;

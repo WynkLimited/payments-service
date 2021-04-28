@@ -1,7 +1,7 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.dto.response.AbstractPaymentDetails;
 
 public interface IUserPreferredPaymentService {
-    UserPreferredPayment getUserPreferredPayments(String uid);
+    AbstractPaymentDetails getUserPreferredPayments(String uid, String planId);
 }

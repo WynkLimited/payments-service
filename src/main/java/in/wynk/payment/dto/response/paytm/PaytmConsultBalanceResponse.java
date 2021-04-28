@@ -14,11 +14,19 @@ public class PaytmConsultBalanceResponse {
 
     @Getter
     @NoArgsConstructor
-    public static class ConsultBalanceResponseBody {
+    private static class ConsultBalanceResponseBody {
 
         private PaytmResultInfo resultInfo;
         private List<PaytmPayOption> payOptions;
 
+    }
+
+    public String getResultStatus() {
+        return getBody().getResultInfo().getResultStatus();
+    }
+
+    public PaytmPayOption getPayOption() {
+        return getBody().getPayOptions().get(0);
     }
 
 }

@@ -143,15 +143,15 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         Transaction transaction = TransactionContext.get();
         final String uid = transaction.getUid();
         final String msisdn = transaction.getMsisdn();
-        PaytmWalletBalanceResponse paytmWalletBalanceResponse = balance().getBody();
+        PaytmWalletDetails paytmWalletDetails = this.getUserPreferredPayments(uid, transaction.getPlanId().toString());
 
         final PlanDTO selectedPlan = paymentCachingService.getPlan(chargingRequest.getPlanId());
 
         final PaymentEvent eventType = chargingRequest.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
 
-        if (!paytmWalletBalanceResponse.isFundsSufficient()) {
-            throw new WynkRuntimeException(WynkErrorType.UT001);
-        }
+//        if (!paytmWalletDetails.isFundsSufficient()) {
+//            throw new WynkRuntimeException(WynkErrorType.UT001);
+//        }
         if (StringUtils.isBlank(msisdn) || StringUtils.isBlank(uid)) {
             throw new WynkRuntimeException(WynkErrorType.UT001, "Linked Msisdn or UID not found for user");
         }
@@ -212,7 +212,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
 
     private String getAccessToken(String uid) {
         String accessToken;
-        UserPreferredPayment userPreferredPayment = getUserPreferredPayments(uid);
+        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
         if (Objects.nonNull(userPreferredPayment)) {
             Wallet wallet = (Wallet) userPreferredPayment.getOption();
             accessToken = wallet.getAccessToken();
@@ -400,7 +400,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             ResponseEntity responseEntity = restTemplate.exchange(requestEntity, String.class);
             HttpStatus statusCode = responseEntity.getStatusCode();
             if (statusCode.is2xxSuccessful()) {
-                userPaymentsManager.deletePaymentDetails(getUserPreferredPayments(uid));
+                userPaymentsManager.deletePaymentDetails(uid, PAYTM_WALLET);
                 return BaseResponse.status(true);
             }
         } catch (Exception e) {}
@@ -408,17 +408,16 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<PaytmWalletBalanceResponse> balance() {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        String uid = sessionDTO.get(UID);
-        UserPreferredPayment userPreferredPayment = getUserPreferredPayments(uid);
+    public BaseResponse<PaytmWalletDetails> balance(String uid, String planId) {
+        PlanDTO planDTO = paymentCachingService.getPlan(planId);
+        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
         if (Objects.nonNull(userPreferredPayment)) {
             Wallet wallet = (Wallet) userPreferredPayment.getOption();
             String accessToken = wallet.getAccessToken();
             if (validateAccessToken(uid, wallet) || refreshAccessToken(uid, wallet)) {
                 try {
                     URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
-                    PaytmConsultBalanceRequest.ConsultBalanceRequestBody body = PaytmConsultBalanceRequest.ConsultBalanceRequestBody.builder().userToken(accessToken).mid(MID).txnAmount(200498).build();
+                    PaytmConsultBalanceRequest.ConsultBalanceRequestBody body = PaytmConsultBalanceRequest.ConsultBalanceRequestBody.builder().userToken(accessToken).mid(MID).txnAmount(planDTO.getFinalPrice()).build();
                     String jsonPayload = objectMapper.writeValueAsString(body);
                     log.debug("Generating signature for payload: {}", jsonPayload);
                     String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
@@ -430,14 +429,20 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                     log.info("Paytm wallet balance response: {}", responseEntity);
                     AnalyticService.update("PAYTM_RESPONSE_CODE", responseEntity.getStatusCodeValue());
                     PaytmConsultBalanceResponse payTmResponse = responseEntity.getBody();
-                    if (payTmResponse != null && payTmResponse.getBody() != null && payTmResponse.getBody().getResultInfo().getResultStatus().equals(Status.SUCCESS.toString())) {
-                        PaytmWalletBalanceResponse response = PaytmWalletBalanceResponse.builder()
-                                .isLinked(true)
-                                .balance(payTmResponse.getBody().getPayOptions().get(0).getAmount())
-                                .deficitBalance(payTmResponse.getBody().getPayOptions().get(0).getDeficitAmount())
-                                .fundsSufficient(payTmResponse.getBody().getPayOptions().get(0).isFundSufficient())
+                    if (payTmResponse != null && payTmResponse.getBody() != null && payTmResponse.getResultStatus().equals(Status.SUCCESS.toString())) {
+                        PaytmWalletDetails response = PaytmWalletDetails.builder()
+                                .active(true)
+                                .linked(true)
+                                .linkedMobileNo(wallet.getWalletUserId())
+                                .balance(payTmResponse.getPayOption().getAmount())
+                                .walletCode(payTmResponse.getPayOption().getPayMethod())
+                                .displayName(payTmResponse.getPayOption().getDisplayName())
+                                .expiredAmount(payTmResponse.getPayOption().getExpiredAmount())
+                                .fundSufficient(payTmResponse.getPayOption().isFundSufficient())
+                                .deficitBalance(payTmResponse.getPayOption().getDeficitAmount())
+                                .addMoneyAllowed(payTmResponse.getPayOption().isAddMoneyAllowed())
                                 .build();
-                        return BaseResponse.<PaytmWalletBalanceResponse>builder().body(response).status(HttpStatus.OK).build();
+                        return BaseResponse.<PaytmWalletDetails>builder().body(response).status(HttpStatus.OK).build();
                     }
                 } catch (URISyntaxException e) {
                     throw new RuntimeException("Http Status Exception Occurred");
@@ -446,7 +451,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
                 }
             }
         }
-        return BaseResponse.<PaytmWalletBalanceResponse>builder().body(PaytmWalletBalanceResponse.defaultUnlinkResponse()).status(HttpStatus.OK).build();
+        return BaseResponse.<PaytmWalletDetails>builder().body(PaytmWalletDetails.builder().active(false).build()).status(HttpStatus.OK).build();
     }
 
     private boolean validateAccessToken(String uid, Wallet wallet) {
@@ -526,8 +531,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public UserPreferredPayment getUserPreferredPayments(String uid) {
-        return userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
+    public PaytmWalletDetails getUserPreferredPayments(String uid, String planId) {
+        return balance(uid, planId).getBody();
     }
 
 }

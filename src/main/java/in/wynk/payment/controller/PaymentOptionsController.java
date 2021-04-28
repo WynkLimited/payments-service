@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,9 +31,7 @@ public class PaymentOptionsController {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "combinedPaymentDetails")
     public WynkResponse<PaymentDetailsWrapper> getPaymentDetails(@PathVariable String sid, @RequestParam String planId, @RequestParam String codes) {
-        List<PaymentCode> paymentCodes = Arrays.asList(codes.split(",")).stream().map(PaymentCode::getFromCode).collect(Collectors.toList());
-        return WynkResponse.<PaymentDetailsWrapper>builder().body(paymentMethodService.getPaymentDetails(planId, paymentCodes)).build();
+        return WynkResponse.<PaymentDetailsWrapper>builder().body(paymentMethodService.getPaymentDetails(planId, Arrays.asList(codes.split(",")).stream().map(PaymentCode::getFromCode).collect(Collectors.toList()))).build();
     }
+
 }
-
-

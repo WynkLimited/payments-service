@@ -15,10 +15,8 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
-import in.wynk.payment.core.dao.entity.Card;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -687,19 +685,12 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return builder.build();
     }
 
-    public UserPreferredPayment getUserPreferredPayments(String uid) {
+    public UserCardDetails getUserPreferredPayments(String uid, String planId) {
         String userCredentials = payUMerchantKey + COLON + uid;
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
-        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {
-        });
-        Card.Builder cardBuilder = new Card.Builder().paymentCode(PaymentCode.PAYU);
-        for (String cardToken : userCardDetailsResponse.getUserCards().keySet()) {
-            cardBuilder.cardDetails(Card.CardDetails.builder().cardToken(cardToken).build());
-        }
-        return UserPreferredPayment.builder()
-                .uid(uid)
-                .option(cardBuilder.build())
-                .build();
+        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});
+        Map<String, CardDetails> cardDetailsMap = userCardDetailsResponse.getUserCards();
+        return UserCardDetails.builder().active(!cardDetailsMap.isEmpty()).cards(userCardDetailsResponse.getUserCards()).build();
     }
 
     @Override

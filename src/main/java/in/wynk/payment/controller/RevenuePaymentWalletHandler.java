@@ -69,7 +69,8 @@ public class RevenuePaymentWalletHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletBalance")
     public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam PaymentCode paymentCode) {
-        return getMerchantWalletService(paymentCode).balance().getResponse();
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        return getMerchantWalletService(paymentCode).balance(sessionDTO.get(UID), sessionDTO.get(PLAN_ID)).getResponse();
     }
 
     @PostMapping("/addMoney/{sid}")
@@ -83,6 +84,7 @@ public class RevenuePaymentWalletHandler {
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid planId or itemId");
         }
         sessionDTO.put(PLAN_ID, request.getPlanId());
+        sessionDTO.put(PAYMENT_CODE, request.getPaymentCode().getCode());
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         BaseResponse<?> baseResponse = paymentManager.addMoney(uid, msisdn, request);

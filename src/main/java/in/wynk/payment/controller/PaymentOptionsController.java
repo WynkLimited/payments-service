@@ -31,7 +31,7 @@ public class PaymentOptionsController {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "combinedPaymentDetails")
     public WynkResponse<PaymentDetailsWrapper> getPaymentDetails(@PathVariable String sid, @RequestParam String planId, @RequestParam String codes) {
-        return WynkResponse.<PaymentDetailsWrapper>builder().body(paymentMethodService.getPaymentDetails(planId, Arrays.asList(codes.split(",")).stream().map(PaymentCode::getFromCode).collect(Collectors.toList()))).build();
+        return WynkResponse.<PaymentDetailsWrapper>builder().body(paymentMethodService.getPaymentDetails(planId, Arrays.asList(codes.split(",")).stream().map(PaymentCode::getFromPaymentCode).collect(Collectors.toList()))).build();
     }
 
 }

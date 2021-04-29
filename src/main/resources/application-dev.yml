@@ -91,7 +91,7 @@ spring:
 payment:
   se:
     s3:
-      bucket: wcf-logs
+      bucket: wynk-framework-dev-ap-south-1
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:

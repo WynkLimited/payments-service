@@ -29,6 +29,7 @@ public class PaymentMysqlDumpService {
     public static final String PAYMENT_DUMP = "weekly_transaction_dump/";
     public static final String PAYMENT_TRANSACTION = "/transaction.json";
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private static Boolean isSuccess=false;
 
     @Autowired
     private AmazonS3 amazonS3Client;
@@ -81,6 +82,7 @@ public class PaymentMysqlDumpService {
     private void putObjectOnAmazonS3(String fileName, String object) {
         try {
             amazonS3Client.putObject(bucket,fileName,object);
+            isSuccess=true;
             log.info("Weekly transaction dump uploaded successfully on S3 at directory: {}", fileName );
         } catch(Exception ex) {
             log.error(AMAZON_SERVICE_ERROR,"Amazon error occurred "+ ex.getMessage());
@@ -88,10 +90,11 @@ public class PaymentMysqlDumpService {
         }
     }
 
-    public void startCassandraS3Export() {
+    public Boolean startCassandraS3Export() {
         log.info("Starting subscription s3 export!!");
         Calendar cal = Calendar.getInstance();
         putTransactionDataOnS3(cal);
         log.info("Done for today {}",cal);
+        return isSuccess;
     }
 }

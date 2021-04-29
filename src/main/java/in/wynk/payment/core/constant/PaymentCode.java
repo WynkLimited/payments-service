@@ -39,4 +39,13 @@ public enum PaymentCode {
         throw new WynkRuntimeException(PaymentErrorType.PAY001);
     }
 
+    public static PaymentCode getFromPaymentCode(String paymentCode) {
+        for (PaymentCode code : values()) {
+            if (StringUtils.equalsIgnoreCase(paymentCode, code.name())) {
+                return code;
+            }
+        }
+        throw new WynkRuntimeException(PaymentErrorType.PAY001);
+    }
+
 }

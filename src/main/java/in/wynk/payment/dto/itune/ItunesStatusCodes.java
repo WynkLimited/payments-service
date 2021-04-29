@@ -36,7 +36,9 @@ public enum ItunesStatusCodes {
     /* APPLE_21017 */
     APPLE_21017("Itunes transaction Id not found", 21017),
     /* APPLE_21018 */
-    APPLE_21018("No itunes receipt found for selected plan", 21018);
+    APPLE_21018("No itunes receipt found for selected plan", 21018),
+    /* APPLE_21019 */
+    APPLE_21019("User has cancelled the subscription from app store", 21019);
 
     private final String errorTitle;
     private final int errorCode;

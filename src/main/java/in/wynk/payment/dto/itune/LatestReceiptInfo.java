@@ -13,6 +13,7 @@ import lombok.ToString;
 @ToString
 public class LatestReceiptInfo {
 
+    @Analysed
     @JsonProperty("cancellation_date")
     private String cancellationDate;
 
@@ -20,6 +21,7 @@ public class LatestReceiptInfo {
     @Analysed
     private String cancellationDateMs;
 
+    @Analysed
     @JsonProperty("cancellation_date_pst")
     private String cancellationDatePst;
 
@@ -45,12 +47,15 @@ public class LatestReceiptInfo {
     @Analysed
     private String isTrialPeriod;
 
+    @Analysed
     @JsonProperty("is_upgraded")
     private String isUpgraded;
 
+    @Analysed
     @JsonProperty("original_purchase_date")
     private String originalPurchaseDate;
 
+    @Analysed
     @JsonProperty("original_purchase_date_ms")
     private String originalPurchaseDateMs;
 
@@ -76,6 +81,7 @@ public class LatestReceiptInfo {
 
     private String quantity;
 
+    @Analysed
     @JsonProperty("subscription_group_identifier")
     private String subscriptionGroupIdentifier;
 

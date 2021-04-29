@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -49,22 +52,21 @@ public class PaymentMysqlDumpService {
         try {
             putTransactionsOnS3Bucket(paymentMysqlDbDump.getTransactions(), cal);
         } catch(AmazonServiceException ex) {
-            // amazons3 could not process
             log.error(AMAZON_SERVICE_ERROR,"AmazonServiceException "+ ex.getErrorMessage());
         } catch(SdkClientException e) {
-            // amazon s3 could not be contacted
             log.error(SDK_CLIENT_ERROR,"SdkClientException "+e.getMessage());
         }
     }
 
-    private PaymentMysqlDbDump getPaymentDbDump() {
+    private PaymentMysqlDbDump getPaymentDbDump() throws ParseException {
         Calendar cal = Calendar.getInstance();
-        Date toDate=cal.getTime();
         cal.add(Calendar.DATE, -7);
-        Date fromDate=cal.getTime();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+        String fromDateFormat=dateFormat.format(cal.getTime());
+        Date fromDate=dateFormat.parse(fromDateFormat);
         log.info("start Date {}",fromDate);
-        log.info("current Date {}", toDate);
         return paymentMysqlDbDumpService.populatePaymentDbDump(fromDate);
+
     }
 
     private void putTransactionsOnS3Bucket(List<Transaction> transactions, Calendar cal) {

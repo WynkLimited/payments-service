@@ -15,18 +15,19 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 @AnalysedEntity
 public enum PaymentCode {
 
-    AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE, false),
-    ITUNES(ITUNES_PAYMENT_SERVICE, false),
-    PAYU(PAYU_MERCHANT_PAYMENT_SERVICE, true),
-    PAYTM_WALLET(PAYTM_MERCHANT_WALLET_SERVICE, true),
-    PHONEPE_WALLET(PHONEPE_MERCHANT_PAYMENT_SERVICE, true),
-    GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE, false),
-    APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, true),
-    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false);
+    AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE, false, false),
+    ITUNES(ITUNES_PAYMENT_SERVICE, false, false),
+    PAYU(PAYU_MERCHANT_PAYMENT_SERVICE, true, true),
+    PAYTM_WALLET(PAYTM_MERCHANT_WALLET_SERVICE, true, false),
+    PHONEPE_WALLET(PHONEPE_MERCHANT_PAYMENT_SERVICE, true, false),
+    GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE, false, false),
+    APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, true, false),
+    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false);
 
     @Analysed(name = PAYMENT_GATEWAY)
     private final String code;
     private final boolean isInternalRecurring;
+    private final boolean isTrialRefundSupported;
 
     public static PaymentCode getFromCode(String codeStr) {
         for (PaymentCode code : values()) {

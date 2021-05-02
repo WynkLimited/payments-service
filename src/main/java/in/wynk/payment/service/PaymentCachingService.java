@@ -86,7 +86,7 @@ public class PaymentCachingService {
                     if(groupsMap.containsKey(method.getGroup())) {
                         List<PaymentMethod> paymentMethodsInternal = newPaymentMethods.getOrDefault(method.getGroup(), new ArrayList<>());
                         paymentMethodsInternal.add(method);
-                        newPaymentMethods.put(method.getGroup(), paymentMethodsInternal);
+                        newPaymentMethods.put(method.getGroup().getId(), paymentMethodsInternal);
                     }
                 }
                 for(String group : groupsMap.keySet()) {

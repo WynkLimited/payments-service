@@ -405,11 +405,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 .parallelStream()
                 .map(cardEntry -> {
                     CardDetails cardDetails = cardEntry.getValue();
-                    PayUCardInfo payUCardInfo = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(),
-                            cardDetails.getCardBin()),
-                            new TypeReference<PayUCardInfo>() {
+                    PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[] {cardDetails.getCardBin(), null, null, "1"}),
+                            new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
                             });
-                    cardDetails.setIssuingBank(String.valueOf(payUCardInfo.getIssuingBank()));
                     return gson.toJson(cardDetails);
                 })
                 .collect(Collectors.toList());
@@ -653,12 +651,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     verificationResponse.setValid(true);
                 return BaseResponse.<PayUVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
-                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
-                PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUCardInfo>() {
+                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[] {verificationRequest.getVerifyValue(), null, null, "1"});
+                PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
                 });
-                if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
-                    payUCardInfo.setValid(true);
-                return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
+                return BaseResponse.<PayUCardInfo>builder().body(payUBinWrapper.getBin()).status(payUBinWrapper.getStatus() == 1 ? HttpStatus.OK: HttpStatus.FAILED_DEPENDENCY).build();
         }
         return BaseResponse.status(false);
     }

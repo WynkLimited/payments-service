@@ -3,7 +3,9 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
+import in.wynk.common.dto.EmptyResponse;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.Status;
 import in.wynk.common.enums.TransactionStatus;
@@ -333,7 +335,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             }
             log.info("Otp sent successfully. Status: {}", paytmWalletLinkResponse.getStatus());
             sessionDTO.put(STATE_TOKEN, paytmWalletLinkResponse.getState_token());
-            return BaseResponse.<PaytmWalletLinkResponsePaytm>builder().status(HttpStatus.OK).body(paytmWalletLinkResponse).headers(requestEntity.getHeaders()).build();
+            WynkResponse.WynkResponseWrapper<PaytmWalletLinkResponsePaytm> response = WynkResponse.WynkResponseWrapper.<PaytmWalletLinkResponsePaytm>builder().data(paytmWalletLinkResponse).build();
+            return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(response).headers(requestEntity.getHeaders()).build();
         } catch (URISyntaxException e) {
             log.error(PAYTM_ERROR, "Error from paytm: {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - " + e.getMessage());
@@ -353,7 +356,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             PaytmWalletValidateLinkResponsePaytm paytmWalletValidateLinkResponse = responseEntity.getBody();
             if (paytmWalletValidateLinkResponse != null && paytmWalletValidateLinkResponse.getStatus().equals(Status.SUCCESS)) {
                 saveToken(paytmWalletValidateLinkResponse);
-                return BaseResponse.status(true);
+                WynkResponse.WynkResponseWrapper<Void> response = WynkResponse.WynkResponseWrapper.<Void>builder().data(null).build();
+                return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(response).headers(requestEntity.getHeaders()).build();
             }
         } catch (URISyntaxException e) {
             AnalyticService.update("otpValidated", false);
@@ -404,7 +408,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             HttpStatus statusCode = responseEntity.getStatusCode();
             if (statusCode.is2xxSuccessful()) {
                 userPaymentsManager.deletePaymentDetails(uid, PAYTM_WALLET);
-                return BaseResponse.status(true);
+                WynkResponse.WynkResponseWrapper<Void> response = WynkResponse.WynkResponseWrapper.<Void>builder().data(null).build();
+                return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(response).headers(requestEntity.getHeaders()).build();
             }
         } catch (Exception e) {}
         return BaseResponse.status(false);
@@ -508,7 +513,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<Map<String, String>> addMoney(WalletAddMoneyRequest walletAddMoneyRequest) {
+    public BaseResponse<?> addMoney(WalletAddMoneyRequest walletAddMoneyRequest) {
         try {
             Transaction transaction = TransactionContext.get();
             TreeMap<String, String> parameters = new TreeMap<>();
@@ -527,10 +532,11 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
             Map<String, String> params = new HashMap<>();
             params.put(INFO, payTmRequestParams);
-            return BaseResponse.<Map<String, String>>builder().body(params).status(HttpStatus.OK).build();
+            WynkResponse.WynkResponseWrapper<Map<String, String>> response = WynkResponse.WynkResponseWrapper.<Map<String, String>>builder().data(params).build();
+            return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(response).build();
         } catch (Exception e) {
             log.error(e.toString());
-            throw new WynkRuntimeException("Http Status Exception Occurred");
+            throw new WynkRuntimeException(e);
         }
     }
 

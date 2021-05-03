@@ -88,7 +88,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         for (PaymentCode paymentCode : codes) {
             IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(paymentCode.getCode(), IUserPreferredPaymentService.class);
             task = () -> userPreferredPaymentService.getUserPreferredPayments(sessionDTO.get(UID), planId, sessionDTO.get(DEVICE_ID));
-            map.put(paymentCode.getCode(), executorService.submit(task));
+            map.put(paymentCode.name(), executorService.submit(task));
         }
         executorService.shutdown();
         try {
@@ -99,7 +99,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
             Map<String, AbstractPaymentDetails> paymentDetailsMap = paymentDetailsWrapper.getDetails();
             for (String paymentCode: map.keySet()) {
                 try {
-                    paymentDetailsMap.put(paymentCode, map.get(paymentCode).get());
+                    if (map.get(paymentCode).get().isActive()) {
+                        paymentDetailsMap.put(paymentCode, map.get(paymentCode).get());
+                    }
                 } catch (Exception e) {}
             }
             return paymentDetailsWrapper;

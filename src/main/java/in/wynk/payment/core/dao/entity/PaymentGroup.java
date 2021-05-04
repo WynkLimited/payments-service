@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @SuperBuilder
 @Document("payment_groups")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class PaymentGroup extends MongoBaseEntity {
+public class PaymentGroup extends MongoBaseEntity<String> {
     private String displayName;
     private int hierarchy;
 

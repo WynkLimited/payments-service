@@ -1,10 +1,8 @@
 package in.wynk.payment.core.dao.entity;
 
 import in.wynk.data.entity.MongoBaseEntity;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,12 +10,6 @@ import java.io.Serializable;
 
 @Getter
 @SuperBuilder
+@NoArgsConstructor
 @Document("user_preferred_payments")
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class UserPreferredPayment extends MongoBaseEntity implements Serializable {
-
-    private String uid;
-    @Setter
-    private Payment option;
-
-}
+public abstract class UserPreferredPayment extends MongoBaseEntity<Key> implements Serializable {}

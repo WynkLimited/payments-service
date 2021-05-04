@@ -7,6 +7,7 @@ public interface PaymentConstants extends BaseConstants {
     String CARD = "CARD";
     String TXN_ID = "tid";
     String ERROR = "error";
+    String WALLET = "WALLET";
     String SUBSID = "subsId";
     String STATUS = "status";
     String FAILED = "failed";

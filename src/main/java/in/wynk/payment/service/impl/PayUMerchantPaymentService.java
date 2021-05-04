@@ -21,7 +21,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
-import in.wynk.payment.dto.payu.CardDetails;
+import in.wynk.payment.core.dao.entity.CardDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;

@@ -10,6 +10,7 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.Key;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
@@ -18,7 +19,6 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.phonepe.PhonePeResponseData;
@@ -30,6 +30,7 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,12 +43,11 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_AUTO_DEBIT;
-import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_WALLET;
-import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
-import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
@@ -116,7 +116,7 @@ public class PhonePeWalletAutoDebitService implements IRenewalMerchantWalletServ
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + UNLINK_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse phonePeWalletResponse = response.getBody();
             PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).build();
-            userPaymentsManager.deletePaymentDetails(uid, PHONEPE_WALLET);
+            userPaymentsManager.deletePaymentDetails(userPaymentsManager.getPaymentDetails(getKey(uid)));
             return new BaseResponse<>(PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build(), HttpStatus.OK, null);
 
         } catch (HttpStatusCodeException hex) {
@@ -145,6 +145,10 @@ public class PhonePeWalletAutoDebitService implements IRenewalMerchantWalletServ
         String uid = sessionDTO.get(UID);
         String userAuthToken = getAccessToken(uid);
         return new BaseResponse<>(addMoney(userAuthToken, Double.valueOf(request.getAmountToCredit()).longValue(), request.getPhonePeVersionCode()), HttpStatus.OK, null);
+    }
+
+    private Key getKey(String uid) {
+        return Key.builder().uid(uid).paymentGroup(WALLET).paymentCode(PHONEPE_AUTO_DEBIT.name()).build();
     }
 
     private PhonePeWalletResponse sendOTP(String mobileNumber) {
@@ -290,20 +294,23 @@ public class PhonePeWalletAutoDebitService implements IRenewalMerchantWalletServ
 
 
     private void saveToken(String userAuthToken) {
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(userAuthToken)) {
+        if (StringUtils.isNotBlank(userAuthToken)) {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             String walletUserId = sessionDTO.get(WALLET_USER_ID);
             String uid = sessionDTO.get(UID);
-            Wallet wallet = new Wallet.Builder().paymentCode(PHONEPE_AUTO_DEBIT).walletUserId(walletUserId).accessToken(userAuthToken).build();
-            userPaymentsManager.saveWalletToken(uid, wallet);
+            userPaymentsManager.savePaymentDetails(Wallet.builder()
+                    .accessToken(userAuthToken)
+                    .walletUserId(walletUserId)
+                    .id(getKey(uid))
+                    .build());
         }
     }
 
     private String getAccessToken(String uid) {
         String accessToken;
-        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PHONEPE_AUTO_DEBIT);
+        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(getKey(uid));
         if (Objects.nonNull(userPreferredPayment)) {
-            Wallet wallet = (Wallet) userPreferredPayment.getOption();
+            Wallet wallet = (Wallet) userPreferredPayment;
             accessToken = wallet.getAccessToken();
             if (org.apache.commons.lang3.StringUtils.isBlank(accessToken)) {
                 throw new WynkRuntimeException(WynkErrorType.UT018);
@@ -480,7 +487,7 @@ public class PhonePeWalletAutoDebitService implements IRenewalMerchantWalletServ
         PhonePeWalletResponse phonePeWalletResponse = this.balance(uid, planId, deviceId).getBody();
         if (phonePeWalletResponse.isSuccess()) {
             PhonePeWallet phonePeWallet = phonePeWalletResponse.getData().getWallet();
-            Wallet wallet = (Wallet) userPaymentsManager.getPaymentDetails(uid, PHONEPE_AUTO_DEBIT).getOption();
+            Wallet wallet = (Wallet) userPaymentsManager.getPaymentDetails(getKey(uid));
             return PhonePeWalletDetails.builder()
                     .linked(true)
                     .active(phonePeWallet.getWalletActive())

@@ -3,7 +3,6 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
-import in.wynk.common.dto.EmptyResponse;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
@@ -16,6 +15,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.StatusMode;
+import in.wynk.payment.core.dao.entity.Key;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
@@ -53,6 +53,7 @@ import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 import static in.wynk.logging.BaseLoggingMarkers.HTTP_ERROR;
 import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
+import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
@@ -216,18 +217,17 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     private String getAccessToken(String uid) {
-        String accessToken;
-        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
+        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(getKey(uid));
         if (Objects.nonNull(userPreferredPayment)) {
-            Wallet wallet = (Wallet) userPreferredPayment.getOption();
-            accessToken = wallet.getAccessToken();
+            Wallet wallet = (Wallet) userPreferredPayment;
+            String accessToken = wallet.getAccessToken();
             if (StringUtils.isBlank(accessToken) || wallet.getTokenValidity() < System.currentTimeMillis()) {
                 throw new WynkRuntimeException("token expired error");
             }
+            return accessToken;
         } else {
             throw new WynkRuntimeException("link wallet error");
         }
-        return accessToken;
     }
     //TODO refactor and test
     private PaytmChargingResponse withdrawFromPaytm(String uid, Transaction transaction, String amount, String accessToken, String deviceId) {
@@ -384,14 +384,14 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             String walletUserId = sessionDTO.get(WALLET_USER_ID);
             String uid = sessionDTO.get(UID);
-            Wallet wallet = new Wallet.Builder()
-                    .paymentCode(PAYTM_WALLET)
+            Wallet wallet = Wallet.builder()
+                    .id(getKey(uid))
                     .walletUserId(walletUserId)
                     .tokenValidity(tokenResponse.getExpiry())
                     .accessToken(tokenResponse.getAccessToken())
                     .refreshToken(tokenResponse.getRefreshToken())
                     .build();
-            userPaymentsManager.saveWalletToken(uid, wallet);
+            userPaymentsManager.savePaymentDetails(wallet);
         }
     }
 
@@ -407,7 +407,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             ResponseEntity responseEntity = restTemplate.exchange(requestEntity, String.class);
             HttpStatus statusCode = responseEntity.getStatusCode();
             if (statusCode.is2xxSuccessful()) {
-                userPaymentsManager.deletePaymentDetails(uid, PAYTM_WALLET);
+                userPaymentsManager.deletePaymentDetails(userPaymentsManager.getPaymentDetails(getKey(uid)));
                 WynkResponse.WynkResponseWrapper<Void> response = WynkResponse.WynkResponseWrapper.<Void>builder().data(null).build();
                 return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(response).headers(requestEntity.getHeaders()).build();
             }
@@ -418,9 +418,9 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     @Override
     public BaseResponse<PaytmWalletDetails> balance(String uid, String planId, String deviceId) {
         PlanDTO planDTO = paymentCachingService.getPlan(planId);
-        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(uid, PAYTM_WALLET);
+        UserPreferredPayment userPreferredPayment = userPaymentsManager.getPaymentDetails(getKey(uid));
         if (Objects.nonNull(userPreferredPayment)) {
-            Wallet wallet = (Wallet) userPreferredPayment.getOption();
+            Wallet wallet = (Wallet) userPreferredPayment;
             String accessToken = wallet.getAccessToken();
             if (validateAccessToken(uid, wallet) || refreshAccessToken(uid, wallet, deviceId)) {
                 try {
@@ -500,9 +500,13 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             ResponseEntity<PaytmRefreshTokenResponse> responseEntity = restTemplate.exchange(requestEntity, PaytmRefreshTokenResponse.class);
             PaytmRefreshTokenResponse paytmRefreshTokenResponse = responseEntity.getBody();
             if (responseEntity.getStatusCode().is2xxSuccessful() && Objects.nonNull(paytmRefreshTokenResponse)) {
-                wallet.setAccessToken(paytmRefreshTokenResponse.getAccessToken());
-                wallet.setTokenValidity(paytmRefreshTokenResponse.getExpiresIn());
-                userPaymentsManager.saveWalletToken(uid, wallet);
+                userPaymentsManager.savePaymentDetails(Wallet.builder()
+                        .id(wallet.getId())
+                        .walletUserId(wallet.getWalletUserId())
+                        .refreshToken(wallet.getRefreshToken())
+                        .accessToken(paytmRefreshTokenResponse.getAccessToken())
+                        .tokenValidity(paytmRefreshTokenResponse.getExpiresIn())
+                        .build());
                 return true;
             }
         } catch (URISyntaxException e) {
@@ -543,6 +547,10 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     @Override
     public PaytmWalletDetails getUserPreferredPayments(String uid, String planId, String deviceId) {
         return this.balance(uid, planId, deviceId).getBody();
+    }
+
+    private Key getKey(String uid) {
+        return Key.builder().uid(uid).paymentGroup(WALLET).paymentCode(PAYTM_WALLET.name()).build();
     }
 
 }

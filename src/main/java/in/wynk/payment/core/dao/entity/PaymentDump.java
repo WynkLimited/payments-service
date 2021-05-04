@@ -11,6 +11,6 @@ import java.util.List;
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
-public class PaymentMysqlDbDump {
+public class PaymentDump {
     List<Transaction> transactions;
 }

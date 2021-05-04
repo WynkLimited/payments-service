@@ -16,7 +16,7 @@ import java.util.Map;
 @Document("payment_methods")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentMethod extends MongoBaseEntity<String> {
-    private PaymentGroup group;
+    private String group;
     private Map<String, Object> meta;
     private String displayName;
     private String subtitle;

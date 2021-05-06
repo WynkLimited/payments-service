@@ -684,8 +684,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return builder.build();
     }
 
-    public UserCardDetails getUserPreferredPayments(String uid, String planId, String deviceId) {
-        String userCredentials = payUMerchantKey + COLON + uid;
+    public UserCardDetails getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
+        String userCredentials = payUMerchantKey + COLON + userPreferredPaymentsRequest.getUid();
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
         PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});
         Map<String, CardDetails> cardDetailsMap = userCardDetailsResponse.getUserCards();

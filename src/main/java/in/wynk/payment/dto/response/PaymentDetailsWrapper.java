@@ -7,5 +7,5 @@ import java.util.Map;
 
 @Getter
 public class PaymentDetailsWrapper {
-    private final Map<String, AbstractPaymentDetails> details = new HashMap<>();
+    private final Map<String, Map<String, AbstractPaymentDetails>> details = new HashMap<>();
 }

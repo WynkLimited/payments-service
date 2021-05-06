@@ -3,8 +3,11 @@ package in.wynk.payment.service.impl;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.Key;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
+import in.wynk.payment.dto.request.UserPreferredPaymentsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.PaymentDetailsWrapper;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
@@ -26,6 +29,7 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+
 
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
@@ -79,16 +83,18 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     }
 
     @Override
-    public PaymentDetailsWrapper getPaymentDetails(String planId, List<PaymentCode> codes) {
+    public PaymentDetailsWrapper getPaymentDetails(CombinedPaymentDetailsRequest request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         PaymentDetailsWrapper paymentDetailsWrapper = new PaymentDetailsWrapper();
         ExecutorService executorService = Executors.newFixedThreadPool(N);
-        Map<String, Future<AbstractPaymentDetails>> map = new HashMap<>();
+        Map<Key, Future<AbstractPaymentDetails>> map = new HashMap<>();
         Callable<AbstractPaymentDetails> task;
-        for (PaymentCode paymentCode : codes) {
-            IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(paymentCode.getCode(), IUserPreferredPaymentService.class);
-            task = () -> userPreferredPaymentService.getUserPreferredPayments(sessionDTO.get(UID), planId, sessionDTO.get(DEVICE_ID));
-            map.put(paymentCode.name(), executorService.submit(task));
+        for (String paymentGroup : request.getPaymentGroups().keySet()) {
+            for (String paymentCode : request.getPaymentGroups().get(paymentGroup)) {
+                IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCode.getFromPaymentCode(paymentCode).getCode(), IUserPreferredPaymentService.class);
+                task = () -> userPreferredPaymentService.getUserPreferredPayments(UserPreferredPaymentsRequest.builder().deviceId(sessionDTO.get(DEVICE_ID)).paymentCode(paymentCode).paymentGroup(paymentGroup).planId(request.getPlanId()).uid(sessionDTO.get(UID)).build());
+                map.put(Key.builder().paymentCode(paymentCode).paymentGroup(paymentGroup).build(), executorService.submit(task));
+            }
         }
         executorService.shutdown();
         try {
@@ -96,13 +102,17 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 executorService.shutdownNow();
             }
         } finally {
-            Map<String, AbstractPaymentDetails> paymentDetailsMap = paymentDetailsWrapper.getDetails();
-            for (String paymentCode: map.keySet()) {
+            Map<String, AbstractPaymentDetails> temp;
+            Map<String, Map<String, AbstractPaymentDetails>> paymentDetailsMap = paymentDetailsWrapper.getDetails();
+            for (Key key : map.keySet()) {
                 try {
-                    if (map.get(paymentCode).get().isActive()) {
-                        paymentDetailsMap.put(paymentCode, map.get(paymentCode).get());
+                    if (map.get(key).get().isActive()) {
+                        temp = paymentDetailsMap.getOrDefault(key.getPaymentGroup(), new HashMap<>());
+                        temp.put(key.getPaymentCode(), map.get(key).get());
+                        paymentDetailsMap.put(key.getPaymentGroup(), temp);
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
             return paymentDetailsWrapper;
         }

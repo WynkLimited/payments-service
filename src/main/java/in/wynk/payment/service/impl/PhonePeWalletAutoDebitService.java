@@ -483,11 +483,11 @@ public class PhonePeWalletAutoDebitService implements IRenewalMerchantWalletServ
     }
 
     @Override
-    public PhonePeWalletDetails getUserPreferredPayments(String uid, String planId, String deviceId) {
-        PhonePeWalletResponse phonePeWalletResponse = this.balance(uid, planId, deviceId).getBody();
+    public PhonePeWalletDetails getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
+        PhonePeWalletResponse phonePeWalletResponse = this.balance(userPreferredPaymentsRequest.getUid(), userPreferredPaymentsRequest.getPlanId(), userPreferredPaymentsRequest.getDeviceId()).getBody();
         if (phonePeWalletResponse.isSuccess()) {
             PhonePeWallet phonePeWallet = phonePeWalletResponse.getData().getWallet();
-            Wallet wallet = (Wallet) userPaymentsManager.getPaymentDetails(getKey(uid));
+            Wallet wallet = (Wallet) userPaymentsManager.getPaymentDetails(getKey(userPreferredPaymentsRequest.getUid()));
             return PhonePeWalletDetails.builder()
                     .linked(true)
                     .active(phonePeWallet.getWalletActive())

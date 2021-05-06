@@ -149,7 +149,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         Transaction transaction = TransactionContext.get();
         final String uid = transaction.getUid();
         final String msisdn = transaction.getMsisdn();
-        PaytmWalletDetails paytmWalletDetails = this.getUserPreferredPayments(uid, transaction.getPlanId().toString(), "");
+        PaytmWalletDetails paytmWalletDetails = this.getUserPreferredPayments(UserPreferredPaymentsRequest.builder().uid(uid).planId(transaction.getPlanId().toString()).build());
 
         final PlanDTO selectedPlan = paymentCachingService.getPlan(chargingRequest.getPlanId());
 
@@ -545,8 +545,8 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public PaytmWalletDetails getUserPreferredPayments(String uid, String planId, String deviceId) {
-        return this.balance(uid, planId, deviceId).getBody();
+    public PaytmWalletDetails getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
+        return this.balance(userPreferredPaymentsRequest.getUid(), userPreferredPaymentsRequest.getPlanId(), userPreferredPaymentsRequest.getDeviceId()).getBody();
     }
 
     private Key getKey(String uid) {

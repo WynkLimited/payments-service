@@ -104,6 +104,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 .perMonthValue(plan.getPrice().getMonthlyAmount())
                 .discountedPrice(plan.getPrice().getAmount())
                 .price(plan.getPrice().getDisplayAmount())
+                .validity(plan.getPeriod().getValidity())
                 .discount(plan.getPrice().getSavings())
                 .partnerLogo(partner.getPartnerLogo())
                 .freeTrialAvailable(isFreeTrail)

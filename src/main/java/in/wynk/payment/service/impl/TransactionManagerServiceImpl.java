@@ -117,19 +117,24 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     private void updateAndPublish(Transaction transaction, Consumer<Transaction> fetchAndUpdateFromSourceFn, boolean isSync) {
-        TransactionStatus existingTransactionStatus = transaction.getStatus();
-        fetchAndUpdateFromSourceFn.accept(transaction);
-        TransactionStatus finalTransactionStatus = transaction.getStatus();
-        updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, isSync);
+            TransactionStatus existingTransactionStatus = transaction.getStatus();
+            fetchAndUpdateFromSourceFn.accept(transaction);
+            TransactionStatus finalTransactionStatus = transaction.getStatus();
+            updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, isSync);
     }
 
-    private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync) {
+    private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync){
         try {
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
-                recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
-                if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
-                        (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED)) {
-                    subscribePlan(transaction, finalTransactionStatus, isSync);
+                if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                    // do nothing as per https://airteldigital.atlassian.net/browse/RG-1610
+                    return;
+                } else {
+                    recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
+                    if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
+                            (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED)) {
+                        subscribePlan(transaction, finalTransactionStatus, isSync);
+                    }
                 }
             }
         } catch (WynkRuntimeException e) {

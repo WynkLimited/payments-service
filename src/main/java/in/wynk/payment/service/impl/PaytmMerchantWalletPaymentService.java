@@ -10,7 +10,6 @@ import in.wynk.common.enums.Status;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.Utils;
-import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -41,7 +40,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -130,67 +128,50 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         this.checkSumServiceHelper = CheckSumServiceHelper.getCheckSumServiceHelper();
     }
 
-    @Override//TODO refactor and test
+    @Override
     public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
-        Transaction transaction = TransactionContext.get();
-        final int planId = transaction.getPlanId();
-        Map<String, List<String>> params = (Map<String, List<String>>) callbackRequest.getBody();
-        List<String> status = params.getOrDefault(PAYTM_STATUS, new ArrayList<>());
-        if (CollectionUtils.isEmpty(status) || !status.get(0).equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
+        Map<String, String> params = (Map<String, String>) callbackRequest.getBody();
+        String status = params.get(PAYTM_STATUS);
+        if (StringUtils.isBlank(status) || !status.equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
             log.error(APPLICATION_ERROR, "Add money txn at paytm failed");
             throw new RuntimeException("Failed to add money to wallet");
         }
         log.info("Successfully added money to wallet. Now withdrawing amount");
-        return doCharging(ChargingRequest.builder().planId(planId).paymentCode(PAYTM_WALLET).build());
+        return doCharging(null);
     }
 
-    @Override//TODO refactor and test
+    @Override
     public BaseResponse<?> doCharging(ChargingRequest chargingRequest) {
         Transaction transaction = TransactionContext.get();
+        String redirectUrl = null;
         final String uid = transaction.getUid();
         final String msisdn = transaction.getMsisdn();
-        PaytmWalletDetails paytmWalletDetails = this.getUserPreferredPayments(UserPreferredPaymentsRequest.builder().uid(uid).planId(transaction.getPlanId().toString()).build());
-
-        final PlanDTO selectedPlan = paymentCachingService.getPlan(chargingRequest.getPlanId());
-
-        final PaymentEvent eventType = chargingRequest.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
-
-//        if (!paytmWalletDetails.isFundsSufficient()) {
-//            throw new WynkRuntimeException(WynkErrorType.UT001);
-//        }
+        final String sid = SessionContextHolder.getId();
+        final String planId = transaction.getPlanId().toString();
         if (StringUtils.isBlank(msisdn) || StringUtils.isBlank(uid)) {
-            throw new WynkRuntimeException(WynkErrorType.UT001, "Linked Msisdn or UID not found for user");
+            throw new WynkRuntimeException("Linked Msisdn or UID not found for user");
+        }
+        PaytmWalletDetails paytmWalletDetails = this.getUserPreferredPayments(UserPreferredPaymentsRequest.builder().planId(planId).uid(uid).build());
+        if (!paytmWalletDetails.isFundSufficient()) {
+            throw new WynkRuntimeException("Balance insufficient in linked wallet for this transaction to succeed");
         }
         try {
-            withdrawAndUpdateTransactionFromSource(transaction);
-            return BaseResponse.redirectResponse(String.format(successPage, SessionContextHolder.get().getId().toString(), transaction.getId().toString()));
-        } catch (Exception e) {
-            return BaseResponse.redirectResponse(failurePage);
-        } finally {
-            //Add reconciliation
-//            PaymentReconciliationMessage message = new PaymentReconciliationMessage(transaction);
-//            publishSQSMessage(reconciliationQueue, reconciliationMessageDelay, message);
-        }
-    }
-    //TODO refactor and test
-    private void withdrawAndUpdateTransactionFromSource(Transaction transaction) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String deviceId = sessionDTO.get(DEVICE_ID);
-        try {
-            String accessToken = getAccessToken(transaction.getUid());
-            PaytmChargingResponse paytmChargingResponse = withdrawFromPaytm(transaction.getUid(), transaction, String.valueOf(transaction.getAmount()), accessToken, deviceId);
+            PaytmChargingResponse paytmChargingResponse = withdrawFromPaytm(transaction);
             if (paytmChargingResponse != null && paytmChargingResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
                 transaction.setStatus(TransactionStatus.SUCCESS.name());
-            } else if (Objects.nonNull(paytmChargingResponse)) {
+                redirectUrl = successPage+sid;
+            } else {
                 transaction.setStatus(TransactionStatus.FAILURE.name());
                 applicationEventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build());
             }
-        } catch (WynkRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.name());
-            log.error(PAYTM_ERROR, "unable to execute withdrawAndUpdateTransactionFromSource due to ", e);
-            throw new WynkRuntimeException("Something went wrong in withdrawAndUpdateTransactionFromSource due to ", e);
+            log.error(PAYTM_ERROR, "unable to charge due to ", e);
+        } finally {
+            if (StringUtils.isBlank(redirectUrl)) {
+                redirectUrl = failurePage+sid;
+            }
+            return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(WynkResponse.WynkResponseWrapper.builder().data(redirectUrl).build()).build();
         }
     }
 
@@ -213,7 +194,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         final PaymentEvent eventType = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
 
         Transaction transaction = TransactionContext.get();
-        PaytmChargingResponse response = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);
+//        PaytmChargingResponse response = withdrawFromPaytm(uid, transaction, String.valueOf(amount), accessToken, deviceId);
     }
 
     private String getAccessToken(String uid) {
@@ -229,22 +210,22 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
             throw new WynkRuntimeException("link wallet error");
         }
     }
-    //TODO refactor and test
-    private PaytmChargingResponse withdrawFromPaytm(String uid, Transaction transaction, String amount, String accessToken, String deviceId) {
+
+    private PaytmChargingResponse withdrawFromPaytm(Transaction transaction) {
         MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             URI uri = new URIBuilder(AUTO_DEBIT).build();
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put("MID", MID);
             parameters.put("ReqType", "WITHDRAW");
-            parameters.put("TxnAmount", String.valueOf(amount));
-            parameters.put("AppIP", "capi-host");
-            parameters.put("OrderId", transaction.getId().toString());
+            parameters.put("TxnAmount", String.valueOf(transaction.getAmount()));
+            parameters.put("AppIP", "45.251.51.117");
+            parameters.put("OrderId", transaction.getIdStr());
+            parameters.put("DeviceId", transaction.getMsisdn());
             parameters.put("Currency", "INR");
-            parameters.put("DeviceId", deviceId);
-            parameters.put("SSOToken", accessToken);
+            parameters.put("SSOToken", getAccessToken(transaction.getUid()));
             parameters.put("PaymentMode", "PPI");
-            parameters.put("CustId", uid);
+            parameters.put("CustId", transaction.getUid());
             parameters.put("IndustryType", "Retail");
             parameters.put("Channel", "WEB");
             parameters.put("AuthMode", "USRPWD");
@@ -270,7 +251,7 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         }
     }
 
-    @Override//TODO refactor and test
+    @Override
     public BaseResponse<?> status(AbstractTransactionStatusRequest transactionStatusRequest) {
         final Transaction transaction = TransactionContext.get();
         if (transactionStatusRequest.getMode().equals(StatusMode.SOURCE)) {
@@ -285,13 +266,13 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
         }
         return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(transaction.getId().toString(), transaction.getPlanId())).status(HttpStatus.OK).build();
     }
-    //TODO refactor and test
+
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(String txnId) {
         try {
             URI uri = new URIBuilder(TRANSACTION_STATUS).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", "application/json");
-            PaytmStatusRequest.PaytmStatusRequestBody body = PaytmStatusRequest.PaytmStatusRequestBody.builder().mid(MID).orderId(txnId).txnType("PREAUTH").build();
+            PaytmStatusRequest.PaytmStatusRequestBody body = PaytmStatusRequest.PaytmStatusRequestBody.builder().mid(MID).orderId(txnId).txnType("WITHDRAW").build();
             String jsonPayload = objectMapper.writeValueAsString(body);
             String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
             log.info("Generated checksum: {} for payload: {}", signature, jsonPayload);

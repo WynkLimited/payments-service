@@ -66,9 +66,9 @@ public class RevenuePaymentWalletHandler {
     @GetMapping("/balance/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletBalance")
-    public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam PaymentCode paymentCode) {
+    public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam String planId, @RequestParam PaymentCode paymentCode) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return getMerchantWalletService(paymentCode).balance(sessionDTO.get(UID), sessionDTO.get(PLAN_ID).toString(), sessionDTO.get(DEVICE_ID)).getResponse();
+        return getMerchantWalletService(paymentCode).balance(sessionDTO.get(UID), planId, sessionDTO.get(DEVICE_ID)).getResponse();
     }
 
     @PostMapping("/addMoney/{sid}")

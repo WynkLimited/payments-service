@@ -305,7 +305,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                     StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
-                finalTransactionStatus = TransactionStatus.FAILURE;
+                finalTransactionStatus = TransactionStatus.INPROGRESS;
             }
         } else {
             finalTransactionStatus = TransactionStatus.FAILURE;

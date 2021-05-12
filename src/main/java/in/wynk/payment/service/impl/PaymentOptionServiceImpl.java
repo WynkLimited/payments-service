@@ -106,6 +106,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 .price(plan.getPrice().getDisplayAmount())
                 .discount(plan.getPrice().getSavings())
                 .partnerLogo(partner.getPartnerLogo())
+                .month(plan.getPeriod().getMonth())
                 .freeTrialAvailable(isFreeTrail)
                 .partnerName(partner.getName())
                 .build();

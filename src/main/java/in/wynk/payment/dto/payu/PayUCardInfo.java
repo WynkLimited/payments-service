@@ -25,7 +25,7 @@ public class PayUCardInfo {
 
     private boolean autoRenewSupported;
 
-    private boolean isValid;
+    private boolean valid;
 
     @JsonProperty(value = "issuing_bank")
     public void setIssuingBank(String issuingBank) {
@@ -48,7 +48,7 @@ public class PayUCardInfo {
     }
 
     public boolean isValid() {
-        return getIsDomestic().equalsIgnoreCase("1");
+        return getIsDomestic().equalsIgnoreCase("Y");
     }
 
     public boolean isAutoRenewSupported() {

@@ -20,7 +20,7 @@
                 ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd,
                 aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
-            <maxHistory>90</maxHistory>
+            <maxHistory>3</maxHistory>
             <maxFileSize>200MB</maxFileSize>
         </rollingPolicy>
     </appender>
@@ -41,7 +41,7 @@
             <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd,
                 aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
-            <maxHistory>90</maxHistory>
+            <maxHistory>3</maxHistory>
             <maxFileSize>200MB</maxFileSize>
         </rollingPolicy>
     </appender>
@@ -63,7 +63,7 @@
             <fileNamePattern>${ANALYTICS_LOG_PATH:-/tmp}/payment/logstash/day=%d{yyyy-MM-dd,
                 aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
-            <maxHistory>90</maxHistory>
+            <maxHistory>3</maxHistory>
             <maxFileSize>200MB</maxFileSize>
         </rollingPolicy>
     </appender>

@@ -159,8 +159,13 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         final ItunesReceipt itunesReceipt = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn(), request.getUid(), request.getPlanId());
         if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
             final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
+            boolean autoRenewal = false;
+            if(CollectionUtils.isNotEmpty(itunesReceipt.getPendingRenewalInfo())) {
+                autoRenewal = itunesReceipt.getPendingRenewalInfo().stream().filter(pendingRenewal -> !StringUtils.isEmpty(latestReceiptInfo.getProductId()) && latestReceiptInfo.getProductId().equalsIgnoreCase(pendingRenewal.getAutoRenewProductId()) && pendingRenewal.getAutoRenewStatus() == "1" && pendingRenewal.getOriginalTransactionId() == latestReceiptInfo.getOriginalTransactionId()).findAny().isPresent();
+            }
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
             return ItunesLatestReceiptResponse.builder()
+                    .autoRenewal(autoRenewal)
                     .itunesReceiptType(receiptType)
                     .latestReceiptInfo(itunesReceipt.getLatestReceiptInfoList())
                     .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())

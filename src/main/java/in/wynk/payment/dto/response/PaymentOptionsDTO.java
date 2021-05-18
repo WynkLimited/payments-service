@@ -26,6 +26,7 @@ public class PaymentOptionsDTO {
         private final String partnerLogo;
         private final String discount;
         private final String validityUnit;
+        private final Integer month;
         private final int perMonthValue;
         private final double price;
         private final double discountedPrice;

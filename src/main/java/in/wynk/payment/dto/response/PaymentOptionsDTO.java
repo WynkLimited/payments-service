@@ -64,7 +64,7 @@ public class PaymentOptionsDTO {
         private final List<String> suffixes;
 
         public PaymentMethodDTO(PaymentMethod method) {
-            this.group = method.getGroup().getId();
+            this.group = method.getGroup();
             this.meta = method.getMeta();
             this.hierarchy = method.getHierarchy();
             this.displayName = method.getDisplayName();

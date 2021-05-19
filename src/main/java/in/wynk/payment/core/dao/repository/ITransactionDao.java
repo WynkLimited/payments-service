@@ -12,7 +12,7 @@ import java.util.List;
 
 @Repository(BeanConstant.TRANSACTION_DAO)
 public interface ITransactionDao extends JpaRepository<Transaction, String> {
-    @Query(value="SELECT * FROM payments.transaction WHERE init_timestamp >= :fromDate", nativeQuery = true)
+    @Query("FROM Transaction WHERE init_timestamp >= :fromDate")
     List<Transaction> getTransactionWeeklyDump(@Param("fromDate") Date fromDate);
 
 }

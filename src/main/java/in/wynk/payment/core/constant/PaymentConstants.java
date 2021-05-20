@@ -28,7 +28,7 @@ public interface PaymentConstants extends BaseConstants {
     
     String SOURCE_MODE = "mode";
     String MERCHANT_TRANSACTION = "merchantTransaction";
-
+    String PAYMENT_MODE="paymentMode";
     String ATTEMPT_SEQUENCE = "attemptSequence";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";

@@ -43,7 +43,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PHONEPE_UNLINK_FAILURE = MarkerFactory.getMarker("PHONEPE_UNLINK_FAILURE");
     Marker PHONEPE_ADD_MONEY_FAILURE = MarkerFactory.getMarker("PHONEPE_ADD_MONEY_FAILURE");
 
-
+    Marker PAYTM_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYTM_CHARGING_STATUS_VERIFICATION");
 
     Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
     Marker ITUNES_ERROR = MarkerFactory.getMarker("ITUNES_ERROR");

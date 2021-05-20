@@ -76,9 +76,8 @@ public class PaymentManager {
         Transaction originalTransaction = TransactionContext.get();
         final Transaction refundTransaction = initiateRefundTransaction(originalTransaction.getUid(), originalTransaction.getMsisdn(), originalTransaction.getPlanId(), originalTransaction.getItemId(), originalTransaction.getClientAlias(), originalTransaction.getAmount(), originalTransaction.getPaymentChannel());
         String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
-        originalTransaction.putValueInPaymentMetaData(EXTERNAL_TRANSACTION_ID, externalReferenceId);
         final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(originalTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
-        AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, refundTransaction, request.getReason());
+        AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
         BaseResponse<?> refundInitResponse = refundService.refund(refundRequest);
         AbstractPaymentRefundResponse refundResponse = (AbstractPaymentRefundResponse) refundInitResponse.getBody();
         if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
@@ -99,6 +98,7 @@ public class PaymentManager {
     public BaseResponse<?> doCharging(String uid, String msisdn, ChargingRequest request) {
         final PaymentCode paymentCode = request.getPaymentCode();
         final Transaction transaction = initiateTransaction(request.isAutoRenew(), request.getPlanId(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
+        final TransactionStatus existingStatus = transaction.getStatus();
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                 .paymentCode(transaction.getPaymentChannel())
                 .paymentEvent(transaction.getType())
@@ -109,7 +109,9 @@ public class PaymentManager {
                 .uid(transaction.getUid())
                 .build());
         final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        return chargingService.doCharging(request);
+        BaseResponse response = chargingService.doCharging(request);
+        transactionManager.updateAndAsyncPublish(transaction, existingStatus, transaction.getStatus());
+        return response;
     }
 
     @TransactionAware(txnId = "#request.transactionId")

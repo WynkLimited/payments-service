@@ -30,11 +30,10 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
-
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
-    private static final int N=3;
+    private static final int N=8;
     private final PaymentCachingService paymentCachingService;
 
     public PaymentOptionServiceImpl(PaymentCachingService paymentCachingService) {

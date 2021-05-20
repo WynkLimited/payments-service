@@ -173,12 +173,13 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private void publishAnalytics(Transaction transaction) {
         AnalyticService.update(UID, transaction.getUid());
         AnalyticService.update(MSISDN, transaction.getMsisdn());
+        AnalyticService.update(PLAN_ID, transaction.getPlanId());
+        AnalyticService.update(ITEM_ID, transaction.getItemId());
+        AnalyticService.update(AMOUNT_PAID, transaction.getAmount());
         AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
-        AnalyticService.update(PLAN_ID, transaction.getPlanId());
-        AnalyticService.update(ITEM_ID, transaction.getItemId());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
 

@@ -3,6 +3,8 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.StandardBusinessErrorDetails;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.utils.Utils;
@@ -16,13 +18,15 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.ErrorCode;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.UserWalletDetails;
 import in.wynk.payment.dto.response.phonepe.PhonePeResponseData;
-import in.wynk.payment.dto.response.phonepe.PhonePeWalletDetails;
 import in.wynk.payment.dto.response.phonepe.PhonePeWalletResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
@@ -49,6 +53,7 @@ import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_AUTO_DEBIT;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
+import static in.wynk.payment.dto.phonepe.PhonePeConstants.PHONEPE_OTP_TOKEN;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
@@ -134,9 +139,44 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public BaseResponse<PhonePeWalletResponse> balance(String uid, String planId, String deviceId) {
-        String userAuthToken = getAccessToken(uid);
-        return new BaseResponse<>(balance(userAuthToken, deviceId), HttpStatus.OK, null);
+    public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(String uid, String planId, String deviceId) {
+        ErrorCode errorCode = null;
+        HttpStatus httpStatus = HttpStatus.OK;
+        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
+        return BaseResponse.<WynkResponseEntity.WynkBaseResponse<UserWalletDetails>>builder().status(httpStatus).body(builder.error(StandardBusinessErrorDetails.builder().code("sssss").build()).build()).build();
+
+//        String userAuthToken = getAccessToken(uid);
+//        PhonePeAutoDebitRequest phonePeAutoDebitRequest = PhonePeAutoDebitRequest.builder().merchantId(merchantId).userAuthToken(userAuthToken).build();
+//        try {
+//            String requestJson = gson.toJson(phonePeAutoDebitRequest);
+//            Map<String, String> requestMap = new HashMap<>();
+//            requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
+//            String xVerifyHeader = Utils.encodeBase64(requestJson) + BALANCE_API + salt;
+//            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.add(X_DEVICE_ID, deviceId);
+//            headers.add(X_VERIFY, xVerifyHeader);
+//            headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+//            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
+//            ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + BALANCE_API, requestEntity, PhonePeWalletResponse.class);
+//            PhonePeWalletResponse phonePeWalletResponse = response.getBody();
+//            PhonePeResponseData data = PhonePeResponseData.builder().wallet(phonePeWalletResponse.getData().getWallet()).linkedUser(phonePeWalletResponse.getData().getLinkedUser()).code(phonePeWalletResponse.getCode()).message(phonePeWalletResponse.getMessage()).build();
+//            return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
+//
+//        } catch (HttpStatusCodeException hex) {
+//            AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
+//            log.error(PHONEPE_GET_BALANCE_FAILURE, hex.getResponseBodyAsString());
+//            String errorResponse = hex.getResponseBodyAsString();
+//            PhonePeWalletResponse phonePeWalletResponse = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
+//            PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
+//            return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
+//
+//        } catch (Exception e) {
+//            log.error(PHONEPE_GET_BALANCE_FAILURE, e.getMessage(), e);
+//            throw new WynkRuntimeException(PHONEPE_GET_BALANCE_FAILURE, e.getMessage(), e);
+//        }
+//        return new BaseResponse<>(balance(userAuthToken, deviceId), HttpStatus.OK, null);
     }
 
     @Override
@@ -220,39 +260,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             throw new WynkRuntimeException(PHONEPE_OTP_VERIFICATION_FAILURE, e.getMessage(), e);
         }
     }
-
-    private PhonePeWalletResponse balance(String userAuthToken, String deviceId) {
-        PhonePeAutoDebitRequest phonePeAutoDebitRequest = PhonePeAutoDebitRequest.builder().merchantId(merchantId).userAuthToken(userAuthToken).build();
-        try {
-            String requestJson = gson.toJson(phonePeAutoDebitRequest);
-            Map<String, String> requestMap = new HashMap<>();
-            requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-            String xVerifyHeader = Utils.encodeBase64(requestJson) + BALANCE_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(X_DEVICE_ID, deviceId);
-            headers.add(X_VERIFY, xVerifyHeader);
-            headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
-            ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + BALANCE_API, requestEntity, PhonePeWalletResponse.class);
-            PhonePeWalletResponse phonePeWalletResponse = response.getBody();
-            PhonePeResponseData data = PhonePeResponseData.builder().wallet(phonePeWalletResponse.getData().getWallet()).linkedUser(phonePeWalletResponse.getData().getLinkedUser()).code(phonePeWalletResponse.getCode()).message(phonePeWalletResponse.getMessage()).build();
-            return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
-
-        } catch (HttpStatusCodeException hex) {
-            AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
-            log.error(PHONEPE_GET_BALANCE_FAILURE, hex.getResponseBodyAsString());
-            String errorResponse = hex.getResponseBodyAsString();
-            PhonePeWalletResponse phonePeWalletResponse = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
-            return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
-
-        } catch (Exception e) {
-            log.error(PHONEPE_GET_BALANCE_FAILURE, e.getMessage(), e);
-            throw new WynkRuntimeException(PHONEPE_GET_BALANCE_FAILURE, e.getMessage(), e);
-        }
-    }
-
 
     private PhonePeWalletResponse addMoney(String userAuthToken, long amount, long phonePeVersionCode) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -339,11 +346,11 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         String uid = sessionDTO.get(UID);
         String deviceId = sessionDTO.get(DEVICE_ID);
         String userAuthToken = getAccessToken(uid);
-        PhonePeWalletResponse phonePeWalletBalanceResponse = balance(userAuthToken, deviceId);
-        if (phonePeWalletBalanceResponse.isSuccess() && phonePeWalletBalanceResponse.getData().getWallet().getAvailableBalance() < (Double.valueOf(transaction.getAmount() * 100).longValue())) {
-
-            return new BaseResponse<>(addMoney(userAuthToken, Double.valueOf(transaction.getAmount() * 100).longValue(), sessionDTO.get("phonePeVersionCode")), HttpStatus.OK, null);
-        }
+//        PhonePeWalletResponse phonePeWalletBalanceResponse = balance(userAuthToken, deviceId);
+//        if (phonePeWalletBalanceResponse.isSuccess() && phonePeWalletBalanceResponse.getData().getWallet().getAvailableBalance() < (Double.valueOf(transaction.getAmount() * 100).longValue())) {
+//
+//            return new BaseResponse<>(addMoney(userAuthToken, Double.valueOf(transaction.getAmount() * 100).longValue(), sessionDTO.get("phonePeVersionCode")), HttpStatus.OK, null);
+//        }
         PhonePeAutoDebitChargeRequest payload = (PhonePeAutoDebitChargeRequest) chargingRequest;
         PhonePeAutoDebitChargeRequest peAutoDebitChargeRequest = PhonePeAutoDebitChargeRequest.builder().merchantId(merchantId).userAuthToken(userAuthToken).amount(Double.valueOf(transaction.getAmount() * 100).longValue()).deviceContext(payload.getDeviceContext()).transactionId(transaction.getId().toString()).build();
         try {
@@ -464,21 +471,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public PhonePeWalletDetails getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
-        PhonePeWalletResponse phonePeWalletResponse = this.balance(userPreferredPaymentsRequest.getUid(), userPreferredPaymentsRequest.getPlanId(), userPreferredPaymentsRequest.getDeviceId()).getBody();
-        if (phonePeWalletResponse.isSuccess()) {
-            PhonePeWallet phonePeWallet = phonePeWalletResponse.getData().getWallet();
-            Wallet wallet = (Wallet) userPaymentsManager.getPaymentDetails(getKey(userPreferredPaymentsRequest.getUid()));
-            return PhonePeWalletDetails.builder()
-                    .linked(true)
-                    .active(phonePeWallet.getWalletActive())
-                    .linkedMobileNo(wallet.getWalletUserId())
-                    .walletCode(phonePeWalletResponse.getCode())
-                    .balance(phonePeWallet.getAvailableBalance())
-                    .build();
-        } else {
-            return PhonePeWalletDetails.builder().active(false).build();
-        }
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
+        return this.balance(userPreferredPaymentsRequest.getUid(), userPreferredPaymentsRequest.getPlanId(), userPreferredPaymentsRequest.getDeviceId()).getBody();
     }
 
 }

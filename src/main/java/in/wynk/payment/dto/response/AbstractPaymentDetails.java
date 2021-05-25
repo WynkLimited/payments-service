@@ -1,6 +1,5 @@
 package in.wynk.payment.dto.response;
 
-import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -8,7 +7,4 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class AbstractPaymentDetails {
-    @Analysed
-    private boolean active;
-}
+public abstract class AbstractPaymentDetails {}

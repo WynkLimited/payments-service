@@ -6,6 +6,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
@@ -23,6 +24,7 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.core.dao.entity.CardDetails;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
@@ -684,12 +686,12 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return builder.build();
     }
 
-    public UserCardDetails getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
         String userCredentials = payUMerchantKey + COLON + userPreferredPaymentsRequest.getUid();
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
         PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});
         Map<String, CardDetails> cardDetailsMap = userCardDetailsResponse.getUserCards();
-        return UserCardDetails.builder().active(!cardDetailsMap.isEmpty()).cards(userCardDetailsResponse.getUserCards()).build();
+        return WynkResponseEntity.WynkBaseResponse.<AbstractPaymentDetails>builder().data(UserCardDetails.builder().cards(userCardDetailsResponse.getUserCards()).build()).build();
     }
 
     @Override

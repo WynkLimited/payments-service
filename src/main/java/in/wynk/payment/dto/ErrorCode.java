@@ -1,6 +1,7 @@
 package in.wynk.payment.dto;
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public enum ErrorCode {
@@ -78,11 +79,16 @@ public enum ErrorCode {
     PAYTM071("PAYTM071", "NA", "Client permission not found", "Client permission not found"),
     PAYTM072("PAYTM072", "SUCCESS", "Request served successfully.", "Request served successfully."),
     PAYTM073("PAYTM073", "WM_1003", "Merchant does not exist.", "Merchant does not exist."),
-    UNKNOWN("UNKNOWN", "UNKNOWN", "Oops something went wrong", "Oops something went wrong");
+    UNKNOWN("UNKNOWN", "", "Oops something went wrong", "");
 
+    @Setter
     private String internalCode;
+
     private String externalCode;
+
+    @Setter
     private String internalMessage;
+
     private String externalMessage;
 
     ErrorCode(String internalCode, String externalCode, String internalMessage, String externalMessage) {

@@ -1,11 +1,13 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.paytm.pg.merchant.CheckSumServiceHelper;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
 import in.wynk.common.dto.WynkResponse;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.Status;
 import in.wynk.common.enums.TransactionStatus;
@@ -435,9 +437,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
 
     @Override
     public BaseResponse<?> linkRequest(WalletLinkRequest walletLinkRequest) {
-        HttpStatus httpStatus = HttpStatus.OK;
         ErrorCode errorCode = null;
-        WynkResponse.WynkResponseWrapper.WynkResponseWrapperBuilder builder = WynkResponse.WynkResponseWrapper.<Void>builder();
+        HttpStatus httpStatus = HttpStatus.OK;
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             String phone = walletLinkRequest.getEncSi();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -448,9 +450,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             PaytmWalletOtpRequest paytmWalletOtpRequest = PaytmWalletOtpRequest.builder().phone(phone).scopes(Arrays.asList("wallet")).build();
             RequestEntity<PaytmWalletOtpRequest> requestEntity = new RequestEntity<>(paytmWalletOtpRequest, headers, HttpMethod.POST, uri);
             log.info("Paytm OTP request: {}", requestEntity);
-            ResponseEntity<PaytmWalletLinkResponsePaytm> responseEntity = restTemplate.exchange(requestEntity, PaytmWalletLinkResponsePaytm.class);
+            ResponseEntity<PaytmWalletLinkResponse> responseEntity = restTemplate.exchange(requestEntity, PaytmWalletLinkResponse.class);
             log.info("Paytm OTP response: {}", responseEntity);
-            PaytmWalletLinkResponsePaytm paytmWalletLinkResponse = responseEntity.getBody();
+            PaytmWalletLinkResponse paytmWalletLinkResponse = responseEntity.getBody();
             if (paytmWalletLinkResponse.getStatus() == Status.SUCCESS && StringUtils.isNotBlank(paytmWalletLinkResponse.getState_token())) {
                 log.info("Otp sent successfully. Status: {}", paytmWalletLinkResponse.getStatus());
                 sessionDTO.put(STATE_TOKEN, paytmWalletLinkResponse.getState_token());
@@ -459,6 +461,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             }
         } catch (HttpStatusCodeException e) {
             log.error(PAYTM_ERROR, "Error from paytm: {}", e.getMessage(), e);
+            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletLinkResponse.class).getResponseCode());
         } catch (Exception e) {
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -466,12 +469,15 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             if (Objects.nonNull(errorCode)) {
                 builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build());
             }
-            return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(httpStatus).body(builder.build()).build();
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.build()).build();
         }
     }
 
     @Override
     public BaseResponse<?> validateLink(WalletValidateLinkRequest walletValidateLinkRequest) {
+        ErrorCode errorCode = null;
+        HttpStatus httpStatus = HttpStatus.OK;
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             URI uri = new URIBuilder(VALIDATE_OTP).build();
             HttpHeaders headers = getHttpHeaders();
@@ -479,18 +485,26 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             walletValidateLinkRequest.setState_token(sessionDTO.get(STATE_TOKEN));
             RequestEntity<WalletValidateLinkRequest> requestEntity = new RequestEntity<>(walletValidateLinkRequest, headers, HttpMethod.POST, uri);
             log.info("Validate paytm otp request: {}", requestEntity);
-            ResponseEntity<PaytmWalletValidateLinkResponsePaytm> responseEntity = restTemplate.exchange(requestEntity, PaytmWalletValidateLinkResponsePaytm.class);
-            PaytmWalletValidateLinkResponsePaytm paytmWalletValidateLinkResponse = responseEntity.getBody();
+            ResponseEntity<PaytmWalletValidateLinkResponse> responseEntity = restTemplate.exchange(requestEntity, PaytmWalletValidateLinkResponse.class);
+            PaytmWalletValidateLinkResponse paytmWalletValidateLinkResponse = responseEntity.getBody();
             if (paytmWalletValidateLinkResponse != null && paytmWalletValidateLinkResponse.getStatus().equals(Status.SUCCESS)) {
                 saveToken(paytmWalletValidateLinkResponse);
-                WynkResponse.WynkResponseWrapper<Void> response = WynkResponse.WynkResponseWrapper.<Void>builder().data(null).build();
-                return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(response).headers(requestEntity.getHeaders()).build();
+            } else {
+                errorCode = ErrorCode.getErrorCodesFromExternalCode(paytmWalletValidateLinkResponse.getResponseCode());
             }
-        } catch (URISyntaxException e) {
+        } catch (HttpStatusCodeException e) {
             AnalyticService.update("otpValidated", false);
             log.error(PAYTM_ERROR, "Error in response: {}", e.getMessage(), e);
+            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletValidateLinkResponse.class).getResponseCode());
+        } catch (Exception e) {
+            errorCode = ErrorCode.UNKNOWN;
+            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        } finally {
+            if (Objects.nonNull(errorCode)) {
+                builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build());
+            }
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.build()).build();
         }
-        throw new WynkRuntimeException(PaymentErrorType.PAY998, PAYTM_ERROR);
     }
 
     private HttpHeaders getHttpHeaders() {
@@ -506,7 +520,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         }
     }
 
-    private void saveToken(PaytmWalletValidateLinkResponsePaytm tokenResponse) {
+    private void saveToken(PaytmWalletValidateLinkResponse tokenResponse) {
         if (!tokenResponse.getTokens().isEmpty()) {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             String walletUserId = sessionDTO.get(WALLET_USER_ID);

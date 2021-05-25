@@ -63,5 +63,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker CLIENT_CALLBACK_INFO = MarkerFactory.getMarker("CLIENT_CALLBACK_INFO");
 
+    Marker TOKEN_EXPIRED_ERROR = MarkerFactory.getMarker("TOKEN_EXPIRED_ERROR");
+    Marker LINK_WALLET_ERROR = MarkerFactory.getMarker("LINK_WALLET_ERROR");
+
 
 }

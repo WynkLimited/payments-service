@@ -34,8 +34,9 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY997("Point Purchase Failure", "Unable to generate session, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.POINT_PURCHASE_SESSION_INIT_FAILURE),
     PAY888("Not Supported", "This service is currently not supported", HttpStatus.NOT_FOUND, PaymentLoggingMarker.NOT_SUPPORTED_SERVICE),
     PAY889("Refund Failure", "Refund process is not supported by the payment partner", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_REFUND_ERROR),
-    PYA887("Transaction Reconciliation Failure", "Failed to reconcile refund", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
-
+    PAY887("Transaction Reconciliation Failure", "Failed to reconcile refund", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
+    PAY201("Token Expired Error", "User Access Token Stored in Db is expired, try refreshing it", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.TOKEN_EXPIRED_ERROR),
+    PAY202("Link Wallet Error", "Unable to find any linked wallet for corresponding uid-paymentCode combination. Try linking a fresh wallet", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.LINK_WALLET_ERROR),
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     /**

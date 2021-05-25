@@ -27,7 +27,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("NET_BANKING").hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.builder().displayName("CARD").build()).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -36,7 +36,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("CARD").hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.builder().displayName("CARD").build()).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
     }
 
@@ -45,7 +45,7 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("WALLET").hierarchy(10)
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group(PaymentGroup.builder().displayName("WALLET").build()).hierarchy(10)
                 .meta(meta).paymentCode(PaymentCode.PAYTM_WALLET).state(State.ACTIVE).build();
     }
 

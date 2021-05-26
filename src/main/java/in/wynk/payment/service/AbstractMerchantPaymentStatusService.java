@@ -10,6 +10,7 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.subscription.common.dto.OfferDTO;
@@ -31,7 +32,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
         if (AbstractTransactionReconciliationStatusRequest.class.isAssignableFrom(transactionStatusRequest.getClass())) {
             return status((AbstractTransactionReconciliationStatusRequest) transactionStatusRequest);
         } else if (ChargingTransactionStatusRequest.class.isAssignableFrom(transactionStatusRequest.getClass())) {
@@ -41,9 +42,9 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         }
     }
 
-    public abstract BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest);
+    public abstract BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest);
 
-    public BaseResponse<ChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
+    public BaseResponse<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         Transaction transaction = TransactionContext.get();
         ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
 
@@ -76,7 +77,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 builder.packDetails(paidPackBuilder.build());
             }
         }
-        return BaseResponse.<ChargingStatusResponse>builder().body(builder.build()).status(HttpStatus.OK).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().body(builder.build()).status(HttpStatus.OK).build();
     }
 
 }

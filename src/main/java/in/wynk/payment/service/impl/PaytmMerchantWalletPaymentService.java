@@ -292,20 +292,20 @@ public class PaytmMerchantWalletPaymentService implements IRenewalMerchantWallet
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
         final String tid = chargingStatusRequest.getTransactionId();
         final Transaction transaction = transactionManager.get(tid);
         if (chargingStatusRequest.getMode().equals(StatusMode.SOURCE)) {
             PaytmChargingStatusResponse paytmResponse = fetchChargingStatusFromPaytm(tid);
             if (paytmResponse != null && paytmResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId())).status(HttpStatus.OK).build();
+                return BaseResponse.<AbstractChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId())).status(HttpStatus.OK).build();
             }
         } else if (chargingStatusRequest.getMode().equals(StatusMode.LOCAL)) {
             if (TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-                return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(chargingStatusRequest.getPlanId()), chargingStatusRequest.getPlanId())).status(HttpStatus.OK).build();
+                return BaseResponse.<AbstractChargingStatusResponse>builder().body(ChargingStatusResponse.success(tid, cachingService.validTillDate(chargingStatusRequest.getPlanId()), chargingStatusRequest.getPlanId())).status(HttpStatus.OK).build();
             }
         }
-        return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid, transaction.getPlanId())).status(HttpStatus.OK).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().body(ChargingStatusResponse.failure(tid, transaction.getPlanId())).status(HttpStatus.OK).build();
     }
 
     private PaytmChargingStatusResponse fetchChargingStatusFromPaytm(String txnId) {

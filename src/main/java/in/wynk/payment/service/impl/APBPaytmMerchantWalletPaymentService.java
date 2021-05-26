@@ -61,61 +61,61 @@ import static in.wynk.payment.dto.paytm.PayTmConstants.PAYTM_CHECKSUMHASH;
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
 public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantWalletService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
-    @Value("${paytm.native.merchantId}")
+    @Value("${apbpaytm.native.merchantId}")
     private String MID;
 
-    @Value("${paytm.native.secret}")
+    @Value("${apbpaytm.native.secret}")
     private String SECRET;
 
-    @Value("${paytm.refund.api}")
+    @Value("${apbpaytm.refund.api}")
     private String REFUND;
 
-    @Value("${paytm.sendOtp.api}")
+    @Value("${apbpaytm.sendOtp.api}")
     private String SEND_OTP;
 
-    @Value("${paytm.native.clientId}")
+    @Value("${apbpaytm.native.clientId}")
     private String CLIENT_ID;
 
-    @Value("${paytm.autoDebit.api}")
+    @Value("${apbpaytm.autoDebit.api}")
     private String AUTO_DEBIT;
 
-    @Value("${payment.success.page}")
+    @Value("${apbpayment.success.page}")
     private String successPage;
 
-    @Value("${payment.failure.page}")
+    @Value("${apbpayment.failure.page}")
     private String failurePage;
 
-    @Value("${paytm.native.wcf.callbackUrl}")
+    @Value("${apbpaytm.native.wcf.callbackUrl}")
     private String callBackUrl;
 
-    @Value("${paytm.validateOtp.api}")
+    @Value("${apbpaytm.validateOtp.api}")
     private String VALIDATE_OTP;
 
-    @Value("${paytm.native.merchantKey}")
+    @Value("${apbpaytm.native.merchantKey}")
     private String MERCHANT_KEY;
 
-    @Value("${paytm.refundStatus.api}")
+    @Value("${apbpaytm.refundStatus.api}")
     private String REFUND_STATUS;
 
-    @Value("${paytm.refreshToken.api}")
+    @Value("${apbpaytm.refreshToken.api}")
     private String REFRESH_TOKEN;
 
-    @Value("${paytm.validateToken.api}")
+    @Value("${apbpaytm.validateToken.api}")
     private String VALIDATE_TOKEN;
 
-    @Value("${paytm.fetchInstrument.api}")
+    @Value("${apbpaytm.fetchInstrument.api}")
     private String FETCH_INSTRUMENT;
 
-    @Value("${paytm.transactionStatus.api}")
+    @Value("${apbpaytm.transactionStatus.api}")
     private String TRANSACTION_STATUS;
 
-    @Value("${paytm.revokeAccessToken.api}")
+    @Value("${apbpaytm.revokeAccessToken.api}")
     private String REVOKE_ACCESS_TOKEN;
 
-    @Value("{payment.encryption.key}")
+    @Value("{apbpayment.encryption.key}")
     private String paymentEncryptionKey;
 
-    @Value("${paytm.requesting.website}")
+    @Value("${apbpaytm.requesting.website}")
     private String paytmRequestingWebsite;
 
     private final ObjectMapper objectMapper;

@@ -78,6 +78,18 @@ public enum ErrorCode {
     PAYTM071("PAYTM071", "NA", "Client permission not found", "Client permission not found"),
     PAYTM072("PAYTM072", "SUCCESS", "Request served successfully.", "Request served successfully."),
     PAYTM073("PAYTM073", "WM_1003", "Merchant does not exist.", "Merchant does not exist."),
+
+    PHONEPE001("PHONEPE001", "AUTHORIZATION_FAILED", "Unauthorized", "Value of X-VERIFY is incorrect."),
+    PHONEPE002("PHONEPE002", "BAD_REQUEST", "please provide valid details.", "Invalid request payload."),
+    PHONEPE003("PHONEPE003", "INTERNAL_SERVER_ERROR", "Internal server error. Try again after sometime.", "There is an error trying to process your transaction at the moment. Please try again in a while."),
+    PHONEPE004("PHONEPE004", "USER_BLACKLISTED", "PhonePe has blocked your account. Try another payment method", "Customer is blacklisted on PhonePe side."),
+    PHONEPE005("PHONEPE005", "USER_BLOCKED", "Your PhonePe account is blocked for 24 hours. Try another payment method.", "Too many incorrect attempts. Please try again after 24 hours."),
+    PHONEPE006("PHONEPE006", "OTP_LIMIT_EXCEEDED", "You cannot request OTP anymore in this session as your limit has expired. Try again after sometime.", "There is a limit on number of times OTP can be sent on a mobile number. This code will be received is that limit is crossed."),
+    PHONEPE007("PHONEPE007", "TOO_MANY_REQUESTS", "Oops! something went wrong. Try again after sometime or try another payment method", "Getting too many requests from merchant for this API."),
+    PHONEPE008("PHONEPE008", "INVALID_OTP_TOKEN", "Something went wrong. Try again / Resend OTP", "OTP token is not valid or expired."),
+    PHONEPE009("PHONEPE009", "OTP_VERIFY_FAILED", "Invalid OTP. Enter the correct OTP.", "OTP is not valid"),
+    PHONEPE010("PHONEPE010", "OTP_EXPIRED", "OTP has expired. Resend OTP", "Your OTP has expired. Please regenerate your otp."),
+    PHONEPE011("PHONEPE011", "OTP_ALREADY_VERIFIED", "The OTP has been already verified", "The OTP has been already verified "),
     UNKNOWN("UNKNOWN", "UNKNOWN", "Oops something went wrong", "Oops something went wrong");
 
     private String internalCode;

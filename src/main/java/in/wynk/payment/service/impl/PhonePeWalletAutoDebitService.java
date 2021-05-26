@@ -1,8 +1,11 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.StandardBusinessErrorDetails;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.utils.Utils;
@@ -16,11 +19,13 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.ErrorCode;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.paytm.PaytmWalletLinkResponse;
 import in.wynk.payment.dto.response.phonepe.PhonePeResponseData;
 import in.wynk.payment.dto.response.phonepe.PhonePeWalletDetails;
 import in.wynk.payment.dto.response.phonepe.PhonePeWalletResponse;
@@ -76,25 +81,76 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     public PhonePeWalletAutoDebitService(Gson gson,
                                          PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher,
-                                         @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+                                         @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper) {
         super(cachingService);
         this.gson = gson;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     public BaseResponse<?> linkRequest(WalletLinkRequest request) {
-        return new BaseResponse<>(sendOTP(request.getEncSi()), HttpStatus.OK, null);
+
+        ErrorCode errorCode = null;
+        HttpStatus httpStatus = HttpStatus.OK;
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
+        try {
+            String phone = request.getEncSi();
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            sessionDTO.put(WALLET_USER_ID, phone);
+            log.info("Sending OTP to {} via PhonePe", phone);
+            PhonePeWalletResponse linkRequestResponse=this.sendOTP(phone);
+            if (linkRequestResponse!=null && linkRequestResponse.isSuccess() && linkRequestResponse.getData().getCode().equalsIgnoreCase(SUCCESS) ) {
+                log.info("Otp sent successfully. Status: {}", linkRequestResponse.getCode());
+            } else {
+                errorCode = ErrorCode.getErrorCodesFromExternalCode(linkRequestResponse.getData().getCode());
+            }
+        } catch (HttpStatusCodeException e) {
+            log.error(PHONEPE_OTP_SEND_FAILURE, "Error from phonePe while sending otp: {}", e.getMessage(), e);
+            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletLinkResponse.class).getResponseCode());
+        } catch (Exception e) {
+            errorCode = ErrorCode.UNKNOWN;
+            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        } finally {
+            if (Objects.nonNull(errorCode)) {
+                builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build()).success(false);
+            }
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.build()).build();
+        }
+
     }
 
     @Override
     public BaseResponse<?> validateLink(WalletValidateLinkRequest request) {
-        return new BaseResponse<>(verifyOtp(request.getOtp()), HttpStatus.OK, null);
+        ErrorCode errorCode = null;
+        HttpStatus httpStatus = HttpStatus.OK;
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
+        try {
+            PhonePeWalletResponse verifyOtpResponse=this.verifyOtp(request.getOtp());
+            if (verifyOtpResponse!=null && verifyOtpResponse.isSuccess() && verifyOtpResponse.getData().getCode().equalsIgnoreCase(SUCCESS)) {
+                saveToken(verifyOtpResponse.getData().getUserAuthToken());
+            } else {
+                errorCode = ErrorCode.getErrorCodesFromExternalCode(verifyOtpResponse.getData().getCode());;
+            }
+        } catch (HttpStatusCodeException e) {
+            AnalyticService.update("otpValidated", false);
+            log.error(PHONEPE_OTP_VERIFICATION_FAILURE, "Error in response while verifying otp: {}", e.getMessage(), e);
+            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletLinkResponse.class).getResponseCode());
+        } catch (Exception e) {
+            errorCode = ErrorCode.UNKNOWN;
+            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        } finally {
+            if (Objects.nonNull(errorCode)) {
+                builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build()).success(false);
+            }
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.build()).build();
+        }
     }
 
     @Override
@@ -205,7 +261,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + VERIFY_OTP_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse phonePeWalletResponse = response.getBody();
-            saveToken(phonePeWalletResponse.getData().getUserAuthToken());
             PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
             return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
         } catch (HttpStatusCodeException hex) {

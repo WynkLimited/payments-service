@@ -127,7 +127,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         try {
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
                 if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-                    unsubscribePlan(transaction, finalTransactionStatus, isSync);
+                    // do nothing as per https://airteldigital.atlassian.net/browse/RG-1610
+                    return;
                 } else {
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
                     if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||

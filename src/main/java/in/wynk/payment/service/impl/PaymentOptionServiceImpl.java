@@ -1,11 +1,9 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.common.dto.CombinedStandardBusinessErrorDetails;
-import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.dto.StandardBusinessErrorDetails;
-import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Key;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
@@ -117,8 +115,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
             Map<String, AbstractPaymentDetails> tempData;
             Map<String, Map<String, AbstractPaymentDetails>> paymentDetailsMap = new HashMap<>();
 
-            Map<String, StandardBusinessErrorDetails> tempError;
-            Map<String, Map<String, StandardBusinessErrorDetails>> paymentErrorMap = new HashMap<>();
+            Map<String, AbstractErrorDetails> tempError;
+            Map<String, Map<String, AbstractErrorDetails>> paymentErrorMap = new HashMap<>();
 
             for (Key key: map.keySet()) {
                 try {
@@ -132,10 +130,15 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
                     if (Objects.nonNull(details.getError())) {
                         tempError = paymentErrorMap.getOrDefault(key.getPaymentGroup(), new HashMap<>());
-                        tempError.put(key.getPaymentCode(), (StandardBusinessErrorDetails) details.getError());
+                        tempError.put(key.getPaymentCode(), (AbstractErrorDetails) details.getError());
                         paymentErrorMap.put(key.getPaymentGroup(), tempError);
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                    tempError = paymentErrorMap.getOrDefault(key.getPaymentGroup(), new HashMap<>());
+                    PaymentErrorType paymentErrorType = PaymentErrorType.PAY201;
+                    tempError.put(key.getPaymentCode(), TechnicalErrorDetails.builder().code(paymentErrorType.getErrorCode()).description(paymentErrorType.getErrorMessage()).build());
+                    paymentErrorMap.put(key.getPaymentGroup(), tempError);
+                }
             }
             if (!paymentDetailsMap.isEmpty()) {
                 builder.data(PaymentDetailsWrapper.builder().details(paymentDetailsMap).build());

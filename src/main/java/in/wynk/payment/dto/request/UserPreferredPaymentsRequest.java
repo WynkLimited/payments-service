@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserPreferredPaymentsRequest {
 
+    private int planId;
     private String uid;
-    private String planId;
     private String deviceId;
     private String paymentCode;
     private String paymentGroup;

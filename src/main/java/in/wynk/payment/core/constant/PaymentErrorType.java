@@ -36,6 +36,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY889("Refund Failure", "Refund process is not supported by the payment partner", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_REFUND_ERROR),
     PAY201("Saved Payment Option Timed Out", "Due to some unknown reasons saved options can't fetch data for this particular payment code-group pair. Try again after some time.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.SAVED_OPTIONS_TIMED_OUT),
     PAY202("Link Wallet Error", "Unable to find any linked wallet for corresponding uid-paymentCode combination. Try linking a fresh wallet", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.LINK_WALLET_ERROR),
+    PAY203("Saved Cards Error", "Unable to find any saved cards for corresponding uid-paymentCode combination. Try savings cards a fresh", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.SAVED_CARDS_ERROR),
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     /**

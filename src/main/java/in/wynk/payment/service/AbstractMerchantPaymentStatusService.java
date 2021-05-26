@@ -10,9 +10,7 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
-import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -46,38 +44,54 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
 
     public BaseResponse<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         Transaction transaction = TransactionContext.get();
-        ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
-
-        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            PlanDTO plan = cachingService.getPlan(request.getPlanId());
-            OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-            PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
-            if (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-                PlanDTO paidPlan = cachingService.getPlan(transaction.getPlanId());
-                TrialPack.TrialPackBuilder<?, ?> trialPackBuilder = TrialPack.builder().title(offer.getTitle()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name());
-                if (offer.isCombo()) {
-                    BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
-                    List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
-                    trialPackBuilder.benefits(bundleBenefitsBuilder.channelsBenefits(channelBenefits).build());
-                } else {
-                    ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
-                    trialPackBuilder.benefits(channelBenefitsBuilder.build());
-                }
-                builder.packDetails(trialPackBuilder.paidPack(PaidPack.builder().title(paidPlan.getTitle()).amount(paidPlan.getFinalPrice()).period(paidPlan.getPeriod().getValidity()).timeUnit(paidPlan.getPeriod().getTimeUnit().name()).build()).build());
-            } else {
-                PaidPack.PaidPackBuilder<?, ?> paidPackBuilder = PaidPack.builder().title(offer.getTitle()).amount(plan.getFinalPrice()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name());
-                if (offer.isCombo()) {
-                    BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
-                    List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
-                    paidPackBuilder.benefits(benefitsBuilder.channelsBenefits(channelBenefits).build());
-                } else {
-                    ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
-                    paidPackBuilder.benefits(channelBenefitsBuilder.build());
-                }
-                builder.packDetails(paidPackBuilder.build());
+        TransactionStatus txnStatus = transaction.getStatus();
+        if (txnStatus == TransactionStatus.FAILURE) {
+            return failure(FailureResponse.FAIL001, transaction, request);
+        } else if (txnStatus == TransactionStatus.INPROGRESS) {
+            return failure(FailureResponse.FAIL002, transaction, request);
+        } else {
+            ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
+            if (txnStatus == TransactionStatus.SUCCESS) {
+                builder.packDetails(getPackDetails(transaction, request));
             }
+            return BaseResponse. < AbstractChargingStatusResponse > builder().body(builder.build()).status(HttpStatus.OK).build();
         }
-        return BaseResponse.<AbstractChargingStatusResponse>builder().body(builder.build()).status(HttpStatus.OK).build();
+    }
+
+    private BaseResponse<AbstractChargingStatusResponse> failure(FailureResponse failureResponse,Transaction transaction,ChargingTransactionStatusRequest request) {
+        FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(failureResponse, transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus());
+        return BaseResponse.<AbstractChargingStatusResponse>builder().body(failureChargingStatusResponse).status(HttpStatus.OK).build();
+    }
+
+    private AbstractPack getPackDetails(Transaction transaction,ChargingTransactionStatusRequest request) {
+
+        PlanDTO plan = cachingService.getPlan(request.getPlanId());
+        OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
+        PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
+        if (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+            PlanDTO paidPlan = cachingService.getPlan(transaction.getPlanId());
+            TrialPack.TrialPackBuilder<?, ?> trialPackBuilder = TrialPack.builder().title(offer.getTitle()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name());
+            if (offer.isCombo()) {
+                BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
+                trialPackBuilder.benefits(bundleBenefitsBuilder.channelsBenefits(channelBenefits).build());
+            } else {
+                ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                trialPackBuilder.benefits(channelBenefitsBuilder.build());
+            }
+            return trialPackBuilder.paidPack(PaidPack.builder().title(paidPlan.getTitle()).amount(paidPlan.getFinalPrice()).period(paidPlan.getPeriod().getValidity()).timeUnit(paidPlan.getPeriod().getTimeUnit().name()).build()).build();
+        } else {
+            PaidPack.PaidPackBuilder<?, ?> paidPackBuilder = PaidPack.builder().title(offer.getTitle()).amount(plan.getFinalPrice()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name());
+            if (offer.isCombo()) {
+                BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
+                paidPackBuilder.benefits(benefitsBuilder.channelsBenefits(channelBenefits).build());
+            } else {
+                ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                paidPackBuilder.benefits(channelBenefitsBuilder.build());
+            }
+            return paidPackBuilder.build();
+        }
     }
 
 }

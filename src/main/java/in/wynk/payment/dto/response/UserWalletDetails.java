@@ -8,15 +8,24 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class AbstractWalletDetails extends AbstractPaymentDetails {
-    @Analysed
-    private double balance;
-    @Analysed
-    private double deficitBalance;
+public class UserWalletDetails extends AbstractPaymentDetails {
+
     @Analysed
     private boolean linked;
+
     @Analysed
-    private String walletCode;
+    private boolean active;
+
+    @Analysed
+    private double balance;
+
+    @Analysed
+    private double deficitBalance;
+
+    @Analysed
+    private double expiredBalance;
+
     @Analysed
     private String linkedMobileNo;
+
 }

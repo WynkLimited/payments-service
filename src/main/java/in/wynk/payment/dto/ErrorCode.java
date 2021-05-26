@@ -1,6 +1,7 @@
 package in.wynk.payment.dto;
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public enum ErrorCode {
@@ -89,12 +90,21 @@ public enum ErrorCode {
     PHONEPE008("PHONEPE008", "INVALID_OTP_TOKEN", "Something went wrong. Try again / Resend OTP", "OTP token is not valid or expired."),
     PHONEPE009("PHONEPE009", "OTP_VERIFY_FAILED", "Invalid OTP. Enter the correct OTP.", "OTP is not valid"),
     PHONEPE010("PHONEPE010", "OTP_EXPIRED", "OTP has expired. Resend OTP", "Your OTP has expired. Please regenerate your otp."),
-    PHONEPE011("PHONEPE011", "OTP_ALREADY_VERIFIED", "The OTP has been already verified", "The OTP has been already verified "),
-    UNKNOWN("UNKNOWN", "UNKNOWN", "Oops something went wrong", "Oops something went wrong");
+    PHONEPE011("PHONEPE011", "OTP_ALREADY_VERIFIED", "The OTP has been already verified", "The OTP has been already verified."),
+    PHONEPE012("PHONEPE012", "INVALID_DEVICE_ID", "Device id mismatch. Please relink PhonePe wallet on the current device.", "The device id you have provided seems to be invalid."),
+    PHONEPE013("PHONEPE013", "WALLET_RELINK_REQUIRED", "We have found suspicious activity from this number. Therefore, we have blocked your account. Please relink PhonePe wallet on the current device.", "Fraud suspected. Please relink PhonePe wallet on the current device."),
 
+
+    UNKNOWN("UNKNOWN", "", "Oops something went wrong", "");
+
+    @Setter
     private String internalCode;
+
     private String externalCode;
+
+    @Setter
     private String internalMessage;
+
     private String externalMessage;
 
     ErrorCode(String internalCode, String externalCode, String internalMessage, String externalMessage) {

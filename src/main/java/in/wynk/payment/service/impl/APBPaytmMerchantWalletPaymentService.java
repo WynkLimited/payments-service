@@ -58,7 +58,7 @@ import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 import static in.wynk.payment.dto.paytm.PayTmConstants.PAYTM_CHECKSUMHASH;
 
 @Slf4j
-@Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
+@Service(BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE)
 public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantWalletService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
     @Value("${apbpaytm.native.merchantId}")
@@ -79,10 +79,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     @Value("${apbpaytm.autoDebit.api}")
     private String AUTO_DEBIT;
 
-    @Value("${apbpayment.success.page}")
+    @Value("${payment.success.page}")
     private String successPage;
 
-    @Value("${apbpayment.failure.page}")
+    @Value("${payment.failure.page}")
     private String failurePage;
 
     @Value("${apbpaytm.native.wcf.callbackUrl}")
@@ -112,7 +112,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     @Value("${apbpaytm.revokeAccessToken.api}")
     private String REVOKE_ACCESS_TOKEN;
 
-    @Value("{apbpayment.encryption.key}")
+    @Value("{payment.encryption.key}")
     private String paymentEncryptionKey;
 
     @Value("${apbpaytm.requesting.website}")

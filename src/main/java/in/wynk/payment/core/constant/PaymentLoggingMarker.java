@@ -55,5 +55,9 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker CLIENT_CALLBACK_INFO = MarkerFactory.getMarker("CLIENT_CALLBACK_INFO");
 
+    Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
+
+    Marker SDK_CLIENT_ERROR = MarkerFactory.getMarker("SDK_CLIENT_ERROR");
+
 
 }

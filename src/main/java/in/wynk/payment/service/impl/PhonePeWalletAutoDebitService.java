@@ -340,7 +340,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         String deviceId = sessionDTO.get(DEVICE_ID);
         String userAuthToken = getAccessToken(uid);
         PhonePeWalletResponse phonePeWalletBalanceResponse = balance(userAuthToken, deviceId);
-        if (phonePeWalletBalanceResponse.isSuccess() && phonePeWalletBalanceResponse.getData().getWallet().getAvailableBalance() < (Double.valueOf(transaction.getAmount() * 100).longValue())) {
+        if(!phonePeWalletBalanceResponse.isSuccess()){
+            return new BaseResponse<>(phonePeWalletBalanceResponse, HttpStatus.OK, null);
+        }
+        else if (phonePeWalletBalanceResponse.isSuccess() && phonePeWalletBalanceResponse.getData().getWallet().getAvailableBalance() < (Double.valueOf(transaction.getAmount() * 100).longValue())) {
 
             return new BaseResponse<>(addMoney(userAuthToken, Double.valueOf(transaction.getAmount() * 100).longValue(), sessionDTO.get("phonePeVersionCode")), HttpStatus.OK, null);
         }
@@ -362,14 +365,16 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             PhonePeResponseData data=null;
             if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())) {
                  data = PhonePeResponseData.builder().redirectUrl(phonePeWalletResponse.getData().getRedirectUrl()).responseType(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name()).message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
+                transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
             }
             else if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())) {
                  data = PhonePeResponseData.builder().redirectUrl(phonePeWalletResponse.getData().getRedirectUrl()).responseType(PhonePeResponseType.PAYMENT.name()).transactionId(phonePeWalletResponse.getData().getTransactionId()).message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).amount(phonePeWalletResponse.getData()
                         .getAmount()).paymentState(phonePeWalletResponse.getData().getPaymentState()).providerReferenceId(phonePeWalletResponse.getData().getProviderReferenceId()).build();
+                  transaction.setStatus(TransactionStatus.SUCCESS.getValue());
             }
             return new BaseResponse<>(PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build(), HttpStatus.OK, null);
         } catch (HttpStatusCodeException hex) {
-
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
             log.error(PHONEPE_CHARGING_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
@@ -377,6 +382,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             PhonePeResponseData data = phonePeWalletResponse.getData().builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
             return new BaseResponse<>(PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build(), HttpStatus.OK, null);
         } catch (Exception e) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(PHONEPE_CHARGING_FAILURE, e.getMessage(), e);
         }
     }

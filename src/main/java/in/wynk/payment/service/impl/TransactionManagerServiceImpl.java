@@ -144,6 +144,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
                 transaction.setExitTime(Calendar.getInstance());
             }
+            if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                return;
+            }
             this.upsert(transaction);
         }
     }

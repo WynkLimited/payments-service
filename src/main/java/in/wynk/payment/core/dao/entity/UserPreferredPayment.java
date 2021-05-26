@@ -12,4 +12,4 @@ import java.io.Serializable;
 @SuperBuilder
 @NoArgsConstructor
 @Document("user_preferred_payments")
-public abstract class UserPreferredPayment extends MongoBaseEntity<Key> implements Serializable {}
+public abstract class UserPreferredPayment extends MongoBaseEntity<Key> {}

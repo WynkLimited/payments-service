@@ -106,7 +106,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             sessionDTO.put(WALLET_USER_ID, phone);
             log.info("Sending OTP to {} via PhonePe", phone);
             PhonePeWalletResponse linkRequestResponse=this.sendOTP(phone);
-            if (linkRequestResponse!=null && linkRequestResponse.isSuccess() && linkRequestResponse.getData().getCode().equalsIgnoreCase(SUCCESS) ) {
+            if (linkRequestResponse!=null && linkRequestResponse.isSuccess() && linkRequestResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && linkRequestResponse.getData().getOtpToken()!=null) {
                 log.info("Otp sent successfully. Status: {}", linkRequestResponse.getCode());
             } else {
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(linkRequestResponse.getData().getCode());
@@ -133,7 +133,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             PhonePeWalletResponse verifyOtpResponse=this.verifyOtp(request.getOtp());
-            if (verifyOtpResponse!=null && verifyOtpResponse.isSuccess() && verifyOtpResponse.getData().getCode().equalsIgnoreCase(SUCCESS)) {
+            if (verifyOtpResponse!=null && verifyOtpResponse.isSuccess() && verifyOtpResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && verifyOtpResponse.getData().getUserAuthToken()!=null) {
                 saveToken(verifyOtpResponse.getData().getUserAuthToken());
             } else {
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(verifyOtpResponse.getData().getCode());;
@@ -227,7 +227,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             sessionDTO.put(WALLET_USER_ID,mobileNumber);
             sessionDTO.put(MSISDN,mobileNumber);
             sessionDTO.put(UID,MsisdnUtils.getUidFromMsisdn(mobileNumber));
-            PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).otpToken(phonePeWalletResponse.getData().getOtpToken()).build();
             return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
 
         } catch (HttpStatusCodeException hex) {
@@ -261,7 +261,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + VERIFY_OTP_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse phonePeWalletResponse = response.getBody();
-            PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
+            PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).userAuthToken(phonePeWalletResponse.getData().getUserAuthToken()).build();
             return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());

@@ -8,7 +8,6 @@ import in.wynk.payment.core.dao.entity.Key;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
-import in.wynk.payment.dto.request.UserPreferredPaymentsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.PaymentDetailsWrapper;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
@@ -94,14 +93,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         for (String paymentGroup : request.getPaymentGroups().keySet()) {
             for (String paymentCode : request.getPaymentGroups().get(paymentGroup)) {
                 IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCode.getFromPaymentCode(paymentCode).getCode(), IUserPreferredPaymentService.class);
-                task = () -> userPreferredPaymentService.getUserPreferredPayments(UserPreferredPaymentsRequest.builder()
-                        .uid(uid)
-                        .deviceId(deviceId)
-                        .paymentCode(paymentCode)
-                        .paymentGroup(paymentGroup)
-                        .planId(request.getPlanId())
-                        .build());
-                map.put(Key.builder().uid(uid).paymentCode(paymentCode).paymentGroup(paymentGroup).build(), executorService.submit(task));
+                Key key = Key.builder().uid(uid).deviceId(deviceId).paymentCode(paymentCode).paymentGroup(paymentGroup).build();
+                task = () -> userPreferredPaymentService.getUserPreferredPayments(key, request.getPlanId());
+                map.put(key, executorService.submit(task));
             }
         }
         executorService.shutdown();

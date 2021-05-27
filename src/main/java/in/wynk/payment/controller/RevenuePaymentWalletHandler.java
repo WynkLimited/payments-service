@@ -84,7 +84,6 @@ public class RevenuePaymentWalletHandler {
         sessionDTO.put(PAYMENT_CODE, request.getPaymentCode().getCode());
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        request.setDeviceId(sessionDTO.get(DEVICE_ID));
         return paymentManager.addMoney(uid, msisdn, request).getResponse();
     }
 

@@ -101,6 +101,12 @@ public enum ErrorCode {
     PHONEPE020("PHONEPE020", "PAYMENT_ERROR", "Request timed out.", "Your request was timed out. Call the transaction status API to verify the transaction status."),
     PHONEPE021("PHONEPE021", "PAYMENT_DECLINED", "Transaction Failed.", "Payment declined by user."),
     PHONEPE022("PHONEPE022", "PAYMENT_CANCELLED", "Transaction Failed.", "Payment canceled"),
+    PHONEPE023("PHONEPE023", "PHONEPE023", "Your phonePe wallet is not active. Try another payment method", ""),
+    PHONEPE024("PHONEPE024", "PHONEPE024", "Your wallet is not linked. please link your wallet", ""),
+    PHONEPE025("PHONEPE025", "PHONEPE025", "Your balance is low.Sending deeplink to add money to your wallet", ""),
+    PHONEPE026("PHONEPE026", "PHONEPE026", "your balance is low and phonePe is not allowing to add money to you wallet, please try another payment method", ""),
+
+
 
     SUCCESS("SUCCESS", "SUCCESS", "Request served successfully.", "Request served successfully."),
     UNKNOWN("UNKNOWN", "", "Oops something went wrong", "");

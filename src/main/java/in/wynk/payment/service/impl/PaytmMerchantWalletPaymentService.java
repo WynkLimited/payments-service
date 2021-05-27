@@ -669,7 +669,11 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
 
     @Override
     public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPaymentsRequest userPreferredPaymentsRequest) {
-        return this.balance(userPreferredPaymentsRequest.getPlanId(), getWallet(userPreferredPaymentsRequest.getUid(), userPreferredPaymentsRequest.getDeviceId())).getBody();
+        try {
+            return this.balance(userPreferredPaymentsRequest.getPlanId(), getWallet(userPreferredPaymentsRequest.getUid(), userPreferredPaymentsRequest.getDeviceId())).getBody();
+        } catch (WynkRuntimeException e) {
+            return WynkResponseEntity.WynkBaseResponse.<AbstractPaymentDetails>builder().error(TechnicalErrorDetails.builder().code(e.getErrorCode()).description(e.getMessage()).build()).success(false).build();
+        }
     }
 
     private Wallet getWallet(String uid, String deviceId) {

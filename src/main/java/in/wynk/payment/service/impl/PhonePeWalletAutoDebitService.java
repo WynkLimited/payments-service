@@ -363,22 +363,16 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
 
     @Override
     public BaseResponse<?> doCharging(ChargingRequest chargingRequest) {
-
         ErrorCode errorCode = null;
         ChargingResponse chargingResponse = null;
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder();
-
-
-
         final Transaction transaction = TransactionContext.get();
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-
         final String sid = SessionContextHolder.getId();
         String redirectUrl = null;
-        PhonePeAutoDebitChargeRequest payload = (PhonePeAutoDebitChargeRequest) chargingRequest;
-
         try {
+            PhonePeAutoDebitChargeRequest payload = (PhonePeAutoDebitChargeRequest) chargingRequest;
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
             UserWalletDetails userWalletDetails = (UserWalletDetails) this.balance(transaction.getPlanId(), wallet).getBody().getData();
             PhonePeAutoDebitChargeRequest peAutoDebitChargeRequest = PhonePeAutoDebitChargeRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(Double.valueOf(transaction.getAmount() * 100).longValue()).deviceContext(payload.getDeviceContext()).transactionId(transaction.getId().toString()).build();
@@ -420,43 +414,34 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
                 ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + DEBIT_API, requestEntity, PhonePeWalletResponse.class);
                 PhonePeWalletResponse phonePeWalletResponse = response.getBody();
-                PhonePeResponseData data = null;
                 if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())) {
-                    //                data = PhonePeResponseData.builder().redirectUrl(phonePeWalletResponse.getData().getRedirectUrl()).responseType(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name()).message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
                     transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                     errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE025.name());
                     chargingResponse = ChargingResponse.builder().deficit(true).info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey)).build();
                 } else if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())) {
-//                 data = PhonePeResponseData.builder().redirectUrl(phonePeWalletResponse.getData().getRedirectUrl()).responseType(PhonePeResponseType.PAYMENT.name()).transactionId(phonePeWalletResponse.getData().getTransactionId()).message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).amount(phonePeWalletResponse.getData()
-//                        .getAmount()).paymentState(phonePeWalletResponse.getData().getPaymentState()).providerReferenceId(phonePeWalletResponse.getData().getProviderReferenceId()).build();
-//                  transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                     redirectUrl = successPage + sid;
                     chargingResponse = ChargingResponse.builder().deficit(false).redirectUrl(redirectUrl).build();
                     log.info("redirect url####################{}", redirectUrl);
                 }
-
-                //       return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(WynkResponse.WynkResponseWrapper.builder().data(chargingResponse).build()).build();
             }
             builder.data(chargingResponse);
         }
         catch (HttpStatusCodeException hex) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
             log.error(PHONEPE_CHARGING_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse phonePeWalletResponse = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = phonePeWalletResponse.getData().builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
             chargingResponse=ChargingResponse.builder().redirectUrl(failurePage).build();
-
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(data.getCode());
+            errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getCode());
             builder.data(chargingResponse);
-    //        return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(WynkResponse.WynkResponseWrapper.builder().data(redirectUrl).build()).build();
         }
         catch (WynkRuntimeException e) {
+            log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             errorCode = handleWynkRunTimeException(e);
             httpStatus = e.getErrorType().getHttpResponseStatusCode();
         } catch (Exception e) {
+            log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;

@@ -105,6 +105,7 @@ public enum ErrorCode {
     PHONEPE024("PHONEPE024", "PHONEPE024", "Your wallet is not linked. please link your wallet", ""),
     PHONEPE025("PHONEPE025", "PHONEPE025", "Your balance is low.Sending deeplink to add money to your wallet", ""),
     PHONEPE026("PHONEPE026", "PHONEPE026", "your balance is low and phonePe is not allowing to add money to you wallet, please try another payment method", ""),
+    PHONEPE027("PHONEPE027", "INVALID_USER_AUTH_TOKEN", "Invalid user access token", "User auth token is invalid"),
 
 
 

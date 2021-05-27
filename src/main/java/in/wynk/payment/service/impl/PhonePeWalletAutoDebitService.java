@@ -188,6 +188,75 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
+    public BaseResponse<?> balance(int planId) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        return balance(planId, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+    }
+
+    public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
+        ErrorCode errorCode = null;
+        HttpStatus httpStatus = HttpStatus.OK;
+        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
+        try {
+            PhonePeAutoDebitRequest walletRequest = PhonePeAutoDebitRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).build();
+            String requestJson = gson.toJson(walletRequest);
+            Map<String, String> requestMap = new HashMap<>();
+            requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
+            String xVerifyHeader = Utils.encodeBase64(requestJson) + BALANCE_API + salt;
+            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(X_DEVICE_ID, wallet.getId().getDeviceId());
+            headers.add(X_VERIFY, xVerifyHeader);
+            headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
+            ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + BALANCE_API, requestEntity, PhonePeWalletResponse.class);
+            PhonePeWalletResponse walletResponse = response.getBody();
+            if (walletResponse!=null && walletResponse.isSuccess() && walletResponse.getCode().equalsIgnoreCase(SUCCESS) && walletResponse.getData().getWallet().getWalletActive()){
+                double deficitBalance=0;
+                double finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
+                double usableBalance=walletResponse.getData().getWallet().getUsableBalance()/100d;
+                if (usableBalance<finalAmount){
+                    deficitBalance=finalAmount-walletResponse.getData().getWallet().getUsableBalance();
+                }
+                AnalyticService.update("PHONEPE_CODE", walletResponse.getCode());
+                builder.data(userWalletDetailsBuilder
+                        .linked(true)
+                        .active(true)
+                        .balance(usableBalance)
+                        .deficitBalance(deficitBalance)
+                        .addMoneyAllowed(walletResponse.getData().getWallet().getWalletTopupSuggested())
+                        .linkedMobileNo(wallet.getWalletUserId())
+                        .build());
+            }
+
+            else {
+
+                errorCode = ErrorCode.getErrorCodesFromExternalCode(walletResponse.getCode());
+                if(!walletResponse.getData().getWallet().getWalletActive()){
+                    errorCode= ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
+                }
+                builder.data(userWalletDetailsBuilder.linked(true).build());
+            }
+        } catch (HttpStatusCodeException hex) {
+            builder.data(userWalletDetailsBuilder.linked(true).build());
+            log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", hex.getResponseBodyAsString());
+            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
+        } catch (WynkRuntimeException e) {
+            log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", e.getMessage());
+            errorCode = handleWynkRunTimeException(e);
+            httpStatus = e.getErrorType().getHttpResponseStatusCode();
+        } catch (Exception e) {
+            log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", e.getMessage());
+            errorCode = ErrorCode.UNKNOWN;
+            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        } finally {
+            handleError(errorCode, builder);
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse<UserWalletDetails>>builder().status(httpStatus).body(builder.build()).build();
+        }
+    }
+
+    @Override
     public BaseResponse<?> unlink() {
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -222,92 +291,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         }
     }
 
-    @Override
-    public BaseResponse<?> balance(int planId) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return balance(planId, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
-    }
-
-    public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
-        ErrorCode errorCode = null;
-        HttpStatus httpStatus = HttpStatus.OK;
-        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
-        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
-        try {
-            PhonePeWalletResponse balanceResponse=this.getBalance(wallet);
-            if (balanceResponse!=null && balanceResponse.isSuccess() && balanceResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && balanceResponse.getData().getWallet().getWalletActive()){
-                double deficitBalance=0;
-                double finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
-                double usableBalance=balanceResponse.getData().getWallet().getUsableBalance()/100d;
-                if (usableBalance<finalAmount){
-                    deficitBalance=finalAmount-balanceResponse.getData().getWallet().getUsableBalance();
-                }
-                AnalyticService.update("PHONEPE_CODE", balanceResponse.getCode());
-                builder.data(userWalletDetailsBuilder
-                        .linked(true)
-                        .active(true)
-                        .balance(usableBalance)
-                        .deficitBalance(deficitBalance)
-                        .addMoneyAllowed(balanceResponse.getData().getWallet().getWalletTopupSuggested())
-                        .linkedMobileNo(wallet.getWalletUserId())
-                        .build());
-            }
-
-             else {
-
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(balanceResponse.getData().getCode());
-                if(!balanceResponse.getData().getWallet().getWalletActive()){
-                    errorCode= ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
-                }
-                builder.data(userWalletDetailsBuilder.linked(true).build());
-            }
-        } catch (HttpStatusCodeException e) {
-            builder.data(userWalletDetailsBuilder.linked(true).build());
-            log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", e.getMessage(), e);
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
-        } catch (WynkRuntimeException e) {
-            errorCode = handleWynkRunTimeException(e);
-            httpStatus = e.getErrorType().getHttpResponseStatusCode();
-        } catch (Exception e) {
-            errorCode = ErrorCode.UNKNOWN;
-            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        } finally {
-            handleError(errorCode, builder);
-            return BaseResponse.<WynkResponseEntity.WynkBaseResponse<UserWalletDetails>>builder().status(httpStatus).body(builder.build()).build();
-        }
-    }
-
-    private PhonePeWalletResponse getBalance(Wallet wallet){
-        PhonePeAutoDebitRequest phonePeAutoDebitRequest = PhonePeAutoDebitRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).build();
-        try {
-            String requestJson = gson.toJson(phonePeAutoDebitRequest);
-            Map<String, String> requestMap = new HashMap<>();
-            requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-            String xVerifyHeader = Utils.encodeBase64(requestJson) + BALANCE_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(X_DEVICE_ID, wallet.getId().getDeviceId());
-            headers.add(X_VERIFY, xVerifyHeader);
-            headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
-            ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + BALANCE_API, requestEntity, PhonePeWalletResponse.class);
-            PhonePeWalletResponse phonePeWalletResponse = response.getBody();
-            PhonePeResponseData data = PhonePeResponseData.builder().wallet(phonePeWalletResponse.getData().getWallet()).linkedUser(phonePeWalletResponse.getData().getLinkedUser()).code(phonePeWalletResponse.getCode()).message(phonePeWalletResponse.getMessage()).build();
-            return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
-
-        } catch (HttpStatusCodeException hex) {
-            AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
-            log.error(PHONEPE_GET_BALANCE_FAILURE, hex.getResponseBodyAsString());
-            String errorResponse = hex.getResponseBodyAsString();
-            PhonePeWalletResponse phonePeWalletResponse = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).build();
-            return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
-
-        } catch (Exception e) {
-            log.error(PHONEPE_GET_BALANCE_FAILURE, e.getMessage(), e);
-            throw new WynkRuntimeException(PHONEPE_GET_BALANCE_FAILURE, e.getMessage(), e);
-        }
-    }
 
     @Override
     public BaseResponse<?> addMoney(WalletAddMoneyRequest request) {

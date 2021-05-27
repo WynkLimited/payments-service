@@ -14,6 +14,7 @@ import java.io.Serializable;
 public class Key implements Serializable {
 
     private String uid;
+    private String deviceId;
     private String paymentCode;
     private String paymentGroup;
 

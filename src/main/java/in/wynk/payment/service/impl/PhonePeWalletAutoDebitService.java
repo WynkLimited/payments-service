@@ -8,7 +8,6 @@ import in.wynk.common.dto.StandardBusinessErrorDetails;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
@@ -112,6 +111,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             log.info("Sending OTP to {} via PhonePe", phone);
             PhonePeWalletResponse linkRequestResponse=this.sendOTP(phone);
             if (linkRequestResponse!=null && linkRequestResponse.isSuccess() && linkRequestResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && linkRequestResponse.getData().getOtpToken()!=null) {
+                sessionDTO.put(PHONEPE_OTP_TOKEN, linkRequestResponse.getData().getOtpToken());
                 log.info("Otp sent successfully. Status: {}", linkRequestResponse.getCode());
             } else {
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(linkRequestResponse.getData().getCode());
@@ -209,13 +209,12 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         try {
             PhonePeWalletResponse balanceResponse=this.getBalance(uid,deviceId);
-            if (balanceResponse!=null && balanceResponse.isSuccess() && balanceResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && balanceResponse.getData().getWallet().getWalletActive() && balanceResponse.getData().getWallet().getWalletTopupSuggested()) {
+            if (balanceResponse!=null && balanceResponse.isSuccess() && balanceResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && balanceResponse.getData().getWallet().getWalletActive()) {
                 double deficitBalance=0;
                 double finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
-                finalAmount=finalAmount*100;
                 double usableBalance=balanceResponse.getData().getWallet().getUsableBalance()/100d;
                 if (usableBalance<finalAmount){
-                    deficitBalance=(finalAmount-balanceResponse.getData().getWallet().getUsableBalance())/100d;
+                    deficitBalance=finalAmount-balanceResponse.getData().getWallet().getUsableBalance();
                 }
                 AnalyticService.update("PHONEPE_CODE", balanceResponse.getCode());
                 builder.data(userWalletDetailsBuilder
@@ -224,6 +223,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                         .balance(usableBalance)
                         .linkedMobileNo(getWalletUserId(uid))
                         .deficitBalance(deficitBalance)
+                        .isTopUpSuggested(balanceResponse.getData().getWallet().getWalletTopupSuggested())
                         .build());
             }
 
@@ -300,8 +300,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             String requestJson = gson.toJson(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-            String xVerifyHeader = Utils.encodeBase64(requestJson) + TRIGGER_OTP_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
+            String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + TRIGGER_OTP_API + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
@@ -310,10 +309,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             Session<SessionDTO> session = SessionContextHolder.get();
             PhonePeWalletResponse phonePeWalletResponse = response.getBody();
             SessionDTO sessionDTO = session.getBody();
-            sessionDTO.put(PHONEPE_OTP_TOKEN, phonePeWalletResponse.getData().getOtpToken());
-            sessionDTO.put(WALLET_USER_ID,mobileNumber);
-            sessionDTO.put(MSISDN,mobileNumber);
-            sessionDTO.put(UID,MsisdnUtils.getUidFromMsisdn(mobileNumber));
+//            sessionDTO.put(PHONEPE_OTP_TOKEN, phonePeWalletResponse.getData().getOtpToken());
+//            sessionDTO.put(WALLET_USER_ID,mobileNumber);
+//            sessionDTO.put(MSISDN,mobileNumber);
+//            sessionDTO.put(UID,MsisdnUtils.getUidFromMsisdn(mobileNumber));
             PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).code(phonePeWalletResponse.getCode()).otpToken(phonePeWalletResponse.getData().getOtpToken()).build();
             return PhonePeWalletResponse.builder().success(phonePeWalletResponse.isSuccess()).data(data).build();
 
@@ -339,8 +338,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             String requestJson = gson.toJson(phonePeAutoDebitOtpRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-            String xVerifyHeader = Utils.encodeBase64(requestJson) + VERIFY_OTP_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
+            String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + VERIFY_OTP_API + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_DEVICE_ID, deviceId);
             headers.add(X_VERIFY, xVerifyHeader);
@@ -374,8 +372,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             String requestJson = gson.toJson(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-            String xVerifyHeader = Utils.encodeBase64(requestJson) + TOPUP_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
+            String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + TOPUP_API + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_DEVICE_ID, deviceId);
             headers.add(X_VERIFY, xVerifyHeader);
@@ -470,8 +467,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             String requestJson = gson.toJson(peAutoDebitChargeRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-            String xVerifyHeader = Utils.encodeBase64(requestJson) + DEBIT_API + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + X_VERIFY_SUFFIX;
+            String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + DEBIT_API + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_DEVICE_ID, deviceId);
             headers.add(X_VERIFY, xVerifyHeader);
@@ -527,8 +523,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(txn.getIdStr());
         try {
             String apiPath = TRANS_STATUS_API_PREFIX + merchantId + SLASH + txn.getIdStr() + TRANS_STATUS_API_SUFFIX;
-            String xVerifyHeader = apiPath + salt;
-            xVerifyHeader = DigestUtils.sha256Hex(xVerifyHeader) + "###1";
+            String xVerifyHeader = DigestUtils.sha256Hex(apiPath + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);

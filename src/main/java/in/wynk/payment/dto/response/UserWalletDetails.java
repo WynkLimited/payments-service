@@ -28,4 +28,7 @@ public class UserWalletDetails extends AbstractPaymentDetails {
     @Analysed
     private String linkedMobileNo;
 
+    @Analysed
+    private boolean isTopUpSuggested;
+
 }

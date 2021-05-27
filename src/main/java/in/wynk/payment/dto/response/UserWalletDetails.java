@@ -29,6 +29,6 @@ public class UserWalletDetails extends AbstractPaymentDetails {
     private String linkedMobileNo;
 
     @Analysed
-    private boolean isTopUpSuggested;
+    private boolean addMoneyAllowed;
 
 }

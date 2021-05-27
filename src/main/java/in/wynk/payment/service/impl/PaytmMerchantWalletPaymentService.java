@@ -553,6 +553,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                         .linkedMobileNo(wallet.getWalletUserId())
                         .deficitBalance(paytmPayOption.getDeficitAmount())
                         .expiredBalance(paytmPayOption.getExpiredAmount())
+                        .addMoneyAllowed(paytmPayOption.isAddMoneyAllowed())
                         .build());
             } else {
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(payTmResponse.getBody().getResultInfo().getResultCode());

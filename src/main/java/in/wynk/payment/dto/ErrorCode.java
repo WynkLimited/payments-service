@@ -77,8 +77,7 @@ public enum ErrorCode {
     PAYTM069("PAYTM069", "GE_0003", "We could not get the requested details. Please try again.", "We could not get the requested details. Please try again."),
     PAYTM070("PAYTM070", "GE_3", "Internal server error.", "Internal server error."),
     PAYTM071("PAYTM071", "NA", "Client permission not found", "Client permission not found"),
-    PAYTM072("PAYTM072", "SUCCESS", "Request served successfully.", "Request served successfully."),
-    PAYTM073("PAYTM073", "WM_1003", "Merchant does not exist.", "Merchant does not exist."),
+    PAYTM072("PAYTM072", "WM_1003", "Merchant does not exist.", "Merchant does not exist."),
 
     PHONEPE001("PHONEPE001", "AUTHORIZATION_FAILED", "Unauthorized", "Value of X-VERIFY is incorrect."),
     PHONEPE002("PHONEPE002", "BAD_REQUEST", "please provide valid details.", "Invalid request payload."),
@@ -93,8 +92,17 @@ public enum ErrorCode {
     PHONEPE011("PHONEPE011", "OTP_ALREADY_VERIFIED", "The OTP has been already verified", "The OTP has been already verified."),
     PHONEPE012("PHONEPE012", "INVALID_DEVICE_ID", "Device id mismatch. Please relink PhonePe wallet on the current device.", "The device id you have provided seems to be invalid."),
     PHONEPE013("PHONEPE013", "WALLET_RELINK_REQUIRED", "We have found suspicious activity from this number. Therefore, we have blocked your account. Please relink PhonePe wallet on the current device.", "Fraud suspected. Please relink PhonePe wallet on the current device."),
+    PHONEPE014("PHONEPE014", "WALLET_NOT_ACTIVATED", "Incomplete KYC on Phonepe. Complete your KYC to use your PhonePe wallet or try another method.", "As per RBI guidelines, please complete your KYC to use your PhonePe wallet."),
+    PHONEPE015("PHONEPE015", "WALLET_LIMIT_BREACHED", "Transaction or top-up exceeds the user’s debit limit or credit limit.", "Transaction or top-up  exceeds the user’s debit limit or credit limit."),
+    PHONEPE016("PHONEPE016", "APP_VERSION_NOT_SUPPORTED", "Update phonePe app. You are on an older app version which does not support this feature.", "Update app. You are on an older app version which does not support this feature."),
+    PHONEPE017("PHONEPE017", "TIMED_OUT", "Request timed out.", "Your request was timed out. Call the transaction status API to get the transaction state."),
+    PHONEPE018("PHONEPE018", "TRANSACTION_NOT_FOUND", "Transaction Failed.", "Payment not initiated inside PhonePe."),
+    PHONEPE019("PHONEPE019", "PAYMENT_PENDING", "Transaction Pending.", "Payment is pending.Call transaction status API to verify the transaction status."),
+    PHONEPE020("PHONEPE020", "PAYMENT_ERROR", "Request timed out.", "Your request was timed out. Call the transaction status API to verify the transaction status."),
+    PHONEPE021("PHONEPE021", "PAYMENT_DECLINED", "Transaction Failed.", "Payment declined by user."),
+    PHONEPE022("PHONEPE022", "PAYMENT_CANCELLED", "Transaction Failed.", "Payment canceled"),
 
-
+    SUCCESS("SUCCESS", "SUCCESS", "Request served successfully.", "Request served successfully."),
     UNKNOWN("UNKNOWN", "", "Oops something went wrong", "");
 
     @Setter

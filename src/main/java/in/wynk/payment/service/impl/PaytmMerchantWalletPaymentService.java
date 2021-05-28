@@ -524,7 +524,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
-        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
+        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder().linked(true);
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         try {
             URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
@@ -543,7 +543,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             if (payTmResponse != null && payTmResponse.getBody() != null && payTmResponse.getBody().getResultInfo().getResultStatus().equals(Status.SUCCESS.toString())) {
                 PaytmPayOption paytmPayOption = payTmResponse.getBody().getPayOptions().get(0);
                 builder.data(userWalletDetailsBuilder
-                        .linked(true)
                         .active(true)
                         .balance(paytmPayOption.getAmount())
                         .linkedMobileNo(wallet.getWalletUserId())
@@ -553,10 +552,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                         .build());
             } else {
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(payTmResponse.getBody().getResultInfo().getResultCode());
-                builder.data(userWalletDetailsBuilder.linked(true).build());
             }
         } catch (HttpStatusCodeException e) {
-            builder.data(userWalletDetailsBuilder.linked(true).build());
             log.error(PAYTM_ERROR, "Error in response: {}", e.getMessage(), e);
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletValidateLinkResponse.class).getResponseCode());
         } catch (WynkRuntimeException e) {
@@ -566,6 +563,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
+            builder.data(userWalletDetailsBuilder.build());
             handleError(errorCode, builder);
             return BaseResponse.<WynkResponseEntity.WynkBaseResponse<UserWalletDetails>>builder().status(httpStatus).body(builder.build()).build();
         }

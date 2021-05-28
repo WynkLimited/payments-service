@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class IapVerificationResponse extends BaseResponse<IapVerificationResponse.IapVerification> {
+public class IapVerificationResponse extends BaseResponse<IapVerificationResponse.IapVerification,Void> {
 
     @Analysed
     private IapVerification data;

@@ -4,6 +4,8 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.ErrorCodeConstants;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.*;
@@ -18,8 +20,11 @@ import org.springframework.http.HttpStatus;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public abstract class AbstractMerchantPaymentStatusService implements IMerchantPaymentStatusService {
 
@@ -46,9 +51,9 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         Transaction transaction = TransactionContext.get();
         TransactionStatus txnStatus = transaction.getStatus();
         if (txnStatus == TransactionStatus.FAILURE) {
-            return failure(FailureResponse.FAIL001, transaction, request);
+            return failure(ErrorCode.FAIL001, transaction, request);
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
-            return failure(FailureResponse.FAIL002, transaction, request);
+            return failure(ErrorCode.FAIL002, transaction, request);
         } else {
             ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
             if (txnStatus == TransactionStatus.SUCCESS) {
@@ -58,8 +63,9 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         }
     }
 
-    private BaseResponse<AbstractChargingStatusResponse> failure(FailureResponse failureResponse,Transaction transaction,ChargingTransactionStatusRequest request) {
-        FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(failureResponse, transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus());
+    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode,Transaction transaction,ChargingTransactionStatusRequest request) {
+        Map<String,String> errorMap = ErrorCodeConstants.getMapFromErrorCode(errorCode.getInternalCode());
+        FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(errorCode, errorMap.get(SUBTITLE_TEXT),errorMap.get(BUTTON_TEXT),Boolean.parseBoolean(errorMap.get(BUTTON_ARROW)), transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus());
         return BaseResponse.<AbstractChargingStatusResponse>builder().body(failureChargingStatusResponse).status(HttpStatus.OK).build();
     }
 

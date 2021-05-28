@@ -175,6 +175,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
                             EQUAL +
                             sessionDTO.<String>get(SERVICE) +
                             AND +
+                            APP_ID +
+                            EQUAL +
+                            sessionDTO.<String>get(APP_ID) +
+                            AND +
                             BUILD_NO +
                             EQUAL +
                             sessionDTO.<Integer>get(BUILD_NO);

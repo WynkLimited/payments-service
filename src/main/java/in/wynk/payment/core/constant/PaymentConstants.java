@@ -34,4 +34,8 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
 
+    String SUBTITLE_TEXT = "subtitle";
+    String BUTTON_TEXT = "buttonText";
+    String BUTTON_ARROW = "buttonArrow";
+
 }

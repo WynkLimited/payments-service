@@ -367,34 +367,37 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String sid = SessionContextHolder.getId();
         String redirectUrl = null;
+        boolean deficit=false;
+        boolean deeplinkGenerated=false;
         try {
             PhonePeAutoDebitChargeRequest payload = (PhonePeAutoDebitChargeRequest) chargingRequest;
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
             UserWalletDetails userWalletDetails = (UserWalletDetails) this.balance(transaction.getPlanId(), wallet).getBody().getData();
             PhonePeAutoDebitChargeRequest peAutoDebitChargeRequest = PhonePeAutoDebitChargeRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(Double.valueOf(transaction.getAmount() * 100).longValue()).deviceContext(payload.getDeviceContext()).transactionId(transaction.getId().toString()).build();
             if (!userWalletDetails.isLinked()) {
-                chargingResponse = ChargingResponse.builder().deficit(false).build();
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
                 log.info("your wallet is not linked. please link your wallet");
             } else if (!userWalletDetails.isActive()) {
-                chargingResponse = ChargingResponse.builder().deficit(false).build();
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE024.name());
                 log.info("your phonePe account is not active. please try another payment method");
             } else if (userWalletDetails.isLinked() && userWalletDetails.isActive() && userWalletDetails.getDeficitBalance() > 0d) {
                 if (userWalletDetails.isAddMoneyAllowed()) {
                     errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE025.name());
-                    chargingResponse = ChargingResponse.builder().deficit(true).build();
+                    deficit=true;
                     log.info("Your balance is low.Sending deeplink to add money to your wallet");
-                    PhonePeWalletResponse phonePeWalletResponse = addMoney(wallet.getAccessToken(), Double.valueOf(500000 * 100).longValue(), payload.getDeviceContext().getPhonePeVersionCode());
+                    PhonePeWalletResponse phonePeWalletResponse = addMoney(wallet.getAccessToken(), Double.valueOf(transaction.getAmount() * 100).longValue(), payload.getDeviceContext().getPhonePeVersionCode());
                     if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && phonePeWalletResponse.getData().getRedirectUrl() != null) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
+                        deficit=true;
+                        deeplinkGenerated=true;
                         chargingResponse = ChargingResponse.builder().deficit(true).info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey)).build();
                     } else {
-                        chargingResponse = ChargingResponse.builder().deficit(true).build();
+                         deficit=true;
+                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
                         errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getData().getCode());
                     }
                 } else {
-                    chargingResponse = ChargingResponse.builder().deficit(true).build();
+                    deficit=true;
                     errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE026.name());
                     log.info("your balance is low and phonePe is not allowing to add money to you wallet");
                 }
@@ -410,26 +413,29 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
                 ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + DEBIT_API, requestEntity, PhonePeWalletResponse.class);
                 PhonePeWalletResponse phonePeWalletResponse = response.getBody();
-                if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())) {
+ //TODO:  Will discuss and check with PhonePe, if PhonePe  is handling balance and deeplink flow in its debit api then two api(balance and addMoney) hits will reduce.
+                /*if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())) {
                     transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
+                    deficit=true;
+                    deeplinkGenerated=true;
                     errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE025.name());
                     chargingResponse = ChargingResponse.builder().deficit(true).info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey)).build();
-                } else if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())) {
+                } */
+                  if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())) {
+                     transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                     redirectUrl = successPage + sid;
                     chargingResponse = ChargingResponse.builder().deficit(false).redirectUrl(redirectUrl).build();
                     log.info("redirect url####################{}", redirectUrl);
                 }
             }
-            builder.data(chargingResponse);
+
         }
         catch (HttpStatusCodeException hex) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             log.error(PHONEPE_CHARGING_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse phonePeWalletResponse = gson.fromJson(errorResponse, PhonePeWalletResponse.class);
-            chargingResponse=ChargingResponse.builder().redirectUrl(failurePage).build();
             errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getCode());
-            builder.data(chargingResponse);
         }
         catch (WynkRuntimeException e) {
             log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
@@ -442,6 +448,23 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
+             if (StringUtils.isBlank(redirectUrl) && !deficit && !deeplinkGenerated) {
+                 redirectUrl = failurePage+sid;
+                 chargingResponse=ChargingResponse.builder().deficit(false).redirectUrl(redirectUrl).build();
+                 builder.data(chargingResponse);
+             }
+             else if(StringUtils.isBlank(redirectUrl) && deficit && !deeplinkGenerated){
+                  redirectUrl = failurePage+sid;
+                  chargingResponse=ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
+                  builder.data(chargingResponse);
+            }
+             else if(StringUtils.isBlank(redirectUrl) && deficit && deeplinkGenerated) {
+                 builder.data(chargingResponse);
+             }
+             else{
+                 builder.data(chargingResponse);
+             }
+
             handleError(errorCode, builder);
             return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.build()).build();
         }

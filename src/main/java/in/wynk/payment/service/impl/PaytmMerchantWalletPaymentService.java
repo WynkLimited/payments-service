@@ -447,8 +447,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             URI uri = new URIBuilder(VALIDATE_OTP).build();
-            HttpHeaders headers = getHttpHeaders(null);
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID));
             walletValidateLinkRequest.setState_token(sessionDTO.get(STATE_TOKEN));
             RequestEntity<WalletValidateLinkRequest> requestEntity = new RequestEntity<>(walletValidateLinkRequest, headers, HttpMethod.POST, uri);
             log.info("Validate paytm otp request: {}", requestEntity);

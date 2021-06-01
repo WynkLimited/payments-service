@@ -18,19 +18,19 @@ public class UserPaymentsManagerImpl implements IUserPaymentsManager {
     private UserPreferredPaymentsDao userPreferredPaymentsDao;
 
     @Override
-    @Cacheable(cacheName = "UserPreferredPayment", cacheKey = "#key.getUid() + ':' + #key.getPaymentCode() + ':' + #key.getPaymentGroup()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @Cacheable(cacheName = "UserPreferredPayment", cacheKey = "#key.getUid() + ':' + #key.getDeviceId() + ':' + #key.getPaymentCode() + ':' + #key.getPaymentGroup()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public UserPreferredPayment getPaymentDetails(Key key) {
         return userPreferredPaymentsDao.findById(key).orElse(null);
     }
 
     @Override
-    @CacheEvict(cacheName = "UserPreferredPayment", cacheKey = "#userPreferredPayment.getId().getUid() + ':' + #userPreferredPayment.getId().getPaymentCode() + ':' + #userPreferredPayment.getId().getPaymentGroup()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "UserPreferredPayment", cacheKey = "#userPreferredPayment.getId().getUid() + ':' + #userPreferredPayment.getId().getDeviceId() + ':' + #userPreferredPayment.getId().getPaymentCode() + ':' + #userPreferredPayment.getId().getPaymentGroup()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void savePaymentDetails(UserPreferredPayment userPreferredPayment) {
         userPreferredPaymentsDao.save(userPreferredPayment);
     }
 
     @Override
-    @CacheEvict(cacheName = "UserPreferredPayment", cacheKey = "#userPreferredPayment.getId().getUid() + ':' + #userPreferredPayment.getId().getPaymentCode() + ':' + #userPreferredPayment.getId().getPaymentGroup()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "UserPreferredPayment", cacheKey = "#userPreferredPayment.getId().getUid() + ':' + #userPreferredPayment.getId().getDeviceId() + ':' + #userPreferredPayment.getId().getPaymentCode() + ':' + #userPreferredPayment.getId().getPaymentGroup()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void deletePaymentDetails(UserPreferredPayment userPreferredPayment) {
         userPreferredPaymentsDao.delete(userPreferredPayment);
     }

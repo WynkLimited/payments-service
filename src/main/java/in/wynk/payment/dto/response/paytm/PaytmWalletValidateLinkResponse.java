@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
-public class PaytmWalletValidateLinkResponsePaytm extends PaytmCustomResponse {
+public class PaytmWalletValidateLinkResponse extends PaytmCustomResponse {
 
     private List<Token> tokens;
     private String encryptedUserId;

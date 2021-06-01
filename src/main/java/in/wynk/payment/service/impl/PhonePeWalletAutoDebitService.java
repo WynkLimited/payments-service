@@ -59,12 +59,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.PHONEPE_OTP_TOKEN;
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
 public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantWalletService, IUserPreferredPaymentService {
 
-    private static final String DEBIT_API = "/v3/wallet/debit";
-    private static final String TRIGGER_OTP_API = "/v3/merchant/otp/send";
-    private static final String VERIFY_OTP_API = "/v3/merchant/otp/verify";
-    private static final String UNLINK_API = "/v3/merchant/token/unlink";
-    private static final String BALANCE_API = "/v3/wallet/balance";
-    private static final String TOPUP_API = "/v3/wallet/topup";
+
     @Value("{payment.encryption.key}")
     private String paymentEncryptionKey;
     @Value("${payment.merchant.phonepe.id}")
@@ -405,13 +400,13 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 String requestJson = gson.toJson(peAutoDebitChargeRequest);
                 Map<String, String> requestMap = new HashMap<>();
                 requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
-                String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + DEBIT_API + salt) + X_VERIFY_SUFFIX;
+                String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + AUTO_DEBIT_API + salt) + X_VERIFY_SUFFIX;
                 HttpHeaders headers = new HttpHeaders();
                 headers.add(X_DEVICE_ID, wallet.getId().getDeviceId());
                 headers.add(X_VERIFY, xVerifyHeader);
                 headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
                 HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
-                ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + DEBIT_API, requestEntity, PhonePeWalletResponse.class);
+                ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + AUTO_DEBIT_API, requestEntity, PhonePeWalletResponse.class);
                 PhonePeWalletResponse phonePeWalletResponse = response.getBody();
  //TODO:  Will discuss and check with PhonePe, if PhonePe  is handling balance and deeplink flow in its debit api then two api(balance and addMoney) hits will reduce.
                 /*if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())) {

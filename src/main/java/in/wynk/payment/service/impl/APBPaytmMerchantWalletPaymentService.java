@@ -21,13 +21,16 @@ import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.apb.paytm.APBPaytmLinkRequest;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.Apb.paytm.APBPaytmLinkResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.paytm.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.session.dto.Session;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +42,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -54,6 +59,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
+import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.ABP_PAYTM_OTP_TOKEN;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 import static in.wynk.payment.dto.paytm.PayTmConstants.PAYTM_CHECKSUMHASH;
 
@@ -70,8 +76,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     @Value("${apbpaytm.refund.api}")
     private String REFUND;
 
-    @Value("${apbpaytm.sendOtp.api}")
-    private String SEND_OTP;
+ //   @Value("${apbpaytm.sendOtp.api}")
+    private String SEND_OTP="http://kongqa.airtel.com/preprod-236/pg-service/v1/wallet/initiate-link";
 
     @Value("${apbpaytm.native.clientId}")
     private String CLIENT_ID;
@@ -438,33 +444,32 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     @Override
     public BaseResponse<?> linkRequest(WalletLinkRequest walletLinkRequest) {
         try {
-            String phone = walletLinkRequest.getEncSi();
-            SessionDTO sessionDTO = SessionContextHolder.getBody();
-            sessionDTO.put(WALLET_USER_ID, phone);
-            log.info("Sending OTP to {} via PayTM", phone);
-            URI uri = new URIBuilder(SEND_OTP).build();
-            HttpHeaders headers = getHttpHeaders();
-            PaytmWalletOtpRequest paytmWalletOtpRequest = PaytmWalletOtpRequest.builder().phone(phone).scopes(Arrays.asList("wallet")).build();
-            RequestEntity<PaytmWalletOtpRequest> requestEntity = new RequestEntity<>(paytmWalletOtpRequest, headers, HttpMethod.POST, uri);
-            log.info("Paytm OTP request: {}", requestEntity);
-            ResponseEntity<PaytmWalletLinkResponsePaytm> responseEntity = restTemplate.exchange(requestEntity, PaytmWalletLinkResponsePaytm.class);
-            log.info("Paytm OTP response: {}", responseEntity);
-            HttpStatus statusCode = responseEntity.getStatusCode();
-            PaytmWalletLinkResponsePaytm paytmWalletLinkResponse = responseEntity.getBody();
-            if (!statusCode.is2xxSuccessful() || paytmWalletLinkResponse.getStatus() == Status.FAILURE) {
-                String responseCode = paytmWalletLinkResponse.getResponseCode();
-                PayTmErrorCodes errorCode = PayTmErrorCodes.resolveErrorCode(responseCode);
-                log.error(HTTP_ERROR, "Error in sending otp. Reason: [{}]", errorCode.getMessage());
-                throw new RuntimeException("Error in sending otp.");
+            APBPaytmLinkRequest linkRequest=APBPaytmLinkRequest.builder().walletLoginId(walletLinkRequest.getEncSi()).
+                    loginId(walletLinkRequest.getEncSi()).wallet("PAYTM").authType("AUTH").build();
+            Map<String, String> map = new HashMap<>();
+            map.put("walletLoginId", walletLinkRequest.getEncSi());
+            map.put("loginId", walletLinkRequest.getEncSi());
+            map.put("wallet","PAYTM");
+            map.put("authType", "AUTH");
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("authorization", "Basic cGF5bWVudDpwYXlAcWNrc2x2cg==");
+            headers.add("channel-id", "WEB_MOBILE_UNAUTH");
+            headers.add("iv-user",walletLinkRequest.getEncSi());
+            headers.add("content-type", "application/json");
+            headers.add("accept", "application/json");
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(map, headers);
+            ResponseEntity<APBPaytmLinkResponse> linkResponse = restTemplate.postForEntity(SEND_OTP, requestEntity, APBPaytmLinkResponse.class);
+            APBPaytmLinkResponse response=linkResponse.getBody();
+            if(response.isResult()){
+                Session<SessionDTO> session = SessionContextHolder.get();
+                SessionDTO sessionDTO = session.getBody();
+                sessionDTO.put(ABP_PAYTM_OTP_TOKEN, response.getData().getOtpToken());
+                log.info("otp send successfully {} ",  response.getData().getOtpToken());
+
             }
-            if (StringUtils.isBlank(paytmWalletLinkResponse.getState_token())) {
-                throw new RuntimeException("Paytm responded with empty state for OTP response");
-            }
-            log.info("Otp sent successfully. Status: {}", paytmWalletLinkResponse.getStatus());
-            sessionDTO.put(STATE_TOKEN, paytmWalletLinkResponse.getState_token());
-            WynkResponse.WynkResponseWrapper<PaytmWalletLinkResponsePaytm> response = WynkResponse.WynkResponseWrapper.<PaytmWalletLinkResponsePaytm>builder().data(paytmWalletLinkResponse).build();
-            return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(response).headers(requestEntity.getHeaders()).build();
-        } catch (URISyntaxException e) {
+            return null;
+
+        } catch (Exception e) {
             log.error(PAYTM_ERROR, "Error from paytm: {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, "Paytm error - " + e.getMessage());
         }
@@ -494,10 +499,13 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     private HttpHeaders getHttpHeaders() {
-        String authHeader = String.format("Basic %s", Utils.encodeBase64(CLIENT_ID + ":" + SECRET));
+//        String authHeader = String.format("Basic %s", Utils.encodeBase64(CLIENT_ID + ":" + SECRET));
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", authHeader);
-        headers.add("Content-Type", "application/json");
+        headers.add("authorization", "Basic cGF5bWVudDpwYXlAcWNrc2x2cg==");
+        headers.add("channel-id", "WEB_MOBILE_UNAUTH");
+        headers.add("iv-user","");
+        headers.add("content-type", "application/json");
+        headers.add("accept", "application/json");
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             headers.add("x-device-identifier", sessionDTO.get(DEVICE_ID));

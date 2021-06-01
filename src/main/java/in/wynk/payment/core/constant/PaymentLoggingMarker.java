@@ -63,5 +63,9 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker CLIENT_CALLBACK_INFO = MarkerFactory.getMarker("CLIENT_CALLBACK_INFO");
 
+    Marker SAVED_OPTIONS_TIMED_OUT = MarkerFactory.getMarker("SAVED_OPTIONS_TIMED_OUT");
+    Marker LINK_WALLET_ERROR = MarkerFactory.getMarker("LINK_WALLET_ERROR");
+    Marker SAVED_CARDS_ERROR = MarkerFactory.getMarker("SAVED_CARDS_ERROR");
+
 
 }

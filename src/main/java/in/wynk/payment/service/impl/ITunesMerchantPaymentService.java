@@ -227,7 +227,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             ItunesStatusCodes code = null;
             final ItunesReceiptType receiptType = itunesLatestReceiptResponse.getItunesReceiptType();
             final List<LatestReceiptInfo> latestReceiptInfoList = itunesLatestReceiptResponse.getLatestReceiptInfo();
-            if(latestReceiptInfoList == null || latestReceiptInfoList.size() == 0) {
+            if(CollectionUtils.isEmpty(latestReceiptInfoList)) {
                 log.info("Latest receipt not found for uid: {}, planId: {}", transaction.getUid(), transaction.getPlanId());
                 code = ItunesStatusCodes.APPLE_21018;
                 transaction.setStatus(TransactionStatus.FAILURE.name());

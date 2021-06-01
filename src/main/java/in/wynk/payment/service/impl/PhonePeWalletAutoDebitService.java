@@ -188,7 +188,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         return balance(planId, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
-    public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
+    private BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
@@ -349,12 +349,60 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
 
     @Override
     public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
+        ErrorCode errorCode = null;
+        ChargingResponse chargingResponse = null;
+        HttpStatus httpStatus = HttpStatus.OK;
+        String redirectUrl = null;
+        final String sid = SessionContextHolder.getId();
+        final Transaction transaction = TransactionContext.get();
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder();
         try {
-            PhonePeAutoDebitChargeRequest request =PhonePeAutoDebitChargeRequest.builder().deviceContext(new DeviceContext(Long.parseLong(processCallback(callbackRequest)))).build();
-            return doCharging(request);
+
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
+            UserWalletDetails userWalletDetails = (UserWalletDetails) this.balance(transaction.getPlanId(), wallet).getBody().getData();
+            if(userWalletDetails.getBalance()>=Double.valueOf(transaction.getAmount())){
+                PhonePeAutoDebitChargeRequest peAutoDebitChargeRequest = PhonePeAutoDebitChargeRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(Double.valueOf(transaction.getAmount() * 100).longValue()).deviceContext(new DeviceContext(Long.parseLong(processCallback(callbackRequest)))).transactionId(transaction.getId().toString()).build();
+                String requestJson = gson.toJson(peAutoDebitChargeRequest);
+                Map<String, String> requestMap = new HashMap<>();
+                requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
+                String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + AUTO_DEBIT_API + salt) + X_VERIFY_SUFFIX;
+                HttpHeaders headers = new HttpHeaders();
+                headers.add(X_DEVICE_ID, wallet.getId().getDeviceId());
+                headers.add(X_VERIFY, xVerifyHeader);
+                headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+                HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
+                ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + AUTO_DEBIT_API, requestEntity, PhonePeWalletResponse.class);
+                PhonePeWalletResponse phonePeWalletResponse = response.getBody();
+                if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())) {
+                    transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+                    redirectUrl = successPage + sid;
+                    chargingResponse = ChargingResponse.builder().deficit(false).redirectUrl(redirectUrl).build();
+                }
+
+                else{
+                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                    redirectUrl = failurePage + sid;
+                    chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
+                }
+                log.info("redirect url####################{}", redirectUrl);
+            }
+            else {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                redirectUrl = failurePage + sid;
+                chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
+                log.info("redirect url####################{}", redirectUrl);
+            }
+            builder.data(chargingResponse);
+
         }
       catch (Exception e) {
+             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new PaymentRuntimeException(PHONEPE_CHARGING_CALLBACK_FAILURE, e.getMessage(), e);
+        }
+        finally {
+            handleError(errorCode, builder);
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.build()).build();
         }
     }
 

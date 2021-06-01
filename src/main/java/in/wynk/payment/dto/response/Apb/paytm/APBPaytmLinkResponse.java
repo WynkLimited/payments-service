@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class APBPaytmLinkResponse {
+    private String code;
     private boolean result;
     private APBPaytmResponseData data;
 }

@@ -185,6 +185,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
+        AnalyticService.update(COUPON_CODE,transaction.getCoupon());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
 

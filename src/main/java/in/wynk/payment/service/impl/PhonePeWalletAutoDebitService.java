@@ -209,10 +209,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             PhonePeWalletResponse walletResponse = response.getBody();
             if (walletResponse!=null && walletResponse.isSuccess() && walletResponse.getCode().equalsIgnoreCase(SUCCESS) && walletResponse.getData().getWallet().getWalletActive()){
                 double deficitBalance=0;
-                double finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
+                final double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
                 double usableBalance=walletResponse.getData().getWallet().getUsableBalance()/100d;
                 if (usableBalance<finalAmount){
-                    deficitBalance=finalAmount-walletResponse.getData().getWallet().getUsableBalance();
+                    deficitBalance=finalAmount-usableBalance;
                 }
                 AnalyticService.update("PHONEPE_CODE", walletResponse.getCode());
                 builder.data(userWalletDetailsBuilder

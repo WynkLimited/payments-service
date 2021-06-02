@@ -107,7 +107,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Value("${paytm.revokeAccessToken.api}")
     private String REVOKE_ACCESS_TOKEN;
 
-    @Value("{payment.encryption.key}")
+    @Value("${payment.encKey}")
     private String paymentEncryptionKey;
 
     @Value("${paytm.requesting.website}")

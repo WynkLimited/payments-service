@@ -60,7 +60,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.PHONEPE_OTP_TOKEN;
 public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantWalletService, IUserPreferredPaymentService {
 
 
-    @Value("{payment.encryption.key}")
+    @Value("${payment.encKey}")
     private String paymentEncryptionKey;
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;

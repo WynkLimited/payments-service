@@ -194,8 +194,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         try {
-            PhonePeAutoDebitRequest walletRequest = PhonePeAutoDebitRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).build();
-            String requestJson = gson.toJson(walletRequest);
+            double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
+
+            PhonePeAutoDebitRequest walletRequest = PhonePeAutoDebitRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).txnAmount(Double.valueOf(finalAmount).longValue()).build();
+            String requestJson = objectMapper.writeValueAsString(walletRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = Utils.encodeBase64(requestJson) + BALANCE_API + salt;
@@ -209,7 +211,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             PhonePeWalletResponse walletResponse = response.getBody();
             if (walletResponse!=null && walletResponse.isSuccess() && walletResponse.getCode().equalsIgnoreCase(SUCCESS) && walletResponse.getData().getWallet().getWalletActive()){
                 double deficitBalance=0;
-                final double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
                 double usableBalance=walletResponse.getData().getWallet().getUsableBalance()/100d;
                 if (usableBalance<finalAmount){
                     deficitBalance=finalAmount-usableBalance;
@@ -307,7 +308,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 .amount(amount).adjustAmount(true).linkType(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())
                 .deviceContext(new DeviceContext(phonePeVersionCode)).build();
         try {
-            String requestJson = gson.toJson(phonePePaymentRequest);
+            String requestJson = objectMapper.writeValueAsString(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
             String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + TOPUP_API + salt) + X_VERIFY_SUFFIX;
@@ -451,7 +452,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                     log.info("your balance is low and phonePe is not allowing to add money to you wallet");
                 }
             } else {
-                String requestJson = gson.toJson(peAutoDebitChargeRequest);
+                String requestJson = objectMapper.writeValueAsString(peAutoDebitChargeRequest);
                 Map<String, String> requestMap = new HashMap<>();
                 requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
                 String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + AUTO_DEBIT_API + salt) + X_VERIFY_SUFFIX;

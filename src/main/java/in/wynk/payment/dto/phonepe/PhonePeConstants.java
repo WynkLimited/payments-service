@@ -19,4 +19,5 @@ public interface PhonePeConstants {
     String UNLINK_API = "/v3/merchant/token/unlink";
     String BALANCE_API = "/v3/wallet/balance";
     String TOPUP_API = "/v3/wallet/topup";
+    String PHONEPE_VERSION_CODE="phonePeVersionCode";
 }

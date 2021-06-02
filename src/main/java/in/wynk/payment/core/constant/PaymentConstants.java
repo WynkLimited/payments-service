@@ -23,6 +23,7 @@ public interface PaymentConstants extends BaseConstants {
 
     String MESSAGE = "message";
     String PAYMENT_METHOD = "paymentMethod";
+    String PAYMENT_CODE = "paymentCode";
     String MIGRATED_TXN_ID = "transactionid";
     String REQUEST_PAYLOAD = "requestPayload";
     

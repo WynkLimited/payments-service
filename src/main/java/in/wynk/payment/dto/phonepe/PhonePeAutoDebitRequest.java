@@ -9,9 +9,10 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 public class PhonePeAutoDebitRequest {
+
+    private long txnAmount;
     private String merchantId;
     private String userAuthToken;
-    private long txnAmount;
 
     public long getTxnAmount(){
         return txnAmount*100;
@@ -24,4 +25,5 @@ public class PhonePeAutoDebitRequest {
     public String getUserAuthToken() {
         return this.userAuthToken;
     }
+
 }

@@ -24,9 +24,9 @@ public class PaymentOptionsController {
         return paymentMethodService.getPaymentOptions(planId);
     }
 
-    @PostMapping("/details/combine/{sid}")
+    @PostMapping("/saved/details/{sid}")
     @ManageSession(sessionId = "#sid")
-    @AnalyseTransaction(name = "combinedPaymentDetails")
+    @AnalyseTransaction(name = "savedDetails")
     public WynkResponseEntity<PaymentDetailsWrapper> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedPaymentDetailsRequest request) {
         return WynkResponseEntity.<PaymentDetailsWrapper>builder().body(paymentMethodService.getPaymentDetails(request)).build();
     }

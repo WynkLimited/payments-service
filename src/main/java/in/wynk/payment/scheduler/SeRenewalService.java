@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -88,32 +87,29 @@ public class SeRenewalService {
     private void doSeRenewals(String filePath, List<String[]> csvContent) {
         int hits = 0;
         int count = 0;
-        Map<String, Pair<Long, String[]>> map = new HashMap<>();
+        Map<String, String[]> map = new HashMap<>();
         for (String[] subsData : csvContent) {
             count = count + 1;
             if (count == 1) {
                 continue;
             }
-            String msisdn = subsData[1];
-            String dateStr = subsData[4];
-            //03-06-2017 00:58:41
-            SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-            Date date = null;
-            try {
-                date = formatter.parse(dateStr);
-            } catch (ParseException e) {
-                log.error(SE_PAYMENT_RENEWAL_ERROR, "ERROR while converting date string to long for record : {}", subsData, e);
-            }
-            Long millis = date.getTime();
-            if (!map.containsKey(msisdn) || (map.containsKey(msisdn) && map.get(msisdn).getFirst() < millis)) {
-                Pair<Long, String[]> pair = Pair.of(millis, subsData);
-                map.put(msisdn, pair);
+            String msisdn = subsData[1].trim();
+            String extProductId = subsData[3].trim();
+            String transactionType = subsData[5].trim();
+            String transactionStatus = subsData[6].trim();
+            int amount = subsData[9].trim().equalsIgnoreCase("") ? 0 : Integer.valueOf(subsData[9].trim());
+            TransactionStatus seTxnStatus = getSETransactionStatus(transactionType, transactionStatus);
+            if (seTxnStatus == TransactionStatus.SUCCESS && amount > 0) {
+                String key = msisdn + extProductId;
+                if (!map.containsKey(key)) {
+                    map.put(key, subsData);
+                }
             }
         }
         log.info("Total map size : {}", map.size());
         StringBuffer sb = new StringBuffer();
         for (String key : map.keySet()) {
-            if (mismatchStatus(map.get(key).getSecond(), sb)) {
+            if (mismatchStatus(map.get(key), sb)) {
                 hits++;
             }
         }

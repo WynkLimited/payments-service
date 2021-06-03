@@ -55,7 +55,7 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             queryBuilder.addParameter(ITEM_ID, request.getItemId());
             queryBuilder.addParameter(POINT_PURCHASE_FLOW, Boolean.TRUE.toString());
             queryBuilder.addParameter(AMOUNT, String.valueOf(request.getItemPrice()));
-            String builder = PAYMENT_OPTION_URL + session.getId().toString() + SLASH + request.getOs().getValue() + QUESTION_MARK + queryBuilder.build().getQuery();
+            String builder = PAYMENT_OPTION_URL + session.getId().toString() + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(session.getId().toString()).build();
             return SessionResponse.builder().data(response).build();
         } catch (URISyntaxException e) {

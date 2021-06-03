@@ -197,7 +197,7 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.getPaymentCode();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
-        final Transaction transaction = initiateTransactionForPlan(latestReceiptResponse.isFreeTrial(), request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
+        final Transaction transaction = initiateTransactionForPlan(latestReceiptResponse.isAutoRenewal(), latestReceiptResponse.isFreeTrial(), request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                 .extTxnId(latestReceiptResponse.getExtTxnId())
                 .paymentCode(transaction.getPaymentChannel())
@@ -275,10 +275,10 @@ public class PaymentManager {
         return TransactionContext.get();
     }
 
-    private Transaction initiateTransactionForPlan(boolean freeTrial, int planId, String uid, String msisdn, PaymentCode paymentCode) {
+    private Transaction initiateTransactionForPlan(boolean autoRenewal, boolean freeTrial, int planId, String uid, String msisdn, PaymentCode paymentCode) {
         final SessionDTO session = SessionContextHolder.getBody();
         PlanDTO selectedPlan = cachingService.getPlan(planId);
-        PaymentEvent paymentEvent = selectedPlan.getPlanType() == PlanType.ONE_TIME_SUBSCRIPTION ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
+        PaymentEvent paymentEvent = autoRenewal ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
         double finalAmountToBePaid = selectedPlan.getFinalPrice();
         if (freeTrial) {
             paymentEvent = PaymentEvent.TRIAL_SUBSCRIPTION;

@@ -322,7 +322,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         String sid = SessionContextHolder.get().getId().toString();
         Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-           //payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+            //payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
             payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
         } else {
             payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
@@ -583,6 +583,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                                 SERVICE +
                                 EQUAL +
                                 sessionDTO.<String>get(SERVICE) +
+                                AND +
+                                APP_ID +
+                                EQUAL +
+                                sessionDTO.<String>get(APP_ID) +
                                 AND +
                                 BUILD_NO +
                                 EQUAL +

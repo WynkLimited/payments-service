@@ -67,5 +67,9 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker LINK_WALLET_ERROR = MarkerFactory.getMarker("LINK_WALLET_ERROR");
     Marker SAVED_CARDS_ERROR = MarkerFactory.getMarker("SAVED_CARDS_ERROR");
 
+    Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
+
+    Marker SDK_CLIENT_ERROR = MarkerFactory.getMarker("SDK_CLIENT_ERROR");
+
 
 }

@@ -126,7 +126,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         try {
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
                 if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-                    unsubscribePlan(transaction, finalTransactionStatus, isSync);
+                    // do nothing as per https://airteldigital.atlassian.net/browse/RG-1610
+                    return;
                 } else {
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
                     if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
@@ -141,6 +142,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         } finally {
             if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
                 transaction.setExitTime(Calendar.getInstance());
+            }
+            if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                return;
             }
             this.upsert(transaction);
         }
@@ -180,6 +184,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
+        AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
 

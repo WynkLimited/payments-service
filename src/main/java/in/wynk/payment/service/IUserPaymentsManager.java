@@ -1,14 +1,15 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dao.entity.Key;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+
+import java.util.List;
 
 public interface IUserPaymentsManager {
 
-    UserPreferredPayment getPaymentDetails(Key key);
+    List<UserPreferredPayment> get(String uid);
 
-    void savePaymentDetails(UserPreferredPayment userPreferredPayment);
+    void save(UserPreferredPayment userPreferredPayment);
 
-    void deletePaymentDetails(UserPreferredPayment userPreferredPayment);
+    void delete(UserPreferredPayment userPreferredPayment);
 
 }

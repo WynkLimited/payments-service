@@ -54,11 +54,11 @@ public class PaymentTestUtils {
     }
 
     public static UserPreferredPayment dummyPreferredWallet() {
-        return Wallet.builder().id(Key.builder().paymentCode(PAYTM_WALLET.name()).paymentGroup(WALLET).uid(DUMMY_UID).build()).build();
+        return Wallet.builder().id(SavedDetailsKey.builder().paymentCode(PAYTM_WALLET.name()).paymentGroup(WALLET).uid(DUMMY_UID).build()).build();
     }
 
     public static UserPreferredPayment dummyPreferredCard() {
-        return Card.builder().id(Key.builder().paymentCode(PAYU.name()).paymentGroup(CARD).uid(DUMMY_UID).build()).build();
+        return Card.builder().id(SavedDetailsKey.builder().paymentCode(PAYU.name()).paymentGroup(CARD).uid(DUMMY_UID).build()).build();
     }
 
     public static SessionDTO dummySession() {

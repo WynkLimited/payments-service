@@ -12,7 +12,7 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletValidateLinkRequest extends WalletRequest {
+public class WalletBalanceRequest extends WalletRequest {
     @Analysed
-    private String otp;
+    private int planId;
 }

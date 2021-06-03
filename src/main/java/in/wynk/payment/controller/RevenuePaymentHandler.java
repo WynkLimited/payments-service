@@ -103,4 +103,18 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
+    @PostMapping(path = "/callback/{sid}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentCallback")
+    public ResponseEntity<?> handleCallbackJSON(@PathVariable String sid, @RequestBody Map<String, Object> payload) {
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final String transactionId = sessionDTO.get(TRANSACTION_ID);
+        final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+        final CallbackRequest request = CallbackRequest.builder().body(payload).transactionId(transactionId).build();
+        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
+        AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
+        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode);
+        return baseResponse.getResponse();
+    }
+
 }

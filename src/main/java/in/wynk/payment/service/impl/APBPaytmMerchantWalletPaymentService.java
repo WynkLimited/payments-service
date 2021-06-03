@@ -149,26 +149,26 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             Map<String, String> map = new HashMap<>();
             map.put("walletLoginId", sessionDTO.get(WALLET_USER_ID));
             map.put("loginId", sessionDTO.get(WALLET_USER_ID));
+            map.put("channel", "ANDROID");
             map.put("wallet", "PAYTM");
             map.put("authType", "AUTH");
+            map.put("otp", request.getOtp());
+            map.put("otpToken",sessionDTO.get(ABP_PAYTM_OTP_TOKEN));
             HttpHeaders headers = new HttpHeaders();
             headers.add("authorization", "Basic cGF5bWVudDpwYXlAcWNrc2x2cg==");
-            headers.add("channel-id", "WEB_AUTH");
+            headers.add("channel-id", "WEB_MOBILE_UNAUTH");
             headers.add("iv-user", sessionDTO.get(WALLET_USER_ID));
             headers.add("content-type", "application/json");
             headers.add("accept", "application/json");
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(map, headers);
-            ResponseEntity<APBPaytmLinkResponse> linkResponse = restTemplate.postForEntity(SEND_OTP, requestEntity, APBPaytmLinkResponse.class);
-            APBPaytmLinkResponse response = linkResponse.getBody();
-            if (response.isResult()) {
- //               Session<SessionDTO> session = SessionContextHolder.get();
- //               SessionDTO sessionDTO = session.getBody();
-                sessionDTO.put(ABP_PAYTM_OTP_TOKEN, response.getData().getOtpToken());
-                log.info("otp send successfully {} ", response.getData().getOtpToken());
+            ResponseEntity<String> linkResponse = restTemplate.postForEntity(VERIFY_OTP, requestEntity, String.class);
+
+            if (linkResponse!=null) {
+                log.info("otp validated successfully {}", linkResponse.getBody());
 
             } else {
 //TODO:  Need to take errorCodes list from APB and put all in  ErrorCode  enum to provide ErrorCodes to FE
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(response.getCode());
+                errorCode = ErrorCode.getErrorCodesFromExternalCode("");
             }
         }
         catch (HttpStatusCodeException hex) {
@@ -198,9 +198,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     @Override
-    public BaseResponse<?> addMoney(WalletAddMoneyRequest request) {
-        return null;
-    }
+    public BaseResponse<?> addMoney(WalletAddMoneyRequest request) { return null; }
 
 
     @Override

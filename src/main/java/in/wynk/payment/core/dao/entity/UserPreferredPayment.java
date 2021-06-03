@@ -10,4 +10,4 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @SuperBuilder
 @NoArgsConstructor
 @Document("user_preferred_payments")
-public abstract class UserPreferredPayment extends MongoBaseEntity<Key> {}
+public class UserPreferredPayment extends MongoBaseEntity<SavedDetailsKey> {}

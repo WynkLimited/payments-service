@@ -2,7 +2,9 @@ package in.wynk.payment.service;
 
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.AbstractErrorDetails;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -110,6 +112,13 @@ public class PaymentManager {
                 .build());
         final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         BaseResponse response = chargingService.doCharging(request);
+        if (WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(response.getBody().getClass())) {
+            WynkResponseEntity.WynkBaseResponse wynkBaseResponse = (WynkResponseEntity.WynkBaseResponse) response.getBody();
+            if (!wynkBaseResponse.isSuccess()) {
+                AbstractErrorDetails errorDetails = (AbstractErrorDetails) wynkBaseResponse.getError();
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorDetails.getCode()).description(errorDetails.getDescription()).build());
+            }
+        }
         transactionManager.updateAndAsyncPublish(transaction, existingStatus, transaction.getStatus());
         return response;
     }
@@ -122,6 +131,13 @@ public class PaymentManager {
         final BaseResponse<?> baseResponse;
         try {
             baseResponse = callbackService.handleCallback(request);
+            if (WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(baseResponse.getBody().getClass())) {
+                WynkResponseEntity.WynkBaseResponse wynkBaseResponse = (WynkResponseEntity.WynkBaseResponse) baseResponse.getBody();
+                if (!wynkBaseResponse.isSuccess()) {
+                    AbstractErrorDetails errorDetails = (AbstractErrorDetails) wynkBaseResponse.getError();
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorDetails.getCode()).description(errorDetails.getDescription()).build());
+                }
+            }
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);

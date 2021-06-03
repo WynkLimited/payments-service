@@ -8,6 +8,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 public class PhonePeAutoDebitRequest {
+
     private String merchantId;
     private String userAuthToken;
+
 }

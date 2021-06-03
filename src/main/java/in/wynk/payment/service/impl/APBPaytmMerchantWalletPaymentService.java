@@ -72,7 +72,7 @@ import static in.wynk.payment.dto.paytm.PayTmConstants.PAYTM_CHECKSUMHASH;
 public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantWalletService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
     private String SEND_OTP="http://kongqa.airtel.com/preprod-236/pg-service/v1/wallet/initiate-link";
-    private String VERIFY_OTP="http://kongqa.airtel.com/preprod-236/pg-service/v1/wallet/initiate-link";
+    private String VERIFY_OTP="http://kongqa.airtel.com/preprod-236/pg-service/v1/wallet/link";
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
     private final IUserPaymentsManager userPaymentsManager;
@@ -94,6 +94,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     public BaseResponse<?> linkRequest(WalletLinkRequest walletLinkRequest) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        sessionDTO.put(WALLET_USER_ID, walletLinkRequest.getEncSi());
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             APBPaytmLinkRequest linkRequest = APBPaytmLinkRequest.builder().walletLoginId(walletLinkRequest.getEncSi()).
@@ -113,8 +115,6 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             ResponseEntity<APBPaytmLinkResponse> linkResponse = restTemplate.postForEntity(SEND_OTP, requestEntity, APBPaytmLinkResponse.class);
             APBPaytmLinkResponse response = linkResponse.getBody();
             if (response.isResult()) {
-                Session<SessionDTO> session = SessionContextHolder.get();
-                SessionDTO sessionDTO = session.getBody();
                 sessionDTO.put(ABP_PAYTM_OTP_TOKEN, response.getData().getOtpToken());
                 log.info("otp send successfully {} ", response.getData().getOtpToken());
 
@@ -140,21 +140,21 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     @Override
     public BaseResponse<?> validateLink(WalletValidateLinkRequest request) {
+
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-
             Map<String, String> map = new HashMap<>();
- //           map.put("walletLoginId", sessionDTO.get());
-//            map.put("loginId", request.getEncSi());
+            map.put("walletLoginId", sessionDTO.get(WALLET_USER_ID));
+            map.put("loginId", sessionDTO.get(WALLET_USER_ID));
             map.put("wallet", "PAYTM");
             map.put("authType", "AUTH");
             HttpHeaders headers = new HttpHeaders();
             headers.add("authorization", "Basic cGF5bWVudDpwYXlAcWNrc2x2cg==");
-            headers.add("channel-id", "WEB_MOBILE_UNAUTH");
- //           headers.add("iv-user", walletLinkRequest.getEncSi());
+            headers.add("channel-id", "WEB_AUTH");
+            headers.add("iv-user", sessionDTO.get(WALLET_USER_ID));
             headers.add("content-type", "application/json");
             headers.add("accept", "application/json");
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(map, headers);

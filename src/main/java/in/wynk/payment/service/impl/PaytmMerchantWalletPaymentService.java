@@ -425,6 +425,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             String phone = walletLinkRequest.getEncSi();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             sessionDTO.put(WALLET_USER_ID, phone);
             log.info("Sending OTP to {} via PayTM", phone);
             URI uri = new URIBuilder(SEND_OTP).build();
@@ -463,6 +464,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(VALIDATE_OTP).build();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID));
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put("otp", walletValidateLinkRequest.getOtp());

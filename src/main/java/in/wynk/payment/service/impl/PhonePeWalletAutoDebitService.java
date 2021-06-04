@@ -106,6 +106,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         try {
             String phone = request.getEncSi();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             sessionDTO.put(WALLET_USER_ID, phone);
             String deviceId=sessionDTO.get(DEVICE_ID);
             log.info("Sending OTP to {} via PhonePe", phone);
@@ -143,6 +144,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             String otpToken = sessionDTO.get(PHONEPE_OTP_TOKEN);
             String deviceId = sessionDTO.get(DEVICE_ID);
             PhonePeAutoDebitOtpRequest phonePeAutoDebitOtpRequest = PhonePeAutoDebitOtpRequest.builder().merchantId(merchantId).otp(request.getOtp()).otpToken(otpToken).build();

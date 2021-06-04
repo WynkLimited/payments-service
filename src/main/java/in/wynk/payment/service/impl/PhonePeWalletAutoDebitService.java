@@ -318,6 +318,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
 
     @Override
     public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        ChargingResponse.ChargingResponseBuilder chargingResponseBuilder = ChargingResponse.builder();
         ErrorCode errorCode = null;
         ChargingResponse chargingResponse = null;
         HttpStatus httpStatus = HttpStatus.OK;
@@ -326,8 +328,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         final Transaction transaction = TransactionContext.get();
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder();
         try {
-
-            SessionDTO sessionDTO = SessionContextHolder.getBody();
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
             UserWalletDetails userWalletDetails = (UserWalletDetails) this.balance(transaction.getPlanId(), wallet).getBody().getData();
             if(userWalletDetails.getBalance()>=Double.valueOf(transaction.getAmount())){
@@ -345,14 +345,12 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
 
                 else{
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    redirectUrl = failurePage + sid;
                     chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
                 }
                 log.info("redirect url####################{}", redirectUrl);
             }
             else {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                redirectUrl = failurePage + sid;
                 chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
                 log.info("redirect url####################{}", redirectUrl);
             }
@@ -376,13 +374,27 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
              log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
              transaction.setStatus(TransactionStatus.FAILURE.getValue());
              errorCode = ErrorCode.UNKNOWN;
-             redirectUrl = failurePage + sid;
              chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
         }
         finally {
+                if (StringUtils.isBlank(redirectUrl)) {
+                    redirectUrl = failurePage+sid;
+                }
             handleError(errorCode, builder);
             builder.data(chargingResponse);
-            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.build()).build();
+             return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.data(chargingResponseBuilder
+                    .redirectUrl(redirectUrl +
+                            SLASH +
+                            sessionDTO.<String>get(OS) +
+                            QUESTION_MARK +
+                            SERVICE +
+                            EQUAL +
+                            sessionDTO.<String>get(SERVICE) +
+                            AND +
+                            BUILD_NO +
+                            EQUAL +
+                            sessionDTO.<Integer>get(BUILD_NO))
+                    .build()).build()).build();
         }
     }
 
@@ -412,7 +424,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 log.info("your phonePe account is not active. please try another payment method");
             } else if (userWalletDetails.isLinked() && userWalletDetails.isActive() && userWalletDetails.getDeficitBalance() > 0d) {
                 if (userWalletDetails.isAddMoneyAllowed()) {
-                    errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE025.name());
                     deficit=true;
                     log.info("Your balance is low.Sending deeplink to add money to your wallet");
                     PhonePeWalletResponse phonePeWalletResponse = addMoney(wallet.getAccessToken(), finalAmountToCharge, payload.getPhonePeVersionCode(),wallet.getId().getDeviceId());
@@ -421,7 +432,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                         deficit=true;
                         deeplinkGenerated=true;
                         chargingResponseBuilder.deficit(true).info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey));
-//                        chargingResponse = ChargingResponse.builder().deficit(true).info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey)).build();
                     } else {
                          deficit=true;
                          transaction.setStatus(TransactionStatus.FAILURE.getValue());

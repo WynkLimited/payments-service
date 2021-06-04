@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;

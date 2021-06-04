@@ -417,10 +417,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             final long  finalAmountToCharge=Double.valueOf(transaction.getAmount() * 100).longValue();
             PhonePeAutoDebitChargeRequest peAutoDebitChargeRequest = PhonePeAutoDebitChargeRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(finalAmountToCharge).deviceContext(new DeviceContext(payload.getPhonePeVersionCode())).transactionId(transaction.getId().toString()).build();
             if (!userWalletDetails.isLinked()) {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
+                errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE024.name());
                 log.info("your wallet is not linked. please link your wallet");
             } else if (!userWalletDetails.isActive()) {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE024.name());
+                errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
                 log.info("your phonePe account is not active. please try another payment method");
             } else if (userWalletDetails.isLinked() && userWalletDetails.isActive() && userWalletDetails.getDeficitBalance() > 0d) {
                 if (userWalletDetails.isAddMoneyAllowed()) {

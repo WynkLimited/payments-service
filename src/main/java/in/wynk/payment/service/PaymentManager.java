@@ -8,6 +8,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.constant.CouponProvisionState;
 import in.wynk.coupon.core.constant.ProvisionSource;
+import in.wynk.coupon.core.dto.CouponContext;
 import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
@@ -269,7 +270,7 @@ public class PaymentManager {
             PlanDTO trialPlan = cachingService.getPlan(selectedPlan.getLinkedFreePlanId());
             finalAmountToBePaid = trialPlan.getFinalPrice();
         }
-        coupon = getCoupon(couponCode, msisdn, uid, service, null, paymentCode, selectedPlan);
+        coupon = getAndApplyCoupon(couponCode, msisdn, uid, service, null, paymentCode, selectedPlan);
         TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder()
                 .uid(uid)
                 .msisdn(msisdn)
@@ -347,6 +348,22 @@ public class PaymentManager {
                     .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             return couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
+        } else {
+            return null;
+        }
+    }
+
+    private CouponDTO getAndApplyCoupon(String couponId, String msisdn, String uid, String service, String
+            itemId, PaymentCode paymentCode, PlanDTO selectedPlan) {
+        if (!StringUtils.isEmpty(couponId)) {
+            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
+            CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            CouponDTO couponDTO = couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
+            if(couponDTO!=null) {
+                couponManager.applyCoupon(couponProvisionRequest);
+            }
+            return couponDTO;
         } else {
             return null;
         }

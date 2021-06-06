@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
@@ -53,6 +54,7 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
         }
         SessionDTO sessionDTO = SessionDTO.builder().sessionPayload(map).build();
         Session<SessionDTO> session = sessionManager.init(sessionDTO, 5, TimeUnit.MINUTES);
+        AnalyticService.update(ORIGINAL_SID, request.getSid());
         request.setSid(session.getId().toString());
         return request;
     }

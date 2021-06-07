@@ -136,7 +136,7 @@ public class PaymentManager {
 
         try {
             final BaseResponse<?> baseResponse = callbackService.handleCallback(request);
-            if (WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(baseResponse.getBody().getClass())) {
+            if (Objects.nonNull(baseResponse.getBody()) && WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(baseResponse.getBody().getClass())) {
                 WynkResponseEntity.WynkBaseResponse wynkBaseResponse = (WynkResponseEntity.WynkBaseResponse) baseResponse.getBody();
                 if (!wynkBaseResponse.isSuccess()) {
                     AbstractErrorDetails errorDetails = (AbstractErrorDetails) wynkBaseResponse.getError();

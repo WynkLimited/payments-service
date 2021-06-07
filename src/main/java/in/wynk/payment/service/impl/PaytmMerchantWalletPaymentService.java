@@ -543,10 +543,11 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
-        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder().linked(true);
+        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         try {
             URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
+            userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
             PaytmBalanceRequestBody body = PaytmBalanceRequestBody.builder().userToken(wallet.getAccessToken()).mid(MID).txnAmount(paymentCachingService.getPlan(planId).getFinalPrice()).build();
             String jsonPayload = objectMapper.writeValueAsString(body);
             log.debug("Generating signature for payload: {}", jsonPayload);
@@ -564,7 +565,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                 builder.data(userWalletDetailsBuilder
                         .active(true)
                         .balance(paytmPayOption.getAmount())
-                        .linkedMobileNo(wallet.getWalletUserId())
                         .deficitBalance(paytmPayOption.getDeficitAmount())
                         .expiredBalance(paytmPayOption.getExpiredAmount())
                         .addMoneyAllowed(paytmPayOption.isAddMoneyAllowed())

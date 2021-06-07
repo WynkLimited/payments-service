@@ -187,7 +187,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         try {
             double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
-
+            userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
             PhonePeAutoDebitRequest walletRequest = PhonePeAutoDebitRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).txnAmount(Double.valueOf(finalAmount).longValue()).build();
             String requestJson = objectMapper.writeValueAsString(walletRequest);
             HttpEntity<Map<String, String>> requestEntity = generatePayload(wallet.getId().getDeviceId(),requestJson,BALANCE_API);
@@ -200,14 +200,11 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                     deficitBalance=finalAmount-usableBalance;
                 }
                 AnalyticService.update("PHONEPE_CODE", walletResponse.getCode());
-                builder.data(userWalletDetailsBuilder
-                        .linked(true)
+                userWalletDetailsBuilder
                         .active(true)
                         .balance(usableBalance)
                         .deficitBalance(deficitBalance)
-                        .addMoneyAllowed(walletResponse.getData().getWallet().getWalletTopupSuggested())
-                        .linkedMobileNo(wallet.getWalletUserId())
-                        .build());
+                        .addMoneyAllowed(walletResponse.getData().getWallet().getWalletTopupSuggested());
             }
             else {
 
@@ -215,10 +212,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 if(!walletResponse.getData().getWallet().getWalletActive()){
                     errorCode= ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
                 }
-                builder.data(userWalletDetailsBuilder.linked(true).build());
             }
         } catch (HttpStatusCodeException hex) {
-            builder.data(userWalletDetailsBuilder.linked(true).build());
             log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
         } catch (WynkRuntimeException e) {
@@ -230,6 +225,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
+            builder.data(userWalletDetailsBuilder.build());
             handleError(errorCode, builder);
             return BaseResponse.<WynkResponseEntity.WynkBaseResponse<UserWalletDetails>>builder().status(httpStatus).body(builder.build()).build();
         }

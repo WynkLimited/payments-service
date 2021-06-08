@@ -14,7 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class CombinedPaymentDetailsRequest {
 
-    private String planId;
+    private int planId;
     private Map<String, List<String>> paymentGroups;
 
 }

@@ -8,9 +8,8 @@ import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.dto.request.WalletAddMoneyRequest;
-import in.wynk.payment.dto.request.WalletLinkRequest;
-import in.wynk.payment.dto.request.WalletValidateLinkRequest;
+import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantWalletService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
@@ -35,7 +34,6 @@ public class RevenuePaymentWalletHandler {
 
     private IMerchantWalletService getMerchantWalletService(PaymentCode paymentCode) {
         try {
-            AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
             return BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantWalletService.class);
         } catch (BeansException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY005);
@@ -46,29 +44,40 @@ public class RevenuePaymentWalletHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletLink")
     public ResponseEntity<?> linkRequest(@PathVariable String sid, @RequestBody WalletLinkRequest request) {
-        return getMerchantWalletService(request.getPaymentCode()).linkRequest(request).getResponse();
+        AnalyticService.update(request);
+        BaseResponse<?> response = getMerchantWalletService(request.getPaymentCode()).linkRequest(request);
+        AnalyticService.update(response.getBody());
+        return response.getResponse();
     }
 
     @PostMapping("/link/validate/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletValidateLink")
     public ResponseEntity<?> linkValidate(@PathVariable String sid, @RequestBody WalletValidateLinkRequest request) {
-        return getMerchantWalletService(request.getPaymentCode()).validateLink(request).getResponse();
+        AnalyticService.update(request);
+        BaseResponse<?> response = getMerchantWalletService(request.getPaymentCode()).validateLink(request);
+        AnalyticService.update(response.getBody());
+        return response.getResponse();
     }
 
-    @GetMapping("/unlink/request/{sid}")
+    @PostMapping("/unlink/request/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletUnlink")
-    public ResponseEntity<?> unlink(@PathVariable String sid, @RequestParam PaymentCode paymentCode) {
-        return getMerchantWalletService(paymentCode).unlink().getResponse();
+    public ResponseEntity<?> unlink(@PathVariable String sid, @RequestBody WalletRequest request) {
+        AnalyticService.update(request);
+        BaseResponse<?> response = getMerchantWalletService(request.getPaymentCode()).unlink();
+        AnalyticService.update(response.getBody());
+        return response.getResponse();
     }
 
-    @GetMapping("/balance/{sid}")
+    @PostMapping("/balance/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletBalance")
-    public ResponseEntity<?> balance(@PathVariable String sid, @RequestParam String planId, @RequestParam PaymentCode paymentCode) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return getMerchantWalletService(paymentCode).balance(sessionDTO.get(UID), planId, sessionDTO.get(DEVICE_ID)).getResponse();
+    public ResponseEntity<?> balance(@PathVariable String sid, @RequestBody WalletBalanceRequest request) {
+        AnalyticService.update(request);
+        BaseResponse<?> response = getMerchantWalletService(request.getPaymentCode()).balance(request.getPlanId());
+        AnalyticService.update(response.getBody());
+        return response.getResponse();
     }
 
     @PostMapping("/addMoney/{sid}")
@@ -85,7 +94,9 @@ public class RevenuePaymentWalletHandler {
         sessionDTO.put(PAYMENT_CODE, request.getPaymentCode().getCode());
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        return paymentManager.addMoney(uid, msisdn, request).getResponse();
+        BaseResponse<?> response = paymentManager.addMoney(uid, msisdn, request);
+        AnalyticService.update(response.getBody());
+        return response.getResponse();
     }
 
 }

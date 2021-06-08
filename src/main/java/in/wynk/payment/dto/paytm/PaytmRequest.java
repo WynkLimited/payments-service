@@ -5,15 +5,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaytmWalletOtpRequest {
+public class PaytmRequest<T> {
 
-    private String phone;
-    private List<String> scopes;
+    private PaytmRequestHead head;
+    private T body;
 
 }

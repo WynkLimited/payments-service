@@ -5,8 +5,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class PaytmWalletLinkResponsePaytm extends PaytmCustomResponse {
+public class PaytmResponse<T> {
 
-    private String state_token;
+    private PaytmResponseHead head;
+    private T body;
 
 }

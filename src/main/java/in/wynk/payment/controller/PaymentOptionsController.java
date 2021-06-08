@@ -1,7 +1,7 @@
 package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
-import in.wynk.common.dto.WynkResponse;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
 import in.wynk.payment.dto.response.PaymentDetailsWrapper;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
@@ -24,11 +24,11 @@ public class PaymentOptionsController {
         return paymentMethodService.getPaymentOptions(planId);
     }
 
-    @PostMapping("/details/combine/{sid}")
+    @PostMapping("/saved/details/{sid}")
     @ManageSession(sessionId = "#sid")
-    @AnalyseTransaction(name = "combinedPaymentDetails")
-    public WynkResponse<PaymentDetailsWrapper> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedPaymentDetailsRequest request) {
-        return WynkResponse.<PaymentDetailsWrapper>builder().body(paymentMethodService.getPaymentDetails(request)).build();
+    @AnalyseTransaction(name = "savedDetails")
+    public WynkResponseEntity<PaymentDetailsWrapper> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedPaymentDetailsRequest request) {
+        return WynkResponseEntity.<PaymentDetailsWrapper>builder().body(paymentMethodService.getPaymentDetails(request)).build();
     }
 
 }

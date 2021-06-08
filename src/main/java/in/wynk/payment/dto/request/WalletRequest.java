@@ -1,23 +1,19 @@
 package in.wynk.payment.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        property = "type"
-)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = WalletLinkRequest.class, name = "PaytmWalletLink"),
-        @JsonSubTypes.Type(value = WalletValidateLinkRequest.class, name = "PaytmWalletValidateLink"),
-        @JsonSubTypes.Type(value = WalletAddMoneyRequest.class, name = "PaytmWalletAddMoney")
-})
 @Getter
-@Setter
-@Deprecated
+@SuperBuilder
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
 public class WalletRequest {
+    @Analysed
     private PaymentCode paymentCode;
 }

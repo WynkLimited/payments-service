@@ -1,18 +1,20 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.Key;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
-import in.wynk.payment.dto.request.UserPreferredPaymentsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.PaymentDetailsWrapper;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
 import in.wynk.payment.service.IPaymentOptionService;
+import in.wynk.payment.service.IUserPaymentsManager;
 import in.wynk.payment.service.IUserPreferredPaymentService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
@@ -26,18 +28,20 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
-
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
-    private static final int N=3;
+    private static final int N=8;
+    private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
 
-    public PaymentOptionServiceImpl(PaymentCachingService paymentCachingService) {
+    public PaymentOptionServiceImpl(IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService) {
+        this.userPaymentsManager = userPaymentsManager;
         this.paymentCachingService = paymentCachingService;
     }
 
@@ -84,17 +88,27 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     }
 
     @Override
-    public PaymentDetailsWrapper getPaymentDetails(CombinedPaymentDetailsRequest request) {
+    public WynkResponseEntity.WynkBaseResponse<PaymentDetailsWrapper> getPaymentDetails(CombinedPaymentDetailsRequest request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        PaymentDetailsWrapper paymentDetailsWrapper = new PaymentDetailsWrapper();
+        final String uid = sessionDTO.get(UID);
+        final String deviceId = sessionDTO.get(DEVICE_ID);
         ExecutorService executorService = Executors.newFixedThreadPool(N);
-        Map<Key, Future<AbstractPaymentDetails>> map = new HashMap<>();
-        Callable<AbstractPaymentDetails> task;
+        Map<SavedDetailsKey, Future<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>>> map = new HashMap<>();
+        Map<SavedDetailsKey, UserPreferredPayment> userPreferredPaymentMap = userPaymentsManager.get(uid).stream().collect(Collectors.toMap(UserPreferredPayment::getId, Function.identity()));
+        Callable<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> task;
         for (String paymentGroup : request.getPaymentGroups().keySet()) {
             for (String paymentCode : request.getPaymentGroups().get(paymentGroup)) {
-                IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCode.getFromPaymentCode(paymentCode).getCode(), IUserPreferredPaymentService.class);
-                task = () -> userPreferredPaymentService.getUserPreferredPayments(UserPreferredPaymentsRequest.builder().deviceId(sessionDTO.get(DEVICE_ID)).paymentCode(paymentCode).paymentGroup(paymentGroup).planId(request.getPlanId()).uid(sessionDTO.get(UID)).build());
-                map.put(Key.builder().paymentCode(paymentCode).paymentGroup(paymentGroup).build(), executorService.submit(task));
+                SavedDetailsKey.SavedDetailsKeyBuilder keyBuilder = SavedDetailsKey.builder().uid(uid).paymentCode(paymentCode).paymentGroup(paymentGroup);
+                if (!userPreferredPaymentMap.containsKey(keyBuilder.build())) {
+                    keyBuilder.deviceId(deviceId);
+                }
+                try {
+                    IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCode.getFromPaymentCode(paymentCode).getCode(), IUserPreferredPaymentService.class);
+                    task = () -> userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId());
+                    map.put(keyBuilder.build(), executorService.submit(task));
+                } catch (Exception e) {
+                    map.put(keyBuilder.build(), null);
+                }
             }
         }
         executorService.shutdown();
@@ -103,19 +117,45 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 executorService.shutdownNow();
             }
         } finally {
-            Map<String, AbstractPaymentDetails> temp;
-            Map<String, Map<String, AbstractPaymentDetails>> paymentDetailsMap = paymentDetailsWrapper.getDetails();
-            for (Key key : map.keySet()) {
+            WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<AbstractPaymentDetails>builder();
+
+            Map<String, AbstractPaymentDetails> tempData;
+            Map<String, Map<String, AbstractPaymentDetails>> paymentDetailsMap = new HashMap<>();
+
+            Map<String, AbstractErrorDetails> tempError;
+            Map<String, Map<String, AbstractErrorDetails>> paymentErrorMap = new HashMap<>();
+
+            for (SavedDetailsKey savedDetailsKey : map.keySet()) {
                 try {
-                    if (map.get(key).get().isActive()) {
-                        temp = paymentDetailsMap.getOrDefault(key.getPaymentGroup(), new HashMap<>());
-                        temp.put(key.getPaymentCode(), map.get(key).get());
-                        paymentDetailsMap.put(key.getPaymentGroup(), temp);
+                    WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> details = map.get(savedDetailsKey).get();
+
+                    if (Objects.nonNull(details.getData())) {
+                        tempData = paymentDetailsMap.getOrDefault(savedDetailsKey.getPaymentGroup(), new HashMap<>());
+                        tempData.put(savedDetailsKey.getPaymentCode(), details.getData());
+                        paymentDetailsMap.put(savedDetailsKey.getPaymentGroup(), tempData);
+                    }
+
+                    if (Objects.nonNull(details.getError())) {
+                        tempError = paymentErrorMap.getOrDefault(savedDetailsKey.getPaymentGroup(), new HashMap<>());
+                        tempError.put(savedDetailsKey.getPaymentCode(), (AbstractErrorDetails) details.getError());
+                        paymentErrorMap.put(savedDetailsKey.getPaymentGroup(), tempError);
                     }
                 } catch (Exception e) {
+                    tempError = paymentErrorMap.getOrDefault(savedDetailsKey.getPaymentGroup(), new HashMap<>());
+                    PaymentErrorType paymentErrorType = PaymentErrorType.PAY201;
+                    tempError.put(savedDetailsKey.getPaymentCode(), TechnicalErrorDetails.builder().code(paymentErrorType.getErrorCode()).description(paymentErrorType.getErrorMessage()).build());
+                    paymentErrorMap.put(savedDetailsKey.getPaymentGroup(), tempError);
                 }
             }
-            return paymentDetailsWrapper;
+            if (!paymentDetailsMap.isEmpty()) {
+                builder.data(PaymentDetailsWrapper.builder().details(paymentDetailsMap).build());
+            }
+
+            if (!paymentErrorMap.isEmpty()) {
+                builder.error(CombinedStandardBusinessErrorDetails.builder().errors(paymentErrorMap).build()).success(false);
+            }
+
+            return builder.build();
         }
     }
 

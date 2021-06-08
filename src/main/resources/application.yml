@@ -90,12 +90,16 @@ cors:
     methods: GET, PUT, PATCH, POST, OPTIONS, DELETE
 
 paytm:
+  refund:
+    api: ${paytm.native.services.baseUrl}/refund/apply
   validateToken:
     api: ${paytm.native.accounts.baseUrl}/user/details
   autoDebit:
     api: ${paytm.native.services.baseUrl}/order/directPay
   transactionStatus:
     api: ${paytm.native.services.baseUrl}/v3/order/status
+  refundStatus:
+    api: ${paytm.native.services.baseUrl}/v2/refund/status
   revokeAccessToken:
     api: ${paytm.native.accounts.baseUrl}/oauth2/token/sv1
   refreshToken:

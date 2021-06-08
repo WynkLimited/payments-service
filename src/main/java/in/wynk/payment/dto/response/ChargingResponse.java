@@ -1,29 +1,28 @@
-package in.wynk.payment.dto.request;
+package in.wynk.payment.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
+@Builder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletAddMoneyRequest extends WalletRequest {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ChargingResponse {
 
     @Analysed
-    private int planId;
+    private String info;
 
     @Analysed
-    private String itemId;
+    private String redirectUrl;
 
     @Analysed
-    private double amountToCredit;
-
-    @Analysed
-    private long phonePeVersionCode;
+    private boolean deficit;
 
 }

@@ -20,7 +20,7 @@ public enum PaymentCode {
     PAYU(PAYU_MERCHANT_PAYMENT_SERVICE, true, true),
     PAYTM_WALLET(PAYTM_MERCHANT_WALLET_SERVICE, true, false),
     PHONEPE_WALLET(PHONEPE_MERCHANT_PAYMENT_SERVICE, true, false),
-    PHONEPE_AUTO_DEBIT(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE, true,false),
+    PHONEPE_AUTO_DEBIT(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE, true, false),
     GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE, false, false),
     APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, true, false),
     SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false);
@@ -33,6 +33,15 @@ public enum PaymentCode {
     public static PaymentCode getFromCode(String codeStr) {
         for (PaymentCode code : values()) {
             if (StringUtils.equalsIgnoreCase(codeStr, code.getCode())) {
+                return code;
+            }
+        }
+        throw new WynkRuntimeException(PaymentErrorType.PAY001);
+    }
+
+    public static PaymentCode getFromPaymentCode(String paymentCode) {
+        for (PaymentCode code : values()) {
+            if (StringUtils.equalsIgnoreCase(paymentCode, code.name())) {
                 return code;
             }
         }

@@ -43,7 +43,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PHONEPE_UNLINK_FAILURE = MarkerFactory.getMarker("PHONEPE_UNLINK_FAILURE");
     Marker PHONEPE_ADD_MONEY_FAILURE = MarkerFactory.getMarker("PHONEPE_ADD_MONEY_FAILURE");
 
-
+    Marker PAYTM_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYTM_CHARGING_STATUS_VERIFICATION");
 
     Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
     Marker ITUNES_ERROR = MarkerFactory.getMarker("ITUNES_ERROR");
@@ -62,6 +62,10 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYMENT_REFUND_ERROR = MarkerFactory.getMarker("PAYMENT_REFUND_ERROR");
 
     Marker CLIENT_CALLBACK_INFO = MarkerFactory.getMarker("CLIENT_CALLBACK_INFO");
+
+    Marker SAVED_OPTIONS_TIMED_OUT = MarkerFactory.getMarker("SAVED_OPTIONS_TIMED_OUT");
+    Marker LINK_WALLET_ERROR = MarkerFactory.getMarker("LINK_WALLET_ERROR");
+    Marker SAVED_CARDS_ERROR = MarkerFactory.getMarker("SAVED_CARDS_ERROR");
 
     Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
 

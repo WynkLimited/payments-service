@@ -1,22 +1,19 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto.paytm;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
+@Getter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
-public class ConsultBalanceResponseHead {
-
-    private String responseTimestamp;
+public abstract class PaytmHead {
 
     private String version;
-
     private String clientId;
-
+    private String channelId;
     private String signature;
 
 }

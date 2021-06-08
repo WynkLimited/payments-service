@@ -395,4 +395,19 @@ public class PaymentManager {
         }
     }
 
+    public BaseResponse addMoney(String uid, String msisdn, WalletAddMoneyRequest request) {
+        final PaymentCode paymentCode = request.getPaymentCode();
+        final Transaction transaction = initiateTransaction(false, request.getPlanId(), uid, msisdn, request.getItemId(), null, paymentCode);
+        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
+                .paymentCode(transaction.getPaymentChannel())
+                .transactionId(transaction.getIdStr())
+                .paymentEvent(transaction.getType())
+                .itemId(transaction.getItemId())
+                .planId(transaction.getPlanId())
+                .msisdn(transaction.getMsisdn())
+                .uid(transaction.getUid())
+                .build());
+        return BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantWalletService.class).addMoney(request);
+    }
+
 }

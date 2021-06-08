@@ -8,4 +8,9 @@ public interface PhonePeConstants {
     String PHONE_STATUS_CODE = "phonePeStatusCode";
     String DEBIT_API = "/v4/debit";
     String REFUND_API = "/v3/credit/backToSource";
+    String X_DEVICE_ID="x-device-id";
+    String X_VERIFY_SUFFIX="###1";
+    String TRANS_STATUS_API_PREFIX="/v3/transaction/";
+    String TRANS_STATUS_API_SUFFIX="/status";
+    String PHONEPE_OTP_TOKEN="phonePeOtpToken";
 }

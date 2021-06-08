@@ -17,14 +17,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.Arrays;
 import java.util.List;
 
-import static in.wynk.payment.test.utils.PaymentTestUtils.DUMMY_UID;
-
-@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 @RunWith(SpringRunner.class)
+@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 public class MongoCrudTest {
 
     @Autowired
     private PaymentMethodDao paymentMethodDao;
+
     @Autowired
     private UserPreferredPaymentsDao preferredPaymentsDao;
 
@@ -37,7 +36,6 @@ public class MongoCrudTest {
         List<PaymentMethod> methods1 = paymentMethodDao.insert(methods);
         assert methods1.stream().allMatch(m -> StringUtils.isNotBlank(m.getId()));
     }
-
 
     @Test
     public void findPaymentMethod() {
@@ -57,9 +55,4 @@ public class MongoCrudTest {
         preferredPaymentsDao.insert(preferredPayment);
     }
 
-    @Test
-    public void findPreferredPaymentMethod() {
-        List<UserPreferredPayment> methods = preferredPaymentsDao.findByUid(DUMMY_UID);
-        assert methods.size() > 0;
-    }
 }

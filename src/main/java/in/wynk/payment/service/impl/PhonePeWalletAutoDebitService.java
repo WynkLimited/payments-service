@@ -319,11 +319,11 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         ChargingResponse.ChargingResponseBuilder chargingResponseBuilder = ChargingResponse.builder();
         ErrorCode errorCode = null;
-        ChargingResponse chargingResponse = null;
         HttpStatus httpStatus = HttpStatus.OK;
         String redirectUrl = null;
         final String sid = SessionContextHolder.getId();
         final Transaction transaction = TransactionContext.get();
+        transaction.setStatus(TransactionStatus.FAILURE.getValue());
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder();
         try {
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
@@ -338,49 +338,27 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())) {
                     transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                     redirectUrl = successPage + sid;
-                    chargingResponse = ChargingResponse.builder().deficit(false).redirectUrl(redirectUrl).build();
                 }
-
-                else{
-                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
-                }
-                log.info("redirect url####################{}", redirectUrl);
             }
-            else {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
-                log.info("redirect url####################{}", redirectUrl);
-            }
-            builder.data(chargingResponse);
-
-        }
-        catch (HttpStatusCodeException hex) {
+            log.info("redirect url: {}", redirectUrl);
+        } catch (HttpStatusCodeException hex) {
             log.error(PHONEPE_CHARGING_FAILURE, hex.getResponseBodyAsString());
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse phonePeWalletResponse = objectMapper.readValue(errorResponse, PhonePeWalletResponse.class);
             errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getCode());
-        }
-        catch (WynkRuntimeException e) {
+        } catch (WynkRuntimeException e) {
             log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
             errorCode = handleWynkRunTimeException(e);
             httpStatus = e.getErrorType().getHttpResponseStatusCode();
-        }
-      catch (Exception e) {
+        } catch (Exception e) {
              log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
-             transaction.setStatus(TransactionStatus.FAILURE.getValue());
              errorCode = ErrorCode.UNKNOWN;
-             chargingResponse = ChargingResponse.builder().deficit(true).redirectUrl(redirectUrl).build();
-        }
-        finally {
-                if (StringUtils.isBlank(redirectUrl)) {
-                    redirectUrl = failurePage+sid;
-                }
+        } finally {
+            if (StringUtils.isBlank(redirectUrl)) {
+                redirectUrl = failurePage+sid;
+            }
             handleError(errorCode, builder);
-            builder.data(chargingResponse);
-             return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.data(chargingResponseBuilder
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(httpStatus).body(builder.data(chargingResponseBuilder
                     .redirectUrl(redirectUrl +
                             SLASH +
                             sessionDTO.<String>get(OS) +

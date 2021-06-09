@@ -3,7 +3,7 @@ spring:
     name: paymentApi
   profiles:
     active: ${env}
-    include: base-common,coupon-core-${env}, coupon-core-${env}, client-core-${env}, wynk-service-core-${env}, error-mapping-core-${env}
+    include: base-common,coupon-core-${env}, coupon-core-${env}, client-core-${env}, wynk-service-core-${env}, error-codes-core-${env}
   main:
     banner-mode: off
   devtools:

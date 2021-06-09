@@ -76,7 +76,7 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>error-mapping-core</artifactId>
+            <artifactId>error-codes-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

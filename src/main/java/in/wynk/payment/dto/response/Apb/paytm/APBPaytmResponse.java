@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class APBPaytmLinkResponse {
-    private String code;
+public class APBPaytmResponse {
+    private String errorCode;
     private boolean result;
     private APBPaytmResponseData data;
 }

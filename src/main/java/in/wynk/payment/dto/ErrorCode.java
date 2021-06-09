@@ -133,6 +133,7 @@ public enum ErrorCode {
         this.externalMessage = externalMessage;
     }
 
+    @Deprecated
     public static ErrorCode getErrorCodesFromExternalCode(String externalCode) {
         for (ErrorCode errorCode : values()) {
             if (String.valueOf(errorCode.getExternalCode()).equalsIgnoreCase(externalCode)) {

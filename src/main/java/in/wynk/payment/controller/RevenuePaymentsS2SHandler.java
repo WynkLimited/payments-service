@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @RestController
@@ -44,6 +45,7 @@ public class RevenuePaymentsS2SHandler {
     @ManageSession(sessionId = "#request.sid")
     @AnalyseTransaction(name = "receiptVerification")
     public ResponseEntity<?> verifyIap(@RequestBody IapVerificationRequest request) {
+        AnalyticService.update(ORIGINAL_SID, request.getSid());
         return getResponseEntity(request);
     }
 
@@ -51,6 +53,7 @@ public class RevenuePaymentsS2SHandler {
     @PostMapping("/v2/verify/receipt")
     @AnalyseTransaction(name = "receiptVerification")
     public ResponseEntity<?> verifyIap2(@RequestBody IapVerificationRequest request) {
+        AnalyticService.update(ORIGINAL_SID, request.getSid());
         return getResponseEntity(dummySessionGenerator.initSession(request));
     }
 

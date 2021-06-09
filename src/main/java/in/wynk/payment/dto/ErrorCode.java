@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter
+@Deprecated
 public enum ErrorCode {
 
     PAYTM001("PAYTM001", "1", "Txn Successful.", "Txn Successful."),

@@ -10,7 +10,6 @@ public class PhonePeAutoDebitDoChargingRequest {
     private String userAuthToken;
     private String transactionId;
     private long amount;
-    private long phonePeVersionCode;
     private DeviceContext deviceContext;
 
 }

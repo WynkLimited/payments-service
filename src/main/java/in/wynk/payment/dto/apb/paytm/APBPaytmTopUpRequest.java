@@ -2,15 +2,13 @@ package in.wynk.payment.dto.apb.paytm;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.payment.dto.response.Apb.paytm.APBPaytmResponseData;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Builder
+@SuperBuilder
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class APBPaytmTopUpRequest{
-    private String channel;
+public class APBPaytmTopUpRequest extends APBPaytmRequest{
     private String encryptedToken;
-    private String authType;
     private APBTopUpInfo topUpInfo;
     private APBPaytmUserInfo userInfo;
 

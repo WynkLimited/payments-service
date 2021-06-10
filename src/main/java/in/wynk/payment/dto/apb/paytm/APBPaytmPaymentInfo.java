@@ -10,9 +10,10 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class APBPaytmPaymentInfo {
     private String lob;
-    private double paymentAmount;
-    private String paymentMode;
-    private String wallet;
-    private String currency;
     private String walletLoginId;
+    private String wallet;
+    private String encryptedToken;
+    private String currency;
+    private String paymentMode;
+    private double paymentAmount;
 }

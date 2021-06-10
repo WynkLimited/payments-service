@@ -221,7 +221,7 @@ payment:
     apbPaytm:
       api:
         base:
-          url: http://kongqa.airtel.com/preprod-236/pg-service
+          url: http://kongqa.airtel.com/preprod-84/pg-service
       callback:
         url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
 

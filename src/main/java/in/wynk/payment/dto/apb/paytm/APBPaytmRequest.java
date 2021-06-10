@@ -1,17 +1,20 @@
 package in.wynk.payment.dto.apb.paytm;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.dto.request.WalletValidateLinkRequest;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Getter
 @SuperBuilder
-public class APBPaytmLinkRequest extends APBPaytmRequest {
-    private String otp;
-    private String otpToken;
-
+@Getter
+@AllArgsConstructor
+public class APBPaytmRequest {
+    private String walletLoginId;
+    //private String loginId;
+    private String wallet;
+    private String authType;
+    private String channel;
+    private String encryptedToken;
 }

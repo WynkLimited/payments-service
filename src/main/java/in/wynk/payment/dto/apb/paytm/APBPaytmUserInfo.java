@@ -8,6 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class APBPaytmUserInfo {
-    private String circleId;
-    private String loginId;
+    private int circleId;
+    private String serviceInstance;
 }

@@ -9,6 +9,7 @@ import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
@@ -55,15 +56,24 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.unSubscribePlan}")
     private String unSubscribePlanEndPoint;
 
+    @Value("${service.subscription.api.endpoint.renewalPlanEligibility}")
+    private String renewalPlanEligibilityEndpoint;
+
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
     private RestTemplate restTemplate;
+
     @Autowired
     private ISqsManagerService sqsMessagePublisher;
+
     @Autowired
     private WynkApplicationContext myApplicationContext;
+
     @Autowired
     private PaymentCachingService paymentCachingService;
+
+    @Autowired
+    private IRecurringPaymentManagerService recurringPaymentManagerService;
 
     @Override
     public List<PlanDTO> getPlans() {
@@ -84,6 +94,27 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allOfferApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
         }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean renewalPlanEligibility(int planId, String transactionId, String uid) {
+        try {
+            RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).build();
+            RequestEntity<RenewalPlanEligibilityRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest, HttpMethod.POST);
+            ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
+            });
+            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+                if (renewalPlanEligibilityResponse.getDeferredUntil() > 0) {
+                    long today = System.currentTimeMillis();
+                    recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, renewalPlanEligibilityResponse.getDeferredUntil()-today);
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     @Override

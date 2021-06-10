@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.phonepe;
+package in.wynk.payment.dto.phonepe.autodebit;
 
 import lombok.*;
 @Getter

@@ -1,6 +1,7 @@
-package in.wynk.payment.dto.phonepe;
+package in.wynk.payment.dto.phonepe.autodebit;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.phonepe.autodebit.DeviceContext;
 import in.wynk.payment.dto.request.ChargingRequest;
 import lombok.*;
 import lombok.experimental.SuperBuilder;

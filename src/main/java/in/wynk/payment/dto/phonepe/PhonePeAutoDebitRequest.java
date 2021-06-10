@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
+@Deprecated
 public class PhonePeAutoDebitRequest {
 
     private long txnAmount;

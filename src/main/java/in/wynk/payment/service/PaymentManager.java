@@ -111,21 +111,18 @@ public class PaymentManager {
                 .uid(transaction.getUid())
                 .build());
         final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        try {
-            BaseResponse response = chargingService.doCharging(request);
-            if (WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(response.getBody().getClass())) {
-                WynkResponseEntity.WynkBaseResponse wynkBaseResponse = (WynkResponseEntity.WynkBaseResponse) response.getBody();
-                if (!wynkBaseResponse.isSuccess()) {
-                    AbstractErrorDetails errorDetails = (AbstractErrorDetails) wynkBaseResponse.getError();
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorDetails.getCode()).description(errorDetails.getDescription()).build());
-                }
+        BaseResponse response = chargingService.doCharging(request);
+        if (Objects.nonNull(response) && Objects.nonNull(response.getBody()) && WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(response.getBody().getClass())) {
+            WynkResponseEntity.WynkBaseResponse wynkBaseResponse = (WynkResponseEntity.WynkBaseResponse) response.getBody();
+            if (!wynkBaseResponse.isSuccess()) {
+                AbstractErrorDetails errorDetails = (AbstractErrorDetails) wynkBaseResponse.getError();
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorDetails.getCode()).description(errorDetails.getDescription()).build());
             }
-            return response;
-        } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
         }
+        return response;
     }
 
     @TransactionAware(txnId = "#request.transactionId")
@@ -133,10 +130,9 @@ public class PaymentManager {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
-
         try {
             final BaseResponse<?> baseResponse = callbackService.handleCallback(request);
-            if (WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(baseResponse.getBody().getClass())) {
+            if (Objects.nonNull(baseResponse) && Objects.nonNull(baseResponse.getBody()) && WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(baseResponse.getBody().getClass())) {
                 WynkResponseEntity.WynkBaseResponse wynkBaseResponse = (WynkResponseEntity.WynkBaseResponse) baseResponse.getBody();
                 if (!wynkBaseResponse.isSuccess()) {
                     AbstractErrorDetails errorDetails = (AbstractErrorDetails) wynkBaseResponse.getError();

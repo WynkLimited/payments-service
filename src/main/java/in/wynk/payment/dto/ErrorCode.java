@@ -102,10 +102,10 @@ public enum ErrorCode {
     PHONEPE021("PHONEPE021", "PAYMENT_DECLINED", "Transaction Failed.", "Payment declined by user."),
     PHONEPE022("PHONEPE022", "PAYMENT_CANCELLED", "Transaction Failed.", "Payment canceled"),
     PHONEPE023("PHONEPE023", "PHONEPE023", "Your phonePe wallet is not active. Try another payment method", ""),
-    PHONEPE024("PHONEPE024", "PHONEPE024", "Your wallet is not linked. please link your wallet", ""),
+    PHONEPE024("PHONEPE024", "PHONEPE024", "Your wallet is not linked. Please link your wallet", ""),
     PHONEPE025("PHONEPE025", "PHONEPE025", "Your balance is low.Sending deeplink to add money to your wallet", ""),
-    PHONEPE026("PHONEPE026", "PHONEPE026", "your balance is low and phonePe is not allowing to add money to you wallet, please try another payment method", ""),
-    PHONEPE027("PHONEPE027", "INVALID_USER_AUTH_TOKEN", "Invalid user access token", "User auth token is invalid"),
+    PHONEPE026("PHONEPE026", "PHONEPE026", "Your balance is low and phonePe is not allowing to add money to you wallet. Please try another payment method", ""),
+    PHONEPE027("PHONEPE027", "INVALID_USER_AUTH_TOKEN", "Your PhonePe account is not linked. Please link your account", "User auth token is invalid"),
 
 
 

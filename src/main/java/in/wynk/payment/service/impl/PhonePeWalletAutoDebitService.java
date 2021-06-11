@@ -216,6 +216,9 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         } catch (HttpStatusCodeException hex) {
             log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
+            if(errorCode.getInternalCode().equalsIgnoreCase(ErrorCode.PHONEPE027.name())){
+                userWalletDetailsBuilder.linked(false);
+            }
         } catch (WynkRuntimeException e) {
             log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", e.getMessage());
             errorCode = handleWynkRunTimeException(e);

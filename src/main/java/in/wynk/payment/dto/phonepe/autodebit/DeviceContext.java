@@ -5,5 +5,5 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DeviceContext {
-    private long phonePeVersionCode;
+    private Long phonePeVersionCode;
 }

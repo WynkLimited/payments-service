@@ -16,7 +16,6 @@ public class PhonePeAutoDebitChargeRequest extends ChargingRequest {
     private String userAuthToken;
     private String transactionId;
     private long amount;
-    private long phonePeVersionCode;
-    private DeviceContext deviceContext;
+    private Long phonePeVersionCode;
 
 }

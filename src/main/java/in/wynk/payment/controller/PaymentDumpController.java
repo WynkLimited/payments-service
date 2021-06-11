@@ -25,7 +25,7 @@ public class PaymentDumpController {
 
     @GetMapping("/dump")
     @AnalyseTransaction(name = "transactionWeeklyDump")
-    public EmptyResponse allPlans() {
+    public EmptyResponse transactionWeeklyDump() {
         String requestId = MDC.get(REQUEST_ID);
         executorService.submit(()-> paymentDumpService.startPaymentDumpS3Export(requestId));
         return EmptyResponse.response();

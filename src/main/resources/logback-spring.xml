@@ -209,7 +209,12 @@
     <logger name="sePaymentRenewals" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-
+    <logger name="transactionWeeklyDump" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="startPaymentDumpS3Export" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
     <springProfile name="local">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>

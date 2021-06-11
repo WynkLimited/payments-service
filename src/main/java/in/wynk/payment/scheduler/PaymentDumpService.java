@@ -49,7 +49,7 @@ public class PaymentDumpService implements IPaymentDumpService {
     public PaymentDumpService(@Qualifier(BeanConstant.TRANSACTION_DAO)ITransactionDao transactionDao) {
         this.transactionDao = transactionDao;
     }
-    @AnalyseTransaction(name = "putTransactionDataOnS3")
+
     private void putTransactionDataOnS3(Calendar cal) {
         try {
             PaymentDump paymentDump = getPaymentDbDump();
@@ -57,15 +57,18 @@ public class PaymentDumpService implements IPaymentDumpService {
         try {
              putTransactionsOnS3Bucket(paymentDump.getTransactions(), cal);
         } catch(AmazonServiceException ex) {
+            AnalyticService.update(AMAZON_SERVICE_ERROR.getName(),ex.getErrorMessage());
             log.error(AMAZON_SERVICE_ERROR,"AmazonServiceException "+ ex.getErrorMessage());
         } catch(SdkClientException e) {
+            AnalyticService.update(SDK_CLIENT_ERROR.getName(),e.getMessage());
             log.error(SDK_CLIENT_ERROR,"SdkClientException "+e.getMessage());
         }
         } catch(Exception ex) {
+            AnalyticService.update(MYSQL_ERROR.getName(),ex.getMessage());
             log.error(MYSQL_ERROR,"Unable to load mySql db "+ ex.getMessage());
         }
     }
-    @AnalyseTransaction(name = "getPaymentDbDump")
+
     private PaymentDump getPaymentDbDump() throws ParseException {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE, -7);
@@ -77,7 +80,7 @@ public class PaymentDumpService implements IPaymentDumpService {
         return populatePaymentDump(fromDate);
 
     }
-    @AnalyseTransaction(name = "putTransactionsOnS3Bucket")
+
     private void putTransactionsOnS3Bucket(List<Transaction> transactions, Calendar cal) {
         if(!transactions.isEmpty()) {
             String fileName = PAYMENT_DUMP + dateFormat.format(cal.getTime()) + PAYMENT_TRANSACTION;
@@ -91,14 +94,15 @@ public class PaymentDumpService implements IPaymentDumpService {
             log.info("No record found in TransactionDump");
         }
     }
-    @AnalyseTransaction(name = "putObjectOnAmazonS3")
+
     private void putObjectOnAmazonS3(String fileName, String object) {
         try {
             amazonS3Client.putObject(bucket,fileName,object);
-            AnalyticService.update("putObjectOnAmazonS3", true);
+            AnalyticService.update("success", true);
             AnalyticService.update("FileName", fileName);
             log.info("Weekly transaction dump uploaded successfully on S3 at directory: {}", fileName );
         } catch(Exception ex) {
+            AnalyticService.update("success", false);
             log.error(AMAZON_SERVICE_ERROR,"Amazon error occurred "+ ex.getMessage());
         }
     }

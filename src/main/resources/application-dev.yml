@@ -172,6 +172,7 @@ payment:
       salt: Zbm2ZyNe
       api:
         info: https://test.payu.in/merchant/postservice.php?form=2
+        payment: https://test.payu.in/_payment
       internal:
         web:
           url: https://wcfpay-new.wynk.in/wcf/payu

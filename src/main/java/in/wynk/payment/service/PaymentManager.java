@@ -37,7 +37,6 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;

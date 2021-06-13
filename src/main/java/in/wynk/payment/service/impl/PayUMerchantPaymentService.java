@@ -11,7 +11,6 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
@@ -64,6 +63,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -77,6 +77,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final ApplicationEventPublisher eventPublisher;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     private final IMerchantTransactionService merchantTransactionService;
+
     @Value("${payment.merchant.payu.salt}")
     private String payUSalt;
     @Value("${payment.encKey}")
@@ -85,6 +86,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUMerchantKey;
     @Value("${payment.merchant.payu.api.info}")
     private String payUInfoApiUrl;
+    @Value("${payment.merchant.payu.api.payment}")
+    private String payUPaymentApiUrl;
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
     @Value("${payment.merchant.payu.internal.callback.successUrl}")
@@ -116,19 +119,26 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     @Override
     public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
         Map<String, String> payUPayload = getPayload(TransactionContext.get());
-        String encryptedParams;
+        String encryptedParams = null;
         try {
+            if (chargingRequest.getPaymentMode().equalsIgnoreCase(PAYU_UPI_INTENT)) {
+                String deeplink = this.initIntentUpiPayU(payUPayload);
+                if (StringUtils.isNotBlank(deeplink)) {
+                    payUPayload.put(PAYU_INTENT_URI_DATA, "upi://pay?" + deeplink);
+                }
+            }
             encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
         } catch (Exception e) {
-            log.error(BaseLoggingMarkers.ENCRYPTION_ERROR, e.getMessage(), e);
+            log.error(PAYU_CHARGING_FAILURE, e.getMessage(), e);
             throw new WynkRuntimeException(e);
+        } finally {
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put(PAYU_CHARGING_INFO, encryptedParams);
+            return BaseResponse.<Map<String, String>>builder()
+                    .body(queryParams)
+                    .status(HttpStatus.OK)
+                    .build();
         }
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put(PAYU_CHARGING_INFO, encryptedParams);
-        return BaseResponse.<Map<String, String>>builder()
-                .body(queryParams)
-                .status(HttpStatus.OK)
-                .build();
     }
 
     @Override
@@ -505,6 +515,28 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             }
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+        }
+    }
+
+    private String initIntentUpiPayU(Map<String, String> payUPayload) {
+        try {
+            MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+            for (String key: payUPayload.keySet()) {
+                requestMap.add(key, payUPayload.get(key));
+            }
+            payUPayload.clear();
+            requestMap.add(PAYU_PG, "UPI");
+            requestMap.add(PAYU_TXN_S2S_FLOW, "2");
+            requestMap.add(PAYU_BANKCODE, "INTENT");
+            final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).body(requestMap), String.class).getBody();
+            Map<String, String> responseMap = objectMapper.readValue(response, Map.class);
+            return responseMap.get(PAYU_INTENT_URI_DATA);
+        } catch (HttpStatusCodeException ex) {
+            log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
+            throw new WynkRuntimeException(PAY015, ex);
+        } catch (Exception ex) {
+            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
+            throw new WynkRuntimeException(PAY015, ex);
         }
     }
 

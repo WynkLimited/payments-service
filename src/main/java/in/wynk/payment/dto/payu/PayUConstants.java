@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.payu;
 
 public interface PayUConstants {
+
     String PAYU_PG = "pg";
     String PAYU_SI_KEY = "si";
     String PAYU_HASH = "hash";
@@ -12,6 +13,7 @@ public interface PayUConstants {
     String PAYU_SUCCESS_URL = "surl";
     String PAYU_FAILURE_URL = "furl";
     String PAYU_MERCHANT_KEY = "key";
+    String PAYU_BANKCODE = "bankcode";
     String PAYU_CHARGING_INFO = "info";
     String PAYU_UDF1_PARAMETER = "udf1";
     String PAYU_CARD_NUMBER = "card_no";
@@ -27,11 +29,14 @@ public interface PayUConstants {
     String PAYU_PRODUCT_INFO = "productinfo";
     String PAYU_CARD_DETAILS = "CardDetails";
     String PAYU_TRANSACTION_AMOUNT = "amount";
+    String PAYU_TXN_S2S_FLOW = "txn_s2s_flow";
+    String PAYU_UPI_INTENT = "PAYU_UPI_INTENT";
     String PAYU_NETBANKING_MODE = "netbanking";
     String PAYU_STATUS_NOT_FOUND = "Not Found";
     String PAYU_PAYMENT_SOURCE_SIST = "sist";
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";
     String PAYU_REQUEST_TRANSACTION_ID = "txnid";
+    String PAYU_INTENT_URI_DATA = "intentURIData";
     String PAYU_RESPONSE_AUTH_PAYUID = "authPayuId";
     String PAYU_ENFORCE_PAYMENT = "enforce_payment";
     String PAYU_USER_CREDENTIALS = "user_credentials";
@@ -41,4 +46,5 @@ public interface PayUConstants {
     String PAYU_IS_FALLBACK_ATTEMPT = "isFallbackAttempt";
     String PAYU_REFUND_TRANSACTION_TYPE = "REFUND_TYPE";
     String PAYU_CHARGING_TRANSACTION_TYPE = "CHARGE_TYPE";
+
 }

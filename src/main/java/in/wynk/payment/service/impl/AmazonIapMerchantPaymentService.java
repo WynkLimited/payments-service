@@ -23,10 +23,7 @@ import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.IapVerificationResponse;
-import in.wynk.payment.dto.response.LatestReceiptResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
 import in.wynk.payment.service.IMerchantPaymentStatusService;
@@ -189,9 +186,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
-        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
 }

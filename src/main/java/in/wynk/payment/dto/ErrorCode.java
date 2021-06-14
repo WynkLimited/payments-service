@@ -110,7 +110,10 @@ public enum ErrorCode {
 
 
     SUCCESS("SUCCESS", "SUCCESS", "Request served successfully.", "Request served successfully."),
-    UNKNOWN("UNKNOWN", "", "Oops something went wrong", "");
+    UNKNOWN("UNKNOWN", "", "Oops something went wrong", ""),
+
+    FAIL001("FAIL001","FAILURE","Don’t worry, any amount deducted will be credited back to the payment source in a few working days.","Something went wrong"),
+    FAIL002("FAIL002","PAYMENT-PENDING","You will soon get a confirmation message from us regarding your payment. Kindly wait for some time.","Payment under process");
 
     @Setter
     private String internalCode;

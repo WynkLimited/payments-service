@@ -21,7 +21,7 @@ public interface APBPaytmConstants {
     String ABP_PAYTM_CONTENT_TYPE="application/json";
     String ABP_PAYTM_ACCEPT="application/json";
 
-    String AUTH_TYPE_AUTH="AUTH";
+    String AUTH_TYPE_WEB_UNAUTH="WEB_UNAUTH";
     String CHANNEL_WEB="WEB";
     int CIRCLE_ID=-1;
     String WALLET_PAYTM="PAYTM";

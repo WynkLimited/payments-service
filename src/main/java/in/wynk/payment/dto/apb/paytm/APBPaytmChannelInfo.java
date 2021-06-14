@@ -10,5 +10,6 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class APBPaytmChannelInfo {
     private String redirectionUrl;
+    private String channel;
     private boolean encodedParams;
 }

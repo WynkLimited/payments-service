@@ -147,6 +147,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
             String mode = payUChargingTransactionDetails.getMode();
+            AnalyticService.update(PAYMENT_MODE,mode);
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             // TODO:: Remove it once migration is completed
             String transactionId = StringUtils.isNotEmpty(payUChargingTransactionDetails.getMigratedTransactionId()) ? payUChargingTransactionDetails.getMigratedTransactionId() : paymentRenewalChargingRequest.getId();

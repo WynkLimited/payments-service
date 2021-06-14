@@ -388,7 +388,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             String loginId = sessionDTO.get(WALLET_USER_ID);
             String encryptedToken = sessionDTO.get(ABP_PAYTM_ENCRYPTED_TOKEN);
             HttpHeaders headers = generateHeaders();
-            final double amountToCharge = 1;
+            final double amountToCharge = transaction.getAmount();
             APBPaytmResponse balanceResponse = this.getBalance();
             if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < amountToCharge) {
                 APBPaytmResponse topUpResponse = this.addMoney();
@@ -406,7 +406,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                         .channel(CHANNEL_WEB)
                         .userInfo(APBPaytmUserInfo.builder().circleId(CIRCLE_ID).serviceInstance(loginId).build())
                         .channelInfo(APBPaytmChannelInfo.builder().redirectionUrl(successPage+sid).channel(AUTH_TYPE_WEB_UNAUTH).build())
-                        .paymentInfo(APBPaytmPaymentInfo.builder().lob(WYNK).paymentAmount(1).paymentMode(WALLET).wallet(WALLET_PAYTM).currency(CURRENCY_INR).walletLoginId(loginId).encryptedToken(encryptedToken).build()).build();
+                        .paymentInfo(APBPaytmPaymentInfo.builder().lob(WYNK).paymentAmount(amountToCharge).paymentMode(WALLET).wallet(WALLET_PAYTM).currency(CURRENCY_INR).walletLoginId(loginId).encryptedToken(encryptedToken).build()).build();
 
 
                 HttpEntity<APBPaytmWalletPaymentRequest> requestEntity = new HttpEntity<APBPaytmWalletPaymentRequest>(walletPaymentRequest, headers);

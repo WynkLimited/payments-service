@@ -1,19 +1,19 @@
 ######  Properties #########
 paytm:
   native:
-    clientId: merchant-wynk
-    merchantKey: RrGHVFOJyEjbp4hN
-    merchantId: AirBSB68537227489657
-    secret: fd13c3f9-da62-47e2-b354-8f0f18fbe90b
+    clientId: merchant-wynk-uat
+    merchantKey: 2A2%#0MvWdNeg1_7
+    merchantId: WYNKPr93314794046826
+    secret: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
     accounts:
-      baseUrl: https://accounts.paytm.com
+      baseUrl: https://accounts-uat.paytm.com
     services:
-      baseUrl: https://securegw.paytm.in
+      baseUrl: https://securegw-stage.paytm.in
     wcf:
-      addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
-      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
+      addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
+      callbackUrl: http://localhost:8081/wynk/v1/payment/callback/
   requesting:
-    website: WCF
+    website: WEBSTAGING
 
 apb:
   txn:
@@ -198,7 +198,7 @@ payment:
         base:
           url: https://mercury-uat.phonepe.com
       callback:
-        url: http://localhost:8081/wynk/v1/payment/callback
+        url: http://localhost:8081/wynk/v1/payment/callback/
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
     #### Itunes props ######
     itunes:
@@ -317,3 +317,40 @@ wynk:
 security:
   exempt:
     paths: /wynk/v1/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
+
+cache:
+  caffeine:
+    eviction:
+      size:
+        initial: 10
+        maximum: 500
+      time:
+        expireAfterAccess: 0
+        expireAfterWrite: 0
+        fixed: true
+        timeunit: seconds
+    metrics: false
+    nullable: false
+  enabled: true
+  mode: composite
+  redis:
+    cache:
+      cacheNullValues: false
+      keyPrefix: LOCAL
+      timeunit: minutes
+      ttl: 15
+      usePrefix: false
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      maxIdle: 8
+      maxTotal: 10
+      minIdle: 5
+      timeout: 2000
+    enableJmx: true
+    enabled: true
+    jmxPrefix: local
+    mode: cluster
+    name: l2cache-local
+    readTimeout: 1000
+    usePooling: true

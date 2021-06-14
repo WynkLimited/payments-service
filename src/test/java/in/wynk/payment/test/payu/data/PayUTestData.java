@@ -1,11 +1,9 @@
 package in.wynk.payment.test.payu.data;
 
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.payu.PayUCommand;
@@ -26,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 public class PayUTestData {
@@ -78,14 +77,14 @@ public class PayUTestData {
 
     public static Session<SessionDTO> initSession() {
         Map<String, Object> payload = new HashMap<>();
-        payload.put(SessionKeys.UID, PayUDataConstant.UID);
-        payload.put(SessionKeys.MSISDN, PayUDataConstant.MSISDN);
-        payload.put(SessionKeys.APP_ID, PayUDataConstant.APP_ID);
-        payload.put(SessionKeys.DEVICE_ID, PayUDataConstant.DEVICE_ID);
-        payload.put(SessionKeys.APP_VERSION, PayUDataConstant.APP_VERSION);
-        payload.put(SessionKeys.BUILD_NO, PayUDataConstant.BUILD_NO);
-        payload.put(SessionKeys.OS, PayUDataConstant.OS);
-        payload.put(SessionKeys.PACK_GROUP, "");
+        payload.put(UID, PayUDataConstant.UID);
+        payload.put(MSISDN, PayUDataConstant.MSISDN);
+        payload.put(APP_ID, PayUDataConstant.APP_ID);
+        payload.put(DEVICE_ID, PayUDataConstant.DEVICE_ID);
+        payload.put(APP_VERSION, PayUDataConstant.APP_VERSION);
+        payload.put(BUILD_NO, PayUDataConstant.BUILD_NO);
+        payload.put(OS, PayUDataConstant.OS);
+        payload.put(PACK_GROUP, "");
         return Session.<SessionDTO>builder()
                 .id(UUID.randomUUID())
                 .body(SessionDTO.builder().sessionPayload(payload).build())

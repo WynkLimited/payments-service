@@ -34,6 +34,7 @@ public class RenewalWalletTest {
 
     @Test
     public void testWalletBalance(){
-        renewalMerchantWalletService.balance();
+        renewalMerchantWalletService.balance(606);
     }
+
 }

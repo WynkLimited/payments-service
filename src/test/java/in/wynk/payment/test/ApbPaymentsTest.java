@@ -1,6 +1,5 @@
 package in.wynk.payment.test;
 
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -84,7 +83,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     @Test
     public void apbCallbackFailureTest() {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(SessionKeys.TRANSACTION_ID, TXN_ID);
+        sessionDTO.put(TRANSACTION_ID, TXN_ID);
         BaseResponse<?> response = callbackTest(CODE, dummyApbFailureCallback());
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();
@@ -129,7 +128,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     @Test
     public void apbCallbackSuccessTest() {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(SessionKeys.TRANSACTION_ID, TXN_ID);
+        sessionDTO.put(TRANSACTION_ID, TXN_ID);
         BaseResponse<?> response = callbackTest(CODE, dummyApbSuccessCallback());
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();

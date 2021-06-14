@@ -5,8 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.TechnicalErrorDetails;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
@@ -15,20 +16,18 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
-import in.wynk.payment.core.dao.entity.Card;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
-import in.wynk.payment.dto.response.PayUVpaVerificationResponse;
+import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
@@ -61,8 +60,8 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -344,8 +343,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         payload.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         payload.put(ERROR, PAYU_REDIRECT_MESSAGE);
         payload.put(PAYU_USER_CREDENTIALS, userCredentials);
-        putValueInSession(SessionKeys.TRANSACTION_ID, transaction.getId().toString());
-        putValueInSession(SessionKeys.PAYMENT_CODE, PaymentCode.PAYU.getCode());
+        putValueInSession(TRANSACTION_ID, transaction.getId().toString());
+        putValueInSession(PAYMENT_CODE, PaymentCode.PAYU.getCode());
         return payload;
     }
 
@@ -690,19 +689,17 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return builder.build();
     }
 
-    public UserPreferredPayment getUserPreferredPayments(String uid) {
-        String userCredentials = payUMerchantKey + COLON + uid;
+    @Override
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
+        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserCardDetails>builder();
+        String userCredentials = payUMerchantKey + COLON + userPreferredPayment.getId().getUid();
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
-        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {
-        });
-        Card.Builder cardBuilder = new Card.Builder().paymentCode(PaymentCode.PAYU);
-        for (String cardToken : userCardDetailsResponse.getUserCards().keySet()) {
-            cardBuilder.cardDetails(Card.CardDetails.builder().cardToken(cardToken).build());
+        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});
+        Map<String, CardDetails> cardDetailsMap = userCardDetailsResponse.getUserCards();
+        if (cardDetailsMap.isEmpty()) {
+            builder.error(TechnicalErrorDetails.builder().code(PAY203.getErrorCode()).description(PAY203.getErrorMessage()).build()).success(false);
         }
-        return UserPreferredPayment.builder()
-                .uid(uid)
-                .option(cardBuilder.build())
-                .build();
+        return builder.data(UserCardDetails.builder().cards(cardDetailsMap).build()).build();
     }
 
     @Override

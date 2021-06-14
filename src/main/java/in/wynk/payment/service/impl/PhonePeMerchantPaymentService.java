@@ -13,7 +13,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.PhonePePaymentRefundRequest;
+import in.wynk.payment.dto.phonepe.PhonePePaymentRefundRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.AbstractPaymentRefundRequest;
@@ -39,7 +39,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -56,7 +55,6 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IOTCMerchantPaymentService, IMerchantPaymentRefundService {
 
     private static final String DEBIT_API = "/v4/debit";
-
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
     @Value("${payment.merchant.phonepe.callback.url}")
@@ -67,7 +65,6 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private String salt;
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
-
     private final Gson gson;
     private final RestTemplate restTemplate;
     private final ApplicationEventPublisher eventPublisher;

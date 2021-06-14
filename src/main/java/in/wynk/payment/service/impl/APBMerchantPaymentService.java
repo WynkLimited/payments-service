@@ -2,7 +2,6 @@ package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.Currency;
 import in.wynk.common.enums.PaymentEvent;
@@ -10,10 +9,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.constant.StatusMode;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -109,7 +105,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
 
-        String txnId = sessionDTO.get(SessionKeys.TRANSACTION_ID);
+        String txnId = sessionDTO.get(TRANSACTION_ID);
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
@@ -204,7 +200,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .addParameter(DATE, formattedDate)
                 .addParameter(CURRENCY, Currency.INR.name())
                 .addParameter(CUSTOMER_MOBILE, txn.getMsisdn())
-                .addParameter(MERCHANT_NAME, BaseConstants.WYNK)
+                .addParameter(MERCHANT_NAME, WYNK)
                 .addParameter(ApbConstants.HASH, hash)
                 .addParameter(SERVICE, serviceName)
                 .build().toString();

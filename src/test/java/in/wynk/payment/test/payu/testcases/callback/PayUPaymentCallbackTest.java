@@ -1,6 +1,5 @@
 package in.wynk.payment.test.payu.testcases.callback;
 
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -29,6 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
+import static in.wynk.common.constant.BaseConstants.TRANSACTION_ID;
 import static org.mockito.ArgumentMatchers.*;
 
 @RunWith(SpringRunner.class)
@@ -82,7 +82,7 @@ public class PayUPaymentCallbackTest {
     @Test
     @Order(1)
     public void handleOneTimeCallbackTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
+        SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
         CallbackRequest request = PayUTestData.buildOneTimeCallbackRequest();
         BaseResponse<?> response = callbackService.handleCallback(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.FOUND);
@@ -93,7 +93,7 @@ public class PayUPaymentCallbackTest {
     @Test
     @Order(2)
     public void handleRecurringCallbackTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
+        SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
         CallbackRequest request = PayUTestData.buildRecurringCallbackRequest();
         BaseResponse<?> response = callbackService.handleCallback(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.FOUND);

@@ -2,6 +2,9 @@ package in.wynk.payment.core.constant;
 
 import in.wynk.common.constant.BaseConstants;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public interface PaymentConstants extends BaseConstants {
 
     String CARD = "CARD";
@@ -36,5 +39,21 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
+
+    String SUBTITLE_TEXT = "subtitle";
+    String BUTTON_TEXT = "buttonText";
+    String BUTTON_ARROW = "buttonArrow";
+
+    Map<String,String> FAIL001_ERROR_MAP = new HashMap<String, String>() {{
+        put(SUBTITLE_TEXT, "We could not process your payment");
+        put(BUTTON_TEXT, "TRY ANOTHER OPTION");
+        put(BUTTON_ARROW,"true");
+    }};
+
+    Map<String,String> FAIL002_ERROR_MAP = new HashMap<String, String>() {{
+        put(SUBTITLE_TEXT, "We are still processing your payment");
+        put(BUTTON_TEXT, "GO TO HOMEPAGE");
+        put(BUTTON_ARROW,"false");
+    }};
 
 }

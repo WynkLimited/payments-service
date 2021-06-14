@@ -30,13 +30,11 @@ public interface PayUConstants {
     String PAYU_CARD_DETAILS = "CardDetails";
     String PAYU_TRANSACTION_AMOUNT = "amount";
     String PAYU_TXN_S2S_FLOW = "txn_s2s_flow";
-    String PAYU_UPI_INTENT = "PAYU_UPI_INTENT";
     String PAYU_NETBANKING_MODE = "netbanking";
     String PAYU_STATUS_NOT_FOUND = "Not Found";
     String PAYU_PAYMENT_SOURCE_SIST = "sist";
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";
     String PAYU_REQUEST_TRANSACTION_ID = "txnid";
-    String PAYU_INTENT_URI_DATA = "intentURIData";
     String PAYU_RESPONSE_AUTH_PAYUID = "authPayuId";
     String PAYU_ENFORCE_PAYMENT = "enforce_payment";
     String PAYU_USER_CREDENTIALS = "user_credentials";

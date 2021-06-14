@@ -12,12 +12,17 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Key;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.ErrorCode;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.paytm.*;
+import in.wynk.payment.dto.phonepe.PhonePeStatusEnum;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.Apb.paytm.APBPaytmResponse;
@@ -46,7 +51,7 @@ import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE)
-public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantWalletService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
+public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantWalletService{
     @Value("${payment.encKey}")
     private String paymentEncryptionKey;
     @Value("${paytm.native.wcf.callbackUrl}")
@@ -63,16 +68,16 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private final IUserPaymentsManager userPaymentsManager;
     private final CheckSumServiceHelper checkSumServiceHelper;
     private final PaymentCachingService paymentCachingService;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public APBPaytmMerchantWalletPaymentService(ObjectMapper objectMapper, Gson gson, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService, ApplicationEventPublisher applicationEventPublisher) {
+    public APBPaytmMerchantWalletPaymentService(ObjectMapper objectMapper, Gson gson, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService, ApplicationEventPublisher eventPublisher) {
         super(paymentCachingService);
         this.objectMapper = objectMapper;
         this.gson = gson;
         this.restTemplate = restTemplate;
         this.userPaymentsManager = userPaymentsManager;
         this.paymentCachingService = paymentCachingService;
-        this.applicationEventPublisher = applicationEventPublisher;
+        this.eventPublisher = eventPublisher;
         this.checkSumServiceHelper = CheckSumServiceHelper.getCheckSumServiceHelper();
     }
 
@@ -219,7 +224,63 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     @Override
     public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
-        return null;
+        Transaction transaction = TransactionContext.get();
+        this.fetchAndUpdateTransactionFromSource(transaction);
+        if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION", "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
+        } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION", "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY008, "APB_PAYTM_CHARGING_STATUS_VERIFICATION");
+        }
+        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
+    }
+
+    private APBPaytmResponse getTransactionStatus(Transaction txn) {
+        MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(txn.getIdStr());
+        try {
+            HttpHeaders headers= generateHeaders();
+            HttpEntity<HttpHeaders> requestEntity = new HttpEntity<HttpHeaders>(headers);
+            APBPaytmResponse statusResponse =restTemplate.exchange(
+                    apbPaytmBaseUrl+ABP_PAYTM_TRANSACTION_STATUS+txn.getIdStr(), HttpMethod.GET, requestEntity, APBPaytmResponse.class).getBody();
+            if (statusResponse != null && statusResponse.isResult() ) {
+                merchantTransactionEventBuilder.externalTransactionId(statusResponse.getData().getPgId());
+            }
+            merchantTransactionEventBuilder.response(objectMapper.writeValueAsString(statusResponse));
+            return statusResponse;
+        } catch (HttpStatusCodeException e) {
+            merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
+            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE", "Error from phonepe: {}", e.getResponseBodyAsString(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from PhonePe " + e.getStatusCode().toString());
+        } catch (Exception e) {
+            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE", "Unable to verify status from Phonepe");
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e,e.getMessage());
+        } finally {
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+        }
+    }
+
+    private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
+
+        TransactionStatus finalTransactionStatus;
+        APBPaytmResponse response = getTransactionStatus(transaction);
+        if (response.isResult()) {
+            String statusCode = response.getData().getPaymentStatus();
+            if (statusCode == "PAYMENT_SUCCESS") {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+            } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
+                    statusCode == "PAYMENT_PENDING") {
+                finalTransactionStatus = TransactionStatus.INPROGRESS;
+            } else {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+            }
+        } else {
+            finalTransactionStatus = TransactionStatus.FAILURE;
+        }
+        if (finalTransactionStatus == TransactionStatus.FAILURE) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(response.getErrorCode()).description(response.getErrorCode()).build());
+        }
+        transaction.setStatus(finalTransactionStatus.name());
     }
 
     @Override
@@ -393,18 +454,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 }
 
     @Override
-    public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
-        return null;
-    }
-
-    @Override
     public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
 
-    }
-
-    @Override
-    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(Key key, int planId) {
-        return null;
     }
 
     private void handleError(ErrorCode errorCode, WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder) {

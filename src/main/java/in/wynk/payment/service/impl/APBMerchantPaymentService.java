@@ -21,6 +21,7 @@ import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -211,7 +212,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         ChargingStatusResponse status = ChargingStatusResponse.failure(chargingStatusRequest.getTransactionId(),transaction.getPlanId());
         if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {
@@ -220,7 +221,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
             status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(chargingStatusRequest.getPlanId()), chargingStatusRequest.getPlanId());
         }
-        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
     }
 
 

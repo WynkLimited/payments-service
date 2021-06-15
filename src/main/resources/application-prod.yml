@@ -207,7 +207,6 @@ payment:
       callback:
         url: https://payments.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
-      saltAuto: 96229dff-07f5-4f92-9348-81bb7fc495b4
 
 subscription:
   pooling:

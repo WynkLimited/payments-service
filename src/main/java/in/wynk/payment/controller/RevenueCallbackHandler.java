@@ -58,7 +58,7 @@ public class RevenueCallbackHandler {
 
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handlePartnerCallbackForm(@PathVariable String partner, @RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> handlePartnerCallbackForm(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
         AnalyticService.update("JAI", "handlePartnerCallbackForm");
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);

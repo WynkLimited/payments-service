@@ -147,7 +147,6 @@ public class PaymentManager {
             transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
         }
-
     }
 
     @ClientAware(clientAlias = "#clientAlias")

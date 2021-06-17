@@ -209,7 +209,7 @@
     <logger name="sePaymentRenewals" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-    <logger name="combinedPaymentDetails" additivity="false" level="INFO">
+    <logger name="savedDetails" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 

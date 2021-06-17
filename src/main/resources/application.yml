@@ -89,3 +89,25 @@ cors:
   maxAge: 3600
   allowed:
     methods: GET, PUT, PATCH, POST, OPTIONS, DELETE
+
+paytm:
+  refund:
+    api: ${paytm.native.services.baseUrl}/refund/apply
+  validateToken:
+    api: ${paytm.native.accounts.baseUrl}/user/details
+  autoDebit:
+    api: ${paytm.native.services.baseUrl}/order/directPay
+  transactionStatus:
+    api: ${paytm.native.services.baseUrl}/v3/order/status
+  refundStatus:
+    api: ${paytm.native.services.baseUrl}/v2/refund/status
+  revokeAccessToken:
+    api: ${paytm.native.accounts.baseUrl}/oauth2/token/sv1
+  refreshToken:
+    api: ${paytm.native.accounts.baseUrl}/oauth2/v3/token/sv1
+  sendOtp:
+    api: ${paytm.native.accounts.baseUrl}/v4/signin/otp/sv1/?locale=en-IN
+  fetchInstrument:
+    api: ${paytm.native.services.baseUrl}/paymentservices/fetch/instrument
+  validateOtp:
+    api: ${paytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id

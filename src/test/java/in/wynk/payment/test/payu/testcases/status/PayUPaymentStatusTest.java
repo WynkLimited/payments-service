@@ -1,6 +1,5 @@
 package in.wynk.payment.test.payu.testcases.status;
 
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -30,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
+import static in.wynk.common.constant.BaseConstants.TRANSACTION_ID;
 import static org.mockito.ArgumentMatchers.*;
 
 @RunWith(SpringRunner.class)
@@ -86,7 +86,7 @@ public class PayUPaymentStatusTest {
     @Test
     @Order(1)
     public void handleOneTimePaymentStatusTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
+        SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
         AbstractTransactionStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest(PaymentCode.PAYU);
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
@@ -97,7 +97,7 @@ public class PayUPaymentStatusTest {
     @Test
     @Order(2)
     public void handleRecurringPaymentStatusTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(SessionKeys.TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
+        SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
         AbstractTransactionStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest(PaymentCode.PAYU);
         BaseResponse<?> response = statusService.status(request);
         Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);

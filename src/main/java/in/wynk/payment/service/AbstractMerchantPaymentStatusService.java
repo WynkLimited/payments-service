@@ -1,6 +1,7 @@
 package in.wynk.payment.service;
 
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -11,9 +12,11 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.response.*;
+import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 
 import java.util.Collection;
@@ -25,6 +28,11 @@ import java.util.stream.Collectors;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public abstract class AbstractMerchantPaymentStatusService implements IMerchantPaymentStatusService {
+
+    @Value("${payment.success.page}")
+    private String successPage;
+    @Value("${payment.failure.page}")
+    private String failurePage;
 
     private final PaymentCachingService cachingService;
 
@@ -48,21 +56,44 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     public BaseResponse<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         Transaction transaction = TransactionContext.get();
         TransactionStatus txnStatus = transaction.getStatus();
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
         if (txnStatus == TransactionStatus.FAILURE) {
-            return failure(ErrorCode.FAIL001,FAIL001_ERROR_MAP, transaction, request);
+            return failure(ErrorCode.FAIL001,FAIL001_ERROR_MAP, transaction, request, sessionDTO);
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
-            return failure(ErrorCode.FAIL002,FAIL002_ERROR_MAP, transaction, request);
+            return failure(ErrorCode.FAIL002,FAIL002_ERROR_MAP, transaction, request, sessionDTO);
         } else {
             ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
             if (txnStatus == TransactionStatus.SUCCESS) {
                 builder.packDetails(getPackDetails(transaction, request));
+                builder.redirectUrl(successPage+SessionContextHolder.getId() +
+                        SLASH +
+                        sessionDTO.<String>get(OS) +
+                        QUESTION_MARK +
+                        SERVICE +
+                        EQUAL +
+                        sessionDTO.<String>get(SERVICE) +
+                        AND +
+                        BUILD_NO +
+                        EQUAL +
+                        sessionDTO.<Integer>get(BUILD_NO));
             }
             return BaseResponse. < AbstractChargingStatusResponse > builder().body(builder.build()).status(HttpStatus.OK).build();
         }
     }
 
-    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode, Map<String,String> errorMap,Transaction transaction,ChargingTransactionStatusRequest request) {
-        FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(errorCode, errorMap.get(SUBTITLE_TEXT),errorMap.get(BUTTON_TEXT),Boolean.parseBoolean(errorMap.get(BUTTON_ARROW)), transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus());
+    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode, Map<String,String> errorMap, Transaction transaction, ChargingTransactionStatusRequest request, SessionDTO sessionDTO) {
+        String redirectUrl = successPage+SessionContextHolder.getId() +
+                SLASH +
+                sessionDTO.<String>get(OS) +
+                QUESTION_MARK +
+                SERVICE +
+                EQUAL +
+                sessionDTO.<String>get(SERVICE) +
+                AND +
+                BUILD_NO +
+                EQUAL +
+                sessionDTO.<Integer>get(BUILD_NO);
+        FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(errorCode, errorMap.get(SUBTITLE_TEXT), errorMap.get(BUTTON_TEXT), Boolean.parseBoolean(errorMap.get(BUTTON_ARROW)), transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus(), redirectUrl);
         return BaseResponse.<AbstractChargingStatusResponse>builder().body(failureChargingStatusResponse).status(HttpStatus.OK).build();
     }
 

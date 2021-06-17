@@ -3,6 +3,7 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -35,7 +36,6 @@ public class RevenueCallbackHandler {
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public ResponseEntity<?> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
-        AnalyticService.update("JAI", "handlePartnerCallback");
         CallbackRequest request = CallbackRequest.builder().body(payload).build();
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
@@ -44,28 +44,16 @@ public class RevenueCallbackHandler {
         return baseResponse.getResponse();
     }
 
-    @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handlePartnerCallbackJSON(@PathVariable String partner, @RequestBody Map<String, Object> payload) {
-        AnalyticService.update("JAI", "handlePartnerCallbackJSON");
-        CallbackRequest request = CallbackRequest.builder().body(payload).build();
-        PaymentCode paymentCode = PaymentCode.getFromCode(partner);
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        BaseResponse<?> baseResponse = paymentManager.handleNotification(applicationAlias, request, paymentCode);
-        return baseResponse.getResponse();
-    }
-
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handlePartnerCallbackForm(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
-        AnalyticService.update("JAI", "handlePartnerCallbackForm");
-        CallbackRequest request = CallbackRequest.builder().body(payload).build();
-        PaymentCode paymentCode = PaymentCode.getFromCode(partner);
+    public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
+        final String transactionId = (String) payload.get("txnid");
+        final PaymentCode paymentCode = PaymentCode.getFromCode(partner);
+        final CallbackRequest request = CallbackRequest.builder().body(payload).transactionId(transactionId).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        BaseResponse<?> baseResponse = paymentManager.handleNotification(applicationAlias, request, paymentCode);
-        return baseResponse.getResponse();
+        paymentManager.handleCallback(request, paymentCode);
+        return EmptyResponse.response();
     }
 
 }

@@ -63,7 +63,6 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -113,7 +112,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     @Override
     public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
         String returnUrl = processCallback(callbackRequest);
-        return BaseResponse.redirectResponse(returnUrl);
+        if (StringUtils.isNotBlank(returnUrl)) {
+            return BaseResponse.redirectResponse(returnUrl);
+        }
+        return BaseResponse.<Void>builder().build();
     }
 
     @Override
@@ -579,7 +581,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         final Transaction transaction = TransactionContext.get();
         final String transactionId = transaction.getIdStr();
         try {
-            SessionDTO sessionDTO = SessionContextHolder.getBody();
             final PayUCallbackRequestPayload payUCallbackRequestPayload = gson.fromJson(gson.toJsonTree(callbackRequest.getBody()), PayUCallbackRequestPayload.class);
 
             final String errorCode = payUCallbackRequestPayload.getError();
@@ -603,25 +604,29 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                    String successUrl = sessionDTO.get(SUCCESS_WEB_URL);
-                    if (StringUtils.isEmpty(successUrl)) {
-                        successUrl = SUCCESS_PAGE + SessionContextHolder.getId() +
-                                SLASH +
-                                sessionDTO.<String>get(OS) +
-                                QUESTION_MARK +
-                                SERVICE +
-                                EQUAL +
-                                sessionDTO.<String>get(SERVICE) +
-                                AND +
-                                APP_ID +
-                                EQUAL +
-                                sessionDTO.<String>get(APP_ID) +
-                                AND +
-                                BUILD_NO +
-                                EQUAL +
-                                sessionDTO.<Integer>get(BUILD_NO);
+                    SessionDTO sessionDTO = SessionContextHolder.getBody();
+                    if (Objects.nonNull(sessionDTO)) {
+                        String successUrl = sessionDTO.get(SUCCESS_WEB_URL);
+                        if (StringUtils.isEmpty(successUrl)) {
+                            successUrl = SUCCESS_PAGE + SessionContextHolder.getId() +
+                                    SLASH +
+                                    sessionDTO.<String>get(OS) +
+                                    QUESTION_MARK +
+                                    SERVICE +
+                                    EQUAL +
+                                    sessionDTO.<String>get(SERVICE) +
+                                    AND +
+                                    APP_ID +
+                                    EQUAL +
+                                    sessionDTO.<String>get(APP_ID) +
+                                    AND +
+                                    BUILD_NO +
+                                    EQUAL +
+                                    sessionDTO.<Integer>get(BUILD_NO);
+                        }
+                        return successUrl;
                     }
-                    return successUrl;
+                    return null;
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);
                 }

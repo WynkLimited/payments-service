@@ -15,6 +15,10 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
+import static in.wynk.payment.core.constant.PaymentCode.PAYU;
+import static in.wynk.payment.core.constant.PaymentConstants.CARD;
+import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 
 public class PaymentTestUtils {
 
@@ -27,8 +31,8 @@ public class PaymentTestUtils {
         meta.put("icon_url", "/wp-content/themes/");
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
-        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("CARD").hierarchy(10)
-                .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
+        return PaymentMethod.builder().displayName("Credit / Debit Cards").group("NET_BANKING").hierarchy(10)
+                .meta(meta).paymentCode(PAYU).state(State.ACTIVE).build();
     }
 
     public static PaymentMethod dummyCardMethod() {
@@ -37,7 +41,7 @@ public class PaymentTestUtils {
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
         return PaymentMethod.builder().displayName("Credit / Debit Cards").group("CARD").hierarchy(10)
-                .meta(meta).paymentCode(PaymentCode.PAYU).state(State.ACTIVE).build();
+                .meta(meta).paymentCode(PAYU).state(State.ACTIVE).build();
     }
 
     public static PaymentMethod dummyWalletMethod() {
@@ -50,13 +54,11 @@ public class PaymentTestUtils {
     }
 
     public static UserPreferredPayment dummyPreferredWallet() {
-        Payment payment = new Wallet.Builder().paymentCode(PaymentCode.PAYTM_WALLET).build();
-        return UserPreferredPayment.builder().option(payment).uid(DUMMY_UID).build();
+        return Wallet.builder().id(SavedDetailsKey.builder().paymentCode(PAYTM_WALLET.name()).paymentGroup(WALLET).uid(DUMMY_UID).build()).build();
     }
 
     public static UserPreferredPayment dummyPreferredCard() {
-        Payment payment = new Card.Builder().paymentCode(PaymentCode.PAYU).build();
-        return UserPreferredPayment.builder().option(payment).uid(DUMMY_UID).build();
+        return Card.builder().id(SavedDetailsKey.builder().paymentCode(PAYU.name()).paymentGroup(CARD).uid(DUMMY_UID).build()).build();
     }
 
     public static SessionDTO dummySession() {

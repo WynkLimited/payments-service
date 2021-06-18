@@ -2,7 +2,6 @@ package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.Currency;
 import in.wynk.common.enums.PaymentEvent;
@@ -10,10 +9,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.constant.StatusMode;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -25,6 +21,7 @@ import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.Apb.ApbChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -109,7 +106,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
 
-        String txnId = sessionDTO.get(SessionKeys.TRANSACTION_ID);
+        String txnId = sessionDTO.get(TRANSACTION_ID);
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
         String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
         String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
@@ -204,7 +201,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
                 .addParameter(DATE, formattedDate)
                 .addParameter(CURRENCY, Currency.INR.name())
                 .addParameter(CUSTOMER_MOBILE, txn.getMsisdn())
-                .addParameter(MERCHANT_NAME, BaseConstants.WYNK)
+                .addParameter(MERCHANT_NAME, WYNK)
                 .addParameter(ApbConstants.HASH, hash)
                 .addParameter(SERVICE, serviceName)
                 .build().toString();
@@ -215,7 +212,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
         Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
         ChargingStatusResponse status = ChargingStatusResponse.failure(chargingStatusRequest.getTransactionId(),transaction.getPlanId());
         if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {
@@ -224,7 +221,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
         } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
             status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(chargingStatusRequest.getPlanId()), chargingStatusRequest.getPlanId());
         }
-        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
     }
 
 

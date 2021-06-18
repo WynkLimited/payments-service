@@ -13,13 +13,14 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.PhonePePaymentRefundRequest;
+import in.wynk.payment.dto.phonepe.PhonePePaymentRefundRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.AbstractPaymentRefundRequest;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -39,7 +40,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -56,7 +56,6 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IOTCMerchantPaymentService, IMerchantPaymentRefundService {
 
     private static final String DEBIT_API = "/v4/debit";
-
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
     @Value("${payment.merchant.phonepe.callback.url}")
@@ -67,7 +66,6 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private String salt;
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
-
     private final Gson gson;
     private final RestTemplate restTemplate;
     private final ApplicationEventPublisher eventPublisher;
@@ -109,10 +107,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         Transaction transaction = TransactionContext.get();
         ChargingStatusResponse chargingStatus = getStatusFromPhonePe(transaction);
-        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(chargingStatus).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(chargingStatus).build();
     }
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {

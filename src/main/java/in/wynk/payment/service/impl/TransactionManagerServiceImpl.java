@@ -1,7 +1,6 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -70,8 +69,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         Session<SessionDTO> session = SessionContextHolder.get();
         if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
             SessionDTO sessionDTO = session.getBody();
-            sessionDTO.put(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
-            sessionDTO.put(SessionKeys.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
+            sessionDTO.put(TRANSACTION_ID, transaction.getIdStr());
+            sessionDTO.put(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         }
         return transaction;
     }

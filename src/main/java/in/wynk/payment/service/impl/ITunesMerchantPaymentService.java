@@ -30,10 +30,7 @@ import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.IapVerificationResponse;
-import in.wynk.payment.dto.response.LatestReceiptResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -159,8 +156,13 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         final ItunesReceipt itunesReceipt = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn(), request.getUid(), request.getPlanId());
         if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
             final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
+            boolean autoRenewal = false;
+            if(CollectionUtils.isNotEmpty(itunesReceipt.getPendingRenewalInfo())) {
+                autoRenewal = itunesReceipt.getPendingRenewalInfo().stream().filter(pendingRenewal -> !StringUtils.isEmpty(latestReceiptInfo.getProductId()) && latestReceiptInfo.getProductId().equalsIgnoreCase(pendingRenewal.getAutoRenewProductId()) && pendingRenewal.getAutoRenewStatus() == "1" && pendingRenewal.getOriginalTransactionId() == latestReceiptInfo.getOriginalTransactionId()).findAny().isPresent();
+            }
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
             return ItunesLatestReceiptResponse.builder()
+                    .autoRenewal(autoRenewal)
                     .itunesReceiptType(receiptType)
                     .latestReceiptInfo(itunesReceipt.getLatestReceiptInfoList())
                     .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())
@@ -222,41 +224,49 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             ItunesStatusCodes code = null;
             final ItunesReceiptType receiptType = itunesLatestReceiptResponse.getItunesReceiptType();
             final List<LatestReceiptInfo> latestReceiptInfoList = itunesLatestReceiptResponse.getLatestReceiptInfo();
-            LatestReceiptInfo latestReceiptInfo = latestReceiptInfoList.get(0);
-            AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
-            final long expireTimestamp = receiptType.getExpireDate(latestReceiptInfo);
-            if (expireTimestamp == 0 || expireTimestamp < System.currentTimeMillis()) {
-                code = ItunesStatusCodes.APPLE_21015;
+            if(CollectionUtils.isEmpty(latestReceiptInfoList)) {
+                log.info("Latest receipt not found for uid: {}, planId: {}", transaction.getUid(), transaction.getPlanId());
+                code = ItunesStatusCodes.APPLE_21018;
                 transaction.setStatus(TransactionStatus.FAILURE.name());
             } else {
-                final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
-                final String itunesTrxnId = latestReceiptInfo.getTransactionId();
-                final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
-                if (isAutoRenewalOff(latestReceiptInfo.getProductId(), itunesLatestReceiptResponse.getPendingRenewalInfo())) {
-                    log.info("User has unsubscribed the plan from app store for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
-                    code = ItunesStatusCodes.APPLE_21019;
-                    transaction.setStatus(TransactionStatus.CANCELLED.name());
-                } else if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails)) {
-                    log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
-                    code = ItunesStatusCodes.APPLE_21016;
-                    transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
+                LatestReceiptInfo latestReceiptInfo = latestReceiptInfoList.get(0);
+                AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
+                final long expireTimestamp = receiptType.getExpireDate(latestReceiptInfo);
+                if (expireTimestamp == 0 || expireTimestamp < System.currentTimeMillis()) {
+                    log.info("Latest receipt found expired for uid: {}, expireTimestamp :{} , planId: {}", transaction.getUid(), expireTimestamp, transaction.getPlanId());
+                    code = ItunesStatusCodes.APPLE_21015;
+                    transaction.setStatus(TransactionStatus.FAILURE.name());
                 } else {
-                    if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
-                        final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
-                                .type(receiptType.name())
-                                .id(originalITunesTrxnId)
-                                .uid(transaction.getUid())
-                                .msisdn(transaction.getMsisdn())
-                                .planId(transaction.getPlanId())
-                                .transactionId(receiptType.getTransactionId(latestReceiptInfo))
-                                .expiry(receiptType.getExpireDate(latestReceiptInfo))
-                                .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
-                                .build();
-                        receiptDetailsDao.save(itunesIdUidMapping);
-                        transaction.setStatus(TransactionStatus.SUCCESS.name());
+                    final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
+                    final String itunesTrxnId = latestReceiptInfo.getTransactionId();
+                    final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
+                    if (isAutoRenewalOff(latestReceiptInfo.getProductId(), itunesLatestReceiptResponse.getPendingRenewalInfo())) {
+                        log.info("User has unsubscribed the plan from app store for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
+                        code = ItunesStatusCodes.APPLE_21019;
+                        transaction.setStatus(TransactionStatus.CANCELLED.name());
+                    } else if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails)) {
+                        log.info("ItunesIdUidMapping found for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
+                        code = ItunesStatusCodes.APPLE_21016;
+                        transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
                     } else {
-                        code = ItunesStatusCodes.APPLE_21017;
-                        transaction.setStatus(TransactionStatus.FAILURE.name());
+                        if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
+                            final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
+                                    .type(receiptType.name())
+                                    .id(originalITunesTrxnId)
+                                    .uid(transaction.getUid())
+                                    .msisdn(transaction.getMsisdn())
+                                    .planId(transaction.getPlanId())
+                                    .transactionId(receiptType.getTransactionId(latestReceiptInfo))
+                                    .expiry(receiptType.getExpireDate(latestReceiptInfo))
+                                    .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
+                                    .build();
+                            receiptDetailsDao.save(itunesIdUidMapping);
+                            transaction.setStatus(TransactionStatus.SUCCESS.name());
+                        } else {
+                            log.info("originalITunesTrxnId or itunesTrxnId found empty for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
+                            code = ItunesStatusCodes.APPLE_21017;
+                            transaction.setStatus(TransactionStatus.FAILURE.name());
+                        }
                     }
                 }
             }
@@ -398,9 +408,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromItunesSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId(), transactionStatusRequest.getPlanId());
-        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {
@@ -433,7 +443,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     private boolean isAutoRenewalOff(String autoRenewableProductId, List<PendingRenewalInfo> pendingRenewalInfo) {
-        return pendingRenewalInfo.stream().filter(pendingRenew -> pendingRenew.getAutoRenewProductId().equals(autoRenewableProductId)).anyMatch(pendingInfo -> pendingInfo.getAutoRenewStatus().equalsIgnoreCase("0"));
+        return pendingRenewalInfo.stream().filter(pendingRenew -> pendingRenew.getAutoRenewProductId().equals(autoRenewableProductId) || pendingRenew.getProductId().equals(autoRenewableProductId)).anyMatch(pendingInfo -> pendingInfo.getAutoRenewStatus().equalsIgnoreCase("0"));
     }
 
 }

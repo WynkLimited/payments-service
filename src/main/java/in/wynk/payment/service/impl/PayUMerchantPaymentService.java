@@ -16,16 +16,14 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
-import in.wynk.payment.core.dao.entity.Key;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
-import in.wynk.payment.core.dao.entity.CardDetails;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -63,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
@@ -149,6 +148,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
             String mode = payUChargingTransactionDetails.getMode();
+            AnalyticService.update(PAYMENT_MODE,mode);
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             // TODO:: Remove it once migration is completed
             String transactionId = StringUtils.isNotEmpty(payUChargingTransactionDetails.getMigratedTransactionId()) ? payUChargingTransactionDetails.getMigratedTransactionId() : paymentRenewalChargingRequest.getId();
@@ -186,9 +186,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest, transactionStatusRequest.getExtTxnId());
-        return BaseResponse.<ChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
     }
 
     private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest
@@ -325,7 +325,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         String sid = SessionContextHolder.get().getId().toString();
         Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-           //payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+            //payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
             payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
         } else {
             payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
@@ -406,11 +406,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 .parallelStream()
                 .map(cardEntry -> {
                     CardDetails cardDetails = cardEntry.getValue();
-                    PayUCardInfo payUCardInfo = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(),
-                            cardDetails.getCardBin()),
-                            new TypeReference<PayUCardInfo>() {
+                    PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[] {cardDetails.getCardBin(), null, null, "1"}),
+                            new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
                             });
-                    cardDetails.setIssuingBank(String.valueOf(payUCardInfo.getIssuingBank()));
                     return gson.toJson(cardDetails);
                 })
                 .collect(Collectors.toList());
@@ -587,6 +585,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                                 EQUAL +
                                 sessionDTO.<String>get(SERVICE) +
                                 AND +
+                                APP_ID +
+                                EQUAL +
+                                sessionDTO.<String>get(APP_ID) +
+                                AND +
                                 BUILD_NO +
                                 EQUAL +
                                 sessionDTO.<Integer>get(BUILD_NO);
@@ -654,12 +656,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     verificationResponse.setValid(true);
                 return BaseResponse.<PayUVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
-                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
-                PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUCardInfo>() {
+                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[] {verificationRequest.getVerifyValue(), null, null, "1"});
+                PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
                 });
-                if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
-                    payUCardInfo.setValid(true);
-                return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
+                return BaseResponse.<PayUCardInfo>builder().body(payUBinWrapper.getBin()).status(payUBinWrapper.getStatus() == 1 ? HttpStatus.OK: HttpStatus.FAILED_DEPENDENCY).build();
         }
         return BaseResponse.status(false);
     }
@@ -688,9 +688,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(Key key, int planId) {
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserCardDetails>builder();
-        String userCredentials = payUMerchantKey + COLON + key.getUid();
+        String userCredentials = payUMerchantKey + COLON + userPreferredPayment.getId().getUid();
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
         PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});
         Map<String, CardDetails> cardDetailsMap = userCardDetailsResponse.getUserCards();

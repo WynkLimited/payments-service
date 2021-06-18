@@ -2,21 +2,15 @@ package in.wynk.payment.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.dto.AbstractPack;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
-@Builder
+@SuperBuilder
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ChargingStatusResponse {
+public class ChargingStatusResponse extends AbstractChargingStatusResponse {
 
-    private final String tid;
-    private final int planId;
     private final long validity;
-    private final AbstractPack packDetails;
-    private final TransactionStatus transactionStatus;
-
 
     public static ChargingStatusResponse success(String tid, Long validity, int planId) {
         return ChargingStatusResponse.builder().tid(tid).validity(validity).planId(planId).transactionStatus(TransactionStatus.SUCCESS).build();

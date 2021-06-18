@@ -3,16 +3,17 @@ package in.wynk.payment.dto.phonepe;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PhonePeWallet {
-    private Long availableBalance;
+
     private Long usableBalance;
     private Long maxTopupAllowed;
-    private Boolean walletActive;
+    private Long availableBalance;
     private Boolean walletTopupSuggested;
+    private Boolean walletActive;
+
 }

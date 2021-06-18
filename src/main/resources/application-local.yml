@@ -115,7 +115,7 @@ logging:
 payment:
   se:
     s3:
-      bucket: wcf-logs
+      bucket: wynk-framework-dev-ap-south-1
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:
@@ -216,6 +216,7 @@ payment:
       callback:
         url: http://localhost:8081/wynk/v1/payment/callback/
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
     #### APBPaytm props ######
     apbPaytm:
       api:
@@ -223,7 +224,6 @@ payment:
           url: http://kongqa.airtel.com/preprod-84/pg-service
       callback:
         url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
-
     #### Itunes props ######
     itunes:
       api:

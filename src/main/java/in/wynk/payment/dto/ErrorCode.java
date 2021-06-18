@@ -102,10 +102,10 @@ public enum ErrorCode {
     PHONEPE021("PHONEPE021", "PAYMENT_DECLINED", "Transaction Failed.", "Payment declined by user."),
     PHONEPE022("PHONEPE022", "PAYMENT_CANCELLED", "Transaction Failed.", "Payment canceled"),
     PHONEPE023("PHONEPE023", "PHONEPE023", "Your phonePe wallet is not active. Try another payment method", ""),
-    PHONEPE024("PHONEPE024", "PHONEPE024", "Your wallet is not linked. please link your wallet", ""),
+    PHONEPE024("PHONEPE024", "PHONEPE024", "Your wallet is not linked. Please link your wallet", ""),
     PHONEPE025("PHONEPE025", "PHONEPE025", "Your balance is low.Sending deeplink to add money to your wallet", ""),
-    PHONEPE026("PHONEPE026", "PHONEPE026", "your balance is low and phonePe is not allowing to add money to you wallet, please try another payment method", ""),
-    PHONEPE027("PHONEPE027", "INVALID_USER_AUTH_TOKEN", "Invalid user access token", "User auth token is invalid"),
+    PHONEPE026("PHONEPE026", "PHONEPE026", "Your balance is low and phonePe is not allowing to add money to you wallet. Please try another payment method", ""),
+    PHONEPE027("PHONEPE027", "INVALID_USER_AUTH_TOKEN", "Your PhonePe account is not linked. Please link your account", "User auth token is invalid"),
 
     APBPAYTM001("APBPAYTM001","PGS-5088","Unable to send otp,try after sometimes or try another payment method", "Unable to send otp to the user"),
     APBPAYTM002("APBPAYTM002","PGS-5084","Failed to link wallet, try again", "Failed to link wallet"),
@@ -114,7 +114,10 @@ public enum ErrorCode {
     APBPAYTM005("APBPAYTM005","PGS-4113","Wallet Login id is required", "Wallet Login id is required"),
 
     SUCCESS("SUCCESS", "SUCCESS", "Request served successfully.", "Request served successfully."),
-    UNKNOWN("UNKNOWN", "", "Oops something went wrong", "");
+    UNKNOWN("UNKNOWN", "", "Oops something went wrong", ""),
+
+    FAIL001("FAIL001","FAILURE","Don’t worry, any amount deducted will be credited back to the payment source in a few working days.","Something went wrong"),
+    FAIL002("FAIL002","PAYMENT-PENDING","You will soon get a confirmation message from us regarding your payment. Kindly wait for some time.","Payment under process");
 
     @Setter
     private String internalCode;

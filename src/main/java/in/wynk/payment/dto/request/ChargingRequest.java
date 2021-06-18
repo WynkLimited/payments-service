@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.phonepe.PhonePeAutoDebitChargeRequest;
+import in.wynk.payment.dto.phonepe.autodebit.PhonePeAutoDebitChargeRequest;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 

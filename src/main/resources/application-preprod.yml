@@ -323,6 +323,43 @@ wynk:
     socketTimeout: 5000
     readPreference: secondaryPreferred
 
+cache:
+  caffeine:
+    eviction:
+      size:
+        initial: 10
+        maximum: 500
+      time:
+        expireAfterAccess: 0
+        expireAfterWrite: 0
+        fixed: true
+        timeunit: seconds
+    metrics: false
+    nullable: false
+  enabled: true
+  mode: composite
+  redis:
+    cache:
+      cacheNullValues: false
+      keyPrefix: PREPROD
+      timeunit: minutes
+      ttl: 15
+      usePrefix: false
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      maxIdle: 50
+      maxTotal: 60
+      minIdle: 20
+      timeout: 2000
+    enableJmx: true
+    enabled: true
+    jmxPrefix: preprod
+    mode: cluster
+    name: l2cache-preprod
+    readTimeout: 1000
+    usePooling: true
+
 ######## lib-auth props #######
 security:
   exempt:

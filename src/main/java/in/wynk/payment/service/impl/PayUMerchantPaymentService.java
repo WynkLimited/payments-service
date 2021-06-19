@@ -604,8 +604,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     log.error(PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                    SessionDTO sessionDTO = SessionContextHolder.getBody();
-                    if (Objects.nonNull(sessionDTO)) {
+                    if (Objects.nonNull(SessionContextHolder.get())) {
+                        SessionDTO sessionDTO = SessionContextHolder.getBody();
                         String successUrl = sessionDTO.get(SUCCESS_WEB_URL);
                         if (StringUtils.isEmpty(successUrl)) {
                             successUrl = SUCCESS_PAGE + SessionContextHolder.getId() +

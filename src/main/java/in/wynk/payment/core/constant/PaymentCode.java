@@ -11,8 +11,8 @@ import static in.wynk.payment.core.constant.BeanConstant.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 
 @Getter
-@RequiredArgsConstructor
 @AnalysedEntity
+@RequiredArgsConstructor
 public enum PaymentCode {
 
     AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE, false, false),
@@ -24,9 +24,7 @@ public enum PaymentCode {
     PHONEPE_AUTO_DEBIT(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE, true, false),
     GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE, false, false),
     APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, true, false),
-    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false),
-    APB_PAYTM_WALLET(APB_PAYTM_MERCHANT_WALLET_SERVICE, true, false),
-    ;
+    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false);
 
     @Analysed(name = PAYMENT_GATEWAY)
     private final String code;

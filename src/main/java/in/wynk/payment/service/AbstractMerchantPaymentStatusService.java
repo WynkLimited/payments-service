@@ -31,6 +31,8 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
 
     @Value("${payment.success.page}")
     private String successPage;
+    @Value("${payment.pending.page}")
+    private String pendingPage;
     @Value("${payment.failure.page}")
     private String failurePage;
 
@@ -56,33 +58,23 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     public BaseResponse<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         Transaction transaction = TransactionContext.get();
         TransactionStatus txnStatus = transaction.getStatus();
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
         if (txnStatus == TransactionStatus.FAILURE) {
-            return failure(ErrorCode.FAIL001,FAIL001_ERROR_MAP, transaction, request, sessionDTO);
+            return failure(ErrorCode.FAIL001,FAIL001_ERROR_MAP, transaction, request, getRedirectUrl(failurePage));
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
-            return failure(ErrorCode.FAIL002,FAIL002_ERROR_MAP, transaction, request, sessionDTO);
+            return failure(ErrorCode.FAIL002,FAIL002_ERROR_MAP, transaction, request, getRedirectUrl(pendingPage));
         } else {
             ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
             if (txnStatus == TransactionStatus.SUCCESS) {
                 builder.packDetails(getPackDetails(transaction, request));
-                builder.redirectUrl(successPage+SessionContextHolder.getId() +
-                        SLASH +
-                        sessionDTO.<String>get(OS) +
-                        QUESTION_MARK +
-                        SERVICE +
-                        EQUAL +
-                        sessionDTO.<String>get(SERVICE) +
-                        AND +
-                        BUILD_NO +
-                        EQUAL +
-                        sessionDTO.<Integer>get(BUILD_NO));
+                builder.redirectUrl(getRedirectUrl(successPage));
             }
             return BaseResponse. < AbstractChargingStatusResponse > builder().body(builder.build()).status(HttpStatus.OK).build();
         }
     }
 
-    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode, Map<String,String> errorMap, Transaction transaction, ChargingTransactionStatusRequest request, SessionDTO sessionDTO) {
-        String redirectUrl = successPage+SessionContextHolder.getId() +
+    private String getRedirectUrl(String basePage) {
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        return basePage+SessionContextHolder.getId() +
                 SLASH +
                 sessionDTO.<String>get(OS) +
                 QUESTION_MARK +
@@ -93,6 +85,9 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 BUILD_NO +
                 EQUAL +
                 sessionDTO.<Integer>get(BUILD_NO);
+    }
+
+    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode, Map<String,String> errorMap, Transaction transaction, ChargingTransactionStatusRequest request, String redirectUrl) {
         FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(errorCode, errorMap.get(SUBTITLE_TEXT), errorMap.get(BUTTON_TEXT), Boolean.parseBoolean(errorMap.get(BUTTON_ARROW)), transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus(), redirectUrl);
         return BaseResponse.<AbstractChargingStatusResponse>builder().body(failureChargingStatusResponse).status(HttpStatus.OK).build();
     }

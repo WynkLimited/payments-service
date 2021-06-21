@@ -398,7 +398,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         try {
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
             HttpHeaders headers = generateHeaders();
-            final double amountToCharge = 2000d;
+            final double amountToCharge = transaction.getAmount();
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < amountToCharge) {
                 APBPaytmResponse topUpResponse = this.addMoney(amountToCharge, wallet);

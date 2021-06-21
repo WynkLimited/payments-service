@@ -24,8 +24,7 @@ public enum PaymentCode {
     PHONEPE_AUTO_DEBIT(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE, true, false),
     GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE, false, false),
     APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, true, false),
-    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false),
-    ;
+    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false),;
 
     @Analysed(name = PAYMENT_GATEWAY)
     private final String code;

@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.phonepe;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.phonepe.autodebit.DeviceContext;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -9,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Deprecated
 public class PhonePeAutoDebitTopupRequest extends PhonePeAutoDebitRequest{
 
     private long amount;

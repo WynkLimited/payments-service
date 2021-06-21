@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -148,6 +149,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
             String mode = payUChargingTransactionDetails.getMode();
+            AnalyticService.update(PAYMENT_MODE, mode);
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             // TODO:: Remove it once migration is completed
             String transactionId = StringUtils.isNotEmpty(payUChargingTransactionDetails.getMigratedTransactionId()) ? payUChargingTransactionDetails.getMigratedTransactionId() : paymentRenewalChargingRequest.getId();
@@ -300,10 +302,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
-            } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
                     (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
-            } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
                     StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             }
@@ -405,11 +407,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 .parallelStream()
                 .map(cardEntry -> {
                     CardDetails cardDetails = cardEntry.getValue();
-                    PayUCardInfo payUCardInfo = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(),
-                            cardDetails.getCardBin()),
-                            new TypeReference<PayUCardInfo>() {
+                    PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{cardDetails.getCardBin(), null, null, "1"}),
+                            new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
                             });
-                    cardDetails.setIssuingBank(String.valueOf(payUCardInfo.getIssuingBank()));
                     return gson.toJson(cardDetails);
                 })
                 .collect(Collectors.toList());
@@ -657,12 +657,20 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     verificationResponse.setValid(true);
                 return BaseResponse.<PayUVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
-                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), verificationRequest.getVerifyValue());
-                PayUCardInfo payUCardInfo = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUCardInfo>() {
-                });
-                if (payUCardInfo.getIsDomestic().equalsIgnoreCase("Y"))
-                    payUCardInfo.setValid(true);
-                return BaseResponse.<PayUCardInfo>builder().body(payUCardInfo).status(HttpStatus.OK).build();
+                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{verificationRequest.getVerifyValue(), null, null, "1"});
+                PayUCardInfo cardInfo;
+                try {
+                    PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
+                    });
+                    cardInfo = payUBinWrapper.getBin();
+                } catch (WynkRuntimeException e) {
+                    cardInfo = new PayUCardInfo();
+                    cardInfo.setValid(Boolean.FALSE);
+                    cardInfo.setIssuingBank(UNKNOWN.toUpperCase());
+                    cardInfo.setCardType(UNKNOWN.toUpperCase());
+                    cardInfo.setCardCategory(UNKNOWN.toUpperCase());
+                }
+                return BaseResponse.<PayUCardInfo>builder().body(cardInfo).status(cardInfo.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
         }
         return BaseResponse.status(false);
     }
@@ -695,7 +703,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserCardDetails>builder();
         String userCredentials = payUMerchantKey + COLON + userPreferredPayment.getId().getUid();
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
-        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});
+        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {
+        });
         Map<String, CardDetails> cardDetailsMap = userCardDetailsResponse.getUserCards();
         if (cardDetailsMap.isEmpty()) {
             builder.error(TechnicalErrorDetails.builder().code(PAY203.getErrorCode()).description(PAY203.getErrorMessage()).build()).success(false);

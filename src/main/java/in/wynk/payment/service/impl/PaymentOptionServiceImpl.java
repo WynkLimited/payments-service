@@ -36,7 +36,7 @@ import static in.wynk.common.constant.BaseConstants.*;
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
-    private static final int N=8;
+    private static final int N=3;
     private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
 

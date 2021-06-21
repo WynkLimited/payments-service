@@ -199,6 +199,7 @@ payment:
       callback:
         url: http://localhost:8081/wynk/v1/payment/callback/
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
     #### Itunes props ######
     itunes:
       api:

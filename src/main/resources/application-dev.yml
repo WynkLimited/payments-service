@@ -198,6 +198,7 @@ payment:
       callback:
         url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
 
 subscription:
   pooling:

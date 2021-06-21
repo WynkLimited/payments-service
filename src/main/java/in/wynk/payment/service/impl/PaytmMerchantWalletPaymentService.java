@@ -109,7 +109,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Value("${paytm.revokeAccessToken.api}")
     private String REVOKE_ACCESS_TOKEN;
 
-    @Value("{payment.encryption.key}")
+    @Value("${payment.encKey}")
     private String paymentEncryptionKey;
 
     @Value("${paytm.requesting.website}")
@@ -426,6 +426,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             String phone = walletLinkRequest.getEncSi();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             sessionDTO.put(WALLET_USER_ID, phone);
             log.info("Sending OTP to {} via PayTM", phone);
             URI uri = new URIBuilder(SEND_OTP).build();
@@ -464,6 +465,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(VALIDATE_OTP).build();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID));
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put("otp", walletValidateLinkRequest.getOtp());
@@ -542,10 +544,11 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
-        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder().linked(true);
+        UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         try {
             URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
+            userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
             PaytmBalanceRequestBody body = PaytmBalanceRequestBody.builder().userToken(wallet.getAccessToken()).mid(MID).txnAmount(paymentCachingService.getPlan(planId).getFinalPrice()).build();
             String jsonPayload = objectMapper.writeValueAsString(body);
             log.debug("Generating signature for payload: {}", jsonPayload);
@@ -563,7 +566,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                 builder.data(userWalletDetailsBuilder
                         .active(true)
                         .balance(paytmPayOption.getAmount())
-                        .linkedMobileNo(wallet.getWalletUserId())
                         .deficitBalance(paytmPayOption.getDeficitAmount())
                         .expiredBalance(paytmPayOption.getExpiredAmount())
                         .addMoneyAllowed(paytmPayOption.isAddMoneyAllowed())

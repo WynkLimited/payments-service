@@ -29,6 +29,7 @@ import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpEntity;
@@ -73,7 +74,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService paymentCachingService;
 
-    public APBPaytmMerchantWalletPaymentService(ObjectMapper objectMapper, RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, ApplicationEventPublisher eventPublisher, PaymentCachingService paymentCachingService) {
+    public APBPaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, ApplicationEventPublisher eventPublisher, PaymentCachingService paymentCachingService) {
         super(paymentCachingService);
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
@@ -142,7 +143,6 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             if (linkResponse!=null && linkResponse.isResult()) {
                 userPaymentsManager.save(Wallet.builder()
                         .walletUserId(loginId)
-                        .balance(linkResponse.getData().getBalance())
                         .tokenValidity(System.currentTimeMillis()+1000000)
                         .accessToken(linkResponse.getData().getEncryptedToken())
                         .id(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)))
@@ -207,9 +207,11 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     private APBPaytmResponse addMoney(double amount, Wallet wallet){
         try {
-            APBPaytmTopUpRequest topUpRequest = APBPaytmTopUpRequest.builder()
+
+            Transaction transaction = TransactionContext.get();
+            APBPaytmTopUpRequest topUpRequest = APBPaytmTopUpRequest.builder().orderId(transaction.getIdStr())
                     .channel(CHANNEL_WEB)
-                    .authType(AUTH_TYPE_WEB_UNAUTH)
+                    .authType("UN_AUTH")
                     .encryptedToken(wallet.getAccessToken())
                     .userInfo(APBPaytmUserInfo.builder().circleId(CIRCLE_ID).build())
                     .topUpInfo(APBTopUpInfo.builder()
@@ -396,10 +398,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         try {
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
             HttpHeaders headers = generateHeaders();
-            final double amountToCharge = transaction.getAmount();
+            final double amountToCharge = 2000d;
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < amountToCharge) {
-                APBPaytmResponse topUpResponse = this.addMoney(0, wallet);
+                APBPaytmResponse topUpResponse = this.addMoney(amountToCharge, wallet);
                 if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
                     chargingResponseBuilder.deficit(true).info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey));
                     //            chargingResponseBuilder.deficit(true).info(topUpResponse.getData().getHtml());
@@ -475,15 +477,22 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         Wallet wallet = getWallet(userPreferredPayment);
         if (Objects.nonNull(wallet)) {
-            double deficitBalance = wallet.getBalance()-paymentCachingService.getPlan(planId).getFinalPrice();
-            builder.data(UserWalletDetails.builder()
-                    .linked(true)
-                    .active(true)
-                    .balance(wallet.getBalance())
-                    .linkedMobileNo(wallet.getWalletUserId())
-                    .deficitBalance(deficitBalance>0 ? deficitBalance : 0)
-                    .build());
-        } else {
+            APBPaytmResponse balanceResponse = this.getBalance(wallet);
+            if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < paymentCachingService.getPlan(planId).getFinalPrice()) {
+                double deficitBalance = paymentCachingService.getPlan(planId).getFinalPrice() - balanceResponse.getData().getBalance();
+                builder.data(UserWalletDetails.builder()
+                        .linked(true)
+                        .active(true)
+                        .balance(balanceResponse.getData().getBalance())
+                        .linkedMobileNo(wallet.getWalletUserId())
+                        .deficitBalance(deficitBalance > 0 ? deficitBalance : 0)
+                        .build());
+            } else {
+                builder.error(TechnicalErrorDetails.builder().code(UT022.getErrorCode()).description(UT022.getErrorMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
+            }
+
+        }
+        else {
             builder.error(TechnicalErrorDetails.builder().code(UT022.getErrorCode()).description(UT022.getErrorMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
         }
         return builder.build();

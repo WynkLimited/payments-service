@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Getter
 public class APBPaytmTopUpRequest extends APBPaytmRequest{
+    private String orderId;
     private String encryptedToken;
     private APBTopUpInfo topUpInfo;
     private APBPaytmUserInfo userInfo;

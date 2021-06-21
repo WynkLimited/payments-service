@@ -12,9 +12,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @AllArgsConstructor
 public class Wallet extends UserPreferredPayment {
 
-    @Field("balance")
-    private double balance;
-
     @Field("token_validity")
     private long tokenValidity;
 

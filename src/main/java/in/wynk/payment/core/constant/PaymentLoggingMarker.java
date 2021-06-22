@@ -70,6 +70,15 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
 
     Marker SDK_CLIENT_ERROR = MarkerFactory.getMarker("SDK_CLIENT_ERROR");
+    Marker APB_PAYTM_OTP_SEND_FAILURE=MarkerFactory.getMarker("APB_PAYTM_OTP_SEND_FAILURE");
+    Marker APB_PAYTM_OTP_VALIDATE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_OTP_VALIDATE_FAILURE");
+    Marker APB_PAYTM_ADD_MONEY_FAILURE=MarkerFactory.getMarker("APB_PAYTM_ADD_MONEY_FAILURE");
+    Marker APB_PAYTM_CHARGE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_CHARGE_FAILURE");
+    Marker APB_PAYTM_GET_BALANCE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_GET_BALANCE_FAILURE");
+
+
+
+
 
 
 }

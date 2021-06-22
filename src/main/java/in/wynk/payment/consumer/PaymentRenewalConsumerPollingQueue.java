@@ -83,7 +83,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        if (message.getPaymentEvent() != PaymentEvent.DEFERRED || subscriptionServiceManager.renewalPlanEligibility(transaction.getPlanId(), transaction.getIdStr(), transaction.getUid())) {
+        if (subscriptionServiceManager.renewalPlanEligibility(transaction.getPlanId(), transaction.getIdStr(), transaction.getUid())) {
             sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
                     .uid(transaction.getUid())
                     .id(transaction.getIdStr())

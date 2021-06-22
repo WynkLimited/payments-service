@@ -51,6 +51,7 @@ import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.payment.core.constant.PaymentCode.APB_PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.*;
 
 @Slf4j
@@ -104,10 +105,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             }
         }
         catch (HttpStatusCodeException hex) {
-            log.error("APB_PAYTM_OTP_SEND_FAILURE", hex.getResponseBodyAsString());
+            log.error(APB_PAYTM_OTP_SEND_FAILURE, hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
         } catch (Exception e) {
-            log.error("APB_PAYTM_OTP_SEND_FAILURE", e.getMessage());
+            log.error(APB_PAYTM_OTP_SEND_FAILURE, e.getMessage());
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
@@ -151,10 +152,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                 errorCode = ErrorCode.getErrorCodesFromExternalCode("");
             }
         } catch (HttpStatusCodeException hex) {
-            log.error("APB_PAYTM_OTP_SEND_FAILURE", hex.getResponseBodyAsString());
+            log.error(APB_PAYTM_OTP_VALIDATE_FAILURE, hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
         } catch (Exception e) {
-            log.error("APB_PAYTM_OTP_SEND_FAILURE", e.getMessage());
+            log.error(APB_PAYTM_OTP_VALIDATE_FAILURE,e.getMessage());
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
@@ -229,15 +230,15 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         }
         catch (HttpStatusCodeException hex) {
             AnalyticService.update("APB_PAYTM_ADD_MONEY_FAILURE", hex.getRawStatusCode());
-            log.error("APB_PAYTM_ADD_MONEY_FAILURE", hex.getResponseBodyAsString());
+            log.error(APB_PAYTM_ADD_MONEY_FAILURE, hex.getResponseBodyAsString());
             try {
                 return objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class);
             } catch (JsonProcessingException e) {
-                log.error("APB_PAYTM_ADD_MONEY_FAILURE", e.getMessage(), e);
+                log.error(APB_PAYTM_ADD_MONEY_FAILURE, e.getMessage());
                 return APBPaytmResponse.builder().result(false).data(APBPaytmResponseData.builder().html(null).build()).build();
             }
         } catch (Exception e) {
-            log.error("APB_PAYTM_ADD_MONEY_FAILURE", e.getMessage(), e);
+            log.error(APB_PAYTM_ADD_MONEY_FAILURE, e.getMessage(), e);
             return APBPaytmResponse.builder().result(false).data(APBPaytmResponseData.builder().html(null).build()).build();
         }
     }
@@ -380,7 +381,11 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             HttpEntity<String> requestEntityForBalance = new HttpEntity<>(requestBalance, headers);
             APBPaytmResponse balanceResponse = restTemplate.exchange(apbPaytmBaseUrl + ABP_PAYTM_GET_BALANCE, HttpMethod.POST, requestEntityForBalance, APBPaytmResponse.class).getBody();
             return balanceResponse;
+        } catch (HttpStatusCodeException e) {
+            log.error(APB_PAYTM_GET_BALANCE_FAILURE, e.getResponseBodyAsString());
+            return APBPaytmResponse.builder().result(false).build();
         } catch (Exception e){
+            log.error(APB_PAYTM_GET_BALANCE_FAILURE, e.getMessage());
             return APBPaytmResponse.builder().result(false).build();
         }
     }
@@ -429,10 +434,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             }
 
         } catch (HttpStatusCodeException hex) {
-            log.error("APB_PAYTM_CHARGE_FAILURE", hex.getResponseBodyAsString());
+            log.error(APB_PAYTM_CHARGE_FAILURE, hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
         } catch (Exception e) {
-            log.error("APB_PAYTM_CHARGE_FAILURE", e.getMessage());
+            log.error(APB_PAYTM_CHARGE_FAILURE, e.getMessage());
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {

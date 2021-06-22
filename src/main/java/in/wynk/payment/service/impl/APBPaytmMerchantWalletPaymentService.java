@@ -483,16 +483,28 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         Wallet wallet = getWallet(userPreferredPayment);
         if (Objects.nonNull(wallet)) {
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
-            if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < paymentCachingService.getPlan(planId).getFinalPrice()) {
-                double deficitBalance = paymentCachingService.getPlan(planId).getFinalPrice() - balanceResponse.getData().getBalance();
-                builder.data(UserWalletDetails.builder()
-                        .linked(true)
-                        .active(true)
-                        .balance(balanceResponse.getData().getBalance())
-                        .linkedMobileNo(wallet.getWalletUserId())
-                        .deficitBalance(deficitBalance > 0 ? deficitBalance : 0)
-                        .build());
-            } else {
+            if(balanceResponse.isResult()){
+                if (balanceResponse.getData().getBalance() < paymentCachingService.getPlan(planId).getFinalPrice()) {
+                    double deficitBalance = paymentCachingService.getPlan(planId).getFinalPrice() - balanceResponse.getData().getBalance();
+                    builder.data(UserWalletDetails.builder()
+                            .linked(true)
+                            .active(true)
+                            .balance(balanceResponse.getData().getBalance())
+                            .linkedMobileNo(wallet.getWalletUserId())
+                            .deficitBalance(deficitBalance)
+                            .build());
+                }
+                else{
+                    builder.data(UserWalletDetails.builder()
+                            .linked(true)
+                            .active(true)
+                            .balance(balanceResponse.getData().getBalance())
+                            .linkedMobileNo(wallet.getWalletUserId())
+                            .deficitBalance(0)
+                            .build());
+                }
+            }
+             else {
                 builder.error(TechnicalErrorDetails.builder().code(UT022.getErrorCode()).description(UT022.getErrorMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
             }
 

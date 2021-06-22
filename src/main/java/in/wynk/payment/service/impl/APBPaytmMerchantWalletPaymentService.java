@@ -442,7 +442,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (StringUtils.isBlank(redirectUrl)) {
-                transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
                 redirectUrl = failurePage + sid;
 
             }

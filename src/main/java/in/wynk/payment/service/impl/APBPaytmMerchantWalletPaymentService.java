@@ -247,10 +247,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         Transaction transaction = TransactionContext.get();
         this.fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION", "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at phonepe");
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY008, "Transaction is still pending at APBPaytm");
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION", "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY008, "APB_PAYTM_CHARGING_STATUS_VERIFICATION");
         }
         return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
@@ -258,26 +258,22 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     private APBPaytmResponse getTransactionStatus(Transaction txn) {
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txn.getIdStr());
-        MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(txn.getIdStr());
+        if(merchantTransaction==null){
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, "Transaction not found in MerchantTransaction,Invalid TransactionId");
+            throw new WynkRuntimeException(PaymentErrorType.PAY010);
+        }
         try {
             HttpHeaders headers= generateHeaders();
             HttpEntity<HttpHeaders> requestEntity = new HttpEntity<HttpHeaders>(headers);
             APBPaytmResponse statusResponse =restTemplate.exchange(
                     apbPaytmBaseUrl+ABP_PAYTM_TRANSACTION_STATUS+merchantTransaction.getExternalTransactionId(), HttpMethod.GET, requestEntity, APBPaytmResponse.class).getBody();
-            if (statusResponse != null && statusResponse.isResult() ) {
-                merchantTransactionEventBuilder.externalTransactionId(statusResponse.getData().getPgId());
-            }
-            merchantTransactionEventBuilder.response(objectMapper.writeValueAsString(statusResponse));
             return statusResponse;
         } catch (HttpStatusCodeException e) {
-            merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
-            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE", "Error from phonepe: {}", e.getResponseBodyAsString(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from PhonePe " + e.getStatusCode().toString());
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from APBPayTm " + e.getStatusCode().toString());
         } catch (Exception e) {
-            log.error("APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE", "Unable to verify status from Phonepe");
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, e.getMessage());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e,e.getMessage());
-        } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }
 
@@ -287,10 +283,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         APBPaytmResponse response = getTransactionStatus(transaction);
         if (response.isResult()) {
             String statusCode = response.getData().getPaymentStatus();
-            if (statusCode == "PAYMENT_SUCCESS") {
+            if (StringUtils.isNotBlank(statusCode) && statusCode.equalsIgnoreCase("PAYMENT_SUCCESS")) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * 3 &&
-                    statusCode == "PAYMENT_PENDING") {
+                    StringUtils.isNotBlank(statusCode) && statusCode.equalsIgnoreCase("PAYMENT_PENDING")) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;

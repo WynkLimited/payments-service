@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
 @Service
 @Slf4j
@@ -113,7 +114,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             }
             return true;
         } catch (Exception e) {
-            return true;
+            throw new WynkRuntimeException(PAY105);
         }
     }
 

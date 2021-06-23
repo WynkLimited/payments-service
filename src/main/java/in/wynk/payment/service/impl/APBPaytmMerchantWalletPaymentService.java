@@ -303,12 +303,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     @Override
     public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
         ErrorCode errorCode = null;
-        HttpStatus httpStatus = HttpStatus.FOUND;
         String redirectUrl = null;
         Transaction transaction = TransactionContext.get();
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String sid = SessionContextHolder.getId();
-        ChargingResponse.ChargingResponseBuilder chargingResponseBuilder = ChargingResponse.builder();
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder();
         try {
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
@@ -335,13 +333,12 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             MerchantTransactionEvent merchantTransactionEvent= MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(paymentResponse.getData().getPgId()).request(requestEntity).response(paymentResponse).build();
             eventPublisher.publishEvent(merchantTransactionEvent);
         } catch (HttpStatusCodeException hex) {
-            log.error("APB_PAYTM_CHARGE_FAILURE", hex.getResponseBodyAsString());
+            log.error(APB_PAYTM_CHARGE_FAILURE, hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorCode.name()).description(errorCode.getInternalMessage()).build());
         } catch (Exception e) {
-            log.error("APB_PAYTM_CHARGE_FAILURE", e.getMessage());
+            log.error(APB_PAYTM_CHARGE_FAILURE, e.getMessage());
             errorCode = ErrorCode.UNKNOWN;
-            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (Objects.nonNull(errorCode)) {
                 builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build()).success(false);

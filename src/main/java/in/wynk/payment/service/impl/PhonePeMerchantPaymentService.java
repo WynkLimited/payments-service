@@ -3,6 +3,8 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.StandardBusinessErrorDetails;
+import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
@@ -51,7 +53,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
-public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IOTCMerchantPaymentService, IMerchantPaymentRefundService {
+public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IOTCMerchantPaymentService, IMerchantPaymentRefundService<PhonePePaymentRefundResponse, PhonePePaymentRefundRequest> {
 
     private static final String DEBIT_API = "/v4/debit";
     @Value("${payment.merchant.phonepe.id}")
@@ -277,14 +279,14 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
+    public WynkResponseEntity<PhonePePaymentRefundResponse> refund(PhonePePaymentRefundRequest refundRequest) {
         Transaction refundTransaction = TransactionContext.get();
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(refundTransaction.getIdStr());
+        WynkResponseEntity.WynkResponseEntityBuilder<PhonePePaymentRefundResponse> responseBuilder = WynkResponseEntity.builder();
         PhonePePaymentRefundResponse.PhonePePaymentRefundResponseBuilder<?, ?> refundResponseBuilder = PhonePePaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId()).itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn()).paymentEvent(refundTransaction.getType());
         try {
-            PhonePePaymentRefundRequest refundRequest = (PhonePePaymentRefundRequest) request;
-            PhonePeRefundRequest baseRefundRequest = PhonePeRefundRequest.builder().message(request.getReason()).merchantId(merchantId).amount(Double.valueOf(refundTransaction.getAmount() * 100).longValue()).providerReferenceId(refundRequest.getPpId()).transactionId(refundTransaction.getIdStr()).merchantOrderId(refundRequest.getOriginalTransactionId()).originalTransactionId(refundRequest.getOriginalTransactionId()).build();
+            PhonePeRefundRequest baseRefundRequest = PhonePeRefundRequest.builder().message(refundRequest.getReason()).merchantId(merchantId).amount(Double.valueOf(refundTransaction.getAmount() * 100).longValue()).providerReferenceId(refundRequest.getPpId()).transactionId(refundTransaction.getIdStr()).merchantOrderId(refundRequest.getOriginalTransactionId()).originalTransactionId(refundRequest.getOriginalTransactionId()).build();
             String requestJson = gson.toJson(baseRefundRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
@@ -304,7 +306,9 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
                 } else if (response.getBody().getCode() == PhonePeStatusEnum.PAYMENT_PENDING) {
                     finalTransactionStatus = TransactionStatus.INPROGRESS;
                 } else {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(response.getBody().getCode().name()).description(response.getBody().getMessage()).build());
+                    PaymentErrorEvent errorEvent = PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(response.getBody().getCode().name()).description(response.getBody().getMessage()).build();
+                    responseBuilder.success(false).error(StandardBusinessErrorDetails.builder().code(errorEvent.getCode()).description(errorEvent.getDescription()).build());
+                    eventPublisher.publishEvent(errorEvent);
                 }
             }
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData()) && StringUtils.isNotEmpty(response.getBody().getData().getProviderReferenceId())) {
@@ -312,13 +316,17 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
                 refundResponseBuilder.providerReferenceId(response.getBody().getData().getProviderReferenceId());
             }
         } catch (Exception ex) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY020, ex, ex.getMessage());
+            PaymentErrorType errorType = PaymentErrorType.PAY020;
+            PaymentErrorEvent errorEvent = PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build();
+            responseBuilder.status(errorType.getHttpResponseStatusCode()).success(false).error(TechnicalErrorDetails.builder().code(errorEvent.getCode()).description(errorEvent.getDescription()).build());
+            eventPublisher.publishEvent(errorEvent);
+            log.error(errorType.getMarker(), ex.getMessage(), ex);
         } finally {
             refundTransaction.setStatus(finalTransactionStatus.getValue());
             refundResponseBuilder.transactionStatus(finalTransactionStatus);
             eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }
-        return BaseResponse.builder().body(refundResponseBuilder.build()).status(HttpStatus.OK).build();
+        return responseBuilder.data(refundResponseBuilder.build()).build();
     }
 
 }

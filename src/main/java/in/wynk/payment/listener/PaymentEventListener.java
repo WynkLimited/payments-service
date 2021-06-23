@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -12,7 +13,6 @@ import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
-import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
 import in.wynk.payment.service.PaymentManager;
@@ -89,7 +89,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
         AnalyticService.update(event);
-        BaseResponse<?> response = paymentManager.initRefund(PaymentRefundInitRequest.builder().originalTransactionId(event.getOriginalTransactionId()).reason(event.getReason()).build());
+        WynkResponseEntity<?> response = paymentManager.refund(PaymentRefundInitRequest.builder().originalTransactionId(event.getOriginalTransactionId()).reason(event.getReason()).build());
         AnalyticService.update(response.getBody());
     }
 

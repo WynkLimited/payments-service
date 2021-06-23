@@ -2,9 +2,12 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
+import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.PaymentManager;
@@ -30,22 +33,20 @@ public class RevenuePaymentsS2SHandler {
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
-    public ResponseEntity<?> doCharging(@RequestBody DefaultChargingRequest<?> request) {
-        final String uid = request.getUid();
-        final String msisdn = request.getMsisdn();
+    public ResponseEntity<?> doCharging(@RequestBody DefaultChargingRequest<AbstractChargingRequest.IWebChargingDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.doCharging(uid, msisdn, request);
-        return baseResponse.getResponse();
+        WynkResponseEntity<AbstractChargingResponse> baseResponse = paymentManager.doCharging(request);
+        return baseResponse;
     }
 
     @PostMapping("/v1/payment/refund")
     @AnalyseTransaction(name = "initRefund")
     public ResponseEntity<?> doRefund(@RequestBody PaymentRefundInitRequest request) {
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.initRefund(request);
+        WynkResponseEntity<?> baseResponse = paymentManager.refund(request);
         AnalyticService.update(baseResponse.getBody());
-        return baseResponse.getResponse();
+        return baseResponse;
     }
 
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")

@@ -48,7 +48,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 
 @Slf4j
 @Service
-public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper> {
+public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -69,18 +69,20 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
     }
 
     @TransactionAware(txnId = "#request.originalTransactionId")
-    public BaseResponse<?> initRefund(PaymentRefundInitRequest request) {
+    public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
         final Transaction originalTransaction = TransactionContext.get();
         final AbstractTransactionInitRequest refundTransactionInitRequest = DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build());
         try {
             final Transaction refundTransaction = transactionManager.init(refundTransactionInitRequest);
             final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
-            final IMerchantPaymentRefundService refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(), IMerchantPaymentRefundService.class);
+            final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {});
             final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
-            final BaseResponse<?> refundInitResponse = refundService.refund(refundRequest);
-            final AbstractPaymentRefundResponse refundResponse = (AbstractPaymentRefundResponse) refundInitResponse.getBody();
-            if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
-                sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(refundTransaction.getPaymentChannel()).extTxnId(refundResponse.getExternalReferenceId()).transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId()).msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
+            final WynkResponseEntity<AbstractPaymentRefundResponse> refundInitResponse = refundService.refund(refundRequest);
+            if(Objects.nonNull(refundInitResponse.getBody())) {
+                final AbstractPaymentRefundResponse refundResponse = refundInitResponse.getBody().getData();
+                if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
+                    sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(refundTransaction.getPaymentChannel()).extTxnId(refundResponse.getExternalReferenceId()).transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId()).msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
+                }
             }
             return refundInitResponse;
         } catch (WynkRuntimeException e) {

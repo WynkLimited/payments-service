@@ -55,7 +55,7 @@ import static in.wynk.payment.dto.paytm.PayTmConstants.PAYTM_CHECKSUMHASH;
 
 @Slf4j
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
-public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>> ,IRenewalMerchantWalletService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
+public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>> ,IRenewalMerchantWalletService, IUserPreferredPaymentService, IMerchantPaymentRefundService<PaytmPaymentRefundResponse, PaytmPaymentRefundRequest> {
 
     @Value("${paytm.native.merchantId}")
     private String MID;
@@ -186,7 +186,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     @Override
-    public BaseResponse<?> refund(AbstractPaymentRefundRequest request) {
+    public WynkResponseEntity<PaytmPaymentRefundResponse> refund(PaytmPaymentRefundRequest refundRequest) {
         Transaction refundTransaction = TransactionContext.get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         MerchantTransactionEvent.Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(refundTransaction.getIdStr());
@@ -199,8 +199,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                 .paymentEvent(refundTransaction.getType())
                 .transactionId(refundTransaction.getIdStr())
                 .clientAlias(refundTransaction.getClientAlias());
+        WynkResponseEntity.WynkResponseEntityBuilder<PaytmPaymentRefundResponse> responseBuilder = WynkResponseEntity.builder();
         try {
-            PaytmPaymentRefundRequest refundRequest = (PaytmPaymentRefundRequest) request;
             URI uri = new URIBuilder(REFUND).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", "application/json");
@@ -227,22 +227,25 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             PaytmResponse<PaytmRefundResponseBody> paytmRefundResponse = responseEntity.getBody();
             if (!paytmRefundResponse.getBody().getResultInfo().getResultStatus().equalsIgnoreCase(PAYTM_STATUS_PENDING)) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
-                applicationEventPublisher.publishEvent(PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(String.valueOf(paytmRefundResponse.getBody().getResultInfo().getResultCode())).description(paytmRefundResponse.getBody().getResultInfo().getResultMsg()).build());
+                PaymentErrorEvent errorEvent = PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(String.valueOf(paytmRefundResponse.getBody().getResultInfo().getResultCode())).description(paytmRefundResponse.getBody().getResultInfo().getResultMsg()).build();
+                responseBuilder.success(false).error(StandardBusinessErrorDetails.builder().code(errorEvent.getCode()).description(errorEvent.getDescription()).build());
+                applicationEventPublisher.publishEvent(errorEvent);
             } else {
                 refundResponseBuilder.paytmTxnId(paytmRefundResponse.getBody().getOrderId());
                 merchantTransactionBuilder.externalTransactionId(paytmRefundResponse.getBody().getOrderId());
                 AnalyticService.update(EXTERNAL_TRANSACTION_ID, paytmRefundResponse.getBody().getOrderId());
             }
-        } catch (WynkRuntimeException ex) {
-            applicationEventPublisher.publishEvent(PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(ex.getErrorCode()).description(ex.getErrorTitle()).build());
-            throw new WynkRuntimeException(PaymentErrorType.PAY020, ex, ex.getMessage());
         } catch (Exception ex) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY020, ex, ex.getMessage());
+            PaymentErrorType errorType = PaymentErrorType.PAY020;
+            PaymentErrorEvent errorEvent = PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build();
+            responseBuilder.status(errorType.getHttpResponseStatusCode()).success(false).error(TechnicalErrorDetails.builder().code(errorEvent.getCode()).description(errorEvent.getDescription()).build());
+            applicationEventPublisher.publishEvent(errorEvent);
+            log.error(errorType.getMarker(), ex.getMessage(), ex);
         } finally {
             refundTransaction.setStatus(finalTransactionStatus.getValue());
             refundResponseBuilder.transactionStatus(finalTransactionStatus);
             applicationEventPublisher.publishEvent(merchantTransactionBuilder.build());
-            return BaseResponse.builder().body(refundResponseBuilder.build()).status(HttpStatus.OK).build();
+            return responseBuilder.data(refundResponseBuilder.build()).build();
         }
     }
 

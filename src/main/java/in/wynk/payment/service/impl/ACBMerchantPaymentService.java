@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -7,20 +8,20 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractCallbackResponse;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.service.IMerchantPaymentCallbackService;
+import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.IRenewalMerchantPaymentService;
 import org.springframework.stereotype.Service;
 
 @Service(BeanConstant.ACB_MERCHANT_PAYMENT_SERVICE)
-public class ACBMerchantPaymentService implements IRenewalMerchantPaymentService {
+public class ACBMerchantPaymentService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IRenewalMerchantPaymentService {
+
 
     @Override
-    public BaseResponse<?> handleCallback(CallbackRequest callbackRequest) {
-        throw new WynkRuntimeException(PaymentErrorType.PAY888);
-    }
-
-    @Override
-    public BaseResponse<?> doCharging(ChargingRequest chargingRequest) {
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
 
@@ -39,4 +40,8 @@ public class ACBMerchantPaymentService implements IRenewalMerchantPaymentService
         return false;
     }
 
+    @Override
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
+        throw new WynkRuntimeException(PaymentErrorType.PAY888);
+    }
 }

@@ -5,31 +5,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.CardDetails;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
-import in.wynk.payment.dto.response.AbstractPaymentDetails;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
-import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
@@ -61,15 +60,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IRenewalMerchantPaymentService,IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -109,27 +108,24 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
         String returnUrl = processCallback(callbackRequest);
-        return BaseResponse.redirectResponse(returnUrl);
+        return WynkResponseUtils.redirectResponse(returnUrl);
     }
 
     @Override
-    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
-        Map<String, String> payUPayload = getPayload(TransactionContext.get());
-        String encryptedParams;
+    public WynkResponseEntity<PayUChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
+        final WynkResponseEntity.WynkResponseEntityBuilder<PayUChargingResponse> builder = WynkResponseEntity.builder();
         try {
-            encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
+            final Map<String, String> payUPayload = getPayload(TransactionContext.get());
+            final String encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
+            builder.data(PayUChargingResponse.builder().info(encryptedParams).build());
         } catch (Exception e) {
+            final PaymentErrorType errorType = PAY002;
+            builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode());
             log.error(BaseLoggingMarkers.ENCRYPTION_ERROR, e.getMessage(), e);
-            throw new WynkRuntimeException(e);
         }
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put(PAYU_CHARGING_INFO, encryptedParams);
-        return BaseResponse.<Map<String, String>>builder()
-                .body(queryParams)
-                .status(HttpStatus.OK)
-                .build();
+        return builder.build();
     }
 
     @Override
@@ -684,7 +680,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
             builder.request(payUChargingVerificationRequest);
-            builder.response(payUChargingVerificationResponse);
+                builder.response(payUChargingVerificationResponse);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(tid);
             payUChargingTransactionDetails.setMigratedTransactionId(tid);
             if (params.containsKey(MIGRATED) && Boolean.parseBoolean(params.get(MIGRATED))) {
@@ -699,8 +695,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
-        WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserCardDetails>builder();
+    public WynkResponseEntity<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
+        WynkResponseEntity.WynkResponseEntityBuilder<AbstractPaymentDetails> builder = WynkResponseEntity.builder();
         String userCredentials = payUMerchantKey + COLON + userPreferredPayment.getId().getUid();
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
         PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {

@@ -5,5 +5,5 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 
 public interface IUserPreferredPaymentService {
-    WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId);
+    WynkResponseEntity<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId);
 }

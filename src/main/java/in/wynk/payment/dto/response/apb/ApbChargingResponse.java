@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.response.Apb;
+package in.wynk.payment.dto.response.apb;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

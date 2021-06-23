@@ -13,17 +13,11 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WalletAddMoneyRequest extends WalletRequest {
-
     @Analysed
     private int planId;
-
     @Analysed
     private String itemId;
-
     @Analysed
     private double amountToCredit;
-
-    @Analysed
-    private long phonePeVersionCode;
 
 }

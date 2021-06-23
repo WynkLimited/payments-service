@@ -3,8 +3,10 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
+import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -16,18 +18,14 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRefundRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
-import in.wynk.payment.dto.request.AbstractPaymentRefundRequest;
-import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingRequest;
+import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.phonepe.PhonePeChargingResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
-import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
-import in.wynk.payment.service.IMerchantPaymentRefundService;
-import in.wynk.payment.service.IOTCMerchantPaymentService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -53,7 +51,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
-public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IOTCMerchantPaymentService, IMerchantPaymentRefundService {
+public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IOTCMerchantPaymentService, IMerchantPaymentRefundService {
 
     private static final String DEBIT_API = "/v4/debit";
     @Value("${payment.merchant.phonepe.id}")
@@ -81,21 +79,19 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public BaseResponse<Void> handleCallback(CallbackRequest callbackRequest) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
         String returnUrl = processCallback(callbackRequest);
-        return BaseResponse.redirectResponse(returnUrl);
+        return WynkResponseUtils.redirectResponse(returnUrl);
 
     }
 
     @Override
-    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
+    public WynkResponseEntity<PhonePeChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
             final double finalPlanAmount = transaction.getAmount();
             final String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
-            Map<String, String> response = new HashMap<>();
-            response.put(REDIRECTION_URL, redirectUri);
-            return BaseResponse.<Map<String, String>>builder().body(response).status(HttpStatus.OK).build();
+            return WynkResponseEntity.<PhonePeChargingResponse>builder().data(PhonePeChargingResponse.builder().redirectUrl(redirectUri).build()).build();
         } catch (Exception e) {
             throw new WynkRuntimeException(PHONEPE_CHARGING_FAILURE, e.getMessage(), e);
         }

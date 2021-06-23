@@ -3,6 +3,7 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
+import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IDummySessionGenerator;
@@ -11,10 +12,7 @@ import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
@@ -28,6 +26,17 @@ public class RevenuePaymentsS2SHandler {
     public RevenuePaymentsS2SHandler(PaymentManager paymentManager, IDummySessionGenerator dummySessionGenerator) {
         this.paymentManager = paymentManager;
         this.dummySessionGenerator = dummySessionGenerator;
+    }
+
+    @PostMapping("/v1/payment/charge")
+    @AnalyseTransaction(name = "paymentCharging")
+    public ResponseEntity<?> doCharging(@RequestBody DefaultChargingRequest<?> request) {
+        final String uid = request.getUid();
+        final String msisdn = request.getMsisdn();
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+        AnalyticService.update(request);
+        BaseResponse<?> baseResponse = paymentManager.doCharging(uid, msisdn, request);
+        return baseResponse.getResponse();
     }
 
     @PostMapping("/v1/payment/refund")

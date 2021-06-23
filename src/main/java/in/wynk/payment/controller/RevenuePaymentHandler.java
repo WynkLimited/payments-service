@@ -4,16 +4,12 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.utils.Utils;
-import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -21,7 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.PAYMENT_CODE;
+import static in.wynk.common.constant.BaseConstants.TRANSACTION_ID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 
@@ -40,16 +37,10 @@ public class RevenuePaymentHandler {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody ChargingRequest request) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String uid = sessionDTO.get(UID);
-        final String msisdn = Utils.getTenDigitMsisdn(sessionDTO.get(MSISDN));
-        if (request.getPlanId() == 0 && StringUtils.isBlank(request.getItemId())) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid planId or itemId");
-        }
+    public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<?> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.doCharging(uid, msisdn, request);
+        BaseResponse<?> baseResponse = paymentManager.doCharging(request);
         return baseResponse.getResponse();
     }
 

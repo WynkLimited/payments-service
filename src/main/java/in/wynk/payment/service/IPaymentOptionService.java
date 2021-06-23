@@ -9,6 +9,6 @@ public interface IPaymentOptionService {
 
     PaymentOptionsDTO getPaymentOptions(String planId);
 
-    WynkResponseEntity.WynkBaseResponse<PaymentDetailsWrapper> getPaymentDetails(CombinedPaymentDetailsRequest request);
+    WynkResponseEntity<PaymentDetailsWrapper> getPaymentDetails(CombinedPaymentDetailsRequest request);
 
 }

@@ -88,14 +88,14 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     }
 
     @Override
-    public WynkResponseEntity.WynkBaseResponse<PaymentDetailsWrapper> getPaymentDetails(CombinedPaymentDetailsRequest request) {
+    public WynkResponseEntity<PaymentDetailsWrapper> getPaymentDetails(CombinedPaymentDetailsRequest request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(UID);
         final String deviceId = sessionDTO.get(DEVICE_ID);
         ExecutorService executorService = Executors.newFixedThreadPool(N);
-        Map<SavedDetailsKey, Future<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>>> map = new HashMap<>();
+        Map<SavedDetailsKey, Future<WynkResponseEntity<AbstractPaymentDetails>>> map = new HashMap<>();
         Map<SavedDetailsKey, UserPreferredPayment> userPreferredPaymentMap = userPaymentsManager.get(uid).stream().collect(Collectors.toMap(UserPreferredPayment::getId, Function.identity()));
-        Callable<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> task;
+        Callable<WynkResponseEntity<AbstractPaymentDetails>> task;
         for (String paymentGroup : request.getPaymentGroups().keySet()) {
             for (String paymentCode : request.getPaymentGroups().get(paymentGroup)) {
                 SavedDetailsKey.SavedDetailsKeyBuilder keyBuilder = SavedDetailsKey.builder().uid(uid).paymentCode(paymentCode).paymentGroup(paymentGroup);
@@ -117,7 +117,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 executorService.shutdownNow();
             }
         } finally {
-            WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<AbstractPaymentDetails>builder();
+            WynkResponseEntity.WynkResponseEntityBuilder builder = WynkResponseEntity.<AbstractPaymentDetails>builder();
 
             Map<String, AbstractPaymentDetails> tempData;
             Map<String, Map<String, AbstractPaymentDetails>> paymentDetailsMap = new HashMap<>();
@@ -127,17 +127,17 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
             for (SavedDetailsKey savedDetailsKey : map.keySet()) {
                 try {
-                    WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> details = map.get(savedDetailsKey).get();
+                    WynkResponseEntity<AbstractPaymentDetails> details = map.get(savedDetailsKey).get();
 
-                    if (Objects.nonNull(details.getData())) {
+                    if (Objects.nonNull(details.getBody().getData())) {
                         tempData = paymentDetailsMap.getOrDefault(savedDetailsKey.getPaymentGroup(), new HashMap<>());
-                        tempData.put(savedDetailsKey.getPaymentCode(), details.getData());
+                        tempData.put(savedDetailsKey.getPaymentCode(), details.getBody().getData());
                         paymentDetailsMap.put(savedDetailsKey.getPaymentGroup(), tempData);
                     }
 
-                    if (Objects.nonNull(details.getError())) {
+                    if (Objects.nonNull(details.getBody().getError())) {
                         tempError = paymentErrorMap.getOrDefault(savedDetailsKey.getPaymentGroup(), new HashMap<>());
-                        tempError.put(savedDetailsKey.getPaymentCode(), (AbstractErrorDetails) details.getError());
+                        tempError.put(savedDetailsKey.getPaymentCode(), (AbstractErrorDetails) details.getBody().getError());
                         paymentErrorMap.put(savedDetailsKey.getPaymentGroup(), tempError);
                     }
                 } catch (Exception e) {

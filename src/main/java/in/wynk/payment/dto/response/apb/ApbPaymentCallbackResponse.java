@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.response.Apb;
+package in.wynk.payment.dto.response.apb;
 
 import in.wynk.common.enums.Status;
 import lombok.AllArgsConstructor;

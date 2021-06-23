@@ -4,11 +4,14 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
-import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.dto.request.SubscribePlanAsyncRequest;
+import in.wynk.payment.dto.request.SubscribePlanSyncRequest;
+import in.wynk.payment.dto.request.UnSubscribePlanAsyncRequest;
+import in.wynk.payment.dto.request.UnSubscribePlanSyncRequest;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
@@ -87,48 +90,23 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
+    public void subscribePlanAsync(SubscribePlanAsyncRequest request) {
         try {
-            this.publishAsync(SubscriptionProvisioningMessage.builder()
-                    .uid(uid)
-                    .msisdn(msisdn)
-                    .planId(getUpdatedPlanId(planId, paymentEvent))
-                    .paymentCode(paymentCode)
-                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                    .referenceId(transactionId)
-                    .paymentEvent(paymentEvent)
-                    .transactionStatus(transactionStatus)
-                    .build());
+            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).build());
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
         }
     }
 
     @Override
-    public void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
-        this.publishAsync(SubscriptionProvisioningMessage.builder()
-                .uid(uid)
-                .msisdn(msisdn)
-                .referenceId(transactionId)
-                .transactionStatus(transactionStatus)
-                .paymentEvent(PaymentEvent.UNSUBSCRIBE)
-                .planId(getUpdatedPlanId(planId, paymentEvent))
-                .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                .build());
+    public void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request) {
+        this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus()).paymentEvent(PaymentEvent.UNSUBSCRIBE).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).build());
     }
 
     @Override
-    public void subscribePlanSync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
+    public void subscribePlanSync(SubscribePlanSyncRequest request) {
         try {
-            PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
-                    .uid(uid)
-                    .msisdn(msisdn)
-                    .paymentCode(paymentCode)
-                    .referenceId(transactionId)
-                    .planId(getUpdatedPlanId(planId, paymentEvent))
-                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                    .eventType(paymentEvent)
-                    .build();
+            PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder().uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).referenceId(request.getTransactionId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).eventType(request.getPaymentEvent()).build();
             RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
             });
@@ -148,14 +126,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void unSubscribePlanSync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent) {
+    public void unSubscribePlanSync(UnSubscribePlanSyncRequest request) {
         try {
-            PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder()
-                    .uid(uid)
-                    .referenceId(transactionId)
-                    .planId(getUpdatedPlanId(planId, paymentEvent))
-                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                    .build();
+            PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder().uid(request.getUid()).referenceId(request.getTransactionId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).build();
             RequestEntity<PlanUnProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
             });

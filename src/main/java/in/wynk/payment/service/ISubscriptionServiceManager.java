@@ -1,7 +1,6 @@
 package in.wynk.payment.service;
 
-import in.wynk.common.enums.PaymentEvent;
-import in.wynk.common.enums.TransactionStatus;
+import in.wynk.payment.dto.request.*;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -10,13 +9,30 @@ import java.util.List;
 
 public interface ISubscriptionServiceManager {
 
-    void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent);
+    default void subscribePlan(AbstractSubscribePlanRequest request) {
+        if(SubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
+            subscribePlanSync((SubscribePlanSyncRequest) request);
+        } else {
+            subscribePlanAsync((SubscribePlanAsyncRequest) request);
+        }
+    }
 
-    void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent);
+    default void UnSubscribePlan(AbstractUnSubscribePlanRequest request) {
+        if(UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
+            unSubscribePlanSync((UnSubscribePlanSyncRequest) request);
+        } else {
+            unSubscribePlanAsync((UnSubscribePlanAsyncRequest) request);
+        }
+    }
 
-    void subscribePlanSync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent);
+    void subscribePlanSync(SubscribePlanSyncRequest request);
 
-    void unSubscribePlanSync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent);
+    void subscribePlanAsync(SubscribePlanAsyncRequest request);
+
+    void unSubscribePlanSync(UnSubscribePlanSyncRequest request);
+
+    void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request);
+
 
     List<PlanDTO> getPlans();
 

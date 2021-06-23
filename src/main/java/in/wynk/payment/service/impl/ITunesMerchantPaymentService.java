@@ -10,6 +10,7 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
@@ -65,7 +66,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService, IReceiptDetailService {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService<ItunesCallbackResponse, CallbackRequest>, IReceiptDetailService {
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -175,7 +176,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public BaseResponse<ChargingStatusResponse> handleCallback(CallbackRequest callbackRequest) {
+    public WynkResponseEntity<ItunesCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
         Transaction transaction = TransactionContext.get();
         try {
             final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
@@ -187,7 +188,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, JSONValue.toJSONString(map)));
                 }
             }
-            return BaseResponse.<ChargingStatusResponse>builder().body(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).status(HttpStatus.OK).build();
+            return WynkResponseEntity.<ItunesCallbackResponse>builder().build();
         } catch (Exception e) {
             throw new WynkRuntimeException(WynkErrorType.UT999, "Error while handling iTunes callback");
         }

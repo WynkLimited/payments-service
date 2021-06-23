@@ -105,7 +105,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                if (renewalPlanEligibilityResponse.getDeferredUntil() > 0) {
+                if (renewalPlanEligibilityResponse.getDeferredUntil() > 60 * 60 * 1000) {
                     long today = System.currentTimeMillis();
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, renewalPlanEligibilityResponse.getDeferredUntil()-today);
                     return false;

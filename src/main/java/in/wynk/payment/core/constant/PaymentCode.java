@@ -15,19 +15,20 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 @AnalysedEntity
 public enum PaymentCode {
 
-    AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE, false, false),
-    ITUNES(ITUNES_PAYMENT_SERVICE, false, false),
-    PAYU(PAYU_MERCHANT_PAYMENT_SERVICE, true, true),
-    PAYTM_WALLET(PAYTM_MERCHANT_WALLET_SERVICE, true, false),
-    APB_PAYTM_WALLET(APB_PAYTM_MERCHANT_WALLET_SERVICE, true, false),
-    PHONEPE_WALLET(PHONEPE_MERCHANT_PAYMENT_SERVICE, true, false),
-    PHONEPE_AUTO_DEBIT(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE, true, false),
-    GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE, false, false),
-    APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, true, false),
-    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false);
+    AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE, false, false, false),
+    ITUNES(ITUNES_PAYMENT_SERVICE, false, false, false),
+    PAYU(PAYU_MERCHANT_PAYMENT_SERVICE, false, true, true),
+    PAYTM_WALLET(PAYTM_MERCHANT_WALLET_SERVICE, false, true, false),
+    APB_PAYTM_WALLET(APB_PAYTM_MERCHANT_WALLET_SERVICE, false, true, false),
+    PHONEPE_WALLET(PHONEPE_MERCHANT_PAYMENT_SERVICE, false, true, false),
+    PHONEPE_AUTO_DEBIT(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE, true, true, false),
+    GOOGLE_WALLET(GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE, false, false, false),
+    APB_GATEWAY(APB_MERCHANT_PAYMENT_SERVICE, false, true, false),
+    SE_BILLING(ACB_MERCHANT_PAYMENT_SERVICE, false, false, false);
 
     @Analysed(name = PAYMENT_GATEWAY)
     private final String code;
+    private final boolean isPreDebit;
     private final boolean isInternalRecurring;
     private final boolean isTrialRefundSupported;
 

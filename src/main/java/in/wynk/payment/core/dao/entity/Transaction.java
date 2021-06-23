@@ -7,9 +7,8 @@ import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-import java.util.*;
-
-import static in.wynk.payment.core.constant.PaymentConstants.ATTEMPT_SEQUENCE;
+import java.util.Calendar;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -72,8 +71,6 @@ public class Transaction {
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar consent;
 
-    private transient Map<String, Object> paymentMetaData;
-
     public PaymentEvent getType() {
         return PaymentEvent.valueOf(type);
     }
@@ -92,25 +89,6 @@ public class Transaction {
 
     public PaymentCode getPaymentChannel() {
         return PaymentCode.valueOf(paymentChannel);
-    }
-
-    public <R> R getValueFromPaymentMetaData(String key) {
-        return (R) getPaymentMetaData().get(key);
-    }
-
-    public <R> void putValueInPaymentMetaData(String key, R value) {
-        getPaymentMetaData().put(key, value);
-    }
-
-    public Map<String, Object> getPaymentMetaData() {
-        if (Objects.isNull(paymentMetaData)) {
-            paymentMetaData = new HashMap<>();
-        }
-        return paymentMetaData;
-    }
-
-    public int getAttemptSequence() {
-        return (int) getPaymentMetaData().getOrDefault(ATTEMPT_SEQUENCE, 0) ;
     }
 
 }

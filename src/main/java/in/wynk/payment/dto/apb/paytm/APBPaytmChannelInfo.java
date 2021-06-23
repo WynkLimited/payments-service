@@ -11,5 +11,4 @@ import lombok.*;
 public class APBPaytmChannelInfo {
     private String redirectionUrl;
     private String channel;
-    private boolean encodedParams;
 }

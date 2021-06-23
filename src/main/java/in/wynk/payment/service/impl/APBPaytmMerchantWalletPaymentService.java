@@ -321,9 +321,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                     .orderId(transaction.getIdStr())
                     .channel(CHANNEL_WEB)
                     .userInfo(APBPaytmUserInfo.builder().circleId(CIRCLE_ID).serviceInstance(wallet.getWalletUserId()).build())
-                    .channelInfo(APBPaytmChannelInfo.builder().redirectionUrl(null).encodedParams(false).build())
+                    .channelInfo(APBPaytmChannelInfo.builder().redirectionUrl(successPage + sid).channel(AUTH_TYPE_WEB_UNAUTH).build())
                     .paymentInfo(APBPaytmPaymentInfo.builder().lob(WYNK).paymentAmount(amountToCharge).paymentMode(WALLET).wallet(WALLET_PAYTM).currency(CURRENCY_INR).walletLoginId(wallet.getWalletUserId()).encryptedToken(wallet.getAccessToken()).build()).build();
-
             HttpHeaders headers = generateHeaders();
             HttpEntity<APBPaytmWalletPaymentRequest> requestEntity = new HttpEntity<APBPaytmWalletPaymentRequest>(walletPaymentRequest, headers);
             APBPaytmResponse paymentResponse = restTemplate.exchange(

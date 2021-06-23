@@ -101,12 +101,12 @@ public class PayUTestData {
                 .build();
     }
 
-    public static ChargingRequest buildOneTimeChargingRequest() {
-        return ChargingRequest.builder().paymentCode(PaymentCode.PAYU).planId(PayUDataConstant.ONE_TIME_PLAN_ID).build();
+    public static AbstractChargingRequest<?> buildOneTimeChargingRequest() {
+        return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).chargingDetails(AbstractChargingRequest.PlanS2SChargingDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build();
     }
 
-    public static ChargingRequest buildRecurringChargingRequest() {
-        return ChargingRequest.builder().paymentCode(PaymentCode.PAYU).planId(PayUDataConstant.RECURRING_PLAN_ID).build();
+    public static AbstractChargingRequest<?> buildRecurringChargingRequest() {
+        return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).chargingDetails(AbstractChargingRequest.PlanS2SChargingDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build();
     }
 
     public static CallbackRequest buildOneTimeCallbackRequest() {
@@ -316,14 +316,12 @@ public class PayUTestData {
     public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentCode code) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                                     .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
-                                    .paymentCode(code.getCode())
                                     .build();
     }
 
     public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentCode code) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .paymentCode(code.getCode())
                 .build();
     }
 

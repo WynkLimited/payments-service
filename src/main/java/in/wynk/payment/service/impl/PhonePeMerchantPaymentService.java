@@ -17,13 +17,13 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.phonepe.PhonePePaymentRefundRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
-import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.phonepe.PhonePeChargingResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -40,6 +40,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -105,10 +106,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         Transaction transaction = TransactionContext.get();
         ChargingStatusResponse chargingStatus = getStatusFromPhonePe(transaction);
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(chargingStatus).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(chargingStatus).build();
     }
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {

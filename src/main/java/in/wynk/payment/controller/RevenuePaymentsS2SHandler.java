@@ -5,9 +5,9 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.PaymentManager;
@@ -36,8 +36,13 @@ public class RevenuePaymentsS2SHandler {
     public ResponseEntity<?> doCharging(@RequestBody DefaultChargingRequest<AbstractChargingRequest.IWebChargingDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        WynkResponseEntity<AbstractChargingResponse> baseResponse = paymentManager.doCharging(request);
-        return baseResponse;
+        return paymentManager.doCharging(request);
+    }
+
+    @GetMapping("/v1/payment/status")
+    @AnalyseTransaction(name = "paymentStatus")
+    public ResponseEntity<?> status(@RequestBody ChargingTransactionStatusRequest request) {
+        return paymentManager.status(request);
     }
 
     @PostMapping("/v1/payment/refund")

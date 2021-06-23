@@ -1,13 +1,15 @@
 package in.wynk.payment.test.payu.testcases.status;
 
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.request.SubscribePlanAsyncRequest;
+import in.wynk.payment.dto.request.SyncTransactionRevisionRequest;
+import in.wynk.payment.dto.request.UnSubscribePlanAsyncRequest;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.service.*;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
@@ -30,7 +32,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
 import static in.wynk.common.constant.BaseConstants.TRANSACTION_ID;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = PaymentTestConfiguration.class)
@@ -65,12 +68,11 @@ public class PayUPaymentStatusTest {
         if (SessionContextHolder.<SessionDTO>get() == null || SessionContextHolder.<SessionDTO>get().getBody() == null) {
             SessionContextHolder.set(PayUTestData.initSession());
         }
-        Mockito.doNothing().when(recurringPaymentManager).scheduleRecurringPayment(any(Transaction.class), any(TransactionStatus.class), any(TransactionStatus.class));
+        Mockito.doNothing().when(recurringPaymentManager).scheduleRecurringPayment(any(SyncTransactionRevisionRequest.class));
         Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID).toString(), Mockito.any(PaymentEvent.class), Mockito.anyLong(), Mockito.anyLong());
-        Mockito.doNothing().when(subscriptionManager).subscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), anyString(), any(), any());
-        Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(anyInt(), anyString(), anyString(), anyString(), any(), any());
+        Mockito.doNothing().when(subscriptionManager).subscribePlanAsync(any(SubscribePlanAsyncRequest.class));
+        Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(any(UnSubscribePlanAsyncRequest.class));
 
-        Mockito.when(transactionManager.upsert(any())).thenReturn(null);
         Mockito.when(transactionManager.get(eq(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString()))).thenReturn(PayUTestData.initOneTimePaymentTransaction());
         Mockito.when(transactionManager.get(eq(PayUDataConstant.RECURRING_TRANSACTION_ID.toString()))).thenReturn(PayUTestData.initRecurringPaymentTransaction());
 
@@ -88,10 +90,10 @@ public class PayUPaymentStatusTest {
     public void handleOneTimePaymentStatusTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
         AbstractTransactionStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest(PaymentCode.PAYU);
-        BaseResponse<?> response = statusService.status(request);
-        Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
-        Assert.assertNotNull(response.getResponse().getBody());
-        Assert.assertEquals(((ChargingStatusResponse) response.getResponse().getBody()).getTransactionStatus(), TransactionStatus.SUCCESS);
+        WynkResponseEntity<?> response = statusService.status(request);
+        Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
+        Assert.assertNotNull(response.getBody());
+        Assert.assertEquals(((ChargingStatusResponse) response.getBody().getData()).getTransactionStatus(), TransactionStatus.SUCCESS);
     }
 
     @Test
@@ -99,10 +101,10 @@ public class PayUPaymentStatusTest {
     public void handleRecurringPaymentStatusTest() {
         SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
         AbstractTransactionStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest(PaymentCode.PAYU);
-        BaseResponse<?> response = statusService.status(request);
-        Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
-        Assert.assertNotNull(response.getResponse().getBody());
-        Assert.assertEquals(((ChargingStatusResponse) response.getResponse().getBody()).getTransactionStatus(), TransactionStatus.SUCCESS);
+        WynkResponseEntity<?> response = statusService.status(request);
+        Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
+        Assert.assertNotNull(response.getBody());
+        Assert.assertEquals(((ChargingStatusResponse) response.getBody().getData()).getTransactionStatus(), TransactionStatus.SUCCESS);
     }
 
 }

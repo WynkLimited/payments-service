@@ -13,7 +13,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -22,8 +21,14 @@ import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.apb.ApbStatus;
 import in.wynk.payment.dto.apb.ApbTransaction;
 import in.wynk.payment.dto.apb.ApbTransactionInquiryRequest;
-import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.response.*;
+import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.dto.response.AbstractCallbackResponse;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.apb.ApbChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
@@ -37,7 +42,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -57,7 +61,7 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
-public class APBMerchantPaymentService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IRenewalMerchantPaymentService {
+public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IRenewalMerchantPaymentService {
 
     @Value("${apb.callback.url}")
     private String CALLBACK_URL;
@@ -83,7 +87,8 @@ public class APBMerchantPaymentService implements IMerchantPaymentCallbackServic
     private final ITransactionManagerService transactionManager;
     private final RestTemplate restTemplate;
 
-    public APBMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager,@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template) {
+    public APBMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template) {
+        super(cachingService);
         this.gson = gson;
         this.restTemplate = template;
         this.cachingService = cachingService;
@@ -185,16 +190,11 @@ public class APBMerchantPaymentService implements IMerchantPaymentCallbackServic
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest chargingStatusRequest) {
-        Transaction transaction = transactionManager.get(chargingStatusRequest.getTransactionId());
-        ChargingStatusResponse status = ChargingStatusResponse.failure(chargingStatusRequest.getTransactionId(),transaction.getPlanId());
-        if (chargingStatusRequest.getMode() == StatusMode.SOURCE) {
-            this.fetchAPBTxnStatus(transaction);
-            status = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
-        } else if (chargingStatusRequest.getMode() == StatusMode.LOCAL && TransactionStatus.SUCCESS.equals(transaction.getStatus())) {
-            status = ChargingStatusResponse.success(transaction.getIdStr(), cachingService.validTillDate(chargingStatusRequest.getPlanId()), chargingStatusRequest.getPlanId());
-        }
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(status).build();
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+        Transaction transaction = transactionManager.get(transactionStatusRequest.getTransactionId());
+        this.fetchAPBTxnStatus(transaction);
+        ChargingStatusResponse status = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(status).build();
     }
 
 

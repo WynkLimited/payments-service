@@ -293,7 +293,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         Transaction transaction = TransactionContext.get();
         if (transactionStatusRequest instanceof ChargingTransactionReconciliationStatusRequest) {
             syncChargingTransactionFromSource(transaction);
@@ -316,7 +316,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(paymentCachingService.validTillDate(transaction.getPlanId()));
         }
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(responseBuilder.build()).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(responseBuilder.build()).build();
     }
 
     private void syncRefundTransactionFromSource(Transaction transaction, String orderId) {

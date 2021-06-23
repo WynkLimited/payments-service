@@ -1,4 +1,3 @@
 package in.wynk.payment.service;
 
-public interface IOTCMerchantWalletService extends IMerchantWalletService,
-                                                   IMerchantPaymentStatusService { }
+public interface IOTCMerchantWalletService extends IMerchantWalletService{ }

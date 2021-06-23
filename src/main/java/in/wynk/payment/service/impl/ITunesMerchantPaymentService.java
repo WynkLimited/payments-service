@@ -66,7 +66,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IMerchantPaymentCallbackService<ItunesCallbackResponse, CallbackRequest>, IReceiptDetailService {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentCallbackService<ItunesCallbackResponse, CallbackRequest>, IReceiptDetailService {
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -409,9 +409,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromItunesSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId(), transactionStatusRequest.getPlanId());
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
     private ChargingStatusResponse fetchChargingStatusFromDataSource(Transaction transaction, int planId) {

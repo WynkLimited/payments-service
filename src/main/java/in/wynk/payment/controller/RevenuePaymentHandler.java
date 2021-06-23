@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -40,8 +41,7 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<?> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.doCharging(request);
-        return baseResponse.getResponse();
+        return paymentManager.doCharging(request);
     }
 
     @GetMapping("/status/{sid}")
@@ -49,11 +49,8 @@ public class RevenuePaymentHandler {
     @AnalyseTransaction(name = "paymentStatus")
     public ResponseEntity<?> status(@PathVariable String sid) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-        AbstractTransactionStatusRequest request = ChargingTransactionStatusRequest.builder().transactionId(sessionDTO.get(TRANSACTION_ID)).paymentCode(paymentCode.getCode()).build();
-        BaseResponse<?> baseResponse = paymentManager.status(request);
-        return baseResponse.getResponse();
+        AbstractTransactionStatusRequest request = ChargingTransactionStatusRequest.builder().transactionId(sessionDTO.get(TRANSACTION_ID)).build();
+        return paymentManager.status(request);
     }
 
     @PostMapping("/verify/{sid}")
@@ -73,25 +70,23 @@ public class RevenuePaymentHandler {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
         final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
-        final CallbackRequest request = CallbackRequest.builder().body(payload).transactionId(transactionId).build();
+        final CallbackRequestWrapper request = CallbackRequestWrapper.builder().body(payload).transactionId(transactionId).paymentCode(paymentCode).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode);
-        return baseResponse.getResponse();
+        return paymentManager.handleCallback(request);
     }
 
     @GetMapping("/callback/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
+    public WynkResponseEntity<?> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
-        CallbackRequest request = CallbackRequest.builder().body(payload).transactionId(transactionId).build();
+        CallbackRequestWrapper request = CallbackRequestWrapper.builder().body(payload).transactionId(transactionId).paymentCode(paymentCode).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode);
-        return baseResponse.getResponse();
+        return paymentManager.handleCallback(request);
     }
 
     @PostMapping(path = "/callback/{sid}", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -101,11 +96,10 @@ public class RevenuePaymentHandler {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
         final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
-        final CallbackRequest request = CallbackRequest.builder().body(payload).transactionId(transactionId).build();
+        final CallbackRequestWrapper request = CallbackRequestWrapper.builder().body(payload).transactionId(transactionId).paymentCode(paymentCode).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        BaseResponse<?> baseResponse = paymentManager.handleCallback(request, paymentCode);
-        return baseResponse.getResponse();
+        return paymentManager.handleCallback(request);
     }
 
 }

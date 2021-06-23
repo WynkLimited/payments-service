@@ -81,8 +81,6 @@ public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.
     @Getter
     @SuperBuilder
     @AnalysedEntity
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class PlanS2SChargingDetails extends AbstractPlanChargingDetails implements IS2SChargingDetails {
         @Analysed
         private String uid;
@@ -98,8 +96,6 @@ public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.
     @Getter
     @SuperBuilder
     @AnalysedEntity
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class PointS2SChargingDetails extends AbstractPointChargingDetails implements IS2SChargingDetails {
 
         @Analysed
@@ -116,8 +112,6 @@ public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.
     @Getter
     @SuperBuilder
     @AnalysedEntity
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class PlanWebChargingDetails extends AbstractPlanChargingDetails implements IWebChargingDetails {
 
         @Override
@@ -129,8 +123,6 @@ public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.
     @Getter
     @SuperBuilder
     @AnalysedEntity
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class PointWebChargingDetails extends AbstractPointChargingDetails implements IWebChargingDetails {
 
         @Override

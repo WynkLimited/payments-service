@@ -1,13 +1,13 @@
 package in.wynk.payment.test;
 
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
-import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -64,7 +64,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     }
 
     private static AbstractTransactionStatusRequest dummyLocalChargingStatusRequest(PaymentCode code) {
-        return ChargingTransactionStatusRequest.builder().transactionId(TXN_ID).paymentCode(code.getCode()).build();
+        return ChargingTransactionStatusRequest.builder().transactionId(TXN_ID).build();
     }
 
     @Before
@@ -75,7 +75,7 @@ public class ApbPaymentsTest extends PaymentsTest {
 
     @Test
     public void apbChargingTest() {
-        BaseResponse<?> response = doChargingTest(CODE);
+        WynkResponseEntity<?> response = doChargingTest(CODE);
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();
     }
@@ -84,52 +84,52 @@ public class ApbPaymentsTest extends PaymentsTest {
     public void apbCallbackFailureTest() {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         sessionDTO.put(TRANSACTION_ID, TXN_ID);
-        BaseResponse<?> response = callbackTest(CODE, dummyApbFailureCallback());
+        WynkResponseEntity<?> response = callbackTest(CODE, dummyApbFailureCallback());
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();
     }
 
     @Test
     public void apbLocalFailedStatusTest(){
-        BaseResponse<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(CODE));
+        WynkResponseEntity<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(CODE));
         System.out.println(response);
-        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
+        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody().getData();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
     @Test
     public void apbLocalSuccessStatusTest(PaymentCode code) {
-        BaseResponse<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(code));
+        WynkResponseEntity<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(code));
         System.out.println(response);
-        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
+        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody().getData();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
     @Test
     public void apbSourceStatusFailureTest(){
-        BaseResponse<?> response = statusTest(CODE, dummyChargingStatusSourceRequest(CODE));
+        WynkResponseEntity<?> response = statusTest(CODE, dummyChargingStatusSourceRequest(CODE));
         System.out.println(response);
-        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
+        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody().getData();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
     @Test
     public void apbSourceStatusSuccessTest() {
-        BaseResponse<?> response = statusTest(CODE, dummyChargingStatusSourceRequest(CODE));
+        WynkResponseEntity<?> response = statusTest(CODE, dummyChargingStatusSourceRequest(CODE));
         System.out.println(response);
-        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody();
+        ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody().getData();
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
     private AbstractTransactionStatusRequest dummyChargingStatusSourceRequest(PaymentCode code) {
-        return ChargingTransactionReconciliationStatusRequest.builder().paymentCode(code.getCode()).transactionId(TXN_ID).build();
+        return ChargingTransactionReconciliationStatusRequest.builder().transactionId(TXN_ID).build();
     }
 
     @Test
     public void apbCallbackSuccessTest() {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         sessionDTO.put(TRANSACTION_ID, TXN_ID);
-        BaseResponse<?> response = callbackTest(CODE, dummyApbSuccessCallback());
+        WynkResponseEntity<?> response = callbackTest(CODE, dummyApbSuccessCallback());
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();
     }

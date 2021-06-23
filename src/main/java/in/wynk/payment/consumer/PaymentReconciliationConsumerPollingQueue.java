@@ -58,13 +58,11 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
             transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder()
                     .extTxnId(message.getExtTxnId())
                     .transactionId(message.getTransactionId())
-                    .paymentCode(message.getPaymentCode().getCode())
                     .build();
         } else {
             transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder()
                     .extTxnId(message.getExtTxnId())
                     .transactionId(message.getTransactionId())
-                    .paymentCode(message.getPaymentCode().getCode())
                     .build();
         }
         paymentManager.status(transactionStatusRequest);

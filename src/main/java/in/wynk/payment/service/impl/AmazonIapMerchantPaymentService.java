@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
@@ -26,7 +27,6 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.IMerchantPaymentStatusService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +49,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService {
 
     private final RestTemplate restTemplate;
     @Value("${payment.success.page}")
@@ -186,9 +186,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
 }

@@ -1,6 +1,7 @@
 package in.wynk.payment.service;
 
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -10,11 +11,12 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
-import in.wynk.payment.dto.response.*;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.FailureChargingStatusResponse;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
-import org.springframework.http.HttpStatus;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,7 +26,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
-public abstract class AbstractMerchantPaymentStatusService implements IMerchantPaymentStatusService {
+public abstract class AbstractMerchantPaymentStatusService implements IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> {
 
     private final PaymentCachingService cachingService;
 
@@ -33,7 +35,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest transactionStatusRequest) {
         if (AbstractTransactionReconciliationStatusRequest.class.isAssignableFrom(transactionStatusRequest.getClass())) {
             return status((AbstractTransactionReconciliationStatusRequest) transactionStatusRequest);
         } else if (ChargingTransactionStatusRequest.class.isAssignableFrom(transactionStatusRequest.getClass())) {
@@ -43,9 +45,9 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         }
     }
 
-    public abstract BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest);
+    public abstract WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest);
 
-    public BaseResponse<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         Transaction transaction = TransactionContext.get();
         TransactionStatus txnStatus = transaction.getStatus();
         if (txnStatus == TransactionStatus.FAILURE) {
@@ -53,17 +55,17 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
             return failure(ErrorCode.FAIL002,FAIL002_ERROR_MAP, transaction, request);
         } else {
-            ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
+            ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
             if (txnStatus == TransactionStatus.SUCCESS) {
                 builder.packDetails(getPackDetails(transaction, request));
             }
-            return BaseResponse. < AbstractChargingStatusResponse > builder().body(builder.build()).status(HttpStatus.OK).build();
+            return WynkResponseEntity. < AbstractChargingStatusResponse > builder().data(builder.build()).build();
         }
     }
 
-    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode, Map<String,String> errorMap,Transaction transaction,ChargingTransactionStatusRequest request) {
+    private WynkResponseEntity<AbstractChargingStatusResponse> failure(ErrorCode errorCode, Map<String,String> errorMap,Transaction transaction,ChargingTransactionStatusRequest request) {
         FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(errorCode, errorMap.get(SUBTITLE_TEXT),errorMap.get(BUTTON_TEXT),Boolean.parseBoolean(errorMap.get(BUTTON_ARROW)), transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus());
-        return BaseResponse.<AbstractChargingStatusResponse>builder().body(failureChargingStatusResponse).status(HttpStatus.OK).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(failureChargingStatusResponse).build();
     }
 
     private AbstractPack getPackDetails(Transaction transaction,ChargingTransactionStatusRequest request) {

@@ -7,18 +7,22 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingResponse;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.service.IMerchantPaymentCallbackService;
-import in.wynk.payment.service.IMerchantPaymentChargingService;
-import in.wynk.payment.service.IRenewalMerchantPaymentService;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
+import in.wynk.payment.service.*;
 import org.springframework.stereotype.Service;
 
 @Service(BeanConstant.ACB_MERCHANT_PAYMENT_SERVICE)
-public class ACBMerchantPaymentService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IRenewalMerchantPaymentService {
+public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IRenewalMerchantPaymentService {
 
+    protected ACBMerchantPaymentService(PaymentCachingService cachingService) {
+        super(cachingService);
+    }
 
     @Override
     public WynkResponseEntity<AbstractChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
@@ -32,7 +36,7 @@ public class ACBMerchantPaymentService implements IMerchantPaymentCallbackServic
     }
 
     @Override
-    public BaseResponse<?> status(AbstractTransactionStatusRequest chargingStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
 

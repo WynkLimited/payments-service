@@ -11,6 +11,7 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -24,16 +25,12 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/wynk/v1/payment")
 public class RevenuePaymentHandler {
 
-    private final PaymentManager paymentManager;
     private final Gson gson;
-
-    public RevenuePaymentHandler(PaymentManager paymentManager, Gson gson) {
-        this.paymentManager = paymentManager;
-        this.gson = gson;
-    }
+    private final PaymentManager paymentManager;
 
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")

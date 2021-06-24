@@ -8,15 +8,15 @@ import in.wynk.payment.dto.response.PaymentDetailsWrapper;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.session.aspect.advice.ManageSession;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/wynk/v1/payment")
 public class PaymentOptionsController {
 
-    @Autowired
-    private IPaymentOptionService paymentMethodService;
+    private final IPaymentOptionService paymentMethodService;
 
     @GetMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")

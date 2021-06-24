@@ -13,6 +13,7 @@ import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -20,16 +21,12 @@ import org.springframework.web.bind.annotation.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/wynk/s2s")
 public class RevenuePaymentsS2SHandler {
 
     private final PaymentManager paymentManager;
     private final IDummySessionGenerator dummySessionGenerator;
-
-    public RevenuePaymentsS2SHandler(PaymentManager paymentManager, IDummySessionGenerator dummySessionGenerator) {
-        this.paymentManager = paymentManager;
-        this.dummySessionGenerator = dummySessionGenerator;
-    }
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")

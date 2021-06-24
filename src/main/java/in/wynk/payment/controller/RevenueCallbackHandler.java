@@ -6,7 +6,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.service.PaymentManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,13 +15,14 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("wynk/v1/callback")
 public class RevenueCallbackHandler {
 
-    @Autowired
-    private PaymentManager paymentManager;
     @Value("${spring.application.name}")
     private String applicationAlias;
+
+    private final PaymentManager paymentManager;
 
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")

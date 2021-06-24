@@ -274,7 +274,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         PhonePeAutoDebitAddMoneyRequest addMoneyRequest = (PhonePeAutoDebitAddMoneyRequest) request;
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
-        final long finalAmountToAdd=Double.valueOf(request.getAmountToCredit()*100).longValue();
+        final Transaction transaction = TransactionContext.get();
+        final long finalAmountToAdd = Double.valueOf(transaction.getAmount() * 100).longValue();
         return new BaseResponse<>(addMoney(wallet.getAccessToken(), finalAmountToAdd, addMoneyRequest.getPhonePeVersionCode(),wallet.getId().getDeviceId()), HttpStatus.OK, null);
     }
 

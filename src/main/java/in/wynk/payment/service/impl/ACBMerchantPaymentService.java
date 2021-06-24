@@ -18,7 +18,7 @@ import in.wynk.payment.service.*;
 import org.springframework.stereotype.Service;
 
 @Service(BeanConstant.ACB_MERCHANT_PAYMENT_SERVICE)
-public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IRenewalMerchantPaymentService {
+public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<Void, PaymentRenewalChargingRequest> {
 
     protected ACBMerchantPaymentService(PaymentCachingService cachingService) {
         super(cachingService);
@@ -30,9 +30,10 @@ public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     }
 
     @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+        return WynkResponseEntity.<Void>builder().build();
     }
 
     @Override

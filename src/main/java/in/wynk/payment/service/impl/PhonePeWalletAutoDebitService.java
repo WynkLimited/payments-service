@@ -58,7 +58,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.PHONEPE_OTP_TOKEN;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
-public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PhonePeCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PhonePeAutoDebitChargingResponse, PhonePeChargingRequest<?>>, IRenewalMerchantWalletService, IUserPreferredPaymentService {
+public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PhonePeCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PhonePeAutoDebitChargingResponse, PhonePeChargingRequest<?>>, IOTCMerchantWalletService, IUserPreferredPaymentService {
 
 
     @Value("${payment.encKey}")
@@ -474,11 +474,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                     sessionDTO.<Integer>get(BUILD_NO))
                     .build()).build();
         }
-    }
-
-    @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-
     }
 
     @Override

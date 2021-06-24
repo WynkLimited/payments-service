@@ -54,7 +54,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
-public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IOTCMerchantPaymentService, IMerchantPaymentRefundService<PhonePePaymentRefundResponse, PhonePePaymentRefundRequest> {
+public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentRefundService<PhonePePaymentRefundResponse, PhonePePaymentRefundRequest> {
 
     private static final String DEBIT_API = "/v4/debit";
     @Value("${payment.merchant.phonepe.id}")

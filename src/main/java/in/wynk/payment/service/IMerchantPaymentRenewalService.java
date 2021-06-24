@@ -1,10 +1,11 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 
-public interface IMerchantPaymentRenewalService {
+public interface IMerchantPaymentRenewalService<R, T extends PaymentRenewalChargingRequest> {
 
-    void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest);
+    WynkResponseEntity<R> doRenewal(T paymentRenewalChargingRequest);
 
     default boolean supportsRenewalReconciliation(){
         return true;

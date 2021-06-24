@@ -55,7 +55,7 @@ import static in.wynk.payment.dto.paytm.PayTmConstants.PAYTM_CHECKSUMHASH;
 
 @Slf4j
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
-public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>> ,IRenewalMerchantWalletService, IUserPreferredPaymentService, IMerchantPaymentRefundService<PaytmPaymentRefundResponse, PaytmPaymentRefundRequest> {
+public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>>, IUserPreferredPaymentService, IOTCMerchantWalletService , IMerchantPaymentRefundService<PaytmPaymentRefundResponse, PaytmPaymentRefundRequest> {
 
     @Value("${paytm.native.merchantId}")
     private String MID;
@@ -248,9 +248,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             return responseBuilder.data(refundResponseBuilder.build()).build();
         }
     }
-
-    @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {}
 
     private PaytmChargingResponse withdrawFromPaytm(Transaction transaction, String accessToken) {
         MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());

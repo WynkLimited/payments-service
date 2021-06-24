@@ -61,7 +61,7 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
-public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IRenewalMerchantPaymentService {
+public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<Void, PaymentRenewalChargingRequest> {
 
     @Value("${apb.callback.url}")
     private String CALLBACK_URL;
@@ -253,7 +253,7 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     }
 
     @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         throw new UnsupportedOperationException("Unsupported operation - Renewal is not supported by APB");
     }
 

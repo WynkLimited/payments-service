@@ -69,7 +69,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IRenewalMerchantPaymentService,IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentRenewalService<Void, PaymentRenewalChargingRequest>,IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -130,7 +130,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(paymentRenewalChargingRequest.getId());
         if (merchantTransaction == null) {
@@ -181,6 +181,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw e;
         }
+        return WynkResponseEntity.<Void>builder().build();
     }
 
     @Override

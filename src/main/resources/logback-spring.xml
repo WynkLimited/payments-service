@@ -125,6 +125,10 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
+    <logger name="paymentRenewalMessageThresholdExceedEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <logger name="recurringPaymentEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>

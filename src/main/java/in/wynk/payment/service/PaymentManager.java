@@ -46,7 +46,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 
 @Slf4j
 @Service
-public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> {
+public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -213,7 +213,8 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final AbstractTransactionInitRequest transactionInitRequest = S2STransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(paymentCode).clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
-        final IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
+        final IMerchantPaymentRenewalService<?, PaymentRenewalChargingRequest> merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentRenewalService<?, PaymentRenewalChargingRequest>>() {
+        });
         try {
             merchantPaymentRenewalService.doRenewal(request);
         } finally {
@@ -242,11 +243,12 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         transactionManager.revision(MigrationTransactionRevisionRequest.builder().nextChargingDate(nextChargingDate).transaction(transaction).existingTransactionStatus(TransactionStatus.INPROGRESS).finalTransactionStatus(transaction.getStatus()).build());
     }
 
-    public BaseResponse addMoney(WalletAddMoneyRequest<?> request) {
+    public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> request) {
         final PaymentCode paymentCode = request.getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request));
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
-        return BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantWalletService.class).addMoney(request);
+        return BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {
+        }).topUp(request);
     }
 
     private void exhaustCouponIfApplicable(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {

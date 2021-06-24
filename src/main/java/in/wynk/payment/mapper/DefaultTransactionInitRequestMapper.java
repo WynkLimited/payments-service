@@ -17,7 +17,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         throw new WynkRuntimeException("Method is not implemented!");
     }
 
-    public static AbstractTransactionInitRequest from(WalletAddMoneyRequest<?> request) {
+    public static AbstractTransactionInitRequest from(WalletTopUpRequest<?> request) {
         if (AbstractChargingRequest.IWebChargingDetails.class.isAssignableFrom(request.getChargingDetails().getClass())) {
             return SessionScopedTransactionInitRequestMapper.from(request);
         } else if (AbstractChargingRequest.IS2SChargingDetails.class.isAssignableFrom(request.getChargingDetails().getClass())) {

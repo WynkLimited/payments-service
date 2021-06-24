@@ -2,7 +2,9 @@ package in.wynk.payment.test;
 
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.service.IRenewalMerchantWalletService;
+import in.wynk.payment.dto.request.WalletBalanceRequest;
+import in.wynk.payment.dto.response.UserWalletDetails;
+import in.wynk.payment.service.IWalletBalanceService;
 import in.wynk.payment.test.utils.PaymentTestUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -22,7 +24,7 @@ public class RenewalWalletTest {
 
     @Autowired
     @Qualifier(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
-    private IRenewalMerchantWalletService renewalMerchantWalletService;
+    private IWalletBalanceService<UserWalletDetails, WalletBalanceRequest> renewalMerchantWalletService;
 
     @Before
     public void setup(){
@@ -34,7 +36,7 @@ public class RenewalWalletTest {
 
     @Test
     public void testWalletBalance(){
-        renewalMerchantWalletService.balance(606);
+        renewalMerchantWalletService.balance(WalletBalanceRequest.builder().planId(606).build());
     }
 
 }

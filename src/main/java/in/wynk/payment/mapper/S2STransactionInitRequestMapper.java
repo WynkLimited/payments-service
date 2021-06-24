@@ -8,7 +8,6 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.IPricingManager;
@@ -22,7 +21,7 @@ public class S2STransactionInitRequestMapper implements IObjectMapper {
         return initRequest;
     }
 
-    public static AbstractTransactionInitRequest from(WalletAddMoneyRequest<?> request) {
+    public static AbstractTransactionInitRequest from(WalletTopUpRequest<?> request) {
         AbstractTransactionInitRequest initRequest =  AbstractChargingRequest.AbstractPointChargingDetails.class.isAssignableFrom(request.getChargingDetails().getClass()) ? pointInit(request.getPaymentCode(), (AbstractChargingRequest.PointS2SChargingDetails) request.getChargingDetails()) : planInit(request.getPaymentCode(), (AbstractChargingRequest.PlanS2SChargingDetails) request.getChargingDetails());
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;

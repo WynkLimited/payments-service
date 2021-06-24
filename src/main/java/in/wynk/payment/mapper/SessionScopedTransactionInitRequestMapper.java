@@ -21,7 +21,7 @@ public class SessionScopedTransactionInitRequestMapper implements IObjectMapper 
         return initRequest;
     }
 
-    public static AbstractTransactionInitRequest from(WalletAddMoneyRequest<?> request) {
+    public static AbstractTransactionInitRequest from(WalletTopUpRequest<?> request) {
         AbstractTransactionInitRequest initRequest = AbstractChargingRequest.PlanWebChargingDetails.class.isAssignableFrom(request.getChargingDetails().getClass()) ? planInit(request.getPaymentCode(), (AbstractChargingRequest.PlanWebChargingDetails) request.getChargingDetails()): pointInit(request.getPaymentCode(), (AbstractChargingRequest.PointWebChargingDetails) request.getChargingDetails());
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;

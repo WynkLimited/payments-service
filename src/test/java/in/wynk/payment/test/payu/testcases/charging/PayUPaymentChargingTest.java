@@ -75,7 +75,7 @@ public class PayUPaymentChargingTest {
     public void doChargingForOneTimePlan() {
         TransactionContext.set(PayUTestData.initOneTimePaymentTransaction());
         AbstractChargingRequest<?> request = PayUTestData.buildOneTimeChargingRequest();
-        WynkResponseEntity<?> response = chargingService.doCharging(request);
+        WynkResponseEntity<?> response = chargingService.charge(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getBody());
         Assert.assertTrue(((Map<String, String>) response.getBody()).size() > 0);
@@ -86,7 +86,7 @@ public class PayUPaymentChargingTest {
     public void doChargingForRecurringPlan() {
         TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
         AbstractChargingRequest<?> request = PayUTestData.buildRecurringChargingRequest();
-        WynkResponseEntity<?> response = chargingService.doCharging(request);
+        WynkResponseEntity<?> response = chargingService.charge(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
         Assert.assertNotNull(response.getBody());
         Assert.assertTrue(((Map<String, String>) response.getBody()).size() > 0);
@@ -97,7 +97,7 @@ public class PayUPaymentChargingTest {
     public void testSiDetails() {
         TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
         AbstractChargingRequest<?> request = PayUTestData.buildRecurringChargingRequest();
-        WynkResponseEntity<?> response = chargingService.doCharging(request);
+        WynkResponseEntity<?> response = chargingService.charge(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
     }
 

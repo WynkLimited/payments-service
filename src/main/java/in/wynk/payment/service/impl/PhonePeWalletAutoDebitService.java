@@ -389,7 +389,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public WynkResponseEntity<PhonePeAutoDebitChargingResponse> doCharging(PhonePeChargingRequest<?> payload) {
+    public WynkResponseEntity<PhonePeAutoDebitChargingResponse> charge(PhonePeChargingRequest<?> payload) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         PhonePeAutoDebitChargingResponse.PhonePeAutoDebitChargingResponseBuilder<?,?> chargingResponseBuilder = PhonePeAutoDebitChargingResponse.builder();

@@ -115,7 +115,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public WynkResponseEntity<PayUChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
+    public WynkResponseEntity<PayUChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
         final WynkResponseEntity.WynkResponseEntityBuilder<PayUChargingResponse> builder = WynkResponseEntity.builder();
         try {
             final Map<String, String> payUPayload = getPayload(TransactionContext.get());

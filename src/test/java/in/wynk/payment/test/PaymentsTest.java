@@ -61,7 +61,7 @@ public class PaymentsTest {
     protected WynkResponseEntity<?> doChargingTest(PaymentCode paymentCode) {
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         AbstractChargingRequest<?> request = DefaultChargingRequest.builder().paymentCode(paymentCode).chargingDetails(AbstractChargingRequest.PlanS2SChargingDetails.builder().planId(PLAN_ID).build()).build();
-        return chargingService.doCharging(request);
+        return chargingService.charge(request);
     }
 
     protected WynkResponseEntity<?> callbackTest(PaymentCode paymentCode, CallbackRequest request) {

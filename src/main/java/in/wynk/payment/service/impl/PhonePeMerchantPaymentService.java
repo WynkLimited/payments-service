@@ -89,7 +89,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public WynkResponseEntity<PhonePeChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
+    public WynkResponseEntity<PhonePeChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
             final double finalPlanAmount = transaction.getAmount();

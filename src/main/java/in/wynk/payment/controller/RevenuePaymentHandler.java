@@ -41,7 +41,7 @@ public class RevenuePaymentHandler {
     public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<?> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        return paymentManager.doCharging(request);
+        return paymentManager.charge(request);
     }
 
     @GetMapping("/status/{sid}")

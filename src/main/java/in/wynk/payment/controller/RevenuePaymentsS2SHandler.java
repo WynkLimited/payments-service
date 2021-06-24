@@ -36,7 +36,7 @@ public class RevenuePaymentsS2SHandler {
     public ResponseEntity<?> doCharging(@RequestBody DefaultChargingRequest<AbstractChargingRequest.IWebChargingDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
-        return paymentManager.doCharging(request);
+        return paymentManager.charge(request);
     }
 
     @GetMapping("/v1/payment/status")

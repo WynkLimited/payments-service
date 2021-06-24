@@ -148,7 +148,7 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     }
 
     @Override
-    public WynkResponseEntity<AbstractChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
+    public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
         Transaction transaction = TransactionContext.get();
         String apbRedirectURL = generateApbRedirectURL(transaction);
         return WynkResponseUtils.redirectResponse(apbRedirectURL);

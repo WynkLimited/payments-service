@@ -25,7 +25,7 @@ public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     }
 
     @Override
-    public WynkResponseEntity<AbstractChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
+    public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
 

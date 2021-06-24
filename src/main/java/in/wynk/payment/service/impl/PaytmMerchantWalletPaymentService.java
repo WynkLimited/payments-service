@@ -147,14 +147,14 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             throw new RuntimeException("Failed to add money to wallet");
         }
         log.info("Successfully added money to wallet. Now withdrawing amount");
-        final WynkResponseEntity<PaytmAutoDebitChargingResponse> baseResponse = doCharging(null);
+        final WynkResponseEntity<PaytmAutoDebitChargingResponse> baseResponse = charge(null);
         final PaytmAutoDebitChargingResponse chargingResponse = baseResponse.getBody().getData();
         final PaytmCallbackResponse callbackResponse = PaytmCallbackResponse.builder().redirectUrl(chargingResponse.getRedirectUrl()).info(chargingResponse.getInfo()).deficit(chargingResponse.isDeficit()).build();
         return WynkResponseEntity.<PaytmCallbackResponse>builder().success(baseResponse.getBody().isSuccess()).status(baseResponse.getStatus()).headers(baseResponse.getHeaders()).error(baseResponse.getBody().getError()).data(callbackResponse).build();
     }
 
     @Override
-    public WynkResponseEntity<PaytmAutoDebitChargingResponse> doCharging(AbstractChargingRequest<?> chargingRequest) {
+    public WynkResponseEntity<PaytmAutoDebitChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         Transaction transaction = TransactionContext.get();
         String redirectUrl = null;

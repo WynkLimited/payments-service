@@ -109,11 +109,12 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
             });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+                long today = System.currentTimeMillis();
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                if (renewalPlanEligibilityResponse.getDeferredUntil() > hour * 60 * 60 * 1000) {
-                    AnalyticService.update("furtherDefer", renewalPlanEligibilityResponse.getDeferredUntil());
-                    long today = System.currentTimeMillis();
-                    recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, renewalPlanEligibilityResponse.getDeferredUntil()-today);
+                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil()-today;
+                if (furtherDefer > hour * 60 * 60 * 1000) {
+                    AnalyticService.update("furtherDefer", furtherDefer);
+                    recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }
             }

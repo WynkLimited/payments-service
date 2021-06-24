@@ -12,9 +12,5 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public class APBPaytmRequest {
     private String walletLoginId;
-    //private String loginId;
     private String wallet;
-    private String authType;
-    private String channel;
-    private String encryptedToken;
 }

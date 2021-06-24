@@ -23,10 +23,14 @@ public interface APBPaytmConstants {
     String ABP_PAYTM_ACCEPT="application/json";
 
     String AUTH_TYPE_WEB_UNAUTH="WEB_UNAUTH";
+    String AUTH_TYPE_UN_AUTH="UN_AUTH";
+
     String CHANNEL_WEB="WEB";
     int CIRCLE_ID=-1;
     String WALLET_PAYTM="PAYTM";
     String PAYMENT_MODE_WALLET="WALLET";
     String CURRENCY_INR="INR";
 
+    String ABP_PAYTM_PAYMENT_SUCCESS="PAYMENT_SUCCESS";
+    String ABP_PAYTM_PAYMENT_PENDING="PAYMENT_PENDING";
 }

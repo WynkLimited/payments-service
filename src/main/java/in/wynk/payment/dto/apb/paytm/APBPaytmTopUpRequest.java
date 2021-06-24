@@ -7,10 +7,11 @@ import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @SuperBuilder
 @Getter
-public class APBPaytmTopUpRequest extends APBPaytmRequest{
+public class APBPaytmTopUpRequest extends APBPaytmAuthAndChannel{
     private String orderId;
     private String encryptedToken;
     private APBTopUpInfo topUpInfo;
     private APBPaytmUserInfo userInfo;
+
 
 }

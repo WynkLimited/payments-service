@@ -26,4 +26,8 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         }
     }
 
+    public static AbstractTransactionInitRequest from(MigrationTransactionRequest request) {
+        return S2STransactionInitRequestMapper.from(request);
+    }
+
 }

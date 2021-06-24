@@ -11,7 +11,6 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
-import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -39,10 +38,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
@@ -245,30 +241,15 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
-    public void addToPaymentRenewalMigration(PaymentRecurringSchedulingMessage message) {
-        final int planId = message.getPlanId();
+    public void addToPaymentRenewalMigration(MigrationTransactionRequest request) {
         final Calendar nextChargingDate = Calendar.getInstance();
-        final double amount = cachingService.getPlan(planId).getFinalPrice();
-        final PaymentCode paymentCode = PaymentCode.getFromCode(message.getPaymentCode());
-
-        nextChargingDate.setTime(message.getNextChargingDate());
-
-        // TODO:: revision is required
-        Transaction transaction = transactionManager.init(PlanTransactionInitRequest.builder()
-                .uid(message.getUid())
-                .msisdn(message.getMsisdn())
-                .clientAlias(message.getClientAlias())
-                .planId(planId)
-                .amount(amount)
-                .paymentCode(paymentCode)
-                .event(message.getEvent())
-                .autoRenewOpted(Boolean.TRUE)
-                .status(TransactionStatus.MIGRATED.getValue())
-                .build());
-        final IMerchantTransactionDetailsService merchantTransactionDetailsService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantTransactionDetailsService.class);
-        message.getPaymentMetaData().put(MIGRATED, Boolean.TRUE.toString());
-        message.getPaymentMetaData().put(TXN_ID, transaction.getIdStr());
-        final MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(message.getPaymentMetaData());
+        final Map<String, String> paymentMetaData = request.getPaymentMetaData();
+        nextChargingDate.setTime(request.getNextChargingDate());
+        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request));
+        paymentMetaData.put(MIGRATED, Boolean.TRUE.toString());
+        paymentMetaData.put(TXN_ID, transaction.getIdStr());
+        final IMerchantTransactionDetailsService merchantTransactionDetailsService = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IMerchantTransactionDetailsService.class);
+        final MerchantTransaction merchantTransaction = merchantTransactionDetailsService.getMerchantTransactionDetails(paymentMetaData);
         merchantTransactionService.upsert(merchantTransaction);
         transactionManager.revision(MigrationTransactionRevisionRequest.builder().nextChargingDate(nextChargingDate).transaction(transaction).existingTransactionStatus(TransactionStatus.INPROGRESS).finalTransactionStatus(transaction.getStatus()).build());
     }

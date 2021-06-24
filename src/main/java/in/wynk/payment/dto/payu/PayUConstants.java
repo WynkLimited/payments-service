@@ -17,6 +17,7 @@ public interface PayUConstants {
     String PAYU_CARD_NUMBER = "card_no";
     String PAYU_CUSTOMER_EMAIL = "email";
     String PAYU_REQUEST_ID = "requestId";
+    String PAYU_DEBIT_DATE = "debitDate";
     String PAYU_CARD_TOKEN = "card_token";
     String PAYU_CUSTOMER_MSISDN = "phone";
     String PAYU_FREE_TRIAL = "free_trial";
@@ -41,4 +42,5 @@ public interface PayUConstants {
     String PAYU_IS_FALLBACK_ATTEMPT = "isFallbackAttempt";
     String PAYU_REFUND_TRANSACTION_TYPE = "REFUND_TYPE";
     String PAYU_CHARGING_TRANSACTION_TYPE = "CHARGE_TYPE";
+    String PAYU_INVOICE_DISPLAY_NUMBER = "invoiceDisplayNumber";
 }

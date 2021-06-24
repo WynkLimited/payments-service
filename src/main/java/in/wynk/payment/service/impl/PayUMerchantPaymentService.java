@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -17,7 +16,10 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.*;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.CardDetails;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -29,7 +31,6 @@ import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
-import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.dto.response.payu.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
@@ -61,15 +62,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService, IPreDebitNotificationService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -739,6 +740,30 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }
         return BaseResponse.builder().body(refundResponseBuilder.build()).build();
+    }
+
+    @Override
+    public void sendPreDebitNotification(PreDebitNotificationRequest request) {
+        try {
+            LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
+            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(request.getTransactionId());
+            orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
+            orderedMap.put(PAYU_REQUEST_ID, request.getTransactionId());
+            orderedMap.put(PAYU_DEBIT_DATE, request.getDate());
+            orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, request.getTransactionId());
+            orderedMap.put(PAYU_TRANSACTION_AMOUNT, cachingService.getPlan(request.getPlanId()).getFinalPrice());
+            String variable = gson.toJson(orderedMap);
+            MultiValueMap<String, String> requestMap = buildPayUInfoRequest(PayUCommand.PRE_DEBIT_SI.getCode(), variable);
+            PayUPreDebitNotificationResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
+            });
+            if (response.getStatus()==1) {
+                log.info("all good");
+            } else {
+                log.error("bad");
+            }
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PAY111);
+        }
     }
 
 }

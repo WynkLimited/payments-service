@@ -9,9 +9,11 @@ import java.util.stream.Stream;
 
 public interface IRecurringPaymentManagerService {
 
-    void scheduleRecurringPayment(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus);
+    Stream<PaymentRenewal> getCurrentDueNotifications();
 
     Stream<PaymentRenewal> getCurrentDueRecurringPayments();
 
     void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil);
+
+    void scheduleRecurringPayment(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus);
 }

@@ -38,6 +38,12 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     private int dueRecurringOffsetDay;
     @Value("${payment.recurring.offset.hour}")
     private int dueRecurringOffsetTime;
+    @Value("${payment.preDebitNotification.preOffsetDays}")
+    private int preDebitNotificationPreOffsetDay;
+    @Value("${payment.preDebitNotification.offset.day}")
+    private int duePreDebitNotificationOffsetDay;
+    @Value("${payment.preDebitNotification.offset.hour}")
+    private int duePreDebitNotificationOffsetTime;
 
     private final IPaymentRenewalDao paymentRenewalDao;
     private final ApplicationEventPublisher eventPublisher;
@@ -96,12 +102,23 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
 
     @Override
     @Transactional
+    public Stream<PaymentRenewal> getCurrentDueNotifications() {
+        return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
+    }
+
+    @Override
+    @Transactional
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments() {
+        return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
+    }
+
+    private Stream<PaymentRenewal> getPaymentRenewalStream(int offsetDay, int offsetTime, int preOffsetDays) {
         Calendar currentDay = Calendar.getInstance();
+        currentDay.add(Calendar.DAY_OF_MONTH, preOffsetDays);
         Calendar currentDayWithOffset = Calendar.getInstance();
+        currentDayWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay+preOffsetDays);
         Date currentTime = currentDay.getTime();
-        Date currentTimeWithOffset = DateUtils.addHours(currentTime, dueRecurringOffsetTime);
-        currentDayWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
+        Date currentTimeWithOffset = DateUtils.addHours(currentTime, offsetTime);
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayWithOffset, currentTime, currentTimeWithOffset);
     }
 

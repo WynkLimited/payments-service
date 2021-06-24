@@ -635,7 +635,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Override
     public BaseResponse<?> addMoney(WalletAddMoneyRequest walletAddMoneyRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return addMoney(walletAddMoneyRequest.getAmountToCredit(), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        return addMoney(0, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
     public BaseResponse<?> addMoney(double amount, Wallet wallet) {

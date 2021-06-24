@@ -17,6 +17,15 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         throw new WynkRuntimeException("Method is not implemented!");
     }
 
+    public static AbstractTransactionInitRequest from(WalletAddMoneyRequest<?> request) {
+        if (AbstractChargingRequest.IWebChargingDetails.class.isAssignableFrom(request.getChargingDetails().getClass())) {
+            return SessionScopedTransactionInitRequestMapper.from(request);
+        } else if (AbstractChargingRequest.IS2SChargingDetails.class.isAssignableFrom(request.getChargingDetails().getClass())) {
+            return S2STransactionInitRequestMapper.from(request);
+        }
+        throw new WynkRuntimeException("Method is not implemented!");
+    }
+
     public static AbstractTransactionInitRequest from(RefundTransactionRequestWrapper wrapper) {
         final Transaction originalTransaction = wrapper.getOriginalTransaction();
         if (originalTransaction.getType() == PaymentEvent.POINT_PURCHASE) {
@@ -24,6 +33,10 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         } else {
             return PlanTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).planId(originalTransaction.getPlanId()).clientAlias(originalTransaction.getClientAlias()).paymentCode(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
         }
+    }
+
+    public static AbstractTransactionInitRequest from(IapVerificationRequestWrapper wrapper) {
+        return S2STransactionInitRequestMapper.from(wrapper);
     }
 
     public static AbstractTransactionInitRequest from(MigrationTransactionRequest request) {

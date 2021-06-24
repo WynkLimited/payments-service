@@ -2,6 +2,7 @@ package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,12 +13,10 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletAddMoneyRequest extends WalletRequest {
+public class WalletAddMoneyRequest<T extends AbstractChargingRequest.IChargingDetails> {
     @Analysed
-    private int planId;
-    @Analysed
-    private String itemId;
-    @Analysed
-    private double amountToCredit;
+    private PaymentCode paymentCode;
 
+    @Analysed
+    private T chargingDetails;
 }

@@ -192,7 +192,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final PaymentCode paymentCode = request.getPaymentCode();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
-        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(DefaultChargingRequest.builder().paymentMode(paymentCode.getCode()).merchantName(paymentCode.getCode()).paymentCode(paymentCode).chargingDetails(AbstractChargingRequest.PlanS2SChargingDetails.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).autoRenew(latestReceiptResponse.isAutoRenewal()).trialOpted(latestReceiptResponse.isFreeTrial()).build()).build());
+        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequest(request).receiptResponse(latestReceiptResponse).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -229,18 +229,6 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
 
-    private void exhaustCouponIfApplicable(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
-        if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-            if (StringUtils.isNotEmpty(transaction.getCoupon())) {
-                try {
-                    couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
-                } catch (WynkRuntimeException e) {
-                    log.error(e.getMarker(), e.getMessage(), e);
-                }
-            }
-        }
-    }
-
     public void addToPaymentRenewalMigration(MigrationTransactionRequest request) {
         final Calendar nextChargingDate = Calendar.getInstance();
         final Map<String, String> paymentMetaData = request.getPaymentMetaData();
@@ -254,19 +242,30 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         transactionManager.revision(MigrationTransactionRevisionRequest.builder().nextChargingDate(nextChargingDate).transaction(transaction).existingTransactionStatus(TransactionStatus.INPROGRESS).finalTransactionStatus(transaction.getStatus()).build());
     }
 
+    public BaseResponse addMoney(WalletAddMoneyRequest<?> request) {
+        final PaymentCode paymentCode = request.getPaymentCode();
+        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request));
+        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
+        return BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantWalletService.class).addMoney(request);
+    }
+
+    private void exhaustCouponIfApplicable(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
+        if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+            if (StringUtils.isNotEmpty(transaction.getCoupon())) {
+                try {
+                    couponManager.exhaustCoupon(transaction.getUid(), transaction.getCoupon());
+                } catch (WynkRuntimeException e) {
+                    log.error(e.getMarker(), e.getMessage(), e);
+                }
+            }
+        }
+    }
+
     private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
         if (!EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
         }
-    }
-
-    public BaseResponse addMoney(String uid, String msisdn, WalletAddMoneyRequest request) {
-        final PaymentCode paymentCode = request.getPaymentCode();
-        // TODO:: revision is required
-        final Transaction transaction = null;//initiateTransaction(false, request.getPlanId(), uid, msisdn, request.getItemId(), null, paymentCode);
-        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
-        return BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantWalletService.class).addMoney(request);
     }
 
 }

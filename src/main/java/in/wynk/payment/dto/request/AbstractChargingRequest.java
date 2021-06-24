@@ -17,10 +17,6 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.IChargingDetails> {
 
-    @Analysed(name = "paymentMode")
-    private String paymentMode;
-    @Analysed(name = "bankName")
-    private String merchantName;
     @Analysed
     private PaymentCode paymentCode;
     @Analysed
@@ -29,6 +25,8 @@ public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.
     @AnalysedEntity
     public interface IChargingDetails {
         String getCouponId();
+        String getPaymentMode();
+        String getMerchantName();
         ChargingType getType();
     }
 
@@ -60,6 +58,10 @@ public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.
         private int planId;
         @Analysed
         private String couponId;
+        @Analysed(name = "paymentMode")
+        private String paymentMode;
+        @Analysed(name = "bankName")
+        private String merchantName;
         @Analysed
         private boolean autoRenew;
         @Analysed
@@ -74,6 +76,10 @@ public abstract class AbstractChargingRequest<T extends AbstractChargingRequest.
     public static abstract class AbstractPointChargingDetails {
         @Analysed
         private String couponId;
+        @Analysed(name = "paymentMode")
+        private String paymentMode;
+        @Analysed(name = "bankName")
+        private String merchantName;
         @Analysed
         private String itemId;
     }

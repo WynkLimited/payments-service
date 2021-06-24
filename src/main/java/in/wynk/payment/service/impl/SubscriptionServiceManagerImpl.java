@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
@@ -41,6 +42,9 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 @Service
 @Slf4j
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
+
+    @Value("${payment.recurring.offset.hour}")
+    private int hour;
 
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
@@ -106,7 +110,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                if (renewalPlanEligibilityResponse.getDeferredUntil() > 60 * 60 * 1000) {
+                if (renewalPlanEligibilityResponse.getDeferredUntil() > hour * 60 * 60 * 1000) {
+                    AnalyticService.update("furtherDefer", renewalPlanEligibilityResponse.getDeferredUntil());
                     long today = System.currentTimeMillis();
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, renewalPlanEligibilityResponse.getDeferredUntil()-today);
                     return false;

@@ -24,6 +24,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import static in.wynk.logging.BaseLoggingMarkers.MYSQL_ERROR;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_DUMP;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_TRANSACTION;
@@ -50,12 +52,12 @@ public class PaymentDumpService implements IPaymentDumpService {
         this.transactionDao = transactionDao;
     }
 
-    private void putTransactionDataOnS3(Calendar cal) {
+    private void putTransactionDataOnS3(Calendar cal, int days) {
         try {
-            PaymentDump paymentDump = getPaymentDbDump();
-            AnalyticService.update("TotalRecordsInDump", paymentDump.getTransactions().size());
+            PaymentDump paymentDump = getPaymentDbDump(days);
+            AnalyticService.update("TotalRecordsInDump", paymentDump.getTransactions().count());
         try {
-             putTransactionsOnS3Bucket(paymentDump.getTransactions(), cal);
+             putTransactionsOnS3Bucket(paymentDump.getTransactions().collect(Collectors.toList()), cal);
         } catch(AmazonServiceException ex) {
             AnalyticService.update(AMAZON_SERVICE_ERROR.getName(),ex.getErrorMessage());
             log.error(AMAZON_SERVICE_ERROR,"AmazonServiceException "+ ex.getErrorMessage());
@@ -69,12 +71,14 @@ public class PaymentDumpService implements IPaymentDumpService {
         }
     }
 
-    private PaymentDump getPaymentDbDump() throws ParseException {
+    private PaymentDump getPaymentDbDump(int days) throws ParseException {
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE, -7);
+       // cal.add(Calendar.DATE, -7);
+        cal.add(Calendar.DATE, -days);
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
         String fromDateFormat=dateFormat.format(cal.getTime());
         AnalyticService.update("FromDateOfDump",fromDateFormat);
+        AnalyticService.update("DumpOfDays",days);
         Date fromDate=dateFormat.parse(fromDateFormat);
         log.info("from Date {}",fromDate);
         return populatePaymentDump(fromDate);
@@ -107,14 +111,14 @@ public class PaymentDumpService implements IPaymentDumpService {
         }
     }
     @AnalyseTransaction(name = "startPaymentDumpS3Export")
-    public void startPaymentDumpS3Export(String requestId) {
+    public void startPaymentDumpS3Export(String requestId, int days) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("startPaymentDumpS3Export", true);
         log.info("Starting weekly dump s3 export!!");
         Calendar cal = Calendar.getInstance();
-        putTransactionDataOnS3(cal);
+        putTransactionDataOnS3(cal,days);
     }
 
     @Override

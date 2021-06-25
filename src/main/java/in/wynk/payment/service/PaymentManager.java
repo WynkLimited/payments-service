@@ -21,7 +21,6 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.TransactionContext;
@@ -32,6 +31,7 @@ import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.payment.mapper.S2STransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -46,25 +46,15 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final ISqsManagerService sqsManagerService;
     private final ApplicationEventPublisher eventPublisher;
-    private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
-
-    public PaymentManager(ICouponManager couponManager, PaymentCachingService cachingService, ISqsManagerService sqsManagerService, ApplicationEventPublisher eventPublisher, IClientCallbackService clientCallbackService, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService) {
-        this.couponManager = couponManager;
-        this.cachingService = cachingService;
-        this.eventPublisher = eventPublisher;
-        this.sqsManagerService = sqsManagerService;
-        this.transactionManager = transactionManager;
-        this.clientCallbackService = clientCallbackService;
-        this.merchantTransactionService = merchantTransactionService;
-    }
 
     @TransactionAware(txnId = "#request.originalTransactionId")
     public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
@@ -226,10 +216,6 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).attemptSequence(request.getAttemptSequence() + 1).build());
         }
-    }
-
-    public void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
-        clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
 
     public void addToPaymentRenewalMigration(MigrationTransactionRequest request) {

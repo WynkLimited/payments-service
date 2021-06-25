@@ -11,14 +11,17 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.event.*;
+import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
+import in.wynk.payment.service.IClientCallbackService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import io.github.resilience4j.retry.RetryRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -30,6 +33,7 @@ import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PaymentEventListener {
 
     private final ObjectMapper mapper;
@@ -37,16 +41,8 @@ public class PaymentEventListener {
     private final PaymentManager paymentManager;
     private final IPaymentErrorService paymentErrorService;
     private final ApplicationEventPublisher eventPublisher;
+    private final IClientCallbackService clientCallbackService;
     private final IMerchantTransactionService merchantTransactionService;
-
-    public PaymentEventListener(ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
-        this.mapper = mapper;
-        this.retryRegistry = retryRegistry;
-        this.paymentManager = paymentManager;
-        this.paymentErrorService = paymentErrorService;
-        this.eventPublisher = eventPublisher;
-        this.merchantTransactionService = merchantTransactionService;
-    }
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
@@ -110,7 +106,11 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "clientCallback")
     public void onClientCallbackEvent(ClientCallbackEvent callbackEvent) {
         AnalyticService.update(callbackEvent);
-        paymentManager.sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
+        sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
+    }
+
+    private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
+        clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
 
     private void initRefundIfApplicable(PaymentChargingReconciledEvent event) {

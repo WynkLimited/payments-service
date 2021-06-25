@@ -224,6 +224,8 @@ payment:
           url: http://kongqa.airtel.com/preprod-84/pg-service
       callback:
         url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
+      auth:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
     #### Itunes props ######
     itunes:
       api:

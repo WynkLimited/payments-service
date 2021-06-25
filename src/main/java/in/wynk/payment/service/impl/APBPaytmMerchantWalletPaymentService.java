@@ -59,7 +59,9 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private String successPage;
     @Value("${payment.failure.page}")
     private String failurePage;
-    @Value("${paytm.native.wcf.callbackUrl}")
+    @Value("${payment.merchant.apbPaytm.auth.token}")
+    private String ABP_PAYTM_AUTHORIZATION;
+    @Value("${payment.merchant.apbPaytm.callback.url}")
     private String callBackUrl;
     @Value("${payment.merchant.apbPaytm.api.base.url}")
     private String apbPaytmBaseUrl;

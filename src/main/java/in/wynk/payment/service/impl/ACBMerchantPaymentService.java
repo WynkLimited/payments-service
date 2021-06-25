@@ -18,7 +18,7 @@ import in.wynk.payment.service.*;
 import org.springframework.stereotype.Service;
 
 @Service(BeanConstant.ACB_MERCHANT_PAYMENT_SERVICE)
-public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<Void, PaymentRenewalChargingRequest> {
+public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     protected ACBMerchantPaymentService(PaymentCachingService cachingService) {
         super(cachingService);

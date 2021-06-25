@@ -46,7 +46,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 
 @Slf4j
 @Service
-public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>> {
+public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -115,6 +115,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
+    @Override
     @TransactionAware(txnId = "#request.transactionId")
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequestWrapper request) {
         final PaymentCode paymentCode = request.getPaymentCode();
@@ -155,6 +156,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         return WynkResponseEntity.<AbstractCallbackResponse>builder().success(false).build();
     }
 
+    @Override
     @TransactionAware(txnId = "#request.transactionId")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
@@ -209,14 +211,14 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
-    public void doRenewal(PaymentRenewalChargingRequest request, PaymentCode paymentCode) {
-        final AbstractTransactionInitRequest transactionInitRequest = S2STransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(paymentCode).clientAlias(request.getClientAlias()).build());
+    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
+        final AbstractTransactionInitRequest transactionInitRequest = S2STransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
-        final IMerchantPaymentRenewalService<?, PaymentRenewalChargingRequest> merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentRenewalService<?, PaymentRenewalChargingRequest>>() {
+        final IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> merchantPaymentRenewalService = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>>() {
         });
         try {
-            merchantPaymentRenewalService.doRenewal(request);
+            return merchantPaymentRenewalService.doRenewal(request);
         } finally {
             if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());

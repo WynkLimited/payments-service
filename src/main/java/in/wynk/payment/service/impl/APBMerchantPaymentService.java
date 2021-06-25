@@ -61,7 +61,7 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
-public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<Void, PaymentRenewalChargingRequest> {
+public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     @Value("${apb.callback.url}")
     private String CALLBACK_URL;

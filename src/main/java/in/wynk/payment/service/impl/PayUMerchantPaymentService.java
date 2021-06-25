@@ -69,7 +69,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentRenewalService<Void, PaymentRenewalChargingRequest>,IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>,IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
 
     private final Gson gson;
     private final RestTemplate restTemplate;

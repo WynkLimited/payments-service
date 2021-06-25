@@ -113,7 +113,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
                 long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil()-today;
                 if (furtherDefer > hour * 60 * 60 * 1000) {
-                    AnalyticService.update("furtherDefer", furtherDefer);
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }

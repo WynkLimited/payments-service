@@ -47,7 +47,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = transactionDao.save(transaction);
         publishAnalytics(persistedEntity);
-        //TransactionContext.set(persistedEntity);
         return persistedEntity;
     }
 

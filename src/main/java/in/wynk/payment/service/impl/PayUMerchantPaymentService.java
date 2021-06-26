@@ -118,9 +118,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public WynkResponseEntity<PayUChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
         final WynkResponseEntity.WynkResponseEntityBuilder<PayUChargingResponse> builder = WynkResponseEntity.builder();
         try {
+            final Transaction transaction = TransactionContext.get();
             final Map<String, String> payUPayload = getPayload(TransactionContext.get());
             final String encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
-            builder.data(PayUChargingResponse.builder().info(encryptedParams).build());
+            builder.data(PayUChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(encryptedParams).build());
         } catch (Exception e) {
             final PaymentErrorType errorType = PAY002;
             builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode());

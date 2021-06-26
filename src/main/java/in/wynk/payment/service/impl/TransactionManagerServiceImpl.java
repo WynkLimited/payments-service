@@ -10,11 +10,9 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
-import in.wynk.payment.dto.IPayerDetails;
-import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.service.IPayerDetailsManger;
+import in.wynk.payment.service.IUserDetailsManger;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -35,11 +33,11 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
     private final ITransactionDao transactionDao;
-    private final IPayerDetailsManger payerDetailsManger;
+    private final IUserDetailsManger payerDetailsManger;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IPayerDetailsManger payerDetailsManger, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IUserDetailsManger payerDetailsManger, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.transactionDao = transactionDao;
         this.payerDetailsManger = payerDetailsManger;
         this.subscriptionServiceManager = subscriptionServiceManager;
@@ -80,11 +78,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     * initiate transaction and upsert payer info for plan based charging, skip in case point charging
     **/
     @Override
-    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IPayerDetails payerDetails) {
+    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IUserDetails userDetails, IAppDetails appDetails) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
-            final IPayerDetails persistedPayer = payerDetailsManger.save(transaction.getIdStr(), payerDetails);
-            TransactionContext.set(TransactionDetails.builder().transaction(transaction).payerDetails(persistedPayer).build());
+            final ICombinedUserDetails persistedDetails = payerDetailsManger.save(transaction.getIdStr(), CombinedUserDetails.builder().appDetails(appDetails).userDetails(userDetails).build());
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).userDetails(persistedDetails.getUserDetails()).appDetails(persistedDetails.getAppDetails()).build());
             return transaction;
         }
         return init(transactionInitRequest);

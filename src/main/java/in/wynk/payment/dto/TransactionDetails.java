@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter
 @Builder
 public class TransactionDetails {
+    private IAppDetails appDetails;
     private Transaction transaction;
-    private IPayerDetails payerDetails;
+    private IUserDetails userDetails;
 }

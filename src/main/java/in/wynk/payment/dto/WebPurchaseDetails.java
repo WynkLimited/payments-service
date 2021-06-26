@@ -25,19 +25,16 @@ public class WebPurchaseDetails implements IPurchaseDetails {
     private IProductDetails productDetails;
 
     @Override
-    @Analysed
-    public IPayerDetails getPayerDetails() {
+    public IAppDetails getAppDetails() {
         SessionDTO session = SessionContextHolder.getBody();
-        return PayerDetails.builder()
-                .msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN)))
-                .subscriberId(session.get(SUBSCRIBER_ID))
-                .deviceType(session.get(DEVICE_TYPE))
-                .deviceId(session.get(DEVICE_ID))
-                .buildNo(session.get(BUILD_NO))
-                .service(session.get(SERVICE))
-                .appId(session.get(APP_ID))
-                .os(session.get(OS))
-                .build();
+        return AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID)).os(session.get(OS)).build();
+    }
+
+    @Override
+    @Analysed
+    public IUserDetails getUserDetails() {
+        SessionDTO session = SessionContextHolder.getBody();
+        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).subscriberId(session.get(SUBSCRIBER_ID)).build();
     }
 
 }

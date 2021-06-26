@@ -14,7 +14,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class S2SPurchaseDetails implements IPurchaseDetails {
     @Analysed
-    private PayerDetails payerDetails;
+    private AppDetails appDetails;
+    @Analysed
+    private UserDetails userDetails;
     @Analysed
     private PaymentDetails paymentDetails;
     @Analysed

@@ -15,16 +15,14 @@ import java.io.Serializable;
 @Builder
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PayerDetails implements IPayerDetails, Serializable {
+public class AppDetails implements IAppDetails, Serializable {
 
     private String os;
     private String appId;
-    private String msisdn;
     private String service;
     private String buildNo;
     private String deviceId;
     private String deviceType;
-    private String subscriberId;
 
     public WynkService getService() {
         return WynkServiceUtils.fromServiceId(service);
@@ -37,5 +35,4 @@ public class PayerDetails implements IPayerDetails, Serializable {
     public Os getOs() {
         return WynkServiceUtils.getAppSupportedOs(os, getApp());
     }
-
 }

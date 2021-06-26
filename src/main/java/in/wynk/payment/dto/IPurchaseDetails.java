@@ -1,7 +1,8 @@
 package in.wynk.payment.dto;
 
 public interface IPurchaseDetails {
-    IPayerDetails getPayerDetails();
+    IAppDetails getAppDetails();
+    IUserDetails getUserDetails();
     PaymentDetails getPaymentDetails();
     IProductDetails getProductDetails();
 }

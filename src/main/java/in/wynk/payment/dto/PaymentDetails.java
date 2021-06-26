@@ -1,20 +1,24 @@
-package in.wynk.payment.dto.request;
+package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.IPurchaseDetails;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
+@Builder
 @AnalysedEntity
-@NoArgsConstructor
 @AllArgsConstructor
-public class WalletTopUpRequest<T extends IPurchaseDetails> {
+@NoArgsConstructor
+public class PaymentDetails {
+    private String couponId;
+    @Analysed(name = "paymentMode")
+    private String paymentMode;
+    @Analysed(name = "bankName")
+    private String merchantName;
     @Analysed
-    private T purchaseDetails;
+    private PaymentCode paymentCode;
 }

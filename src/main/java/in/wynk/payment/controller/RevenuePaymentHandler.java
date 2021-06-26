@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
@@ -35,8 +36,8 @@ public class RevenuePaymentHandler {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<?> request) {
-        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+    public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
+        AnalyticService.update(PAYMENT_METHOD, request.getPurchaseDetails().getPaymentDetails().getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
     }

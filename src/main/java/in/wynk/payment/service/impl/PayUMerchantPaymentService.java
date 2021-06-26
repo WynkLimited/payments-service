@@ -639,7 +639,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     private <T> void putValueInSession(String key, T value) {
-        Session<SessionDTO> session = SessionContextHolder.get();
+        Session<String, SessionDTO> session = SessionContextHolder.get();
         session.getBody().put(key, value);
     }
 

@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.UserWalletDetails;
 import in.wynk.payment.service.*;
@@ -67,7 +68,7 @@ public class RevenuePaymentWalletHandler {
     @PostMapping("/addMoney/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletAddMoney")
-    public ResponseEntity<?> addMoney(@PathVariable String sid, @RequestBody WalletTopUpRequest<AbstractChargingRequest.IWebChargingDetails> request) {
+    public ResponseEntity<?> addMoney(@PathVariable String sid, @RequestBody WalletTopUpRequest<WebPurchaseDetails> request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = paymentManager.topUp(request);
         AnalyticService.update(response.getBody());

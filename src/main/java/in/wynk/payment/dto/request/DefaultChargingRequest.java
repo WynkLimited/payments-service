@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.dto.IPurchaseDetails;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
@@ -9,6 +10,6 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 @AnalysedEntity
-public class DefaultChargingRequest<T extends AbstractChargingRequest.IChargingDetails> extends AbstractChargingRequest<T> {
+public class DefaultChargingRequest<T extends IPurchaseDetails> extends AbstractChargingRequest<T> {
 
 }

@@ -65,7 +65,7 @@ public class PayUPaymentStatusTest {
     @Before
     @SneakyThrows
     public void setup() {
-        if (SessionContextHolder.<SessionDTO>get() == null || SessionContextHolder.<SessionDTO>get().getBody() == null) {
+        if (SessionContextHolder.<String, SessionDTO>get() == null || SessionContextHolder.<String, SessionDTO>get().getBody() == null) {
             SessionContextHolder.set(PayUTestData.initSession());
         }
         Mockito.doNothing().when(recurringPaymentManager).scheduleRecurringPayment(any(SyncTransactionRevisionRequest.class));
@@ -88,7 +88,7 @@ public class PayUPaymentStatusTest {
     @Test
     @Order(1)
     public void handleOneTimePaymentStatusTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
+        SessionContextHolder.<String, SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.ONE_TIME_TRANSACTION_ID);
         AbstractTransactionStatusRequest request = PayUTestData.buildOneTimePaymentStatusRequest(PaymentCode.PAYU);
         WynkResponseEntity<?> response = statusService.status(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
@@ -99,7 +99,7 @@ public class PayUPaymentStatusTest {
     @Test
     @Order(2)
     public void handleRecurringPaymentStatusTest() {
-        SessionContextHolder.<SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
+        SessionContextHolder.<String, SessionDTO>get().getBody().put(TRANSACTION_ID, PayUDataConstant.RECURRING_TRANSACTION_ID);
         AbstractTransactionStatusRequest request = PayUTestData.buildRecurringPaymentStatusRequest(PaymentCode.PAYU);
         WynkResponseEntity<?> response = statusService.status(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);

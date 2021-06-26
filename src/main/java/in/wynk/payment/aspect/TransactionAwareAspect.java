@@ -3,8 +3,11 @@ package in.wynk.payment.aspect;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.PayerDetails;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.impl.PayerDetailsManager;
 import in.wynk.spel.IRuleEvaluator;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -31,6 +34,9 @@ public class TransactionAwareAspect {
     @Autowired
     private ITransactionManagerService transactionManager;
 
+    @Autowired
+    private PayerDetailsManager payerDetailsManager;
+
     @Before(value = "execution(@in.wynk.payment.aspect.advice.TransactionAware * *.*(..))")
     public void beforeTransactionAware(JoinPoint joinPoint) {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
@@ -38,12 +44,13 @@ public class TransactionAwareAspect {
         if (!StringUtils.isEmpty(transactionAware.txnId())) {
             String txnId = parseSpel(joinPoint, transactionAware);
             final Transaction transaction = transactionManager.get(txnId);
-            if(transaction != null){
-                TransactionContext.set(transaction);
-            } else{
+            if (transaction != null) {
+                final PayerDetails payerDetails = payerDetailsManager.get(transaction.getIdStr());
+                TransactionContext.set(TransactionDetails.builder().transaction(transaction).payerDetails(payerDetails).build());
+            } else {
                 throw new WynkRuntimeException("Transaction is null");
             }
-        } else{
+        } else {
             throw new WynkRuntimeException("Empty txn id");
         }
     }

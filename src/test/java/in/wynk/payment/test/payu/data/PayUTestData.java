@@ -75,7 +75,7 @@ public class PayUTestData {
                 .build();
     }
 
-    public static Session<SessionDTO> initSession() {
+    public static Session<String,SessionDTO> initSession() {
         Map<String, Object> payload = new HashMap<>();
         payload.put(UID, PayUDataConstant.UID);
         payload.put(MSISDN, PayUDataConstant.MSISDN);
@@ -85,8 +85,8 @@ public class PayUTestData {
         payload.put(BUILD_NO, PayUDataConstant.BUILD_NO);
         payload.put(OS, PayUDataConstant.OS);
         payload.put(PACK_GROUP, "");
-        return Session.<SessionDTO>builder()
-                .id(UUID.randomUUID())
+        return Session.<String,SessionDTO>builder()
+                .id(UUID.randomUUID().toString())
                 .body(SessionDTO.builder().sessionPayload(payload).build())
                 .build();
     }

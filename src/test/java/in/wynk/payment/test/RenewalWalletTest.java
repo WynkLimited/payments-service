@@ -29,7 +29,7 @@ public class RenewalWalletTest {
     @Before
     public void setup(){
         SessionDTO sessionDTO = PaymentTestUtils.dummySession();
-        Session<SessionDTO> session = Session.<SessionDTO>builder().body(sessionDTO).id(UUID.randomUUID()).build();
+        Session<String,SessionDTO> session = Session.<String, SessionDTO>builder().body(sessionDTO).id(UUID.randomUUID().toString()).build();
         SessionContextHolder.set(session);
     }
 

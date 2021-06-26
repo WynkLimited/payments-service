@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.payment.dto.S2SPurchaseDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.UserWalletDetails;
 import in.wynk.payment.service.*;
@@ -64,7 +65,7 @@ public class RevenuePaymentS2SWalletHandler {
 
     @PostMapping("/v1/addMoney")
     @AnalyseTransaction(name = "walletAddMoney")
-    public ResponseEntity<?> addMoney(@RequestBody WalletTopUpRequest<AbstractChargingRequest.IWebChargingDetails> request) {
+    public ResponseEntity<?> addMoney(@RequestBody WalletTopUpRequest<S2SPurchaseDetails> request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = paymentManager.topUp(request);
         AnalyticService.update(response.getBody());

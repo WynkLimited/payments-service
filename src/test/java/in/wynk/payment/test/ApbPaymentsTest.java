@@ -69,7 +69,7 @@ public class ApbPaymentsTest extends PaymentsTest {
 
     @Before
     public void setup() {
-        Session<SessionDTO> session = Session.<SessionDTO>builder().body(dummyAPBSession()).id(UUID.fromString(TXN_ID)).build();
+        Session<String, SessionDTO> session = Session.<String, SessionDTO>builder().body(dummyAPBSession()).id(UUID.fromString(TXN_ID).toString()).build();
         super.setup(session);
     }
 

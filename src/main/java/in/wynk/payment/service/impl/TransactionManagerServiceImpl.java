@@ -44,7 +44,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = transactionDao.save(transaction);
         publishAnalytics(persistedEntity);
-        TransactionContext.set(persistedEntity);
+        //TransactionContext.set(persistedEntity);
         return persistedEntity;
     }
 
@@ -55,7 +55,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private Transaction initTransaction(Transaction txn) {
         Transaction transaction = upsert(txn);
-        Session<SessionDTO> session = SessionContextHolder.get();
+        Session<String, SessionDTO> session = SessionContextHolder.get();
         if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
             SessionDTO sessionDTO = session.getBody();
             sessionDTO.put(TRANSACTION_ID, transaction.getIdStr());

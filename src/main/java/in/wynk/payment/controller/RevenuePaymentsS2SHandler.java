@@ -4,9 +4,9 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
+import in.wynk.payment.dto.S2SPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
-import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IDummySessionGenerator;
@@ -30,8 +30,8 @@ public class RevenuePaymentsS2SHandler {
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
-    public ResponseEntity<?> doCharging(@RequestBody DefaultChargingRequest<AbstractChargingRequest.IWebChargingDetails> request) {
-        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+    public ResponseEntity<?> doCharging(@RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
+        AnalyticService.update(PAYMENT_METHOD, request.getPurchaseDetails().getPaymentDetails().getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
     }

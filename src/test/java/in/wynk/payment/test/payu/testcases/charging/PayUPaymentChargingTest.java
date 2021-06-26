@@ -73,7 +73,7 @@ public class PayUPaymentChargingTest {
     @Test
     @Order(1)
     public void doChargingForOneTimePlan() {
-        TransactionContext.set(PayUTestData.initOneTimePaymentTransaction());
+        //TransactionContext.set(PayUTestData.initOneTimePaymentTransaction());
         AbstractChargingRequest<?> request = PayUTestData.buildOneTimeChargingRequest();
         WynkResponseEntity<?> response = chargingService.charge(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
@@ -84,7 +84,7 @@ public class PayUPaymentChargingTest {
     @Test
     @Order(2)
     public void doChargingForRecurringPlan() {
-        TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
+        //TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
         AbstractChargingRequest<?> request = PayUTestData.buildRecurringChargingRequest();
         WynkResponseEntity<?> response = chargingService.charge(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
@@ -95,7 +95,7 @@ public class PayUPaymentChargingTest {
     @Test
     @Order(3)
     public void testSiDetails() {
-        TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
+       // TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
         AbstractChargingRequest<?> request = PayUTestData.buildRecurringChargingRequest();
         WynkResponseEntity<?> response = chargingService.charge(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);

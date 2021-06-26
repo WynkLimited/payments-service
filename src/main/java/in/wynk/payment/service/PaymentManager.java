@@ -28,7 +28,7 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
-import in.wynk.payment.mapper.S2STransactionInitRequestMapper;
+import in.wynk.payment.service.impl.PayerDetailsManager;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +52,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final ISqsManagerService sqsManagerService;
+    private final PayerDetailsManager payerDetailsManager;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
@@ -82,9 +83,10 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     @Override
     public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> request) {
-        final PaymentCode paymentCode = request.getPaymentCode();
+        final PaymentCode paymentCode = request.getPurchaseDetails().getPaymentDetails().getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request));
         final TransactionStatus existingStatus = transaction.getStatus();
+        // TODO: add payer details in redis
         final IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>> chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>>() {
         });
         try {
@@ -139,7 +141,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailService.getReceiptDetails(callbackRequest);
         if (optionalReceiptDetails.isPresent()) {
             final ReceiptDetails receiptDetails = optionalReceiptDetails.get();
-            final AbstractTransactionInitRequest transactionInitRequest = S2STransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(receiptDetails.getPlanId()).uid(receiptDetails.getUid()).msisdn(receiptDetails.getMsisdn()).paymentCode(paymentCode).clientAlias(clientAlias).build());
+            final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(receiptDetails.getPlanId()).uid(receiptDetails.getUid()).msisdn(receiptDetails.getMsisdn()).paymentCode(paymentCode).clientAlias(clientAlias).build());
             final Transaction transaction = transactionManager.init(transactionInitRequest);
             return handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).body(callbackRequest.getBody()).transactionId(transaction.getItemId()).build());
         }
@@ -202,7 +204,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
     }
 
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
-        final AbstractTransactionInitRequest transactionInitRequest = S2STransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
+        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> merchantPaymentRenewalService = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>>() {
@@ -232,7 +234,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
     }
 
     public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> request) {
-        final PaymentCode paymentCode = request.getPaymentCode();
+        final PaymentCode paymentCode = request.getPurchaseDetails().getPaymentDetails().getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request));
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         return BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {

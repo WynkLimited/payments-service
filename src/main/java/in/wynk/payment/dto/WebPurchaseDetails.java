@@ -34,7 +34,7 @@ public class WebPurchaseDetails implements IPurchaseDetails {
     @Analysed
     public IUserDetails getUserDetails() {
         SessionDTO session = SessionContextHolder.getBody();
-        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).subscriberId(session.get(SUBSCRIBER_ID)).build();
+        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).build();
     }
 
 }

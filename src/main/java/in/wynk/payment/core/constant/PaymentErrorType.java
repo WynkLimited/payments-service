@@ -39,6 +39,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY203("Saved Cards Error", "Unable to find any saved cards for corresponding uid-paymentCode combination. Try saving a fresh card", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.SAVED_CARDS_ERROR),
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
+    PAY105("Invalid Item", "Invalid item is is supplied", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
+
     /**
      * Payment Redirect webview code
      */

@@ -7,6 +7,8 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.PlanDetails;
+import in.wynk.payment.dto.S2SPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
@@ -62,7 +64,7 @@ public class PaymentsTest {
 
     protected WynkResponseEntity<?> doChargingTest(PaymentCode paymentCode) {
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
-        AbstractChargingRequest<?> request = DefaultChargingRequest.builder().paymentCode(paymentCode).chargingDetails(AbstractChargingRequest.PlanS2SChargingDetails.builder().planId(PLAN_ID).build()).build();
+        AbstractChargingRequest<?> request = DefaultChargingRequest.builder().purchaseDetails(S2SPurchaseDetails.builder().productDetails(PlanDetails.builder().planId(PLAN_ID).build()).build()).build();
         return chargingService.charge(request);
     }
 

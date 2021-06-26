@@ -3,7 +3,7 @@ package in.wynk.payment.aspect;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.PayerDetails;
+import in.wynk.payment.dto.IPayerDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -21,10 +21,6 @@ import org.springframework.util.StringUtils;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
-/**
- * @author Abhishek
- * @created 13/08/20
- */
 @Aspect
 public class TransactionAwareAspect {
 
@@ -45,7 +41,7 @@ public class TransactionAwareAspect {
             String txnId = parseSpel(joinPoint, transactionAware);
             final Transaction transaction = transactionManager.get(txnId);
             if (transaction != null) {
-                final PayerDetails payerDetails = payerDetailsManager.get(transaction.getIdStr());
+                final IPayerDetails payerDetails = payerDetailsManager.get(transaction.getIdStr());
                 TransactionContext.set(TransactionDetails.builder().transaction(transaction).payerDetails(payerDetails).build());
             } else {
                 throw new WynkRuntimeException("Transaction is null");

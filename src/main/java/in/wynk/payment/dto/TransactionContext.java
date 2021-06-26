@@ -13,7 +13,7 @@ public class TransactionContext {
         return transactionThreadLocal.get().getTransaction();
     }
 
-    public static PayerDetails getPayerDetails() {
+    public static IPayerDetails getPayerDetails() {
         return transactionThreadLocal.get().getPayerDetails();
     }
 

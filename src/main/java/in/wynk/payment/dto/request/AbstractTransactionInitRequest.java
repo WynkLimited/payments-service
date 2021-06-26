@@ -3,7 +3,9 @@ package in.wynk.payment.dto.request;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Getter
@@ -23,6 +25,5 @@ public abstract class AbstractTransactionInitRequest {
     private String status = TransactionStatus.INPROGRESS.getValue();
     private PaymentEvent event;
     private PaymentCode paymentCode;
-
 
 }

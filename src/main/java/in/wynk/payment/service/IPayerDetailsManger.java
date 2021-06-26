@@ -1,11 +1,11 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.dto.PayerDetails;
+import in.wynk.payment.dto.IPayerDetails;
 
 public interface IPayerDetailsManger {
 
-    PayerDetails save(String transactionId, PayerDetails details);
+    IPayerDetails save(String transactionId, IPayerDetails details);
 
-    PayerDetails get(String transactionId);
+    IPayerDetails get(String transactionId);
 
 }

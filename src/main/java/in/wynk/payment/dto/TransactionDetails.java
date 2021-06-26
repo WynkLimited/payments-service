@@ -8,5 +8,5 @@ import lombok.Getter;
 @Builder
 public class TransactionDetails {
     private Transaction transaction;
-    private PayerDetails payerDetails;
+    private IPayerDetails payerDetails;
 }

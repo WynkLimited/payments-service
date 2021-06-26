@@ -6,6 +6,9 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.PaymentDetails;
+import in.wynk.payment.dto.PlanDetails;
+import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
@@ -102,11 +105,11 @@ public class PayUTestData {
     }
 
     public static AbstractChargingRequest<?> buildOneTimeChargingRequest() {
-        return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).chargingDetails(AbstractChargingRequest.PlanS2SChargingDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build();
+       return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build()).build();
     }
 
     public static AbstractChargingRequest<?> buildRecurringChargingRequest() {
-        return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).chargingDetails(AbstractChargingRequest.PlanS2SChargingDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build();
+        return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build()).build();
     }
 
     public static CallbackRequest buildOneTimeCallbackRequest() {

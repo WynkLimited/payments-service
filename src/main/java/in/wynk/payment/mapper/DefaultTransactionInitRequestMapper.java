@@ -8,6 +8,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
@@ -19,18 +20,18 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
 
     public static AbstractTransactionInitRequest from(AbstractChargingRequest<?> request) {
         if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return planInit(request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
+            return planInit(request.getPaymentCode(), request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return pointInit(request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
+            return pointInit(request.getPaymentCode(), request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
         }
         throw new WynkRuntimeException("Method is not implemented!");
     }
 
     public static AbstractTransactionInitRequest from(WalletTopUpRequest<?> request) {
         if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return planInit(request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
+            return planInit(request.getPaymentCode() ,request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return pointInit(request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
+            return pointInit(request.getPaymentCode(), request.getPurchaseDetails().getPayerDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
         }
         throw new WynkRuntimeException("Method is not implemented!");
     }
@@ -65,17 +66,17 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         return initRequest;
     }
 
-    private static AbstractTransactionInitRequest planInit(IPayerDetails payerDetails, PaymentDetails paymentDetails, PlanDetails planDetails) {
+    private static AbstractTransactionInitRequest planInit(PaymentCode paymentCode, IPayerDetails payerDetails, PaymentDetails paymentDetails, PlanDetails planDetails) {
         final String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         final PaymentEvent paymentEvent = planDetails.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(clientId);
-        return PlanTransactionInitRequest.builder().autoRenewOpted(planDetails.isAutoRenew()).paymentCode(paymentDetails.getPaymentCode()).trialOpted(planDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(paymentEvent).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
+        return PlanTransactionInitRequest.builder().autoRenewOpted(planDetails.isAutoRenew()).paymentCode(paymentCode).trialOpted(planDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(paymentEvent).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
     }
 
-    private static AbstractTransactionInitRequest pointInit(IPayerDetails payerDetails, PaymentDetails paymentDetails, PointDetails pointDetails) {
+    private static AbstractTransactionInitRequest pointInit(PaymentCode paymentCode, IPayerDetails payerDetails, PaymentDetails paymentDetails, PointDetails pointDetails) {
         final String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(clientId);
-        return PointTransactionInitRequest.builder().paymentCode(paymentDetails.getPaymentCode()).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
+        return PointTransactionInitRequest.builder().paymentCode(paymentCode).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
     }
 
 }

@@ -1,6 +1,6 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.payment.dto.PayerDetails;
+import in.wynk.payment.dto.IPayerDetails;
 import in.wynk.payment.service.IPayerDetailsManger;
 import in.wynk.session.service.ISessionManager;
 import lombok.RequiredArgsConstructor;
@@ -12,15 +12,15 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class PayerDetailsManager implements IPayerDetailsManger {
 
-    private final ISessionManager<String, PayerDetails> sessionManager;
+    private final ISessionManager<String, IPayerDetails> sessionManager;
 
     @Override
-    public PayerDetails save(String transactionId, PayerDetails details) {
+    public IPayerDetails save(String transactionId, IPayerDetails details) {
         return sessionManager.init(transactionId, details, 3, TimeUnit.DAYS).getBody();
     }
 
     @Override
-    public PayerDetails get(String transactionId) {
+    public IPayerDetails get(String transactionId) {
         return sessionManager.get(transactionId).getBody();
     }
 }

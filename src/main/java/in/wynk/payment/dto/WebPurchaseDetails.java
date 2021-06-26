@@ -22,7 +22,7 @@ public class WebPurchaseDetails implements IPurchaseDetails {
     @Analysed
     private PaymentDetails paymentDetails;
     @Analysed
-    private AbstractProductDetails productDetails;
+    private IProductDetails productDetails;
 
     @Override
     @Analysed

@@ -37,7 +37,7 @@ public class RevenuePaymentHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
     public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
-        AnalyticService.update(PAYMENT_METHOD, request.getPurchaseDetails().getPaymentDetails().getPaymentCode().name());
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
     }

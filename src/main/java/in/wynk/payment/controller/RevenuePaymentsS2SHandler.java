@@ -31,7 +31,7 @@ public class RevenuePaymentsS2SHandler {
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
     public ResponseEntity<?> doCharging(@RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
-        AnalyticService.update(PAYMENT_METHOD, request.getPurchaseDetails().getPaymentDetails().getPaymentCode().name());
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
     }

@@ -2,7 +2,6 @@ package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +18,4 @@ public class PaymentDetails {
     private String paymentMode;
     @Analysed(name = "bankName")
     private String merchantName;
-    @Analysed
-    private PaymentCode paymentCode;
 }

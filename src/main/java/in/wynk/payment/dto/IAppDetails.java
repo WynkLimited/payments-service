@@ -5,9 +5,10 @@ import in.wynk.wynkservice.core.dao.entity.Os;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 
 public interface IAppDetails {
-    String getBuildNo();
+    int getBuildNo();
     String getDeviceId();
     String getDeviceType();
+    String getAppVersion();
     Os getOs();
     App getApp();
     WynkService getService();

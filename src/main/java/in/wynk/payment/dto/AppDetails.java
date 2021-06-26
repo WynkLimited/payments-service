@@ -17,12 +17,14 @@ import java.io.Serializable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AppDetails implements IAppDetails, Serializable {
 
+    private int buildNo;
+
     private String os;
     private String appId;
     private String service;
-    private String buildNo;
     private String deviceId;
     private String deviceType;
+    private String appVersion;
 
     public WynkService getService() {
         return WynkServiceUtils.fromServiceId(service);

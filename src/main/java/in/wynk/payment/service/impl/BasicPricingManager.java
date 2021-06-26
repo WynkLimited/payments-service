@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.coupon.core.constant.CouponProvisionState;
 import in.wynk.coupon.core.constant.ProvisionSource;
 import in.wynk.coupon.core.dto.CouponDTO;
@@ -12,18 +13,21 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
 import in.wynk.payment.dto.request.PointTransactionInitRequest;
+import in.wynk.payment.dto.request.TrialPlanEligibilityRequest;
 import in.wynk.payment.service.IPricingManager;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import in.wynk.subscription.common.response.TrialPlanComputationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -37,23 +41,22 @@ public class BasicPricingManager implements IPricingManager {
 
     @Override
     public void computePriceAndApplyDiscount(AbstractTransactionInitRequest request) {
-        Optional<CouponDTO> couponOptional = Optional.empty();
+        Optional<CouponDTO> couponOptional;
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
             final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
             final String service = selectedPlan.getService();
-            nativeRequest.setAmount(selectedPlan.getFinalPrice());
             if (nativeRequest.isTrialOpted()) {
-                // TODO:: eligibility handling
-//                PlanEligibilityResponse trialResponse = subscriptionService.evaluateEligibility(selectedPlan.getLinkedFreePlanId(), request.getUid());
-//                if (trialResponse.isEligible()) {
-                // TODO:: return without apply discount if trial subscription is found
-
-//                    selectedPlan = cachingService.getPlan(selectedPlan.getLinkedFreePlanId());
-//                    request.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
-                // return
-//                }
+                final int trialPlanId = selectedPlan.getLinkedFreePlanId();
+                final TrialPlanComputationResponse trialEligibilityResponse = subscriptionService.compute(TrialPlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());
+                if (Objects.nonNull(trialEligibilityResponse) && trialEligibilityResponse.getEligiblePlans().contains(trialPlanId)) {
+                    final PlanDTO trialPlan = cachingService.getPlan(trialPlanId);
+                    nativeRequest.setAmount(trialPlan.getFinalPrice());
+                    request.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
+                    return;
+                }
             }
+            nativeRequest.setAmount(selectedPlan.getFinalPrice());
             couponOptional = optionalPlanDiscount(request.getCouponId(), request.getMsisdn(), request.getUid(), service, request.getPaymentCode(), selectedPlan);
         } else {
             final PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;

@@ -23,6 +23,7 @@ public abstract class AbstractTransactionInitRequest {
     private String clientAlias;
     @Builder.Default
     private String status = TransactionStatus.INPROGRESS.getValue();
+    @Setter
     private PaymentEvent event;
     private PaymentCode paymentCode;
 

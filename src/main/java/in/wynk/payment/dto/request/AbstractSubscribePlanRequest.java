@@ -14,6 +14,7 @@ public class AbstractSubscribePlanRequest implements IObjectMapper {
 
     private final String uid;
     private final String msisdn;
+    private final String subscriberId;
     private final String paymentCode;
     private final String transactionId;
 

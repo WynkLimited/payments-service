@@ -5,6 +5,7 @@ import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.response.TrialPlanComputationResponse;
 
 import java.util.Collection;
 import java.util.List;
@@ -26,6 +27,8 @@ public interface ISubscriptionServiceManager {
             unSubscribePlanAsync((UnSubscribePlanAsyncRequest) request);
         }
     }
+
+    TrialPlanComputationResponse compute(TrialPlanEligibilityRequest request);
 
     void subscribePlanSync(SubscribePlanSyncRequest request);
 

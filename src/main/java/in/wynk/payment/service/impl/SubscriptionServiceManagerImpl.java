@@ -5,13 +5,13 @@ import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.ChecksumUtils;
+import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.dto.request.SubscribePlanAsyncRequest;
-import in.wynk.payment.dto.request.SubscribePlanSyncRequest;
-import in.wynk.payment.dto.request.UnSubscribePlanAsyncRequest;
-import in.wynk.payment.dto.request.UnSubscribePlanSyncRequest;
+import in.wynk.payment.dto.IAppDetails;
+import in.wynk.payment.dto.IUserDetails;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
@@ -19,6 +19,14 @@ import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
+import in.wynk.subscription.common.request.PlanProvisioningRequest;
+import in.wynk.subscription.common.request.PlanUnProvisioningRequest;
+import in.wynk.subscription.common.request.SinglePlanProvisionRequest;
+import in.wynk.subscription.common.request.TrialPlansComputationRequest;
+import in.wynk.subscription.common.response.AllItemsResponse;
+import in.wynk.subscription.common.response.AllPlansResponse;
+import in.wynk.subscription.common.response.PlanProvisioningResponse;
+import in.wynk.subscription.common.response.TrialPlanComputationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,10 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
@@ -57,6 +62,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Value("${service.subscription.api.endpoint.subscribePlan}")
     private String subscribePlanEndPoint;
+
+    @Value("${service.subscription.api.endpoint.trialPlanComputation}")
+    private String trialPlanComputeEndPoint;
 
     @Value("${service.subscription.api.endpoint.unSubscribePlan}")
     private String unSubscribePlanEndPoint;
@@ -112,6 +120,24 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request) {
         this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus()).paymentEvent(PaymentEvent.UNSUBSCRIBE).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).build());
+    }
+
+    @Override
+    public TrialPlanComputationResponse compute(TrialPlanEligibilityRequest request) {
+        try {
+            final IAppDetails appDetails = request.getAppDetails();
+            final IUserDetails userDetails = request.getUserDetails();
+            TrialPlansComputationRequest trialPlansComputationRequest = TrialPlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(userDetails.getMsisdn())).service(request.getService()).appId(appDetails.getApp().getId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs().getId()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).build();
+            RequestEntity<TrialPlansComputationRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(trialPlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), trialPlansComputationRequest, HttpMethod.POST);
+            ResponseEntity<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>>() {
+            });
+            return response.getBody().getData();
+        } catch (HttpStatusCodeException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
+        }
     }
 
     @Override

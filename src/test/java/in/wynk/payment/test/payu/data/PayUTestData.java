@@ -13,7 +13,7 @@ import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
-import in.wynk.subscription.common.dto.AllPlansResponse;
+import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.PriceDTO;

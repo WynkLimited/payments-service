@@ -46,6 +46,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
 
+    @Value("${service.subscription.api.endpoint.allItems}")
+    private String allItemApiEndPoint;
+
     @Value("${service.subscription.api.endpoint.allOffers}")
     private String allOfferApiEndPoint;
 
@@ -87,6 +90,14 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allOfferApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
         }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
+    }
+
+
+    @Override
+    public Collection<ItemDTO> getItems() {
+        RequestEntity<Void> allItemRequest = ChecksumUtils.buildEntityWithAuthHeaders(allItemApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        return Objects.requireNonNull(restTemplate.exchange(allItemRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<AllItemsResponse>>() {
+        }).getBody()).getData().getItems();
     }
 
     @Override

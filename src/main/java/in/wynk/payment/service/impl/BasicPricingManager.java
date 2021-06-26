@@ -6,13 +6,16 @@ import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
 import in.wynk.payment.dto.request.PointTransactionInitRequest;
 import in.wynk.payment.service.IPricingManager;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
 import lombok.RequiredArgsConstructor;
@@ -34,13 +37,11 @@ public class BasicPricingManager implements IPricingManager {
 
     @Override
     public void computePriceAndApplyDiscount(AbstractTransactionInitRequest request) {
-        String itemId = null;
-        String service = StringUtils.EMPTY;
-        PlanDTO selectedPlan = null;
+        Optional<CouponDTO> couponOptional = Optional.empty();
         if (request instanceof PlanTransactionInitRequest) {
-            PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
-            selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
-            service = selectedPlan.getService();
+            final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
+            final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
+            final String service = selectedPlan.getService();
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
             if (nativeRequest.isTrialOpted()) {
                 // TODO:: eligibility handling
@@ -53,11 +54,15 @@ public class BasicPricingManager implements IPricingManager {
                 // return
 //                }
             }
+            couponOptional = optionalPlanDiscount(request.getCouponId(), request.getMsisdn(), request.getUid(), service, request.getPaymentCode(), selectedPlan);
         } else {
-            PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;
-            itemId = pointRequest.getItemId();
+            final PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;
+            final ItemDTO itemDTO = Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY105));
+            final String service = itemDTO.getService();
+            request.setAmount(itemDTO.getPrice());
+            couponOptional = optionalItemDiscount(request.getCouponId(), request.getMsisdn(), request.getUid(), service, itemDTO.getId(), request.getPaymentCode());
         }
-        optionalDiscount(request.getCouponId(), request.getMsisdn(), request.getUid(), service, itemId, request.getPaymentCode(), selectedPlan).ifPresent(couponDTO -> {
+        couponOptional.ifPresent(couponDTO -> {
             final double totalAmount = request.getAmount();
             final double finalAmount = getFinalAmount(totalAmount, couponDTO);
             request.setAmount(finalAmount);
@@ -65,10 +70,22 @@ public class BasicPricingManager implements IPricingManager {
         });
     }
 
-    private Optional<CouponDTO> optionalDiscount(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode, PlanDTO selectedPlan) {
+    private Optional<CouponDTO> optionalPlanDiscount(String couponId, String msisdn, String uid, String service, PaymentCode paymentCode, PlanDTO selectedPlan) {
         if (!StringUtils.isEmpty(couponId) && selectedPlan.getPlanType() != PlanType.FREE_TRIAL) {
             CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
+            CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            if (couponResponse.getState() != CouponProvisionState.INELIGIBLE) {
+                return Optional.of(couponResponse.getCoupon());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<CouponDTO> optionalItemDiscount(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode) {
+        if (!StringUtils.isEmpty(couponId)) {
+            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             if (couponResponse.getState() != CouponProvisionState.INELIGIBLE) {
                 return Optional.of(couponResponse.getCoupon());

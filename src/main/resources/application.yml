@@ -66,6 +66,7 @@ service:
         allOffers: ${service.subscription.api.root}/wynk/s2s/v1/data/allOffers
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
+        allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments

@@ -1,10 +1,12 @@
 package in.wynk.payment.service;
 
 import in.wynk.payment.dto.request.*;
+import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ISubscriptionServiceManager {
@@ -33,6 +35,7 @@ public interface ISubscriptionServiceManager {
 
     void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request);
 
+    Collection<ItemDTO> getItems();
 
     List<PlanDTO> getPlans();
 

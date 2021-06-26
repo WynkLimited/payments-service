@@ -14,6 +14,7 @@ import java.io.Serializable;
 public class UserDetails implements IUserDetails, Serializable {
 
     private String msisdn;
+    private String dslId;
     private String subscriberId;
 
 }

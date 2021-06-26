@@ -1,6 +1,6 @@
 package in.wynk.payment.core.utils;
 
-import com.fasterxml.uuid.Generators;
+import com.datastax.driver.core.utils.UUIDs;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
@@ -11,7 +11,7 @@ public class TransactionIdentityGenerator implements IdentifierGenerator {
 
     @Override
     public Serializable generate(SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws HibernateException {
-        return Generators.timeBasedGenerator().generate().toString();
+        return UUIDs.timeBased().toString();
     }
 
     @Override

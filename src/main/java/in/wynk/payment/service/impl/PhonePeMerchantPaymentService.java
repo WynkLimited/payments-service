@@ -2,21 +2,24 @@ package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
@@ -25,10 +28,10 @@ import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.DefaultCallbackResponse;
 import in.wynk.payment.dto.response.phonepe.PhonePeChargingResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
-import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
@@ -43,11 +46,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
-import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
@@ -83,9 +84,28 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
 
     @Override
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
-        String returnUrl = processCallback(callbackRequest);
-        return WynkResponseUtils.redirectResponse(returnUrl);
-
+        handleCallbackInternal(callbackRequest);
+        final Transaction transaction = TransactionContext.get();
+        if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
+            Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
+            if (optionalDetails.isPresent()) {
+                final String redirectionUrl;
+                IChargingDetails chargingDetails = (IChargingDetails) optionalDetails.get();
+                if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                    log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    redirectionUrl = chargingDetails.getPageUrlDetails().getPendingPageUrl();
+                } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+                    log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
+                } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+                    redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
+                } else {
+                    redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
+                }
+                return WynkResponseUtils.redirectResponse(redirectionUrl);
+            }
+        }
+        return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
     }
 
     @Override
@@ -149,39 +169,13 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
     }
 
-    private String processCallback(CallbackRequest callbackRequest) {
+    private void handleCallbackInternal(CallbackRequest callbackRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
             Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();
             Boolean validChecksum = validateChecksum(requestPayload);
             if (validChecksum) {
                 this.fetchAndUpdateTransactionFromSource(transaction);
-                if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                    log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    throw new PaymentRuntimeException(PaymentErrorType.PAY300);
-                } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                    log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    throw new PaymentRuntimeException(PaymentErrorType.PAY301);
-                } else if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                    SessionDTO sessionDTO = SessionContextHolder.getBody();
-                    return SUCCESS_PAGE + SessionContextHolder.getId() +
-                            SLASH +
-                            sessionDTO.<String>get(OS) +
-                            QUESTION_MARK +
-                            SERVICE +
-                            EQUAL +
-                            sessionDTO.<String>get(SERVICE) +
-                            AND +
-                            APP_ID +
-                            EQUAL +
-                            sessionDTO.<String>get(APP_ID) +
-                            AND +
-                            BUILD_NO +
-                            EQUAL +
-                            sessionDTO.<Integer>get(BUILD_NO);
-                } else {
-                    throw new PaymentRuntimeException(PaymentErrorType.PAY302);
-                }
             } else {
                 log.error(PHONEPE_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with Wynk transactionId: {} and uid: {}", transaction.getIdStr(), transaction.getUid());
                 throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found for transactionId:" + transaction.getIdStr());
@@ -203,7 +197,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            headers.add(X_REDIRECT_URL, phonePeCallBackURL + SessionContextHolder.getId());
+            headers.add(X_REDIRECT_URL, phonePeCallBackURL + PaymentCode.PHONEPE_WALLET.name());
             headers.add(X_REDIRECT_MODE, HttpMethod.POST.name());
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
             ResponseEntity<PhonePeResponse<PhonePeChargingResponseWrapper>> response = restTemplate.exchange(phonePeBaseUrl + DEBIT_API, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<PhonePeResponse<PhonePeChargingResponseWrapper>>() {

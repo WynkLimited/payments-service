@@ -51,6 +51,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             PlanDTO paidPlan = paymentCachingService.getPlan(planId);
+            // TODO:: integrate subscription compute here, use caching for 15 min
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
             Optional<Integer> freePlanOption = Optional.of(paidPlan.getLinkedFreePlanId());

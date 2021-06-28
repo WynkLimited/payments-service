@@ -8,11 +8,13 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
-import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.service.IUserDetailsManger;
+import in.wynk.payment.service.IPurchaseDetailsManger;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -33,13 +35,13 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
     private final ITransactionDao transactionDao;
-    private final IUserDetailsManger payerDetailsManger;
+    private final IPurchaseDetailsManger purchaseDetailsManger;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IUserDetailsManger payerDetailsManger, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IPurchaseDetailsManger purchaseDetailsManger, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.transactionDao = transactionDao;
-        this.payerDetailsManger = payerDetailsManger;
+        this.purchaseDetailsManger = purchaseDetailsManger;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
@@ -69,7 +71,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction init(AbstractTransactionInitRequest transactionInitRequest) {
         final Transaction transaction = PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) : initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
-        TransactionContext.set(TransactionDetails.builder().transaction(transaction).build());
+        final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
+        purchaseDetailsManger.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
         return transaction;
     }
 
@@ -77,11 +81,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     * initiate transaction and upsert payer info for plan based charging, skip in case point charging
     **/
     @Override
-    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IUserDetails userDetails, IAppDetails appDetails) {
+    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IPurchaseDetails purchaseDetails) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
-            final ICombinedUserDetails persistedDetails = payerDetailsManger.save(transaction.getIdStr(), CombinedUserDetails.builder().appDetails(appDetails).userDetails(userDetails).build());
-            TransactionContext.set(TransactionDetails.builder().transaction(transaction).userDetails(persistedDetails.getUserDetails()).appDetails(persistedDetails.getAppDetails()).build());
+            purchaseDetailsManger.save(transaction, purchaseDetails);
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build());
             return transaction;
         }
         return init(transactionInitRequest);

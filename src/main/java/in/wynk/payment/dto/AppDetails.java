@@ -1,6 +1,7 @@
 package in.wynk.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.App;
 import in.wynk.wynkservice.core.dao.entity.Os;
@@ -26,15 +27,28 @@ public class AppDetails implements IAppDetails, Serializable {
     private String deviceType;
     private String appVersion;
 
-    public WynkService getService() {
+    public WynkService getServiceObj() {
         return WynkServiceUtils.fromServiceId(service);
     }
 
-    public App getApp() {
-        return WynkServiceUtils.getServiceSupportedApp(appId, getService());
+    public App getAppObj() {
+        return WynkServiceUtils.getServiceSupportedApp(appId, getServiceObj());
     }
 
-    public Os getOs() {
-        return WynkServiceUtils.getAppSupportedOs(os, getApp());
+    public Os getOsObj() {
+        return WynkServiceUtils.getAppSupportedOs(os, getAppObj());
+    }
+
+    public String getService() {
+        return getServiceObj().getId();
+    }
+
+    public String getOs() {
+        return getOsObj().getId();
+    }
+
+    @Override
+    public String getAppId() {
+        return getAppObj().getId();
     }
 }

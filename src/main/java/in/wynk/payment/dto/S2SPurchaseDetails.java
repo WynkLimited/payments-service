@@ -2,6 +2,7 @@ package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,5 +21,5 @@ public class S2SPurchaseDetails implements IPurchaseDetails {
     @Analysed
     private PaymentDetails paymentDetails;
     @Analysed
-    private IProductDetails productDetails;
+    private AbstractProductDetails productDetails;
 }

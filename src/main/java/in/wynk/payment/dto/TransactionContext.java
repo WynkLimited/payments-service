@@ -1,6 +1,9 @@
 package in.wynk.payment.dto;
 
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+
+import java.util.Optional;
 
 public class TransactionContext {
     private static final ThreadLocal<TransactionDetails> transactionThreadLocal = new ThreadLocal<>();
@@ -13,12 +16,8 @@ public class TransactionContext {
         return transactionThreadLocal.get().getTransaction();
     }
 
-    public static IUserDetails getUserDetails() {
-        return transactionThreadLocal.get().getUserDetails();
-    }
-
-    public static IAppDetails getAppDetails() {
-        return transactionThreadLocal.get().getAppDetails();
+    public static Optional<IPurchaseDetails> getPurchaseDetails() {
+        return Optional.ofNullable(transactionThreadLocal.get().getPurchaseDetails());
     }
 
 }

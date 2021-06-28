@@ -3,11 +3,10 @@ package in.wynk.payment.aspect;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.ICombinedUserDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.service.IPurchaseDetailsManger;
 import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.impl.UserDetailsManager;
 import in.wynk.spel.IRuleEvaluator;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -31,7 +30,7 @@ public class TransactionAwareAspect {
     private ITransactionManagerService transactionManager;
 
     @Autowired
-    private UserDetailsManager payerDetailsManager;
+    private IPurchaseDetailsManger payerDetailsManager;
 
     @Before(value = "execution(@in.wynk.payment.aspect.advice.TransactionAware * *.*(..))")
     public void beforeTransactionAware(JoinPoint joinPoint) {
@@ -41,8 +40,9 @@ public class TransactionAwareAspect {
             String txnId = parseSpel(joinPoint, transactionAware);
             final Transaction transaction = transactionManager.get(txnId);
             if (transaction != null) {
-                final ICombinedUserDetails combinedUserDetails = payerDetailsManager.get(transaction.getIdStr());
-                TransactionContext.set(TransactionDetails.builder().transaction(transaction).userDetails(combinedUserDetails.getUserDetails()).appDetails(combinedUserDetails.getAppDetails()).build());
+                final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder().transaction(transaction);
+                payerDetailsManager.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
+                TransactionContext.set(transactionDetailsBuilder.build());
             } else {
                 throw new WynkRuntimeException("Transaction is null");
             }

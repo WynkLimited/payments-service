@@ -1,7 +1,7 @@
 package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;

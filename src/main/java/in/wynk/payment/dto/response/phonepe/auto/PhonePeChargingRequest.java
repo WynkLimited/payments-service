@@ -2,7 +2,7 @@ package in.wynk.payment.dto.response.phonepe.auto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

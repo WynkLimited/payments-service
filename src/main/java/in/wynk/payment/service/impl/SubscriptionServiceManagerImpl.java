@@ -9,8 +9,8 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.dto.IAppDetails;
-import in.wynk.payment.dto.IUserDetails;
+import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
@@ -127,7 +127,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         try {
             final IAppDetails appDetails = request.getAppDetails();
             final IUserDetails userDetails = request.getUserDetails();
-            TrialPlansComputationRequest trialPlansComputationRequest = TrialPlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(userDetails.getMsisdn())).service(request.getService()).appId(appDetails.getApp().getId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs().getId()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).build();
+            TrialPlansComputationRequest trialPlansComputationRequest = TrialPlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(userDetails.getMsisdn())).service(request.getService()).appId(appDetails.getAppId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).build();
             RequestEntity<TrialPlansComputationRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(trialPlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), trialPlansComputationRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>>() {
             });

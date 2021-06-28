@@ -1,6 +1,8 @@
 package in.wynk.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IUserDetails;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;

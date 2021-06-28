@@ -81,7 +81,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
     @Override
     public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> request) {
         final PaymentCode paymentCode = request.getPaymentCode();
-        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getAppDetails());
+        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request.getPurchaseDetails());
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>> chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>>() {
         });

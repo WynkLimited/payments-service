@@ -13,14 +13,13 @@ import lombok.NoArgsConstructor;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class PointDetails implements IProductDetails {
+public class PointDetails extends AbstractProductDetails {
     @Analysed
     private String itemId;
 
     @Override
-    @Analysed
-    public boolean isAutoRenew() {
-        return false;
+    public String getId() {
+        return itemId;
     }
 
     @Override

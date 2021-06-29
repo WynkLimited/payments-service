@@ -14,7 +14,6 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -47,7 +46,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -147,30 +146,26 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         return WynkResponseEntity.<AbstractCallbackResponse>builder().success(false).build();
     }
 
+    @TransactionAware(txnId = "#transactionId")
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(String transactionId) {
+        final Transaction transaction = TransactionContext.get();
+        return internalStatus(ChargingTransactionStatusRequest.builder().transactionId(transactionId).planId(transaction.getPlanId()).build());
+    }
+
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionStatusRequest request) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
-        final PaymentCode paymentCode = transaction.getPaymentChannel();
         final TransactionStatus existingStatus = transaction.getStatus();
-        final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
-        });
-        request.setPlanId(transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
         try {
-            return statusService.status(request);
-        } catch (WynkRuntimeException e) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
-            throw e;
+            return internalStatus(request);
         } finally {
-            AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
-            if (request.getMode() == StatusMode.SOURCE) {
-                final TransactionStatus finalStatus = transaction.getStatus();
-                transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
-                if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-                    exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-                }
-                publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
-            }
+            final TransactionStatus finalStatus = transaction.getStatus();
+            AnalyticService.update(PAYMENT_METHOD, transaction.getPaymentChannel().name());
+            transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS)
+                exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
+            publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
         }
     }
 
@@ -238,6 +233,20 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         return BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {
         }).topUp(request);
+    }
+
+    private WynkResponseEntity<AbstractChargingStatusResponse> internalStatus(AbstractTransactionStatusRequest request) {
+        final Transaction transaction = TransactionContext.get();
+        final PaymentCode paymentCode = transaction.getPaymentChannel();
+        final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
+        });
+        request.setPlanId(transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
+        try {
+            return statusService.status(request);
+        } catch (WynkRuntimeException e) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+            throw e;
+        }
     }
 
     private void exhaustCouponIfApplicable(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {

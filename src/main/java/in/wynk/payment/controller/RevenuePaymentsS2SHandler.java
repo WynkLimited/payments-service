@@ -6,8 +6,10 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.S2SPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
-import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
+import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.PaymentManager;
@@ -31,23 +33,23 @@ public class RevenuePaymentsS2SHandler {
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
-    public ResponseEntity<?> doCharging(@RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(@RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
     }
 
-    @GetMapping("/v1/payment/status")
+    @GetMapping("/v1/payment/status/{tid}")
     @AnalyseTransaction(name = "paymentStatus")
-    public ResponseEntity<?> status(@RequestBody ChargingTransactionStatusRequest request) {
-        return paymentManager.status(request);
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String tid) {
+        return paymentManager.status(tid);
     }
 
     @PostMapping("/v1/payment/refund")
     @AnalyseTransaction(name = "initRefund")
-    public ResponseEntity<?> doRefund(@RequestBody PaymentRefundInitRequest request) {
+    public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@RequestBody PaymentRefundInitRequest request) {
         AnalyticService.update(request);
-        WynkResponseEntity<?> baseResponse = paymentManager.refund(request);
+        WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = paymentManager.refund(request);
         AnalyticService.update(baseResponse.getBody());
         return baseResponse;
     }

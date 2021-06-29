@@ -46,9 +46,8 @@ public class RevenuePaymentHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentStatus")
     public ResponseEntity<?> status(@PathVariable String sid) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        AbstractTransactionStatusRequest request = ChargingTransactionStatusRequest.builder().transactionId(sessionDTO.get(TRANSACTION_ID)).build();
-        return paymentManager.status(request);
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        return paymentManager.status(sessionDTO.<String>get(TRANSACTION_ID));
     }
 
     @PostMapping("/verify/{sid}")

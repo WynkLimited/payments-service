@@ -8,6 +8,8 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
@@ -36,7 +38,7 @@ public class RevenuePaymentHandler {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public ResponseEntity<?> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
@@ -45,7 +47,7 @@ public class RevenuePaymentHandler {
     @GetMapping("/status/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentStatus")
-    public ResponseEntity<?> status(@PathVariable String sid) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String sid) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         return paymentManager.status(sessionDTO.<String>get(TRANSACTION_ID));
     }

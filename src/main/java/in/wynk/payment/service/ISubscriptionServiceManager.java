@@ -10,6 +10,8 @@ import java.util.List;
 
 public interface ISubscriptionServiceManager {
 
+    boolean renewalPlanEligibility(int planId, String transactionId, String uid);
+
     void subscribePlanAsync(int planId, String transactionId, String uid, String msisdn, String paymentCode, TransactionStatus transactionStatus, PaymentEvent paymentEvent);
 
     void unSubscribePlanAsync(int planId, String transactionId, String uid, String msisdn, TransactionStatus transactionStatus, PaymentEvent paymentEvent);

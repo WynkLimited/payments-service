@@ -92,4 +92,6 @@ public class LatestReceiptInfo {
     @JsonProperty("web_order_line_item_id")
     private String webOrderLineItemId;
 
+    @JsonProperty("offer_code_ref_name")
+    private String offerCodeRefName;
 }

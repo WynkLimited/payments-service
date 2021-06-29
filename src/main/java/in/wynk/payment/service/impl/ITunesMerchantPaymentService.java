@@ -168,6 +168,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())
                     .decodedReceipt(request.getReceipt())
                     .extTxnId(latestReceiptInfo.getOriginalTransactionId())
+                    .couponCode(latestReceiptInfo.getOfferCodeRefName())
                     .freeTrial(Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod()))
                     .build();
         }

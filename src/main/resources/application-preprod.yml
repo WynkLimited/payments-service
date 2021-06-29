@@ -100,7 +100,7 @@ payment:
       day: 0
       hour: 1
   preDebitNotification:
-    preOffsetDays: -3
+    preOffsetDays: 3
     offset:
       day: 0
       hour: 1

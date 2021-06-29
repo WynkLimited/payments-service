@@ -327,8 +327,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         String sid = SessionContextHolder.get().getId().toString();
         Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-            //payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
-            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
+            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
         } else {
             payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount);
         }
@@ -459,6 +458,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         final String email = uid + BASE_USER_EMAIL;
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, mihpayid);
+        orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER,paymentRenewalChargingRequest.getId());
         orderedMap.put(PAYU_TRANSACTION_AMOUNT, amount);
         orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getIdStr());
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);

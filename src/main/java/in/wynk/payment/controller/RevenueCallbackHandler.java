@@ -47,12 +47,10 @@ public class RevenueCallbackHandler {
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @AnalyseTransaction(name = "paymentCallback")
     public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
-        final String transactionId = (String) payload.get("txnid");
         final PaymentCode paymentCode = PaymentCode.getFromCode(partner);
-        final CallbackRequest request = CallbackRequest.builder().body(payload).transactionId(transactionId).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        paymentManager.handleCallback(request, paymentCode);
+        paymentManager.handleCallback(payload, paymentCode);
         return EmptyResponse.response();
     }
 

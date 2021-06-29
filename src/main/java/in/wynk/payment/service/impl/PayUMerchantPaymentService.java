@@ -68,7 +68,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IRenewalMerchantPaymentService, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService, IMerchantPaymentRefundService, IMerchantProcessCallbackRequestService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -772,6 +772,11 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }
         return BaseResponse.builder().body(refundResponseBuilder.build()).build();
+    }
+
+    @Override
+    public String getTxnId(Map<String, Object> payload) {
+        return (String) payload.get(PAYU_REQUEST_TRANSACTION_ID);
     }
 
 }

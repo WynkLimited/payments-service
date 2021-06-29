@@ -10,7 +10,6 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.constant.CouponProvisionState;
 import in.wynk.coupon.core.constant.ProvisionSource;
-import in.wynk.coupon.core.dto.CouponContext;
 import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
@@ -123,6 +122,11 @@ public class PaymentManager {
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
         }
         return response;
+    }
+
+    public BaseResponse<?> handleCallback(Map<String, Object> payload, PaymentCode paymentCode) {
+        final IMerchantProcessCallbackRequestService service = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantProcessCallbackRequestService.class);
+        return handleCallback(CallbackRequest.builder().body(payload).transactionId(service.getTxnId(payload)).build(), paymentCode);
     }
 
     @TransactionAware(txnId = "#request.transactionId")

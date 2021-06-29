@@ -12,6 +12,7 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
@@ -43,10 +44,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
 @Service
 @Slf4j
 public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManager {
+
+    @Value("${payment.recurring.offset.hour}")
+    private int hour;
 
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
@@ -69,15 +74,24 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.unSubscribePlan}")
     private String unSubscribePlanEndPoint;
 
+    @Value("${service.subscription.api.endpoint.renewalPlanEligibility}")
+    private String renewalPlanEligibilityEndpoint;
+
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
     private RestTemplate restTemplate;
+
     @Autowired
     private ISqsManagerService sqsMessagePublisher;
+
     @Autowired
     private WynkApplicationContext myApplicationContext;
+
     @Autowired
     private PaymentCachingService paymentCachingService;
+
+    @Autowired
+    private IRecurringPaymentManagerService recurringPaymentManagerService;
 
     @Override
     public List<PlanDTO> getPlans() {
@@ -106,6 +120,28 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         RequestEntity<Void> allItemRequest = ChecksumUtils.buildEntityWithAuthHeaders(allItemApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allItemRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<AllItemsResponse>>() {
         }).getBody()).getData().getItems();
+    }
+
+    @Override
+    public boolean renewalPlanEligibility(int planId, String transactionId, String uid) {
+        try {
+            RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).build();
+            RequestEntity<RenewalPlanEligibilityRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest, HttpMethod.POST);
+            ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
+            });
+            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+                long today = System.currentTimeMillis();
+                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil()-today;
+                if (furtherDefer > hour * 60 * 60 * 1000) {
+                    recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PAY105);
+        }
     }
 
     @Override

@@ -40,6 +40,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -197,10 +199,11 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                     deficitBalance=finalAmount-usableBalance;
                 }
                 AnalyticService.update("PHONEPE_CODE", walletResponse.getCode());
+                final DecimalFormat df = new DecimalFormat("#.##");
                 userWalletDetailsBuilder
                         .active(true)
                         .balance(usableBalance)
-                        .deficitBalance(deficitBalance)
+                        .deficitBalance(Double.valueOf(df.format(deficitBalance)))
                         .addMoneyAllowed(walletResponse.getData().getWallet().getWalletTopupSuggested());
             }
             else {

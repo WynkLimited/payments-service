@@ -228,6 +228,7 @@ public class PaymentManager {
         final Transaction transaction = initiateTransactionForRenew(request.getPlanId(), request.getUid(), request.getMsisdn(), request.getClientAlias(), paymentCode);
         transaction.putValueInPaymentMetaData(RENEWAL, true);
         transaction.putValueInPaymentMetaData(ATTEMPT_SEQUENCE, request.getAttemptSequence() + 1);
+        transaction.putValueInPaymentMetaData(ORIGINAL_TRANSACTION_ID, request.getId());
         final TransactionStatus initialStatus = transaction.getStatus();
         IMerchantPaymentRenewalService merchantPaymentRenewalService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentRenewalService.class);
         try {

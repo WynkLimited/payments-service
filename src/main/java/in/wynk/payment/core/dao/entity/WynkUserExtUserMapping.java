@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Getter
 @Document("wynk_user_ext_user_mapping")
 @NoArgsConstructor
-public class WynkUserExtUserMapping extends MongoBaseEntity {
+public class WynkUserExtUserMapping extends MongoBaseEntity<String> {
 
     @Setter
     private String externalUserId;

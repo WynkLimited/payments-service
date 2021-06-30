@@ -4,8 +4,10 @@ public interface BeanConstant {
 
     String PAYU_MERCHANT_PAYMENT_SERVICE = "PayU";
     String PAYTM_MERCHANT_WALLET_SERVICE = "PayTm";
+    String APB_PAYTM_MERCHANT_WALLET_SERVICE = "APBPayTm";
     String ITUNES_PAYMENT_SERVICE = "iTunes";
     String PHONEPE_MERCHANT_PAYMENT_SERVICE = "PhonePe";
+    String PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE="PhonePeAuto";
     String APB_MERCHANT_PAYMENT_SERVICE = "AirtelPaymentBank";
     String ACB_MERCHANT_PAYMENT_SERVICE = "AirtelCarrierBilling";
     String GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE = "GoogleWallet";

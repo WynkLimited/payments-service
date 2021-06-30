@@ -5,13 +5,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.enums.PaymentGroup;
 
+import java.io.Serializable;
 
+@Deprecated
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "group")
-@JsonSubTypes({@JsonSubTypes.Type(value = Card.class, name = "CARD"),
-        @JsonSubTypes.Type(value = Wallet.class, name = "WALLET")})
-public interface Payment {
+@JsonSubTypes({@JsonSubTypes.Type(value = Card.class, name = "CARD"), @JsonSubTypes.Type(value = Wallet.class, name = "WALLET")})
+public interface Payment extends Serializable {
     PaymentGroup getGroup();
-
     PaymentCode getPaymentCode();
 }
-

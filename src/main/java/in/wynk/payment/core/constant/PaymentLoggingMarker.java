@@ -12,7 +12,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
     Marker SUBSCRIPTION_ERROR = MarkerFactory.getMarker("SUBSCRIPTION_ERROR");
 
-
+    Marker RENEWAL_ELIGIBILITY_API_ERROR = MarkerFactory.getMarker("RENEWAL_ELIGIBILITY_API_ERROR");
     Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");
     Marker PAYMENT_RECONCILIATION_FAILURE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_FAILURE");
 
@@ -37,6 +37,14 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PHONEPE_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PHONEPE_CHARGING_STATUS_VERIFICATION");
     Marker PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE");
 
+    Marker PHONEPE_OTP_SEND_FAILURE = MarkerFactory.getMarker("PHONEPE_OTP_SEND_FAILURE");
+    Marker PHONEPE_OTP_VERIFICATION_FAILURE = MarkerFactory.getMarker("PHONEPE_OTP_VERIFICATION_FAILURE");
+    Marker PHONEPE_GET_BALANCE_FAILURE = MarkerFactory.getMarker("PHONEPE_GET_BALANCE_FAILURE");
+    Marker PHONEPE_UNLINK_FAILURE = MarkerFactory.getMarker("PHONEPE_UNLINK_FAILURE");
+    Marker PHONEPE_ADD_MONEY_FAILURE = MarkerFactory.getMarker("PHONEPE_ADD_MONEY_FAILURE");
+
+    Marker PAYTM_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYTM_CHARGING_STATUS_VERIFICATION");
+
     Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
     Marker ITUNES_ERROR = MarkerFactory.getMarker("ITUNES_ERROR");
 
@@ -54,6 +62,14 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYMENT_REFUND_ERROR = MarkerFactory.getMarker("PAYMENT_REFUND_ERROR");
 
     Marker CLIENT_CALLBACK_INFO = MarkerFactory.getMarker("CLIENT_CALLBACK_INFO");
+
+    Marker SAVED_OPTIONS_TIMED_OUT = MarkerFactory.getMarker("SAVED_OPTIONS_TIMED_OUT");
+    Marker LINK_WALLET_ERROR = MarkerFactory.getMarker("LINK_WALLET_ERROR");
+    Marker SAVED_CARDS_ERROR = MarkerFactory.getMarker("SAVED_CARDS_ERROR");
+
+    Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
+
+    Marker SDK_CLIENT_ERROR = MarkerFactory.getMarker("SDK_CLIENT_ERROR");
 
 
 }

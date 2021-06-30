@@ -199,11 +199,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                     deficitBalance=finalAmount-usableBalance;
                 }
                 AnalyticService.update("PHONEPE_CODE", walletResponse.getCode());
-                final DecimalFormat df = new DecimalFormat("#.##");
                 userWalletDetailsBuilder
                         .active(true)
                         .balance(usableBalance)
-                        .deficitBalance(Double.valueOf(df.format(deficitBalance)))
+                        .deficitBalance(deficitBalance)
                         .addMoneyAllowed(walletResponse.getData().getWallet().getWalletTopupSuggested());
             }
             else {

@@ -757,11 +757,13 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PayUPreDebitNotificationResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
             });
             if (response.getStatus()==1) {
-                log.info("all good");
+                log.info(PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: "+response.getInvoiceId()+" invoiceStatus: "+response.getInvoiceStatus());
             } else {
-                log.error("bad");
+                log.error(PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR, response.getMessage());
+                throw new WynkRuntimeException(PAY111);
             }
         } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY111);
         }
     }

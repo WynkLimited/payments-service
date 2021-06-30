@@ -277,7 +277,7 @@ http:
 service:
   subscription:
     api:
-      root: https://subscription-staging.wynk.in
+      root: http://localhost:8080
 
 cors:
   allowed:

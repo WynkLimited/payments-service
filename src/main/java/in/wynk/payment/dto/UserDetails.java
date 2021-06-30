@@ -1,17 +1,15 @@
 package in.wynk.payment.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.payment.core.dao.entity.IUserDetails;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
 import java.io.Serializable;
 
 @Getter
 @Builder
 @ToString
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserDetails implements IUserDetails, Serializable  {
 
     private String msisdn;

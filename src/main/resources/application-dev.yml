@@ -15,24 +15,6 @@ paytm:
   requesting:
     website: WEBSTAGING
 
-apbpaytm:
-  native:
-    clientId: merchant-wynk-uat
-    merchantKey: 2A2%#0MvWdNeg1_7
-    merchantId: WYNKPr93314794046826
-    secret: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
-    accounts:
-      baseUrl: https://accounts-uat.paytm.com
-    services:
-      baseUrl: https://securegw-stage.paytm.in
-    wcf:
-      addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
-      callbackUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/
-  requesting:
-    website: WEBSTAGING
-
-
-
 apb:
   txn:
     inquiry:

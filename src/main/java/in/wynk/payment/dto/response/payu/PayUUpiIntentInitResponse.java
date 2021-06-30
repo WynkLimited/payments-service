@@ -28,17 +28,22 @@ public class PayUUpiIntentInitResponse {
     public String getDeepLink() {
         StringBuilder stringBuilder = new StringBuilder();
         if (Objects.nonNull(this.result)) {
-            stringBuilder.append("upi://pay?pa=");
-            if (StringUtils.isNotBlank(this.result.merchantVpa)) {
-                stringBuilder.append(this.result.merchantVpa);
-            }
-            stringBuilder.append("&pn=WynkLimited&tr=");
-            if (StringUtils.isNotBlank(this.result.paymentId)) {
-                stringBuilder.append(this.result.paymentId);
-            }
-            stringBuilder.append("&am=");
-            if (StringUtils.isNotBlank(this.result.amount)) {
-                stringBuilder.append(this.result.amount);
+            stringBuilder.append("upi://pay?");
+            if (Objects.nonNull(this.result.intentURIData)) {
+                stringBuilder.append(this.result.intentURIData);
+            } else {
+                stringBuilder.append("pa=");
+                if (StringUtils.isNotBlank(this.result.merchantVpa)) {
+                    stringBuilder.append(this.result.merchantVpa);
+                }
+                stringBuilder.append("&pn=WynkLimited&tr=");
+                if (StringUtils.isNotBlank(this.result.paymentId)) {
+                    stringBuilder.append(this.result.paymentId);
+                }
+                stringBuilder.append("&am=");
+                if (StringUtils.isNotBlank(this.result.amount)) {
+                    stringBuilder.append(this.result.amount);
+                }
             }
         }
         return stringBuilder.toString();

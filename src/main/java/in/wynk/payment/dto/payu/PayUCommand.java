@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum PayUCommand {
 
     VERIFY_PAYMENT("verify_payment"),
-    CARD_BIN_INFO("check_isDomestic"),
+    CARD_BIN_INFO("getBinInfo"),
     USER_CARD_DETAILS("get_user_cards"),
     SI_TRANSACTION("si_transaction"),
     VERIFY_VPA("validateVPA"),

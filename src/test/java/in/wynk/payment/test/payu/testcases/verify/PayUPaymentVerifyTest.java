@@ -7,7 +7,7 @@ import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.PayUVpaVerificationResponse;
+import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
 import in.wynk.payment.test.payu.data.PayUTestData;
@@ -115,7 +115,5 @@ public class PayUPaymentVerifyTest {
         Assert.assertEquals(responseBody.getCardCategory(), cardInfo.getCardCategory());
         Assert.assertEquals(responseBody.isValid(), false);
     }
-
-
 
 }

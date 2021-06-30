@@ -1,7 +1,6 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.common.constant.SessionKeys;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -70,8 +69,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         Session<SessionDTO> session = SessionContextHolder.get();
         if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
             SessionDTO sessionDTO = session.getBody();
-            sessionDTO.put(SessionKeys.TRANSACTION_ID, transaction.getIdStr());
-            sessionDTO.put(SessionKeys.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
+            sessionDTO.put(TRANSACTION_ID, transaction.getIdStr());
+            sessionDTO.put(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         }
         return transaction;
     }
@@ -126,8 +125,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync) {
         try {
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
-                if ((PaymentEvent.CANCELLED == transaction.getType()) || existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-                    unsubscribePlan(transaction, finalTransactionStatus, isSync);
+                if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                    // do nothing as per https://airteldigital.atlassian.net/browse/RG-1610
+                    return;
                 } else {
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
                     if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
@@ -142,6 +142,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         } finally {
             if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
                 transaction.setExitTime(Calendar.getInstance());
+            }
+            if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
+                return;
             }
             this.upsert(transaction);
         }
@@ -174,12 +177,15 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private void publishAnalytics(Transaction transaction) {
         AnalyticService.update(UID, transaction.getUid());
         AnalyticService.update(MSISDN, transaction.getMsisdn());
+        AnalyticService.update(PLAN_ID, transaction.getPlanId());
+        AnalyticService.update(ITEM_ID, transaction.getItemId());
+        AnalyticService.update(AMOUNT_PAID, transaction.getAmount());
         AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
-        AnalyticService.update(PLAN_ID, transaction.getPlanId());
-        AnalyticService.update(ITEM_ID, transaction.getItemId());
+        AnalyticService.update(COUPON_CODE,transaction.getCoupon());
+        AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
 

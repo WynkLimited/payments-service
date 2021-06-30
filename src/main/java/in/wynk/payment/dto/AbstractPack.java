@@ -14,6 +14,9 @@ public abstract class AbstractPack {
     private final String title;
     private final String timeUnit;
 
+    private final int monthlyAmount;
+    private final int month;
+
     private final AbstractPartnerBenefits benefits;
 
     public abstract ProvisionType getType();

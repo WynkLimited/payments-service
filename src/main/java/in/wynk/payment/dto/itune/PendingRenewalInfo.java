@@ -25,6 +25,7 @@ public class PendingRenewalInfo {
     @Analysed
     private String expirationIntent;
 
+    @Analysed
     @JsonProperty("grace_period_expires_date")
     private String gracePeriodExpiresDate;
 
@@ -32,6 +33,7 @@ public class PendingRenewalInfo {
     @Analysed
     private String gracePeriodExpiresDateMs;
 
+    @Analysed
     @JsonProperty("grace_period_expires_date_pst")
     private String gracePeriodExpiresDatePst;
 
@@ -39,6 +41,7 @@ public class PendingRenewalInfo {
     @Analysed
     private String inBillingRetryPeriod;
 
+    @Analysed
     @JsonProperty("offer_code_ref_name")
     private String offerCodeRefName;
 
@@ -46,6 +49,7 @@ public class PendingRenewalInfo {
     @Analysed
     private String originalTransactionId;
 
+    @Analysed
     @JsonProperty("price_consent_status")
     private String priceConsentStatus;
 
@@ -53,6 +57,7 @@ public class PendingRenewalInfo {
     @Analysed
     private String productId;
 
+    @Analysed
     @JsonProperty("promotional_offer_id")
     private String promotionalOfferId;
 

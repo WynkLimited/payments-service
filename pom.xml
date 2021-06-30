@@ -76,10 +76,19 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>wynk-service-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>payment-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>lib-cache</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!--DEPENDENCIES-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -225,6 +234,10 @@
                         <aspectLibrary>
                             <groupId>in.wynk</groupId>
                             <artifactId>lib-aspects</artifactId>
+                        </aspectLibrary>
+                        <aspectLibrary>
+                            <groupId>in.wynk</groupId>
+                            <artifactId>lib-cache</artifactId>
                         </aspectLibrary>
                         <aspectLibrary>
                             <groupId>in.wynk</groupId>

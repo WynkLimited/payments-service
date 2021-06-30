@@ -5,13 +5,13 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.enums.Os;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,7 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
         }
         map.put(UID, request.getUid());
         map.put(MSISDN, request.getMsisdn());
-        map.put(OS, Os.getOsFromValue(request.getOs()).getValue());
+        map.put(OS, WynkServiceUtils.fromOsId(request.getOs()).getId().toLowerCase());
         map.put(CLIENT, getClientAlias(SecurityContextHolder.getContext().getAuthentication().getName()));
         if (Objects.nonNull(request.getBuildNo())) {
             map.put(BUILD_NO, request.getBuildNo());

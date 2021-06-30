@@ -1,19 +1,19 @@
 ######  Properties #########
 paytm:
   native:
-    clientId: merchant-wynk-staging
-    merchantKey: 6UePBAcq7LTfdGJI
-    merchantId: WYNKLI36809118294255
-    secret: 653fe766-5864-4e16-a288-68ebcccffbd0
+    clientId: merchant-wynk-uat
+    merchantKey: 2A2%#0MvWdNeg1_7
+    merchantId: WYNKPr93314794046826
+    secret: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
     accounts:
       baseUrl: https://accounts-uat.paytm.com
     services:
-      baseUrl: https://securegw-stage.paytm.in/paymentservices
+      baseUrl: https://securegw-stage.paytm.in
     wcf:
       addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
-      callbackUrl: http://localhost:8181/wynk/v2/s2s/subscription/callback?sid=
+      callbackUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/
   requesting:
-    website: WCF
+    website: WEBSTAGING
 
 apb:
   txn:
@@ -91,7 +91,7 @@ spring:
 payment:
   se:
     s3:
-      bucket: wcf-logs
+      bucket: wynk-framework-dev-ap-south-1
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:
@@ -198,6 +198,7 @@ payment:
       callback:
         url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
 
 subscription:
   pooling:
@@ -297,6 +298,42 @@ wynk:
     socketTimeout: 5000
     readPreference: secondaryPreferred
 
+cache:
+  caffeine:
+    eviction:
+      size:
+        initial: 10
+        maximum: 500
+      time:
+        expireAfterAccess: 0
+        expireAfterWrite: 0
+        fixed: true
+        timeunit: seconds
+    metrics: false
+    nullable: false
+  enabled: true
+  mode: composite
+  redis:
+    cache:
+      cacheNullValues: false
+      keyPrefix: LOCAL
+      timeunit: minutes
+      ttl: 15
+      usePrefix: false
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      maxIdle: 8
+      maxTotal: 10
+      minIdle: 5
+      timeout: 2000
+    enableJmx: true
+    enabled: true
+    jmxPrefix: local
+    mode: cluster
+    name: l2cache-local
+    readTimeout: 1000
+    usePooling: true
 
 ######## lib-auth props #######
 security:

@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PAYMENT" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="in.wynk.payment.PaymentApplication" />
+    <module name="payments" />
+    <method v="2">
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean install -P revenue-payment -Denv=local -DskipTests=true" />
+    </method>
+  </configuration>
+</component>

@@ -15,4 +15,9 @@ public abstract class LatestReceiptResponse {
     @Analysed
     private final boolean freeTrial;
 
+    private final boolean autoRenewal;
+
+    @Analysed
+    private final String couponCode;
+
 }

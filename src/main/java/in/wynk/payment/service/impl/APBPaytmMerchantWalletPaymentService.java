@@ -327,18 +327,21 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             if (paymentResponse != null && paymentResponse.isResult() && paymentResponse.getData().getPaymentStatus().equalsIgnoreCase(ABP_PAYTM_PAYMENT_SUCCESS)) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                 redirectUrl = successPage + sid;
-
+                AnalyticService.update(ABP_ADD_MONEY_SUCCESS,true);
                 log.info("redirectUrl {}", redirectUrl);
             } else {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode("");
+                AnalyticService.update(ABP_ADD_MONEY_SUCCESS,false);
+                errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.UNKNOWN.name());
             }
             MerchantTransactionEvent merchantTransactionEvent= MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(paymentResponse.getData().getPgId()).request(requestEntity).response(paymentResponse).build();
             eventPublisher.publishEvent(merchantTransactionEvent);
         } catch (HttpStatusCodeException hex) {
+            AnalyticService.update(ABP_ADD_MONEY_SUCCESS,false);
             log.error(APB_PAYTM_CHARGE_FAILURE, hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorCode.name()).description(errorCode.getInternalMessage()).build());
         } catch (Exception e) {
+            AnalyticService.update(ABP_ADD_MONEY_SUCCESS,false);
             log.error(APB_PAYTM_CHARGE_FAILURE, e.getMessage());
             errorCode = ErrorCode.UNKNOWN;
         } finally {

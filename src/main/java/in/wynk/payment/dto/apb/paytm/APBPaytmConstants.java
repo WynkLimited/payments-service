@@ -29,4 +29,6 @@ public interface APBPaytmConstants {
 
     String ABP_PAYTM_PAYMENT_SUCCESS="PAYMENT_SUCCESS";
     String ABP_PAYTM_PAYMENT_PENDING="PAYMENT_PENDING";
+
+    String ABP_ADD_MONEY_SUCCESS="addMoney_Success";
 }

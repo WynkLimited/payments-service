@@ -94,6 +94,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             APBPaytmLinkRequest linkRequest = APBPaytmLinkRequest.builder().walletLoginId(walletLinkRequest.getEncSi()).wallet(WALLET_PAYTM).build();
             HttpHeaders headers= generateHeaders();
             HttpEntity<APBPaytmLinkRequest> requestEntity = new HttpEntity<APBPaytmLinkRequest>(linkRequest,headers);
@@ -136,6 +137,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<Void>builder();
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
+            AnalyticService.update(UID,sessionDTO.<String>get(UID));
             String loginId = sessionDTO.get(WALLET_USER_ID);
             String otpToken = sessionDTO.get(ABP_PAYTM_OTP_TOKEN);
             APBPaytmOtpValidateRequest apbPaytmOtpValidateRequest = APBPaytmOtpValidateRequest.builder().walletLoginId(loginId).channel(CHANNEL_WEB).wallet(WALLET_PAYTM).authType(AUTH_TYPE_UN_AUTH).otp(request.getOtp()).otpToken(otpToken).build();
@@ -260,8 +262,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private APBPaytmResponse getTransactionStatus(Transaction txn) {
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txn.getIdStr());
         if(merchantTransaction==null){
-            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, "Transaction not found in MerchantTransaction,Invalid TransactionId");
-            throw new WynkRuntimeException(PaymentErrorType.PAY010);
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, "Transaction not found in MerchantTransaction for the transactionId: {} and uid: {}", txn.getIdStr(), txn.getUid());
         }
         try {
             HttpHeaders headers= generateHeaders();
@@ -422,16 +423,17 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             }
 
         } catch (HttpStatusCodeException hex) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
             log.error(APB_PAYTM_CHARGE_FAILURE, hex.getResponseBodyAsString());
             errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorCode.name()).description(errorCode.getInternalMessage()).build());
         } catch (Exception e) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
             log.error(APB_PAYTM_CHARGE_FAILURE, e.getMessage());
             errorCode = ErrorCode.UNKNOWN;
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (StringUtils.isBlank(redirectUrl)) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
                 redirectUrl = failurePage + sid;
 
             }

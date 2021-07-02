@@ -399,7 +399,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             final double amountToCharge = transaction.getAmount();
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < amountToCharge) {
-                APBPaytmResponse topUpResponse = this.addMoney(amountToCharge, wallet);
+                final double amountToAdd=amountToCharge-balanceResponse.getData().getBalance();
+                APBPaytmResponse topUpResponse = this.addMoney(amountToAdd, wallet);
                 if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
                     chargingResponseBuilder.deficit(true).info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey));
                     log.info("topUp Response {}", topUpResponse);

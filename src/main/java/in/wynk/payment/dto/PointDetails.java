@@ -3,16 +3,13 @@ package in.wynk.payment.dto;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @Builder
 @AnalysedEntity
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class PointDetails extends AbstractProductDetails {
     @Analysed
     private String itemId;

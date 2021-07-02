@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.BeanConstant;
@@ -40,7 +41,8 @@ public class PaymentQueuesConfig {
                                                                                  ObjectMapper objectMapper,
                                                                                  PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
                                                                                  ISqsManagerService sqsManagerService,
-                                                                                 ITransactionManagerService transactionManager) {
+                                                                                 ITransactionManagerService transactionManager,
+                                                                                 ISubscriptionServiceManager subscriptionServiceManager) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -48,7 +50,8 @@ public class PaymentQueuesConfig {
                 threadPoolExecutor(),
                 scheduledThreadPoolExecutor(),
                 sqsManagerService,
-                transactionManager);
+                transactionManager,
+                subscriptionServiceManager);
     }
 
     @Bean

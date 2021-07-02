@@ -211,7 +211,7 @@ payment:
     apbPaytm:
       api:
         base:
-          url: http://intpay.india.airtel.itm/pg-service
+          url: https://paydigi.airtel.in/pg-service
       callback:
         url: https://payments.wynk.in/wynk/v1/payment/callback/
       auth:

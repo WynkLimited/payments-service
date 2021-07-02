@@ -7,33 +7,42 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.IPricingManager;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public class DefaultTransactionInitRequestMapper implements IObjectMapper {
 
     public static AbstractTransactionInitRequest from(AbstractChargingRequest<?> request) {
+        final IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
+        });
+        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getProductDetails().getId()).getPaymentCode();
         if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return planInit(request.getPaymentCode(), request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
+            return planInit(paymentCode, request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return pointInit(request.getPaymentCode(), request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
+            return pointInit(paymentCode, request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
         }
         throw new WynkRuntimeException("Method is not implemented!");
     }
 
     public static AbstractTransactionInitRequest from(WalletTopUpRequest<?> request) {
+        final IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
+        });
+        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getProductDetails().getId()).getPaymentCode();
         if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return planInit(request.getPaymentCode() ,request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
+            return planInit(paymentCode ,request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return pointInit(request.getPaymentCode(), request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
+            return pointInit(paymentCode, request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
         }
         throw new WynkRuntimeException("Method is not implemented!");
     }

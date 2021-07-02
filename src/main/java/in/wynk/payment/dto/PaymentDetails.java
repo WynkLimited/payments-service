@@ -15,11 +15,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PaymentDetails implements IPaymentDetails {
     private String couponId;
+    private String paymentId;
     @Analysed(name = "paymentMode")
     private String paymentMode;
     @Analysed(name = "bankName")
     private String merchantName;
-    private String paymentCode;
     private boolean trialOpted;
     private boolean autoRenew;
 }

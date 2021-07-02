@@ -7,7 +7,7 @@ import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.SkuMapping;
 import in.wynk.payment.core.dao.repository.IPaymentGroupDao;
-import in.wynk.payment.core.dao.repository.PaymentMethodDao;
+import in.wynk.payment.core.dao.repository.IPaymentMethodDao;
 import in.wynk.payment.core.dao.repository.SkuDao;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.OfferDTO;
@@ -53,7 +53,7 @@ public class PaymentCachingService {
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
     private final Map<String, ItemDTO> items = new ConcurrentHashMap<>();
     @Autowired
-    private PaymentMethodDao paymentMethodDao;
+    private IPaymentMethodDao IPaymentMethodDao;
     @Autowired
     private IPaymentGroupDao paymentGroupDao;
     @Autowired
@@ -81,7 +81,7 @@ public class PaymentCachingService {
         if (MapUtils.isNotEmpty(groupsMap) && writeLock.tryLock()) {
             Map<String, List<PaymentMethod>> newPaymentMethods = new ConcurrentHashMap<>();
             try {
-                List<PaymentMethod> paymentMethods = paymentMethodDao.findByGroupInAndState(groupsMap.keySet(), State.ACTIVE);
+                List<PaymentMethod> paymentMethods = IPaymentMethodDao.findByGroupInAndState(groupsMap.keySet(), State.ACTIVE);
                 for (PaymentMethod method : paymentMethods) {
                     if(groupsMap.containsKey(method.getGroup())) {
                         List<PaymentMethod> paymentMethodsInternal = newPaymentMethods.getOrDefault(method.getGroup(), new ArrayList<>());
@@ -198,7 +198,7 @@ public class PaymentCachingService {
 
 
     private List<PaymentMethod> getActivePaymentMethods() {
-        return paymentMethodDao.findAllByState(State.ACTIVE);
+        return IPaymentMethodDao.findAllByState(State.ACTIVE);
     }
 
 

@@ -49,6 +49,8 @@ public class PaymentOptionsDTO {
     @AnalysedEntity
     public static class PaymentMethodDTO {
         @Analysed
+        private final String paymentId;
+        @Analysed
         private final String group;
         @Analysed
         private final int hierarchy;
@@ -64,6 +66,7 @@ public class PaymentOptionsDTO {
         private final List<String> suffixes;
 
         public PaymentMethodDTO(PaymentMethod method) {
+            this.paymentId = method.getId();
             this.group = method.getGroup();
             this.meta = method.getMeta();
             this.hierarchy = method.getHierarchy();

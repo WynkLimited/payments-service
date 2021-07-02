@@ -22,6 +22,7 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -34,16 +35,12 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
     private static final int N=3;
     private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
-
-    public PaymentOptionServiceImpl(IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService) {
-        this.userPaymentsManager = userPaymentsManager;
-        this.paymentCachingService = paymentCachingService;
-    }
 
     @Override
     public PaymentOptionsDTO getPaymentOptions(String planId) {

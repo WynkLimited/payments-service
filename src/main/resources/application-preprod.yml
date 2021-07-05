@@ -181,8 +181,6 @@ payment:
         info: https://info.payu.in/merchant/postservice.php?form=2
         payment: https://secure.payu.in/_payment
       internal:
-        web:
-          url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
           successUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
           failureUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/

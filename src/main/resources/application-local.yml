@@ -186,8 +186,6 @@ payment:
         info: https://test.payu.in/merchant/postservice.php?form=2
         payment: https://test.payu.in/_payment
       internal:
-        web:
-          url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
           successUrl: http://localhost:8081/wynk/v1/payment/callback/
           failureUrl: http://localhost:8081/wynk/v1/payment/callback/

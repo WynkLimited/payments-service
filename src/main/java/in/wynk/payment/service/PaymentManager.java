@@ -10,7 +10,6 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.constant.CouponProvisionState;
 import in.wynk.coupon.core.constant.ProvisionSource;
-import in.wynk.coupon.core.dto.CouponContext;
 import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
@@ -40,7 +39,6 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -126,6 +124,11 @@ public class PaymentManager {
         return response;
     }
 
+    public BaseResponse<?> handleCallback(Map<String, Object> payload, PaymentCode paymentCode) {
+        final IMerchantProcessCallbackRequestService service = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantProcessCallbackRequestService.class);
+        return handleCallback(CallbackRequest.builder().body(payload).transactionId(service.getTxnId(payload)).build(), paymentCode);
+    }
+
     @TransactionAware(txnId = "#request.transactionId")
     public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode) {
         final Transaction transaction = TransactionContext.get();
@@ -149,7 +152,6 @@ public class PaymentManager {
             transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
         }
-
     }
 
     @ClientAware(clientAlias = "#clientAlias")

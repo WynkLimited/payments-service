@@ -94,7 +94,6 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(UID);
         final String deviceId = sessionDTO.get(DEVICE_ID);
-        final String couponId=sessionDTO.get(COUPON_CODE);
         ExecutorService executorService = Executors.newFixedThreadPool(N);
         Map<SavedDetailsKey, Future<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>>> map = new HashMap<>();
         Map<SavedDetailsKey, UserPreferredPayment> userPreferredPaymentMap = userPaymentsManager.get(uid).stream().collect(Collectors.toMap(UserPreferredPayment::getId, Function.identity()));
@@ -110,7 +109,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {
                         MDC.put(REQUEST_ID, requestId);
-                        return userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId(),couponId);
+                        return userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId(),request.getCouponId());
                     };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {

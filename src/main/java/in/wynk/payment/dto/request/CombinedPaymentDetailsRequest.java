@@ -13,7 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CombinedPaymentDetailsRequest {
-
+    private String couponId;
     private int planId;
     private Map<String, List<String>> paymentGroups;
 

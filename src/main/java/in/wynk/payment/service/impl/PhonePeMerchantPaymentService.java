@@ -99,6 +99,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
             final String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
             return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(HttpStatus.OK).body(WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder().data(ChargingResponse.builder().redirectUrl(redirectUri).build()).build()).build();
         } catch (Exception e) {
+            log.error(PHONEPE_REDIRECT_FLOW_DO_CHARGING_ERROR, e.getMessage(), e);
             return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(HttpStatus.OK).body(WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder().error(TechnicalErrorDetails.builder().description(PAY021.getErrorMessage()).code(PAY021.getErrorCode()).build()).success(false).build()).build();
         }
     }

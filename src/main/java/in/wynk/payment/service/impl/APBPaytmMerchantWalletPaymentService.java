@@ -521,7 +521,9 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
     private double getCouponDiscountPercentage(String couponId){
         try {
+            AnalyticService.update("CouponCode",couponId);
             Coupon coupon = couponCacheService.getCouponById(couponId);
+            AnalyticService.update("CouponDiscountPercentage",coupon.getDiscountPercent());
             return coupon.getDiscountPercent();
         }
         catch (Exception e){

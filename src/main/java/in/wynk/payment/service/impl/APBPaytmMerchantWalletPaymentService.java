@@ -9,6 +9,8 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.service.ICouponCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -37,7 +39,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -74,8 +75,9 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService paymentCachingService;
     private final MerchantTransactionImpl merchantTransactionService;
+    private final ICouponCacheService couponCacheService;
 
-    public APBPaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, ApplicationEventPublisher eventPublisher, PaymentCachingService paymentCachingService, MerchantTransactionImpl merchantTransactionService, MerchantTransactionImpl merchantTransactionService1) {
+    public APBPaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, ApplicationEventPublisher eventPublisher, PaymentCachingService paymentCachingService, MerchantTransactionImpl merchantTransactionService, MerchantTransactionImpl merchantTransactionService1, ICouponCacheService couponCacheService) {
         super(paymentCachingService);
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
@@ -83,6 +85,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         this.eventPublisher = eventPublisher;
         this.paymentCachingService = paymentCachingService;
         this.merchantTransactionService = merchantTransactionService;
+        this.couponCacheService = couponCacheService;
     }
 
     @Override
@@ -473,14 +476,21 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     @Override
-    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId, String couponId) {
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserWalletDetails>builder();
         Wallet wallet = getWallet(userPreferredPayment);
         if (Objects.nonNull(wallet)) {
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if(balanceResponse.isResult()){
-                if (balanceResponse.getData().getBalance() < paymentCachingService.getPlan(planId).getFinalPrice()) {
-                    double deficitBalance = paymentCachingService.getPlan(planId).getFinalPrice() - balanceResponse.getData().getBalance();
+                    double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
+                    if(couponId!=null) {
+                        double discountPercentage = this.getCouponDiscountPercentage(couponId);
+                        if (discountPercentage>0) {
+                            finalAmount = finalAmount - (finalAmount * discountPercentage/100);
+                        }
+                    }
+                if (balanceResponse.getData().getBalance() < finalAmount) {
+                    double deficitBalance = finalAmount - balanceResponse.getData().getBalance();
                     builder.data(UserWalletDetails.builder()
                             .linked(true)
                             .active(true)
@@ -509,5 +519,13 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         }
         return builder.build();
     }
-
+    private double getCouponDiscountPercentage(String couponId){
+        try {
+            Coupon coupon = couponCacheService.getCouponById(couponId);
+            return coupon.getDiscountPercent();
+        }
+        catch (Exception e){
+            return 0d;
+        }
+    }
 }

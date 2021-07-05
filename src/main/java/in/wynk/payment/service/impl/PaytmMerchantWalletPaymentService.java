@@ -9,6 +9,8 @@ import in.wynk.common.enums.Status;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.Utils;
+import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.service.ICouponCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -120,14 +122,16 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     private final CheckSumServiceHelper checkSumServiceHelper;
     private final PaymentCachingService paymentCachingService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final ICouponCacheService couponCacheService;
 
-    public PaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService, ApplicationEventPublisher applicationEventPublisher) {
+    public PaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService, ApplicationEventPublisher applicationEventPublisher, ICouponCacheService couponCacheService) {
         super(paymentCachingService);
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.userPaymentsManager = userPaymentsManager;
         this.paymentCachingService = paymentCachingService;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.couponCacheService = couponCacheService;
         this.checkSumServiceHelper = CheckSumServiceHelper.getCheckSumServiceHelper();
     }
 
@@ -157,7 +161,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             throw new WynkRuntimeException("Linked Msisdn or UID not found for user");
         }
         Wallet wallet = getWallet(getKey(uid, deviceId));
-        UserWalletDetails userWalletDetails = (UserWalletDetails) this.getUserPreferredPayments(wallet, planId).getData();
+//        UserWalletDetails userWalletDetails = (UserWalletDetails) this.getUserPreferredPayments(wallet, planId).getData();
 //        PaytmUserWalletDetails paytmWalletDetails = this.getUserPreferredPayments(UserPreferredPaymentsRequest.builder().planId(planId).uid(uid).build());
 //        if (!paytmWalletDetails.isFundSufficient()) {
 //            throw new WynkRuntimeException("Balance insufficient in linked wallet for this transaction to succeed");
@@ -538,7 +542,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         return balance(planId, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
-    public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(int planId, Wallet wallet) {
+    public BaseResponse<WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails>> balance(double finalAmount, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
@@ -546,7 +550,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
             userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
-            PaytmBalanceRequestBody body = PaytmBalanceRequestBody.builder().userToken(wallet.getAccessToken()).mid(MID).txnAmount(paymentCachingService.getPlan(planId).getFinalPrice()).build();
+            PaytmBalanceRequestBody body = PaytmBalanceRequestBody.builder().userToken(wallet.getAccessToken()).mid(MID).txnAmount(finalAmount).build();
             String jsonPayload = objectMapper.writeValueAsString(body);
             log.debug("Generating signature for payload: {}", jsonPayload);
             String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
@@ -679,9 +683,16 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     @Override
-    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId, String couponId) {
         try {
-            return this.balance(planId, getWallet(userPreferredPayment)).getBody();
+            double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
+            if(couponId!=null) {
+                double discountPercentage = this.getCouponDiscountPercentage(couponId);
+                if (discountPercentage>0) {
+                    finalAmount = finalAmount - (finalAmount * discountPercentage/100);
+                }
+            }
+            return this.balance(finalAmount, getWallet(userPreferredPayment)).getBody();
         } catch (WynkRuntimeException e) {
             return WynkResponseEntity.WynkBaseResponse.<AbstractPaymentDetails>builder().error(TechnicalErrorDetails.builder().code(e.getErrorCode()).description(e.getMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
         }
@@ -728,5 +739,13 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             }
         }
     }
-
+    private double getCouponDiscountPercentage(String couponId){
+        try {
+            Coupon coupon = couponCacheService.getCouponById(couponId);
+            return coupon.getDiscountPercent();
+        }
+        catch (Exception e){
+            return 0d;
+        }
+    }
 }

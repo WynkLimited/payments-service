@@ -3,6 +3,8 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.TechnicalErrorDetails;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.exception.WynkRuntimeException;
@@ -22,6 +24,7 @@ import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.ChargingRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.ChargingResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
@@ -48,6 +51,7 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY021;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
@@ -88,16 +92,14 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public BaseResponse<Map<String, String>> doCharging(ChargingRequest chargingRequest) {
-        final Transaction transaction = TransactionContext.get();
+    public BaseResponse<?> doCharging(ChargingRequest chargingRequest) {
         try {
+            final Transaction transaction = TransactionContext.get();
             final double finalPlanAmount = transaction.getAmount();
             final String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
-            Map<String, String> response = new HashMap<>();
-            response.put(REDIRECTION_URL, redirectUri);
-            return BaseResponse.<Map<String, String>>builder().body(response).status(HttpStatus.OK).build();
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(HttpStatus.OK).body(WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder().data(ChargingResponse.builder().redirectUrl(redirectUri).build()).build()).build();
         } catch (Exception e) {
-            throw new WynkRuntimeException(PHONEPE_CHARGING_FAILURE, e.getMessage(), e);
+            return BaseResponse.<WynkResponseEntity.WynkBaseResponse>builder().status(HttpStatus.OK).body(WynkResponseEntity.WynkBaseResponse.<ChargingResponse>builder().error(TechnicalErrorDetails.builder().description(PAY021.getErrorMessage()).code(PAY021.getErrorCode()).build()).success(false).build()).build();
         }
     }
 

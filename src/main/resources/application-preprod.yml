@@ -205,6 +205,15 @@ payment:
       callback:
         url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    #### APBPaytm props ######
+    apbPaytm:
+      api:
+        base:
+          url: https://paydigi.airtel.in/pg-service
+      callback:
+        url: https://payments.wynk.in/wynk/v1/payment/callback/
+      auth:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 
 subscription:
   pooling:

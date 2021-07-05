@@ -22,6 +22,7 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
@@ -104,7 +106,11 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 }
                 try {
                     IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCode.getFromPaymentCode(paymentCode).getCode(), IUserPreferredPaymentService.class);
-                    task = () -> userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId());
+                    String requestId = MDC.get(REQUEST_ID);
+                    task = () -> {
+                        MDC.put(REQUEST_ID, requestId);
+                        return userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId());
+                    };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {
                     map.put(keyBuilder.build(), null);

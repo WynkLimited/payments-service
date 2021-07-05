@@ -21,6 +21,7 @@ apb:
       url: https://ecom.airtelbank.com/ecom/v2/inquiry
   callback:
     url: https://payments.wynk.in/wynk/v1/payment/callback/
+    url: https://payments.wynk.in/wynk/v1/payment/callback/
   merchant:
     id:
   salt:

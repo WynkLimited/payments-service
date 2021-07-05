@@ -5,12 +5,10 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.PaymentManager;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -19,8 +17,9 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("wynk/v1/callback")
-public class RevenueCallbackHandler {
+public class RevenueNotificationHandler {
 
     @Value("${spring.application.name}")
     private String applicationAlias;
@@ -28,20 +27,13 @@ public class RevenueCallbackHandler {
     private final Gson gson;
     private final PaymentManager paymentManager;
 
-    public RevenueCallbackHandler(Gson gson, PaymentManager paymentManager) {
-        this.gson = gson;
-        this.paymentManager = paymentManager;
-    }
-
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
-        CallbackRequest request = CallbackRequest.builder().body(payload).build();
+    public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        BaseResponse<?> baseResponse = paymentManager.handleNotification(applicationAlias, request, paymentCode);
-        return baseResponse.getResponse();
+        return paymentManager.handleNotification(applicationAlias, payload, paymentCode);
     }
 
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

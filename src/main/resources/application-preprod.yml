@@ -209,7 +209,7 @@ payment:
     apbPaytm:
       api:
         base:
-          url: https://paydigi.airtel.in/pg-service
+          url: https://paydigi.airtel.in/web/pg-service
       callback:
         url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       auth:

@@ -204,7 +204,7 @@ payment:
     apbPaytm:
       api:
         base:
-          url: https://paydigi.airtel.in/pg-service
+          url: https://kongqa.airtel.com/preprod-84/pg-service
       callback:
         url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
       auth:

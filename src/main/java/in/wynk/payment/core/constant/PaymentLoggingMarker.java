@@ -70,7 +70,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
 
     Marker SDK_CLIENT_ERROR = MarkerFactory.getMarker("SDK_CLIENT_ERROR");
-    Marker PHONEPE_REDIRECT_FLOW_DO_CHARGING_ERROR = MarkerFactory.getMarker("PHONEPE_REDIRECT_FLOW_DO_CHARGING_ERROR");
 
 
 }

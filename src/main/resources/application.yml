@@ -28,15 +28,15 @@ management:
     jmx:
       exposure:
         exclude: '*'
-    health:
-      mongo:
-        enabled: false
-      cassandra:
-        enabled: false
-      diskspace:
-        enabled: false
-      redis:
-        enabled: false
+  health:
+    mongo:
+      enabled: false
+    cassandra:
+      enabled: false
+    diskspace:
+      enabled: false
+    redis:
+      enabled: false
 
 ###### log props ######
 logging:

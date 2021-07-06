@@ -44,6 +44,7 @@ public class PayUUpiIntentInitResponse {
                 stringBuilder.append(this.result.amount);
             }
             stringBuilder.append("&cu=").append(this.result.intentURIData.split("&cu=")[1].split("&")[0]).append("&tn=").append(planTitle);
+            return stringBuilder.toString();
         }
         throw new WynkRuntimeException(PAY104);
     }

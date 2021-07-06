@@ -532,7 +532,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             requestMap.add(PAYU_TXN_S2S_FLOW, "4");
             requestMap.add(PAYU_BANKCODE, "INTENT");
             return restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).body(requestMap), PayUUpiIntentInitResponse.class)
-                    .getBody().getDeepLink(cachingService.getPlan(TransactionContext.get().getPlanId()).getTitle());
+                    .getBody().getDeepLink(cachingService.getOffer(cachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle());
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);

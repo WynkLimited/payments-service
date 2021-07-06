@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Getter
 @AllArgsConstructor
-public class APBPaytmRequest {
+public abstract class APBPaytmRequest {
     private String walletLoginId;
     private String wallet;
 }

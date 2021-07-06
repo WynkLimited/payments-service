@@ -29,10 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -123,8 +120,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, ABP_PAYTM_AUTHORIZATION);
         headers.add(CHANNEL_ID,ABP_PAYTM_CHANNEL_ID);
-        headers.add(HttpHeaders.CONTENT_TYPE, ABP_PAYTM_CONTENT_TYPE);
-        headers.add(HttpHeaders.ACCEPT, ABP_PAYTM_ACCEPT);
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
         return headers;
     }
 

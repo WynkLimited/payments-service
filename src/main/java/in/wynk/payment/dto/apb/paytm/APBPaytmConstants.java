@@ -11,8 +11,6 @@ public interface APBPaytmConstants {
     String ABP_PAYTM_TRANSACTION_STATUS="/v1/payment/status/order/";
     String CHANNEL_ID="channel-id";
     String ABP_PAYTM_CHANNEL_ID="WEB_UNAUTH";
-    String ABP_PAYTM_CONTENT_TYPE="application/json";
-    String ABP_PAYTM_ACCEPT="application/json";
     String AUTH_TYPE_WEB_UNAUTH="WEB_UNAUTH";
     String AUTH_TYPE_UN_AUTH="UN_AUTH";
     String CHANNEL_WEB="WEB";

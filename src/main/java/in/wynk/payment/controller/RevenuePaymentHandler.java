@@ -8,6 +8,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -65,7 +66,7 @@ public class RevenuePaymentHandler {
     @PostMapping(path = "/callback/{sid}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
         final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
@@ -78,7 +79,7 @@ public class RevenuePaymentHandler {
     @GetMapping("/callback/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<?> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
@@ -91,7 +92,7 @@ public class RevenuePaymentHandler {
     @PostMapping(path = "/callback/{sid}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public ResponseEntity<?> handleCallbackJSON(@PathVariable String sid, @RequestBody Map<String, Object> payload) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @RequestBody Map<String, Object> payload) {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
         final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));

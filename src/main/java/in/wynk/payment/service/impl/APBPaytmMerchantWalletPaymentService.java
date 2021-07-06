@@ -123,10 +123,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     private HttpHeaders generateHeaders(){
         HttpHeaders headers = new HttpHeaders();
-        headers.add(AUTHORIZATION, ABP_PAYTM_AUTHORIZATION);
+        headers.add(HttpHeaders.AUTHORIZATION, ABP_PAYTM_AUTHORIZATION);
         headers.add(CHANNEL_ID,ABP_PAYTM_CHANNEL_ID);
-        headers.add(CONTENT_TYPE, ABP_PAYTM_CONTENT_TYPE);
-        headers.add(ACCEPT, ABP_PAYTM_ACCEPT);
+        headers.add(HttpHeaders.CONTENT_TYPE, ABP_PAYTM_CONTENT_TYPE);
+        headers.add(HttpHeaders.ACCEPT, ABP_PAYTM_ACCEPT);
         return headers;
     }
 
@@ -198,14 +198,16 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     @Override
     public BaseResponse<?> balance(int planId) {
-        return null;
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
+        return new BaseResponse<>(this.getBalance(wallet),HttpStatus.OK,null);
     }
 
 
     @Override
     public BaseResponse<?> addMoney(WalletAddMoneyRequest request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return new BaseResponse<>(addMoney(request.getAmountToCredit(), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)))), HttpStatus.OK, null);
+        return new BaseResponse<>(this.addMoney(request.getAmountToCredit(), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)))), HttpStatus.OK, null);
 
     }
 
@@ -262,7 +264,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private APBPaytmResponse getTransactionStatus(Transaction txn) {
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txn.getIdStr());
         if(merchantTransaction==null){
-            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, "Transaction not found in MerchantTransaction for the transactionId: {} and uid: {}", txn.getIdStr(), txn.getUid());
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, "Transaction not found in MerchantTransaction for the transactionId: {} and uid: {}", txn.getIdStr(), txn.getUid());
         }
         try {
             HttpHeaders headers= generateHeaders();
@@ -271,10 +273,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                     apbPaytmBaseUrl+ABP_PAYTM_TRANSACTION_STATUS+merchantTransaction.getExternalTransactionId(), HttpMethod.GET, requestEntity, APBPaytmResponse.class).getBody();
             return statusResponse;
         } catch (HttpStatusCodeException e) {
-            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, e.getResponseBodyAsString());
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from APBPayTm " + e.getStatusCode().toString());
         } catch (Exception e) {
-            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION_FAILURE, e.getMessage());
+            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, e.getMessage());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e,e.getMessage());
         }
     }

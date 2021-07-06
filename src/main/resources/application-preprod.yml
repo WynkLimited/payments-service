@@ -211,7 +211,7 @@ payment:
         base:
           url: https://paydigi.airtel.in/pg-service
       callback:
-        url: https://payments.wynk.in/wynk/v1/payment/callback/
+        url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 

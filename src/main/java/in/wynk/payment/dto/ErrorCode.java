@@ -111,7 +111,7 @@ public enum ErrorCode {
     APBPAYTM002("APBPAYTM002","PGS-5084","Failed to link wallet, try again", "Failed to link wallet"),
     APBPAYTM003("APBPAYTM003","PGS-5083","Failed to fetch wallet balance, try again", "Failed to fetch wallet balance"),
     APBPAYTM004("APBPAYTM004","PGS-5000","Oops! something went wrong", "Internal Server Error"),
-    APBPAYTM005("APBPAYTM005","PGS-4113","Wallet Login id is required", "Wallet Login id is required"),
+    APBPAYTM005("APBPAYTM005","PGS-4113","Mobile no. is required", "Wallet Login id is required"),
 
     SUCCESS("SUCCESS", "SUCCESS", "Request served successfully.", "Request served successfully."),
     UNKNOWN("UNKNOWN", "", "Oops something went wrong", ""),

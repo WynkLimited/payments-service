@@ -243,6 +243,21 @@ http:
               type: both
           request:
             timeout: 1000
+    apbPaytmHttpTemplate:
+      pool:
+        connection:
+          max: 10
+          maxPerHost: 2
+          timeout: 200
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 4500
     paymentClientHttpTemplate:
       pool:
         connection:

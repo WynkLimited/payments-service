@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -259,7 +260,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private APBPaytmResponse getTransactionStatus(Transaction txn) {
         try {
             HttpHeaders headers= generateHeaders();
-            HttpEntity<HttpHeaders> requestEntity = new HttpEntity<HttpHeaders>(headers);
+            HttpEntity<?> requestEntity = new HttpEntity<>(headers);
             APBPaytmResponse statusResponse =restTemplate.exchange(
                     apbPaytmBaseUrl+ABP_PAYTM_TRANSACTION_STATUS+txn.getIdStr(), HttpMethod.GET, requestEntity, APBPaytmResponse.class).getBody();
             return statusResponse;

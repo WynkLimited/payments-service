@@ -6,11 +6,10 @@ import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-
-@Component
+import java.util.stream.Stream;
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
 public class PaymentDump {
-    List<Transaction> transactions;
+    Stream<Transaction> transactions;
 }

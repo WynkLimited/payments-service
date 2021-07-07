@@ -31,6 +31,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYU_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_REFUND_STATUS_VERIFICATION");
     Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
     Marker PAYU_API_FAILURE = MarkerFactory.getMarker("PAYU_API_FAILURE");
+    Marker PAYU_UPI_INIT_TXN_FAILURE = MarkerFactory.getMarker("PAYU_UPI_INIT_TXN_FAILURE");
 
     Marker PHONEPE_CHARGING_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_FAILURE");
     Marker PHONEPE_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PHONEPE_CHARGING_CALLBACK_FAILURE");
@@ -70,6 +71,16 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
 
     Marker SDK_CLIENT_ERROR = MarkerFactory.getMarker("SDK_CLIENT_ERROR");
+    Marker APB_PAYTM_OTP_SEND_FAILURE=MarkerFactory.getMarker("APB_PAYTM_OTP_SEND_FAILURE");
+    Marker APB_PAYTM_OTP_VALIDATE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_OTP_VALIDATE_FAILURE");
+    Marker APB_PAYTM_ADD_MONEY_FAILURE=MarkerFactory.getMarker("APB_PAYTM_ADD_MONEY_FAILURE");
+    Marker APB_PAYTM_CHARGE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_CHARGE_FAILURE");
+    Marker APB_PAYTM_GET_BALANCE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_GET_BALANCE_FAILURE");
+    Marker APB_PAYTM_CHARGING_STATUS_VERIFICATION=MarkerFactory.getMarker("APB_PAYTM_CHARGING_STATUS_VERIFICATION");
+
+
+
+
 
 
 }

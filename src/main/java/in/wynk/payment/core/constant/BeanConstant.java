@@ -20,6 +20,7 @@ public interface BeanConstant {
 
     String RECURRING_PAYMENT_RENEWAL_SERVICE = "recurringPaymentRenewalManagerBean";
 
+    String APB_PAYTM_PAYMENT_CLIENT_S2S_TEMPLATE = "apbPaytmHttpTemplate";
     String EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE = "paymentClientHttpTemplate";
     String EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE = "paymentGatewayHttpTemplate";
     String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";

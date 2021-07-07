@@ -34,7 +34,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -263,9 +262,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         try {
             HttpHeaders headers= generateHeaders();
             HttpEntity<?> requestEntity = new HttpEntity<>(headers);
-            APBPaytmResponse statusResponse =restTemplate.exchange(
-                    apbPaytmBaseUrl+ABP_PAYTM_TRANSACTION_STATUS+txn.getIdStr(), HttpMethod.GET, requestEntity, APBPaytmResponse.class).getBody();
-            return statusResponse;
+            TransactionStatusAPBPaytmResponse statusResponse =restTemplate.exchange(
+                    apbPaytmBaseUrl+ABP_PAYTM_TRANSACTION_STATUS+txn.getIdStr(), HttpMethod.GET, requestEntity, TransactionStatusAPBPaytmResponse.class).getBody();
+            APBPaytmResponse response= APBPaytmResponse.builder().result(statusResponse.isResult()).errorCode(statusResponse.getErrorCode()).errorMessage(statusResponse.getErrorMessage()).data(statusResponse.getData()[0]).build();
+            return response;
         } catch (HttpStatusCodeException e) {
             log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from APBPayTm " + e.getStatusCode().toString());
@@ -293,7 +293,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
         if (finalTransactionStatus == TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(response.getErrorCode()).description(response.getErrorCode()).build());
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(response.getErrorCode()).description(response.getErrorMessage()).build());
         }
         transaction.setStatus(finalTransactionStatus.name());
     }

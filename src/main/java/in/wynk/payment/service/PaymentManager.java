@@ -17,15 +17,11 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PaymentRefundInitRequest;
-import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -39,7 +35,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
@@ -108,7 +107,11 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
-    @Override
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(Map<String, Object> payload, PaymentCode paymentCode) {
+        final IMerchantProcessCallbackRequestService service = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantProcessCallbackRequestService.class);
+        return handleCallback(CallbackRequestWrapper.builder().body(payload).paymentCode(paymentCode).transactionId(service.getTxnId(payload)).build());
+    }
+
     @TransactionAware(txnId = "#request.transactionId")
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequestWrapper request) {
         final PaymentCode paymentCode = request.getPaymentCode();
@@ -136,17 +139,36 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
-    @ClientAware(clientAlias = "#clientAlias")
-    public WynkResponseEntity<AbstractCallbackResponse> handleNotification(String clientAlias, CallbackRequest callbackRequest, PaymentCode paymentCode) {
-        final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
-        final Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailService.getReceiptDetails(callbackRequest);
-        if (optionalReceiptDetails.isPresent()) {
-            final ReceiptDetails receiptDetails = optionalReceiptDetails.get();
-            final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(receiptDetails.getPlanId()).uid(receiptDetails.getUid()).msisdn(receiptDetails.getMsisdn()).paymentCode(paymentCode).clientAlias(clientAlias).build());
+    @ClientAware(clientAlias = "#request.clientAlias")
+    public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
+        final IReceiptDetailService<?, IAPNotification> receiptDetailService = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
+        });
+        DecodedNotificationWrapper<IAPNotification> wrapper = receiptDetailService.isNotificationEligible(request.getPayload());
+        if (wrapper.isEligible()) {
+            final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
+            final PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+            final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
+            transactionInitRequest.setEvent(event);
             final Transaction transaction = transactionManager.init(transactionInitRequest);
-            return handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).body(callbackRequest.getBody()).transactionId(transaction.getItemId()).build());
+            handleNotification(transaction, mapping);
+            return WynkResponseEntity.<Void>builder().success(true).build();
         }
-        return WynkResponseEntity.<AbstractCallbackResponse>builder().success(false).build();
+        return WynkResponseEntity.<Void>builder().success(false).build();
+    }
+
+    private <T> void handleNotification(Transaction transaction, UserPlanMapping<T> mapping) {
+        final TransactionStatus existingStatus = transaction.getStatus();
+        final IPaymentNotificationService<T> notificationService = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IPaymentNotificationService<T>>() {
+        });
+        try {
+            notificationService.handleNotification(transaction, mapping);
+        } catch (WynkRuntimeException e) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+        } finally {
+            TransactionStatus finalStatus = TransactionContext.get().getStatus();
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+        }
     }
 
     @TransactionAware(txnId = "#transactionId")

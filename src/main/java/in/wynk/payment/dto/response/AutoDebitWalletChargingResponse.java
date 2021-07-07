@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PhonePeAutoDebitChargingResponse extends AbstractChargingResponse {
+public class AutoDebitWalletChargingResponse extends AbstractChargingResponse {
 
     @Analysed
     private String info;

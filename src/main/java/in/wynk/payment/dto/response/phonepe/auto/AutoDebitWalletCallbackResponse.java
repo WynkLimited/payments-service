@@ -7,7 +7,7 @@ import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
-public class PhonePeCallbackResponse extends AbstractCallbackResponse {
+public class AutoDebitWalletCallbackResponse extends AbstractCallbackResponse {
     @Analysed
     private String info;
 

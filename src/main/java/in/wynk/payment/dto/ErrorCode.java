@@ -107,7 +107,11 @@ public enum ErrorCode {
     PHONEPE026("PHONEPE026", "PHONEPE026", "Your balance is low and phonePe is not allowing to add money to you wallet. Please try another payment method", ""),
     PHONEPE027("PHONEPE027", "INVALID_USER_AUTH_TOKEN", "Your PhonePe account is not linked. Please link your account", "User auth token is invalid"),
 
-
+    APBPAYTM001("APBPAYTM001","PGS-5088","Unable to send otp, try after sometimes or try another payment method", "Unable to send otp to the user"),
+    APBPAYTM002("APBPAYTM002","PGS-5084","Failed to link wallet, try again", "Failed to link wallet"),
+    APBPAYTM003("APBPAYTM003","PGS-5083","Failed to fetch wallet balance, try again", "Failed to fetch wallet balance"),
+    APBPAYTM004("APBPAYTM004","PGS-5000","Oops! something went wrong", "Internal Server Error"),
+    APBPAYTM005("APBPAYTM005","PGS-4113","Mobile no. is required", "Wallet Login id is required"),
 
     SUCCESS("SUCCESS", "SUCCESS", "Request served successfully.", "Request served successfully."),
     UNKNOWN("UNKNOWN", "", "Oops something went wrong", ""),

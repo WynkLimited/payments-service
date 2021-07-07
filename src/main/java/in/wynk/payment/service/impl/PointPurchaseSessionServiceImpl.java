@@ -12,7 +12,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.IPointPurchaseSessionService;
 import in.wynk.session.constant.SessionConstant;
-import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.http.client.utils.URIBuilder;
@@ -45,7 +44,8 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             AnalyticService.update(CLIENT, clientDetails.getAlias());
             SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
             sessionDTO.put(CLIENT, clientDetails.getAlias());
-            Session<String, SessionDTO> session = sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + UUIDs.timeBased().toString(), sessionDTO, duration, TimeUnit.MINUTES);
+            final String id = UUIDs.timeBased().toString();
+            sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, duration, TimeUnit.MINUTES);
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             if (request.getParams() != null) {
                 queryBuilder.addParameter(TITLE, request.getParams().get(TITLE));
@@ -55,8 +55,8 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             queryBuilder.addParameter(ITEM_ID, request.getItemId());
             queryBuilder.addParameter(POINT_PURCHASE_FLOW, Boolean.TRUE.toString());
             queryBuilder.addParameter(AMOUNT, String.valueOf(request.getItemPrice()));
-            String builder = PAYMENT_OPTION_URL + session.getId() + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
-            SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(session.getId()).build();
+            String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
+            SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
             return SessionResponse.builder().data(response).build();
         } catch (URISyntaxException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY997);

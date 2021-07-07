@@ -52,8 +52,9 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
             map.put(SERVICE, request.getService());
         }
         SessionDTO sessionDTO = SessionDTO.builder().sessionPayload(map).build();
-        Session<String, SessionDTO> session = sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + UUIDs.timeBased().toString(), sessionDTO, 5, TimeUnit.MINUTES);
-        request.setSid(session.getId());
+        final String id = UUIDs.timeBased().toString();
+        Session<String, SessionDTO> session = sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, 5, TimeUnit.MINUTES);
+        request.setSid(id);
         return request;
     }
 

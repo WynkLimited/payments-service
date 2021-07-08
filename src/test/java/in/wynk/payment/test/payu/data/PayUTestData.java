@@ -166,7 +166,7 @@ public class PayUTestData {
         map.put("name_on_card","SICard");
         map.put("cardnum","489377XXXXXX2986");
         map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
-       return CallbackRequest.builder().body(map).build();
+       return CallbackRequestWrapper.builder().payload(map).build();
     }
 
     public static CallbackRequest buildRecurringCallbackRequest() {
@@ -223,7 +223,7 @@ public class PayUTestData {
         map.put("name_on_card","SICard");
         map.put("cardnum","489377XXXXXX2986");
         map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
-        return CallbackRequest.builder().body(map).build();
+        return CallbackRequestWrapper.builder().payload(map).build();
     }
 
     public static MultiValueMap<String, String> buildOneTimePayUTransactionStatusRequest(String payUMerchantKey) {

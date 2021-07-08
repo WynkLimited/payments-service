@@ -175,7 +175,8 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private void handleCallbackInternal(CallbackRequest callbackRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
-            Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();
+            // TODO:: create your own APB callback request that inherit CallbackRequest and update the impl accordingly
+            Map<String, String> requestPayload = (Map<String, String>) callbackRequest;
             Boolean validChecksum = validateChecksum(requestPayload);
             if (validChecksum) {
                 this.fetchAndUpdateTransactionFromSource(transaction);

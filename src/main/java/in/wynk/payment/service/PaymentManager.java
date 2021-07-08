@@ -47,7 +47,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse,CallbackRequestWrapper<?>>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -63,7 +63,6 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         try {
             final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
-            TransactionContext.set(TransactionDetails.builder().transaction(refundTransaction).build());
             final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
             });
             final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
@@ -107,20 +106,16 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(Map<String, Object> payload, PaymentCode paymentCode) {
-        final IMerchantProcessCallbackRequestService service = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantProcessCallbackRequestService.class);
-        return handleCallback(CallbackRequestWrapper.builder().body(payload).paymentCode(paymentCode).transactionId(service.getTxnId(payload)).build());
-    }
-
+    @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequestWrapper request) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequestWrapper<?> request) {
         final PaymentCode paymentCode = request.getPaymentCode();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest> callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>>() {
         });
         try {
-            final WynkResponseEntity<AbstractCallbackResponse> response = callbackService.handleCallback(request);
+            final WynkResponseEntity<AbstractCallbackResponse> response = callbackService.handleCallback(request.getBody());
             if (paymentCode.isPreDebit()) {
                 final WynkResponseEntity.WynkBaseResponse<?, ?> body = response.getBody();
                 if (Objects.nonNull(body) && !body.isSuccess()) {
@@ -222,6 +217,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
+    @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);

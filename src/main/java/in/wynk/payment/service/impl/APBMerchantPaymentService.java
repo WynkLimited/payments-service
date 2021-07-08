@@ -101,7 +101,9 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     @Override
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest.getBody();
+
+        // TODO:: create your own APB callback request that inherit CallbackRequest and update the impl accordingly
+        MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest;
 
         String txnId = sessionDTO.get(TRANSACTION_ID);
         String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);

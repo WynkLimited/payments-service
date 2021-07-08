@@ -32,7 +32,6 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
@@ -67,7 +66,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService,IMerchantPaymentCallbackService<ItunesCallbackResponse, CallbackRequest>, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
 
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
 
@@ -177,25 +176,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     .build();
         }
         throw new WynkRuntimeException(PAY011);
-    }
-
-    @Override
-    public WynkResponseEntity<ItunesCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
-        Transaction transaction = TransactionContext.get();
-        try {
-            final ItunesCallbackRequest itunesCallbackRequest = mapper.readValue((String) callbackRequest.getBody(), ItunesCallbackRequest.class);
-            if (itunesCallbackRequest.getUnifiedReceipt() != null) {
-                String latestReceipt = itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt();
-                if (StringUtils.isNotBlank(latestReceipt)) {
-                    Map<String, String> map = new HashMap<>();
-                    map.put(RECEIPT_DATA, latestReceipt);
-                    fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, JSONValue.toJSONString(map)));
-                }
-            }
-            return WynkResponseEntity.<ItunesCallbackResponse>builder().build();
-        } catch (Exception e) {
-            throw new WynkRuntimeException(WynkErrorType.UT999, "Error while handling iTunes callback");
-        }
     }
 
     @Override

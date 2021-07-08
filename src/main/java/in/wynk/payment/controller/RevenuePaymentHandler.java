@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.PAYMENT_CODE;
@@ -70,7 +71,7 @@ public class RevenuePaymentHandler {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
         final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
-        final CallbackRequestWrapper request = CallbackRequestWrapper.builder().body(payload).transactionId(transactionId).paymentCode(paymentCode).build();
+        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).transactionId(transactionId).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);
@@ -80,10 +81,11 @@ public class RevenuePaymentHandler {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<AbstractCallbackResponse> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
-        CallbackRequestWrapper request = CallbackRequestWrapper.builder().body(payload).transactionId(transactionId).paymentCode(paymentCode).build();
+        final Map<String, Object> terraformed = new HashMap<>(payload.toSingleValueMap());
+        final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(terraformed).transactionId(transactionId).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);
@@ -96,7 +98,7 @@ public class RevenuePaymentHandler {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String transactionId = sessionDTO.get(TRANSACTION_ID);
         final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
-        final CallbackRequestWrapper request = CallbackRequestWrapper.builder().body(payload).transactionId(transactionId).paymentCode(paymentCode).build();
+        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).transactionId(transactionId).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);

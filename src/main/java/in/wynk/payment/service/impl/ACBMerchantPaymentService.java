@@ -41,7 +41,7 @@ public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
 
-    public boolean supportsRenewalReconciliation(){
+    public boolean supportsRenewalReconciliation() {
         return false;
     }
 
@@ -49,4 +49,5 @@ public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
+
 }

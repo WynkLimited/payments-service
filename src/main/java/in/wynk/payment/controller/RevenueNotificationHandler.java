@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import in.wynk.common.dto.EmptyResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentManager;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class RevenueNotificationHandler {
         final PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        paymentManager.handleCallback(payload, paymentCode);
+        paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build());
         return EmptyResponse.response();
     }
 

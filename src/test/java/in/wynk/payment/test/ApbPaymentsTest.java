@@ -4,10 +4,7 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
@@ -40,7 +37,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     }
 
     private static CallbackRequest dummyApbFailureCallback() {
-        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        MultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
         map.put("STATUS", Collections.singletonList("FAL"));
         map.put("TXN_REF_NO", Collections.singletonList(TXN_ID));
         map.put("TRAN_AMT", Collections.singletonList("50.00"));
@@ -48,11 +45,11 @@ public class ApbPaymentsTest extends PaymentsTest {
         map.put("CODE", Collections.singletonList("900"));
         map.put("MSG", Collections.singletonList("Transaction%20cancelled%20by%20user."));
         map.put("HASH", Collections.singletonList("fef41ed1875a22ebc9a4666bcdc4c154422acbf7a88dc14b7b0de715aa9e5fde6d3498c2d32fbe8d915c95e87c8633e28e5dafb647edfc6065335592aa92f705"));
-        return CallbackRequest.builder().body(map).build();
+        return CallbackRequestWrapper.builder().payload(map.toSingleValueMap()).build();
     }
 
     private static CallbackRequest dummyApbSuccessCallback() {
-        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        MultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
         map.put("STATUS", Collections.singletonList("SUC"));
         map.put("TXN_REF_NO", Collections.singletonList(TXN_ID));
         map.put("TRAN_AMT", Collections.singletonList("50.00"));
@@ -60,7 +57,7 @@ public class ApbPaymentsTest extends PaymentsTest {
         map.put("CODE", Collections.singletonList("900"));
         map.put("MSG", Collections.singletonList("Transaction%20completed%20by%20user."));
         map.put("HASH", Collections.singletonList("undefined"));
-        return CallbackRequest.builder().body(map).build();
+        return CallbackRequestWrapper.builder().payload(map.toSingleValueMap()).build();
     }
 
     private static AbstractTransactionStatusRequest dummyLocalChargingStatusRequest(PaymentCode code) {

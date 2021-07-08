@@ -555,7 +555,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
 
     private String processCallback(CallbackRequest callbackRequest) {
         try {
-            Map<String, String> requestPayload = (Map<String, String>) callbackRequest.getBody();
+            // TODO:: create your own APB callback request that inherit CallbackRequest and update the impl accordingly
+            Map<String, String> requestPayload = (Map<String, String>) callbackRequest;
             String phonePeVersion = Utils.getStringParameter(requestPayload, PHONEPE_VERSION_CODE);
             return phonePeVersion;
         } catch (Exception e) {

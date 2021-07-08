@@ -140,7 +140,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
 
     @Override
     public WynkResponseEntity<PaytmCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
-        final Map<String, String> params = (Map<String, String>) callbackRequest.getBody();
+        // TODO:: create your own Paytm callback request that inherit CallbackRequest and update the impl accordingly
+        final Map<String, String> params = (Map<String, String>) callbackRequest;
         final String status = params.get(PAYTM_STATUS);
         if (StringUtils.isBlank(status) || !status.equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
             log.error(APPLICATION_ERROR, "Add money txn at paytm failed");

@@ -161,14 +161,26 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 autoRenewal = itunesReceipt.getPendingRenewalInfo().stream().filter(pendingRenewal -> !StringUtils.isEmpty(latestReceiptInfo.getProductId()) && latestReceiptInfo.getProductId().equalsIgnoreCase(pendingRenewal.getAutoRenewProductId()) && pendingRenewal.getAutoRenewStatus() == "1" && pendingRenewal.getOriginalTransactionId() == latestReceiptInfo.getOriginalTransactionId()).findAny().isPresent();
             }
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
+            int planId = request.getPlanId();
+            String skuId = latestReceiptInfo.getProductId();
+            if (StringUtils.isNotBlank(skuId)) {
+                if (cachingService.containsSku(skuId)) {
+                    skuId = cachingService.getNewSku(skuId);
+                }
+                PlanDTO planDTO = cachingService.getPlanFromSku(skuId);
+                if (Objects.nonNull(planDTO)) {
+                    planId = planDTO.getId();
+                }
+            }
             return ItunesLatestReceiptResponse.builder()
+                    .planId(planId)
                     .autoRenewal(autoRenewal)
                     .itunesReceiptType(receiptType)
-                    .latestReceiptInfo(itunesReceipt.getLatestReceiptInfoList())
-                    .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())
                     .decodedReceipt(request.getReceipt())
-                    .extTxnId(latestReceiptInfo.getOriginalTransactionId())
                     .couponCode(latestReceiptInfo.getOfferCodeRefName())
+                    .extTxnId(latestReceiptInfo.getOriginalTransactionId())
+                    .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())
+                    .latestReceiptInfo(itunesReceipt.getLatestReceiptInfoList())
                     .freeTrial(Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod()))
                     .build();
         }

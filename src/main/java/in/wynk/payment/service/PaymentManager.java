@@ -200,7 +200,7 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.getPaymentCode();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
-        final Transaction transaction = initiateTransactionForPlan(latestReceiptResponse.isAutoRenewal(), latestReceiptResponse.isFreeTrial(), request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode, latestReceiptResponse.getCouponCode());
+        final Transaction transaction = initiateTransactionForPlan(latestReceiptResponse.isAutoRenewal(), latestReceiptResponse.isFreeTrial(), latestReceiptResponse.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode, latestReceiptResponse.getCouponCode());
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                 .extTxnId(latestReceiptResponse.getExtTxnId())
                 .paymentCode(transaction.getPaymentChannel())

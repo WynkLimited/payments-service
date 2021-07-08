@@ -106,6 +106,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         return AmazonLatestReceiptResponse.builder()
                 .freeTrial(false)
                 .autoRenewal(autoRenewal)
+                .planId(amazonIapVerificationRequest.getPlanId())
                 .amazonIapReceiptResponse(amazonIapReceiptResponse)
                 .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
                 .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())

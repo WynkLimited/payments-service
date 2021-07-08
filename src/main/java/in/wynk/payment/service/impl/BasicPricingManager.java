@@ -60,7 +60,7 @@ public class BasicPricingManager implements IPricingManager {
             couponOptional = optionalPlanDiscount(request.getCouponId(), request.getMsisdn(), request.getUid(), service, request.getPaymentCode(), selectedPlan);
         } else {
             final PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;
-            final ItemDTO itemDTO = Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY105));
+            final ItemDTO itemDTO = Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY106));
             final String service = itemDTO.getService();
             request.setAmount(itemDTO.getPrice());
             couponOptional = optionalItemDiscount(request.getCouponId(), request.getMsisdn(), request.getUid(), service, itemDTO.getId(), request.getPaymentCode());

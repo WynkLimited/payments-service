@@ -3,12 +3,15 @@ package in.wynk.payment.dto;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
+import in.wynk.payment.core.dao.entity.IAppDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.Objects;
+
+import static in.wynk.common.constant.BaseConstants.*;
 
 @Getter
 @Builder
@@ -34,5 +37,9 @@ public class S2SPurchaseDetails implements IChargingDetails {
         final String pendingPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.pending.page}"), appDetails);
         final String unknownPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.unknown.page}"), appDetails);
         return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
+    }
+
+    private String buildUrlFrom(String url, IAppDetails appDetails) {
+        return url + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
     }
 }

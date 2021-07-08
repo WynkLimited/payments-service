@@ -1,7 +1,6 @@
 package in.wynk.payment.service;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -15,11 +14,9 @@ import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.FailureChargingStatusResponse;
-import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Collection;
 import java.util.List;
@@ -30,13 +27,6 @@ import java.util.stream.Collectors;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public abstract class AbstractMerchantPaymentStatusService implements IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> {
-
-    @Value("${payment.success.page}")
-    private String successPage;
-    @Value("${payment.pending.page}")
-    private String pendingPage;
-    @Value("${payment.failure.page}")
-    private String failurePage;
 
     private final PaymentCachingService cachingService;
 
@@ -59,34 +49,20 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
 
     public WynkResponseEntity<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         Transaction transaction = TransactionContext.get();
+        IChargingDetails.IPageUrlDetails pageUrlDetails = TransactionContext.getPurchaseDetails().map(details -> (IChargingDetails) details).map(IChargingDetails::getPageUrlDetails).orElseThrow(() -> new WynkRuntimeException("Pages are not configured"));
         TransactionStatus txnStatus = transaction.getStatus();
         if (txnStatus == TransactionStatus.FAILURE) {
-            return failure(ErrorCode.FAIL001,FAIL001_ERROR_MAP, transaction, request, getRedirectUrl(failurePage));
+            return failure(ErrorCode.FAIL001,FAIL001_ERROR_MAP, transaction, request, pageUrlDetails.getFailurePageUrl());
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
-            return failure(ErrorCode.FAIL002,FAIL002_ERROR_MAP, transaction, request, getRedirectUrl(pendingPage));
+            return failure(ErrorCode.FAIL002,FAIL002_ERROR_MAP, transaction, request, pageUrlDetails.getPendingPageUrl());
         } else {
             ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
             if (txnStatus == TransactionStatus.SUCCESS) {
                 builder.packDetails(getPackDetails(transaction, request));
-                builder.redirectUrl(getRedirectUrl(successPage));
+                builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
             }
             return WynkResponseEntity. < AbstractChargingStatusResponse > builder().data(builder.build()).build();
         }
-    }
-
-    private String getRedirectUrl(String basePage) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return basePage+SessionContextHolder.getId() +
-                SLASH +
-                sessionDTO.<String>get(OS) +
-                QUESTION_MARK +
-                SERVICE +
-                EQUAL +
-                sessionDTO.<String>get(SERVICE) +
-                AND +
-                BUILD_NO +
-                EQUAL +
-                sessionDTO.<Integer>get(BUILD_NO);
     }
 
     private WynkResponseEntity<AbstractChargingStatusResponse> failure(ErrorCode errorCode, Map<String,String> errorMap,Transaction transaction,ChargingTransactionStatusRequest request, String redirectUrl) {

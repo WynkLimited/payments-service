@@ -84,7 +84,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
     @Override
     public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> request) {
         final PaymentCode paymentCode = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
-        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request.getPurchaseDetails());
+        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()), request.getPurchaseDetails());
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>> chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>>() {
         });
@@ -250,7 +250,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> request) {
         final PaymentCode paymentCode = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
-        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request));
+        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()));
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         return BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {
         }).topUp(request);

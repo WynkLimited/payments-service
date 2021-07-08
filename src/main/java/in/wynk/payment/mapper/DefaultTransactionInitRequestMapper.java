@@ -12,10 +12,7 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.IPaymentDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.WebPurchaseDetails;
@@ -30,32 +27,22 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 
 public class DefaultTransactionInitRequestMapper implements IObjectMapper {
 
-    public static AbstractTransactionInitRequest from(AbstractChargingRequest<?> request) {
-        final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
+    public static AbstractTransactionInitRequest from(IPurchaseDetails purchaseDetails) {
         final IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         });
-        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
-        final Client client = WebPurchaseDetails.class.isAssignableFrom(request.getPurchaseDetails().getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)): clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
-        if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return planInit(client, paymentCode, request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
-        } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return pointInit(client, paymentCode, request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
-        }
-        throw new WynkRuntimeException("Method is not implemented!");
-    }
-
-    public static AbstractTransactionInitRequest from(WalletTopUpRequest<?> request) {
+        final PaymentCode paymentCode = paymentMethodCaching.get(purchaseDetails.getPaymentDetails().getPaymentId()).getPaymentCode();
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
-        final IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
-        });
-        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
-        final Client client = WebPurchaseDetails.class.isAssignableFrom(request.getPurchaseDetails().getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)): clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
-        if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return planInit(client, paymentCode ,request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
-        } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
-            return pointInit(client, paymentCode, request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PointDetails) request.getPurchaseDetails().getProductDetails());
+        final Client client = WebPurchaseDetails.class.isAssignableFrom(purchaseDetails.getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)) : clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
+        final AbstractTransactionInitRequest transactionInitRequest;
+        if (PlanDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
+            transactionInitRequest = planInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getPaymentDetails(), (PlanDetails) purchaseDetails.getProductDetails());
+        } else if (PointDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
+            transactionInitRequest = pointInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getPaymentDetails(), (PointDetails) purchaseDetails.getProductDetails());
+        } else {
+            throw new WynkRuntimeException("Method is not implemented!");
         }
-        throw new WynkRuntimeException("Method is not implemented!");
+        BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(transactionInitRequest);
+        return transactionInitRequest;
     }
 
     public static AbstractTransactionInitRequest from(RefundTransactionRequestWrapper wrapper) {

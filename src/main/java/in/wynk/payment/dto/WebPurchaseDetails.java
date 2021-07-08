@@ -3,7 +3,7 @@ package in.wynk.payment.dto;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
@@ -12,7 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -37,19 +36,19 @@ public class WebPurchaseDetails implements IChargingDetails {
     @Override
     @Analysed
     public IUserDetails getUserDetails() {
-        SessionDTO session = SessionContextHolder.getBody();
+        final SessionDTO session = SessionContextHolder.getBody();
         return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).build();
     }
 
     @Override
     public IPageUrlDetails getPageUrlDetails() {
-        final String successPagePlaceholder = "${payment.success.page}";
-        final String failurePagePlaceholder = "${payment.failure.page}";
-        final String pendingPagePlaceholder = "${payment.pending.page}";
-        final String unknownPagePlaceholder = "${payment.unknown.page}";
         final IAppDetails appDetails = getAppDetails();
-        final ConfigurableBeanFactory beanFactory = BeanLocatorFactory.getBean(ConfigurableBeanFactory.class);
-        return PageUrlDetails.builder().successPageUrl(buildUrlFrom(beanFactory.resolveEmbeddedValue(successPagePlaceholder), appDetails)).failurePageUrl(buildUrlFrom(beanFactory.resolveEmbeddedValue(failurePagePlaceholder), appDetails)).pendingPageUrl(buildUrlFrom(beanFactory.resolveEmbeddedValue(pendingPagePlaceholder), appDetails)).unknownPageUrl(buildUrlFrom(beanFactory.resolveEmbeddedValue(unknownPagePlaceholder), appDetails)).build();
+        final SessionDTO session = SessionContextHolder.getBody();
+        final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.success.page}"), appDetails);
+        final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.failure.page}"), appDetails);
+        final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? session.get(PENDING_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.pending.page}"), appDetails);
+        final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? session.get(UNKNOWN_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.unknown.page}"), appDetails);
+        return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
     }
 
     private String buildUrlFrom(String url, IAppDetails appDetails) {

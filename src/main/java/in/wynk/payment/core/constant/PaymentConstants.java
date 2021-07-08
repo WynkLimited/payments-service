@@ -57,4 +57,10 @@ public interface PaymentConstants extends BaseConstants {
         put(BUTTON_ARROW,"false");
     }};
 
+    Map<String,String> FAIL003_ERROR_MAP = new HashMap<String, String>() {{
+        put(SUBTITLE_TEXT, "Payment status is unknown");
+        put(BUTTON_TEXT, "GO TO HOMEPAGE");
+        put(BUTTON_ARROW,"false");
+    }};
+
 }

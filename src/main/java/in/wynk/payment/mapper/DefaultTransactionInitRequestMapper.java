@@ -26,7 +26,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     public static AbstractTransactionInitRequest from(AbstractChargingRequest<?> request) {
         final IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         });
-        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getProductDetails().getId()).getPaymentCode();
+        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
             return planInit(paymentCode, request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
@@ -38,7 +38,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     public static AbstractTransactionInitRequest from(WalletTopUpRequest<?> request) {
         final IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         });
-        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getProductDetails().getId()).getPaymentCode();
+        final PaymentCode paymentCode = paymentMethodCaching.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         if (PlanDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {
             return planInit(paymentCode ,request.getPurchaseDetails().getUserDetails(), request.getPurchaseDetails().getPaymentDetails(), (PlanDetails) request.getPurchaseDetails().getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(request.getPurchaseDetails().getProductDetails().getClass())) {

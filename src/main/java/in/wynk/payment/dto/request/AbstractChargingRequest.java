@@ -18,6 +18,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode", visible = true, defaultImpl = DefaultChargingRequest.class)
 @JsonSubTypes({
+        @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PAYU"),
         @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PHONEPE_AUTO_DEBIT")
 })
 public abstract class AbstractChargingRequest<T extends IPurchaseDetails> {

@@ -152,7 +152,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                         .id(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)))
                         .build());
             } else {
-                errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(linkResponse.getErrorCode());
             }
         } catch (HttpStatusCodeException hex) {
             log.error(APB_PAYTM_OTP_VALIDATE_FAILURE, hex.getResponseBodyAsString());

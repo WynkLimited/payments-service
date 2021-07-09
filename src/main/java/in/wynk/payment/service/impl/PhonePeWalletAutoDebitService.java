@@ -405,7 +405,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 log.info("your phonePe account is not active. please try another payment method");
             } else if (userWalletDetails.isLinked() && userWalletDetails.isActive() && userWalletDetails.getDeficitBalance() > 0d) {
                 if (userWalletDetails.isAddMoneyAllowed()) {
-                    errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(PHONEPE025);
                     deficit=true;
                     log.info("Your balance is low.Sending deeplink to add money to your wallet");
                     PhonePeWalletResponse phonePeWalletResponse = addMoney(wallet.getAccessToken(), finalAmountToCharge, payload.getPhonePeVersionCode(),wallet.getId().getDeviceId());

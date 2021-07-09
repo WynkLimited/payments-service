@@ -233,7 +233,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction, amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
                 AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
@@ -266,13 +266,13 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
     }
 
-    private void saveReceipt(Transaction transaction, String receiptId, String amzUserId) {
+    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId) {
         AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                 .receiptId(receiptId)
                 .id(receiptId).amazonUserId(amzUserId)
-                .uid(transaction.getUid())
-                .msisdn(transaction.getMsisdn())
-                .planId(transaction.getPlanId())
+                .uid(uid)
+                .msisdn(msisdn)
+                .planId(planId)
                 .build();
         receiptDetailsDao.save(amazonReceiptDetails);
     }
@@ -310,7 +310,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         WynkUserExtUserMapping mapping = userMappingDao.findByExternalUserId(message.getAppUserId());
-        saveReceipt(TransactionContext.get(), message.getReceiptId(), message.getAppUserId());
+        saveReceipt(mapping.getId(), mapping.getMsisdn(), planDTO.getId(), message.getReceiptId(), message.getAppUserId());
         return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(receiptResponse).planId(planDTO.getId()).build();
     }
 

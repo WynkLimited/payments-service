@@ -66,9 +66,9 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         Transaction transaction = TransactionContext.get();
         TransactionStatus txnStatus = transaction.getStatus();
         if (txnStatus == TransactionStatus.FAILURE) {
-            return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL001), transaction, request);
+            return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL001), transaction, request, getRedirectUrl(failurePage));
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
-            return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL002), transaction, request);
+            return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL002), transaction, request, getRedirectUrl(pendingPage));
         } else {
             ChargingStatusResponse.ChargingStatusResponseBuilder builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
             if (txnStatus == TransactionStatus.SUCCESS) {
@@ -79,11 +79,11 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         }
     }
 
-    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode,Transaction transaction,ChargingTransactionStatusRequest request) {
+    private BaseResponse<AbstractChargingStatusResponse> failure(ErrorCode errorCode,Transaction transaction,ChargingTransactionStatusRequest request, String redirectUrl) {
         Optional<String> subtitle = errorCode.getMeta(SUBTITLE_TEXT);
         Optional<String> buttonText = errorCode.getMeta(BUTTON_TEXT);
         Optional<Boolean> buttonArrow = errorCode.getMeta(BUTTON_ARROW);
-        FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(errorCode, subtitle.orElse(""),buttonText.orElse(""),buttonArrow.orElse(Boolean.FALSE), transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus());
+        FailureChargingStatusResponse failureChargingStatusResponse = FailureChargingStatusResponse.populate(errorCode, subtitle.orElse(""),buttonText.orElse(""),buttonArrow.orElse(Boolean.FALSE), transaction.getIdStr(), request.getPlanId(), getPackDetails(transaction, request), transaction.getStatus(), redirectUrl);
         return BaseResponse.<AbstractChargingStatusResponse>builder().body(failureChargingStatusResponse).status(HttpStatus.OK).build();
     }
 

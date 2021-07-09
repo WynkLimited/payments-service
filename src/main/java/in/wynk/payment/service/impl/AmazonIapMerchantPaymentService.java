@@ -365,21 +365,19 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     @Override
     public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
-        String notificationType = wrapper.getDecodedNotification().getNotificationType();
-        PaymentEvent event;
-        if (SUBSCRIBED_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.SUBSCRIBE;
-        } else if (PURCHASE_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.PURCHASE;
-        } else if (CANCELLED_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.CANCELLED;
-        } else if (UNSUBSCRIBE_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.UNSUBSCRIBE;
-        } else if (RENEW_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.RENEW;
+        final AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
+        if (SUBSCRIBED_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.SUBSCRIBE;
+        } else if (PURCHASE_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.PURCHASE;
+        } else if (CANCELLED_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.CANCELLED;
+        } else if (UNSUBSCRIBE_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.UNSUBSCRIBE;
+        } else if (RENEW_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.RENEW;
         }  else {
             throw new WynkRuntimeException(WynkErrorType.UT001);
         }
-        return event;
     }
 }

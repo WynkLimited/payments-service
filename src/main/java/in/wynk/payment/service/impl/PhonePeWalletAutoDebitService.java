@@ -65,8 +65,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     private String paymentEncryptionKey;
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
-    @Value("${payment.merchant.phonepe.callback.url}")
-    private String phonePeCallBackURL;
     @Value("${payment.merchant.phonepe.api.base.url}")
     private String phonePeBaseUrl;
     @Value("${payment.merchant.phonepe.salt}")

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.*;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.Utils;
@@ -58,7 +59,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.PHONEPE_OTP_TOKEN;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
-public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, PhonePeChargingRequest<?>>, IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IWalletTopUpService<WalletTopUpResponse, PhonePeAutoDebitTopUpRequest<?>>, IUserPreferredPaymentService<UserWalletDetails> {
+public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, PhonePeChargingRequest<?>>, IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IWalletTopUpService<WalletTopUpResponse, PhonePeAutoDebitTopUpRequest<?>>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
 
 
     @Value("${payment.encKey}")
@@ -175,16 +176,21 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     @Override
     public WynkResponseEntity<UserWalletDetails> balance(WalletBalanceRequest request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return balance(request.getPlanId(), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        return balance(String.valueOf(request.getPlanId()), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
-    private WynkResponseEntity<UserWalletDetails> balance(int planId, Wallet wallet) {
+    private WynkResponseEntity<UserWalletDetails> balance(String productId, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
         WynkResponseEntity.WynkResponseEntityBuilder<UserWalletDetails> builder = WynkResponseEntity.builder();
         try {
-            double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
+            final double finalAmount;
+            if (paymentCachingService.containsPlan(productId)) {
+                finalAmount = paymentCachingService.getPlan(productId).getFinalPrice();
+            } else {
+                finalAmount = paymentCachingService.getItem(productId).getPrice();
+            }
             userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
             PhoneAutoDebitBalanceRequest phoneAutoDebitBalanceRequest = PhoneAutoDebitBalanceRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).txnAmount(Double.valueOf(finalAmount).longValue()).build();
             String requestJson = objectMapper.writeValueAsString(phoneAutoDebitBalanceRequest);
@@ -342,7 +348,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkResponseEntityBuilder<AutoDebitWalletCallbackResponse> builder = WynkResponseEntity.builder();
         try {
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
-            UserWalletDetails userWalletDetails = this.balance(transaction.getPlanId(), wallet).getBody().getData();
+            final String productId = transaction.getType() != PaymentEvent.POINT_PURCHASE ? String.valueOf(transaction.getPlanId()): transaction.getItemId();
+            UserWalletDetails userWalletDetails = this.balance(productId, wallet).getBody().getData();
             if(userWalletDetails.getBalance()>=Double.valueOf(transaction.getAmount())){
                 final long finalAmountToCharge=Double.valueOf(transaction.getAmount() * 100).longValue();
                 PhonePeAutoDebitDoChargingRequest phonePeAutoDebitDoChargingRequest = PhonePeAutoDebitDoChargingRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(finalAmountToCharge).deviceContext(new DeviceContext(Long.parseLong(processCallback(callbackRequest)))).transactionId(transaction.getId().toString()).build();
@@ -403,7 +410,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         boolean deeplinkGenerated=false;
         try {
             Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
-            UserWalletDetails userWalletDetails = this.balance(transaction.getPlanId(), wallet).getBody().getData();
+            UserWalletDetails userWalletDetails = this.balance(payload.getPurchaseDetails().getProductDetails().getId(), wallet).getBody().getData();
             final long  finalAmountToCharge=Double.valueOf(transaction.getAmount() * 100).longValue();
             if (!userWalletDetails.isLinked()) {
                 errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE024.name());
@@ -565,9 +572,9 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
+    public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         try {
-            return this.balance(planId, getWallet(userPreferredPayment));
+            return this.balance(request.getProductDetails().getId(), getWallet(request.getPreferredPayment()));
         } catch (WynkRuntimeException e) {
             return WynkResponseEntity.<UserWalletDetails>builder().error(TechnicalErrorDetails.builder().code(e.getErrorCode()).description(e.getMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
         }

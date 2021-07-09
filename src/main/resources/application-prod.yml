@@ -251,12 +251,12 @@ http:
         connection:
           max: 10
           maxPerHost: 5
-          timeout: 200
+          timeout: 500
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
           socket:
-            timeout: 2500
+            timeout: 4500
             factory:
               type: both
           request:

@@ -23,6 +23,7 @@ import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.ErrorCode;
+import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
@@ -62,7 +63,7 @@ import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
-public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>>, IUserPreferredPaymentService<UserWalletDetails> ,IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IMerchantPaymentRefundService<PaytmPaymentRefundResponse, PaytmPaymentRefundRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>> {
+public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>>, IUserPreferredPaymentService<UserWalletDetails>, IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IMerchantPaymentRefundService<PaytmPaymentRefundResponse, PaytmPaymentRefundRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>> {
 
     @Value("${paytm.native.merchantId}")
     private String MID;
@@ -87,9 +88,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
 
     @Value("${payment.failure.page}")
     private String failurePage;
-
-    @Value("${paytm.native.wcf.callbackUrl}")
-    private String callBackUrl;
 
     @Value("${paytm.validateOtp.api}")
     private String VALIDATE_OTP;
@@ -177,7 +175,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             PaytmChargingResponse paytmChargingResponse = withdrawFromPaytm(transaction, wallet.getAccessToken());
             if (paytmChargingResponse != null && paytmChargingResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
                 transaction.setStatus(TransactionStatus.SUCCESS.name());
-                redirectUrl = successPage+sid;
+                redirectUrl = successPage + sid;
             } else {
                 transaction.setStatus(TransactionStatus.FAILURE.name());
                 applicationEventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build());
@@ -187,7 +185,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             log.error(PAYTM_ERROR, "unable to charge due to ", e);
         } finally {
             if (StringUtils.isBlank(redirectUrl)) {
-                redirectUrl = failurePage+sid;
+                redirectUrl = failurePage + sid;
             }
             return WynkResponseEntity.<PaytmAutoDebitChargingResponse>builder().data(PaytmAutoDebitChargingResponse.builder().build()).build();
         }
@@ -422,7 +420,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             String phone = walletLinkRequest.getEncSi();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-            AnalyticService.update(UID,sessionDTO.<String>get(UID));
+            AnalyticService.update(UID, sessionDTO.<String>get(UID));
             sessionDTO.put(WALLET_USER_ID, phone);
             log.info("Sending OTP to {} via PayTM", phone);
             URI uri = new URIBuilder(SEND_OTP).build();
@@ -461,7 +459,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(VALIDATE_OTP).build();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-            AnalyticService.update(UID,sessionDTO.<String>get(UID));
+            AnalyticService.update(UID, sessionDTO.<String>get(UID));
             HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID));
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put("otp", walletValidateLinkRequest.getOtp());
@@ -640,10 +638,10 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Override
     public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> walletAddMoneyRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return addMoney(0, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        return addMoney(((IChargingDetails) walletAddMoneyRequest.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), 0, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
-    public WynkResponseEntity<WalletTopUpResponse> addMoney(double amount, Wallet wallet) {
+    public WynkResponseEntity<WalletTopUpResponse> addMoney(String callBackUrl, double amount, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
@@ -658,7 +656,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             parameters.put(PAYTM_INDUSTRY_TYPE_ID, RETAIL);
             parameters.put(PAYTM_REQUESTING_WEBSITE, paytmRequestingWebsite);
             parameters.put(PAYTM_SSO_TOKEN, wallet.getAccessToken());
-            parameters.put(PAYTM_REQUEST_CALLBACK, callBackUrl+SessionContextHolder.getId());
+            parameters.put(PAYTM_REQUEST_CALLBACK, callBackUrl);
             parameters.put(PAYTM_CHECKSUMHASH, checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters));
             String payTmRequestParams = objectMapper.writeValueAsString(parameters);
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
@@ -689,8 +687,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             Wallet wallet = (Wallet) userPreferredPayment;
             if (StringUtils.isBlank(wallet.getAccessToken())) {
                 throw new WynkRuntimeException(UT022);
-            }
-            else if (wallet.getTokenValidity() < System.currentTimeMillis()) {
+            } else if (wallet.getTokenValidity() < System.currentTimeMillis()) {
                 return refreshAccessToken(wallet);
             } else {
                 return wallet;

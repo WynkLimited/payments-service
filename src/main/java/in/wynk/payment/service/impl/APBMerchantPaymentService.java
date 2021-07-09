@@ -16,6 +16,7 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
+import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.apb.ApbStatus;
@@ -50,7 +51,6 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.UUID;
@@ -63,8 +63,6 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
 public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
-    @Value("${apb.callback.url}")
-    private String CALLBACK_URL;
     @Value("${apb.merchant.id}")
     private String MERCHANT_ID;
     @Value("${apb.salt}")
@@ -152,31 +150,32 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     @Override
     public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
         Transaction transaction = TransactionContext.get();
-        String apbRedirectURL = generateApbRedirectURL(transaction);
+        String apbRedirectURL = generateApbRedirectURL((IChargingDetails) chargingRequest.getPurchaseDetails());
         return WynkResponseUtils.redirectResponse(apbRedirectURL);
     }
 
-    private String generateApbRedirectURL(Transaction transaction) {
+    private String generateApbRedirectURL(IChargingDetails chargingDetails) {
         try {
             long txnDate = System.currentTimeMillis();
             String serviceName = ApbService.NB.name();
             String formattedDate = CommonUtils.getFormattedDate(txnDate, "ddMMyyyyHHmmss");
-            String chargingUrl = getReturnUri(transaction, formattedDate, serviceName);
+            String chargingUrl = getReturnUri(chargingDetails.getCallbackDetails().getCallbackUrl(), formattedDate, serviceName);
             return chargingUrl;
         } catch (Exception e) {
             throw new WynkRuntimeException(WynkErrorType.UT999, "Exception occurred while generating URL");
         }
     }
 
-    private String getReturnUri(Transaction txn, String formattedDate, String serviceName) throws Exception {
+    private String getReturnUri(String callbackUrl, String formattedDate, String serviceName) throws Exception {
+        Transaction txn = TransactionContext.get();
         String sessionId = SessionContextHolder.get().getId().toString();
         String hashText = MERCHANT_ID + BaseConstants.HASH + txn.getIdStr() + BaseConstants.HASH + txn.getAmount() + BaseConstants.HASH + formattedDate + BaseConstants.HASH + serviceName + BaseConstants.HASH + SALT;
         String hash = CommonUtils.generateHash(hashText, SHA_512);
         return new URIBuilder(APB_INIT_PAYMENT_URL)
                 .addParameter(MID, MERCHANT_ID)
                 .addParameter(TXN_REF_NO, txn.getIdStr())
-                .addParameter(SUCCESS_URL, getCallbackUrl(sessionId).toASCIIString())
-                .addParameter(FAILURE_URL, getCallbackUrl(sessionId).toASCIIString())
+                .addParameter(SUCCESS_URL, callbackUrl)
+                .addParameter(FAILURE_URL, callbackUrl)
                 .addParameter(APB_AMOUNT, String.valueOf(txn.getAmount()))
                 .addParameter(DATE, formattedDate)
                 .addParameter(CURRENCY, Currency.INR.name())
@@ -185,10 +184,6 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
                 .addParameter(ApbConstants.HASH, hash)
                 .addParameter(SERVICE, serviceName)
                 .build().toString();
-    }
-
-    private URI getCallbackUrl(String sid) throws URISyntaxException {
-        return new URIBuilder(CALLBACK_URL + sid).build();
     }
 
     @Override

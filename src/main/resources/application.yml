@@ -76,6 +76,9 @@ service:
 
 ####### payment props #######
 payment:
+  callback:
+    web: ${service.payment.api.root}/wynk/v1/payment/callback
+    s2s: ${service.payment.api.root}/wynk/v1/callback
   payOption:
     page: ${webview.host}/#/payment-option/
   success:

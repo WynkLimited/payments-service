@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
@@ -67,15 +68,17 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
     private final Gson gson;
+    private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
     private final ApplicationEventPublisher eventPublisher;
 
     public PhonePeMerchantPaymentService(Gson gson,
                                          PaymentCachingService cachingService,
-                                         ApplicationEventPublisher eventPublisher,
+                                         ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher,
                                          @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
         super(cachingService);
         this.gson = gson;
+        this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
     }
@@ -104,6 +107,16 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
             }
         }
         return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
+    }
+
+    @Override
+    public PhonePeCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload), PhonePeCallbackRequestPayload.class);
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+        }
     }
 
     @Override

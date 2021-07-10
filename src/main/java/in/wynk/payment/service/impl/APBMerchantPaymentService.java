@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
@@ -18,10 +19,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.apb.ApbConstants;
-import in.wynk.payment.dto.apb.ApbStatus;
-import in.wynk.payment.dto.apb.ApbTransaction;
-import in.wynk.payment.dto.apb.ApbTransactionInquiryRequest;
+import in.wynk.payment.dto.apb.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
@@ -52,11 +50,12 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
@@ -79,15 +78,17 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     private int reconciliationMessageDelay;
 
     private final Gson gson;
+    private final ObjectMapper objectMapper;
+    private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
     private final ISQSMessagePublisher messagePublisher;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
-    private final RestTemplate restTemplate;
 
-    public APBMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template) {
+    public APBMerchantPaymentService(Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template) {
         super(cachingService);
         this.gson = gson;
+        this.objectMapper = objectMapper;
         this.restTemplate = template;
         this.cachingService = cachingService;
         this.messagePublisher = messagePublisher;
@@ -144,6 +145,16 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
             throw e;
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Exception Occurred while verifying status from airtel payments bank");
+        }
+    }
+
+    @Override
+    public ApbCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload), ApbCallbackRequestPayload.class);
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
         }
     }
 

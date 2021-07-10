@@ -405,6 +405,18 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         }
     }
 
+    @Override
+    public ApbPaytmCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            final SessionDTO sessionDTO = SessionContextHolder.getBody();
+            final String transactionId = sessionDTO.get(TRANSACTION_ID);
+            return ApbPaytmCallbackRequestPayload.builder().transactionId(transactionId).build();
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+        }
+    }
+
     private APBPaytmResponse getBalance(Wallet wallet) {
         try {
             APBPaytmBalanceRequest apbPaytmBalanceRequest = APBPaytmBalanceRequest.builder().walletLoginId(wallet.getWalletUserId()).wallet(WALLET_PAYTM).encryptedToken(wallet.getAccessToken()).build();

@@ -3,7 +3,10 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
-import in.wynk.common.dto.*;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.StandardBusinessErrorDetails;
+import in.wynk.common.dto.TechnicalErrorDetails;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.Utils;
@@ -18,7 +21,10 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.ErrorCode;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.phonepe.*;
+import in.wynk.payment.dto.phonepe.PhonePeResponse;
+import in.wynk.payment.dto.phonepe.PhonePeResponseType;
+import in.wynk.payment.dto.phonepe.PhonePeStatusEnum;
+import in.wynk.payment.dto.phonepe.PhonePeTransactionResponseWrapper;
 import in.wynk.payment.dto.phonepe.autodebit.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
@@ -54,7 +60,6 @@ import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_AUTO_DEBIT;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
-import static in.wynk.payment.dto.phonepe.PhonePeConstants.PHONEPE_OTP_TOKEN;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
@@ -384,6 +389,16 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                             EQUAL +
                             sessionDTO.<Integer>get(BUILD_NO))
                     .build()).build();
+        }
+    }
+
+    @Override
+    public PhonePeAutoDebitCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload), PhonePeAutoDebitCallbackRequestPayload.class);
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
         }
     }
 

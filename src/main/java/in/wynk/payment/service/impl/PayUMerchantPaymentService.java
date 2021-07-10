@@ -57,8 +57,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -132,7 +131,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         try {
             return gson.fromJson(gson.toJsonTree(payload), PayUCallbackRequestPayload.class);
         } catch (Exception e) {
-            log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
         }
     }

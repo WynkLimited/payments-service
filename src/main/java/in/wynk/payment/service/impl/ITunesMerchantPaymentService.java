@@ -65,7 +65,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
 
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
 

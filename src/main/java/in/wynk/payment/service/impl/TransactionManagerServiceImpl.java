@@ -133,6 +133,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
                             (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED)) {
                         subscribePlan(transaction, finalTransactionStatus, isSync);
+                    }else if(existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.CANCELLED){
+                         unsubscribePlan(transaction, finalTransactionStatus,isSync);
                     }
                 }
             }

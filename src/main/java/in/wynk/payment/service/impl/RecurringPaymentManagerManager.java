@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED_NEXT_CHARGING_DATE;
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
+import static in.wynk.payment.core.constant.PaymentConstants.ORIGINAL_TRANSACTION_ID;
 
 @Slf4j
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
@@ -96,7 +97,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                     return;
                 }
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
-                scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
+                scheduleRecurringPayment(transaction.getValueFromPaymentMetaData(ORIGINAL_TRANSACTION_ID), nextRecurringDateTime, transaction.getAttemptSequence());
             }
         }
     }

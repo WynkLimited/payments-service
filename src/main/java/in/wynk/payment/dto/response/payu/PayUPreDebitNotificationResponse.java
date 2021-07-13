@@ -11,5 +11,6 @@ public class PayUPreDebitNotificationResponse {
     private String message;
     private String invoiceId;
     private String approvedStatus;
+    private String invoiceStatus;
 
 }

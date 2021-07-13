@@ -5,6 +5,8 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
+import java.text.DecimalFormat;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -30,5 +32,10 @@ public class UserWalletDetails extends AbstractPaymentDetails {
 
     @Analysed
     private boolean addMoneyAllowed;
+
+    public double getDeficitBalance() {
+        final DecimalFormat df = new DecimalFormat("#.##");
+        return Double.valueOf(df.format(deficitBalance));
+    }
 
 }

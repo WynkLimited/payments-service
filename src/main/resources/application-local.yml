@@ -202,9 +202,8 @@ payment:
       salt: Zbm2ZyNe
       api:
         info: https://test.payu.in/merchant/postservice.php?form=2
+        payment: https://test.payu.in/_payment
       internal:
-        web:
-          url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
           successUrl: http://localhost:8081/wynk/v1/payment/callback/
           failureUrl: http://localhost:8081/wynk/v1/payment/callback/
@@ -218,6 +217,15 @@ payment:
         url: http://localhost:8081/wynk/v1/payment/callback/
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
       saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
+    #### APBPaytm props ######
+    apbPaytm:
+      api:
+        base:
+          url: https://kongqa.airtel.com/preprod-84/pg-service
+      callback:
+        url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
+      auth:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
     #### Itunes props ######
     itunes:
       api:
@@ -259,6 +267,21 @@ http:
               type: both
           request:
             timeout: 10000
+    apbPaytmHttpTemplate:
+      pool:
+        connection:
+          max: 5
+          maxPerHost: 1
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 5000
     paymentClientHttpTemplate:
       pool:
         connection:

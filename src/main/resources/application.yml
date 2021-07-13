@@ -3,7 +3,7 @@ spring:
     name: paymentApi
   profiles:
     active: ${env}
-    include: base-common,coupon-core-${env}, coupon-core-${env}, client-core-${env}, wynk-service-core-${env}
+    include: base-common,coupon-core-${env}, coupon-core-${env}, client-core-${env}, wynk-service-core-${env}, error-codes-core-${env}
   main:
     banner-mode: off
   devtools:
@@ -28,15 +28,15 @@ management:
     jmx:
       exposure:
         exclude: '*'
-    health:
-      mongo:
-        enabled: false
-      cassandra:
-        enabled: false
-      diskspace:
-        enabled: false
-      redis:
-        enabled: false
+  health:
+    mongo:
+      enabled: false
+    cassandra:
+      enabled: false
+    diskspace:
+      enabled: false
+    redis:
+      enabled: false
 
 ###### log props ######
 logging:
@@ -63,13 +63,14 @@ service:
   subscription:
     api:
       endpoint:
+        allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
         allOffers: ${service.subscription.api.root}/wynk/s2s/v1/data/allOffers
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
-        allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
+        renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
 
 ####### payment props #######
 payment:
@@ -110,3 +111,26 @@ paytm:
     api: ${paytm.native.services.baseUrl}/paymentservices/fetch/instrument
   validateOtp:
     api: ${paytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
+
+apbpaytm:
+  refund:
+    api: ${apbpaytm.native.services.baseUrl}/refund/apply
+  validateToken:
+    api: ${apbpaytm.native.accounts.baseUrl}/user/details
+  autoDebit:
+    api: ${apbpaytm.native.services.baseUrl}/order/directPay
+  transactionStatus:
+    api: ${apbpaytm.native.services.baseUrl}/v3/order/status
+  refundStatus:
+    api: ${apbpaytm.native.services.baseUrl}/v2/refund/status
+  revokeAccessToken:
+    api: ${apbpaytm.native.accounts.baseUrl}/oauth2/token/sv1
+  refreshToken:
+    api: ${apbpaytm.native.accounts.baseUrl}/oauth2/v3/token/sv1
+  sendOtp:
+    api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/otp/sv1/?locale=en-IN
+  fetchInstrument:
+    api: ${apbpaytm.native.services.baseUrl}/paymentservices/fetch/instrument
+  validateOtp:
+    api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
+

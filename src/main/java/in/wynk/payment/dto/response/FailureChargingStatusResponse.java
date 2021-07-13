@@ -1,8 +1,8 @@
 package in.wynk.payment.dto.response;
 
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.payment.dto.AbstractPack;
-import in.wynk.payment.dto.ErrorCode;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -16,17 +16,18 @@ public class FailureChargingStatusResponse extends AbstractChargingStatusRespons
     private String buttonText;
     private boolean buttonArrow;
 
-    public static FailureChargingStatusResponse populate(ErrorCode errorCode,String subtitle, String buttonText,boolean buttonArrow, String tid, int planId, AbstractPack packDetails, TransactionStatus transactionStatus) {
+    public static FailureChargingStatusResponse populate(ErrorCode errorCode, String subtitle, String buttonText, boolean buttonArrow, String tid, int planId, AbstractPack packDetails, TransactionStatus transactionStatus, String redirectUrl) {
         return FailureChargingStatusResponse.builder().buttonArrow(buttonArrow)
-                                                    .buttonText(buttonText)
-                                                    .description(errorCode.getInternalMessage())
-                                                    .failureType(errorCode.getExternalCode())
-                                                    .subtitle(subtitle)
-                                                    .title(errorCode.getExternalMessage())
-                                                    .packDetails(packDetails)
-                                                    .tid(tid)
-                                                    .planId(planId)
-                                                    .transactionStatus(transactionStatus)
+                .buttonText(buttonText)
+                .description(errorCode.getInternalMessage())
+                .failureType(errorCode.getExternalCode())
+                .subtitle(subtitle)
+                .title(errorCode.getExternalMessage())
+                .packDetails(packDetails)
+                .tid(tid)
+                .redirectUrl(redirectUrl)
+                .planId(planId)
+                .transactionStatus(transactionStatus)
                 .build();
     }
 }

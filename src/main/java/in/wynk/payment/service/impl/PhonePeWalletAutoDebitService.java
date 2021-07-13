@@ -292,12 +292,12 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             try {
                 builder.data(WalletTopUpResponse.builder().info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey)).build());
             } catch (Exception e) {
-                ErrorCode code = ErrorCode.UNKNOWN;
+                ErrorCode code = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
                 builder.success(false).error(TechnicalErrorDetails.builder().code(code.getInternalCode()).description(code.getInternalMessage()).build());
             }
         } else {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            ErrorCode errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getData().getCode());
+            ErrorCode errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(phonePeWalletResponse.getData().getCode());
             builder.success(false).error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getInternalMessage()).build());
         }
         return builder.build();

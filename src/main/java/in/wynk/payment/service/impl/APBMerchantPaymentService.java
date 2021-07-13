@@ -9,6 +9,7 @@ import in.wynk.common.enums.Currency;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.CommonUtils;
 import in.wynk.common.utils.WynkResponseUtils;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -85,8 +86,8 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
-    public APBMerchantPaymentService(Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template) {
-        super(cachingService);
+    public APBMerchantPaymentService(Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+        super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = template;

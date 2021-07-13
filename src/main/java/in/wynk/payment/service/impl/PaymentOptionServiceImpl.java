@@ -44,7 +44,6 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private static final int N = 3;
     private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
-    private final ISubscriptionServiceManager subscriptionManager;
 
     @Override
     public PaymentOptionsDTO getPaymentOptions(String planId, String itemId) {
@@ -65,9 +64,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         final Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
         final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).map(trialPlanId -> !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(trialPlanId)).orElse(false);
         if (trialEligible)
-            builder.paymentGroups(getPaymentGroups((paymentMethod -> paymentMethod.isTrialSupported())));
+            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported)));
         else builder.paymentGroups(getPaymentGroups((paymentMethod -> true)));
-        return builder.productDetails(buildPlanDetails(planId, trialEligible)).build();
+        return builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build();
     }
 
     private PaymentOptionsDTO getPaymentOptionsForItem(String itemId) {
@@ -78,7 +77,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
-            List<PaymentMethodDTO> methodDTOS = availableMethods.get(group).stream().filter(filterPredicate).map(PaymentMethodDTO::new).collect(Collectors.toList());
+            List<PaymentMethodDTO> methodDTOS = availableMethods.get(group.getId()).stream().filter(filterPredicate).map(PaymentMethodDTO::new).collect(Collectors.toList());
             PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
             paymentGroupsDTOS.add(groupsDTO);
         }

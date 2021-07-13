@@ -12,6 +12,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.WynkResponseUtils;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
@@ -90,8 +91,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                                       ApplicationEventPublisher eventPublisher,
                                       PaymentCachingService cachingService,
                                       IMerchantTransactionService merchantTransactionService,
+                                      IErrorCodesCacheService errorCodesCacheServiceImpl,
                                       @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
-        super(cachingService);
+        super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;

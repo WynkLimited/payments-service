@@ -18,7 +18,9 @@ import java.util.Map;
 @AnalysedEntity
 public class PaymentOptionsDTO {
 
+    private final String msisdn;
     private final IProductDetails productDetails;
+    private final PlanDetails planDetails;
     private final List<PaymentGroupsDTO> paymentGroups;
 
     @SuperBuilder

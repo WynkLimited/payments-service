@@ -23,6 +23,7 @@ import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.ErrorCode;
+import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
@@ -57,6 +58,7 @@ import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.CALLBACK_PAYLOAD_PARSING_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 
@@ -87,9 +89,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
 
     @Value("${payment.failure.page}")
     private String failurePage;
-
-    @Value("${paytm.native.wcf.callbackUrl}")
-    private String callBackUrl;
 
     @Value("${paytm.validateOtp.api}")
     private String VALIDATE_OTP;
@@ -152,6 +151,18 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         final PaytmAutoDebitChargingResponse chargingResponse = baseResponse.getBody().getData();
         final PaytmCallbackResponse callbackResponse = PaytmCallbackResponse.builder().redirectUrl(chargingResponse.getRedirectUrl()).info(chargingResponse.getInfo()).deficit(chargingResponse.isDeficit()).build();
         return WynkResponseEntity.<PaytmCallbackResponse>builder().success(baseResponse.getBody().isSuccess()).status(baseResponse.getStatus()).headers(baseResponse.getHeaders()).error(baseResponse.getBody().getError()).data(callbackResponse).build();
+    }
+
+    @Override
+    public PaytmCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            final SessionDTO sessionDTO = SessionContextHolder.getBody();
+            final String transactionId = sessionDTO.get(TRANSACTION_ID);
+            return PaytmCallbackRequestPayload.builder().transactionId(transactionId).build();
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+        }
     }
 
     @Override
@@ -645,10 +656,10 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Override
     public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> walletAddMoneyRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return addMoney(0, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        return addMoney(((IChargingDetails) walletAddMoneyRequest.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), 0, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
-    public WynkResponseEntity<WalletTopUpResponse> addMoney(double amount, Wallet wallet) {
+    public WynkResponseEntity<WalletTopUpResponse> addMoney(String callBackUrl, double amount, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
@@ -663,7 +674,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             parameters.put(PAYTM_INDUSTRY_TYPE_ID, RETAIL);
             parameters.put(PAYTM_REQUESTING_WEBSITE, paytmRequestingWebsite);
             parameters.put(PAYTM_SSO_TOKEN, wallet.getAccessToken());
-            parameters.put(PAYTM_REQUEST_CALLBACK, callBackUrl + SessionContextHolder.getId());
+            parameters.put(PAYTM_REQUEST_CALLBACK, callBackUrl);
             parameters.put(PAYTM_CHECKSUMHASH, checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters));
             String payTmRequestParams = objectMapper.writeValueAsString(parameters);
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);

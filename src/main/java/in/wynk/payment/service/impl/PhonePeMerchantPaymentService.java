@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
@@ -11,7 +12,6 @@ import in.wynk.common.utils.Utils;
 import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
@@ -30,7 +30,6 @@ import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.DefaultCallbackResponse;
 import in.wynk.payment.dto.response.phonepe.PhonePeChargingResponse;
-import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import lombok.extern.slf4j.Slf4j;
@@ -62,8 +61,6 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private static final String DEBIT_API = "/v4/debit";
     @Value("${payment.merchant.phonepe.id}")
     private String merchantId;
-    @Value("${payment.merchant.phonepe.callback.url}")
-    private String phonePeCallBackURL;
     @Value("${payment.merchant.phonepe.api.base.url}")
     private String phonePeBaseUrl;
     @Value("${payment.merchant.phonepe.salt}")
@@ -71,15 +68,17 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
     private final Gson gson;
+    private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
     private final ApplicationEventPublisher eventPublisher;
 
     public PhonePeMerchantPaymentService(Gson gson,
                                          PaymentCachingService cachingService,
-                                         ApplicationEventPublisher eventPublisher,
+                                         ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher,
                                          @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
         super(cachingService);
         this.gson = gson;
+        this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
     }
@@ -111,12 +110,21 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
+    public PhonePeCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload), PhonePeCallbackRequestPayload.class);
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+        }
+    }
+
+    @Override
     public WynkResponseEntity<PhonePeChargingResponse> charge(DefaultChargingRequest<?> chargingRequest) {
         final WynkResponseEntity.WynkResponseEntityBuilder<PhonePeChargingResponse> responseBuilder = WynkResponseEntity.builder();
         try {
-            final Transaction transaction = TransactionContext.get();
-            final double finalPlanAmount = transaction.getAmount();
-            final String redirectUri = getUrlFromPhonePe(finalPlanAmount, transaction);
+
+            final String redirectUri = getUrlFromPhonePe((IChargingDetails) chargingRequest.getPurchaseDetails());
             return responseBuilder.data(PhonePeChargingResponse.builder().redirectUrl(redirectUri).build()).build();
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_FAILURE, e.getMessage(), e);
@@ -124,9 +132,11 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         }
     }
 
-    private String getUrlFromPhonePe(double amount, Transaction transaction) {
+    private String getUrlFromPhonePe(IChargingDetails chargingDetails) {
+        final Transaction transaction = TransactionContext.get();
+        final double amount = transaction.getAmount();
         PhonePePaymentRequest phonePePaymentRequest = PhonePePaymentRequest.builder().amount(Double.valueOf(amount * 100).longValue()).merchantId(merchantId).merchantUserId(transaction.getUid()).transactionId(transaction.getIdStr()).build();
-        return getRedirectionUri(phonePePaymentRequest).toString();
+        return getRedirectionUri(chargingDetails, phonePePaymentRequest).toString();
     }
 
     @Override
@@ -192,7 +202,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         }
     }
 
-    private URI getRedirectionUri(PhonePePaymentRequest phonePePaymentRequest) {
+    private URI getRedirectionUri(IChargingDetails chargingDetails, PhonePePaymentRequest phonePePaymentRequest) {
         try {
             String requestJson = gson.toJson(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
@@ -202,7 +212,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
             headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            headers.add(X_REDIRECT_URL, phonePeCallBackURL + PaymentCode.PHONEPE_WALLET.name());
+            headers.add(X_REDIRECT_URL, chargingDetails.getCallbackDetails().getCallbackUrl());
             headers.add(X_REDIRECT_MODE, HttpMethod.POST.name());
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestMap, headers);
             ResponseEntity<PhonePeResponse<PhonePeChargingResponseWrapper>> response = restTemplate.exchange(phonePeBaseUrl + DEBIT_API, HttpMethod.POST, requestEntity, new ParameterizedTypeReference<PhonePeResponse<PhonePeChargingResponseWrapper>>() {

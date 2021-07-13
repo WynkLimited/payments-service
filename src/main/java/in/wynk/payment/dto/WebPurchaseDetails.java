@@ -57,6 +57,13 @@ public class WebPurchaseDetails implements IChargingDetails {
         return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
     }
 
+    @Override
+    @JsonIgnore
+    public ICallbackDetails getCallbackDetails() {
+        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web}") + SLASH + SessionContextHolder.getId();
+    }
+
+
     private String buildUrlFrom(String url, IAppDetails appDetails) {
         return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
     }

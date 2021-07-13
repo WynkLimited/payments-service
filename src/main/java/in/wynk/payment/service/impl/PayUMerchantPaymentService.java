@@ -57,8 +57,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -85,10 +84,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUPaymentApiUrl;
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
-    @Value("${payment.merchant.payu.internal.callback.successUrl}")
-    private String payUSuccessUrl;
-    @Value("${payment.merchant.payu.internal.callback.failureUrl}")
-    private String payUFailureUrl;
 
     public PayUMerchantPaymentService(Gson gson,
                                       ObjectMapper objectMapper,
@@ -136,7 +131,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         try {
             return gson.fromJson(gson.toJsonTree(payload), PayUCallbackRequestPayload.class);
         } catch (Exception e) {
-            log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
         }
     }
@@ -146,7 +141,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         final WynkResponseEntity.WynkResponseEntityBuilder<PayUChargingResponse> builder = WynkResponseEntity.builder();
         try {
             final Transaction transaction = TransactionContext.get();
-            final Map<String, String> payUPayload = getPayload(TransactionContext.get());
+            final Map<String, String> payUPayload = getPayload(chargingRequest);
             final String encryptedParams;
             if (chargingRequest.isIntent()) {
                 encryptedParams = EncryptionUtils.encrypt(this.initIntentUpiPayU(payUPayload), encryptionKey);
@@ -346,7 +341,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         transaction.setStatus(finalTransactionStatus.getValue());
     }
 
-    private Map<String, String> getPayload(Transaction transaction) {
+    private Map<String, String> getPayload(PayUChargingRequest<?> chargingRequest) {
+        final Transaction transaction = TransactionContext.get();
         final int planId = transaction.getPlanId();
         double finalPlanAmount = transaction.getAmount();
         String uid = transaction.getUid();
@@ -369,8 +365,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         payload.put(PAYU_CUSTOMER_FIRSTNAME, uid);
         payload.put(PAYU_CUSTOMER_EMAIL, email);
         payload.put(PAYU_CUSTOMER_MSISDN, msisdn);
-        payload.put(PAYU_SUCCESS_URL, payUSuccessUrl + PaymentCode.PAYU.name());
-        payload.put(PAYU_FAILURE_URL, payUFailureUrl + PaymentCode.PAYU.name());
+        payload.put(PAYU_SUCCESS_URL, ((IChargingDetails) chargingRequest.getPurchaseDetails()).getCallbackDetails().getCallbackUrl());
+        payload.put(PAYU_FAILURE_URL, ((IChargingDetails) chargingRequest.getPurchaseDetails()).getCallbackDetails().getCallbackUrl());
         // Not in document
         payload.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         payload.put(ERROR, PAYU_REDIRECT_MESSAGE);

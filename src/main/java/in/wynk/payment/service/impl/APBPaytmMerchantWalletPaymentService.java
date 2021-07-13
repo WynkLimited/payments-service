@@ -20,6 +20,7 @@ import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.ErrorCode;
+import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.paytm.*;
 import in.wynk.payment.dto.request.*;
@@ -64,8 +65,6 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private String failurePage;
     @Value("${payment.merchant.apbPaytm.auth.token}")
     private String ABP_PAYTM_AUTHORIZATION;
-    @Value("${payment.merchant.apbPaytm.callback.url}")
-    private String callBackUrl;
     @Value("${payment.merchant.apbPaytm.api.base.url}")
     private String apbPaytmBaseUrl;
     @Value("${payment.encKey}")
@@ -232,7 +231,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final Transaction transaction = TransactionContext.get();
         final WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
-        final APBPaytmResponse topUpResponse = this.addMoney(transaction.getAmount(), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        final APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), transaction.getAmount(), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
         if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
             try {
                 builder.data(WalletTopUpResponse.builder().info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey)).build());
@@ -249,7 +248,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     }
 
-    private APBPaytmResponse addMoney(double amount, Wallet wallet) {
+    private APBPaytmResponse addMoney(String callbackUrl, double amount, Wallet wallet) {
         try {
 
             Transaction transaction = TransactionContext.get();
@@ -264,7 +263,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                             .currency(CURRENCY_INR)
                             .topUpAmount(amount)
                             .walletLoginId(wallet.getWalletUserId())
-                            .data(APBPaytmRequestData.builder().returnUrl(callBackUrl + SessionContextHolder.getId()).build())
+                            .data(APBPaytmRequestData.builder().returnUrl(callbackUrl).build())
                             .build())
                     .build();
             HttpHeaders headers = generateHeaders();
@@ -408,6 +407,18 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         }
     }
 
+    @Override
+    public ApbPaytmCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            final SessionDTO sessionDTO = SessionContextHolder.getBody();
+            final String transactionId = sessionDTO.get(TRANSACTION_ID);
+            return ApbPaytmCallbackRequestPayload.builder().transactionId(transactionId).build();
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY006, e);
+        }
+    }
+
     private APBPaytmResponse getBalance(Wallet wallet) {
         try {
             APBPaytmBalanceRequest apbPaytmBalanceRequest = APBPaytmBalanceRequest.builder().walletLoginId(wallet.getWalletUserId()).wallet(WALLET_PAYTM).encryptedToken(wallet.getAccessToken()).build();
@@ -441,7 +452,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < amountToCharge) {
                 final double amountToAdd = amountToCharge - balanceResponse.getData().getBalance();
-                APBPaytmResponse topUpResponse = this.addMoney(amountToAdd, wallet);
+                APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), amountToAdd, wallet);
                 if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
                     walletResponse.deficit(true).info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey));
                     log.info("topUp Response {}", topUpResponse);
@@ -521,8 +532,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             final APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if (balanceResponse.isResult()) {
                 if (paymentCachingService.containsPlan(request.getProductDetails().getId())) {
-                   final PlanDTO selectedPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
-                   finalPrice = selectedPlan.getFinalPrice();
+                    final PlanDTO selectedPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
+                    finalPrice = selectedPlan.getFinalPrice();
                 } else {
                     final ItemDTO itemDTO = paymentCachingService.getItem(request.getProductDetails().getId());
                     finalPrice = itemDTO.getPrice();

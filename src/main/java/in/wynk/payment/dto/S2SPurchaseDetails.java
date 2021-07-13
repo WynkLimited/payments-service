@@ -1,9 +1,12 @@
 package in.wynk.payment.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.service.impl.PaymentMethodCachingService;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,6 +40,12 @@ public class S2SPurchaseDetails implements IChargingDetails {
         final String pendingPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.pending.page}"), appDetails);
         final String unknownPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.unknown.page}"), appDetails);
         return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
+    }
+
+    @Override
+    @JsonIgnore
+    public ICallbackDetails getCallbackDetails() {
+        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.s2s}") + SLASH +  BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentDetails().getPaymentId()).getPaymentCode().name();
     }
 
     private String buildUrlFrom(String url, IAppDetails appDetails) {

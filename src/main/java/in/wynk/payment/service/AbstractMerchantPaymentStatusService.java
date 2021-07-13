@@ -19,7 +19,6 @@ import in.wynk.payment.dto.response.FailureChargingStatusResponse;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,12 +32,11 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 public abstract class AbstractMerchantPaymentStatusService implements IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> {
 
     private final PaymentCachingService cachingService;
+    private final IErrorCodesCacheService errorCodesCacheServiceImpl;
 
-    @Autowired
-    private IErrorCodesCacheService errorCodesCacheServiceImpl;
-
-    protected AbstractMerchantPaymentStatusService(PaymentCachingService cachingService) {
+    protected AbstractMerchantPaymentStatusService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
         this.cachingService = cachingService;
+        this.errorCodesCacheServiceImpl = errorCodesCacheServiceImpl;
     }
 
     @Override

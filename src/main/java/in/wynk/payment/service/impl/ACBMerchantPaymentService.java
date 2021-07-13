@@ -2,6 +2,7 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -20,8 +21,8 @@ import org.springframework.stereotype.Service;
 @Service(BeanConstant.ACB_MERCHANT_PAYMENT_SERVICE)
 public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
-    protected ACBMerchantPaymentService(PaymentCachingService cachingService) {
-        super(cachingService);
+    protected ACBMerchantPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+        super(cachingService, errorCodesCacheServiceImpl);
     }
 
     @Override

@@ -31,6 +31,8 @@ import in.wynk.payment.dto.response.apb.paytm.APBPaytmResponseData;
 import in.wynk.payment.dto.response.phonepe.auto.AutoDebitWalletCallbackResponse;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.ItemDTO;
+import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -56,7 +58,7 @@ import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE)
-public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, CallbackRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IUserPreferredPaymentService<UserWalletDetails> {
+public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, CallbackRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
 
     @Value("${payment.success.page}")
     private String successPage;
@@ -77,7 +79,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private final IErrorCodesCacheService errorCodesCacheServiceImpl;
 
     public APBPaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.APB_PAYTM_PAYMENT_CLIENT_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, ApplicationEventPublisher eventPublisher, PaymentCachingService paymentCachingService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
-        super(paymentCachingService);
+        super(paymentCachingService, errorCodesCacheServiceImpl);
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.userPaymentsManager = userPaymentsManager;
@@ -523,14 +525,22 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     @Override
-    public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId) {
+    public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserWalletDetails> builder = WynkResponseEntity.builder();
-        Wallet wallet = getWallet(userPreferredPayment);
+        Wallet wallet = getWallet(request.getPreferredPayment());
         if (Objects.nonNull(wallet)) {
-            APBPaytmResponse balanceResponse = this.getBalance(wallet);
+            final double finalPrice;
+            final APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if (balanceResponse.isResult()) {
-                if (balanceResponse.getData().getBalance() < paymentCachingService.getPlan(planId).getFinalPrice()) {
-                    double deficitBalance = paymentCachingService.getPlan(planId).getFinalPrice() - balanceResponse.getData().getBalance();
+                if (paymentCachingService.containsPlan(request.getProductDetails().getId())) {
+                    final PlanDTO selectedPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
+                    finalPrice = selectedPlan.getFinalPrice();
+                } else {
+                    final ItemDTO itemDTO = paymentCachingService.getItem(request.getProductDetails().getId());
+                    finalPrice = itemDTO.getPrice();
+                }
+                if (balanceResponse.getData().getBalance() < paymentCachingService.getPlan(request.getProductDetails().getId()).getFinalPrice()) {
+                    double deficitBalance = finalPrice - balanceResponse.getData().getBalance();
                     builder.data(UserWalletDetails.builder()
                             .linked(true)
                             .active(true)

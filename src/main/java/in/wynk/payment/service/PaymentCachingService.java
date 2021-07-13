@@ -212,6 +212,8 @@ public class PaymentCachingService {
         return plans.containsKey(NumberUtils.toInt(planId));
     }
 
+    public boolean containsItem(String itemId) { return items.containsKey(itemId); }
+
     public PlanDTO getPlan(String planId) {
         return plans.get(NumberUtils.toInt(planId));
     }

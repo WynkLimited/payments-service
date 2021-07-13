@@ -1,20 +1,15 @@
 package in.wynk.payment.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import in.wynk.payment.core.dao.entity.IProductDetails;
+import in.wynk.payment.service.impl.AbstractPreferredPaymentDetailsRequest;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
 
 @Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CombinedPaymentDetailsRequest {
-
-    private int planId;
+@SuperBuilder
+public class CombinedPaymentDetailsRequest<T extends IProductDetails> extends AbstractPreferredPaymentDetailsRequest<T> {
     private Map<String, List<String>> paymentGroups;
-
 }

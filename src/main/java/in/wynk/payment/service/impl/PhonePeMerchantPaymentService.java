@@ -10,6 +10,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.common.utils.WynkResponseUtils;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -74,9 +75,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
 
     public PhonePeMerchantPaymentService(Gson gson,
                                          PaymentCachingService cachingService,
+                                         IErrorCodesCacheService errorCodesCacheServiceImpl,
                                          ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher,
                                          @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
-        super(cachingService);
+        super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;

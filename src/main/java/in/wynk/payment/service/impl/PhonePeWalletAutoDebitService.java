@@ -10,6 +10,8 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.Utils;
+import in.wynk.error.codes.core.dao.entity.ErrorCode;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -19,7 +21,6 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.ErrorCode;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.PhonePeResponse;
 import in.wynk.payment.dto.phonepe.PhonePeResponseType;
@@ -55,6 +56,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_AUTO_DEBIT;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -86,10 +88,11 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final PaymentCachingService paymentCachingService;
+    private final IErrorCodesCacheService errorCodesCacheServiceImpl;
 
     public PhonePeWalletAutoDebitService(Gson gson,
                                          PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher,
-                                         @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, PaymentCachingService paymentCachingService) {
+                                         @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, PaymentCachingService paymentCachingService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
         super(cachingService);
         this.gson = gson;
         this.cachingService = cachingService;
@@ -97,6 +100,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.paymentCachingService = paymentCachingService;
+        this.errorCodesCacheServiceImpl = errorCodesCacheServiceImpl;
     }
 
     @Override
@@ -120,14 +124,14 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 sessionDTO.put(PHONEPE_OTP_TOKEN, linkRequestResponse.getData().getOtpToken());
                 log.info("Otp sent successfully. Status: {}", linkRequestResponse.getCode());
             } else {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(linkRequestResponse.getCode());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(linkRequestResponse.getCode());
             }
         } catch (HttpStatusCodeException hex) {
             log.error(PHONEPE_OTP_SEND_FAILURE, hex.getResponseBodyAsString());
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
         } catch (Exception e) {
             log.error(PHONEPE_OTP_SEND_FAILURE, e.getMessage());
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (Objects.nonNull(errorCode)) {
@@ -157,15 +161,15 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 saveToken(verifyOtpResponse.getData().getUserAuthToken());
                 log.info("Otp validated successfully. Status: {}", verifyOtpResponse.getCode());
             } else {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(verifyOtpResponse.getCode());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(verifyOtpResponse.getCode());
             }
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update("otpValidated", false);
             log.error(PHONEPE_OTP_VERIFICATION_FAILURE, "Error in response while verifying otp: {}", hex.getResponseBodyAsString());
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
         } catch (Exception e) {
             log.error(PHONEPE_OTP_VERIFICATION_FAILURE, "Error in response while verifying otp: {}", e.getMessage(), e);
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (Objects.nonNull(errorCode)) {
@@ -209,15 +213,15 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             }
             else {
 
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(walletResponse.getCode());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(walletResponse.getCode());
                 if(!walletResponse.getData().getWallet().getWalletActive()){
-                    errorCode= ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
+                    errorCode= errorCodesCacheServiceImpl.getErrorCodeByExternalCode(PHONEPE023);
                 }
             }
         } catch (HttpStatusCodeException hex) {
             log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", hex.getResponseBodyAsString());
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
-            if(errorCode.getInternalCode().equalsIgnoreCase(ErrorCode.PHONEPE027.name())){
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
+            if(errorCode.getInternalCode().equalsIgnoreCase(PHONEPE027)){
                 userWalletDetailsBuilder.linked(false);
             }
         } catch (WynkRuntimeException e) {
@@ -226,7 +230,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             httpStatus = e.getErrorType().getHttpResponseStatusCode();
         } catch (Exception e) {
             log.error(PHONEPE_GET_BALANCE_FAILURE, "Error in response: {}", e.getMessage());
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             builder.data(userWalletDetailsBuilder.build());
@@ -252,14 +256,14 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 userPaymentsManager.delete(wallet);
                 log.info("Wallet unliked successfully. Status: {}", unlinkResponse.getCode());
             } else {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(unlinkResponse.getCode());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(unlinkResponse.getCode());
             }
         } catch (HttpStatusCodeException hex) {
             log.error(PHONEPE_UNLINK_FAILURE, hex.getResponseBodyAsString());
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), PhonePeWalletResponse.class).getCode());
         } catch (Exception e) {
             log.error(PHONEPE_UNLINK_FAILURE, e.getMessage());
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (Objects.nonNull(errorCode)) {
@@ -315,7 +319,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
 
         } catch (Exception e) {
             log.error(PHONEPE_ADD_MONEY_FAILURE, e.getMessage(), e);
-            return PhonePeWalletResponse.builder().success(false).data(PhonePeResponseData.builder().code(ErrorCode.UNKNOWN.name()).build()).build();
+            return PhonePeWalletResponse.builder().success(false).data(PhonePeResponseData.builder().code(errorCodesCacheServiceImpl.getDefaultUnknownErrorCode().getInternalCode()).build()).build();
         }
     }
 
@@ -363,14 +367,14 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             log.error(PHONEPE_CHARGING_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse phonePeWalletResponse = objectMapper.readValue(errorResponse, PhonePeWalletResponse.class);
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(phonePeWalletResponse.getCode());
         } catch (WynkRuntimeException e) {
             log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
             errorCode = handleWynkRunTimeException(e);
             httpStatus = e.getErrorType().getHttpResponseStatusCode();
         } catch (Exception e) {
              log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
-             errorCode = ErrorCode.UNKNOWN;
+             errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
         } finally {
             if (StringUtils.isBlank(redirectUrl)) {
                 redirectUrl = failurePage+sid;
@@ -419,10 +423,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             UserWalletDetails userWalletDetails = this.balance(transaction.getPlanId(), wallet).getBody().getData();
             final long  finalAmountToCharge=Double.valueOf(transaction.getAmount() * 100).longValue();
             if (!userWalletDetails.isLinked()) {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE024.name());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(PHONEPE024);
                 log.info("your wallet is not linked. please link your wallet");
             } else if (!userWalletDetails.isActive()) {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE023.name());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(PHONEPE023);
                 log.info("your phonePe account is not active. please try another payment method");
             } else if (userWalletDetails.isLinked() && userWalletDetails.isActive() && userWalletDetails.getDeficitBalance() > 0d) {
                 if (userWalletDetails.isAddMoneyAllowed()) {
@@ -437,11 +441,11 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                     } else {
                          deficit=true;
                          transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getData().getCode());
+                        errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(phonePeWalletResponse.getData().getCode());
                     }
                 } else {
                     deficit=true;
-                    errorCode = ErrorCode.getErrorCodesFromExternalCode(ErrorCode.PHONEPE026.name());
+                    errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(PHONEPE026);
                     log.info("your balance is low and phonePe is not allowing to add money to you wallet");
                 }
             } else {
@@ -464,7 +468,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             log.error(PHONEPE_CHARGING_FAILURE, hex.getResponseBodyAsString());
             String errorResponse = hex.getResponseBodyAsString();
             PhonePeWalletResponse phonePeWalletResponse = objectMapper.readValue(errorResponse, PhonePeWalletResponse.class);
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(phonePeWalletResponse.getCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(phonePeWalletResponse.getCode());
         }
         catch (WynkRuntimeException e) {
             log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
@@ -474,7 +478,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_FAILURE, e.getMessage());
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (StringUtils.isBlank(redirectUrl)) {
@@ -609,15 +613,12 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     private ErrorCode handleWynkRunTimeException(WynkRuntimeException e) {
-        ErrorCode errorCode = ErrorCode.UNKNOWN;
-        errorCode.setInternalCode(e.getErrorCode());
-        errorCode.setInternalMessage(e.getErrorTitle());
-        return errorCode;
+        return errorCodesCacheServiceImpl.getDefaultUnknownErrorCode(e.getErrorCode(),e.getErrorTitle());
     }
 
     private void handleError(ErrorCode errorCode, WynkResponseEntity.WynkResponseEntityBuilder<?> builder) {
         if (Objects.nonNull(errorCode)) {
-            if (errorCode == ErrorCode.UNKNOWN) {
+            if (errorCode == errorCodesCacheServiceImpl.getDefaultUnknownErrorCode()) {
                 builder.error(TechnicalErrorDetails.builder().code(errorCode.getInternalCode()).description(errorCode.getInternalMessage()).build()).success(false);
             } else {
                 builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build()).success(false);

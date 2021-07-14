@@ -69,6 +69,8 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
 
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
+    private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
+    private static final List<String> REFUND_NOTIFICATION = Collections.singletonList("CANCEL");
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -184,7 +186,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         LatestReceiptInfo receiptInfo = mapping.getMessage();
         //Need to add check for itunes txn Id in merchant transaction table to achieve idempotency
         final long expireTimestamp = NumberUtils.toLong(receiptInfo.getExpiresDateMs());
-        if (expireTimestamp > System.currentTimeMillis() || transaction.getType() == PaymentEvent.CANCELLED) {
+        final long cancellationTimestamp = NumberUtils.toLong(receiptInfo.getCancellationDateMs());
+        if (expireTimestamp > System.currentTimeMillis() || (transaction.getType() == PaymentEvent.CANCELLED && cancellationTimestamp <= System.currentTimeMillis())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
         transaction.setStatus(finalTransactionStatus.name());
@@ -447,12 +450,14 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         PaymentEvent event;
         if (RENEWAL_NOTIFICATION.contains(notificationType)) {
             event = PaymentEvent.RENEW;
-        } else if ("DID_CHANGE_RENEWAL_STATUS".equalsIgnoreCase(notificationType)) {
+        } else if (REACTIVATION_NOTIFICATION.contains(notificationType)) {
             if (Boolean.parseBoolean(wrapper.getDecodedNotification().getAutoRenewStatus())) {
                 event = PaymentEvent.SUBSCRIBE;
             } else {
                 event = PaymentEvent.UNSUBSCRIBE;
             }
+        } else if (REFUND_NOTIFICATION.contains(notificationType)) {
+            event = PaymentEvent.CANCELLED;
         } else {
             throw new WynkRuntimeException(WynkErrorType.UT001, "Invalid notification type");
         }

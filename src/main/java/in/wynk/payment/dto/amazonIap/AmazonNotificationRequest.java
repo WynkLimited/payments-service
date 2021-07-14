@@ -2,10 +2,14 @@ package in.wynk.payment.dto.amazonIap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.utils.Utils;
 import in.wynk.payment.dto.IAPNotification;
 import lombok.Getter;
 
 @Getter
+@AnalysedEntity
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AmazonNotificationRequest implements IAPNotification {
 
@@ -33,5 +37,10 @@ public class AmazonNotificationRequest implements IAPNotification {
     private String subscribeUrl;
     @JsonProperty("Token")
     private String token;
+
+    @Analysed(name = "message")
+    public AmazonNotificationMessage getDecodedMessage() {
+        return Utils.getData(message, AmazonNotificationMessage.class);
+    }
 
 }

@@ -44,4 +44,7 @@ public interface PaymentConstants extends BaseConstants {
     String BUTTON_TEXT = "buttonText";
     String BUTTON_ARROW = "buttonArrow";
 
+    String PROD_ENV = "PROD";
+    String SANDBOX_ENV = "Sandbox";
+
 }

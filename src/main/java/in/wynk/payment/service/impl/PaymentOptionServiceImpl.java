@@ -22,6 +22,7 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
@@ -49,9 +51,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     public PaymentOptionsDTO getPaymentOptions(String planId) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             PlanDTO paidPlan = paymentCachingService.getPlan(planId);
-            SessionDTO sessionDTO = SessionContextHolder.getBody();
             Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
             Optional<Integer> freePlanOption = Optional.of(paidPlan.getLinkedFreePlanId());
             if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && !group.getId().equalsIgnoreCase(CARD)) {
@@ -61,7 +63,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
             PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
             paymentGroupsDTOS.add(groupsDTO);
         }
-        return PaymentOptionsDTO.builder().planDetails(buildPlanDetails(planId)).paymentGroups(paymentGroupsDTOS).build();
+        return PaymentOptionsDTO.builder().msisdn(sessionDTO.get(MSISDN)).planDetails(buildPlanDetails(planId)).paymentGroups(paymentGroupsDTOS).build();
     }
 
     private PaymentOptionsDTO.PlanDetails buildPlanDetails(String planId) {
@@ -104,7 +106,11 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 }
                 try {
                     IUserPreferredPaymentService userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCode.getFromPaymentCode(paymentCode).getCode(), IUserPreferredPaymentService.class);
-                    task = () -> userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId());
+                    String requestId = MDC.get(REQUEST_ID);
+                    task = () -> {
+                        MDC.put(REQUEST_ID, requestId);
+                        return userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId());
+                    };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {
                     map.put(keyBuilder.build(), null);

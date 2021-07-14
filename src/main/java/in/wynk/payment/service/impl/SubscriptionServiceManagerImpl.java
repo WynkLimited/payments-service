@@ -193,6 +193,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                     .planId(getUpdatedPlanId(planId, paymentEvent))
                     .paymentPartner(BaseConstants.WYNK.toLowerCase())
                     .msisdn(msisdn)
+                    .paymentEvent(paymentEvent)
                     .build();
             RequestEntity<PlanUnProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {

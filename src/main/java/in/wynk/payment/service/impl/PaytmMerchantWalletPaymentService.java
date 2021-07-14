@@ -9,6 +9,8 @@ import in.wynk.common.enums.Status;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.common.utils.Utils;
+import in.wynk.error.codes.core.dao.entity.ErrorCode;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -16,7 +18,6 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.ErrorCode;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
@@ -120,8 +121,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     private final CheckSumServiceHelper checkSumServiceHelper;
     private final PaymentCachingService paymentCachingService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final IErrorCodesCacheService errorCodesCacheServiceImpl;
 
-    public PaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService, ApplicationEventPublisher applicationEventPublisher) {
+    public PaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService, ApplicationEventPublisher applicationEventPublisher, IErrorCodesCacheService errorCodesCacheServiceImpl) {
         super(paymentCachingService);
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
@@ -129,6 +131,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         this.paymentCachingService = paymentCachingService;
         this.applicationEventPublisher = applicationEventPublisher;
         this.checkSumServiceHelper = CheckSumServiceHelper.getCheckSumServiceHelper();
+        this.errorCodesCacheServiceImpl = errorCodesCacheServiceImpl;
     }
 
     @Override
@@ -438,13 +441,13 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                 log.info("Otp sent successfully. Status: {}", paytmWalletLinkResponse.getStatus());
                 sessionDTO.put(STATE_TOKEN, paytmWalletLinkResponse.getState_token());
             } else {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(paytmWalletLinkResponse.getResponseCode());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(paytmWalletLinkResponse.getResponseCode());
             }
         } catch (HttpStatusCodeException e) {
             log.error(PAYTM_ERROR, "Error from paytm: {}", e.getMessage(), e);
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletLinkResponse.class).getResponseCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletLinkResponse.class).getResponseCode());
         } catch (Exception e) {
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (Objects.nonNull(errorCode)) {
@@ -474,14 +477,14 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             if (paytmWalletValidateLinkResponse != null && paytmWalletValidateLinkResponse.getStatus().equals(Status.SUCCESS)) {
                 saveToken(paytmWalletValidateLinkResponse);
             } else {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(paytmWalletValidateLinkResponse.getResponseCode());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(paytmWalletValidateLinkResponse.getResponseCode());
             }
         } catch (HttpStatusCodeException e) {
             AnalyticService.update("otpValidated", false);
             log.error(PAYTM_ERROR, "Error in response: {}", e.getMessage(), e);
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletValidateLinkResponse.class).getResponseCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletValidateLinkResponse.class).getResponseCode());
         } catch (Exception e) {
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (Objects.nonNull(errorCode)) {
@@ -568,16 +571,16 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                         .addMoneyAllowed(paytmPayOption.isAddMoneyAllowed())
                         .build());
             } else {
-                errorCode = ErrorCode.getErrorCodesFromExternalCode(payTmResponse.getBody().getResultInfo().getResultCode());
+                errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(payTmResponse.getBody().getResultInfo().getResultCode());
             }
         } catch (HttpStatusCodeException e) {
             log.error(PAYTM_ERROR, "Error in response: {}", e.getMessage(), e);
-            errorCode = ErrorCode.getErrorCodesFromExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletValidateLinkResponse.class).getResponseCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(e.getResponseBodyAsString(), PaytmWalletValidateLinkResponse.class).getResponseCode());
         } catch (WynkRuntimeException e) {
             errorCode = handleWynkRunTimeException(e);
             httpStatus = e.getErrorType().getHttpResponseStatusCode();
         } catch (Exception e) {
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             builder.data(userWalletDetailsBuilder.build());
@@ -670,7 +673,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             errorCode = handleWynkRunTimeException(e);
             httpStatus = e.getErrorType().getHttpResponseStatusCode();
         } catch (Exception e) {
-            errorCode = ErrorCode.UNKNOWN;
+            errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             handleError(errorCode, builder);
@@ -713,15 +716,12 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     private ErrorCode handleWynkRunTimeException(WynkRuntimeException e) {
-        ErrorCode errorCode = ErrorCode.UNKNOWN;
-        errorCode.setInternalCode(e.getErrorCode());
-        errorCode.setInternalMessage(e.getErrorTitle());
-        return errorCode;
+        return errorCodesCacheServiceImpl.getDefaultUnknownErrorCode(e.getErrorCode(),e.getErrorTitle());
     }
 
     private void handleError(ErrorCode errorCode, WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder) {
         if (Objects.nonNull(errorCode)) {
-            if (errorCode == ErrorCode.UNKNOWN) {
+            if (errorCode == errorCodesCacheServiceImpl.getDefaultUnknownErrorCode()) {
                 builder.error(TechnicalErrorDetails.builder().code(errorCode.getInternalCode()).description(errorCode.getInternalMessage()).build()).success(false);
             } else {
                 builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build()).success(false);

@@ -10,18 +10,21 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Getter
-@JsonIgnoreProperties(ignoreUnknown = true)
-@AnalysedEntity
 @SuperBuilder
+@AnalysedEntity
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AmazonIapVerificationRequest extends IapVerificationRequest {
-    @Analysed
-    private UserData userData;
+
     @Analysed
     private Receipt receipt;
+
+    @Analysed
+    private UserData userData;
 
     @Override
     public PaymentCode getPaymentCode() {
         return PaymentCode.AMAZON_IAP;
     }
+
 }

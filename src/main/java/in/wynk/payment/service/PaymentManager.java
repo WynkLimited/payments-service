@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.AbstractErrorDetails;
@@ -175,6 +176,7 @@ public class PaymentManager {
             UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
             PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
             String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode, event);
+            AnalyticService.update(wrapper.getDecodedNotification());
             handleNotification(paymentCode, txnId, mapping, wrapper);
             return EmptyResponse.response(true);
         }

@@ -124,7 +124,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync) {
         try {
-            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
+            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND, PaymentEvent.UNSUBSCRIBE).contains(transaction.getType())) {
                 if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
                     // do nothing as per https://airteldigital.atlassian.net/browse/RG-1610
                     return;

@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.session.constant.SessionConstant.SESSION_ID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +47,7 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             sessionDTO.put(CLIENT, clientDetails.getAlias());
             final String id = UUIDs.timeBased().toString();
             sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, duration, TimeUnit.MINUTES);
+            AnalyticService.update(SESSION_ID, id);
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             if (request.getParams() != null) {
                 queryBuilder.addParameter(TITLE, request.getParams().get(TITLE));

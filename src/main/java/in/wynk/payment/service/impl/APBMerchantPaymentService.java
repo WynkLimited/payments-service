@@ -9,7 +9,10 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.CommonUtils;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.*;
+import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -31,7 +34,7 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.dto.SendSQSMessageRequest;
-import in.wynk.queue.producer.ISQSMessagePublisher;
+import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -85,14 +88,14 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     private final Gson gson;
     private final PaymentCachingService cachingService;
-    private final ISQSMessagePublisher messagePublisher;
+    private final ISqsManagerService messagePublisher;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     @Autowired
     @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
     private RestTemplate restTemplate;
 
-    public APBMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ISQSMessagePublisher messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+    public APBMerchantPaymentService(Gson gson, PaymentCachingService cachingService, ISqsManagerService messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.gson = gson;
         this.cachingService = cachingService;
         this.messagePublisher = messagePublisher;
@@ -166,7 +169,7 @@ public class APBMerchantPaymentService implements IRenewalMerchantPaymentService
 
     private <T> void publishSQSMessage(String queueName, int messageDelay, T message) {
         try {
-            messagePublisher.publish(SendSQSMessageRequest.<T>builder()
+            messagePublisher.publishSQSMessage(SendSQSMessageRequest.<T>builder()
                     .queueName(queueName)
                     .delaySeconds(messageDelay)
                     .message(message)

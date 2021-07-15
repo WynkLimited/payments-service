@@ -164,7 +164,7 @@ public class PaymentManager {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
         }
     }
 
@@ -399,7 +399,7 @@ public class PaymentManager {
                     .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             CouponDTO couponDTO = couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
-            if(couponDTO!=null) {
+            if (couponDTO != null) {
                 couponManager.applyCoupon(couponProvisionRequest);
             }
             return couponDTO;

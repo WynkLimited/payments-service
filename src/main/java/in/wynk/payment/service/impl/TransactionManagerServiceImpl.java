@@ -124,17 +124,20 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync) {
         try {
-            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND, PaymentEvent.UNSUBSCRIBE).contains(transaction.getType())) {
+            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
                 if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
                     // do nothing as per https://airteldigital.atlassian.net/browse/RG-1610
                     return;
+                }
+                if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(transaction.getType())) {
+                    if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
+                        unsubscribePlan(transaction, finalTransactionStatus, isSync);
+                    }
                 } else {
                     recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
                     if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
                             (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED)) {
                         subscribePlan(transaction, finalTransactionStatus, isSync);
-                    }else if(existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.CANCELLED){
-                         unsubscribePlan(transaction, finalTransactionStatus,isSync);
                     }
                 }
             }
@@ -186,7 +189,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
-        AnalyticService.update(COUPON_CODE,transaction.getCoupon());
+        AnalyticService.update(COUPON_CODE, transaction.getCoupon());
         AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }

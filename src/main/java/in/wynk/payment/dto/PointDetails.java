@@ -1,5 +1,6 @@
 package in.wynk.payment.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
@@ -20,6 +21,7 @@ public class PointDetails extends AbstractProductDetails {
     }
 
     @Override
+    @JsonIgnore
     public String getType() {
         return BaseConstants.POINT;
     }

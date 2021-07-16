@@ -1,10 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
 import in.wynk.data.entity.MongoBaseEntity;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -30,7 +27,8 @@ public class PurchaseDetails extends MongoBaseEntity<PurchaseDetails.PurchaseKey
 
     @Getter
     @Builder
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class PurchaseKey implements Serializable {
         @Field("uid")
         private String uid;

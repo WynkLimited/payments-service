@@ -12,7 +12,7 @@ import java.io.Serializable;
 @SuperBuilder
 @Document("recurring_payment_details")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class PurchaseDetails extends MongoBaseEntity<PurchaseDetails.PurchaseKey> implements IPurchaseDetails {
+public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseKey> implements IPurchaseDetails {
 
     @Field("source_transaction_id")
     private String sourceTransactionId;

@@ -30,6 +30,7 @@ public class PurchaseDetails extends MongoBaseEntity<PurchaseDetails.PurchaseKey
 
     @Getter
     @Builder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class PurchaseKey implements Serializable {
         @Field("uid")
         private String uid;

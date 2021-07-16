@@ -26,10 +26,11 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
 
     @Override
     public void save(Transaction transaction, IPurchaseDetails details) {
+        final IPurchaseDetails purchaseDetails = PurchaseDetails.builder().id(PurchaseDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(details.getProductDetails().getId()).build()).sourceTransactionId(transaction.getIdStr()).appDetails(details.getAppDetails()).productDetails(details.getProductDetails()).paymentDetails(details.getPaymentDetails()).userDetails(details.getUserDetails()).build();
         if (details.getPaymentDetails().isAutoRenew()) {
-            paymentDetailsDao.save(PurchaseDetails.builder().id(PurchaseDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(details.getProductDetails().getId()).build()).sourceTransactionId(transaction.getIdStr()).appDetails(details.getAppDetails()).productDetails(details.getProductDetails()).paymentDetails(details.getPaymentDetails()).userDetails(details.getUserDetails()).build());
+            paymentDetailsDao.save(purchaseDetails);
         }
-        sessionManager.init(PaymentConstants.PAYMENT_DETAILS_KEY + transaction.getIdStr(), details, 3, TimeUnit.DAYS).getBody();
+        sessionManager.init(PaymentConstants.PAYMENT_DETAILS_KEY + transaction.getIdStr(), purchaseDetails, 3, TimeUnit.DAYS);
     }
 
     @Override
@@ -39,7 +40,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
         }
         Session<String, IPurchaseDetails> pdSession = sessionManager.get(PaymentConstants.PAYMENT_DETAILS_KEY + transaction.getIdStr());
         if (Objects.nonNull(pdSession)) {
-            return Optional.of(pdSession.getBody());
+            return Optional.ofNullable(pdSession.getBody());
         }
         return Optional.empty();
     }

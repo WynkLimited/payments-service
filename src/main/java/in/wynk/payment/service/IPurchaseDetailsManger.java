@@ -9,6 +9,6 @@ public interface IPurchaseDetailsManger {
 
     void save(Transaction transaction, IPurchaseDetails details);
 
-    Optional<IPurchaseDetails> get(Transaction transaction);
+    Optional<? extends IPurchaseDetails> get(Transaction transaction);
 
 }

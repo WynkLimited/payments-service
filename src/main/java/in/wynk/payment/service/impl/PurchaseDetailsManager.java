@@ -26,7 +26,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
 
     @Override
     public void save(Transaction transaction, IPurchaseDetails details) {
-        final IPurchaseDetails purchaseDetails = PurchaseDetails.builder().id(PurchaseDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(details.getProductDetails().getId()).build()).sourceTransactionId(transaction.getIdStr()).appDetails(details.getAppDetails()).productDetails(details.getProductDetails()).paymentDetails(details.getPaymentDetails()).userDetails(details.getUserDetails()).build();
+        final PurchaseDetails purchaseDetails = PurchaseDetails.builder().id(PurchaseDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(details.getProductDetails().getId()).build()).sourceTransactionId(transaction.getIdStr()).appDetails(details.getAppDetails()).productDetails(details.getProductDetails()).paymentDetails(details.getPaymentDetails()).userDetails(details.getUserDetails()).build();
         if (details.getPaymentDetails().isAutoRenew()) {
             paymentDetailsDao.save(purchaseDetails);
         }
@@ -34,7 +34,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    public Optional<IPurchaseDetails> get(Transaction transaction) {
+    public Optional<? extends IPurchaseDetails> get(Transaction transaction) {
         if (transaction.getType() == PaymentEvent.RENEW && transaction.getStatus() != TransactionStatus.MIGRATED) {
             return paymentDetailsDao.findById(PurchaseDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
         }

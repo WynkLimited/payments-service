@@ -60,6 +60,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.logging.BaseLoggingMarkers.PAYMENT_ERROR;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY011;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
@@ -163,7 +164,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
             final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
             boolean autoRenewal = false;
-            if(CollectionUtils.isNotEmpty(itunesReceipt.getPendingRenewalInfo())) {
+            if (CollectionUtils.isNotEmpty(itunesReceipt.getPendingRenewalInfo())) {
                 autoRenewal = itunesReceipt.getPendingRenewalInfo().stream().filter(pendingRenewal -> !StringUtils.isEmpty(latestReceiptInfo.getProductId()) && latestReceiptInfo.getProductId().equalsIgnoreCase(pendingRenewal.getAutoRenewProductId()) && pendingRenewal.getAutoRenewStatus().equals("1") && pendingRenewal.getOriginalTransactionId().equals(latestReceiptInfo.getOriginalTransactionId())).findAny().isPresent();
             }
             AnalyticService.update(ALL_ITUNES_RECEIPT, gson.toJson(latestReceiptInfo));
@@ -221,7 +222,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 log.error(PAYMENT_RECONCILIATION_FAILURE, "unable to reconcile since receipt is not present for original itunes id {}", extTxnId);
             }
         }
-        ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
+        ChargingStatusResponse.ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(planId));
         }
@@ -233,7 +234,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             ItunesStatusCodes code = null;
             final ItunesReceiptType receiptType = itunesLatestReceiptResponse.getItunesReceiptType();
             final List<LatestReceiptInfo> latestReceiptInfoList = itunesLatestReceiptResponse.getLatestReceiptInfo();
-            if(CollectionUtils.isEmpty(latestReceiptInfoList)) {
+            if (CollectionUtils.isEmpty(latestReceiptInfoList)) {
                 log.info("Latest receipt not found for uid: {}, planId: {}", transaction.getUid(), transaction.getPlanId());
                 code = ItunesStatusCodes.APPLE_21018;
                 transaction.setStatus(TransactionStatus.FAILURE.name());
@@ -416,6 +417,11 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                     final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
                     Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailsDao.findById(iTunesId);
+                    try {
+                        AnalyticService.update(LATEST_RECEIPT_INFO, mapper.writeValueAsString(latestReceiptInfo));
+                    } catch (Exception e) {
+                        log.error(PAYMENT_ERROR, "unable to stringify receipt");
+                    }
                     if (optionalReceiptDetails.isPresent()) {
                         ReceiptDetails details = optionalReceiptDetails.get();
                         return UserPlanMapping.<LatestReceiptInfo>builder().planId(details.getPlanId()).msisdn(details.getMsisdn())

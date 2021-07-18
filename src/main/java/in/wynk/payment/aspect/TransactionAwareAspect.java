@@ -1,6 +1,8 @@
 package in.wynk.payment.aspect;
 
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.lock.WynkRedisLock;
+import in.wynk.lock.WynkRedisLockService;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
@@ -18,15 +20,14 @@ import org.springframework.util.StringUtils;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
-/**
- * @author Abhishek
- * @created 13/08/20
- */
 @Aspect
 public class TransactionAwareAspect {
 
     @Autowired
     private IRuleEvaluator ruleEvaluator;
+
+    @Autowired
+    private WynkRedisLockService wynkRedisLockService;
 
     @Autowired
     private ITransactionManagerService transactionManager;
@@ -37,13 +38,20 @@ public class TransactionAwareAspect {
         TransactionAware transactionAware = method.getAnnotation(TransactionAware.class);
         if (!StringUtils.isEmpty(transactionAware.txnId())) {
             String txnId = parseSpel(joinPoint, transactionAware);
-            final Transaction transaction = transactionManager.get(txnId);
-            if(transaction != null){
-                TransactionContext.set(transaction);
-            } else{
-                throw new WynkRuntimeException("Transaction is null");
+            WynkRedisLock wynkRedisLock = wynkRedisLockService.getWynkRedisLock(txnId);
+            if (wynkRedisLock.tryLock()) {
+                try {
+                    final Transaction transaction = transactionManager.get(txnId);
+                    TransactionContext.set(transaction);
+                } catch (WynkRuntimeException e) {
+                    throw e;
+                } finally {
+                    wynkRedisLock.unlock();
+                }
+            } else {
+                throw new WynkRuntimeException("Can not acquire lock on given txn id");
             }
-        } else{
+        } else {
             throw new WynkRuntimeException("Empty txn id");
         }
     }

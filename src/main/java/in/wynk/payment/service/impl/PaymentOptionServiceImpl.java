@@ -8,6 +8,7 @@ import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.dto.UserPreferredPaymentWrapper;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.PaymentDetailsWrapper;
@@ -109,7 +110,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {
                         MDC.put(REQUEST_ID, requestId);
-                        return userPreferredPaymentService.getUserPreferredPayments(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build()), request.getPlanId(),request.getCouponId());
+                        return userPreferredPaymentService.getUserPreferredPayments(UserPreferredPaymentWrapper.builder().userPreferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).planId(request.getPlanId()).couponId(request.getCouponId()).build());
                     };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {

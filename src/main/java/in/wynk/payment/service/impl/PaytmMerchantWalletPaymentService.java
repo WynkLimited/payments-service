@@ -20,6 +20,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.ErrorCode;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.UserPreferredPaymentWrapper;
 import in.wynk.payment.dto.paytm.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
@@ -683,16 +684,16 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     @Override
-    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId, String couponId) {
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPaymentWrapper userPreferredPaymentWrapper) {
         try {
-            double  finalAmount=paymentCachingService.getPlan(planId).getFinalPrice();
-            if(couponId!=null) {
-                double discountPercentage = this.getCouponDiscountPercentage(couponId);
+            double  finalAmount=paymentCachingService.getPlan(userPreferredPaymentWrapper.getPlanId()).getFinalPrice();
+            if(StringUtils.isNotEmpty(userPreferredPaymentWrapper.getCouponId()) && StringUtils.isNotBlank(userPreferredPaymentWrapper.getCouponId())) {
+                double discountPercentage = this.getCouponDiscountPercentage(userPreferredPaymentWrapper.getCouponId());
                 if (discountPercentage>0) {
                     finalAmount = finalAmount - (finalAmount * discountPercentage/100);
                 }
             }
-            return this.balance(finalAmount, getWallet(userPreferredPayment)).getBody();
+            return this.balance(finalAmount, getWallet(userPreferredPaymentWrapper.getUserPreferredPayment())).getBody();
         } catch (WynkRuntimeException e) {
             return WynkResponseEntity.WynkBaseResponse.<AbstractPaymentDetails>builder().error(TechnicalErrorDetails.builder().code(e.getErrorCode()).description(e.getMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
         }

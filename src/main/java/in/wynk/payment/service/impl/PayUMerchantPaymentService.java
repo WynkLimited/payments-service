@@ -21,6 +21,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.UserPreferredPaymentWrapper;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
@@ -688,9 +689,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPayment userPreferredPayment, int planId,String couponId) {
+    public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPaymentWrapper userPreferredPaymentWrapper) {
         WynkResponseEntity.WynkBaseResponse.WynkBaseResponseBuilder builder = WynkResponseEntity.WynkBaseResponse.<UserCardDetails>builder();
-        String userCredentials = payUMerchantKey + COLON + userPreferredPayment.getId().getUid();
+        String userCredentials = payUMerchantKey + COLON + userPreferredPaymentWrapper.getUserPreferredPayment().getId().getUid();
         MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
         PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {});
         Map<String, CardDetails> cardDetailsMap = userCardDetailsResponse.getUserCards();

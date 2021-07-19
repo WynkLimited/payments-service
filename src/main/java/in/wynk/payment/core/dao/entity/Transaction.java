@@ -93,7 +93,7 @@ public class Transaction {
     }
 
     public String getProductId() {
-        if (StringUtils.isEmpty(itemId)) {
+        if (!StringUtils.isEmpty(itemId)) {
             return itemId;
         }
         return String.valueOf(planId);

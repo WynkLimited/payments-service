@@ -51,9 +51,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
     public PaymentOptionsDTO getPaymentOptions(String planId) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             PlanDTO paidPlan = paymentCachingService.getPlan(planId);
-            SessionDTO sessionDTO = SessionContextHolder.getBody();
             Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
             Optional<Integer> freePlanOption = Optional.of(paidPlan.getLinkedFreePlanId());
             if (freePlanOption.isPresent() && !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(freePlanOption.get()) && paymentCachingService.getPlan(freePlanOption.get()).getPlanType() == PlanType.FREE_TRIAL && !group.getId().equalsIgnoreCase(CARD)) {
@@ -63,7 +63,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
             PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
             paymentGroupsDTOS.add(groupsDTO);
         }
-        return PaymentOptionsDTO.builder().planDetails(buildPlanDetails(planId)).paymentGroups(paymentGroupsDTOS).build();
+        return PaymentOptionsDTO.builder().msisdn(sessionDTO.get(MSISDN)).planDetails(buildPlanDetails(planId)).paymentGroups(paymentGroupsDTOS).build();
     }
 
     private PaymentOptionsDTO.PlanDetails buildPlanDetails(String planId) {

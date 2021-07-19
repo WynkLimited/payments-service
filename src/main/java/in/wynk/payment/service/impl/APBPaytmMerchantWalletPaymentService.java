@@ -157,9 +157,9 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             }
         } catch (HttpStatusCodeException hex) {
             log.error(APB_PAYTM_OTP_VALIDATE_FAILURE, hex.getResponseBodyAsString());
-            errorCode =errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
+            errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(objectMapper.readValue(hex.getResponseBodyAsString(), APBPaytmResponse.class).getErrorCode());
         } catch (Exception e) {
-            log.error(APB_PAYTM_OTP_VALIDATE_FAILURE,e.getMessage());
+            log.error(APB_PAYTM_OTP_VALIDATE_FAILURE, e.getMessage());
             errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
@@ -304,7 +304,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         try {
             HttpHeaders headers = generateHeaders();
             HttpEntity<?> requestEntity = new HttpEntity<>(headers);
-            TransactionStatusAPBPaytmResponse statusResponse = restTemplate.exchange(apbPaytmBaseUrl+ABP_PAYTM_TRANSACTION_STATUS+txn.getIdStr(), HttpMethod.GET, requestEntity, TransactionStatusAPBPaytmResponse.class).getBody();
+            TransactionStatusAPBPaytmResponse statusResponse = restTemplate.exchange(apbPaytmBaseUrl + ABP_PAYTM_TRANSACTION_STATUS + txn.getIdStr(), HttpMethod.GET, requestEntity, TransactionStatusAPBPaytmResponse.class).getBody();
             return APBPaytmResponse.builder().result(statusResponse.isResult()).errorCode(statusResponse.getErrorCode()).errorMessage(statusResponse.getErrorMessage()).data(statusResponse.getData()[0]).build();
         } catch (HttpStatusCodeException e) {
             log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, e.getResponseBodyAsString());
@@ -408,6 +408,9 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         }
     }
 
+    /**
+     * TODO:: Since apb paytm is not supplying wynk transaction id in the callback payload, we would be able to parse it, as a work around we are getting transaction id from session, check with apb paytm to include wynk txn id
+     */
     @Override
     public ApbPaytmCallbackRequestPayload parseCallback(Map<String, Object> payload) {
         try {

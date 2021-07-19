@@ -11,7 +11,6 @@ paytm:
       baseUrl: https://securegw.paytm.in
     wcf:
       addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
-      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WCF
 
@@ -182,10 +181,6 @@ payment:
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
         payment: https://secure.payu.in/_payment
-      internal:
-        callback:
-          successUrl: https://payments.wynk.in/wynk/v1/payment/callback/
-          failureUrl: https://payments.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
       api:
@@ -203,16 +198,12 @@ payment:
       api:
         base:
           url: https://mercury-t2.phonepe.com
-      callback:
-        url: https://payments.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
     #### APBPaytm props ######
     apbPaytm:
       api:
         base:
           url: https://paydigi.airtel.in/web/pg-service
-      callback:
-        url: https://payments.wynk.in/wynk/v1/payment/callback/
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 
@@ -295,6 +286,9 @@ service:
   subscription:
     api:
       root: http://subscription.wcf.internal
+  payment:
+    api:
+      root: https://payments.wynk.in
 
 webview:
   host: https://pay.wynk.in

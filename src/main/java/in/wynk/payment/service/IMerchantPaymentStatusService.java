@@ -1,10 +1,11 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 
-public interface IMerchantPaymentStatusService {
+public interface IMerchantPaymentStatusService<R extends AbstractChargingStatusResponse, T extends AbstractTransactionStatusRequest> {
 
-    BaseResponse<?> status(AbstractTransactionStatusRequest transactionStatusRequest);
+    WynkResponseEntity<R> status(T request);
 
 }

@@ -4,7 +4,10 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.EmptyResponse;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.dto.request.CallbackRequestWrapper;
+import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,11 +32,11 @@ public class RevenueNotificationHandler {
 
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
-    public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
+    public WynkResponseEntity<Void> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
         PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        return paymentManager.handleNotification(applicationAlias, payload, paymentCode);
+        return paymentManager.handleNotification(NotificationRequest.builder().paymentCode(paymentCode).payload(payload).clientAlias(applicationAlias).build());
     }
 
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -42,7 +45,7 @@ public class RevenueNotificationHandler {
         final PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        paymentManager.handleCallback(payload, paymentCode);
+        paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build());
         return EmptyResponse.response();
     }
 

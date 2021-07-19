@@ -6,12 +6,15 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
-import in.wynk.payment.dto.request.TransactionInitRequest;
+import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.dto.request.*;
+import in.wynk.payment.service.IPurchaseDetailsManger;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -24,7 +27,6 @@ import org.springframework.stereotype.Service;
 import java.util.Calendar;
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -33,17 +35,18 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
     private final ITransactionDao transactionDao;
+    private final IPurchaseDetailsManger purchaseDetailsManger;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IPurchaseDetailsManger purchaseDetailsManger, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.transactionDao = transactionDao;
+        this.purchaseDetailsManger = purchaseDetailsManger;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
 
-    @Override
-    public Transaction upsert(Transaction transaction) {
+    private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = transactionDao.save(transaction);
         publishAnalytics(persistedEntity);
         return persistedEntity;
@@ -54,19 +57,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return transactionDao.findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, "Invalid txnId - " + id));
     }
 
-    @Override
-    public Transaction initiateTransaction(String uid, String msisdn, int planId, Double amount, PaymentCode paymentCode, PaymentEvent event) {
-        log.info("Initiating transaction for uid: {}, planId: {}, amount: {}, paymentCode:{}, txnEvent: {}", uid, planId, amount, paymentCode.getCode(), event.getValue());
-        Transaction txn = Transaction.builder().planId(planId).amount(amount).initTime(Calendar.getInstance())
-                .consent(Calendar.getInstance()).uid(uid).msisdn(msisdn)
-                .paymentChannel(paymentCode.name()).status(TransactionStatus.INPROGRESS.name())
-                .type(event.name()).build();
-        return initTransaction(txn);
-    }
-
     private Transaction initTransaction(Transaction txn) {
         Transaction transaction = upsert(txn);
-        Session<SessionDTO> session = SessionContextHolder.get();
+        Session<String, SessionDTO> session = SessionContextHolder.get();
         if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
             SessionDTO sessionDTO = session.getBody();
             sessionDTO.put(TRANSACTION_ID, transaction.getIdStr());
@@ -76,106 +69,63 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction initiateTransaction(TransactionInitRequest transactionInitRequest) {
-        Transaction txn = Transaction.builder()
-                .clientAlias(transactionInitRequest.getClientAlias())
-                .planId(transactionInitRequest.getPlanId())
-                .amount(transactionInitRequest.getAmount())
-                .initTime(Calendar.getInstance())
-                .consent(Calendar.getInstance())
-                .uid(transactionInitRequest.getUid())
-                .itemId(transactionInitRequest.getItemId())
-                .msisdn(transactionInitRequest.getMsisdn())
-                .paymentChannel(transactionInitRequest.getPaymentCode().name())
-                .status(transactionInitRequest.getStatus())
-                .type(transactionInitRequest.getEvent().name())
-                .coupon(transactionInitRequest.getCouponId())
-                .discount(transactionInitRequest.getDiscount())
-                .build();
+    public Transaction init(AbstractTransactionInitRequest transactionInitRequest) {
+        final Transaction transaction = PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) : initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
+        final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
+        purchaseDetailsManger.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
+        return transaction;
+    }
+
+    /**
+     * initiate transaction and upsert payer info for plan based charging, skip in case point charging
+     **/
+    @Override
+    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IPurchaseDetails purchaseDetails) {
+        if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
+            final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
+            purchaseDetailsManger.save(transaction, purchaseDetails);
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build());
+            return transaction;
+        }
+        return init(transactionInitRequest);
+    }
+
+    private Transaction initPlanTransaction(PlanTransactionInitRequest transactionInitRequest) {
+        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentCode().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
+        return initTransaction(txn);
+    }
+
+    private Transaction initPointTransaction(PointTransactionInitRequest transactionInitRequest) {
+        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentCode().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).itemId(transactionInitRequest.getItemId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
         return initTransaction(txn);
     }
 
     @Override
-    public void updateAndPublishSync(Transaction transaction, Consumer<Transaction> fetchAndUpdateFromSourceFn) {
-        this.updateAndPublish(transaction, fetchAndUpdateFromSourceFn, true);
-    }
-
-    @Override
-    public void updateAndPublishAsync(Transaction transaction, Consumer<Transaction> fetchAndUpdateFromSourceFn) {
-        this.updateAndPublish(transaction, fetchAndUpdateFromSourceFn, false);
-    }
-
-    @Override
-    public void updateAndSyncPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
-        this.updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, true);
-    }
-
-    @Override
-    public void updateAndAsyncPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
-        this.updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, false);
-    }
-
-    private void updateAndPublish(Transaction transaction, Consumer<Transaction> fetchAndUpdateFromSourceFn, boolean isSync) {
-        TransactionStatus existingTransactionStatus = transaction.getStatus();
-        fetchAndUpdateFromSourceFn.accept(transaction);
-        TransactionStatus finalTransactionStatus = transaction.getStatus();
-        updateAndPublish(transaction, existingTransactionStatus, finalTransactionStatus, isSync);
-    }
-
-    private void updateAndPublish(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus, boolean isSync) {
+    public void revision(AbstractTransactionRevisionRequest request) {
         try {
-            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transaction.getType())) {
-                if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-                    // do nothing as per https://airteldigital.atlassian.net/browse/RG-1610
-                    return;
-                }
-                if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(transaction.getType())) {
-                    if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
-                        unsubscribePlan(transaction, finalTransactionStatus, isSync);
+            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(request.getTransaction().getType())) {
+                if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(request.getTransaction().getType())) {
+                    if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) {
+                        subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
-                    recurringPaymentManagerService.scheduleRecurringPayment(transaction, existingTransactionStatus, finalTransactionStatus);
-                    if ((existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) ||
-                            (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED)) {
-                        subscribePlan(transaction, finalTransactionStatus, isSync);
+                    recurringPaymentManagerService.scheduleRecurringPayment(request);
+                    if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) || (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
+                        subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
                     }
                 }
             }
         } catch (WynkRuntimeException e) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            request.getTransaction().setStatus(TransactionStatus.FAILURE.getValue());
             throw e;
         } finally {
-            if (transaction.getStatus() != TransactionStatus.INPROGRESS && transaction.getStatus() != TransactionStatus.UNKNOWN) {
-                transaction.setExitTime(Calendar.getInstance());
+            if (request.getTransaction().getStatus() != TransactionStatus.INPROGRESS && request.getTransaction().getStatus() != TransactionStatus.UNKNOWN) {
+                request.getTransaction().setExitTime(Calendar.getInstance());
             }
-            if (existingTransactionStatus == TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.FAILURE) {
-                return;
+            if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
+                this.upsert(request.getTransaction());
             }
-            this.upsert(transaction);
-        }
-    }
-
-    private void subscribePlan(Transaction transaction, TransactionStatus finalTransactionStatus, boolean isSync) {
-        if (isSync) {
-            try {
-                subscriptionServiceManager.subscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
-            } catch (Exception e) {
-                subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
-            }
-        } else {
-            subscriptionServiceManager.subscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), transaction.getPaymentChannel().getCode(), finalTransactionStatus, transaction.getType());
-        }
-    }
-
-    private void unsubscribePlan(Transaction transaction, TransactionStatus finalTransactionStatus, boolean isSync) {
-        if (isSync) {
-            try {
-                subscriptionServiceManager.unSubscribePlanSync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
-            } catch (Exception e) {
-                subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
-            }
-        } else {
-            subscriptionServiceManager.unSubscribePlanAsync(transaction.getPlanId(), transaction.getId().toString(), transaction.getUid(), transaction.getMsisdn(), finalTransactionStatus, transaction.getType());
         }
     }
 

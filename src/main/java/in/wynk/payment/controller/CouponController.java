@@ -13,6 +13,7 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,16 +22,12 @@ import java.util.List;
 import static in.wynk.common.constant.BaseConstants.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("wynk/v1/coupon")
 public class CouponController {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
-
-    public CouponController(ICouponManager couponManager, PaymentCachingService cachingService) {
-        this.couponManager = couponManager;
-        this.cachingService = cachingService;
-    }
 
     @GetMapping("/apply/{sid}")
     @ManageSession(sessionId = "#sid")

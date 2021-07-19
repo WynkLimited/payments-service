@@ -7,16 +7,20 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRefundRequest;
 import in.wynk.payment.dto.paytm.PaytmPaymentRefundRequest;
 import in.wynk.payment.dto.payu.PayUPaymentRefundRequest;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
 @AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
 public abstract class AbstractPaymentRefundRequest {
 
-    private final String reason;
-    private final String originalTransactionId;
+    private String reason;
+    private String originalTransactionId;
 
     public static AbstractPaymentRefundRequest from(Transaction originalTransaction, String externalReferenceId, String reason) {
         switch (originalTransaction.getPaymentChannel()) {

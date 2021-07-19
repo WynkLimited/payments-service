@@ -7,6 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
@@ -53,18 +54,16 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     public void consume(PaymentReconciliationMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        final AbstractTransactionStatusRequest transactionStatusRequest;
+        final AbstractTransactionReconciliationStatusRequest transactionStatusRequest;
         if (message.getPaymentEvent() == PaymentEvent.REFUND) {
             transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder()
                     .extTxnId(message.getExtTxnId())
                     .transactionId(message.getTransactionId())
-                    .paymentCode(message.getPaymentCode().getCode())
                     .build();
         } else {
             transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder()
                     .extTxnId(message.getExtTxnId())
                     .transactionId(message.getTransactionId())
-                    .paymentCode(message.getPaymentCode().getCode())
                     .build();
         }
         paymentManager.status(transactionStatusRequest);

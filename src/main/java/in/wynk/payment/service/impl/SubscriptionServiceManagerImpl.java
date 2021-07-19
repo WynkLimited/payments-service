@@ -163,16 +163,16 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         try {
             final IAppDetails appDetails = request.getAppDetails();
             final IUserDetails userDetails = request.getUserDetails();
-            TrialPlansComputationRequest trialPlansComputationRequest = TrialPlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(userDetails.getMsisdn())).service(request.getService()).appId(appDetails.getAppId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).build();
-            RequestEntity<TrialPlansComputationRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(trialPlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), trialPlansComputationRequest, HttpMethod.POST);
-            ResponseEntity<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>>() {
+            final TrialPlansComputationRequest trialPlansComputationRequest = TrialPlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(userDetails.getMsisdn())).service(request.getService()).appId(appDetails.getAppId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).build();
+            final RequestEntity<TrialPlansComputationRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(trialPlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), trialPlansComputationRequest, HttpMethod.POST);
+            final ResponseEntity<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<TrialPlanComputationResponse>>() {
             });
             return response.getBody().getData();
         } catch (HttpStatusCodeException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY107, e, e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY107, e);
         }
     }
 

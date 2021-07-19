@@ -35,7 +35,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final Client client = WebPurchaseDetails.class.isAssignableFrom(purchaseDetails.getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)) : clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
         final AbstractTransactionInitRequest transactionInitRequest;
         if (PlanDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
-            transactionInitRequest = planInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getPaymentDetails(), (PlanDetails) purchaseDetails.getProductDetails());
+            transactionInitRequest = planInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getAppDetails() ,purchaseDetails.getPaymentDetails(), (PlanDetails) purchaseDetails.getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
             transactionInitRequest = pointInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getPaymentDetails(), (PointDetails) purchaseDetails.getProductDetails());
         } else {
@@ -75,12 +75,12 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         return initRequest;
     }
 
-    private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails, IPaymentDetails paymentDetails, PlanDetails planDetails) {
+    private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails) {
         final PaymentEvent paymentEvent = paymentDetails.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
-        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentCode(paymentCode).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(paymentEvent).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
+        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentCode(paymentCode).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(paymentEvent).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
     }
 
-    private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails, IPaymentDetails paymentDetails, PointDetails pointDetails) {
+    private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails,  IPaymentDetails paymentDetails, PointDetails pointDetails) {
         return PointTransactionInitRequest.builder().paymentCode(paymentCode).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
     }
 

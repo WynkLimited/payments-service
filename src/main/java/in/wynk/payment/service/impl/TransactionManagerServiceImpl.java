@@ -130,7 +130,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     return;
                 }
                 if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(transaction.getType())) {
-                    if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
+                    if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS) {
                         unsubscribePlan(transaction, finalTransactionStatus, isSync);
                     }
                 } else {

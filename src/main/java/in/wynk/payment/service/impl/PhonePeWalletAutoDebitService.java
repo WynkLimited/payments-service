@@ -66,7 +66,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
-public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, PhonePeChargingRequest<?>>, IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IWalletTopUpService<WalletTopUpResponse, PhonePeAutoDebitTopUpRequest<?>>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
+public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, PhonePeAutoDebitCallbackRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, PhonePeChargingRequest<?>>, IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IWalletTopUpService<WalletTopUpResponse, PhonePeAutoDebitTopUpRequest<?>>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
 
 
     @Value("${payment.encKey}")
@@ -342,7 +342,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public WynkResponseEntity<AutoDebitWalletCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
+    public WynkResponseEntity<AutoDebitWalletCallbackResponse> handleCallback(PhonePeAutoDebitCallbackRequest request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         AutoDebitWalletCallbackResponse.AutoDebitWalletCallbackResponseBuilder<?, ?> callbackResponseBuilder = AutoDebitWalletCallbackResponse.builder();
         ErrorCode errorCode = null;
@@ -358,7 +358,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             UserWalletDetails userWalletDetails = this.balance(productId, wallet).getBody().getData();
             if (userWalletDetails.getBalance() >= Double.valueOf(transaction.getAmount())) {
                 final long finalAmountToCharge = Double.valueOf(transaction.getAmount() * 100).longValue();
-                PhonePeAutoDebitDoChargingRequest phonePeAutoDebitDoChargingRequest = PhonePeAutoDebitDoChargingRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(finalAmountToCharge).deviceContext(new DeviceContext(Long.parseLong(processCallback(callbackRequest)))).transactionId(transaction.getId().toString()).build();
+                PhonePeAutoDebitDoChargingRequest phonePeAutoDebitDoChargingRequest = PhonePeAutoDebitDoChargingRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(finalAmountToCharge).deviceContext(new DeviceContext(request.getPhonePeVersionCode())).transactionId(transaction.getId().toString()).build();
                 String requestJson = objectMapper.writeValueAsString(phonePeAutoDebitDoChargingRequest);
                 HttpEntity<Map<String, String>> requestEntity = generatePayload(wallet.getId().getDeviceId(), requestJson, AUTO_DEBIT_API);
                 ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + AUTO_DEBIT_API, requestEntity, PhonePeWalletResponse.class);
@@ -403,9 +403,9 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public PhonePeAutoDebitCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+    public PhonePeAutoDebitCallbackRequest parseCallback(Map<String, Object> payload) {
         try {
-            return objectMapper.readValue(objectMapper.writeValueAsString(payload), PhonePeAutoDebitCallbackRequestPayload.class);
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload), PhonePeAutoDebitCallbackRequest.class);
         } catch (Exception e) {
             log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);

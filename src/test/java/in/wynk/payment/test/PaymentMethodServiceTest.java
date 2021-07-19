@@ -25,7 +25,7 @@ public class PaymentMethodServiceTest {
     @Test
     public void testPaymentOptions() {
         SessionDTO dummySession = PaymentTestUtils.dummySession();
-        PaymentOptionsDTO dto = paymentOptionService.getPaymentOptions("123");
+        PaymentOptionsDTO dto = paymentOptionService.getPaymentOptions("123", "");
         System.out.println(gson.toJson(dto));
     }
 

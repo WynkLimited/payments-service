@@ -2,10 +2,13 @@ package in.wynk.payment.dto.response;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.constant.BaseConstants;
+import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -16,13 +19,15 @@ import java.util.Map;
 public class PaymentOptionsDTO {
 
     private final String msisdn;
+    private final IProductDetails productDetails;
     private final PlanDetails planDetails;
     private final List<PaymentGroupsDTO> paymentGroups;
 
-    @Builder
+    @SuperBuilder
     @Getter
     @AnalysedEntity
-    public static class PlanDetails {
+    public static class PlanDetails implements IProductDetails {
+        private final String id;
         private final String partnerName;
         private final String partnerLogo;
         private final String discount;
@@ -32,6 +37,17 @@ public class PaymentOptionsDTO {
         private final double price;
         private final double discountedPrice;
         private final boolean freeTrialAvailable;
+        private final String type = BaseConstants.PLAN;
+    }
+
+    @SuperBuilder
+    @Getter
+    @AnalysedEntity
+    public static class PointDetails implements IProductDetails {
+        private final String id;
+        private final String title;
+        private final double price;
+        private final String type = BaseConstants.POINT;
     }
 
     @Builder
@@ -50,6 +66,8 @@ public class PaymentOptionsDTO {
     @AnalysedEntity
     public static class PaymentMethodDTO {
         @Analysed
+        private final String paymentId;
+        @Analysed
         private final String group;
         @Analysed
         private final int hierarchy;
@@ -65,6 +83,7 @@ public class PaymentOptionsDTO {
         private final List<String> suffixes;
 
         public PaymentMethodDTO(PaymentMethod method) {
+            this.paymentId = method.getId();
             this.group = method.getGroup();
             this.meta = method.getMeta();
             this.hierarchy = method.getHierarchy();

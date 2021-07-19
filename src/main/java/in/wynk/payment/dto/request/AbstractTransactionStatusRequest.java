@@ -19,9 +19,6 @@ public abstract class AbstractTransactionStatusRequest {
     private String transactionId;
 
     @Analysed
-    private String paymentCode;
-
-    @Analysed
     @Setter
     private int planId;
 

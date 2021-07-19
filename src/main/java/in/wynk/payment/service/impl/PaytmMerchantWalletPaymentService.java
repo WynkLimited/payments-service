@@ -171,7 +171,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             PaytmChargingResponse paytmChargingResponse = withdrawFromPaytm(transaction, wallet.getAccessToken());
             if (paytmChargingResponse != null && paytmChargingResponse.getStatus().equalsIgnoreCase(PAYTM_STATUS_SUCCESS)) {
                 transaction.setStatus(TransactionStatus.SUCCESS.name());
-                redirectUrl = successPage+sid;
+                redirectUrl = successPage + sid;
             } else {
                 transaction.setStatus(TransactionStatus.FAILURE.name());
                 applicationEventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(paytmChargingResponse.getResponseCode()).description(paytmChargingResponse.getResponseMessage()).build());
@@ -181,20 +181,20 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             log.error(PAYTM_ERROR, "unable to charge due to ", e);
         } finally {
             if (StringUtils.isBlank(redirectUrl)) {
-                redirectUrl = failurePage+sid;
+                redirectUrl = failurePage + sid;
             }
             return BaseResponse.<WynkResponse.WynkResponseWrapper>builder().status(HttpStatus.OK).body(WynkResponse.WynkResponseWrapper.builder()
                     .data(redirectUrl +
-                    SLASH +
-                    sessionDTO.<String>get(OS) +
-                    QUESTION_MARK +
-                    SERVICE +
-                    EQUAL +
-                    sessionDTO.<String>get(SERVICE) +
-                    AND +
-                    BUILD_NO +
-                    EQUAL +
-                    sessionDTO.<Integer>get(BUILD_NO))
+                            SLASH +
+                            sessionDTO.<String>get(OS) +
+                            QUESTION_MARK +
+                            SERVICE +
+                            EQUAL +
+                            sessionDTO.<String>get(SERVICE) +
+                            AND +
+                            BUILD_NO +
+                            EQUAL +
+                            sessionDTO.<Integer>get(BUILD_NO))
                     .build()).build();
         }
     }
@@ -261,7 +261,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {}
+    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    }
 
     private PaytmChargingResponse withdrawFromPaytm(Transaction transaction, String accessToken) {
         MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
@@ -428,7 +429,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             String phone = walletLinkRequest.getEncSi();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-            AnalyticService.update(UID,sessionDTO.<String>get(UID));
+            AnalyticService.update(UID, sessionDTO.<String>get(UID));
             sessionDTO.put(WALLET_USER_ID, phone);
             log.info("Sending OTP to {} via PayTM", phone);
             URI uri = new URIBuilder(SEND_OTP).build();
@@ -467,7 +468,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(VALIDATE_OTP).build();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-            AnalyticService.update(UID,sessionDTO.<String>get(UID));
+            AnalyticService.update(UID, sessionDTO.<String>get(UID));
             HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID));
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put("otp", walletValidateLinkRequest.getOtp());
@@ -664,7 +665,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             parameters.put(PAYTM_INDUSTRY_TYPE_ID, RETAIL);
             parameters.put(PAYTM_REQUESTING_WEBSITE, paytmRequestingWebsite);
             parameters.put(PAYTM_SSO_TOKEN, wallet.getAccessToken());
-            parameters.put(PAYTM_REQUEST_CALLBACK, callBackUrl+SessionContextHolder.getId());
+            parameters.put(PAYTM_REQUEST_CALLBACK, callBackUrl + SessionContextHolder.getId());
             parameters.put(PAYTM_CHECKSUMHASH, checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters));
             String payTmRequestParams = objectMapper.writeValueAsString(parameters);
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
@@ -686,11 +687,11 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Override
     public WynkResponseEntity.WynkBaseResponse<AbstractPaymentDetails> getUserPreferredPayments(UserPreferredPaymentWrapper userPreferredPaymentWrapper) {
         try {
-            double  finalAmount=paymentCachingService.getPlan(userPreferredPaymentWrapper.getPlanId()).getFinalPrice();
-            if(StringUtils.isNotEmpty(userPreferredPaymentWrapper.getCouponId()) && StringUtils.isNotBlank(userPreferredPaymentWrapper.getCouponId())) {
-                double discountPercentage = this.getCouponDiscountPercentage(userPreferredPaymentWrapper.getCouponId());
-                if (discountPercentage>0) {
-                    finalAmount = finalAmount - (finalAmount * discountPercentage/100);
+            double finalAmount = paymentCachingService.getPlan(userPreferredPaymentWrapper.getPlanId()).getFinalPrice();
+            if (StringUtils.isNotEmpty(userPreferredPaymentWrapper.getCouponId()) && StringUtils.isNotBlank(userPreferredPaymentWrapper.getCouponId())) {
+                final double discountPercentage = this.getCouponDiscountPercentage(userPreferredPaymentWrapper.getCouponId());
+                if (discountPercentage > 0) {
+                    finalAmount = finalAmount - (finalAmount * discountPercentage / 100);
                 }
             }
             return this.balance(finalAmount, getWallet(userPreferredPaymentWrapper.getUserPreferredPayment())).getBody();
@@ -704,8 +705,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             Wallet wallet = (Wallet) userPreferredPayment;
             if (StringUtils.isBlank(wallet.getAccessToken())) {
                 throw new WynkRuntimeException(UT022);
-            }
-            else if (wallet.getTokenValidity() < System.currentTimeMillis()) {
+            } else if (wallet.getTokenValidity() < System.currentTimeMillis()) {
                 return refreshAccessToken(wallet);
             } else {
                 return wallet;
@@ -740,12 +740,12 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             }
         }
     }
-    private double getCouponDiscountPercentage(String couponId){
+
+    private double getCouponDiscountPercentage(String couponId) {
         try {
             Coupon coupon = couponCacheService.getCouponById(couponId);
             return coupon.getDiscountPercent();
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             return 0d;
         }
     }

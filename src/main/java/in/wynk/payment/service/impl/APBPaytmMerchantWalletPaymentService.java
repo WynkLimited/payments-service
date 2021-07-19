@@ -484,7 +484,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             if (balanceResponse.isResult()) {
                 double finalAmount = paymentCachingService.getPlan(userPreferredPaymentWrapper.getPlanId()).getFinalPrice();
                 if (StringUtils.isNotBlank(userPreferredPaymentWrapper.getCouponId()) && StringUtils.isNotEmpty(userPreferredPaymentWrapper.getCouponId())) {
-                    double discountPercentage = this.getCouponDiscountPercentage(userPreferredPaymentWrapper.getCouponId());
+                    final double discountPercentage = this.getCouponDiscountPercentage(userPreferredPaymentWrapper.getCouponId());
                     if (discountPercentage > 0) {
                         finalAmount = finalAmount - (finalAmount * discountPercentage / 100);
                     }

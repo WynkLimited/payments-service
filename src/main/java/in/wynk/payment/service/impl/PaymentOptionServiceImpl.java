@@ -39,7 +39,7 @@ import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 @Service
 public class PaymentOptionServiceImpl implements IPaymentOptionService {
 
-    private static final int N=3;
+    private static final int N = 3;
     private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
 
@@ -72,7 +72,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
         PlanDTO plan = paymentCachingService.getPlan(planId);
-        if(plan.hasLinkedFreePlan() && !CollectionUtils.isEmpty(eligiblePlanIds)) {
+        if (plan.hasLinkedFreePlan() && !CollectionUtils.isEmpty(eligiblePlanIds)) {
             isFreeTrail = eligiblePlanIds.contains(plan.getLinkedFreePlanId());
         }
         OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());

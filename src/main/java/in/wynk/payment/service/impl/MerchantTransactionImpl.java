@@ -23,7 +23,7 @@ public class MerchantTransactionImpl implements IMerchantTransactionService {
 
     @Override
     public MerchantTransaction getMerchantTransaction(String id) {
-        return merchantTransactionDao.findById(id).orElse(null);
+        return merchantTransactionDao.findById(id).get();
     }
 
     @Override

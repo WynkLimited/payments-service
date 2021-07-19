@@ -1,8 +1,10 @@
 package in.wynk.payment.service;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.AbstractErrorDetails;
+import in.wynk.common.dto.EmptyResponse;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
@@ -22,15 +24,11 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.StatusMode;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PaymentRefundInitRequest;
-import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.dto.response.BaseResponse;
@@ -39,7 +37,6 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.subscription.common.enums.PlanType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -125,6 +122,11 @@ public class PaymentManager {
         return response;
     }
 
+    public BaseResponse<?> handleCallback(Map<String, Object> payload, PaymentCode paymentCode) {
+        final IMerchantProcessCallbackRequestService service = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantProcessCallbackRequestService.class);
+        return handleCallback(CallbackRequest.builder().body(payload).transactionId(service.getTxnId(payload)).build(), paymentCode);
+    }
+
     @TransactionAware(txnId = "#request.transactionId")
     public BaseResponse<?> handleCallback(CallbackRequest request, PaymentCode paymentCode) {
         final Transaction transaction = TransactionContext.get();
@@ -148,19 +150,37 @@ public class PaymentManager {
             transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
         }
+    }
 
+    @TransactionAware(txnId = "#txnId")
+    private <T, R extends IAPNotification> void handleNotification(PaymentCode paymentCode, String txnId, UserPlanMapping<T> mapping, DecodedNotificationWrapper<R> wrapper) {
+        final Transaction transaction = TransactionContext.get();
+        final TransactionStatus existingStatus = transaction.getStatus();
+        final IPaymentNotificationService<T> notificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IPaymentNotificationService.class);
+        try {
+            notificationService.handleNotification(transaction, mapping);
+        } catch (WynkRuntimeException e) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+        } finally {
+            TransactionStatus finalStatus = TransactionContext.get().getStatus();
+            transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+        }
     }
 
     @ClientAware(clientAlias = "#clientAlias")
-    public BaseResponse<?> handleNotification(String clientAlias, CallbackRequest callbackRequest, PaymentCode paymentCode) {
+    public EmptyResponse handleNotification(String clientAlias, String requestPayload, PaymentCode paymentCode) {
         final IReceiptDetailService receiptDetailService = BeanLocatorFactory.getBean(paymentCode.getCode(), IReceiptDetailService.class);
-        Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailService.getReceiptDetails(callbackRequest);
-        if (optionalReceiptDetails.isPresent()) {
-            ReceiptDetails receiptDetails = optionalReceiptDetails.get();
-            String txnId = initiateTransaction(receiptDetails.getPlanId(), receiptDetails.getUid(), receiptDetails.getMsisdn(), paymentCode);
-            return handleCallback(CallbackRequest.builder().body(callbackRequest.getBody()).transactionId(txnId).build(), paymentCode);
+        DecodedNotificationWrapper<IAPNotification> wrapper = receiptDetailService.isNotificationEligible(requestPayload);
+        if (wrapper.isEligible()) {
+            UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
+            PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+            String txnId = initiateTransaction(mapping.getPlanId(), mapping.getUid(), mapping.getMsisdn(), paymentCode, event);
+            AnalyticService.update(wrapper.getDecodedNotification());
+            handleNotification(paymentCode, txnId, mapping, wrapper);
+            return EmptyResponse.response(true);
         }
-        return BaseResponse.status(false);
+        return EmptyResponse.response(false);
     }
 
     @TransactionAware(txnId = "#request.transactionId")
@@ -199,7 +219,7 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.getPaymentCode();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
         LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
-        final Transaction transaction = initiateTransactionForPlan(latestReceiptResponse.isAutoRenewal(), latestReceiptResponse.isFreeTrial(), request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode);
+        final Transaction transaction = initiateTransactionForPlan(latestReceiptResponse.isAutoRenewal(), latestReceiptResponse.isFreeTrial(), request.getPlanId(), request.getUid(), request.getMsisdn(), paymentCode, latestReceiptResponse.getCouponCode());
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
                 .extTxnId(latestReceiptResponse.getExtTxnId())
                 .paymentCode(transaction.getPaymentChannel())
@@ -253,7 +273,7 @@ public class PaymentManager {
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
 
-    private String initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode) {
+    private String initiateTransaction(int planId, String uid, String msisdn, PaymentCode paymentCode, PaymentEvent event) {
         PlanDTO selectedPlan = cachingService.getPlan(planId);
         TransactionContext.set(transactionManager.initiateTransaction(TransactionInitRequest.builder()
                 .uid(uid)
@@ -262,7 +282,7 @@ public class PaymentManager {
                 .paymentCode(paymentCode)
                 .amount(selectedPlan.getFinalPrice())
                 .status(TransactionStatus.INPROGRESS.getValue())
-                .event(PaymentEvent.RENEW)
+                .event(event)
                 .build()));
         return TransactionContext.get().getId().toString();
     }
@@ -277,9 +297,11 @@ public class PaymentManager {
         return TransactionContext.get();
     }
 
-    private Transaction initiateTransactionForPlan(boolean autoRenewal, boolean freeTrial, int planId, String uid, String msisdn, PaymentCode paymentCode) {
+    private Transaction initiateTransactionForPlan(boolean autoRenewal, boolean freeTrial, int planId, String uid, String msisdn, PaymentCode paymentCode, String couponCode) {
+        final CouponDTO coupon;
         final SessionDTO session = SessionContextHolder.getBody();
         PlanDTO selectedPlan = cachingService.getPlan(planId);
+        final String service = session.get(SERVICE);
         PaymentEvent paymentEvent = autoRenewal ? PaymentEvent.PURCHASE : PaymentEvent.SUBSCRIBE;
         double finalAmountToBePaid = selectedPlan.getFinalPrice();
         if (freeTrial) {
@@ -287,16 +309,21 @@ public class PaymentManager {
             PlanDTO trialPlan = cachingService.getPlan(selectedPlan.getLinkedFreePlanId());
             finalAmountToBePaid = trialPlan.getFinalPrice();
         }
-        TransactionContext.set(transactionManager.initiateTransaction(TransactionInitRequest.builder()
+        coupon = getAndApplyCoupon(couponCode, msisdn, uid, service, null, paymentCode, selectedPlan);
+        TransactionInitRequest.TransactionInitRequestBuilder builder = TransactionInitRequest.builder()
                 .uid(uid)
                 .msisdn(msisdn)
                 .planId(planId)
                 .event(paymentEvent)
                 .paymentCode(paymentCode)
-                .amount(finalAmountToBePaid)
                 .clientAlias(session.get(CLIENT))
-                .status(TransactionStatus.INPROGRESS.getValue())
-                .build()));
+                .status(TransactionStatus.INPROGRESS.getValue());
+        if (coupon != null) {
+            finalAmountToBePaid = getFinalAmount(finalAmountToBePaid, coupon);
+            builder.couponId(couponCode).discount(coupon.getDiscountPercent());
+        }
+        builder.amount(finalAmountToBePaid);
+        TransactionContext.set(transactionManager.initiateTransaction(builder.build()));
         return TransactionContext.get();
     }
 
@@ -360,6 +387,22 @@ public class PaymentManager {
                     .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             return couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
+        } else {
+            return null;
+        }
+    }
+
+    private CouponDTO getAndApplyCoupon(String couponId, String msisdn, String uid, String service, String
+            itemId, PaymentCode paymentCode, PlanDTO selectedPlan) {
+        if (!StringUtils.isEmpty(couponId)) {
+            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
+            CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            CouponDTO couponDTO = couponResponse.getState() != CouponProvisionState.INELIGIBLE ? couponResponse.getCoupon() : null;
+            if(couponDTO!=null) {
+                couponManager.applyCoupon(couponProvisionRequest);
+            }
+            return couponDTO;
         } else {
             return null;
         }

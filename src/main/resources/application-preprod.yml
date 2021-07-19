@@ -179,9 +179,8 @@ payment:
       salt: 6vbnfVtw
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
+        payment: https://secure.payu.in/_payment
       internal:
-        web:
-          url: https://wcfpay-new.wynk.in/wcf/payu
         callback:
           successUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
           failureUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
@@ -209,9 +208,9 @@ payment:
     apbPaytm:
       api:
         base:
-          url: https://paydigi.airtel.in/pg-service
+          url: https://paydigi.airtel.in/web/pg-service
       callback:
-        url: https://payments.wynk.in/wynk/v1/payment/callback/
+        url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 
@@ -244,6 +243,21 @@ http:
               type: both
           request:
             timeout: 1000
+    apbPaytmHttpTemplate:
+      pool:
+        connection:
+          max: 10
+          maxPerHost: 2
+          timeout: 500
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 4500
+            factory:
+              type: both
+          request:
+            timeout: 4500
     paymentClientHttpTemplate:
       pool:
         connection:

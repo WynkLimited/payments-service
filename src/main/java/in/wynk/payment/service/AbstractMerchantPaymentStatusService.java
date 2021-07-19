@@ -1,13 +1,16 @@
 package in.wynk.payment.service;
 
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -16,6 +19,7 @@ import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.FailureChargingStatusResponse;
+import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -54,7 +58,16 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
 
     public WynkResponseEntity<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         Transaction transaction = TransactionContext.get();
-        IChargingDetails.IPageUrlDetails pageUrlDetails = TransactionContext.getPurchaseDetails().map(details -> (IChargingDetails) details).map(IChargingDetails::getPageUrlDetails).orElseThrow(() -> new WynkRuntimeException("Pages are not configured"));
+        IChargingDetails.IPageUrlDetails pageUrlDetails = TransactionContext.getPurchaseDetails().map(details -> (IChargingDetails) details).map(IChargingDetails::getPageUrlDetails).orElseGet(() ->  {
+            // NOTE: Added backward support to avoid failure for transaction created pre payment refactoring build, once the build is live it has no significance
+            final SessionDTO session = SessionContextHolder.getBody();
+            final IAppDetails appDetails = AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID)).appVersion(APP_VERSION).os(session.get(OS)).build();
+            final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.success.page}"), appDetails);
+            final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.failure.page}"), appDetails);
+            final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? session.get(PENDING_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.pending.page}"), appDetails);
+            final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? session.get(UNKNOWN_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.unknown.page}"), appDetails);
+            return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
+        });
         TransactionStatus txnStatus = transaction.getStatus();
         if (txnStatus == TransactionStatus.FAILURE) {
             return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL001), transaction, request, pageUrlDetails.getFailurePageUrl());
@@ -107,6 +120,10 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
             }
             return paidPackBuilder.build();
         }
+    }
+
+    private String buildUrlFrom(String url, IAppDetails appDetails) {
+        return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
     }
 
 }

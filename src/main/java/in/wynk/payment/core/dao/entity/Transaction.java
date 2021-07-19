@@ -4,6 +4,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -83,12 +84,19 @@ public class Transaction {
         return id != null ? UUID.fromString(id) : null;
     }
 
-    public String getIdStr(){
+    public String getIdStr() {
         return id;
     }
 
     public PaymentCode getPaymentChannel() {
         return PaymentCode.valueOf(paymentChannel);
+    }
+
+    public String getProductId() {
+        if (StringUtils.isEmpty(itemId)) {
+            return itemId;
+        }
+        return String.valueOf(planId);
     }
 
 }

@@ -15,13 +15,17 @@ import org.springframework.core.ParameterizedTypeReference;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PaymentDetails implements IPaymentDetails {
+    @Analysed
     private String couponId;
+    @Analysed
     private String paymentId;
     @Analysed(name = "paymentMode")
     private String paymentMode;
     @Analysed(name = "bankName")
     private String merchantName;
+    @Analysed
     private boolean trialOpted;
+    @Analysed
     private boolean autoRenew;
 
     public boolean isTrialOpted() {

@@ -45,7 +45,6 @@ public class WebPurchaseDetails implements IChargingDetails {
     }
 
     @Override
-    @Analysed
     @JsonIgnore
     public IPageUrlDetails getPageUrlDetails() {
         final IAppDetails appDetails = getAppDetails();

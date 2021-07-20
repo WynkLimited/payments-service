@@ -16,7 +16,7 @@ import java.util.Objects;
 public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackRequest {
 
     private final T body;
-    private String transactionId;
+    private final String transactionId;
     private final PaymentCode paymentCode;
 
     protected CallbackRequestWrapper(CallbackRequestWrapperBuilder<T, ?, ?> b) {
@@ -27,7 +27,7 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
     }
 
     public static <T extends CallbackRequest> CallbackRequestWrapperBuilder<T, ?, ?> builder() {
-        return new CallbackRequestWrapperBuilderImpl<T>();
+        return new CallbackRequestWrapperBuilderImpl<>();
     }
 
     @Override
@@ -84,7 +84,7 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
         }
 
         public CallbackRequestWrapper<T> build() {
-            return new CallbackRequestWrapper<T>(this);
+            return new CallbackRequestWrapper<>(this);
         }
     }
 }

@@ -24,7 +24,6 @@ import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
@@ -57,7 +56,7 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
-public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentRefundService<PhonePePaymentRefundResponse, PhonePePaymentRefundRequest> {
+public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PhonePeCallbackRequestPayload>, IMerchantPaymentRefundService<PhonePePaymentRefundResponse, PhonePePaymentRefundRequest> {
 
     private static final String DEBIT_API = "/v4/debit";
     @Value("${payment.merchant.phonepe.id}")
@@ -66,8 +65,6 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private String phonePeBaseUrl;
     @Value("${payment.merchant.phonepe.salt}")
     private String salt;
-    @Value("${payment.success.page}")
-    private String SUCCESS_PAGE;
     private final Gson gson;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
@@ -86,7 +83,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PhonePeCallbackRequestPayload callbackRequest) {
         handleCallbackInternal(callbackRequest);
         final Transaction transaction = TransactionContext.get();
         if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
@@ -185,12 +182,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         return ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build();
     }
 
-    private void handleCallbackInternal(CallbackRequest callbackRequest) {
+    private void handleCallbackInternal(PhonePeCallbackRequestPayload callbackRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
-            // TODO:: create your own APB callback request that inherit CallbackRequest and update the impl accordingly
-            Map<String, String> requestPayload = (Map<String, String>) callbackRequest;
-            Boolean validChecksum = validateChecksum(requestPayload);
+            Boolean validChecksum = validateChecksum(callbackRequest);
             if (validChecksum) {
                 this.fetchAndUpdateTransactionFromSource(transaction);
             } else {
@@ -227,7 +222,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         } catch (HttpStatusCodeException hex) {
             AnalyticService.update(PHONE_STATUS_CODE, hex.getRawStatusCode());
             log.error(PHONEPE_CHARGING_FAILURE, "Error from phonepe: {}", hex.getResponseBodyAsString(), hex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, hex, "Error from phonepe - " + hex.getStatusCode().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, hex, "Error from phonepe - " + hex.getStatusCode());
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_FAILURE, "Error requesting URL from phonepe");
             throw new WynkRuntimeException(PHONEPE_CHARGING_FAILURE, e.getMessage(), e);
@@ -258,7 +253,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Error from phonepe: {}", e.getResponseBodyAsString(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from PhonePe " + e.getStatusCode().toString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e, "Error from PhonePe " + e.getStatusCode());
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, "Unable to verify status from Phonepe");
             throw new WynkRuntimeException(PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE, e.getMessage(), e);
@@ -267,23 +262,36 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         }
     }
 
-    private Boolean validateChecksum(Map<String, String> requestParams) {
-        String checksum = StringUtils.EMPTY;
+    private Boolean validateChecksum(PhonePeCallbackRequestPayload requestPayload) {
         boolean validated = false;
-        StringBuilder validationString = new StringBuilder();
         try {
-            for (String key : requestParams.keySet()) {
-                if (!key.equals("checksum") && !key.equals("tid")) {
-                    validationString.append(URLDecoder.decode(requestParams.get(key), "UTF-8"));
-                } else if (key.equals("checksum")) {
-                    checksum = URLDecoder.decode(requestParams.get(key), "UTF-8");
-                }
-            }
-            String calculatedChecksum = DigestUtils.sha256Hex(validationString + salt) + "###1";
-            if (StringUtils.equals(checksum, calculatedChecksum)) {
-                validated = true;
-            }
-
+            String rawCheckSum = URLDecoder.decode(requestPayload.getCode(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getMerchantId(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getTransactionId(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getAmount(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getProviderReferenceId(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam1(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam2(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam3(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam4(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam5(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam6(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam7(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam8(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam9(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam10(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam11(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam12(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam13(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam14(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam15(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam16(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam17(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam18(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam19(), "UTF-8") +
+                    URLDecoder.decode(requestPayload.getParam20(), "UTF-8");
+            final String calculatedChecksum = DigestUtils.sha256Hex(rawCheckSum + salt) + "###1";
+            validated = calculatedChecksum.equals(requestPayload.getChecksum());
         } catch (Exception e) {
             log.error(PHONEPE_CHARGING_CALLBACK_FAILURE, "Exception while Checksum validation");
         }

@@ -23,7 +23,6 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingResponse;
@@ -45,7 +44,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -56,12 +54,13 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.CALLBACK_PAYLOAD_PARSING_FAILURE;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
-public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, ApbCallbackRequestPayload>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     @Value("${apb.merchant.id}")
     private String MERCHANT_ID;
@@ -99,22 +98,21 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
 
     //TODO: use txn provided by payment manager and remove redundant code
     @Override
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(ApbCallbackRequestPayload callbackRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
 
         // TODO:: create your own APB callback request that inherit CallbackRequest and update the impl accordingly
-        MultiValueMap<String, String> urlParameters = (MultiValueMap<String, String>) callbackRequest;
 
-        String txnId = sessionDTO.get(TRANSACTION_ID);
-        String code = CommonUtils.getStringParameter(urlParameters, ApbConstants.CODE);
-        String externalMessage = CommonUtils.getStringParameter(urlParameters, ApbConstants.MSG);
-        String merchantId = CommonUtils.getStringParameter(urlParameters, ApbConstants.MID);
-        String externalTxnId = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_ID);
-        String amount = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_AMT);
-        String txnDate = CommonUtils.getStringParameter(urlParameters, ApbConstants.TRAN_DATE);
-        String requestHash = CommonUtils.getStringParameter(urlParameters, ApbConstants.HASH);
-        ApbStatus status = ApbStatus.valueOf(CommonUtils.getStringParameter(urlParameters, ApbConstants.STATUS));
-        String sessionId = SessionContextHolder.get().getId().toString();
+        final String txnId = sessionDTO.get(TRANSACTION_ID);
+        final String code = callbackRequest.getCode();
+        final String externalMessage = callbackRequest.getMsg();
+        final String merchantId = callbackRequest.getMid();
+        final String externalTxnId = callbackRequest.getTransactionId();
+        final String amount = callbackRequest.getTransactionAmount();
+        final String txnDate = callbackRequest.getTransactionDate();
+        final String requestHash = callbackRequest.getHash();
+        final ApbStatus status = callbackRequest.getStatus();
+        final String sessionId = SessionContextHolder.get().getId().toString();
 
         try {
             final Transaction transaction = transactionManager.get(txnId);

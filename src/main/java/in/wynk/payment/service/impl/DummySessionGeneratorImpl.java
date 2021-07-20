@@ -6,16 +6,25 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.adapter.SessionDTOAdapter;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.SessionRequest;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.session.constant.SessionConstant;
+import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.wynkservice.core.dao.entity.App;
+import in.wynk.wynkservice.core.dao.entity.Os;
+import in.wynk.wynkservice.core.dao.entity.WynkService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +40,11 @@ import static in.wynk.session.constant.SessionConstant.SESSION_ID;
 @RequiredArgsConstructor
 public class DummySessionGeneratorImpl implements IDummySessionGenerator {
 
+    @Value("${session.duration:15}")
+    private Integer duration;
+
     private final ISessionManager<String, SessionDTO> sessionManager;
+    private final ClientDetailsCachingService clientDetailsCachingService;
 
     @Override
     public IapVerificationRequest initSession(IapVerificationRequest request) {
@@ -58,6 +71,22 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
         AnalyticService.update(SESSION_ID, id);
         request.setSid(id);
         return request;
+    }
+
+    @Override
+    public Session<String, SessionDTO> generate(SessionRequest request) {
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ClientDetails clientDetails = (ClientDetails) clientDetailsCachingService.getClientById(clientId);
+        try {
+            AnalyticService.update(CLIENT, clientDetails.getAlias());
+            SessionDTO dto = SessionDTOAdapter.generateSessionDTO(request);
+            dto.put(CLIENT, clientDetails.getAlias());
+            final String id = UUIDs.timeBased().toString();
+            AnalyticService.update(SESSION_ID, id);
+            return sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, dto, duration, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            throw new WynkRuntimeException("Unable to generate session");
+        }
     }
 
     @ClientAware(clientId = "#clientId")

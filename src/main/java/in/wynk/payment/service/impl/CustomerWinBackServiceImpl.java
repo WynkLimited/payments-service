@@ -1,17 +1,65 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.utils.WynkResponseUtils;
+import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IProductDetails;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.CustomerWindBackRequest;
+import in.wynk.payment.dto.PlanDetails;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.service.ICustomerWinBackService;
-import lombok.RequiredArgsConstructor;
+import in.wynk.payment.service.IDummySessionGenerator;
+import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.session.constant.SessionConstant;
+import in.wynk.session.dto.Session;
+import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import static in.wynk.common.constant.BaseConstants.*;
+
 @Service
-@RequiredArgsConstructor
 public class CustomerWinBackServiceImpl implements ICustomerWinBackService {
 
-    @Override
-    public WynkResponseEntity<Void> winBack(CustomerWindBackRequest request) {
-        return null;
+    private final String payUrl;
+    private final PaymentCachingService cachingService;
+    private final IDummySessionGenerator sessionGenerator;
+
+    public CustomerWinBackServiceImpl(@Value("${payment.payOption.page}") String payUrl, PaymentCachingService cachingService, IDummySessionGenerator sessionGenerator) {
+        this.payUrl = payUrl;
+        this.cachingService = cachingService;
+        this.sessionGenerator = sessionGenerator;
     }
+
+    @Override
+    @TransactionAware(txnId = "#request.dropoutTransactionId")
+    public WynkResponseEntity<Void> winBack(CustomerWindBackRequest request) {
+        try {
+            final Transaction droppedTransaction = TransactionContext.get();
+            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("unable to process your request"));
+            final IAppDetails appDetails = purchaseDetails.getAppDetails();
+            final IProductDetails productDetails = purchaseDetails.getProductDetails();
+            final Session<String, SessionDTO> winBackSession = sessionGenerator.generate(SessionRequest.builder().uid(droppedTransaction.getUid()).msisdn(droppedTransaction.getMsisdn()).service(appDetails.getService()).appId(appDetails.getAppId()).buildNo(appDetails.getBuildNo()).appVersion(appDetails.getAppVersion()).createdTimestamp(System.currentTimeMillis()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).os(appDetails.getOs()).build());
+            final URIBuilder queryBuilder = new URIBuilder(payUrl);
+            if (productDetails instanceof PlanDetails)
+                queryBuilder.addParameter(PLAN_ID, droppedTransaction.getProductId());
+            else {
+                queryBuilder.addParameter(ITEM_ID, droppedTransaction.getProductId());
+                queryBuilder.addParameter(POINT_PURCHASE_FLOW, Boolean.TRUE.toString());
+                queryBuilder.addParameter(AMOUNT, String.valueOf(cachingService.getItem(droppedTransaction.getProductId()).getPrice()));
+            }
+            queryBuilder.addParameter(SERVICE, String.valueOf(appDetails.getService()));
+            queryBuilder.addParameter(BUILD_NO, String.valueOf(appDetails.getBuildNo()));
+            return WynkResponseUtils.redirectResponse(payUrl + winBackSession.getId().split(SessionConstant.COLON_DELIMITER)[1] + SLASH + appDetails.getOs() + QUESTION_MARK + queryBuilder.build().getQuery());
+        } catch (Exception e) {
+            throw new WynkRuntimeException("unable to process your request");
+        }
+    }
+
 }

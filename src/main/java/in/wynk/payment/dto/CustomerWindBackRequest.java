@@ -15,4 +15,5 @@ public class CustomerWindBackRequest {
     private String dropoutTransactionId;
     @Analysed
     private Map<String, Object> params;
+
 }

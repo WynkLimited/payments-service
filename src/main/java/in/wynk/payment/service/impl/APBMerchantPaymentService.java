@@ -64,7 +64,7 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     private String MERCHANT_ID;
     @Value("${apb.salt}")
     private String SALT;
-    @Value("${apb.init.payment.url}")
+    @Value("${apb.generate.payment.url}")
     private String APB_INIT_PAYMENT_URL;
     @Value("${apb.txn.inquiry.url}")
     private String APB_TXN_INQUIRY_URL;

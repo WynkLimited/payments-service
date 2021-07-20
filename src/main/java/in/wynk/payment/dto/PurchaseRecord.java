@@ -3,7 +3,7 @@ package in.wynk.payment.dto;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.payment.handler.UserChurnLocator;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.scheduler.task.dto.ITaskEntity;
 import lombok.Getter;
 
@@ -25,7 +25,7 @@ public class PurchaseRecord implements ITaskEntity {
 
     @Override
     public String getGroupId() {
-        return UserChurnLocator.GROUP_ID;
+        return PaymentConstants.USER_CHURN_GROUP;
     }
 
 }

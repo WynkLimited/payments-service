@@ -58,7 +58,7 @@ import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE)
-public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, CallbackRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
+public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, ApbPaytmCallbackRequestPayload>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
 
     @Value("${payment.success.page}")
     private String successPage;
@@ -341,7 +341,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     @Override
-    public WynkResponseEntity<AutoDebitWalletCallbackResponse> handleCallback(CallbackRequest callbackRequest) {
+    public WynkResponseEntity<AutoDebitWalletCallbackResponse> handleCallback(ApbPaytmCallbackRequestPayload callbackRequest) {
         ErrorCode errorCode = null;
         String redirectUrl = null;
         Transaction transaction = TransactionContext.get();

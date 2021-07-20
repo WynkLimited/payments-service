@@ -32,4 +32,11 @@ public class ApbCallbackRequestPayload extends CallbackRequest {
     @JsonProperty("TRAN_AMT")
     private String transactionAmount;
 
+    @JsonProperty("TRAN_DATE")
+    private String transactionDate;
+
+    public ApbStatus getStatus() {
+        return ApbStatus.valueOf(status);
+    }
+
 }

@@ -44,5 +44,6 @@ public interface PaymentConstants extends BaseConstants {
 
     String PROD_ENV = "PROD";
     String SANDBOX_ENV = "Sandbox";
+    String USER_CHURN_GROUP = "user-churn-locator";
 
 }

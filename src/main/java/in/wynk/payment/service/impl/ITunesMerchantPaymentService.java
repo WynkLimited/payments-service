@@ -9,10 +9,12 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
@@ -69,6 +71,8 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
 
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
+    private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
+    private static final List<String> REFUND_NOTIFICATION = Collections.singletonList("CANCEL");
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -87,8 +91,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private final ApplicationEventPublisher eventPublisher;
     private final TestingByPassNumbersDao testingByPassNumbersDao;
 
-    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao) {
-        super(cachingService);
+    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+        super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;
@@ -184,7 +188,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         LatestReceiptInfo receiptInfo = mapping.getMessage();
         //Need to add check for itunes txn Id in merchant transaction table to achieve idempotency
         final long expireTimestamp = NumberUtils.toLong(receiptInfo.getExpiresDateMs());
-        if (expireTimestamp > System.currentTimeMillis() || transaction.getType() == PaymentEvent.CANCELLED) {
+        final long cancellationTimestamp = NumberUtils.toLong(receiptInfo.getCancellationDateMs());
+        if (expireTimestamp > System.currentTimeMillis() || (transaction.getType() == PaymentEvent.CANCELLED && cancellationTimestamp <= System.currentTimeMillis())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
         transaction.setStatus(finalTransactionStatus.name());
@@ -393,9 +398,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromItunesSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId(), transactionStatusRequest.getPlanId());
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
     @Override
@@ -447,12 +452,14 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         PaymentEvent event;
         if (RENEWAL_NOTIFICATION.contains(notificationType)) {
             event = PaymentEvent.RENEW;
-        } else if ("DID_CHANGE_RENEWAL_STATUS".equalsIgnoreCase(notificationType)) {
+        } else if (REACTIVATION_NOTIFICATION.contains(notificationType)) {
             if (Boolean.parseBoolean(wrapper.getDecodedNotification().getAutoRenewStatus())) {
                 event = PaymentEvent.SUBSCRIBE;
             } else {
                 event = PaymentEvent.UNSUBSCRIBE;
             }
+        } else if (REFUND_NOTIFICATION.contains(notificationType)) {
+            event = PaymentEvent.CANCELLED;
         } else {
             throw new WynkRuntimeException(WynkErrorType.UT001, "Invalid notification type");
         }

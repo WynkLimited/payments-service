@@ -17,15 +17,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionInitRequest {
-    private String uid;
-    private String msisdn;
-    private String clientAlias;
+    private String uid;//done
+    private String msisdn;//done
+    private String clientAlias;//done
     private int planId;
     private String itemId;
-    private double amount;
-    private PaymentCode paymentCode;
-    private PaymentEvent event;
-    private String couponId;
+    private double amount; //done
+    private PaymentCode paymentCode; //done
+    private PaymentEvent event; //done
+    private String couponId;// done
     private double discount;
     @Builder.Default
     private String status = TransactionStatus.INPROGRESS.getValue();

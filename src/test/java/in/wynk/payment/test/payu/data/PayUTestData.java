@@ -6,11 +6,14 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.PaymentDetails;
+import in.wynk.payment.dto.PlanDetails;
+import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
-import in.wynk.subscription.common.dto.AllPlansResponse;
+import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.PriceDTO;
@@ -75,7 +78,7 @@ public class PayUTestData {
                 .build();
     }
 
-    public static Session<SessionDTO> initSession() {
+    public static Session<String,SessionDTO> initSession() {
         Map<String, Object> payload = new HashMap<>();
         payload.put(UID, PayUDataConstant.UID);
         payload.put(MSISDN, PayUDataConstant.MSISDN);
@@ -85,8 +88,8 @@ public class PayUTestData {
         payload.put(BUILD_NO, PayUDataConstant.BUILD_NO);
         payload.put(OS, PayUDataConstant.OS);
         payload.put(PACK_GROUP, "");
-        return Session.<SessionDTO>builder()
-                .id(UUID.randomUUID())
+        return Session.<String,SessionDTO>builder()
+                .id(UUID.randomUUID().toString())
                 .body(SessionDTO.builder().sessionPayload(payload).build())
                 .build();
     }
@@ -101,12 +104,12 @@ public class PayUTestData {
                 .build();
     }
 
-    public static ChargingRequest buildOneTimeChargingRequest() {
-        return ChargingRequest.builder().paymentCode(PaymentCode.PAYU).planId(PayUDataConstant.ONE_TIME_PLAN_ID).build();
+    public static AbstractChargingRequest<?> buildOneTimeChargingRequest() {
+       return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build()).build();
     }
 
-    public static ChargingRequest buildRecurringChargingRequest() {
-        return ChargingRequest.builder().paymentCode(PaymentCode.PAYU).planId(PayUDataConstant.RECURRING_PLAN_ID).build();
+    public static AbstractChargingRequest<?> buildRecurringChargingRequest() {
+        return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build()).build();
     }
 
     public static CallbackRequest buildOneTimeCallbackRequest() {
@@ -163,7 +166,7 @@ public class PayUTestData {
         map.put("name_on_card","SICard");
         map.put("cardnum","489377XXXXXX2986");
         map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
-       return CallbackRequest.builder().body(map).build();
+       return CallbackRequestWrapper.builder().payload(map).build();
     }
 
     public static CallbackRequest buildRecurringCallbackRequest() {
@@ -220,7 +223,7 @@ public class PayUTestData {
         map.put("name_on_card","SICard");
         map.put("cardnum","489377XXXXXX2986");
         map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
-        return CallbackRequest.builder().body(map).build();
+        return CallbackRequestWrapper.builder().payload(map).build();
     }
 
     public static MultiValueMap<String, String> buildOneTimePayUTransactionStatusRequest(String payUMerchantKey) {
@@ -316,14 +319,12 @@ public class PayUTestData {
     public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentCode code) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                                     .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
-                                    .paymentCode(code.getCode())
                                     .build();
     }
 
     public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentCode code) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .paymentCode(code.getCode())
                 .build();
     }
 

@@ -4,7 +4,7 @@ import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.repository.PaymentMethodDao;
+import in.wynk.payment.core.dao.repository.IPaymentMethodDao;
 import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
 import in.wynk.payment.test.utils.PaymentTestUtils;
 import org.junit.Test;
@@ -22,7 +22,7 @@ import java.util.List;
 public class MongoCrudTest {
 
     @Autowired
-    private PaymentMethodDao paymentMethodDao;
+    private IPaymentMethodDao IPaymentMethodDao;
 
     @Autowired
     private UserPreferredPaymentsDao preferredPaymentsDao;
@@ -33,13 +33,13 @@ public class MongoCrudTest {
         PaymentMethod netBankingMethod = PaymentTestUtils.dummyNetbankingMethod();
         PaymentMethod walletMethod = PaymentTestUtils.dummyWalletMethod();
         List<PaymentMethod> methods = Arrays.asList(cardMethod, walletMethod, netBankingMethod);
-        List<PaymentMethod> methods1 = paymentMethodDao.insert(methods);
+        List<PaymentMethod> methods1 = IPaymentMethodDao.insert(methods);
         assert methods1.stream().allMatch(m -> StringUtils.isNotBlank(m.getId()));
     }
 
     @Test
     public void findPaymentMethod() {
-        List<PaymentMethod> methods = paymentMethodDao.findAll();
+        List<PaymentMethod> methods = IPaymentMethodDao.findAll();
         assert methods.size() > 0;
     }
 

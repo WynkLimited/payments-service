@@ -281,6 +281,21 @@ http:
               type: both
           request:
             timeout: 1000
+    externalServiceTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 20
+          timeout: 1000
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 300
+            factory:
+              type: both
+          request:
+            timeout: 500
 
 service:
   subscription:

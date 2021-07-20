@@ -11,6 +11,8 @@ import in.wynk.common.properties.CorsProperties;
 import in.wynk.data.config.WynkMongoDbFactoryBuilder;
 import in.wynk.data.config.properties.MongoProperties;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.mapper.WinBackTokenMapper;
+import in.wynk.payment.provider.WinBackAuthenticationProvider;
 import in.wynk.queue.config.properties.AmazonSdkProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,6 +27,7 @@ import org.springframework.data.mongodb.MongoDbFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -103,6 +106,16 @@ public class PaymentConfig implements WebMvcConfigurer {
     @Bean
     public AmazonS3 amazonS3Client(AmazonSdkProperties sdkProperties) {
         return AmazonS3ClientBuilder.standard().withRegion(sdkProperties.getSdk().getRegions()).build();
+    }
+
+    @Bean
+    public WinBackTokenMapper winBackTokenMapper() {
+        return new WinBackTokenMapper();
+    }
+
+    @Bean
+    public AuthenticationProvider winBackAuthenticationProvider(ClientDetailsCachingService cachingService) {
+        return new WinBackAuthenticationProvider(cachingService);
     }
 
 }

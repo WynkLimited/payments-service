@@ -219,6 +219,13 @@ subscription:
           producer:
             delayInSecond: 1
 
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-staging-notification
+      delayInSecond: 0
+
 ####### Http Client Props #######
 http:
   enableTemplateRegistration: true

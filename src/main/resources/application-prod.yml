@@ -217,6 +217,14 @@ subscription:
           producer:
             delayInSecond: 1
 
+
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-production-revenue-notification
+      delayInSecond: 0
+
 ####### Http Client Props #######
 http:
   enableTemplateRegistration: true

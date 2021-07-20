@@ -82,7 +82,12 @@ spring:
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: Asia/Kolkata
 
-
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-staging-notification
+      delayInSecond: 0
 
 ####### payment props #######
 payment:

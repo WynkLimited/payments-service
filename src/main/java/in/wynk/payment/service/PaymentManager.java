@@ -98,15 +98,7 @@ public class PaymentManager {
         final PaymentCode paymentCode = request.getPaymentCode();
         final Transaction transaction = initiateTransaction(request.isAutoRenew(), request.getPlanId(), uid, msisdn, request.getItemId(), request.getCouponId(), paymentCode);
         final TransactionStatus existingStatus = transaction.getStatus();
-        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder()
-                .paymentCode(transaction.getPaymentChannel())
-                .paymentEvent(transaction.getType())
-                .transactionId(transaction.getIdStr())
-                .itemId(transaction.getItemId())
-                .planId(transaction.getPlanId())
-                .msisdn(transaction.getMsisdn())
-                .uid(transaction.getUid())
-                .build());
+        sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         final IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
         BaseResponse response = chargingService.doCharging(request);
         if (Objects.nonNull(response) && Objects.nonNull(response.getBody()) && WynkResponseEntity.WynkBaseResponse.class.isAssignableFrom(response.getBody().getClass())) {

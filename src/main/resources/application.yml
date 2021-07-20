@@ -71,6 +71,10 @@ service:
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
+  payment:
+    api:
+      endpoint:
+        winBack: ${service.payment.api.root}/wynk/s2s/v1/customer/winback/
 
 ####### payment props #######
 payment:

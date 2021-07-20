@@ -7,7 +7,6 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -15,7 +14,6 @@ import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.lock.WynkRedisLock;
 import in.wynk.lock.WynkRedisLockService;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -57,6 +55,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -249,8 +249,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 } else {
                     final String originalITunesTrxnId = latestReceiptInfo.getOriginalTransactionId();
                     final String itunesTrxnId = latestReceiptInfo.getTransactionId();
-                    WynkRedisLock wynkRedisLock = wynkRedisLockService.getWynkRedisLock(originalITunesTrxnId);
-                    if (wynkRedisLock.tryLock()) {
+                    Lock lock = wynkRedisLockService.getWynkRedisLock(originalITunesTrxnId);
+                    if (lock.tryLock(3, TimeUnit.SECONDS)) {
                         if (Objects.isNull(receiptDetails)) {
                             receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
                         }
@@ -282,7 +282,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                                 transaction.setStatus(TransactionStatus.FAILURE.name());
                             }
                         }
-                        wynkRedisLock.unlock();
+                        lock.unlock();
                     }
                 }
             }

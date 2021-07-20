@@ -1,7 +1,6 @@
 package in.wynk.payment.aspect;
 
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.lock.WynkRedisLock;
 import in.wynk.lock.WynkRedisLockService;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -19,6 +18,11 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY010;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY401;
 
 @Aspect
 public class TransactionAwareAspect {
@@ -33,26 +37,26 @@ public class TransactionAwareAspect {
     private ITransactionManagerService transactionManager;
 
     @Before(value = "execution(@in.wynk.payment.aspect.advice.TransactionAware * *.*(..))")
-    public void beforeTransactionAware(JoinPoint joinPoint) {
+    public void beforeTransactionAware(JoinPoint joinPoint) throws InterruptedException {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         TransactionAware transactionAware = method.getAnnotation(TransactionAware.class);
         if (!StringUtils.isEmpty(transactionAware.txnId())) {
             String txnId = parseSpel(joinPoint, transactionAware);
-            WynkRedisLock wynkRedisLock = wynkRedisLockService.getWynkRedisLock(txnId);
-            if (wynkRedisLock.tryLock()) {
+            Lock lock = wynkRedisLockService.getWynkRedisLock(txnId);
+            if (lock.tryLock(3, TimeUnit.SECONDS)) {
                 try {
                     final Transaction transaction = transactionManager.get(txnId);
                     TransactionContext.set(transaction);
                 } catch (WynkRuntimeException e) {
                     throw e;
                 } finally {
-                    wynkRedisLock.unlock();
+                    lock.unlock();
                 }
             } else {
-                throw new WynkRuntimeException("Can not acquire lock on given txn id");
+                throw new WynkRuntimeException(PAY401);
             }
         } else {
-            throw new WynkRuntimeException("Empty txn id");
+            throw new WynkRuntimeException(PAY010);
         }
     }
 

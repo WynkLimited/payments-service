@@ -366,6 +366,24 @@ cache:
     readTimeout: 1000
     usePooling: true
 
+lock:
+  redis:
+    name: redis-lock:prepord
+    mode: cluster
+    useSsl: false
+    usePooling: true
+    readTimeout: 1000
+    password: ##
+    enableJmx: true
+    jmxPrefix: session-store:preprod
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
+
 ######## lib-auth props #######
 security:
   exempt:

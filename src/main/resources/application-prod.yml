@@ -355,6 +355,20 @@ cache:
     readTimeout: 1000
     usePooling: true
 
+session:
+  redis:
+    name: redis-lock:prod
+    mode: cluster
+    usePooling: true
+    readTimeout: 1000
+    cluster:
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
+
 ######## lib-auth props #######
 security:
   exempt:

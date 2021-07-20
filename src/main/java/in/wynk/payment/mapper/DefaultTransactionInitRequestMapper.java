@@ -58,7 +58,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final IapVerificationRequest request = wrapper.getVerificationRequest();
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
-        AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.SUBSCRIBE).clientAlias(clientDetails.getAlias()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial()).build();
+        AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.SUBSCRIBE).clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial()).build();
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }

@@ -205,6 +205,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 .amazonIapReceiptResponse(amazonIapReceiptResponse)
                 .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
                 .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
+                .planId(cachingService.getPlanFromSku(amazonIapReceiptResponse.getTermSku()).getId())
                 .build();
     }
 

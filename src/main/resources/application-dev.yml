@@ -11,7 +11,6 @@ paytm:
       baseUrl: https://securegw-stage.paytm.in
     wcf:
       addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
-      callbackUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/
   requesting:
     website: WEBSTAGING
 
@@ -19,8 +18,6 @@ apb:
   txn:
     inquiry:
       url: https://apptest.airtelbank.com/ecom/v2/inquiry
-  callback:
-    url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
   merchant:
     id: 180704
   salt: d41d8cd98f00a
@@ -173,10 +170,6 @@ payment:
       api:
         info: https://test.payu.in/merchant/postservice.php?form=2
         payment: https://test.payu.in/_payment
-      internal:
-        callback:
-          successUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/
-          failureUrl: https://payments-staging.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
       api:
@@ -194,8 +187,6 @@ payment:
       api:
         base:
           url: https://mercury-uat.phonepe.com
-      callback:
-        url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
       saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
 
@@ -204,8 +195,6 @@ payment:
       api:
         base:
           url: https://paydigi.airtel.in/web/pg-service
-      callback:
-        url: https://payments-staging.wynk.in/wynk/v1/payment/callback/
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 
@@ -287,6 +276,9 @@ service:
   subscription:
     api:
       root: http://subscription-staging.wcf.internal
+  payment:
+    api:
+      root: https://payments-staging.wynk.in
 
 cors:
   allowed:
@@ -358,6 +350,20 @@ cache:
     name: l2cache-local
     readTimeout: 1000
     usePooling: true
+
+lock:
+  redis:
+    name: redis-lock:local
+    mode: cluster
+    usePooling: true
+    readTimeout: 1000
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 ######## lib-auth props #######
 security:

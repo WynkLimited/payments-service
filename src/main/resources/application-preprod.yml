@@ -11,7 +11,6 @@ paytm:
       baseUrl: https://securegw-stage.paytm.in/paymentservices
     wcf:
       addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
-      callbackUrl: http://localhost:8181/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WYNKLIMITEDWAP
 
@@ -19,8 +18,6 @@ apb:
   txn:
     inquiry:
       url: https://apptest.airtelbank.com/ecom/v2/inquiry
-  callback:
-    url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
   merchant:
     id: 180704
   salt: d41d8cd98f00a
@@ -180,10 +177,6 @@ payment:
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
         payment: https://secure.payu.in/_payment
-      internal:
-        callback:
-          successUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
-          failureUrl: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
       api:
@@ -201,16 +194,12 @@ payment:
       api:
         base:
           url: https://mercury-t2.phonepe.com
-      callback:
-        url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
     #### APBPaytm props ######
     apbPaytm:
       api:
         base:
           url: https://paydigi.airtel.in/web/pg-service
-      callback:
-        url: https://payments-preprod.wynk.in/wynk/v1/payment/callback/
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 
@@ -248,12 +237,12 @@ http:
         connection:
           max: 10
           maxPerHost: 2
-          timeout: 200
+          timeout: 500
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
           socket:
-            timeout: 2500
+            timeout: 4500
             factory:
               type: both
           request:
@@ -293,6 +282,9 @@ service:
   subscription:
     api:
       root: http://subscription-preprod.wcf.internal
+  payment:
+    api:
+      root: https://payments-preprod.wynk.in
 
 cors:
   allowed:
@@ -365,6 +357,24 @@ cache:
     name: l2cache-preprod
     readTimeout: 1000
     usePooling: true
+
+lock:
+  redis:
+    name: redis-lock:prepord
+    mode: cluster
+    useSsl: false
+    usePooling: true
+    readTimeout: 1000
+    password: ##
+    enableJmx: true
+    jmxPrefix: session-store:preprod
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 ######## lib-auth props #######
 security:

@@ -2,10 +2,12 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -25,21 +27,12 @@ import in.wynk.payment.dto.amazonIap.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.IapVerificationResponse;
-import in.wynk.payment.dto.response.LatestReceiptResponse;
-import in.wynk.payment.service.*;
 import in.wynk.payment.dto.response.*;
-import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,7 +57,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
 
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_PURCHASED");
     private static final List<String> RENEW_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID");
@@ -82,20 +75,19 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private String amazonIapSecret;
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
-    @Autowired
-    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(WynkUserExtUserDao userMappingDao, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
-        super(cachingService);
+    public AmazonIapMerchantPaymentService(WynkUserExtUserDao userMappingDao, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+        super(cachingService, errorCodesCacheServiceImpl);
         this.receiptDetailsDao = receiptDetailsDao;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
         this.userMappingDao = userMappingDao;
+        this.restTemplate = restTemplate;
     }
 
     private static String buildNotificationStringToSign(AmazonNotificationRequest msg) {
@@ -213,6 +205,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 .amazonIapReceiptResponse(amazonIapReceiptResponse)
                 .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
                 .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
+                .planId(cachingService.getPlanFromSku(amazonIapReceiptResponse.getTermSku()).getId())
                 .build();
     }
 
@@ -220,7 +213,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
             fetchAndUpdateTransaction(transaction, AmazonLatestReceiptResponse.builder().extTxnId(extTxnId).build());
         }
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
@@ -233,7 +226,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         Optional<ReceiptDetails> mapping = receiptDetailsDao.findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction, amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
                 AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
@@ -266,13 +259,13 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
     }
 
-    private void saveReceipt(Transaction transaction, String receiptId, String amzUserId) {
+    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId) {
         AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
                 .receiptId(receiptId)
                 .id(receiptId).amazonUserId(amzUserId)
-                .uid(transaction.getUid())
-                .msisdn(transaction.getMsisdn())
-                .planId(transaction.getPlanId())
+                .uid(uid)
+                .msisdn(msisdn)
+                .planId(planId)
                 .build();
         receiptDetailsDao.save(amazonReceiptDetails);
     }
@@ -288,9 +281,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
     @Override
@@ -310,7 +303,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         WynkUserExtUserMapping mapping = userMappingDao.findByExternalUserId(message.getAppUserId());
-        saveReceipt(TransactionContext.get(), message.getReceiptId(), message.getAppUserId());
+        saveReceipt(mapping.getId(), mapping.getMsisdn(), planDTO.getId(), message.getReceiptId(), message.getAppUserId());
         return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(receiptResponse).planId(planDTO.getId()).build();
     }
 
@@ -365,21 +358,19 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     @Override
     public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
-        String notificationType = wrapper.getDecodedNotification().getNotificationType();
-        PaymentEvent event;
-        if (SUBSCRIBED_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.SUBSCRIBE;
-        } else if (PURCHASE_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.PURCHASE;
-        } else if (CANCELLED_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.CANCELLED;
-        } else if (UNSUBSCRIBE_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.UNSUBSCRIBE;
-        } else if (RENEW_NOTIFICATIONS.contains(notificationType)) {
-            event = PaymentEvent.RENEW;
+        final AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
+        if (SUBSCRIBED_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.SUBSCRIBE;
+        } else if (PURCHASE_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.PURCHASE;
+        } else if (CANCELLED_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.CANCELLED;
+        } else if (UNSUBSCRIBE_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.UNSUBSCRIBE;
+        } else if (RENEW_NOTIFICATIONS.contains(message.getNotificationType())) {
+            return PaymentEvent.RENEW;
         }  else {
             throw new WynkRuntimeException(WynkErrorType.UT001);
         }
-        return event;
     }
 }

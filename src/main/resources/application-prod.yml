@@ -11,7 +11,6 @@ paytm:
       baseUrl: https://securegw.paytm.in
     wcf:
       addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
-      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WCF
 
@@ -20,7 +19,6 @@ apb:
     inquiry:
       url: https://ecom.airtelbank.com/ecom/v2/inquiry
   callback:
-    url: https://payments.wynk.in/wynk/v1/payment/callback/
     url: https://payments.wynk.in/wynk/v1/payment/callback/
   merchant:
     id:
@@ -183,10 +181,6 @@ payment:
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
         payment: https://secure.payu.in/_payment
-      internal:
-        callback:
-          successUrl: https://payments.wynk.in/wynk/v1/payment/callback/
-          failureUrl: https://payments.wynk.in/wynk/v1/payment/callback/
     #### Itunes props ######
     itunes:
       api:
@@ -204,16 +198,12 @@ payment:
       api:
         base:
           url: https://mercury-t2.phonepe.com
-      callback:
-        url: https://payments.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
     #### APBPaytm props ######
     apbPaytm:
       api:
         base:
           url: https://paydigi.airtel.in/web/pg-service
-      callback:
-        url: https://payments.wynk.in/wynk/v1/payment/callback/
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 
@@ -251,12 +241,12 @@ http:
         connection:
           max: 10
           maxPerHost: 5
-          timeout: 200
+          timeout: 500
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
           socket:
-            timeout: 2500
+            timeout: 4500
             factory:
               type: both
           request:
@@ -296,6 +286,9 @@ service:
   subscription:
     api:
       root: http://subscription.wcf.internal
+  payment:
+    api:
+      root: https://payments.wynk.in
 
 webview:
   host: https://pay.wynk.in
@@ -361,6 +354,20 @@ cache:
     name: l2cache-prod
     readTimeout: 1000
     usePooling: true
+
+session:
+  redis:
+    name: redis-lock:prod
+    mode: cluster
+    usePooling: true
+    readTimeout: 1000
+    cluster:
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 ######## lib-auth props #######
 security:

@@ -76,6 +76,11 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>error-codes-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>wynk-service-api</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -87,6 +92,11 @@
         <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-cache</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>lib-lock</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!--DEPENDENCIES-->

@@ -3,7 +3,7 @@ spring:
     name: paymentApi
   profiles:
     active: ${env}
-    include: base-common,coupon-core-${env}, coupon-core-${env}, client-core-${env}, wynk-service-core-${env}
+    include: base-common, coupon-core-${env}, client-core-${env}, wynk-service-core-${env}, error-codes-core-${env}
   main:
     banner-mode: off
   devtools:
@@ -66,14 +66,19 @@ service:
         allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
         allOffers: ${service.subscription.api.root}/wynk/s2s/v1/data/allOffers
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
+        allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
+        trialPlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/trial/eligible
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
 
 ####### payment props #######
 payment:
+  callback:
+    web: ${service.payment.api.root}/wynk/v1/payment/callback
+    s2s: ${service.payment.api.root}/wynk/v1/callback
   payOption:
     page: ${webview.host}/#/payment-option/
   success:

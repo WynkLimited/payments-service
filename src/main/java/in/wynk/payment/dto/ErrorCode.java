@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter
+@Deprecated
 public enum ErrorCode {
 
     PAYTM001("PAYTM001", "1", "Txn Successful.", "Txn Successful."),
@@ -136,6 +137,7 @@ public enum ErrorCode {
         this.externalMessage = externalMessage;
     }
 
+    @Deprecated
     public static ErrorCode getErrorCodesFromExternalCode(String externalCode) {
         for (ErrorCode errorCode : values()) {
             if (String.valueOf(errorCode.getExternalCode()).equalsIgnoreCase(externalCode)) {

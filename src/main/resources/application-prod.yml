@@ -361,7 +361,7 @@ cache:
     readTimeout: 1000
     usePooling: true
 
-session:
+lock:
   redis:
     name: redis-lock:prod
     mode: cluster

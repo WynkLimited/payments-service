@@ -33,6 +33,7 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -199,13 +200,17 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if(amazonIapReceiptResponse.getRenewalDate() != null && amazonIapReceiptResponse.getRenewalDate() > System.currentTimeMillis()) {
             autoRenewal = true;
         }
+        String skuId = amazonIapReceiptResponse.getTermSku();
+        if (StringUtils.isEmpty(skuId)) {
+            skuId = amazonIapVerificationRequest.getReceipt().getSku();
+        }
         return AmazonLatestReceiptResponse.builder()
                 .freeTrial(false)
                 .autoRenewal(autoRenewal)
                 .amazonIapReceiptResponse(amazonIapReceiptResponse)
+                .planId(cachingService.getPlanFromSku(skuId).getId())
                 .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
                 .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
-                .planId(cachingService.getPlanFromSku(amazonIapReceiptResponse.getTermSku()).getId())
                 .build();
     }
 

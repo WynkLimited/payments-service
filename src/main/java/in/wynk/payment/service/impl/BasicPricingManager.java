@@ -41,11 +41,14 @@ public class BasicPricingManager implements IPricingManager {
 
     @Override
     public void computePriceAndApplyDiscount(AbstractTransactionInitRequest request) {
-        Optional<CouponDTO> couponOptional;
+        final Optional<CouponDTO> couponOptional;
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
             final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
             final String service = selectedPlan.getService();
+            if (nativeRequest.isAutoRenewOpted()) {
+                request.setEvent(PaymentEvent.SUBSCRIBE);
+            }
             if (nativeRequest.isTrialOpted()) {
                 final int trialPlanId = selectedPlan.getLinkedFreePlanId();
                 final TrialPlanComputationResponse trialEligibilityResponse = subscriptionService.compute(TrialPlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());

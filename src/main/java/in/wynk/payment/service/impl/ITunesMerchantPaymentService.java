@@ -389,11 +389,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 log.error("Receipt Object returned for response {} is not complete!", appStoreResponseBody);
                 throw new WynkRuntimeException(PAY011, statusCode.getErrorTitle());
             }
-            receiptObj.setLatestReceiptInfoList(itunesReceiptType
-                    .getSubscriptionDetailJson(receiptObj)
-                    .stream()
-                    .sorted(Comparator.comparingLong(itunesReceiptType::getExpireDate).reversed())
-                    .collect(Collectors.toList()));
+            List<LatestReceiptInfo> temp = itunesReceiptType.getSubscriptionDetailJson(receiptObj);
+            if (Objects.nonNull(temp)) {
+                receiptObj.setLatestReceiptInfoList(temp.stream().sorted(Comparator.comparingLong(itunesReceiptType::getExpireDate).reversed()).collect(Collectors.toList()));
+            }
             return receiptObj;
         } catch (Exception ex) {
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Error occurred while parsing receipt.");

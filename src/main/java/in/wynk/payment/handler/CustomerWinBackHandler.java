@@ -70,9 +70,10 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
             final String service = entity.getProductDetails().getType() == PLAN ? cachingService.getPlan(lastTransaction.getProductId()).getService(): cachingService.getItem(lastTransaction.getItemId()).getService();
             final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
             final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
-            final String url = winBackUrl + SLASH + lastTransaction.getIdStr() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TOKEN_ID + EQUAL + EncryptionUtils.generateAppToken(lastTransaction.getIdStr(), clientDetails.getClientSecret());
-            final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(url).build());
-            final String terraformed = message.getMessage().replace("#onlink", shortenResponse.getTinyUrl());
+            final String payUrl = winBackUrl + SLASH + lastTransaction.getIdStr() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TOKEN_ID + EQUAL + EncryptionUtils.generateAppToken(lastTransaction.getIdStr(), clientDetails.getClientSecret());
+            final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + payUrl).orElse(payUrl);
+            final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
+            final String terraformed = message.getMessage().replace("<link>", shortenResponse.getTinyUrl());
             sqsManagerService.publishSQSMessage(SmsNotificationMessage.builder().message(terraformed).msisdn(lastTransaction.getMsisdn()).priority(message.getPriority()).service(wynkService.getId()).build());
         }
     }

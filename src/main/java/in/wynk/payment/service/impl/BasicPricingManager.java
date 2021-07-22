@@ -96,7 +96,7 @@ public class BasicPricingManager implements IPricingManager {
     private Optional<CouponDTO> optionalItemDiscount(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode) {
         if (!StringUtils.isEmpty(couponId)) {
             CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.name()).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             if (couponResponse.getState() != CouponProvisionState.INELIGIBLE) {
                 return Optional.of(couponResponse.getCoupon());

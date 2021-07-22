@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -78,9 +79,13 @@ public class BasicPricingManager implements IPricingManager {
 
     private Optional<CouponDTO> optionalPlanDiscount(String couponId, String msisdn, String uid, String service, PaymentCode paymentCode, PlanDTO selectedPlan) {
         if (!StringUtils.isEmpty(couponId) && selectedPlan.getPlanType() != PlanType.FREE_TRIAL) {
-            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
-            CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder().couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
+            final CouponResponse couponResponse;
+            if (EnumSet.of(PaymentCode.ITUNES, PaymentCode.AMAZON_IAP).contains(paymentCode)) {
+                couponResponse = couponManager.applyCoupon(couponProvisionRequest);
+            } else {
+                couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            }
             if (couponResponse.getState() != CouponProvisionState.INELIGIBLE) {
                 return Optional.of(couponResponse.getCoupon());
             }

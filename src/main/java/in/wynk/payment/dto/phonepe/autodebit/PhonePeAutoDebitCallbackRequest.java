@@ -18,7 +18,7 @@ public class PhonePeAutoDebitCallbackRequest extends CallbackRequest {
     private String phonePeVersionCode;
 
     public Long getPhonePeVersionCode() {
-        if(!StringUtils.isNotEmpty(phonePeVersionCode) || NumberUtils.isNumber(phonePeVersionCode)) throw new WynkRuntimeException(PaymentErrorType.PAY400, "malformed phonePeVersionCode is supplied");
+        if(!StringUtils.isNotEmpty(phonePeVersionCode) || !NumberUtils.isNumber(phonePeVersionCode)) throw new WynkRuntimeException(PaymentErrorType.PAY400, "malformed phonePeVersionCode is supplied");
         return NumberUtils.toLong(phonePeVersionCode);
     }
 

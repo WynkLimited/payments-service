@@ -164,7 +164,7 @@ public class PaymentManager {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.updateAndAsyncPublish(transaction, existingStatus, finalStatus);
+            transactionManager.updateAndSyncPublish(transaction, existingStatus, finalStatus);
         }
     }
 

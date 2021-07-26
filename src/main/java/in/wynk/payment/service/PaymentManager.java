@@ -139,6 +139,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final IReceiptDetailService<?, IAPNotification> receiptDetailService = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
         });
         DecodedNotificationWrapper<IAPNotification> wrapper = receiptDetailService.isNotificationEligible(request.getPayload());
+        AnalyticService.update(wrapper.getDecodedNotification());
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
             final PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);

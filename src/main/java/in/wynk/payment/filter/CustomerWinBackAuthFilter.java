@@ -32,7 +32,6 @@ public class CustomerWinBackAuthFilter extends BasicAuthenticationFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         log.info("inside CustomerWinBackAuthFilter ...");
         if (StringUtils.isNotEmpty(request.getRequestURL().toString()) && request.getRequestURL().toString().contains(winBackUrl)) {
-            log.info("CustomerWinBackAuthFilter is applied to {} for {}...",request.getRequestURL().toString(), winBackUrl);
             final Authentication preAuthDetails = tokenMapper.map(request);
             Authentication authentication = this.authenticationManager.authenticate(preAuthDetails);
             if (authentication.isAuthenticated()) {

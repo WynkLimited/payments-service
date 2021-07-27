@@ -6,7 +6,6 @@ import in.wynk.auth.entrypoint.AuthenticationFailureEntryPoint;
 import in.wynk.auth.filter.S2SDetailsAuthenticationFilter;
 import in.wynk.auth.mapper.AbstractPreAuthTokenMapper;
 import in.wynk.payment.mapper.WinBackTokenMapper;
-import in.wynk.payment.provider.WinBackAuthenticationProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -29,13 +28,13 @@ public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
     private final AuthenticationFailureEntryPoint authenticationFailureEntryPoint;
 
     private final WinBackTokenMapper winBackTokenMapper;
-    private final WinBackAuthenticationProvider winBackAuthenticationProvider;
+    private final AuthenticationProvider winBackAuthenticationProvider;
 
     public PaymentSecurityConfig(SecurityProperties properties,
                                  AuthenticationProvider s2sAuthenticationProvider,
                                  AuthenticationFailureEntryPoint authenticationFailureEntryPoint,
                                  @Qualifier(BeanConstant.PRE_AUTH_S2S_DETAILS_TOKEN_MAPPER) AbstractPreAuthTokenMapper preAuthS2SDetailsTokenMapper,
-                                 WinBackTokenMapper winBackTokenMapper, WinBackAuthenticationProvider winBackAuthenticationProvider) {
+                                 WinBackTokenMapper winBackTokenMapper, AuthenticationProvider winBackAuthenticationProvider) {
         this.properties = properties;
         this.s2sAuthenticationProvider = s2sAuthenticationProvider;
         this.preAuthS2SDetailsTokenMapper = preAuthS2SDetailsTokenMapper;

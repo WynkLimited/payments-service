@@ -38,7 +38,7 @@ public class UrlShortenRequest {
         private UrlShortenData data;
 
         UrlShortenRequestBuilder() {
-            this.key = EmbeddedPropertyResolver.resolveEmbeddedValue("branch.onelink.key");
+            this.key = EmbeddedPropertyResolver.resolveEmbeddedValue("${branch.onelink.key}");
         }
 
         public UrlShortenRequestBuilder campaign(String campaign) {

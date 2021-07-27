@@ -371,6 +371,10 @@ cache:
     readTimeout: 1000
     usePooling: true
 
+onelink:
+  key: key_test_pgZfbR1czLvn25MY3jFKmejbACgrSztR
+  url: https://api2.branch.io/v1/url
+
 ######## lib-auth props #######
 security:
   exempt:

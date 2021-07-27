@@ -143,3 +143,7 @@ apbpaytm:
   validateOtp:
     api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
 
+branch:
+  onelink:
+    key: ${onelink.key}
+    url: ${onelink.url}

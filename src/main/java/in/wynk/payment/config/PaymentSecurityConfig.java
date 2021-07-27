@@ -8,6 +8,8 @@ import in.wynk.auth.mapper.AbstractPreAuthTokenMapper;
 import in.wynk.payment.filter.CustomerWinBackAuthFilter;
 import in.wynk.payment.mapper.WinBackTokenMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -19,6 +21,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Value("${payment.payOption.page}")
+    private String winBackUrl;
 
     private final SecurityProperties properties;
 
@@ -52,7 +57,7 @@ public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
                 && properties.getExempt().getPaths() != null
                 && properties.getExempt().getPaths().size() > 0) {
             http
-                    .authorizeRequests()
+                    .authorizeRequests().antMatchers(HttpMethod.OPTIONS).permitAll()
                     .antMatchers(properties.getExempt().getPaths().toArray(new String[]{}))
                     .permitAll();
         }
@@ -68,7 +73,7 @@ public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
                 .exceptionHandling().authenticationEntryPoint(authenticationFailureEntryPoint)
                 .and()
                 .addFilter(new S2SDetailsAuthenticationFilter(authenticationManagerBean(), preAuthS2SDetailsTokenMapper))
-                .addFilter(new CustomerWinBackAuthFilter(authenticationManagerBean(), winBackTokenMapper));
+                .addFilter(new CustomerWinBackAuthFilter(winBackUrl, authenticationManagerBean(), winBackTokenMapper));
     }
 
     @Override

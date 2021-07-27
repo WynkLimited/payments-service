@@ -4,7 +4,6 @@ import in.wynk.auth.constant.AuthLoggingMarker;
 import in.wynk.auth.mapper.AbstractPreAuthTokenMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,13 +18,13 @@ import java.io.IOException;
 @Slf4j
 public class CustomerWinBackAuthFilter extends BasicAuthenticationFilter {
 
-    @Value("${payment.payOption.page}")
-    private String winBackUrl;
+    private final String winBackUrl;
     private final AbstractPreAuthTokenMapper tokenMapper;
     private final AuthenticationManager authenticationManager;
 
-    public CustomerWinBackAuthFilter(AuthenticationManager authenticationManager, AbstractPreAuthTokenMapper tokenMapper) {
+    public CustomerWinBackAuthFilter(String winBackUrl, AuthenticationManager authenticationManager, AbstractPreAuthTokenMapper tokenMapper) {
         super(authenticationManager);
+        this.winBackUrl = winBackUrl;
         this.tokenMapper = tokenMapper;
         this.authenticationManager = authenticationManager;
     }

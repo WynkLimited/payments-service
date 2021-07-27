@@ -5,6 +5,7 @@ import in.wynk.auth.constant.BeanConstant;
 import in.wynk.auth.entrypoint.AuthenticationFailureEntryPoint;
 import in.wynk.auth.filter.S2SDetailsAuthenticationFilter;
 import in.wynk.auth.mapper.AbstractPreAuthTokenMapper;
+import in.wynk.payment.filter.CustomerWinBackAuthFilter;
 import in.wynk.payment.mapper.WinBackTokenMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -67,7 +68,7 @@ public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
                 .exceptionHandling().authenticationEntryPoint(authenticationFailureEntryPoint)
                 .and()
                 .addFilter(new S2SDetailsAuthenticationFilter(authenticationManagerBean(), preAuthS2SDetailsTokenMapper))
-                .addFilter(new S2SDetailsAuthenticationFilter(authenticationManagerBean(), winBackTokenMapper));;
+                .addFilter(new CustomerWinBackAuthFilter(authenticationManagerBean(), winBackTokenMapper));
     }
 
     @Override

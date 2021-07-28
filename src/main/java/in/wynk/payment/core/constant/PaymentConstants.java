@@ -2,9 +2,6 @@ package in.wynk.payment.core.constant;
 
 import in.wynk.common.constant.BaseConstants;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public interface PaymentConstants extends BaseConstants {
 
     String CARD = "CARD";
@@ -22,6 +19,7 @@ public interface PaymentConstants extends BaseConstants {
     String SUCCESS = "success";
     String PIPE_SEPARATOR = "|";
     String BASE_USER_EMAIL = "@wynk.in";
+    String PAYMENT_DETAILS_KEY = "PAYMENT_DETAILS_KEY:";
 
     String PAYMENT_GATEWAY = "paymentGateway";
 

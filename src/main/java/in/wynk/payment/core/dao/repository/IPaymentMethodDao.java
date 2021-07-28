@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Repository
-public interface PaymentMethodDao extends MongoRepository<PaymentMethod, String> {
+public interface IPaymentMethodDao extends MongoRepository<PaymentMethod, String> {
 
     List<PaymentMethod> findAllByState(State state);
 

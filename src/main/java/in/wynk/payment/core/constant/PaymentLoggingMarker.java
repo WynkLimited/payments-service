@@ -78,5 +78,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APB_PAYTM_CHARGE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_CHARGE_FAILURE");
     Marker APB_PAYTM_GET_BALANCE_FAILURE=MarkerFactory.getMarker("APB_PAYTM_GET_BALANCE_FAILURE");
     Marker APB_PAYTM_CHARGING_STATUS_VERIFICATION=MarkerFactory.getMarker("APB_PAYTM_CHARGING_STATUS_VERIFICATION");
+    Marker CALLBACK_PAYLOAD_PARSING_FAILURE = MarkerFactory.getMarker("CALLBACK_PAYLOAD_PARSING_FAILURE");
 
 }

@@ -3,8 +3,6 @@ package in.wynk.payment.dto.request;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.AppDetails;
-import in.wynk.payment.dto.UserDetails;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +18,6 @@ public abstract class WalletRequest {
     @Analysed
     private PaymentCode paymentCode;
 
-    public abstract AppDetails getAppDetails();
-    public abstract UserDetails getUserDetails();
+    public abstract String getDeviceId();
 
 }

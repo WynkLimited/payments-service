@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
@@ -12,8 +13,7 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class WalletLinkRequest extends WalletRequest {
+public class S2SWalletValidateLinkRequest extends WalletValidateLinkRequest {
     @Analysed
-    private String encSi;
-
+    private String deviceId;
 }

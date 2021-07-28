@@ -11,7 +11,9 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletDeLinkRequest extends WalletRequest {
-    private String uid;
-    private String deviceId;
+public abstract class WalletDeLinkRequest extends WalletRequest {
+
+    public abstract String getUid();
+    public abstract String getMsisdn();
+
 }

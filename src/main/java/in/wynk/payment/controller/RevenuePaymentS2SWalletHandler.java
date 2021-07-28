@@ -25,7 +25,7 @@ public class RevenuePaymentS2SWalletHandler {
 
     @PostMapping("/v1/link/request")
     @AnalyseTransaction(name = "walletLink")
-    public ResponseEntity<?> linkRequest(@RequestBody WalletLinkRequest request) {
+    public ResponseEntity<?> linkRequest(@RequestBody S2SWalletLinkRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletLinkService<Void, WalletLinkRequest>>() {
         }).link(request);
@@ -35,7 +35,7 @@ public class RevenuePaymentS2SWalletHandler {
 
     @PostMapping("/v1/link/validate")
     @AnalyseTransaction(name = "walletValidateLink")
-    public ResponseEntity<?> linkValidate(@RequestBody WalletValidateLinkRequest request) {
+    public ResponseEntity<?> linkValidate(@RequestBody S2SWalletValidateLinkRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletValidateLinkService<Void, WalletValidateLinkRequest>>() {
         }).validate(request);
@@ -45,7 +45,7 @@ public class RevenuePaymentS2SWalletHandler {
 
     @PostMapping("/v1/unlink/request")
     @AnalyseTransaction(name = "walletUnlink")
-    public ResponseEntity<?> unlink(@RequestBody WalletDeLinkRequest request) {
+    public ResponseEntity<?> unlink(@RequestBody S2SWalletDeLinkRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletDeLinkService<Void, WalletDeLinkRequest>>() {
         }).deLink(request);
@@ -55,7 +55,7 @@ public class RevenuePaymentS2SWalletHandler {
 
     @PostMapping("/v1/balance")
     @AnalyseTransaction(name = "walletBalance")
-    public ResponseEntity<?> balance(@RequestBody WalletBalanceRequest request) {
+    public ResponseEntity<?> balance(@RequestBody S2SWalletBalanceRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>>() {
         }).balance(request);

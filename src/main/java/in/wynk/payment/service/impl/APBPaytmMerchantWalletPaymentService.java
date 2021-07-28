@@ -94,7 +94,6 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         sessionDTO.put(WALLET_USER_ID, walletLinkRequest.getEncSi());
         WynkResponseEntity.WynkResponseEntityBuilder<Void> builder = WynkResponseEntity.builder();
         try {
-            AnalyticService.update(UID, sessionDTO.<String>get(UID));
             APBPaytmLinkRequest linkRequest = APBPaytmLinkRequest.builder().walletLoginId(walletLinkRequest.getEncSi()).wallet(WALLET_PAYTM).build();
             HttpHeaders headers = generateHeaders();
             HttpEntity<APBPaytmLinkRequest> requestEntity = new HttpEntity<>(linkRequest, headers);

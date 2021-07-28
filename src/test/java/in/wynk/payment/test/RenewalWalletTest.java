@@ -3,6 +3,7 @@ package in.wynk.payment.test;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.dto.request.WalletBalanceRequest;
+import in.wynk.payment.dto.request.WebWalletBalanceRequest;
 import in.wynk.payment.dto.response.UserWalletDetails;
 import in.wynk.payment.service.IWalletBalanceService;
 import in.wynk.payment.test.utils.PaymentTestUtils;
@@ -36,7 +37,7 @@ public class RenewalWalletTest {
 
     @Test
     public void testWalletBalance(){
-        renewalMerchantWalletService.balance(WalletBalanceRequest.builder().planId(606).build());
+        renewalMerchantWalletService.balance(WebWalletBalanceRequest.builder().planId(606).build());
     }
 
 }

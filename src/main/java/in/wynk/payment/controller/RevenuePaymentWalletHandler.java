@@ -24,7 +24,7 @@ public class RevenuePaymentWalletHandler {
     @PostMapping("/link/request/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletLink")
-    public ResponseEntity<?> linkRequest(@PathVariable String sid, @RequestBody WalletLinkRequest request) {
+    public ResponseEntity<?> linkRequest(@PathVariable String sid, @RequestBody WebWalletLinkRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletLinkService<Void, WalletLinkRequest>>() {
         }).link(request);
@@ -35,7 +35,7 @@ public class RevenuePaymentWalletHandler {
     @PostMapping("/link/validate/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletValidateLink")
-    public ResponseEntity<?> linkValidate(@PathVariable String sid, @RequestBody WalletValidateLinkRequest request) {
+    public ResponseEntity<?> linkValidate(@PathVariable String sid, @RequestBody WebWalletValidateLinkRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletValidateLinkService<Void, WalletValidateLinkRequest>>() {
         }).validate(request);
@@ -46,7 +46,7 @@ public class RevenuePaymentWalletHandler {
     @PostMapping("/unlink/request/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletUnlink")
-    public ResponseEntity<?> unlink(@PathVariable String sid, @RequestBody WalletDeLinkRequest request) {
+    public ResponseEntity<?> unlink(@PathVariable String sid, @RequestBody WebWalletDeLinkRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletDeLinkService<Void, WalletDeLinkRequest>>() {
         }).deLink(request);
@@ -57,7 +57,7 @@ public class RevenuePaymentWalletHandler {
     @PostMapping("/balance/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletBalance")
-    public ResponseEntity<?> balance(@PathVariable String sid, @RequestBody WalletBalanceRequest request) {
+    public ResponseEntity<?> balance(@PathVariable String sid, @RequestBody WebWalletBalanceRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<?> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>>() {
         }).balance(request);

@@ -12,8 +12,7 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class WalletLinkRequest extends WalletRequest {
+public class S2SWalletLinkRequest extends WalletLinkRequest {
     @Analysed
-    private String encSi;
-
+    private String deviceId;
 }

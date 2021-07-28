@@ -1,10 +1,11 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
 
-public interface IMerchantPaymentChargingService {
+public interface IMerchantPaymentChargingService<R extends AbstractChargingResponse, T extends AbstractChargingRequest<?>> {
 
-    BaseResponse<?> doCharging(ChargingRequest chargingRequest);
+    WynkResponseEntity<R> charge(T request);
 
 }

@@ -1,5 +1,7 @@
 package in.wynk.payment.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
@@ -12,15 +14,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"),
-        @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")
-})
 @Getter
-@AnalysedEntity
 @SuperBuilder
+@AnalysedEntity
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
+@JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")})
 public abstract class IapVerificationRequest {
 
     @Analysed
@@ -31,8 +32,6 @@ public abstract class IapVerificationRequest {
     @Analysed
     private String sid;
     @Analysed
-    private int planId;
-    @Analysed
     private int buildNo;
     @Analysed
     private String msisdn;
@@ -40,7 +39,6 @@ public abstract class IapVerificationRequest {
     private String service;
     @Analysed
     private String deviceId;
-
     private PaymentCode paymentCode;
 
 }

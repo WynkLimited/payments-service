@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.itune;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.PaymentCode;
@@ -9,9 +10,10 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Getter
-@AnalysedEntity
 @SuperBuilder
+@AnalysedEntity
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ItunesVerificationRequest extends IapVerificationRequest {
 
     @Analysed
@@ -21,4 +23,5 @@ public class ItunesVerificationRequest extends IapVerificationRequest {
     public PaymentCode getPaymentCode() {
         return PaymentCode.ITUNES;
     }
+
 }

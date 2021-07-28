@@ -9,16 +9,14 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.SavedDetailsKey;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.IChargingDetails;
@@ -52,13 +50,12 @@ import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.payment.core.constant.PaymentCode.APB_PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
-import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE)
-public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, ApbPaytmCallbackRequestPayload>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
+public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IWalletLinkService<WalletLinkResponse, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, ApbPaytmCallbackRequestPayload>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
 
     @Value("${payment.success.page}")
     private String successPage;
@@ -87,19 +84,18 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     @Override
-    public WynkResponseEntity<Void> link(WalletLinkRequest walletLinkRequest) {
+    public WynkResponseEntity<WalletLinkResponse> link(WalletLinkRequest walletLinkRequest) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        sessionDTO.put(WALLET_USER_ID, walletLinkRequest.getEncSi());
-        WynkResponseEntity.WynkResponseEntityBuilder<Void> builder = WynkResponseEntity.builder();
+        WynkResponseEntity.WynkResponseEntityBuilder<WalletLinkResponse> builder = WynkResponseEntity.builder();
+        final WalletLinkResponse.WalletLinkResponseBuilder responseBuilder = WalletLinkResponse.builder().walletUserId(walletLinkRequest.getWalletUserId());
         try {
-            APBPaytmLinkRequest linkRequest = APBPaytmLinkRequest.builder().walletLoginId(walletLinkRequest.getEncSi()).wallet(WALLET_PAYTM).build();
+            APBPaytmLinkRequest linkRequest = APBPaytmLinkRequest.builder().walletLoginId(walletLinkRequest.getWalletUserId()).wallet(WALLET_PAYTM).build();
             HttpHeaders headers = generateHeaders();
             HttpEntity<APBPaytmLinkRequest> requestEntity = new HttpEntity<>(linkRequest, headers);
             APBPaytmResponse response = restTemplate.exchange(apbPaytmBaseUrl + ABP_PAYTM_SEND_OTP, HttpMethod.POST, requestEntity, APBPaytmResponse.class).getBody();
             if (response.isResult()) {
-                sessionDTO.put(ABP_PAYTM_OTP_TOKEN, response.getData().getOtpToken());
+                responseBuilder.otpToken(response.getData().getOtpToken());
                 log.info("otp send successfully {} ", response.getData().getOtpToken());
             } else {
                 errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(response.getErrorCode());
@@ -115,7 +111,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             if (Objects.nonNull(errorCode)) {
                 builder.error(StandardBusinessErrorDetails.builder().code(errorCode.getInternalCode()).title(errorCode.getExternalMessage()).description(errorCode.getInternalMessage()).build()).success(false);
             }
-            return builder.status(httpStatus).build();
+            return builder.status(httpStatus).data(responseBuilder.build()).build();
         }
     }
 
@@ -134,10 +130,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<Void> builder = WynkResponseEntity.builder();
         try {
-            SessionDTO sessionDTO = SessionContextHolder.getBody();
-            AnalyticService.update(UID, sessionDTO.<String>get(UID));
-            String loginId = sessionDTO.get(WALLET_USER_ID);
-            String otpToken = sessionDTO.get(ABP_PAYTM_OTP_TOKEN);
+            String loginId = request.getWalletUserId();
+            String otpToken = request.getOtpToken();
             APBPaytmOtpValidateRequest apbPaytmOtpValidateRequest = APBPaytmOtpValidateRequest.builder().walletLoginId(loginId).channel(CHANNEL_WEB).wallet(WALLET_PAYTM).authType(AUTH_TYPE_UN_AUTH).otp(request.getOtp()).otpToken(otpToken).build();
             HttpHeaders headers = generateHeaders();
             HttpEntity<APBPaytmOtpValidateRequest> requestEntity = new HttpEntity<>(apbPaytmOtpValidateRequest, headers);
@@ -147,7 +141,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                         .walletUserId(loginId)
                         .tokenValidity(System.currentTimeMillis() + 1000000)
                         .accessToken(linkResponse.getData().getEncryptedToken())
-                        .id(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)))
+                        .id(getKey(request.getUid(), request.getDeviceId()))
                         .build());
             } else {
                 errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(linkResponse.getErrorCode());
@@ -191,9 +185,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     @Override
     public WynkResponseEntity<UserWalletDetails> balance(WalletBalanceRequest request) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final double finalAmount = DiscountUtils.compute(null, PlanDetails.builder().planId(request.getPlanId()).build());
-        return balance(finalAmount ,getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        return balance(finalAmount, getWallet(getKey(request.getUid(), request.getDeviceId())));
     }
 
     private WynkResponseEntity<UserWalletDetails> balance(double finalAmount, Wallet wallet) {
@@ -232,10 +225,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     @Override
     public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> request) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final Transaction transaction = TransactionContext.get();
+        final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         final WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
-        final APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), transaction.getAmount(), getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        final APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), transaction.getAmount(), getWallet(getKey(MsisdnUtils.getUidFromMsisdn(purchaseDetails.getUserDetails().getMsisdn()), purchaseDetails.getAppDetails().getDeviceId())));
         if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
             try {
                 builder.data(WalletTopUpResponse.builder().info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey)).build());
@@ -343,12 +336,11 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     public WynkResponseEntity<AutoDebitWalletCallbackResponse> handleCallback(ApbPaytmCallbackRequestPayload callbackRequest) {
         ErrorCode errorCode = null;
         String redirectUrl = null;
-        Transaction transaction = TransactionContext.get();
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String sid = SessionContextHolder.getId();
+        final Transaction transaction = TransactionContext.get();
+        final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         WynkResponseEntity.WynkResponseEntityBuilder<AutoDebitWalletCallbackResponse> builder = WynkResponseEntity.builder();
         try {
-            Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
+            Wallet wallet = getWallet(getKey(transaction.getUid(), purchaseDetails.getAppDetails().getDeviceId()));
             final double amountToCharge = transaction.getAmount();
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
             if (balanceResponse.isResult() && balanceResponse.getData().getBalance() >= amountToCharge) {
@@ -357,7 +349,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                         .orderId(transaction.getIdStr())
                         .channel(CHANNEL_WEB)
                         .userInfo(APBPaytmUserInfo.builder().circleId(CIRCLE_ID).serviceInstance(wallet.getWalletUserId()).build())
-                        .channelInfo(APBPaytmChannelInfo.builder().redirectionUrl(successPage + sid).channel(AUTH_TYPE_WEB_UNAUTH).build())
+                        .channelInfo(APBPaytmChannelInfo.builder().redirectionUrl(((IChargingDetails) purchaseDetails).getPageUrlDetails().getSuccessPageUrl()).channel(AUTH_TYPE_WEB_UNAUTH).build())
                         .paymentInfo(APBPaytmPaymentInfo.builder().lob(WYNK).paymentAmount(amountToCharge).paymentMode(WALLET).wallet(WALLET_PAYTM).currency(CURRENCY_INR).walletLoginId(wallet.getWalletUserId()).encryptedToken(wallet.getAccessToken()).build()).build();
                 HttpHeaders headers = generateHeaders();
                 HttpEntity<APBPaytmWalletPaymentRequest> requestEntity = new HttpEntity<APBPaytmWalletPaymentRequest>(walletPaymentRequest, headers);
@@ -366,7 +358,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
                 if (paymentResponse != null && paymentResponse.isResult() && paymentResponse.getData().getPaymentStatus().equalsIgnoreCase(ABP_PAYTM_PAYMENT_SUCCESS)) {
                     transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-                    redirectUrl = successPage + sid;
+                    redirectUrl = ((IChargingDetails) purchaseDetails).getPageUrlDetails().getSuccessPageUrl();
                     log.info("redirectUrl {}", redirectUrl);
                 } else {
                     errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
@@ -391,21 +383,11 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             }
 
             if (StringUtils.isBlank(redirectUrl)) {
-                redirectUrl = failurePage + sid;
+                redirectUrl = ((IChargingDetails) purchaseDetails).getPageUrlDetails().getFailurePageUrl();
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
 
-            return WynkResponseUtils.redirectResponse(redirectUrl +
-                    SLASH +
-                    sessionDTO.<String>get(OS) +
-                    QUESTION_MARK +
-                    SERVICE +
-                    EQUAL +
-                    sessionDTO.<String>get(SERVICE) +
-                    AND +
-                    BUILD_NO +
-                    EQUAL +
-                    sessionDTO.<Integer>get(BUILD_NO));
+            return WynkResponseUtils.redirectResponse(redirectUrl);
         }
     }
 
@@ -446,12 +428,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         HttpStatus httpStatus = HttpStatus.OK;
         String redirectUrl = null;
         Transaction transaction = TransactionContext.get();
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String sid = SessionContextHolder.getId();
         AutoDebitWalletChargingResponse.AutoDebitWalletChargingResponseBuilder<?, ?> walletResponse = AutoDebitWalletChargingResponse.builder();
         WynkResponseEntity.WynkResponseEntityBuilder<AutoDebitWalletChargingResponse> builder = WynkResponseEntity.builder();
         try {
-            Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
+            Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn()), request.getPurchaseDetails().getAppDetails().getDeviceId()));
             HttpHeaders headers = generateHeaders();
             final double amountToCharge = transaction.getAmount();
             APBPaytmResponse balanceResponse = this.getBalance(wallet);
@@ -469,7 +449,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                         .orderId(transaction.getIdStr())
                         .channel(CHANNEL_WEB)
                         .userInfo(APBPaytmUserInfo.builder().circleId(CIRCLE_ID).serviceInstance(wallet.getWalletUserId()).build())
-                        .channelInfo(APBPaytmChannelInfo.builder().redirectionUrl(successPage + sid).channel(AUTH_TYPE_WEB_UNAUTH).build())
+                        .channelInfo(APBPaytmChannelInfo.builder().redirectionUrl(((IChargingDetails) request.getPurchaseDetails()).getPageUrlDetails().getSuccessPageUrl()).channel(AUTH_TYPE_WEB_UNAUTH).build())
                         .paymentInfo(APBPaytmPaymentInfo.builder().lob(WYNK).paymentAmount(amountToCharge).paymentMode(WALLET).wallet(WALLET_PAYTM).currency(CURRENCY_INR).walletLoginId(wallet.getWalletUserId()).encryptedToken(wallet.getAccessToken()).build()).build();
 
                 HttpEntity<APBPaytmWalletPaymentRequest> requestEntity = new HttpEntity<APBPaytmWalletPaymentRequest>(walletPaymentRequest, headers);
@@ -477,7 +457,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                         apbPaytmBaseUrl + ABP_PAYTM_WALLET_PAYMENT, HttpMethod.POST, requestEntity, APBPaytmResponse.class).getBody();
                 if (paymentResponse.isResult() && paymentResponse.getData().getPaymentStatus() != null && paymentResponse.getData().getPaymentStatus().equalsIgnoreCase(ABP_PAYTM_PAYMENT_SUCCESS)) {
                     transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-                    redirectUrl = successPage + sid;
+                    redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getPageUrlDetails().getSuccessPageUrl();
                 }
                 MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(paymentResponse.getData().getPgId()).request(requestEntity).response(paymentResponse).build();
                 eventPublisher.publishEvent(merchantTransactionEvent);
@@ -495,25 +475,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             if (StringUtils.isBlank(redirectUrl)) {
-                redirectUrl = failurePage + sid;
-
+                redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getPageUrlDetails().getFailurePageUrl();
             }
             handleError(errorCode, builder);
-            return builder.status(httpStatus)
-                    .data(walletResponse
-                            .redirectUrl(redirectUrl +
-                                    SLASH +
-                                    sessionDTO.<String>get(OS) +
-                                    QUESTION_MARK +
-                                    SERVICE +
-                                    EQUAL +
-                                    sessionDTO.<String>get(SERVICE) +
-                                    AND +
-                                    BUILD_NO +
-                                    EQUAL +
-                                    sessionDTO.<Integer>get(BUILD_NO))
-                            .build())
-                    .build();
+            return builder.status(httpStatus).data(walletResponse.redirectUrl(redirectUrl).build()).build();
         }
     }
 

@@ -14,6 +14,6 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public abstract class WalletLinkRequest extends WalletRequest {
     @Analysed
-    private String encSi;
+    private String walletUserId;
 
 }

@@ -24,4 +24,18 @@ public class WebWalletBalanceRequest extends WalletBalanceRequest {
         return session.get(BaseConstants.DEVICE_ID);
     }
 
+    @Override
+    @JsonIgnore
+    public String getMsisdn() {
+        final SessionDTO session = SessionContextHolder.getBody();
+        return session.get(BaseConstants.MSISDN);
+    }
+
+    @Override
+    @JsonIgnore
+    public String getUid() {
+        final SessionDTO session = SessionContextHolder.getBody();
+        return session.get(BaseConstants.UID);
+    }
+
 }

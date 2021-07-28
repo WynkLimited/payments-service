@@ -17,4 +17,7 @@ public abstract class WalletBalanceRequest extends WalletRequest {
     private int planId;
     @Analysed
     private String couponId;
+
+    public abstract String getMsisdn();
+    public abstract String getUid();
 }

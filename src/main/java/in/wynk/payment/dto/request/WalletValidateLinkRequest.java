@@ -15,4 +15,9 @@ import lombok.experimental.SuperBuilder;
 public abstract class WalletValidateLinkRequest extends WalletRequest {
     @Analysed
     private String otp;
+    private String otpToken;
+    private String walletUserId;
+
+    public abstract String getMsisdn();
+    public abstract String getUid();
 }

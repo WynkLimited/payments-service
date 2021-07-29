@@ -13,13 +13,13 @@ import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.dto.PlanDetails;
-import in.wynk.payment.dto.PointDetails;
-import in.wynk.payment.dto.WebPurchaseDetails;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.IPricingManager;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.PlanDTO;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -57,27 +57,27 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     public static AbstractTransactionInitRequest from(IapVerificationRequestWrapper wrapper) {
         final IapVerificationRequest request = wrapper.getVerificationRequest();
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
+        final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(receiptResponse.getPlanId());
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
-        AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.SUBSCRIBE).clientAlias(clientDetails.getAlias()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial()).build();
+        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.PURCHASE).clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial()).userDetails(UserDetails.builder().msisdn(request.getMsisdn()).build()).appDetails(AppDetails.builder().os(request.getOs()).deviceId(request.getDeviceId()).service(selectedPlan.getService()).buildNo(request.getBuildNo()).build()).build();
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }
 
     public static AbstractTransactionInitRequest from(PlanRenewalRequest request) {
-        AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.RENEW).clientAlias(request.getClientAlias()).autoRenewOpted(true).build();
+        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.RENEW).clientAlias(request.getClientAlias()).autoRenewOpted(true).build();
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }
 
     public static AbstractTransactionInitRequest from(MigrationTransactionRequest request) {
-        AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.RENEW).clientAlias(request.getClientAlias()).autoRenewOpted(true).status(TransactionStatus.MIGRATED.getValue()).build();
+        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).event(PaymentEvent.RENEW).clientAlias(request.getClientAlias()).autoRenewOpted(true).status(TransactionStatus.MIGRATED.getValue()).build();
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }
 
     private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails) {
-        final PaymentEvent paymentEvent = paymentDetails.isAutoRenew() ? PaymentEvent.SUBSCRIBE : PaymentEvent.PURCHASE;
-        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentCode(paymentCode).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(paymentEvent).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
+        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentCode(paymentCode).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
     }
 
     private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails,  IPaymentDetails paymentDetails, PointDetails pointDetails) {

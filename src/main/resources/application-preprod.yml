@@ -187,7 +187,8 @@ payment:
     amazonIap:
       secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
       status:
-        baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
+        ##baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
+        baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
       id: WYNK
@@ -383,6 +384,24 @@ cache:
 onelink:
   key: key_test_pgZfbR1czLvn25MY3jFKmejbACgrSztR
   url: https://api2.branch.io/v1/url
+
+lock:
+  redis:
+    name: redis-lock:prepord
+    mode: cluster
+    useSsl: false
+    usePooling: true
+    readTimeout: 1000
+    password: ##
+    enableJmx: true
+    jmxPrefix: session-store:preprod
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 ######## lib-auth props #######
 security:

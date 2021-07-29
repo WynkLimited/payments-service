@@ -155,7 +155,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request) {
-        this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus()).paymentEvent(PaymentEvent.UNSUBSCRIBE).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).build());
+        this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus()).paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).build());
     }
 
     @Override
@@ -201,7 +201,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void unSubscribePlanSync(UnSubscribePlanSyncRequest request) {
         try {
-            PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder().msisdn(request.getMsisdn()).uid(request.getUid()).referenceId(request.getTransactionId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).build();
+            PlanUnProvisioningRequest unProvisioningRequest = PlanUnProvisioningRequest.builder().msisdn(request.getMsisdn()).uid(request.getUid()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).build();
             RequestEntity<PlanUnProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
             });

@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -41,19 +42,24 @@ public class BasicPricingManager implements IPricingManager {
 
     @Override
     public void computePriceAndApplyDiscount(AbstractTransactionInitRequest request) {
-        Optional<CouponDTO> couponOptional;
+        final Optional<CouponDTO> couponOptional;
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
             final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
             final String service = selectedPlan.getService();
-            if (nativeRequest.isTrialOpted()) {
-                final int trialPlanId = selectedPlan.getLinkedFreePlanId();
-                final TrialPlanComputationResponse trialEligibilityResponse = subscriptionService.compute(TrialPlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());
-                if (Objects.nonNull(trialEligibilityResponse) && trialEligibilityResponse.getEligiblePlans().contains(trialPlanId)) {
-                    final PlanDTO trialPlan = cachingService.getPlan(trialPlanId);
-                    nativeRequest.setAmount(trialPlan.getFinalPrice());
-                    request.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
-                    return;
+            if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
+                if (nativeRequest.isAutoRenewOpted()) {
+                    request.setEvent(PaymentEvent.SUBSCRIBE);
+                }
+                if (nativeRequest.isTrialOpted()) {
+                    final int trialPlanId = selectedPlan.getLinkedFreePlanId();
+                    final TrialPlanComputationResponse trialEligibilityResponse = subscriptionService.compute(TrialPlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());
+                    if (Objects.nonNull(trialEligibilityResponse) && trialEligibilityResponse.getEligiblePlans().contains(trialPlanId)) {
+                        final PlanDTO trialPlan = cachingService.getPlan(trialPlanId);
+                        nativeRequest.setAmount(trialPlan.getFinalPrice());
+                        request.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
+                        return;
+                    }
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
@@ -75,9 +81,13 @@ public class BasicPricingManager implements IPricingManager {
 
     private Optional<CouponDTO> optionalPlanDiscount(String couponId, String msisdn, String uid, String service, PaymentCode paymentCode, PlanDTO selectedPlan) {
         if (!StringUtils.isEmpty(couponId) && selectedPlan.getPlanType() != PlanType.FREE_TRIAL) {
-            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
-            CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder().couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).selectedPlan(selectedPlan).uid(uid).source(ProvisionSource.MANAGED).build();
+            final CouponResponse couponResponse;
+            if (EnumSet.of(PaymentCode.ITUNES, PaymentCode.AMAZON_IAP).contains(paymentCode)) {
+                couponResponse = couponManager.applyCoupon(couponProvisionRequest);
+            } else {
+                couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
+            }
             if (couponResponse.getState() != CouponProvisionState.INELIGIBLE) {
                 return Optional.of(couponResponse.getCoupon());
             }
@@ -88,7 +98,7 @@ public class BasicPricingManager implements IPricingManager {
     private Optional<CouponDTO> optionalItemDiscount(String couponId, String msisdn, String uid, String service, String itemId, PaymentCode paymentCode) {
         if (!StringUtils.isEmpty(couponId)) {
             CouponProvisionRequest couponProvisionRequest = CouponProvisionRequest.builder()
-                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.getCode()).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
+                    .couponCode(couponId).msisdn(msisdn).service(service).paymentCode(paymentCode.name()).itemId(itemId).uid(uid).source(ProvisionSource.MANAGED).build();
             CouponResponse couponResponse = couponManager.evalCouponEligibility(couponProvisionRequest);
             if (couponResponse.getState() != CouponProvisionState.INELIGIBLE) {
                 return Optional.of(couponResponse.getCoupon());

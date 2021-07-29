@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
@@ -32,6 +33,10 @@ public class PaymentOptionsDTO {
         private final double price;
         private final double discountedPrice;
         private final boolean freeTrialAvailable;
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+        private double dailyAmount;
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+        private int day;
     }
 
     @Builder

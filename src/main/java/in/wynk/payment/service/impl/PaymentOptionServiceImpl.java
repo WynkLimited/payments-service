@@ -86,6 +86,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService {
                 .month(plan.getPeriod().getMonth())
                 .freeTrialAvailable(isFreeTrail)
                 .partnerName(partner.getName())
+                .dailyAmount(plan.getPrice().getDailyAmount())
+                .day(plan.getPeriod().getDay())
                 .build();
     }
 

@@ -16,7 +16,6 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -95,12 +94,13 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Override
     @Transactional
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments() {
-        Calendar currentDay = Calendar.getInstance();
-        Calendar currentDayWithOffset = Calendar.getInstance();
-        Date currentTime = currentDay.getTime();
-        Date currentTimeWithOffset = DateUtils.addHours(currentTime, dueRecurringOffsetTime);
-        currentDayWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
-        return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayWithOffset, currentTime, currentTimeWithOffset);
+        final Calendar currentDay = Calendar.getInstance();
+        final Calendar currentDayTimeWithOffset = Calendar.getInstance();
+        final Date currentTime = currentDay.getTime();
+        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
+        currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, dueRecurringOffsetTime);
+        final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
+        return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 
     @Override

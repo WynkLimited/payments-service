@@ -34,9 +34,9 @@ public class PaymentOptionsDTO {
         private final double discountedPrice;
         private final boolean freeTrialAvailable;
         @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-        private double dailyAmount;
+        private final double dailyAmount;
         @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-        private int day;
+        private final int day;
     }
 
     @Builder

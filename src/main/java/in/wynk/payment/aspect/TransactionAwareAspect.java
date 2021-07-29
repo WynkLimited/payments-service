@@ -36,10 +36,10 @@ public class TransactionAwareAspect {
     private WynkRedisLockService wynkRedisLockService;
 
     @Autowired
-    private ITransactionManagerService transactionManager;
+    private IPurchaseDetailsManger payerDetailsManager;
 
     @Autowired
-    private IPurchaseDetailsManger payerDetailsManager;
+    private ITransactionManagerService transactionManager;
 
     @Before(value = "execution(@in.wynk.payment.aspect.advice.TransactionAware * *.*(..))")
     public void beforeTransactionAware(JoinPoint joinPoint) throws InterruptedException {
@@ -47,24 +47,32 @@ public class TransactionAwareAspect {
         TransactionAware transactionAware = method.getAnnotation(TransactionAware.class);
         if (!StringUtils.isEmpty(transactionAware.txnId())) {
             String txnId = parseSpel(joinPoint, transactionAware);
-            Lock lock = wynkRedisLockService.getWynkRedisLock(txnId);
-            if (lock.tryLock(2500, TimeUnit.MILLISECONDS)) {
-                try {
-                    final Transaction transaction = transactionManager.get(txnId);
-                    final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder().transaction(transaction);
-                    payerDetailsManager.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
-                    TransactionContext.set(transactionDetailsBuilder.build());
-                } catch (WynkRuntimeException e) {
-                    throw e;
-                } finally {
-                    lock.unlock();
+            if (transactionAware.lock()) {
+                Lock lock = wynkRedisLockService.getWynkRedisLock(txnId);
+                if (lock.tryLock(2500, TimeUnit.MILLISECONDS)) {
+                    try {
+                        processTxnId(txnId);
+                    } catch (WynkRuntimeException e) {
+                        throw e;
+                    } finally {
+                        lock.unlock();
+                    }
+                } else {
+                    throw new WynkRuntimeException(PAY401);
                 }
             } else {
-                throw new WynkRuntimeException(PAY401);
+                processTxnId(txnId);
             }
         } else {
             throw new WynkRuntimeException(PAY010);
         }
+    }
+
+    private void processTxnId(String txnId) {
+        final Transaction transaction = transactionManager.get(txnId);
+        final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder().transaction(transaction);
+        payerDetailsManager.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        TransactionContext.set(transactionDetailsBuilder.build());
     }
 
     private String parseSpel(JoinPoint joinPoint, TransactionAware transactionAware) {

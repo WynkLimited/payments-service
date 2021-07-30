@@ -11,7 +11,6 @@ paytm:
       baseUrl: https://securegw.paytm.in
     wcf:
       addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
-      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
   requesting:
     website: WCF
 
@@ -181,12 +180,7 @@ payment:
       salt: 6vbnfVtw
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
-      internal:
-        web:
-          url: https://wcfpay-new.wynk.in/wcf/payu
-        callback:
-          successUrl: https://payments.wynk.in/wynk/v1/payment/callback/
-          failureUrl: https://payments.wynk.in/wynk/v1/payment/callback/
+        payment: https://secure.payu.in/_payment
     #### Itunes props ######
     itunes:
       api:
@@ -204,9 +198,14 @@ payment:
       api:
         base:
           url: https://mercury-t2.phonepe.com
-      callback:
-        url: https://payments.wynk.in/wynk/v1/payment/callback/
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    #### APBPaytm props ######
+    apbPaytm:
+      api:
+        base:
+          url: https://paydigi.airtel.in/web/pg-service
+      auth:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
 
 subscription:
   pooling:
@@ -237,6 +236,21 @@ http:
               type: both
           request:
             timeout: 1000
+    apbPaytmHttpTemplate:
+      pool:
+        connection:
+          max: 10
+          maxPerHost: 5
+          timeout: 500
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 4500
+            factory:
+              type: both
+          request:
+            timeout: 4500
     paymentClientHttpTemplate:
       pool:
         connection:
@@ -272,6 +286,9 @@ service:
   subscription:
     api:
       root: http://subscription.wcf.internal
+  payment:
+    api:
+      root: https://payments.wynk.in
 
 webview:
   host: https://pay.wynk.in
@@ -301,6 +318,56 @@ wynk:
     socketTimeout: 5000
     readPreference: secondaryPreferred
 
+cache:
+  caffeine:
+    eviction:
+      size:
+        initial: 10
+        maximum: 10
+      time:
+        expireAfterAccess: 0
+        expireAfterWrite: 0
+        fixed: true
+        timeunit: seconds
+    metrics: false
+    nullable: false
+  enabled: true
+  mode: composite
+  redis:
+    cache:
+      cacheNullValues: false
+      keyPrefix: PROD
+      timeunit: minutes
+      ttl: 15
+      usePrefix: false
+    cluster:
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      maxIdle: 300
+      maxTotal: 1500
+      minIdle: 100
+      timeout: 1000
+    enableJmx: true
+    enabled: true
+    jmxPrefix: prod
+    mode: cluster
+    name: l2cache-prod
+    readTimeout: 1000
+    usePooling: true
+
+lock:
+  redis:
+    name: redis-lock:prod
+    mode: cluster
+    usePooling: true
+    readTimeout: 1000
+    cluster:
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
 
 ######## lib-auth props #######
 security:

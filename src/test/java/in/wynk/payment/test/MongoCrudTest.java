@@ -4,7 +4,7 @@ import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.repository.PaymentMethodDao;
+import in.wynk.payment.core.dao.repository.IPaymentMethodDao;
 import in.wynk.payment.core.dao.repository.UserPreferredPaymentsDao;
 import in.wynk.payment.test.utils.PaymentTestUtils;
 import org.junit.Test;
@@ -17,14 +17,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.Arrays;
 import java.util.List;
 
-import static in.wynk.payment.test.utils.PaymentTestUtils.DUMMY_UID;
-
-@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 @RunWith(SpringRunner.class)
+@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 public class MongoCrudTest {
 
     @Autowired
-    private PaymentMethodDao paymentMethodDao;
+    private IPaymentMethodDao IPaymentMethodDao;
+
     @Autowired
     private UserPreferredPaymentsDao preferredPaymentsDao;
 
@@ -34,14 +33,13 @@ public class MongoCrudTest {
         PaymentMethod netBankingMethod = PaymentTestUtils.dummyNetbankingMethod();
         PaymentMethod walletMethod = PaymentTestUtils.dummyWalletMethod();
         List<PaymentMethod> methods = Arrays.asList(cardMethod, walletMethod, netBankingMethod);
-        List<PaymentMethod> methods1 = paymentMethodDao.insert(methods);
+        List<PaymentMethod> methods1 = IPaymentMethodDao.insert(methods);
         assert methods1.stream().allMatch(m -> StringUtils.isNotBlank(m.getId()));
     }
 
-
     @Test
     public void findPaymentMethod() {
-        List<PaymentMethod> methods = paymentMethodDao.findAll();
+        List<PaymentMethod> methods = IPaymentMethodDao.findAll();
         assert methods.size() > 0;
     }
 
@@ -57,9 +55,4 @@ public class MongoCrudTest {
         preferredPaymentsDao.insert(preferredPayment);
     }
 
-    @Test
-    public void findPreferredPaymentMethod() {
-        List<UserPreferredPayment> methods = preferredPaymentsDao.findByUid(DUMMY_UID);
-        assert methods.size() > 0;
-    }
 }

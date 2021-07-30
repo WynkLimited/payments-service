@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
@@ -10,8 +11,9 @@ import in.wynk.common.dto.SessionResponse;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.IPointPurchaseSessionService;
-import in.wynk.session.dto.Session;
+import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.service.ISessionManager;
+import lombok.RequiredArgsConstructor;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,21 +23,19 @@ import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.session.constant.SessionConstant.SESSION_ID;
 
 @Service
+@RequiredArgsConstructor
 public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionService {
 
-    private final ISessionManager sessionManager;
-    private final ClientDetailsCachingService clientDetailsCachingService;
     @Value("${session.duration:15}")
     private Integer duration;
     @Value("${payment.payOption.page}")
     private String PAYMENT_OPTION_URL;
 
-    public PointPurchaseSessionServiceImpl(ISessionManager sessionManager, ClientDetailsCachingService clientDetailsCachingService) {
-        this.sessionManager = sessionManager;
-        this.clientDetailsCachingService = clientDetailsCachingService;
-    }
+    private final ISessionManager<String, SessionDTO> sessionManager;
+    private final ClientDetailsCachingService clientDetailsCachingService;
 
     @Override
     public SessionResponse initSession(SessionRequest request) {
@@ -45,7 +45,9 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             AnalyticService.update(CLIENT, clientDetails.getAlias());
             SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
             sessionDTO.put(CLIENT, clientDetails.getAlias());
-            Session<SessionDTO> session = sessionManager.init(sessionDTO, duration, TimeUnit.MINUTES);
+            final String id = UUIDs.timeBased().toString();
+            sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, duration, TimeUnit.MINUTES);
+            AnalyticService.update(SESSION_ID, id);
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             if (request.getParams() != null) {
                 queryBuilder.addParameter(TITLE, request.getParams().get(TITLE));
@@ -55,8 +57,8 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             queryBuilder.addParameter(ITEM_ID, request.getItemId());
             queryBuilder.addParameter(POINT_PURCHASE_FLOW, Boolean.TRUE.toString());
             queryBuilder.addParameter(AMOUNT, String.valueOf(request.getItemPrice()));
-            String builder = PAYMENT_OPTION_URL + session.getId().toString() + SLASH + request.getOs().getValue() + QUESTION_MARK + queryBuilder.build().getQuery();
-            SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(session.getId().toString()).build();
+            String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
+            SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
             return SessionResponse.builder().data(response).build();
         } catch (URISyntaxException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY997);

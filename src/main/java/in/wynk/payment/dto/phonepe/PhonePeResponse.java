@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class PhonePeResponse<T extends PhonePeResponse.PhonePeResponseWrapper> extends BaseResponse<T> {
+public class PhonePeResponse<T extends PhonePeResponse.PhonePeResponseWrapper> extends BaseResponse<T, Void> {
 
     private T data;
     private PhonePeStatusEnum code;

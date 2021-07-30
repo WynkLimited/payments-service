@@ -11,8 +11,18 @@ import lombok.experimental.SuperBuilder;
 public abstract class LatestReceiptResponse {
 
     @Analysed
+    private final int planId;
+
+    @Analysed
     private final String extTxnId;
+
+    @Analysed
+    private final String couponCode;
+
     @Analysed
     private final boolean freeTrial;
+
+    @Analysed
+    private final boolean autoRenewal;
 
 }

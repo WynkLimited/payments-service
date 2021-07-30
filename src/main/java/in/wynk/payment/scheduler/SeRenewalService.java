@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.opencsv.CSVReader;
+import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.MsisdnUtils;
@@ -60,6 +61,8 @@ public class SeRenewalService {
     private AmazonS3 amazonS3Client;
     @Autowired
     private PaymentManager paymentManager;
+    @Autowired
+    private WynkApplicationContext wynkApplicationContext;
 
     @Value("${payment.se.s3.bucket}")
     private String bucket;
@@ -170,8 +173,10 @@ public class SeRenewalService {
                             .msisdn(msisdn)
                             .id(extTransactionId)
                             .planId(planDTO.getId())
+                            .paymentCode( PaymentCode.SE_BILLING)
+                            .clientAlias(wynkApplicationContext.getClientAlias())
                             .build();
-                    paymentManager.doRenewal(request, PaymentCode.SE_BILLING);
+                    paymentManager.doRenewal(request);
                     return true;
                 } else {
                     log.info("Not verifying the transaction as the status of transaction from SE is : {} for uid : {} and event : {} and record : {}", seTxnStatus, uid, event,

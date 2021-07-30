@@ -34,7 +34,6 @@ public class DummyAmazonIAPTest {
                 .build());
         return AmazonIapVerificationRequest.builder()
                 .uid("wA57HOCySewPNcuCe0")
-                .planId(226)
                 .deviceId("f67bb47448024fde")
                 .msisdn("919538014167")
                 .service("")

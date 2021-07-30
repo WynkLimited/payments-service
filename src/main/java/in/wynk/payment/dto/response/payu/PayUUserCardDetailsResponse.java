@@ -1,11 +1,8 @@
 package in.wynk.payment.dto.response.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import in.wynk.payment.dto.payu.CardDetails;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import in.wynk.payment.core.dao.entity.CardDetails;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
 import java.util.Map;

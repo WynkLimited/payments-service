@@ -96,6 +96,10 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
+    <logger name="refreshInMemoryCachePaymentMethod" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <logger name="pointPurchase" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -122,6 +126,10 @@
     </logger>
 
     <logger name="paymentOptions" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="paymentRenewalMessageThresholdExceedEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
@@ -209,6 +217,9 @@
     <logger name="sePaymentRenewals" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="savedDetails" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
 
     <!-- wynk service module loggers -->
     <logger name="refreshInMemoryCacheWynkService" additivity="false" level="INFO">
@@ -221,6 +232,13 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
+    <logger name="transactionWeeklyDump" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="startPaymentDumpS3Export" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <springProfile name="local">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
@@ -230,18 +248,18 @@
         <logger name="in.wynk" additivity="false" level="DEBUG">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
-            <appender-ref ref="ASYNC_ERRORLOG" />
+            <appender-ref ref="ASYNC_ERRORLOG"/>
         </logger>
     </springProfile>
 
     <springProfile name="dev,preprod">
         <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>
-            <appender-ref ref="ASYNC_ERRORLOG" />
+            <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
         <logger name="in.wynk" additivity="false" level="DEBUG">
             <appender-ref ref="ASYNC_FILE"/>
-            <appender-ref ref="ASYNC_ERRORLOG" />
+            <appender-ref ref="ASYNC_ERRORLOG"/>
         </logger>
     </springProfile>
 

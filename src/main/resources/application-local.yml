@@ -1,26 +1,23 @@
 ######  Properties #########
 paytm:
   native:
-    clientId: merchant-wynk
-    merchantKey: RrGHVFOJyEjbp4hN
-    merchantId: AirBSB68537227489657
-    secret: fd13c3f9-da62-47e2-b354-8f0f18fbe90b
+    clientId: merchant-wynk-uat
+    merchantKey: 2A2%#0MvWdNeg1_7
+    merchantId: WYNKPr93314794046826
+    secret: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
     accounts:
-      baseUrl: https://accounts.paytm.com
+      baseUrl: https://accounts-uat.paytm.com
     services:
-      baseUrl: https://securegw.paytm.in
+      baseUrl: https://securegw-stage.paytm.in
     wcf:
-      addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
-      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
+      addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
   requesting:
-    website: WCF
+    website: WEBSTAGING
 
 apb:
   txn:
     inquiry:
       url: https://apptest.airtelbank.com/ecom/v2/inquiry
-  callback:
-    url: http://localhost:8081/wynk/v1/payment/callback/
   merchant:
     id: 180704
   salt: d41d8cd98f00a
@@ -184,21 +181,22 @@ payment:
       salt: Zbm2ZyNe
       api:
         info: https://test.payu.in/merchant/postservice.php?form=2
-      internal:
-        web:
-          url: https://wcfpay-new.wynk.in/wcf/payu
-        callback:
-          successUrl: http://localhost:8081/wynk/v1/payment/callback/
-          failureUrl: http://localhost:8081/wynk/v1/payment/callback/
+        payment: https://test.payu.in/_payment
     #### PhonePe props ######
     phonepe:
       id: WYNKUAT
       api:
         base:
           url: https://mercury-uat.phonepe.com
-      callback:
-        url: http://localhost:8081/wynk/v1/payment/callback
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
+    #### APBPaytm props ######
+    apbPaytm:
+      api:
+        base:
+          url: https://kongqa.airtel.com/preprod-84/pg-service
+      auth:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
     #### Itunes props ######
     itunes:
       api:
@@ -240,6 +238,21 @@ http:
               type: both
           request:
             timeout: 10000
+    apbPaytmHttpTemplate:
+      pool:
+        connection:
+          max: 5
+          maxPerHost: 1
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 5000
     paymentClientHttpTemplate:
       pool:
         connection:
@@ -277,6 +290,9 @@ service:
   subscription:
     api:
       root: https://subscription-staging.wynk.in
+  payment:
+    api:
+      root: http://localhost:${server.port}
 
 cors:
   allowed:
@@ -316,3 +332,57 @@ wynk:
 security:
   exempt:
     paths: /wynk/v1/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
+
+cache:
+  caffeine:
+    eviction:
+      size:
+        initial: 10
+        maximum: 500
+      time:
+        expireAfterAccess: 0
+        expireAfterWrite: 0
+        fixed: true
+        timeunit: seconds
+    metrics: false
+    nullable: false
+  enabled: true
+  mode: composite
+  redis:
+    cache:
+      cacheNullValues: false
+      keyPrefix: LOCAL
+      timeunit: minutes
+      ttl: 15
+      usePrefix: false
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      maxIdle: 8
+      maxTotal: 10
+      minIdle: 5
+      timeout: 2000
+    enableJmx: true
+    enabled: true
+    jmxPrefix: local
+    mode: cluster
+    name: l2cache-local
+    readTimeout: 1000
+    usePooling: true
+
+lock:
+  redis:
+    name: redis-lock:local
+    mode: cluster
+    usePooling: true
+    readTimeout: 1000
+    enableJmx: true
+    enabled: true
+    jmxPrefix: local
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1500
+      maxTotal: 100
+      minIdle: 25
+      maxIdle: 50

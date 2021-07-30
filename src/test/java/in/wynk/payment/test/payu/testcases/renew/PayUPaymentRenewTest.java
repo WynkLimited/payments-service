@@ -77,7 +77,7 @@ public class PayUPaymentRenewTest {
     @Test
     public void paymentManagerDoRenewalTest() {
         PaymentRenewalChargingRequest paymentRenewalChargingRequest = PayUTestData.buildPaymentRenewalChargingRequest();
-        TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
+        //TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
         payUMerchantPaymentService.doRenewal(paymentRenewalChargingRequest);
         Assert.assertEquals(TransactionContext.get().getStatus(), TransactionStatus.SUCCESS);
     }

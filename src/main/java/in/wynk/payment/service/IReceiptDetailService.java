@@ -1,12 +1,15 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.dto.request.CallbackRequest;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.payment.dto.DecodedNotificationWrapper;
+import in.wynk.payment.dto.IAPNotification;
+import in.wynk.payment.dto.UserPlanMapping;
 
-import java.util.Optional;
+public interface IReceiptDetailService<T, R extends IAPNotification> {
 
-public interface IReceiptDetailService {
+    UserPlanMapping<T> getUserPlanMapping(DecodedNotificationWrapper<R> wrapper);
 
-    Optional<ReceiptDetails> getReceiptDetails(CallbackRequest callbackRequest);
+    DecodedNotificationWrapper<R> isNotificationEligible(String requestPayload);
 
+    PaymentEvent getPaymentEvent(DecodedNotificationWrapper<R> wrapper);
 }

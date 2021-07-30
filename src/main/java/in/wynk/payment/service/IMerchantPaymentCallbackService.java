@@ -1,10 +1,19 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.AbstractCallbackResponse;
 
-public interface IMerchantPaymentCallbackService {
+import java.util.Map;
 
-    BaseResponse<?> handleCallback(CallbackRequest callbackRequest);
+public interface IMerchantPaymentCallbackService<R extends AbstractCallbackResponse,T extends CallbackRequest> {
+
+    WynkResponseEntity<R> handleCallback(T callbackRequest);
+
+    default T parseCallback(Map<String, Object> payload) {
+        throw new WynkRuntimeException(PaymentErrorType.PAY888);
+    }
 
 }

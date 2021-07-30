@@ -6,6 +6,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.dto.request.MigrationTransactionRequest;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -64,7 +65,7 @@ public class PaymentRecurringSchedulingPollingQueue extends AbstractSQSMessageCo
     public void consume(PaymentRecurringSchedulingMessage message) {
         log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing PaymentRecurringSchedulingMessage {}", message);
         AnalyticService.update(message);
-        paymentManager.addToPaymentRenewalMigration(message);
+        paymentManager.addToPaymentRenewalMigration(MigrationTransactionRequest.from(message));
     }
 
     @Override

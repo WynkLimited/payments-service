@@ -100,6 +100,19 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
         currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, dueRecurringOffsetTime);
         final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
+        if (currentDay.get(Calendar.DAY_OF_MONTH) != currentDayTimeWithOffset.get(Calendar.DAY_OF_MONTH)) {
+            currentDay.set(Calendar.HOUR_OF_DAY, 23);
+            currentDay.set(Calendar.MINUTE, 59);
+            currentDay.set(Calendar.SECOND, 59);
+            currentDay.set(Calendar.MILLISECOND, 999);
+            currentDayTimeWithOffset.set(Calendar.HOUR_OF_DAY, 00);
+            currentDayTimeWithOffset.set(Calendar.MINUTE, 00);
+            currentDayTimeWithOffset.set(Calendar.SECOND, 00);
+            currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
+            final Date[] lowerRangeBound = new Date[] {currentTime, currentDayTimeWithOffset.getTime()};
+            final Date[] upperRangeBound = new Date[] {currentDay.getTime(), currentTimeWithOffset};
+            return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]), paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
+        }
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 

@@ -1,5 +1,7 @@
 package in.wynk.payment.service.impl;
 
+import com.datastax.driver.core.utils.UUIDs;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
@@ -9,9 +11,10 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.service.IDummySessionGenerator;
-import in.wynk.session.dto.Session;
+import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.service.ISessionManager;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -22,15 +25,13 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.session.constant.SessionConstant.SESSION_ID;
 
 @Service
+@RequiredArgsConstructor
 public class DummySessionGeneratorImpl implements IDummySessionGenerator {
 
-    private final ISessionManager sessionManager;
-
-    public DummySessionGeneratorImpl(ISessionManager sessionManager) {
-        this.sessionManager = sessionManager;
-    }
+    private final ISessionManager<String, SessionDTO> sessionManager;
 
     @Override
     public IapVerificationRequest initSession(IapVerificationRequest request) {
@@ -52,8 +53,10 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
             map.put(SERVICE, request.getService());
         }
         SessionDTO sessionDTO = SessionDTO.builder().sessionPayload(map).build();
-        Session<SessionDTO> session = sessionManager.init(sessionDTO, 5, TimeUnit.MINUTES);
-        request.setSid(session.getId().toString());
+        final String id = UUIDs.timeBased().toString();
+        sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, 5, TimeUnit.MINUTES);
+        AnalyticService.update(SESSION_ID, id);
+        request.setSid(id);
         return request;
     }
 

@@ -9,8 +9,8 @@ import lombok.Getter;
 
 import java.util.Map;
 
-@AnalysedEntity
 @Getter
+@AnalysedEntity
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AmazonNotificationMessage {
 

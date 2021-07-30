@@ -1,12 +1,11 @@
 package in.wynk.payment.test.payu.testcases.charging;
 
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.request.ChargingRequest;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -30,7 +29,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {PaymentApplication.class, HttpClientConfig.class})
@@ -52,8 +52,8 @@ public class PayUPaymentChargingTest {
     public void setup() {
         SessionContextHolder.set(PayUTestData.initSession());
         Mockito.when(subscriptionServiceManager.getPlans()).thenReturn(PaymentTestUtils.dummyPlansDTO());
-        Mockito.when(transactionManager.initiateTransaction(anyString(), anyString(), eq(PayUDataConstant.ONE_TIME_PLAN_ID), anyDouble(), any(), any())).thenReturn(PayUTestData.initOneTimePaymentTransaction());
-        Mockito.when(transactionManager.initiateTransaction(anyString(), anyString(), eq(PayUDataConstant.RECURRING_PLAN_ID), anyDouble(), any(), any())).thenReturn(PayUTestData.initRecurringPaymentTransaction());
+        Mockito.when((transactionManager.init(any()))).thenReturn(PayUTestData.initOneTimePaymentTransaction());
+        Mockito.when((transactionManager.init(any()))).thenReturn(PayUTestData.initRecurringPaymentTransaction());
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.ONE_TIME_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.ONE_TIME_PLAN_ID, PlanType.ONE_TIME_SUBSCRIPTION));
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.RECURRING_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.RECURRING_PLAN_ID, PlanType.SUBSCRIPTION));
         chargingService = BeanLocatorFactory.getBean(PaymentCode.PAYU.getCode(), IMerchantPaymentChargingService.class);
@@ -62,32 +62,32 @@ public class PayUPaymentChargingTest {
     @Test
     @Order(1)
     public void doChargingForOneTimePlan() {
-        TransactionContext.set(PayUTestData.initOneTimePaymentTransaction());
-        ChargingRequest request = PayUTestData.buildOneTimeChargingRequest();
-        BaseResponse<?> response = chargingService.doCharging(request);
-        Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
-        Assert.assertNotNull(response.getResponse().getBody());
-        Assert.assertTrue(((Map<String, String>) response.getResponse().getBody()).size() > 0);
+        //TransactionContext.set(PayUTestData.initOneTimePaymentTransaction());
+        AbstractChargingRequest<?> request = PayUTestData.buildOneTimeChargingRequest();
+        WynkResponseEntity<?> response = chargingService.charge(request);
+        Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
+        Assert.assertNotNull(response.getBody());
+        Assert.assertTrue(((Map<String, String>) response.getBody()).size() > 0);
     }
 
     @Test
     @Order(2)
     public void doChargingForRecurringPlan() {
-        TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
-        ChargingRequest request = PayUTestData.buildRecurringChargingRequest();
-        BaseResponse<?> response = chargingService.doCharging(request);
-        Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
-        Assert.assertNotNull(response.getResponse().getBody());
-        Assert.assertTrue(((Map<String, String>) response.getResponse().getBody()).size() > 0);
+        //TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
+        AbstractChargingRequest<?> request = PayUTestData.buildRecurringChargingRequest();
+        WynkResponseEntity<?> response = chargingService.charge(request);
+        Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
+        Assert.assertNotNull(response.getBody());
+        Assert.assertTrue(((Map<String, String>) response.getBody()).size() > 0);
     }
 
     @Test
     @Order(3)
     public void testSiDetails() {
-        TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
-        ChargingRequest request = PayUTestData.buildRecurringChargingRequest();
-        BaseResponse<?> response = chargingService.doCharging(request);
-        Assert.assertEquals(response.getResponse().getStatusCode(), HttpStatus.OK);
+       // TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
+        AbstractChargingRequest<?> request = PayUTestData.buildRecurringChargingRequest();
+        WynkResponseEntity<?> response = chargingService.charge(request);
+        Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);
     }
 
 }

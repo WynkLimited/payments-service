@@ -23,6 +23,7 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private String iconUrl;
     private PaymentCode paymentCode;
     private int hierarchy;
+    private boolean trialSupported;
     private boolean autoRenewSupported;
     private List<String> suffixes;
 }

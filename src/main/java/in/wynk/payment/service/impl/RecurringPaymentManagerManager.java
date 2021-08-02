@@ -5,18 +5,17 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
+import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
+import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,9 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.stream.Stream;
 
-import static in.wynk.common.constant.BaseConstants.MIGRATED_NEXT_CHARGING_DATE;
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
 
 @Slf4j
@@ -66,31 +65,28 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    public void scheduleRecurringPayment(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus) {
-        if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.MIGRATED && transaction.getType() == PaymentEvent.SUBSCRIBE) {
-            scheduleRecurringPayment(transaction.getIdStr(), transaction.getValueFromPaymentMetaData(MIGRATED_NEXT_CHARGING_DATE), transaction.getAttemptSequence());
+    public void scheduleRecurringPayment(AbstractTransactionRevisionRequest request) {
+        if (MigrationTransactionRevisionRequest.class.isAssignableFrom(request.getClass()) && request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED && request.getTransaction().getType() == PaymentEvent.SUBSCRIBE) {
+            scheduleRecurringPayment(request.getTransaction().getIdStr(), ((MigrationTransactionRevisionRequest) request).getNextChargingDate(), 0);
         } else {
             Calendar nextRecurringDateTime = Calendar.getInstance();
-            PlanDTO planDTO = paymentCachingService.getPlan(transaction.getPlanId());
-            PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
-            if (existingTransactionStatus != TransactionStatus.SUCCESS && finalTransactionStatus == TransactionStatus.SUCCESS && transaction.getPaymentChannel().isInternalRecurring()) {
-                if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW) {
-                    nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getValidity()));
-                    scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
-                } else if (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-                    planPeriodDTO = paymentCachingService.getPlan(planDTO.getLinkedFreePlanId()).getPeriod();
-                    nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getValidity()));
-                    scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
+            PlanDTO planDTO = paymentCachingService.getPlan(request.getTransaction().getPlanId());
+            if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
+                if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(request.getTransaction().getType())) {
+                    nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
+                    scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
+                } else if (request.getTransaction().getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+                    nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
+                    scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
                 }
-            } else if (existingTransactionStatus == TransactionStatus.INPROGRESS && finalTransactionStatus == TransactionStatus.FAILURE
-                    && (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.RENEW)
-                    && transaction.getPaymentMetaData() != null && transaction.getPaymentMetaData().containsKey(PaymentConstants.RENEWAL)) {
-                if (planPeriodDTO.getMaxRetryCount() < transaction.getAttemptSequence()) {
+            } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE && request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
+                PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
+                if (planPeriodDTO.getMaxRetryCount() < request.getAttemptSequence()) {
                     AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
                     return;
                 }
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
-                scheduleRecurringPayment(transaction.getIdStr(), nextRecurringDateTime, transaction.getAttemptSequence());
+                scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
             }
         }
     }
@@ -98,12 +94,26 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Override
     @Transactional
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments() {
-        Calendar currentDay = Calendar.getInstance();
-        Calendar currentDayWithOffset = Calendar.getInstance();
-        Date currentTime = currentDay.getTime();
-        Date currentTimeWithOffset = DateUtils.addHours(currentTime, dueRecurringOffsetTime);
-        currentDayWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
-        return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayWithOffset, currentTime, currentTimeWithOffset);
+        final Calendar currentDay = Calendar.getInstance();
+        final Calendar currentDayTimeWithOffset = Calendar.getInstance();
+        final Date currentTime = currentDay.getTime();
+        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
+        currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, dueRecurringOffsetTime);
+        final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
+        if (currentDay.get(Calendar.DAY_OF_MONTH) != currentDayTimeWithOffset.get(Calendar.DAY_OF_MONTH)) {
+            currentDay.set(Calendar.HOUR_OF_DAY, 23);
+            currentDay.set(Calendar.MINUTE, 59);
+            currentDay.set(Calendar.SECOND, 59);
+            currentDay.set(Calendar.MILLISECOND, 999);
+            currentDayTimeWithOffset.set(Calendar.HOUR_OF_DAY, 00);
+            currentDayTimeWithOffset.set(Calendar.MINUTE, 00);
+            currentDayTimeWithOffset.set(Calendar.SECOND, 00);
+            currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
+            final Date[] lowerRangeBound = new Date[] {currentTime, currentDayTimeWithOffset.getTime()};
+            final Date[] upperRangeBound = new Date[] {currentDay.getTime(), currentTimeWithOffset};
+            return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]), paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
+        }
+        return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 
     @Override

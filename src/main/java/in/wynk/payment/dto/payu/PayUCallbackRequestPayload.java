@@ -1,42 +1,46 @@
 package in.wynk.payment.dto.payu;
 
 import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import in.wynk.payment.dto.request.CallbackRequest;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 
-@Data
-@AllArgsConstructor
+@Getter
+@SuperBuilder
 @NoArgsConstructor
-public class PayUCallbackRequestPayload implements Serializable {
-  @SerializedName("bankcode")
-  private String bankCode;
+public class PayUCallbackRequestPayload extends CallbackRequest implements Serializable {
 
-  private String mode;
-  private String status;
+    private String mode;
+    private String udf1;
+    private String email;
+    private String status;
+    private String cardToken;
 
-  @SerializedName("mihpayid")
-  private String externalTransactionId;
+    @SerializedName("Error")
+    private String error;
 
-  @SerializedName("Error")
-  private String error;
+    @SerializedName("bankcode")
+    private String bankCode;
 
-  @SerializedName("error_Message")
-  private String errorMessage;
+    @SerializedName("firstname")
+    private String firstName;
 
-  private String udf1;
-  private String cardToken;
+    @SerializedName("cardnum")
+    private String cardNumber;
 
-  @SerializedName("cardnum")
-  private String cardNumber;
+    @SerializedName("hash")
+    private String responseHash;
 
-  private String email;
+    @SerializedName("error_Message")
+    private String errorMessage;
 
-  @SerializedName("firstname")
-  private String firstName;
+    @SerializedName("txnid")
+    private String transactionId;
 
-  @SerializedName("hash")
-  private String responseHash;
+    @SerializedName("mihpayid")
+    private String externalTransactionId;
+
 }

@@ -2,10 +2,12 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -25,21 +27,13 @@ import in.wynk.payment.dto.amazonIap.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
-import in.wynk.payment.dto.response.BaseResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.IapVerificationResponse;
-import in.wynk.payment.dto.response.LatestReceiptResponse;
-import in.wynk.payment.service.*;
 import in.wynk.payment.dto.response.*;
-import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
-import in.wynk.payment.service.IMerchantIapPaymentVerificationService;
-import in.wynk.payment.service.IMerchantPaymentStatusService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,7 +58,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IMerchantPaymentStatusService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
 
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_PURCHASED");
     private static final List<String> RENEW_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID");
@@ -82,20 +76,19 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private String amazonIapSecret;
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
-    @Autowired
-    @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
     @Value("${payment.success.page}")
     private String SUCCESS_PAGE;
     @Value("${payment.failure.page}")
     private String FAILURE_PAGE;
 
-    public AmazonIapMerchantPaymentService(WynkUserExtUserDao userMappingDao, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService) {
-        super(cachingService);
+    public AmazonIapMerchantPaymentService(WynkUserExtUserDao userMappingDao, ReceiptDetailsDao receiptDetailsDao, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+        super(cachingService, errorCodesCacheServiceImpl);
         this.receiptDetailsDao = receiptDetailsDao;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
         this.userMappingDao = userMappingDao;
+        this.restTemplate = restTemplate;
     }
 
     private static String buildNotificationStringToSign(AmazonNotificationRequest msg) {
@@ -207,10 +200,15 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if(amazonIapReceiptResponse.getRenewalDate() != null && amazonIapReceiptResponse.getRenewalDate() > System.currentTimeMillis()) {
             autoRenewal = true;
         }
+        String skuId = amazonIapReceiptResponse.getTermSku();
+        if (StringUtils.isEmpty(skuId)) {
+            skuId = amazonIapVerificationRequest.getReceipt().getSku();
+        }
         return AmazonLatestReceiptResponse.builder()
                 .freeTrial(false)
                 .autoRenewal(autoRenewal)
                 .amazonIapReceiptResponse(amazonIapReceiptResponse)
+                .planId(cachingService.getPlanFromSku(skuId).getId())
                 .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
                 .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
                 .build();
@@ -220,7 +218,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
             fetchAndUpdateTransaction(transaction, AmazonLatestReceiptResponse.builder().extTxnId(extTxnId).build());
         }
-        ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
@@ -288,9 +286,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @Override
-    public BaseResponse<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
         ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
-        return BaseResponse.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).body(statusResponse).build();
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
     @Override

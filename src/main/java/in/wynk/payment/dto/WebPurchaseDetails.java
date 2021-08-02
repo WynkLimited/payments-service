@@ -1,0 +1,72 @@
+package in.wynk.payment.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
+import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.service.impl.PaymentMethodCachingService;
+import in.wynk.session.context.SessionContextHolder;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import static in.wynk.common.constant.BaseConstants.*;
+
+@Getter
+@Builder
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
+public class WebPurchaseDetails implements IChargingDetails {
+
+    @Analysed
+    private PaymentDetails paymentDetails;
+    @Analysed
+    private AbstractProductDetails productDetails;
+
+    @Override
+    @Analysed
+    @JsonIgnore
+    public IAppDetails getAppDetails() {
+        SessionDTO session = SessionContextHolder.getBody();
+        return AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID)).appVersion(session.get(APP_VERSION)).os(session.get(OS)).build();
+    }
+
+    @Override
+    @Analysed
+    @JsonIgnore
+    public IUserDetails getUserDetails() {
+        final SessionDTO session = SessionContextHolder.getBody();
+        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).build();
+    }
+
+    @Override
+    @JsonIgnore
+    public IPageUrlDetails getPageUrlDetails() {
+        final IAppDetails appDetails = getAppDetails();
+        final SessionDTO session = SessionContextHolder.getBody();
+        final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.success.page}"), appDetails);
+        final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.failure.page}"), appDetails);
+        final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? session.get(PENDING_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.pending.page}"), appDetails);
+        final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? session.get(UNKNOWN_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.unknown.page}"), appDetails);
+        return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
+    }
+
+    @Override
+    @JsonIgnore
+    public ICallbackDetails getCallbackDetails() {
+        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web}") + SLASH + SessionContextHolder.getId() + SLASH +  BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentDetails().getPaymentId()).getPaymentCode().getCode();
+    }
+
+
+    private String buildUrlFrom(String url, IAppDetails appDetails) {
+        return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
+    }
+
+}

@@ -1,9 +1,12 @@
 package in.wynk.payment.aspect;
 
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.lock.WynkRedisLockService;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.service.IPurchaseDetailsManger;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.spel.IRuleEvaluator;
 import org.aspectj.lang.JoinPoint;
@@ -17,11 +20,12 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
-/**
- * @author Abhishek
- * @created 13/08/20
- */
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY010;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY401;
+
 @Aspect
 public class TransactionAwareAspect {
 
@@ -29,23 +33,46 @@ public class TransactionAwareAspect {
     private IRuleEvaluator ruleEvaluator;
 
     @Autowired
+    private WynkRedisLockService wynkRedisLockService;
+
+    @Autowired
+    private IPurchaseDetailsManger payerDetailsManager;
+
+    @Autowired
     private ITransactionManagerService transactionManager;
 
     @Before(value = "execution(@in.wynk.payment.aspect.advice.TransactionAware * *.*(..))")
-    public void beforeTransactionAware(JoinPoint joinPoint) {
+    public void beforeTransactionAware(JoinPoint joinPoint) throws InterruptedException {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         TransactionAware transactionAware = method.getAnnotation(TransactionAware.class);
         if (!StringUtils.isEmpty(transactionAware.txnId())) {
             String txnId = parseSpel(joinPoint, transactionAware);
-            final Transaction transaction = transactionManager.get(txnId);
-            if(transaction != null){
-                TransactionContext.set(transaction);
-            } else{
-                throw new WynkRuntimeException("Transaction is null");
+            if (transactionAware.lock()) {
+                Lock lock = wynkRedisLockService.getWynkRedisLock(txnId);
+                if (lock.tryLock(2500, TimeUnit.MILLISECONDS)) {
+                    try {
+                        processTxnId(txnId);
+                    } catch (WynkRuntimeException e) {
+                        throw e;
+                    } finally {
+                        lock.unlock();
+                    }
+                } else {
+                    throw new WynkRuntimeException(PAY401);
+                }
+            } else {
+                processTxnId(txnId);
             }
-        } else{
-            throw new WynkRuntimeException("Empty txn id");
+        } else {
+            throw new WynkRuntimeException(PAY010);
         }
+    }
+
+    private void processTxnId(String txnId) {
+        final Transaction transaction = transactionManager.get(txnId);
+        final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder().transaction(transaction);
+        payerDetailsManager.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        TransactionContext.set(transactionDetailsBuilder.build());
     }
 
     private String parseSpel(JoinPoint joinPoint, TransactionAware transactionAware) {

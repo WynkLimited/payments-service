@@ -4,12 +4,13 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 
 import java.util.stream.Stream;
 
 public interface IRecurringPaymentManagerService {
 
-    void scheduleRecurringPayment(Transaction transaction, TransactionStatus existingTransactionStatus, TransactionStatus finalTransactionStatus);
+    void scheduleRecurringPayment(AbstractTransactionRevisionRequest request);
 
     Stream<PaymentRenewal> getCurrentDueRecurringPayments();
 

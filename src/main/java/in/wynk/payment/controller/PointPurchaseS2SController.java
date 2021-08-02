@@ -6,20 +6,18 @@ import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.payment.service.IPointPurchaseSessionService;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/wynk/s2s/v1/point")
 public class PointPurchaseS2SController {
 
     private final IPointPurchaseSessionService sessionService;
-
-    public PointPurchaseS2SController(IPointPurchaseSessionService sessionService) {
-        this.sessionService = sessionService;
-    }
 
     @ApiOperation("Provides session Id and the webview URL for point purchase")
     @PostMapping("/purchase")

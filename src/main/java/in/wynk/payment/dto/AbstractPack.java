@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractPack {
 
     private final long period;
@@ -18,10 +19,8 @@ public abstract class AbstractPack {
     private final int perMonthValue;
     private final int month;
 
-    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    private final double dailyAmount;
-    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    private final int day;
+    private final Double dailyAmount;
+    private final Integer day;
 
     private final AbstractPartnerBenefits benefits;
 

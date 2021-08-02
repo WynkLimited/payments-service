@@ -58,7 +58,7 @@ public class PaymentOptionsDTO {
 
         private final int validity;
 
-        private Integer day;
+        private final Integer day;
         private final Integer month;
         private final TimeUnit timeUnit;
         private final String type = BaseConstants.PLAN;

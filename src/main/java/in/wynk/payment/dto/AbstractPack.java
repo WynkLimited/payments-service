@@ -15,7 +15,7 @@ public abstract class AbstractPack {
     private final String title;
     private final String timeUnit;
 
-    private final int monthlyAmount;
+    private final int perMonthValue;
     private final int month;
 
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)

@@ -16,7 +16,6 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -111,13 +110,28 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     private Stream<PaymentRenewal> getPaymentRenewalStream(int offsetDay, int offsetTime, int preOffsetDays) {
-        Calendar currentDay = Calendar.getInstance();
+        final Calendar currentDay = Calendar.getInstance();
         currentDay.add(Calendar.DAY_OF_MONTH, preOffsetDays);
-        Calendar currentDayWithOffset = Calendar.getInstance();
-        currentDayWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay+preOffsetDays);
-        Date currentTime = currentDay.getTime();
-        Date currentTimeWithOffset = DateUtils.addHours(currentTime, offsetTime);
-        return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayWithOffset, currentTime, currentTimeWithOffset);
+        final Calendar currentDayTimeWithOffset = Calendar.getInstance();
+        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay+preOffsetDays);
+        final Date currentTime = currentDay.getTime();
+        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay);
+        currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, offsetTime);
+        final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
+        if (currentDay.get(Calendar.DAY_OF_MONTH) != currentDayTimeWithOffset.get(Calendar.DAY_OF_MONTH)) {
+            currentDay.set(Calendar.HOUR_OF_DAY, 23);
+            currentDay.set(Calendar.MINUTE, 59);
+            currentDay.set(Calendar.SECOND, 59);
+            currentDay.set(Calendar.MILLISECOND, 999);
+            currentDayTimeWithOffset.set(Calendar.HOUR_OF_DAY, 00);
+            currentDayTimeWithOffset.set(Calendar.MINUTE, 00);
+            currentDayTimeWithOffset.set(Calendar.SECOND, 00);
+            currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
+            final Date[] lowerRangeBound = new Date[] {currentTime, currentDayTimeWithOffset.getTime()};
+            final Date[] upperRangeBound = new Date[] {currentDay.getTime(), currentTimeWithOffset};
+            return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]), paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
+        }
+        return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 
     @Override

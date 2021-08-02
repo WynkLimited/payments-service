@@ -167,7 +167,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
-    @TransactionAware(txnId = "#transactionId")
+    @TransactionAware(txnId = "#transactionId", lock = false)
     public WynkResponseEntity<AbstractChargingStatusResponse> status(String transactionId) {
         final Transaction transaction = TransactionContext.get();
         return internalStatus(ChargingTransactionStatusRequest.builder().transactionId(transactionId).planId(transaction.getPlanId()).build());

@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.service.impl.PaymentMethodCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +35,7 @@ public class WebPurchaseDetails implements IChargingDetails {
     @JsonIgnore
     public IAppDetails getAppDetails() {
         SessionDTO session = SessionContextHolder.getBody();
-        return AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID)).appVersion(APP_VERSION).os(session.get(OS)).build();
+        return AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID)).appVersion(session.get(APP_VERSION)).os(session.get(OS)).build();
     }
 
     @Override
@@ -59,7 +61,7 @@ public class WebPurchaseDetails implements IChargingDetails {
     @Override
     @JsonIgnore
     public ICallbackDetails getCallbackDetails() {
-        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web}") + SLASH + SessionContextHolder.getId();
+        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web}") + SLASH + SessionContextHolder.getId() + SLASH +  BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentDetails().getPaymentId()).getPaymentCode().getCode();
     }
 
 

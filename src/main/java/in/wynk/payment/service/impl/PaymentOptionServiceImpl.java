@@ -102,7 +102,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         PlanDTO plan = paymentCachingService.getPlan(planId);
         OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());
         PartnerDTO partner = paymentCachingService.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
-        return PaymentOptionsDTO.PlanDetails.builder()
+        PaymentOptionsDTO.PlanDetails.PlanDetailsBuilder<?,?> planDetailsBuilder = PaymentOptionsDTO.PlanDetails.builder()
                 .id(planId)
                 .validityUnit(plan.getPeriod().getValidityUnit())
                 .perMonthValue(plan.getPrice().getMonthlyAmount())
@@ -114,8 +114,12 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .freeTrialAvailable(trialEligible)
                 .partnerName(partner.getName())
                 .dailyAmount(plan.getPrice().getDailyAmount())
-                .day(plan.getPeriod().getDay())
-                .build();
+                .day(plan.getPeriod().getDay());
+        if(trialEligible) {
+           final PlanDTO trialPlan = paymentCachingService.getPlan(plan.getLinkedFreePlanId());
+           planDetailsBuilder.trialDetails(PaymentOptionsDTO.TrialPlanDetails.builder().id(String.valueOf(trialPlan.getId())).day(trialPlan.getPeriod().getDay()).month(trialPlan.getPeriod().getMonth()).validityUnit(trialPlan.getPeriod().getValidityUnit()).validity(trialPlan.getPeriod().getValidity()).currency(trialPlan.getPrice().getCurrency()).timeUnit(trialPlan.getPeriod().getTimeUnit()).build());
+        }
+        return planDetailsBuilder.build();
     }
 
     @Override

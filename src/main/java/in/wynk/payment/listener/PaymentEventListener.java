@@ -143,4 +143,10 @@ public class PaymentEventListener {
         }
     }
 
+    @EventListener
+    @AnalyseTransaction(name = "transactionStatisticsEvent")
+    public void onTransactionStatusEvent (TransactionStatisticsEvent event) {
+        AnalyticService.update(event);
+    }
+
 }

@@ -6,11 +6,11 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
 @Getter
-@Builder
+@SuperBuilder
 @AnalysedEntity
 public class PaymentReconciliationThresholdExceedEvent extends MessageThresholdExceedEvent {
 

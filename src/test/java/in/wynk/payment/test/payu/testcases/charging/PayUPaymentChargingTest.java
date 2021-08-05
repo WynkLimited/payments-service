@@ -5,7 +5,6 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
@@ -14,9 +13,6 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.payment.test.payu.data.PayUTestData;
 import in.wynk.payment.test.utils.PaymentTestUtils;
-import in.wynk.queue.constant.BeanConstant;
-import in.wynk.queue.producer.ISQSMessagePublisher;
-import in.wynk.queue.producer.SQSMessagePublisher;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.enums.PlanType;
 import lombok.SneakyThrows;
@@ -41,12 +37,6 @@ import static org.mockito.ArgumentMatchers.eq;
 public class PayUPaymentChargingTest {
 
     @MockBean
-    private ISQSMessagePublisher sqsMessagePublisher;
-
-    @MockBean(name = BeanConstant.SQS_EVENT_PRODUCER)
-    private SQSMessagePublisher sqsMessagePublisher1;
-
-    @MockBean
     private ITransactionManagerService transactionManager;
 
     @MockBean
@@ -62,7 +52,6 @@ public class PayUPaymentChargingTest {
     public void setup() {
         SessionContextHolder.set(PayUTestData.initSession());
         Mockito.when(subscriptionServiceManager.getPlans()).thenReturn(PaymentTestUtils.dummyPlansDTO());
-        Mockito.when(sqsMessagePublisher.publish(any())).thenReturn("SUCCESS");
         Mockito.when((transactionManager.init(any()))).thenReturn(PayUTestData.initOneTimePaymentTransaction());
         Mockito.when((transactionManager.init(any()))).thenReturn(PayUTestData.initRecurringPaymentTransaction());
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.ONE_TIME_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.ONE_TIME_PLAN_ID, PlanType.ONE_TIME_SUBSCRIPTION));

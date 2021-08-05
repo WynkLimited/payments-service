@@ -146,8 +146,8 @@ public class PaymentEventListener {
     }
 
     @EventListener
-    @AnalyseTransaction(name = "transactionStatisticsEvent")
-    public void onTransactionStatusEvent (TransactionStatisticsEvent event) {
+    @AnalyseTransaction(name = "transactionSnapshot")
+    public void onTransactionSnapshotEvent (TransactionSnapshotEvent event) {
         AnalyticService.update(event.getPaymentDetails());
         AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());

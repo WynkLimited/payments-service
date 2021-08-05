@@ -157,7 +157,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
-    <logger name="transactionStatisticsEvent" additivity="false" level="INFO">
+    <logger name="transactionSnapshot" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 

@@ -11,7 +11,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
-import in.wynk.payment.core.event.TransactionStatisticsEvent;
+import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.dto.request.*;
@@ -52,7 +52,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = transactionDao.save(transaction);
-        purchaseDetailsManger.get(transaction).map(IPurchaseDetails::getPaymentDetails).ifPresent(p -> applicationEventPublisher.publishEvent(new TransactionStatisticsEvent(transaction, p)));
+        purchaseDetailsManger.get(transaction).map(IPurchaseDetails::getPaymentDetails).ifPresent(p -> applicationEventPublisher.publishEvent(new TransactionSnapshotEvent(transaction, p)));
         publishAnalytics(persistedEntity);
         return persistedEntity;
     }

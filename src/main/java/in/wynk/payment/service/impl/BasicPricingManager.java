@@ -47,17 +47,19 @@ public class BasicPricingManager implements IPricingManager {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
             final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
             final String service = selectedPlan.getService();
-            if (nativeRequest.isAutoRenewOpted()) {
-                request.setEvent(PaymentEvent.SUBSCRIBE);
-            }
-            if (nativeRequest.isTrialOpted()) {
-                final int trialPlanId = selectedPlan.getLinkedFreePlanId();
-                final TrialPlanComputationResponse trialEligibilityResponse = subscriptionService.compute(TrialPlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());
-                if (Objects.nonNull(trialEligibilityResponse) && trialEligibilityResponse.getEligiblePlans().contains(trialPlanId)) {
-                    final PlanDTO trialPlan = cachingService.getPlan(trialPlanId);
-                    nativeRequest.setAmount(trialPlan.getFinalPrice());
-                    request.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
-                    return;
+            if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
+                if (nativeRequest.isAutoRenewOpted()) {
+                    request.setEvent(PaymentEvent.SUBSCRIBE);
+                }
+                if (nativeRequest.isTrialOpted()) {
+                    final int trialPlanId = selectedPlan.getLinkedFreePlanId();
+                    final TrialPlanComputationResponse trialEligibilityResponse = subscriptionService.compute(TrialPlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());
+                    if (Objects.nonNull(trialEligibilityResponse) && trialEligibilityResponse.getEligiblePlans().contains(trialPlanId)) {
+                        final PlanDTO trialPlan = cachingService.getPlan(trialPlanId);
+                        nativeRequest.setAmount(trialPlan.getFinalPrice());
+                        request.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
+                        return;
+                    }
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());

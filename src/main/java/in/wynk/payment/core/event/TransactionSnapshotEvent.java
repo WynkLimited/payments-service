@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public class TransactionStatisticsEvent {
+public class TransactionSnapshotEvent {
     private final Transaction transaction;
     private final IPaymentDetails paymentDetails;
 }

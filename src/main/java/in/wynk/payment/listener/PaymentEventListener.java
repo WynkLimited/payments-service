@@ -33,6 +33,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
 
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 
 @Slf4j
@@ -146,7 +148,19 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "transactionStatisticsEvent")
     public void onTransactionStatusEvent (TransactionStatisticsEvent event) {
-        AnalyticService.update(event);
+        AnalyticService.update(event.getPaymentDetails());
+        AnalyticService.update(UID, event.getTransaction().getUid());
+        AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
+        AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());
+        AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
+        AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
+        AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
+        AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
+        AnalyticService.update(PAYMENT_EVENT, event.getTransaction().getType().getValue());
+        AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
+        AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().getCode());
+        AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
     }
 
 }

@@ -50,6 +50,7 @@ public class PaymentCachingService {
     private final Lock writeLock = lock.writeLock();
     private final Map<String, PaymentGroup> paymentGroups = new ConcurrentHashMap<>();
     private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
+    private final Map<String,PaymentMethod> paymentMethodsMap = new ConcurrentHashMap<>();
     private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
     private final Map<String, ItemDTO> items = new ConcurrentHashMap<>();
     @Autowired
@@ -78,6 +79,7 @@ public class PaymentCachingService {
 
     private void loadPayments() {
         final Map<String, PaymentGroup> groupsMap = paymentGroupDao.findAllByState(State.ACTIVE).stream().collect(Collectors.toConcurrentMap(PaymentGroup::getId, Function.identity()));
+        Map<String,PaymentMethod> localPaymentMethodMap = new ConcurrentHashMap<>();
         if (MapUtils.isNotEmpty(groupsMap) && writeLock.tryLock()) {
             Map<String, List<PaymentMethod>> newPaymentMethods = new ConcurrentHashMap<>();
             try {
@@ -86,6 +88,7 @@ public class PaymentCachingService {
                     if(groupsMap.containsKey(method.getGroup())) {
                         List<PaymentMethod> paymentMethodsInternal = newPaymentMethods.getOrDefault(method.getGroup(), new ArrayList<>());
                         paymentMethodsInternal.add(method);
+                        localPaymentMethodMap.put(method.getId(),method);
                         newPaymentMethods.put(method.getGroup(), paymentMethodsInternal);
                     }
                 }
@@ -95,6 +98,8 @@ public class PaymentCachingService {
                 }
                 paymentGroups.clear();
                 paymentGroups.putAll(groupsMap);
+                paymentMethodsMap.clear();
+                paymentMethodsMap.putAll(localPaymentMethodMap);
                 groupedPaymentMethods.clear();
                 groupedPaymentMethods.putAll(newPaymentMethods);
             } catch (Throwable th) {
@@ -220,6 +225,10 @@ public class PaymentCachingService {
 
     public OfferDTO getOffer(int offerId) {
         return offers.get(offerId);
+    }
+
+    public PaymentMethod getPaymentMethod(String id) {
+        return paymentMethodsMap.get(id);
     }
 
     public PartnerDTO getPartner(String packGroup) {

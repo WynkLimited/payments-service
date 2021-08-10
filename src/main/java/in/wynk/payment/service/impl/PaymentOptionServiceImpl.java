@@ -2,6 +2,7 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -12,8 +13,15 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
+import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
+import in.wynk.payment.eligibility.evaluation.PaymentMethodsItemEligibilityEvaluation;
+import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvaluation;
+import in.wynk.payment.eligibility.evaluation.PaymentOptionsCommonEligibilityEvaluation;
+import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
+import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
+import in.wynk.payment.eligibility.service.PaymentOptionComputationManager;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.IUserPaymentsManager;
 import in.wynk.payment.service.IUserPreferredPaymentService;
@@ -65,22 +73,28 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
+        PaymentOptionsEligibilityRequest request = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().planDTO(paidPlan).msisdn(sessionDTO.get(MSISDN)).build());
         final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).map(trialPlanId -> !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(trialPlanId)).orElse(false);
         if (trialEligible)
-            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported)));
-        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true)));
+            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported),request));
+        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true),request));
         return builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build();
     }
 
     private PaymentOptionsDTO getPaymentOptionsForItem(String itemId) {
-        return PaymentOptionsDTO.builder().productDetails(buildPointDetails(itemId)).paymentGroups(getPaymentGroups((paymentMethod -> true))).build();
+        final ItemDTO item = paymentCachingService.getItem(itemId);
+        PaymentOptionsEligibilityRequest request = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item).build());
+        return PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getPaymentGroups((paymentMethod -> true),request)).build();
     }
 
-    private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate) {
+    private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate, PaymentOptionsEligibilityRequest request) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
-            List<PaymentMethodDTO> methodDTOS = availableMethods.get(group.getId()).stream().filter(filterPredicate).map(PaymentMethodDTO::new).collect(Collectors.toList());
+            List<PaymentMethod> methods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
+            final List<EligibilityResult<PaymentMethod>> eligibilityResults = methods.stream().map(paymentMethod -> (Objects.nonNull(request.getMsisdn())) ? PaymentMethodsPlanEligibilityEvaluation.builder().root(request).entity(paymentMethod).build() : PaymentMethodsItemEligibilityEvaluation.builder().root(request).entity(paymentMethod).build()).map(this::evaluate).collect(Collectors.toList());
+
+            List<PaymentMethodDTO> methodDTOS = methods.stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
                 paymentGroupsDTOS.add(groupsDTO);
@@ -89,10 +103,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         return paymentGroupsDTOS;
     }
 
-    private PaymentOptionsDTO.PointDetails buildPointDetails(String itemId) {
-        final ItemDTO item = paymentCachingService.getItem(itemId);
+    private PaymentOptionsDTO.PointDetails buildPointDetails(ItemDTO item) {
         return PaymentOptionsDTO.PointDetails.builder()
-                .id(itemId)
+                .id(item.getId())
                 .title(item.getName())
                 .price(item.getPrice())
                 .build();

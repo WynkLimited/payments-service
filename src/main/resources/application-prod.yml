@@ -299,12 +299,12 @@ wynk:
     enabled: true
     sources:
       payment:
-        nodes: 10.40.12.162,10.40.12.216,10.40.12.45
+        nodes: 10.40.12.86,10.40.12.216,10.40.12.45
         username: user_payments
         password: tHdPNyp6Du
         database: payments
       coupons:
-        nodes: 10.40.12.162,10.40.12.216,10.40.12.45
+        nodes: 10.40.12.86,10.40.12.216,10.40.12.45
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons

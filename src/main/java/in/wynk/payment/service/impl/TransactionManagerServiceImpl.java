@@ -52,7 +52,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = transactionDao.save(transaction);
-        purchaseDetailsManger.get(transaction).map(IPurchaseDetails::getPaymentDetails).ifPresent(p -> applicationEventPublisher.publishEvent(new TransactionSnapshotEvent(transaction, p)));
+        applicationEventPublisher.publishEvent(new TransactionSnapshotEvent(transaction, purchaseDetailsManger.get(transaction).map(IPurchaseDetails::getPaymentDetails)));
         publishAnalytics(persistedEntity);
         return persistedEntity;
     }

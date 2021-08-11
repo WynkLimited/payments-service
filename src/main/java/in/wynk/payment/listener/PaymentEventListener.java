@@ -13,14 +13,12 @@ import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
+import in.wynk.payment.dto.PaymentReconciliationThresholdExceedEvent;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
-import in.wynk.payment.service.IClientCallbackService;
-import in.wynk.payment.service.IMerchantTransactionService;
-import in.wynk.payment.service.IPaymentErrorService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentManager;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
@@ -57,6 +55,16 @@ public class PaymentEventListener {
     public void onAnyOrderMessageThresholdExceedEvent(MessageThresholdExceedEvent event) throws JsonProcessingException {
         AnalyticService.update(event);
         AnalyticService.update(MESSAGE_PAYLOAD, mapper.writeValueAsString(event));
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentReconciliationThresholdExceedEvent")
+    public void onPaymentReconThresholdExceedEvent(PaymentReconciliationThresholdExceedEvent event) {
+        AnalyticService.update(event);
+        final Transaction transaction = transactionManagerService.get(event.getTransactionId());
+        final TransactionStatus existingTransactionStatus = transaction.getStatus();
+        transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
+        transactionManagerService.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingTransactionStatus).finalTransactionStatus(transaction.getStatus()).build());
     }
 
     @EventListener
@@ -147,8 +155,8 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
-    public void onTransactionSnapshotEvent (TransactionSnapshotEvent event) {
-        AnalyticService.update(event.getPaymentDetails());
+    public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
+        event.getPaymentDetails().ifPresent(AnalyticService::update);
         AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
         AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());

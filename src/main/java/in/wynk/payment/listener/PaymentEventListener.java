@@ -24,6 +24,7 @@ import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.subscription.common.message.SubscriptionProvisionMessageThresholdExceedEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
 
+import static in.wynk.payment.core.constant.PaymentConstants.SUBSCRIPTION_MAX_ATTEMPT_EXHAUSTED;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 
 @Slf4j
@@ -141,6 +143,13 @@ public class PaymentEventListener {
                     .originalTransactionId(event.getTransactionId())
                     .build());
         }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "subscriptionProvisionThresholdExceedEvent")
+    public void activateExternalSubscription(SubscriptionProvisionMessageThresholdExceedEvent event) {
+        AnalyticService.update(event);
+        AnalyticService.update(SUBSCRIPTION_MAX_ATTEMPT_EXHAUSTED,true);
     }
 
 }

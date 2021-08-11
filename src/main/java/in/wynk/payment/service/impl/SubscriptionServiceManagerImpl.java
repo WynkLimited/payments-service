@@ -187,13 +187,16 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
                 //TODO: remove deferred state check post IAP fixes.
                 if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED && provisioningResponse.getState() != ProvisionState.DEFERRED) {
+                    this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).build());
                     throw new WynkRuntimeException(PaymentErrorType.PAY013);
                 }
             }
         } catch (HttpStatusCodeException e) {
+            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).build());
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
+            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).build());
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
         }
     }

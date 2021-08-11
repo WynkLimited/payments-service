@@ -45,4 +45,6 @@ public interface PaymentConstants extends BaseConstants {
     String PROD_ENV = "PROD";
     String SANDBOX_ENV = "Sandbox";
 
+    String SUBSCRIPTION_MAX_ATTEMPT_EXHAUSTED = "maxAttemptExhausted";
+
 }

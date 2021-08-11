@@ -5,9 +5,11 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Optional;
+
 @Getter
 @RequiredArgsConstructor
 public class TransactionSnapshotEvent {
     private final Transaction transaction;
-    private final IPaymentDetails paymentDetails;
+    private final Optional<IPaymentDetails> paymentDetails;
 }

@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
@@ -12,6 +13,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Builder
 @Getter
@@ -26,6 +28,7 @@ public class PaymentOptionsDTO {
     @SuperBuilder
     @Getter
     @AnalysedEntity
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class PlanDetails implements IProductDetails {
         private final String id;
         private final String partnerName;
@@ -37,6 +40,27 @@ public class PaymentOptionsDTO {
         private final double price;
         private final double discountedPrice;
         private final boolean freeTrialAvailable;
+        private final Double dailyAmount;
+        private final Integer day;
+        private final TrialPlanDetails trialDetails;
+        private final String type = BaseConstants.PLAN;
+    }
+
+    @SuperBuilder
+    @Getter
+    @AnalysedEntity
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class TrialPlanDetails implements IProductDetails {
+        private final String id;
+        private String title;
+        private final String validityUnit;
+        private final String currency;
+
+        private final int validity;
+
+        private final Integer day;
+        private final Integer month;
+        private final TimeUnit timeUnit;
         private final String type = BaseConstants.PLAN;
     }
 

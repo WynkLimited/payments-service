@@ -12,6 +12,7 @@ import org.apache.commons.lang.StringUtils;
 @Getter
 @SuperBuilder
 public class PaymentMethodsItemEligibilityEvaluation extends PaymentOptionsCommonEligibilityEvaluation<PaymentMethod, PaymentOptionsEligibilityRequest>  {
+
     @Override
     public String getExpression() {
         if (StringUtils.isEmpty(getEntity().getRuleExpression())) {

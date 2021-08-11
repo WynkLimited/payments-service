@@ -2,7 +2,6 @@ package in.wynk.payment.service.impl;
 
 import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -16,12 +15,9 @@ import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
-import in.wynk.payment.eligibility.evaluation.PaymentMethodsItemEligibilityEvaluation;
-import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvaluation;
-import in.wynk.payment.eligibility.evaluation.PaymentOptionsCommonEligibilityEvaluation;
 import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
-import in.wynk.payment.eligibility.service.PaymentOptionComputationManager;
+import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.IUserPaymentsManager;
 import in.wynk.payment.service.IUserPreferredPaymentService;
@@ -55,6 +51,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private static final int N = 3;
     private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
+    private final IPaymentOptionComputationManager paymentOptionManager;
 
     @Override
     public PaymentOptionsDTO getPaymentOptions(String planId, String itemId) {
@@ -91,9 +88,10 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
+            request.setGroup(group.getId());
             List<PaymentMethod> methods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
-            final List<EligibilityResult<PaymentMethod>> eligibilityResults = methods.stream().map(paymentMethod -> (Objects.nonNull(request.getMsisdn())) ? PaymentMethodsPlanEligibilityEvaluation.builder().root(request).entity(paymentMethod).build() : PaymentMethodsItemEligibilityEvaluation.builder().root(request).entity(paymentMethod).build()).map(this::evaluate).collect(Collectors.toList());
-
+            final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
+            methods = filterPaymentMethodsBasedOnEligibility(response,methods);
             List<PaymentMethodDTO> methodDTOS = methods.stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
@@ -101,6 +99,11 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
             }
         }
         return paymentGroupsDTOS;
+    }
+
+    private List<PaymentMethod> filterPaymentMethodsBasedOnEligibility(PaymentOptionsComputationResponse response,List<PaymentMethod> methods) {
+        Set<PaymentMethod> eligibilityResultSet = response.getPaymentMethods();
+        return methods.stream().filter(method->eligibilityResultSet.contains(method)).collect(Collectors.toList());
     }
 
     private PaymentOptionsDTO.PointDetails buildPointDetails(ItemDTO item) {

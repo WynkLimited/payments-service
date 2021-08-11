@@ -1,38 +1,45 @@
 package in.wynk.payment.eligibility.service;
 
+import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
+import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.eligibility.service.AbstractEligibilityService;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
+import in.wynk.payment.eligibility.evaluation.PaymentMethodsItemEligibilityEvaluation;
+import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvaluation;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
-import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.spel.IRuleEvaluator;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @SuperBuilder
-public class PaymentOptionComputationManager<R extends PaymentOptionsComputationResponse, T extends PaymentOptionsEligibilityRequest> extends AbstractEligibilityService<R,T> implements IPaymentOptionComputationManager<R,T>{
+public class PaymentOptionComputationManager<R extends PaymentOptionsComputationResponse, T extends PaymentOptionsEligibilityRequest> extends AbstractEligibilityService<PaymentMethod,T> implements IPaymentOptionComputationManager<R,T>{
 
     private final IRuleEvaluator evaluator;
+    private final PaymentCachingService cachingService;
 
-    public PaymentOptionComputationManager(IRuleEvaluator evaluator) {
+    public PaymentOptionComputationManager(IRuleEvaluator evaluator,PaymentCachingService cachingService) {
         super(evaluator);
         this.evaluator =evaluator;
+        this.cachingService = cachingService;
     }
 
     @Override
-    public R compute(T request) {
-        return (R) (request instanceof PaymentOptionsPlanEligibilityRequest ? compute((PaymentOptionsPlanEligibilityRequest) request) : compute((PaymentOptionsItemEligibilityRequest) request));
-    }
-
-    private PaymentOptionsComputationResponse compute(PaymentOptionsPlanEligibilityRequest request) {
-        return PaymentOptionsComputationResponse.builder().build();
-    }
-
-    private PaymentOptionsComputationResponse compute(PaymentOptionsItemEligibilityRequest request) {
-        return PaymentOptionsComputationResponse.builder().build();
+    public PaymentOptionsComputationResponse compute(PaymentOptionsEligibilityRequest request) {
+        final String group = request.getGroup();
+        final List<PaymentMethod> paymentMethodsInGroup = cachingService.getGroupedPaymentMethods().get(group);
+        final List<EligibilityResult<PaymentMethod>> eligibilityResults = paymentMethodsInGroup.stream().map(paymentMethod -> (AbstractEligibilityEvaluation<PaymentMethod, T>)((request instanceof PaymentOptionsPlanEligibilityRequest)?PaymentMethodsPlanEligibilityEvaluation.builder().root(request).entity(paymentMethod).build():PaymentMethodsItemEligibilityEvaluation.builder().root(request).entity(paymentMethod).build())).map(this::evaluate).collect(Collectors.toList());
+        final Set<PaymentMethod> eligiblePaymentMethods = eligibilityResults.stream().filter(EligibilityResult::isEligible).map(EligibilityResult::getEntity).collect(Collectors.toSet());
+        return PaymentOptionsComputationResponse.builder().paymentMethods(eligiblePaymentMethods).build();
     }
 
 }

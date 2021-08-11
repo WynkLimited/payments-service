@@ -4,6 +4,7 @@ import in.wynk.eligibility.dto.IEligibilityRequest;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang.StringUtils;
 
@@ -15,6 +16,8 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     private final String msisdn;
     private final String service;
     private final String uid;
+    @Setter
+    private String group;
 
     public static PaymentOptionsEligibilityRequest from(PaymentOptionsComputationDTO computationDTO) {
         final PlanDTO planDTO = computationDTO.getPlanDTO();

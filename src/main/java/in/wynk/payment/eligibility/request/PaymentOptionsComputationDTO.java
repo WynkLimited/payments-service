@@ -11,4 +11,5 @@ public class PaymentOptionsComputationDTO {
     private final PlanDTO planDTO;
     private final String msisdn;
     private final ItemDTO itemDTO;
+    private final String group;
 }

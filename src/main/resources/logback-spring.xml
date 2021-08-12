@@ -241,6 +241,11 @@
     <logger name="subscriptionProvisionThresholdExceedEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="paymentReconciliationThresholdExceedEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+>>>>>>> 7c6ca6599ee560e5f7cb8c1bf49f27910c9e5fa3
     <springProfile name="local">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>

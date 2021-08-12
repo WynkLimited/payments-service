@@ -51,12 +51,12 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-session</artifactId>
+            <artifactId>scheduler-queue</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>lib-queue</artifactId>
+            <artifactId>lib-session</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

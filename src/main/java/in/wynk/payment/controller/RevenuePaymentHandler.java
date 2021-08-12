@@ -7,7 +7,9 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.WebPurchaseDetails;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.request.CallbackRequestWrapper;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -63,43 +66,58 @@ public class RevenuePaymentHandler {
         return baseResponse.getResponse();
     }
 
-    @PostMapping(path = "/callback/{sid}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(@PathVariable String sid, @RequestParam Map<String, Object> payload) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String transactionId = sessionDTO.get(TRANSACTION_ID);
-        payload.put(TRANSACTION_ID_FULL, transactionId);
-        final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestParam Map<String, Object> payload) {
+        final PaymentCode paymentCode;
+        if (StringUtils.isEmpty(pc)) {
+            final SessionDTO sessionDTO = SessionContextHolder.getBody();
+            final String transactionId = sessionDTO.get(TRANSACTION_ID);
+            payload.put(TRANSACTION_ID_FULL, transactionId);
+            paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+        } else {
+            paymentCode = PaymentCode.getFromCode(pc);
+        }
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);
     }
 
-    @GetMapping("/callback/{sid}")
+    @GetMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"})
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackGet(@PathVariable String sid, @RequestParam MultiValueMap<String, String> payload) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String transactionId = sessionDTO.get(TRANSACTION_ID);
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackGet(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestParam MultiValueMap<String, String> payload) {
+        final PaymentCode paymentCode;
         final Map<String, Object> terraformed = new HashMap<>(payload.toSingleValueMap());
-        terraformed.put(TRANSACTION_ID_FULL, transactionId);
-        final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+        if (StringUtils.isEmpty(pc)) {
+            final SessionDTO sessionDTO = SessionContextHolder.getBody();
+            final String transactionId = sessionDTO.get(TRANSACTION_ID);
+            terraformed.put(TRANSACTION_ID_FULL, transactionId);
+            paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+        } else {
+            paymentCode = PaymentCode.getFromCode(pc);
+        }
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(terraformed).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);
     }
 
-    @PostMapping(path = "/callback/{sid}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @RequestBody Map<String, Object> payload) {
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String transactionId = sessionDTO.get(TRANSACTION_ID);
-        payload.put(TRANSACTION_ID_FULL, transactionId);
-        final PaymentCode paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
+        final PaymentCode paymentCode;
+        if (StringUtils.isEmpty(pc)) {
+            final SessionDTO sessionDTO = SessionContextHolder.getBody();
+            final String transactionId = sessionDTO.get(TRANSACTION_ID);
+            payload.put(TRANSACTION_ID_FULL, transactionId);
+            paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+        } else {
+            paymentCode = PaymentCode.getFromCode(pc);
+        }
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));

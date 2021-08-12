@@ -31,7 +31,10 @@ import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.apb.ApbChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
+<<<<<<< HEAD
 import in.wynk.queue.service.ISqsManagerService;
+=======
+>>>>>>> 7c6ca6599ee560e5f7cb8c1bf49f27910c9e5fa3
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -80,18 +83,18 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     private final Gson gson;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
-    private final PaymentCachingService cachingService;
-    private final ISqsManagerService messagePublisher;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
+<<<<<<< HEAD
     public APBMerchantPaymentService(Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ISqsManagerService messagePublisher, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+=======
+    public APBMerchantPaymentService(Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+>>>>>>> 7c6ca6599ee560e5f7cb8c1bf49f27910c9e5fa3
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = template;
-        this.cachingService = cachingService;
-        this.messagePublisher = messagePublisher;
         this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;
     }

@@ -3,8 +3,10 @@ package in.wynk.payment.service.impl;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
@@ -17,13 +19,16 @@ import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.constant.SessionConstant;
+import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
+@Slf4j
 @Service
 public class CustomerWinBackServiceImpl implements ICustomerWinBackService {
 
@@ -40,10 +45,10 @@ public class CustomerWinBackServiceImpl implements ICustomerWinBackService {
     @Override
     @TransactionAware(txnId = "#request.dropoutTransactionId")
     public WynkResponseEntity<Void> winBack(CustomerWindBackRequest request) {
+        final Transaction droppedTransaction = TransactionContext.get();
+        final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("unable to process your request"));
+        final IAppDetails appDetails = purchaseDetails.getAppDetails();
         try {
-            final Transaction droppedTransaction = TransactionContext.get();
-            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("unable to process your request"));
-            final IAppDetails appDetails = purchaseDetails.getAppDetails();
             final IProductDetails productDetails = purchaseDetails.getProductDetails();
             final Session<String, SessionDTO> winBackSession = sessionGenerator.generate(SessionRequest.builder().uid(droppedTransaction.getUid()).msisdn(droppedTransaction.getMsisdn()).service(appDetails.getService()).appId(appDetails.getAppId()).buildNo(appDetails.getBuildNo()).appVersion(appDetails.getAppVersion()).createdTimestamp(System.currentTimeMillis()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).os(appDetails.getOs()).build());
             final URIBuilder queryBuilder = new URIBuilder(payUrl);
@@ -58,8 +63,13 @@ public class CustomerWinBackServiceImpl implements ICustomerWinBackService {
             queryBuilder.addParameter(BUILD_NO, String.valueOf(appDetails.getBuildNo()));
             return WynkResponseUtils.redirectResponse(payUrl + winBackSession.getId().split(SessionConstant.COLON_DELIMITER)[1] + SLASH + appDetails.getOs() + QUESTION_MARK + queryBuilder.build().getQuery());
         } catch (Exception e) {
-            throw new WynkRuntimeException("unable to process your request");
+            log.error(BaseLoggingMarkers.APPLICATION_ERROR, "Unable to execute winback logic due to {}", e.getMessage(), e);
+            return WynkResponseUtils.redirectResponse(buildFailureUrl(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.timeout.page}"), appDetails));
         }
+    }
+
+    private String buildFailureUrl(String url, IAppDetails appDetails) {
+        return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
     }
 
 }

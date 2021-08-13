@@ -4,7 +4,6 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.event.PurchaseInitEvent;
 import in.wynk.scheduler.task.dto.ITaskEntity;
 import lombok.*;
@@ -26,7 +25,7 @@ public class PurchaseRecord implements ITaskEntity {
     @Analysed
     private String transactionId;
     @Analysed
-    private IProductDetails productDetails;
+    private AbstractProductDetails productDetails;
 
     @Override
     public String getTaskId() {
@@ -44,7 +43,7 @@ public class PurchaseRecord implements ITaskEntity {
                 .msisdn(purchaseInitEvent.getMsisdn())
                 .clientAlias(purchaseInitEvent.getClientAlias())
                 .transactionId(purchaseInitEvent.getTransactionId())
-                .productDetails(purchaseInitEvent.getProductDetails())
+                .productDetails((AbstractProductDetails) purchaseInitEvent.getProductDetails())
                 .build();
     }
 

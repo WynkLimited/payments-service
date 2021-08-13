@@ -85,7 +85,7 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
             AnalyticService.update(SESSION_ID, id);
             return sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, dto, duration, TimeUnit.MINUTES);
         } catch (Exception e) {
-            throw new WynkRuntimeException("Unable to generate session");
+            throw new WynkRuntimeException("Unable to generate session", e);
         }
     }
 

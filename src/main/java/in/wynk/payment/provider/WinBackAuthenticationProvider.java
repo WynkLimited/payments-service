@@ -31,7 +31,7 @@ public class WinBackAuthenticationProvider implements AuthenticationProvider {
         final String droppedTransactionId = preAuthToken.getTransactionId();
         if (preAuthToken.getTtl()  >  System.currentTimeMillis()) {
             final String signedToken = EncryptionUtils.generateAppToken(droppedTransactionId + BaseConstants.COLON + preAuthToken.getTtl(), client.getClientSecret());
-            final Authentication authenticated = new WinBackToken(preAuthToken.getPrincipal(), signedToken, droppedTransactionId, preAuthToken.getTtl(), Collections.singleton(new SimpleGrantedAuthority("READ_ONLY")));
+            final Authentication authenticated = new WinBackToken(client.getClientId(), signedToken, droppedTransactionId, preAuthToken.getTtl(), Collections.singleton(new SimpleGrantedAuthority("READ_ONLY")));
             if (signedToken.equals(preAuthToken.getCredentials())) {
                 authenticated.setAuthenticated(true);
             } else {

@@ -41,7 +41,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     private final ITransactionManagerService transactionManager;
     private final ClientDetailsCachingService clientDetailsService;
 
-    public CustomerWinBackHandler(ObjectMapper mapper, @Value("${payment.api.endpoint.winBack}") String winBackUrl, ISqsManagerService sqsManagerService, IUrlShortenService urlShortenService, PaymentCachingService cachingService, ClientDetailsCachingService clientDetailsService, ITransactionManagerService transactionManager) {
+    public CustomerWinBackHandler(ObjectMapper mapper, @Value("${service.payment.api.endpoint.winBack}") String winBackUrl, ISqsManagerService sqsManagerService, IUrlShortenService urlShortenService, PaymentCachingService cachingService, ClientDetailsCachingService clientDetailsService, ITransactionManagerService transactionManager) {
         super(mapper);
         this.winBackUrl = winBackUrl;
         this.cachingService = cachingService;

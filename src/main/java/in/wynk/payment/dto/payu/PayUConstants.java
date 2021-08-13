@@ -44,8 +44,6 @@ public interface PayUConstants {
     String PAYU_IS_FALLBACK_ATTEMPT = "isFallbackAttempt";
     String PAYU_REFUND_TRANSACTION_TYPE = "REFUND_TYPE";
     String PAYU_CHARGING_TRANSACTION_TYPE = "CHARGE_TYPE";
-    String PAYU_MODE = "mode";
-    String PAYU_BANK_CODE = "bankCode";
     String PAYU_CARD_TYPE = "cardType";
     String PAYU_SI = "SI";
 

@@ -305,8 +305,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             });
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode())) AnalyticService.update(PAYU_MODE, payUChargingTransactionDetails.getMode());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode())) AnalyticService.update(PAYU_BANK_CODE, payUChargingTransactionDetails.getBankCode());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode())) AnalyticService.update(SOURCE_MODE, payUChargingTransactionDetails.getMode());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode())) AnalyticService.update(BANK_CODE, payUChargingTransactionDetails.getBankCode());
             if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType())) AnalyticService.update(PAYU_CARD_TYPE, payUChargingTransactionDetails.getBankCode());
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());

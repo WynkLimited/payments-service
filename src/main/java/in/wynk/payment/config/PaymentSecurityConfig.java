@@ -22,7 +22,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Value("${payment.payOption.page}")
+    @Value("${service.payment.api.endpoint.winBack}")
     private String winBackUrl;
 
     private final SecurityProperties properties;

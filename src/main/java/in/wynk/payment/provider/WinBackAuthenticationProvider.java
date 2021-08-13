@@ -5,6 +5,7 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.auth.exception.WynkAuthErrorType;
 import in.wynk.auth.exception.WynkAuthenticationException;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.payment.dto.WinBackToken;
 import lombok.RequiredArgsConstructor;
@@ -28,15 +29,19 @@ public class WinBackAuthenticationProvider implements AuthenticationProvider {
         final WinBackToken preAuthToken = (WinBackToken) authentication;
         final Client client = clientDetailsCache.getClientById(authentication.getPrincipal().toString());
         final String droppedTransactionId = preAuthToken.getTransactionId();
-        final String signedToken = EncryptionUtils.generateAppToken(droppedTransactionId, client.getClientSecret());
-        final Authentication authenticated = new WinBackToken(preAuthToken.getPrincipal(), signedToken, droppedTransactionId, Collections.singleton(new SimpleGrantedAuthority("READ_ONLY")));
-        if (signedToken.equals(preAuthToken.getCredentials())) {
-            authenticated.setAuthenticated(true);
+        if (preAuthToken.getTtl()  >  System.currentTimeMillis()) {
+            final String signedToken = EncryptionUtils.generateAppToken(droppedTransactionId + BaseConstants.COLON + preAuthToken.getTtl(), client.getClientSecret());
+            final Authentication authenticated = new WinBackToken(preAuthToken.getPrincipal(), signedToken, droppedTransactionId, preAuthToken.getTtl(), Collections.singleton(new SimpleGrantedAuthority("READ_ONLY")));
+            if (signedToken.equals(preAuthToken.getCredentials())) {
+                authenticated.setAuthenticated(true);
+            } else {
+                log.info(AuthLoggingMarker.AUTHENTICATION_FAILURE, "Request Signature: {} does not match with computed signature: {}", authentication.getCredentials(), preAuthToken.getCredentials());
+                throw new WynkAuthenticationException(WynkAuthErrorType.AUTH006);
+            }
+            return authenticated;
         } else {
-            log.info(AuthLoggingMarker.AUTHENTICATION_FAILURE, "Request Signature: {} does not match with computed signature: {}", authentication.getCredentials(), preAuthToken.getCredentials());
-            throw new WynkAuthenticationException(WynkAuthErrorType.AUTH006);
+            return new WinBackToken(preAuthToken.getPrincipal(), preAuthToken.getCredentials(), droppedTransactionId, preAuthToken.getTtl(), null);
         }
-        return authenticated;
     }
 
     @Override

@@ -12,12 +12,14 @@ public class WinBackToken extends AbstractAuthenticationToken {
     private final String principal;
     private final String credentials;
     private final String transactionId;
+    private final long ttl;
 
-    public WinBackToken(String principal, String credentials, String transactionId, Collection<? extends GrantedAuthority> authorities) {
+    public WinBackToken(String principal, String credentials, String transactionId,  long ttl, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.principal = principal;
         this.credentials = credentials;
         this.transactionId = transactionId;
+        this.ttl = ttl;
     }
 
 }

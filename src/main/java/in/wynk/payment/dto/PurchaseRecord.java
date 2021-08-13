@@ -25,6 +25,8 @@ public class PurchaseRecord implements ITaskEntity {
     @Analysed
     private String transactionId;
     @Analysed
+    private AppDetails appDetails;
+    @Analysed
     private AbstractProductDetails productDetails;
 
     @Override
@@ -43,6 +45,7 @@ public class PurchaseRecord implements ITaskEntity {
                 .msisdn(purchaseInitEvent.getMsisdn())
                 .clientAlias(purchaseInitEvent.getClientAlias())
                 .transactionId(purchaseInitEvent.getTransactionId())
+                .appDetails((AppDetails) purchaseInitEvent.getAppDetails())
                 .productDetails((AbstractProductDetails) purchaseInitEvent.getProductDetails())
                 .build();
     }

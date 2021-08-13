@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URLDecoder;
+import java.util.UUID;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -21,10 +22,11 @@ public class WinBackTokenMapper extends AbstractPreAuthTokenMapper {
     public Authentication parse(HttpServletRequest request) throws WynkAuthenticationException {
         try {
             final String principal = URLDecoder.decode(request.getParameter(CLIENT_IDENTITY), "UTF-8");
-            final String credentials = URLDecoder.decode(request.getParameter(TOKEN_ID), "UTF-8");
-            final String[] splitter = request.getContextPath().split(SLASH);
+            final long ttl = Long.parseLong(URLDecoder.decode(request.getParameter(TTL), "UTF-8"));
+            final String credentials = request.getParameter(TOKEN_ID);
+            final String[] splitter = request.getRequestURI().split(SLASH);
             final String transactionId = splitter[splitter.length - 1];
-            return new WinBackToken(principal, credentials, transactionId, null);
+            return new WinBackToken(principal, credentials, transactionId, ttl, null);
         } catch (Exception e) {
             log.error(AuthLoggingMarker.AUTHENTICATION_FAILURE, "unable to parse validate the request", e);
             throw new WynkAuthenticationException(WynkAuthErrorType.AUTH007);
@@ -34,9 +36,13 @@ public class WinBackTokenMapper extends AbstractPreAuthTokenMapper {
     @Override
     public void validate(Authentication authentication) throws WynkAuthenticationException {
         final WinBackToken token = (WinBackToken) authentication;
-        if (StringUtils.isEmpty(token.getPrincipal()) || StringUtils.isEmpty(token.getCredentials()))
+        if (StringUtils.isEmpty(token.getPrincipal()) || StringUtils.isEmpty(token.getCredentials()) || StringUtils.isEmpty(token.getTransactionId()) || token.getTtl() <= 0)
             throw new WynkAuthenticationException(WynkAuthErrorType.AUTH007);
-
+        try {
+            UUID.fromString(token.getTransactionId());
+        } catch (Exception e) {
+            throw new WynkAuthenticationException(WynkAuthErrorType.AUTH007);
+        }
     }
 
 }

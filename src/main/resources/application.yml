@@ -78,7 +78,7 @@ service:
       endpoint:
         winBack: ${service.payment.api.root}/wynk/s2s/v1/customer/winback/
 
-####### payment props #######
+####### payment props #######session-out
 payment:
   callback:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
@@ -93,6 +93,8 @@ payment:
     page: ${webview.host}/#/txn-state/payment-pending/
   unknown:
     page: ${webview.host}/#/txn-state/payment-unknown/
+  timeout:
+    page: ${webview.host}/#/txn-state/session-out/
 
 cors:
   maxAge: 3600

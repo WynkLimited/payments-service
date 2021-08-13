@@ -13,6 +13,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PurchaseRecord;
 import in.wynk.payment.dto.UrlShortenRequest;
@@ -25,8 +26,13 @@ import in.wynk.scheduler.task.dto.TaskHandler;
 import in.wynk.sms.common.message.SmsNotificationMessage;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -67,6 +73,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
         return lastTransaction.getStatus() != TransactionStatus.SUCCESS;
     }
 
+    @SneakyThrows
     @Override
     @ClientAware(clientAlias = "#task.clientAlias")
     @AnalyseTransaction(name = "userChurnLocator")
@@ -76,10 +83,15 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
         final String service = task.getProductDetails().getType().equalsIgnoreCase(PLAN) ? cachingService.getPlan(task.getProductDetails().getId()).getService() : cachingService.getItem(task.getProductDetails().getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
-        final String payUrl = winBackUrl + task.getTransactionId() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TOKEN_ID + EQUAL + EncryptionUtils.generateAppToken(task.getTransactionId(), clientDetails.getClientSecret());
+        final long ttl = System.currentTimeMillis()  + TimeUnit.DAYS.toMillis(3);
+        final String payUrl = buildUrlFrom(winBackUrl + task.getTransactionId() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TTL + EQUAL + ttl + AND + TOKEN_ID + EQUAL + URLEncoder.encode(EncryptionUtils.generateAppToken(task.getTransactionId() + COLON +ttl, clientDetails.getClientSecret()), StandardCharsets.UTF_8.toString()), task.getAppDetails());
         final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + payUrl).orElse(payUrl);
         final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
         final String terraformed = message.getMessage().replace("<link>", shortenResponse.getTinyUrl());
         sqsManagerService.publishSQSMessage(SmsNotificationMessage.builder().message(terraformed).msisdn(task.getMsisdn()).priority(message.getPriority()).service(wynkService.getId()).build());
+    }
+
+    private String buildUrlFrom(String url, IAppDetails appDetails) {
+        return url + AND + OS + EQUAL + appDetails.getOs() + AND + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
     }
 }

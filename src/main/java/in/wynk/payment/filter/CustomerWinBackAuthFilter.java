@@ -1,7 +1,10 @@
 package in.wynk.payment.filter;
 
 import in.wynk.auth.constant.AuthLoggingMarker;
+import in.wynk.auth.exception.WynkAuthErrorType;
 import in.wynk.auth.mapper.AbstractPreAuthTokenMapper;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +17,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLDecoder;
+
+import static in.wynk.common.constant.BaseConstants.*;
 
 @Slf4j
 public class CustomerWinBackAuthFilter extends BasicAuthenticationFilter {
@@ -32,10 +38,18 @@ public class CustomerWinBackAuthFilter extends BasicAuthenticationFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         log.info("inside CustomerWinBackAuthFilter ...");
         if (StringUtils.isNotEmpty(request.getRequestURL().toString()) && request.getRequestURL().toString().contains(winBackUrl)) {
-            final Authentication preAuthDetails = tokenMapper.map(request);
-            Authentication authentication = this.authenticationManager.authenticate(preAuthDetails);
-            if (authentication.isAuthenticated()) {
-                onSuccessfulAuthentication(request, response, authentication);
+            try {
+                final Authentication preAuthDetails = tokenMapper.map(request);
+                final Authentication authentication = this.authenticationManager.authenticate(preAuthDetails);
+                if (authentication.isAuthenticated()) {
+                    onSuccessfulAuthentication(request, response, authentication);
+                } else {
+                    response.sendRedirect(buildFailureUrl(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.timeout.page}"), request));
+                }
+            } catch (Exception e) {
+                log.error(WynkAuthErrorType.AUTH007.getMarker(), "authentication is failed due to {}", e.getMessage(), e);
+                response.sendRedirect(buildFailureUrl(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.timeout.page}"), request));
+                return;
             }
         }
         chain.doFilter(request, response);
@@ -45,6 +59,15 @@ public class CustomerWinBackAuthFilter extends BasicAuthenticationFilter {
     protected void onSuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, Authentication authResult) {
         log.debug(AuthLoggingMarker.AUTHENTICATION_SUCCESS, "authentication successful for principal-digest {}", authResult.getPrincipal());
         SecurityContextHolder.getContext().setAuthentication(authResult);
+    }
+
+    private String buildFailureUrl(String baseUrl, HttpServletRequest request) {
+        return baseUrl + decode(request, OS) + QUESTION_MARK + SERVICE + EQUAL + decode(request, SERVICE) + AND + APP_ID + EQUAL + decode(request, APP_ID) + AND + BUILD_NO + EQUAL + decode(request, BUILD_NO);
+    }
+
+    @SneakyThrows
+    private String decode(HttpServletRequest request, String key) {
+        return URLDecoder.decode(request.getParameter(key), "UTF-8");
     }
 
 }

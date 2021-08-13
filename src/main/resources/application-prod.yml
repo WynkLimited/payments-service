@@ -93,6 +93,9 @@ spring:
 
 ####### payment props #######
 payment:
+  dropout:
+    tracker:
+      delayInSec: 3600
   se:
     s3:
       bucket: wcf-logs

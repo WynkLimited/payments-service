@@ -27,7 +27,7 @@ public class WinBackAuthenticationProvider implements AuthenticationProvider {
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         log.debug("authenticating churned user");
         final WinBackToken preAuthToken = (WinBackToken) authentication;
-        final Client client = clientDetailsCache.getClientById(authentication.getPrincipal().toString());
+        final Client client = clientDetailsCache.getClientByAlias(authentication.getPrincipal().toString());
         final String droppedTransactionId = preAuthToken.getTransactionId();
         if (preAuthToken.getTtl()  >  System.currentTimeMillis()) {
             final String signedToken = EncryptionUtils.generateAppToken(droppedTransactionId + BaseConstants.COLON + preAuthToken.getTtl(), client.getClientSecret());

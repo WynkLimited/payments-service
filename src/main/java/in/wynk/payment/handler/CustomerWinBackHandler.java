@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -84,7 +85,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
         final long ttl = System.currentTimeMillis()  + TimeUnit.DAYS.toMillis(3);
-        final String payUrl = buildUrlFrom(winBackUrl + task.getTransactionId() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TTL + EQUAL + ttl + AND + TOKEN_ID + EQUAL + URLEncoder.encode(EncryptionUtils.generateAppToken(task.getTransactionId() + COLON +ttl, clientDetails.getClientSecret()), StandardCharsets.UTF_8.toString()), task.getAppDetails());
+        final String payUrl = buildUrlFrom(winBackUrl + task.getTransactionId() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + Base64.getEncoder().encodeToString(clientDetails.getAlias().getBytes(StandardCharsets.UTF_8)) + AND + TTL + EQUAL + ttl + AND + TOKEN_ID + EQUAL + URLEncoder.encode(EncryptionUtils.generateAppToken(task.getTransactionId() + COLON +ttl, clientDetails.getClientSecret()), StandardCharsets.UTF_8.toString()), task.getAppDetails());
         final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + payUrl).orElse(payUrl);
         final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
         final String terraformed = message.getMessage().replace("<link>", shortenResponse.getTinyUrl());

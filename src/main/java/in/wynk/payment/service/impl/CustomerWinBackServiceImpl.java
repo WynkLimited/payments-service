@@ -26,6 +26,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 import static in.wynk.common.constant.BaseConstants.*;
 
 @Slf4j
@@ -69,7 +71,7 @@ public class CustomerWinBackServiceImpl implements ICustomerWinBackService {
     }
 
     private String buildFailureUrl(String url, IAppDetails appDetails) {
-        return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
+        return url + UUID.randomUUID().toString() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
     }
 
 }

@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.util.UUID;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -62,7 +63,7 @@ public class CustomerWinBackAuthFilter extends BasicAuthenticationFilter {
     }
 
     private String buildFailureUrl(String baseUrl, HttpServletRequest request) {
-        return baseUrl + decode(request, OS) + QUESTION_MARK + SERVICE + EQUAL + decode(request, SERVICE) + AND + APP_ID + EQUAL + decode(request, APP_ID) + AND + BUILD_NO + EQUAL + decode(request, BUILD_NO);
+        return baseUrl + UUID.randomUUID().toString() + SLASH + decode(request, OS) + QUESTION_MARK + SERVICE + EQUAL + decode(request, SERVICE) + AND + APP_ID + EQUAL + decode(request, APP_ID) + AND + BUILD_NO + EQUAL + decode(request, BUILD_NO);
     }
 
     @SneakyThrows

@@ -5,14 +5,13 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
+import in.wynk.payment.core.event.PurchaseInitEvent;
 import in.wynk.scheduler.task.dto.ITaskEntity;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @Builder
+@ToString
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,6 +19,10 @@ public class PurchaseRecord implements ITaskEntity {
 
     @Analysed
     private String uid;
+    @Analysed
+    private String msisdn;
+    @Analysed
+    private String clientAlias;
     @Analysed
     private String transactionId;
     @Analysed
@@ -33,6 +36,16 @@ public class PurchaseRecord implements ITaskEntity {
     @Override
     public String getGroupId() {
         return PaymentConstants.USER_WINBACK;
+    }
+
+    public static PurchaseRecord from(PurchaseInitEvent purchaseInitEvent) {
+        return PurchaseRecord.builder()
+                .uid(purchaseInitEvent.getUid())
+                .msisdn(purchaseInitEvent.getMsisdn())
+                .clientAlias(purchaseInitEvent.getClientAlias())
+                .transactionId(purchaseInitEvent.getTransactionId())
+                .productDetails(purchaseInitEvent.getProductDetails())
+                .build();
     }
 
 }

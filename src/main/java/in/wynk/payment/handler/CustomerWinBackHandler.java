@@ -5,10 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.Message;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PurchaseRecord;
@@ -59,22 +63,26 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     }
 
     @Override
+    public boolean shouldTriggerExecute(PurchaseRecord task) {
+        final Transaction lastTransaction = transactionManager.get(task.getTransactionId());
+        final boolean shouldTriggerExecute = lastTransaction.getStatus() != TransactionStatus.SUCCESS;
+        if (!shouldTriggerExecute) log.info("skipping to drop msg as user has completed transaction for purchase record {}", task);
+        return lastTransaction.getStatus() != TransactionStatus.SUCCESS;
+    }
+
+    @Override
+    @ClientAware(clientAlias = "#task.clientAlias")
     @AnalyseTransaction(name = "userChurnLocator")
-    public void execute(PurchaseRecord entity) {
-        AnalyticService.update(entity);
-        AnalyticService.update(PaymentConstants.SHOULD_WINBACK, false);
-        final Transaction lastTransaction = transactionManager.get(entity.getTransactionId());
-        if (lastTransaction.getStatus() != TransactionStatus.SUCCESS) {
-            AnalyticService.update(PaymentConstants.SHOULD_WINBACK, true);
-            final Client clientDetails = clientDetailsService.getClientByAlias(lastTransaction.getClientAlias());
-            final String service = entity.getProductDetails().getType() == PLAN ? cachingService.getPlan(lastTransaction.getProductId()).getService(): cachingService.getItem(lastTransaction.getItemId()).getService();
-            final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
-            final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
-            final String payUrl = winBackUrl + SLASH + lastTransaction.getIdStr() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TOKEN_ID + EQUAL + EncryptionUtils.generateAppToken(lastTransaction.getIdStr(), clientDetails.getClientSecret());
-            final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + payUrl).orElse(payUrl);
-            final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
-            final String terraformed = message.getMessage().replace("<link>", shortenResponse.getTinyUrl());
-            sqsManagerService.publishSQSMessage(SmsNotificationMessage.builder().message(terraformed).msisdn(lastTransaction.getMsisdn()).priority(message.getPriority()).service(wynkService.getId()).build());
-        }
+    public void execute(PurchaseRecord task) {
+        AnalyticService.update(task);
+        final Client clientDetails = ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+        final String service = task.getProductDetails().getType().equalsIgnoreCase(PLAN) ? cachingService.getPlan(task.getProductDetails().getId()).getService() : cachingService.getItem(task.getProductDetails().getId()).getService();
+        final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
+        final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
+        final String payUrl = winBackUrl + SLASH + task.getTransactionId() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TOKEN_ID + EQUAL + EncryptionUtils.generateAppToken(task.getTransactionId(), clientDetails.getClientSecret());
+        final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + payUrl).orElse(payUrl);
+        final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
+        final String terraformed = message.getMessage().replace("<link>", shortenResponse.getTinyUrl());
+        sqsManagerService.publishSQSMessage(SmsNotificationMessage.builder().message(terraformed).msisdn(task.getMsisdn()).priority(message.getPriority()).service(wynkService.getId()).build());
     }
 }

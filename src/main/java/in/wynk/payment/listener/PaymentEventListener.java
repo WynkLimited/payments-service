@@ -12,12 +12,10 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.*;
-import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
-import in.wynk.payment.dto.PaymentReconciliationThresholdExceedEvent;
-import in.wynk.payment.dto.PaymentRefundInitRequest;
-import in.wynk.payment.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
+import in.wynk.payment.handler.CustomerWinBackHandler;
 import in.wynk.payment.service.IClientCallbackService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IPaymentErrorService;
@@ -26,14 +24,19 @@ import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.scheduler.task.dto.TaskDefinition;
+import in.wynk.scheduler.task.service.ITaskScheduler;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.SimpleScheduleBuilder;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
 
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 
@@ -45,6 +48,7 @@ public class PaymentEventListener {
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
+    private final ITaskScheduler taskScheduler;
     private final ISqsManagerService sqsManagerService;
     private final IPaymentErrorService paymentErrorService;
     private final ApplicationEventPublisher eventPublisher;
@@ -142,6 +146,12 @@ public class PaymentEventListener {
         sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
     }
 
+
+    @EventListener
+    public void onPurchaseInit(PurchaseInitEvent purchaseInitEvent) {
+        dropOutTracker(PurchaseRecord.from(purchaseInitEvent));
+    }
+
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
@@ -153,6 +163,13 @@ public class PaymentEventListener {
                     .originalTransactionId(event.getTransactionId())
                     .build());
         }
+    }
+
+    private void dropOutTracker(PurchaseRecord purchaseRecord) {
+        if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
+            taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
+        }
+        taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder().entity(purchaseRecord).handler(CustomerWinBackHandler.class).triggerConfiguration(TaskDefinition.TriggerConfiguration.builder().startAt(new Date(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1))).scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0)).build()).build());
     }
 
 }

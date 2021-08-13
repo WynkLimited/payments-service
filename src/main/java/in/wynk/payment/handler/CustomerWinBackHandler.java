@@ -8,7 +8,6 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
-import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.Message;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
@@ -39,15 +38,13 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     private final IUrlShortenService urlShortenService;
     private final PaymentCachingService cachingService;
     private final ITransactionManagerService transactionManager;
-    private final ClientDetailsCachingService clientDetailsService;
 
-    public CustomerWinBackHandler(ObjectMapper mapper, @Value("${service.payment.api.endpoint.winBack}") String winBackUrl, ISqsManagerService sqsManagerService, IUrlShortenService urlShortenService, PaymentCachingService cachingService, ClientDetailsCachingService clientDetailsService, ITransactionManagerService transactionManager) {
+    public CustomerWinBackHandler(ObjectMapper mapper, @Value("${service.payment.api.endpoint.winBack}") String winBackUrl, ISqsManagerService sqsManagerService, IUrlShortenService urlShortenService, PaymentCachingService cachingService, ITransactionManagerService transactionManager) {
         super(mapper);
         this.winBackUrl = winBackUrl;
         this.cachingService = cachingService;
         this.sqsManagerService = sqsManagerService;
         this.urlShortenService = urlShortenService;
-        this.clientDetailsService = clientDetailsService;
         this.transactionManager = transactionManager;
     }
 
@@ -79,7 +76,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
         final String service = task.getProductDetails().getType().equalsIgnoreCase(PLAN) ? cachingService.getPlan(task.getProductDetails().getId()).getService() : cachingService.getItem(task.getProductDetails().getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
-        final String payUrl = winBackUrl + SLASH + task.getTransactionId() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TOKEN_ID + EQUAL + EncryptionUtils.generateAppToken(task.getTransactionId(), clientDetails.getClientSecret());
+        final String payUrl = winBackUrl + task.getTransactionId() + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + clientDetails.getClientId() + AND + TOKEN_ID + EQUAL + EncryptionUtils.generateAppToken(task.getTransactionId(), clientDetails.getClientSecret());
         final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + payUrl).orElse(payUrl);
         final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
         final String terraformed = message.getMessage().replace("<link>", shortenResponse.getTinyUrl());

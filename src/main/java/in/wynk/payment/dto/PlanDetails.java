@@ -25,7 +25,6 @@ public class PlanDetails extends AbstractProductDetails {
     }
 
     @Override
-    @JsonIgnore
     public String getType() {
         return BaseConstants.PLAN;
     }

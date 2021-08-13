@@ -31,6 +31,7 @@ public interface PaymentConstants extends BaseConstants {
     String WALLET_USER_ID = "walletUserId";
     
     String SOURCE_MODE = "mode";
+    String BANK_CODE = "bankCode";
     String MERCHANT_TRANSACTION = "merchantTransaction";
     String PAYMENT_MODE="paymentMode";
     String ATTEMPT_SEQUENCE = "attemptSequence";

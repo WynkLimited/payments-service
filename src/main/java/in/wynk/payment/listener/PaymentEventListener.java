@@ -174,7 +174,7 @@ public class PaymentEventListener {
             if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
                 taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
             }
-            taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder().entity(purchaseRecord).handler(CustomerWinBackHandler.class).triggerConfiguration(TaskDefinition.TriggerConfiguration.builder().startAt(new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(Long.parseLong(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.dropout.tracker.delayInSec:3600"))))).scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0)).build()).build());
+            taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder().entity(purchaseRecord).handler(CustomerWinBackHandler.class).triggerConfiguration(TaskDefinition.TriggerConfiguration.builder().startAt(new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(Long.parseLong(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.dropout.tracker.delayInSec:3600}"))))).scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0)).build()).build());
         } catch (Exception e) {
             log.error(WynkErrorType.UT999.getMarker(), "something went wrong while scheduling task due to {}", e.getMessage(), e);
         }

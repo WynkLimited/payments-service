@@ -23,7 +23,7 @@ public class WinBackTokenMapper extends AbstractPreAuthTokenMapper {
         try {
             final String principal = URLDecoder.decode(request.getParameter(CLIENT_IDENTITY), "UTF-8");
             final long ttl = Long.parseLong(URLDecoder.decode(request.getParameter(TTL), "UTF-8"));
-            final String credentials = request.getParameter(TOKEN_ID);
+            final String credentials = request.getParameter(TOKEN_ID).replace(" ", "+");
             final String[] splitter = request.getRequestURI().split(SLASH);
             final String transactionId = splitter[splitter.length - 1];
             return new WinBackToken(principal, credentials, transactionId, ttl, null);

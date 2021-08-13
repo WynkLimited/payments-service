@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.IN_MEMORY_CACHE_CRON;
-import static in.wynk.common.constant.CacheBeanNames.PAYMENT_METHOD;
+import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 
 @Slf4j

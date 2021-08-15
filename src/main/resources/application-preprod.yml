@@ -303,24 +303,41 @@ wynk:
     enabled: true
     sources:
       payment:
+        appName: payment
         nodes: 10.80.0.128,10.80.0.240
         username: user_payments_preprod
         password: t2KXcR8dnW
         database: payments_preprod
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
       coupons:
+        appName: coupon
         nodes: 10.80.0.128,10.80.0.240
         username: user_coupons_preprod
         password: yC3weM5K2Q
         database: coupons_preprod
-    ########### Mongo Pool Config ###########
-    minConnectionsPerHost: 10
-    maxConnectionsPerHost: 50
-    threadsAllowedToBlockForConnectionMultiplier: 5
-    serverSelectionTimeoutMs: 10000
-    maxWaitTime: 10000
-    connectTimeout: 2000
-    socketTimeout: 5000
-    readPreference: secondaryPreferred
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
 
 cache:
   caffeine:

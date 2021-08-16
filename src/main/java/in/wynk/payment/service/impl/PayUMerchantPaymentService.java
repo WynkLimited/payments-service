@@ -758,6 +758,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             MultiValueMap<String, String> requestMap = buildPayUInfoRequest(PayUCommand.PRE_DEBIT_SI.getCode(), variable);
             PayUPreDebitNotificationResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
             });
+            AnalyticService.update(response);
             if (response.getStatus()==1) {
                 log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: "+response.getInvoiceId()+" invoiceStatus: "+response.getInvoiceStatus());
             } else {

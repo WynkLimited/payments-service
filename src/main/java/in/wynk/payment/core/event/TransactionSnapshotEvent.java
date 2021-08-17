@@ -1,15 +1,17 @@
 package in.wynk.payment.core.event;
 
-import in.wynk.payment.core.dao.entity.IPaymentDetails;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-import java.util.Optional;
+import lombok.NoArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TransactionSnapshotEvent {
-    private final Transaction transaction;
-    private final Optional<IPaymentDetails> paymentDetails;
+    private Transaction transaction;
+    private IPurchaseDetails purchaseDetails;
 }

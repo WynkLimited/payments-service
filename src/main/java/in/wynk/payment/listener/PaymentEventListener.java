@@ -30,6 +30,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
+import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
@@ -156,7 +157,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
     public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
-        event.getPaymentDetails().ifPresent(AnalyticService::update);
+        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
         AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
         AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());

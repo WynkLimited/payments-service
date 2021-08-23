@@ -6,6 +6,8 @@ import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import lombok.*;
 
+import java.util.Optional;
+
 @Getter
 @Builder
 @ToString
@@ -23,4 +25,7 @@ public class PurchaseInitEvent {
     private IAppDetails appDetails;
     @Analysed
     private IProductDetails productDetails;
+
+    private Optional<String> sid;
+
 }

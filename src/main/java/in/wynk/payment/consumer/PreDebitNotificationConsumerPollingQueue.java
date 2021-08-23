@@ -68,7 +68,7 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     }
 
     @Override
-    @TransactionAware(txnId = "#message.getTransactionId()")
+    @TransactionAware(txnId = "#message.transactionId")
     @AnalyseTransaction(name = "preDebitNotificationMessage")
     public void consume(PreDebitNotificationMessage message) {
         AnalyticService.update(message);

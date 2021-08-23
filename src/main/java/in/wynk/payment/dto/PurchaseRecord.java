@@ -17,6 +17,8 @@ import lombok.*;
 public class PurchaseRecord implements ITaskEntity {
 
     @Analysed
+    private String sid;
+    @Analysed
     private String uid;
     @Analysed
     private String msisdn;
@@ -43,6 +45,7 @@ public class PurchaseRecord implements ITaskEntity {
         return PurchaseRecord.builder()
                 .uid(purchaseInitEvent.getUid())
                 .msisdn(purchaseInitEvent.getMsisdn())
+                .sid(purchaseInitEvent.getSid().get())
                 .clientAlias(purchaseInitEvent.getClientAlias())
                 .transactionId(purchaseInitEvent.getTransactionId())
                 .appDetails((AppDetails) purchaseInitEvent.getAppDetails())

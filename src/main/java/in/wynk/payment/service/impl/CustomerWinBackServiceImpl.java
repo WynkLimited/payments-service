@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -19,7 +20,6 @@ import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.constant.SessionConstant;
-import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
@@ -67,6 +67,10 @@ public class CustomerWinBackServiceImpl implements ICustomerWinBackService {
         } catch (Exception e) {
             log.error(BaseLoggingMarkers.APPLICATION_ERROR, "Unable to execute winback logic due to {}", e.getMessage(), e);
             return WynkResponseUtils.redirectResponse(buildFailureUrl(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.timeout.page}"), appDetails));
+        } finally {
+            if (request.getParams().containsKey(OLD_SID)) {
+                AnalyticService.update(ORIGINAL_SID, (String) request.getParams().get(OLD_SID));
+            }
         }
     }
 

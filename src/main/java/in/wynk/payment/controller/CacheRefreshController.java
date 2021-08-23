@@ -1,6 +1,5 @@
 package in.wynk.payment.controller;
 
-import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.payment.service.PaymentCachingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;

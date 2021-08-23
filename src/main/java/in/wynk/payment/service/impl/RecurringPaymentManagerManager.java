@@ -37,6 +37,12 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     private int dueRecurringOffsetDay;
     @Value("${payment.recurring.offset.hour}")
     private int dueRecurringOffsetTime;
+    @Value("${payment.preDebitNotification.preOffsetDays}")
+    private int preDebitNotificationPreOffsetDay;
+    @Value("${payment.preDebitNotification.offset.day}")
+    private int duePreDebitNotificationOffsetDay;
+    @Value("${payment.preDebitNotification.offset.hour}")
+    private int duePreDebitNotificationOffsetTime;
 
     private final IPaymentRenewalDao paymentRenewalDao;
     private final ApplicationEventPublisher eventPublisher;
@@ -86,19 +92,31 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                     return;
                 }
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
-                scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
+                scheduleRecurringPayment(request.getTransactionId(), nextRecurringDateTime, request.getAttemptSequence());
             }
         }
     }
 
     @Override
     @Transactional
+    public Stream<PaymentRenewal> getCurrentDueNotifications() {
+        return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
+    }
+
+    @Override
+    @Transactional
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments() {
+        return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
+    }
+
+    private Stream<PaymentRenewal> getPaymentRenewalStream(int offsetDay, int offsetTime, int preOffsetDays) {
         final Calendar currentDay = Calendar.getInstance();
+        currentDay.add(Calendar.DAY_OF_MONTH, preOffsetDays);
         final Calendar currentDayTimeWithOffset = Calendar.getInstance();
+        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay+preOffsetDays);
         final Date currentTime = currentDay.getTime();
-        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, dueRecurringOffsetDay);
-        currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, dueRecurringOffsetTime);
+        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay);
+        currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, offsetTime);
         final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
         if (currentDay.get(Calendar.DAY_OF_MONTH) != currentDayTimeWithOffset.get(Calendar.DAY_OF_MONTH)) {
             currentDay.set(Calendar.HOUR_OF_DAY, 23);

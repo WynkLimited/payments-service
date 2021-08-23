@@ -94,9 +94,27 @@ payment:
     offset:
       day: 0
       hour: 1
+  preDebitNotification:
+    preOffsetDays: 3
+    offset:
+      day: 0
+      hour: 1
   ###### lib-queue props ######
   pooling:
     queue:
+      preDebitNotification:
+        enabled: true
+        name: mandate-notification-sqs-queue
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       reconciliation:
         enabled: true
         name: wcf-staging-payment-reconciliation

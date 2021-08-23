@@ -221,7 +221,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     @Override
     public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest, transactionStatusRequest.getExtTxnId());
+        final ChargingStatusResponse statusResponse = fetchAndUpdateTransactionFromSource(transactionStatusRequest, transactionStatusRequest.getExtTxnId());
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
@@ -297,14 +297,17 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     public void syncChargingTransactionFromSource(Transaction transaction) {
-        Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        final Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
+            final MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
-            PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
+            final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode())) AnalyticService.update(SOURCE_MODE, payUChargingTransactionDetails.getMode());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode())) AnalyticService.update(BANK_CODE, payUChargingTransactionDetails.getBankCode());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType())) AnalyticService.update(PAYU_CARD_TYPE, payUChargingTransactionDetails.getCardType());
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);

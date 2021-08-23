@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false" scan="true" scanPeriod="30 seconds">
-    <springProperty name="ANALYTICS_LOG_PATH" source="logging.path.analytics"/>
     <springProperty name="APP_NAME" source="logging.appName"/>
     <springProperty name="ACTIVE_PROFILE" source="logging.profile"/>
 
@@ -18,6 +17,7 @@
         </filter>
         <encoder class="in.wynk.logging.encoder.StandardEventEncoder">
             <layout class="in.wynk.logging.layout.ErrorLayout">
+                <product>wcf</product>
                 <appName>${APP_NAME}</appName>
                 <profile>${ACTIVE_PROFILE}</profile>
             </layout>
@@ -27,6 +27,7 @@
     <appender name="APPLOG" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="in.wynk.logging.encoder.StandardEventEncoder">
             <layout class="in.wynk.logging.layout.AppLayout">
+                <product>wcf</product>
                 <appName>${APP_NAME}</appName>
                 <profile>${ACTIVE_PROFILE}</profile>
             </layout>
@@ -36,6 +37,7 @@
     <appender name="LOGSTASHLOG" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="in.wynk.logging.encoder.StandardEventEncoder">
             <layout class="in.wynk.logging.layout.LogstashLayout">
+                <product>wcf</product>
                 <appName>${APP_NAME}</appName>
                 <profile>${ACTIVE_PROFILE}</profile>
             </layout>

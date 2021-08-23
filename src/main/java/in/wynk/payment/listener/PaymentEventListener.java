@@ -18,11 +18,7 @@ import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
-import in.wynk.payment.service.IClientCallbackService;
-import in.wynk.payment.service.IMerchantTransactionService;
-import in.wynk.payment.service.IPaymentErrorService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentManager;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
@@ -34,7 +30,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
+import java.util.Optional;
 
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 
 @Slf4j
@@ -153,6 +152,24 @@ public class PaymentEventListener {
                     .originalTransactionId(event.getTransactionId())
                     .build());
         }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "transactionSnapshot")
+    public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
+        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
+        AnalyticService.update(UID, event.getTransaction().getUid());
+        AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
+        AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());
+        AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
+        AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
+        AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
+        AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
+        AnalyticService.update(PAYMENT_EVENT, event.getTransaction().getType().getValue());
+        AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
+        AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
+        AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
     }
 
 }

@@ -11,6 +11,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
+import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.dto.request.*;
@@ -22,6 +23,7 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Calendar;
@@ -36,18 +38,23 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private final ITransactionDao transactionDao;
     private final IPurchaseDetailsManger purchaseDetailsManger;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IPurchaseDetailsManger purchaseDetailsManger, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IPurchaseDetailsManger purchaseDetailsManger, ApplicationEventPublisher applicationEventPublisher, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.transactionDao = transactionDao;
         this.purchaseDetailsManger = purchaseDetailsManger;
+        this.applicationEventPublisher = applicationEventPublisher;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
 
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = transactionDao.save(transaction);
+        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
+        purchaseDetailsManger.get(transaction).ifPresent(builder::purchaseDetails);
+        applicationEventPublisher.publishEvent(builder.build());
         publishAnalytics(persistedEntity);
         return persistedEntity;
     }
@@ -136,10 +143,10 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(ITEM_ID, transaction.getItemId());
         AnalyticService.update(AMOUNT_PAID, transaction.getAmount());
         AnalyticService.update(CLIENT, transaction.getClientAlias());
+        AnalyticService.update(COUPON_CODE, transaction.getCoupon());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
-        AnalyticService.update(COUPON_CODE, transaction.getCoupon());
         AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }

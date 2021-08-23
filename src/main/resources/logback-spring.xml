@@ -157,6 +157,10 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
+    <logger name="transactionSnapshot" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <logger name="receiptVerification" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>

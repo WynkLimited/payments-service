@@ -35,7 +35,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY106("Invalid Item", "Invalid item is is supplied", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY107("Trial Computation Failed", "Unable to compute trial for purchase", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_ERROR),
 
-    PAY111("PayU Pre Debit Notification Failure", "PayU Pre Debit Notification Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR),
+    PAY111("PayU Pre Debit Notification Failure", "Pre Debit Notification Failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR),
 
     PAY201("Saved Payment Option Failure", "Either this payment option is not currently supported to fetch user saved payments or we are getting timeout from external server", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.SAVED_OPTIONS_TIMED_OUT),
     PAY202("Link Wallet Error", "Unable to find any linked wallet for corresponding uid-paymentCode combination. Try linking a fresh wallet", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.LINK_WALLET_ERROR),

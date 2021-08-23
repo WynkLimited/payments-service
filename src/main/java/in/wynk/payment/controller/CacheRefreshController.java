@@ -17,7 +17,6 @@ public class CacheRefreshController {
     private final PaymentCachingService paymentCachingService;
 
     @GetMapping("/cache/refresh")
-    @AnalyseTransaction(name = "refreshCache")
     public void refreshCache() {
         paymentCachingService.init();
     }

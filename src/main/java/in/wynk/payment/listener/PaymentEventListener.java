@@ -7,6 +7,8 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
@@ -33,6 +35,7 @@ import java.util.EnumSet;
 import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 
@@ -86,7 +89,14 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "recurringPaymentEvent")
-    public void onRecurringPaymentEvent(RecurringPaymentEvent event) { // for auditing and stop recurring in external payment gateway
+    public void onRecurringPaymentEvent(RecurringPaymentEvent event) {
+        try {
+            AnalyticService.update(event);
+            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE)
+                BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class).cancelRecurring(event.getTransactionId());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(UT025, e);
+        }
     }
 
     @EventListener

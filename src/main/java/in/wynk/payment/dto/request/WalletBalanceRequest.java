@@ -12,7 +12,12 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletBalanceRequest extends WalletRequest {
+public abstract class WalletBalanceRequest extends WalletRequest {
     @Analysed
     private int planId;
+    @Analysed
+    private String couponId;
+
+    public abstract String getMsisdn();
+    public abstract String getUid();
 }

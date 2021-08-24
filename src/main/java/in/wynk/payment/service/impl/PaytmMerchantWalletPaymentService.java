@@ -430,7 +430,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<Void> builder = WynkResponseEntity.builder();
         try {
-            String phone = walletLinkRequest.getEncSi();
+            String phone = walletLinkRequest.getWalletUserId();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             AnalyticService.update(UID, sessionDTO.<String>get(UID));
             sessionDTO.put(WALLET_USER_ID, phone);

@@ -93,9 +93,6 @@ logging:
 
 ####### payment props #######
 payment:
-  dropout:
-    tracker:
-      delayInSec: 300
   se:
     s3:
       bucket: wynk-framework-dev-ap-south-1

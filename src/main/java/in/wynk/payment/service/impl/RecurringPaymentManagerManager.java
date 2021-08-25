@@ -122,9 +122,8 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         currentDay.add(Calendar.DAY_OF_MONTH, preOffsetDays);
         final Calendar currentDayTimeWithOffset = Calendar.getInstance();
         currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay + preOffsetDays);
-        final Date currentTime = currentDay.getTime();
-        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay);
         currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, offsetTime);
+        final Date currentTime = currentDay.getTime();
         final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
         if (currentDay.get(Calendar.DAY_OF_MONTH) != currentDayTimeWithOffset.get(Calendar.DAY_OF_MONTH)) {
             currentDay.set(Calendar.HOUR_OF_DAY, 23);

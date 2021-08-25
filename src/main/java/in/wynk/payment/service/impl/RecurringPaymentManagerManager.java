@@ -9,10 +9,12 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
+import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EnumSet;
@@ -33,6 +36,10 @@ import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
 public class RecurringPaymentManagerManager implements IRecurringPaymentManagerService {
 
+    private final ISqsManagerService sqsManagerService;
+    private final IPaymentRenewalDao paymentRenewalDao;
+    private final ApplicationEventPublisher eventPublisher;
+    private final PaymentCachingService paymentCachingService;
     @Value("${payment.recurring.offset.day}")
     private int dueRecurringOffsetDay;
     @Value("${payment.recurring.offset.hour}")
@@ -44,12 +51,11 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Value("${payment.preDebitNotification.offset.hour}")
     private int duePreDebitNotificationOffsetTime;
 
-    private final IPaymentRenewalDao paymentRenewalDao;
-    private final ApplicationEventPublisher eventPublisher;
-    private final PaymentCachingService paymentCachingService;
-
-    public RecurringPaymentManagerManager(@Qualifier(BeanConstant.PAYMENT_RENEWAL_DAO) IPaymentRenewalDao paymentRenewalDao,
-                                          ApplicationEventPublisher eventPublisher, PaymentCachingService paymentCachingService) {
+    public RecurringPaymentManagerManager(ISqsManagerService sqsManagerService,
+                                          @Qualifier(BeanConstant.PAYMENT_RENEWAL_DAO) IPaymentRenewalDao paymentRenewalDao,
+                                          ApplicationEventPublisher eventPublisher,
+                                          PaymentCachingService paymentCachingService) {
+        this.sqsManagerService = sqsManagerService;
         this.paymentRenewalDao = paymentRenewalDao;
         this.eventPublisher = eventPublisher;
         this.paymentCachingService = paymentCachingService;
@@ -91,8 +97,10 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                     AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
                     return;
                 }
-                nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
+                nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()) + 1 * 60 * 60 * 1000); // 1 hour more than proper date
                 scheduleRecurringPayment(request.getTransactionId(), nextRecurringDateTime, request.getAttemptSequence());
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                sqsManagerService.publishSQSMessage(PreDebitNotificationMessage.builder().date(format.format(nextRecurringDateTime.getTime())).transactionId(request.getTransactionId()).build());
             }
         }
     }
@@ -113,7 +121,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         final Calendar currentDay = Calendar.getInstance();
         currentDay.add(Calendar.DAY_OF_MONTH, preOffsetDays);
         final Calendar currentDayTimeWithOffset = Calendar.getInstance();
-        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay+preOffsetDays);
+        currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay + preOffsetDays);
         final Date currentTime = currentDay.getTime();
         currentDayTimeWithOffset.add(Calendar.DAY_OF_MONTH, offsetDay);
         currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, offsetTime);
@@ -127,8 +135,8 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
             currentDayTimeWithOffset.set(Calendar.MINUTE, 00);
             currentDayTimeWithOffset.set(Calendar.SECOND, 00);
             currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
-            final Date[] lowerRangeBound = new Date[] {currentTime, currentDayTimeWithOffset.getTime()};
-            final Date[] upperRangeBound = new Date[] {currentDay.getTime(), currentTimeWithOffset};
+            final Date[] lowerRangeBound = new Date[]{currentTime, currentDayTimeWithOffset.getTime()};
+            final Date[] upperRangeBound = new Date[]{currentDay.getTime(), currentTimeWithOffset};
             return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]), paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
         }
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);

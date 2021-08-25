@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
@@ -372,13 +373,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         // Mandatory according to document
         Map<String, String> payload = new HashMap<>(payloadTemp);
-        if (paymentMethodCachingService.get(chargingRequest.getPurchaseDetails().getPaymentDetails().getPaymentId()).getGroup().equalsIgnoreCase(PAYU_UPI)) {
-            payload.put(PAYU_PG, PAYU_UPI);
-            payload.put(PAYU_BANKCODE, PAYU_UPI);
-            payload.put(PAYU_VPA, "");
-            payload.put(PAYU_TXN_S2S_FLOW, "4");
-            payload.put(PAYU_DECODED_S2S_RESPONSE, "1");
-        }
         payload.put(PAYU_MERCHANT_KEY, payUMerchantKey);
         payload.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
         payload.put(PAYU_TRANSACTION_AMOUNT, String.valueOf(finalPlanAmount));
@@ -766,7 +760,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
             MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(request.getTransactionId());
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
-            orderedMap.put(PAYU_REQUEST_ID, request.getTransactionId());
+            orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
             orderedMap.put(PAYU_DEBIT_DATE, request.getDate());
             orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, request.getTransactionId());
             orderedMap.put(PAYU_TRANSACTION_AMOUNT, cachingService.getPlan(request.getPlanId()).getFinalPrice());

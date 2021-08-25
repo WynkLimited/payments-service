@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@SuperBuilder
 public class PaymentOptionComputationManager<R extends PaymentOptionsComputationResponse, T extends PaymentOptionsEligibilityRequest> extends AbstractEligibilityService<PaymentMethod,T> implements IPaymentOptionComputationManager<R,T>{
 
     private final IRuleEvaluator evaluator;

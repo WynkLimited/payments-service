@@ -385,7 +385,7 @@ cache:
     usePooling: true
 
 onelink:
-  key: key_test_pgZfbR1czLvn25MY3jFKmejbACgrSztR
+  key: key_live_kc5hbJYeDTvc99K81cvQrfbkzrbvQtEW
   url: https://api2.branch.io/v1/url
 
 lock:

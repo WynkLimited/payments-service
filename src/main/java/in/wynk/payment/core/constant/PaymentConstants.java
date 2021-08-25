@@ -48,5 +48,5 @@ public interface PaymentConstants extends BaseConstants {
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
     String SHOULD_WINBACK = "shouldWinBack";
     String WINBACK_CAMPAIGN ="winback_campaign";
-
+    String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
 }

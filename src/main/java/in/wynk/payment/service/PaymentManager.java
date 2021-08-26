@@ -51,7 +51,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
-    private final ISqsManagerService sqsManagerService;
+    private final ISqsManagerService<Object> sqsManagerService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;

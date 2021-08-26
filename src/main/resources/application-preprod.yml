@@ -105,7 +105,7 @@ payment:
   pooling:
     queue:
       preDebitNotification:
-        enabled: false
+        enabled: true
         name: mandate-notification-sqs-queue
         sqs:
           messages:

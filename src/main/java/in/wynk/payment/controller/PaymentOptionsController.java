@@ -6,6 +6,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.AbstractProductDetails;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
+import in.wynk.payment.dto.request.PaymentOptionsRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -17,13 +18,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/wynk/v1/payment")
+@RequestMapping("/wynk")
 public class PaymentOptionsController {
 
     private final IPaymentOptionService paymentMethodService;
     private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedPaymentDetailsRequest<?>> preferredPaymentService;
 
-    @GetMapping("/options/{sid}")
+    @GetMapping("/v1/payment/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
     public PaymentOptionsDTO getPaymentMethods(@PathVariable String sid, @RequestParam(defaultValue = "") String planId, @RequestParam(defaultValue = "") String itemId) {
@@ -31,7 +32,7 @@ public class PaymentOptionsController {
         return paymentMethodService.getPaymentOptions(planId, itemId);
     }
 
-    @PostMapping("/saved/details/{sid}")
+    @PostMapping("/v1/payment/saved/details/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "savedDetails")
     public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedPaymentDetailsRequest<? extends AbstractProductDetails> request) {
@@ -39,6 +40,13 @@ public class PaymentOptionsController {
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());
         return detailsResponse;
+    }
+
+    @PostMapping("/s2s/v1/payment/options")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentOptions")
+    public PaymentOptionsDTO getFilteredPaymentMethods(@RequestBody PaymentOptionsRequest request) {
+        return paymentMethodService.getPaymentOptions(request.getPlanId(), request.getItemId());
     }
 
 }

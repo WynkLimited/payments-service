@@ -1,7 +1,7 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.AppDetails;
+import in.wynk.payment.dto.UserDetails;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,8 +11,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PaymentOptionsRequest {
-     IUserDetails userDetails;
-     IAppDetails appDetails;
+     UserDetails userDetails;
+     AppDetails appDetails;
      String sid;
      String planId;
      String itemId;

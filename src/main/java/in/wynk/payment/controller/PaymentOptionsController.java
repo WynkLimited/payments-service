@@ -43,10 +43,9 @@ public class PaymentOptionsController {
     }
 
     @PostMapping("/s2s/v1/payment/options")
-    @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
     public PaymentOptionsDTO getFilteredPaymentMethods(@RequestBody PaymentOptionsRequest request) {
-        return paymentMethodService.getPaymentOptions(request.getPlanId(), request.getItemId());
+        return paymentMethodService.getFilteredPaymentOptions(request);
     }
 
 }

@@ -4,6 +4,7 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
@@ -88,9 +89,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private WynkApplicationContext myApplicationContext;
 
     @Autowired
-    private PaymentCachingService paymentCachingService;
-
-    @Autowired
     private IRecurringPaymentManagerService recurringPaymentManagerService;
 
     @Override
@@ -132,7 +130,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 long today = System.currentTimeMillis();
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil()-today;
+                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
                 if (furtherDefer > hour * 60 * 60 * 1000) {
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
@@ -227,7 +225,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private int getUpdatedPlanId(int planId, PaymentEvent paymentEvent) {
-        return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? paymentCachingService.getPlan(planId).getLinkedFreePlanId() : planId;
+        return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).getLinkedFreePlanId() : planId;
     }
 
 }

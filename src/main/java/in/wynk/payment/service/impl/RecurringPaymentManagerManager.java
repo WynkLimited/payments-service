@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -16,6 +17,7 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,19 +37,16 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
 
     @Value("${payment.recurring.offset.day}")
     private int dueRecurringOffsetDay;
+
     @Value("${payment.recurring.offset.hour}")
     private int dueRecurringOffsetTime;
 
-    private final IPaymentRenewalDao paymentRenewalDao;
-    private final ApplicationEventPublisher eventPublisher;
-    private final PaymentCachingService paymentCachingService;
+    @Autowired
+    @Qualifier(BeanConstant.PAYMENT_RENEWAL_DAO)
+    private IPaymentRenewalDao paymentRenewalDao;
 
-    public RecurringPaymentManagerManager(@Qualifier(BeanConstant.PAYMENT_RENEWAL_DAO) IPaymentRenewalDao paymentRenewalDao,
-                                          ApplicationEventPublisher eventPublisher, PaymentCachingService paymentCachingService) {
-        this.paymentRenewalDao = paymentRenewalDao;
-        this.eventPublisher = eventPublisher;
-        this.paymentCachingService = paymentCachingService;
-    }
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
         try {
@@ -70,7 +69,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
             scheduleRecurringPayment(request.getTransaction().getIdStr(), ((MigrationTransactionRevisionRequest) request).getNextChargingDate(), 0);
         } else {
             Calendar nextRecurringDateTime = Calendar.getInstance();
-            PlanDTO planDTO = paymentCachingService.getPlan(request.getTransaction().getPlanId());
+            PlanDTO planDTO = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(request.getTransaction().getPlanId());
             if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(request.getTransaction().getType())) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
@@ -109,8 +108,8 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
             currentDayTimeWithOffset.set(Calendar.MINUTE, 00);
             currentDayTimeWithOffset.set(Calendar.SECOND, 00);
             currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
-            final Date[] lowerRangeBound = new Date[] {currentTime, currentDayTimeWithOffset.getTime()};
-            final Date[] upperRangeBound = new Date[] {currentDay.getTime(), currentTimeWithOffset};
+            final Date[] lowerRangeBound = new Date[]{currentTime, currentDayTimeWithOffset.getTime()};
+            final Date[] upperRangeBound = new Date[]{currentDay.getTime(), currentTimeWithOffset};
             return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]), paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
         }
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);

@@ -23,6 +23,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     private final String couponCode;
     private final String appId;
     private final int buildNo;
+    private final String os;
 
 
     public static PaymentOptionsEligibilityRequest from(PaymentOptionsComputationDTO computationDTO) {

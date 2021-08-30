@@ -16,4 +16,5 @@ public class PaymentOptionsComputationDTO {
     private final String couponCode;
     private final String appId;
     private final int buildNo;
+    private final String os;
 }

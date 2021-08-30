@@ -2,11 +2,12 @@ package in.wynk.payment.eligibility.enums;
 
 import in.wynk.eligibility.enums.IEligibilityStatusReason;
 
-public enum PaymentMethodEligibilityReason implements IEligibilityStatusReason {
+public enum PaymentsEligibilityReason implements IEligibilityStatusReason {
     MSISDN_NOT_IN_COUNTRY_CODE,
     BLANK_MSISDN,
+    SERVICE_NOT_IN_PROVIDED_LIST,
     BLANK_SERVICE,
-    SERVICE_NOT_IN_PROVIDED_LIST;
+    ;
 
     @Override
     public String getCode() {

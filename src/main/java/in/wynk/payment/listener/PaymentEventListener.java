@@ -24,6 +24,8 @@ import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.tinylytics.constants.TinylyticsConstants;
+import in.wynk.tinylytics.dto.BranchEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +33,15 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.util.EnumSet;
-import java.util.Optional;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.UID;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
+import static in.wynk.tinylytics.constants.TinylyticsConstants.*;
 
 @Slf4j
 @Service
@@ -182,4 +186,25 @@ public class PaymentEventListener {
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
     }
 
+    private void publishBranchEvent(TransactionSnapshotEvent event) {
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+            Map<String, Object> meta = new HashMap<>();
+            meta.put(PACK_ID, event.getTransaction().getPlanId());
+            meta.put(TRANSACTION_ID, event.getTransaction().getIdStr());
+            meta.put(AMOUNT, event.getTransaction().getAmount());
+            meta.put(PAYMENT_CODE,event.getTransaction().getPaymentChannel().name());
+            meta.put(CLIENT,event.getTransaction().getClientAlias());
+            meta.put(TRANSACTION_STATUS,event.getTransaction().getStatus());
+            meta.put(MSISDN, event.getTransaction().getMsisdn());
+            meta.put(TRIGGER_DATE, dateFormat.format(new Date()));
+            if(Optional.ofNullable(event.getPurchaseDetails()).isPresent()){
+                meta.put(OPT_FOR_AUTO_RENEW ,event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
+                meta.put(DID,event.getPurchaseDetails().getAppDetails().getDeviceId());
+                meta.put(TinylyticsConstants.OS,event.getPurchaseDetails().getAppDetails().getOs());
+            }
+            BranchEvent branchEvent = BranchEvent.builder().uid(event.getTransaction().getUid()).eventName(event.getTransaction().getType().getValue()).meta(meta).build();
+            eventPublisher.publishEvent(branchEvent);
+        } catch (Exception ignored){}
+    }
 }

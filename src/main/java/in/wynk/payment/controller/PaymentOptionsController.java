@@ -5,8 +5,10 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.AbstractProductDetails;
+import in.wynk.payment.dto.S2SPaymentOptionsRequest;
+import in.wynk.payment.dto.WebPaymentOptionsRequest;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
-import in.wynk.payment.dto.request.PaymentOptionsRequest;
+import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -32,6 +34,14 @@ public class PaymentOptionsController {
         return paymentMethodService.getPaymentOptions(planId, itemId);
     }
 
+    @PostMapping("/v1/payment/options/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentOptions")
+    public PaymentOptionsDTO getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
+        AnalyticService.update(request);
+        return paymentMethodService.getFilteredPaymentOptions(request);
+    }
+
     @PostMapping("/v1/payment/saved/details/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "savedDetails")
@@ -44,7 +54,8 @@ public class PaymentOptionsController {
 
     @PostMapping("/s2s/v1/payment/options")
     @AnalyseTransaction(name = "paymentOptions")
-    public PaymentOptionsDTO getFilteredPaymentMethods(@RequestBody PaymentOptionsRequest request) {
+    public PaymentOptionsDTO getFilteredPaymentMethods(@RequestBody DefaultPaymentOptionRequest<S2SPaymentOptionsRequest> request) {
+        AnalyticService.update(request);
         return paymentMethodService.getFilteredPaymentOptions(request);
     }
 

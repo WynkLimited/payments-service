@@ -9,8 +9,9 @@ import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
-import in.wynk.payment.dto.request.PaymentOptionsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
@@ -71,11 +72,11 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Override
-    public PaymentOptionsDTO getFilteredPaymentOptions(PaymentOptionsRequest request) {
+    public PaymentOptionsDTO getFilteredPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         try {
-            return getFilteredPaymentOptionsForPlan(request);
+            return getFilteredPaymentOptionsForPlan(request.getPaymentOptionRequest());
         } catch (Exception ex) {
-            log.info(PAYMENT_OPTIONS_FAILURE,"Can't fetch payment options for plan {} and msisdn {}",request.getPlanId(),request.getUserDetails().getMsisdn());
+            log.info(PAYMENT_OPTIONS_FAILURE,"Can't fetch payment options for plan {} and msisdn {}",request.getPaymentOptionRequest().getPlanId(),request.getPaymentOptionRequest().getUserDetails().getMsisdn());
             throw new WynkRuntimeException(PAY022,ex);
         }
     }
@@ -229,7 +230,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         }
     }
 
-    private PaymentOptionsDTO getFilteredPaymentOptionsForPlan(PaymentOptionsRequest request) {
+    private PaymentOptionsDTO getFilteredPaymentOptionsForPlan(IPaymentOptionsRequest request) {
         final String planId = request.getPlanId();
         final PlanDTO paidPlan = paymentCachingService.getPlan(planId);
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();

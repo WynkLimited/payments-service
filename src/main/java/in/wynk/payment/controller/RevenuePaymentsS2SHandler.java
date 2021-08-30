@@ -14,6 +14,7 @@ import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;
+import in.wynk.payment.service.IQuickPayLinkGenerator;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
@@ -34,6 +35,7 @@ public class RevenuePaymentsS2SHandler {
 
     private final PaymentManager paymentManager;
     private final ICustomerWinBackService winBackService;
+    private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final IDummySessionGenerator dummySessionGenerator;
 
     @PostMapping("/v1/payment/charge")
@@ -67,6 +69,11 @@ public class RevenuePaymentsS2SHandler {
         final WynkResponseEntity<Void> response = winBackService.winBack(request);
         AnalyticService.update(response);
         return response;
+    }
+
+    @GetMapping("/v1/pay/link/{tid}")
+    public WynkResponseEntity<String> quickPayLink(@PathVariable String tid) {
+        return WynkResponseEntity.<String>builder().data(quickPayLinkGenerator.generate(tid)).build();
     }
 
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")

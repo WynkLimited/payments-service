@@ -12,4 +12,8 @@ public class PaymentOptionsComputationDTO {
     private final String msisdn;
     private final ItemDTO itemDTO;
     private final String group;
+    private final String countryCode;
+    private final String couponCode;
+    private final String appId;
+    private final int buildNo;
 }

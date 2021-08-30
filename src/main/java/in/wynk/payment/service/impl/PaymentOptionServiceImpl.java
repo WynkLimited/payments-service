@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY022;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
 
 @Service
@@ -60,6 +61,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private final IPaymentOptionComputationManager paymentOptionManager;
 
     @Override
+    @Deprecated
     public PaymentOptionsDTO getPaymentOptions(String planId, String itemId) {
         if (!StringUtils.isEmpty(planId) && paymentCachingService.containsPlan(planId)) {
             return getPaymentOptionsForPlan(planId);
@@ -74,41 +76,43 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     @Override
     public PaymentOptionsDTO getFilteredPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         try {
-            return getFilteredPaymentOptionsForPlan(request.getPaymentOptionRequest());
+            if (request.getPaymentOptionRequest().getPlanId() != null) {
+                return getFilteredPaymentOptionsForPlan(request.getPaymentOptionRequest());
+            } else if (request.getPaymentOptionRequest().getItemId() != null) {
+                return getFilteredPaymentOptionsForItem(request.getPaymentOptionRequest());
+            } else {
+                log.info(PAYMENT_OPTIONS_FAILURE, "Either planId or itemId is mandatory for paymentOptions");
+                throw new WynkRuntimeException(PAY023);
+            }
         } catch (Exception ex) {
-            log.info(PAYMENT_OPTIONS_FAILURE,"Can't fetch payment options for plan {} and msisdn {}",request.getPaymentOptionRequest().getPlanId(),request.getPaymentOptionRequest().getUserDetails().getMsisdn());
-            throw new WynkRuntimeException(PAY022,ex);
+            log.info(PAYMENT_OPTIONS_FAILURE, "Can't fetch payment options for plan {} and msisdn {} and item {}", request.getPaymentOptionRequest().getPlanId(), request.getPaymentOptionRequest().getUserDetails().getMsisdn(), request.getPaymentOptionRequest().getItemId());
+            throw new WynkRuntimeException(PAY022, ex);
         }
     }
 
+    @Deprecated
     private PaymentOptionsDTO getPaymentOptionsForPlan(String planId) {
         final PlanDTO paidPlan = paymentCachingService.getPlan(planId);
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
-        PaymentOptionsEligibilityRequest request = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().planDTO(paidPlan).msisdn(sessionDTO.get(MSISDN)).build());
         final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).map(trialPlanId -> !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(trialPlanId)).orElse(false);
         if (trialEligible)
-            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported), request));
-        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true), request));
+            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported)));
+        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true)));
         return builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build();
     }
 
+    @Deprecated
     private PaymentOptionsDTO getPaymentOptionsForItem(String itemId) {
-        final ItemDTO item = paymentCachingService.getItem(itemId);
-        PaymentOptionsEligibilityRequest request = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item).build());
-        return PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getPaymentGroups((paymentMethod -> true), request)).build();
+        return PaymentOptionsDTO.builder().productDetails(buildPointDetails(itemId)).paymentGroups(getPaymentGroups((paymentMethod -> true))).build();
     }
 
-    private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate, PaymentOptionsEligibilityRequest request) {
+    private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
-            request.setGroup(group.getId());
-            List<PaymentMethod> methods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
-            final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
-            methods = filterPaymentMethodsBasedOnEligibility(response, methods);
-            List<PaymentMethodDTO> methodDTOS = methods.stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
+            List<PaymentMethodDTO> methodDTOS = availableMethods.get(group.getId()).stream().filter(filterPredicate).map(PaymentMethodDTO::new).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
                 paymentGroupsDTOS.add(groupsDTO);
@@ -125,6 +129,16 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private PaymentOptionsDTO.PointDetails buildPointDetails(ItemDTO item) {
         return PaymentOptionsDTO.PointDetails.builder()
                 .id(item.getId())
+                .title(item.getName())
+                .price(item.getPrice())
+                .build();
+    }
+
+    @Deprecated
+    private PaymentOptionsDTO.PointDetails buildPointDetails(String itemId) {
+        final ItemDTO item = paymentCachingService.getItem(itemId);
+        return PaymentOptionsDTO.PointDetails.builder()
+                .id(itemId)
                 .title(item.getName())
                 .price(item.getPrice())
                 .build();
@@ -234,12 +248,46 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         final String planId = request.getPlanId();
         final PlanDTO paidPlan = paymentCachingService.getPlan(planId);
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
-        PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().planDTO(paidPlan).msisdn(request.getUserDetails().getMsisdn()).build());
+        PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder()
+                .planDTO(paidPlan)
+                .msisdn(request.getUserDetails().getMsisdn())
+                .appId(request.getAppDetails().getAppId())
+                .buildNo(request.getAppDetails().getBuildNo())
+                .countryCode(request.getCountryCode())
+                .couponCode(request.getCouponId())
+                .build());
         final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).isPresent();
         if (trialEligible)
-            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
-        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true), eligibilityRequest));
+            builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
+        else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest));
         return builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(planId, trialEligible)).build();
+    }
+
+    private PaymentOptionsDTO getFilteredPaymentOptionsForItem(IPaymentOptionsRequest request) {
+        final ItemDTO item = paymentCachingService.getItem(request.getItemId());
+        PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item)
+                .appId(request.getAppDetails().getAppId())
+                .buildNo(request.getAppDetails().getBuildNo())
+                .countryCode(request.getCountryCode())
+                .couponCode(request.getCouponId()).build());
+        return PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest)).build();
+    }
+
+    private List<PaymentOptionsDTO.PaymentGroupsDTO> getFilteredPaymentGroups(Predicate<PaymentMethod> filterPredicate, PaymentOptionsEligibilityRequest request) {
+        Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
+        List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
+        for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
+            request.setGroup(group.getId());
+            List<PaymentMethod> methods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
+            final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
+            methods = filterPaymentMethodsBasedOnEligibility(response, methods);
+            List<PaymentMethodDTO> methodDTOS = methods.stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
+            if (!CollectionUtils.isEmpty(methodDTOS)) {
+                PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
+                paymentGroupsDTOS.add(groupsDTO);
+            }
+        }
+        return paymentGroupsDTOS;
     }
 
 }

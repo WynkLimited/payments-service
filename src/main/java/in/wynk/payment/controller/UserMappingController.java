@@ -10,15 +10,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping("wynk/s2s/v1")
 public class UserMappingController {
 
     @PostMapping("/mapping")
-    @AnalyseTransaction(name="wynkUidToExtUserIdMapping")
-    public EmptyResponse updateUserMapping(@RequestBody UserMappingRequest request){
+    @AnalyseTransaction(name = "wynkUidToExtUserIdMapping")
+    public EmptyResponse updateUserMapping(@Valid @RequestBody UserMappingRequest request) {
         IUserMappingService mappingService = BeanLocatorFactory.getBean(request.getCode().getCode(), IUserMappingService.class);
         mappingService.addUserMapping(request);
         return EmptyResponse.response();
     }
+
 }

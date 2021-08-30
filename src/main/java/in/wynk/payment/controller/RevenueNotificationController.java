@@ -22,13 +22,13 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("wynk/v1/callback")
-public class RevenueNotificationHandler {
-
-    @Value("${spring.application.name}")
-    private String applicationAlias;
+public class RevenueNotificationController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
+
+    @Value("${spring.application.name}")
+    private String applicationAlias;
 
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
@@ -39,8 +39,8 @@ public class RevenueNotificationHandler {
         return paymentManager.handleNotification(NotificationRequest.builder().paymentCode(paymentCode).payload(payload).clientAlias(applicationAlias).build());
     }
 
-    @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @AnalyseTransaction(name = "paymentCallback")
+    @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
         final PaymentCode paymentCode = PaymentCode.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());

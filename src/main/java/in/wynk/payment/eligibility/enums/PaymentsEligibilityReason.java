@@ -7,6 +7,10 @@ public enum PaymentsEligibilityReason implements IEligibilityStatusReason {
     BLANK_MSISDN,
     SERVICE_NOT_IN_PROVIDED_LIST,
     BLANK_SERVICE,
+    EMPTY_COUNTRY_CODE,
+    INVALID_COUNTRY_CODE,
+    EMPTY_COUPON_ID,
+    INVALID_COUPON
     ;
 
     @Override

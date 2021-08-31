@@ -20,13 +20,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/wynk")
+@RequestMapping("/wynk/v1/payment")
 public class PaymentOptionsController {
 
     private final IPaymentOptionService paymentMethodService;
     private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedPaymentDetailsRequest<?>> preferredPaymentService;
 
-    @GetMapping("/v1/payment/options/{sid}")
+    @GetMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
     public PaymentOptionsDTO getPaymentMethods(@PathVariable String sid, @RequestParam(defaultValue = "") String planId, @RequestParam(defaultValue = "") String itemId) {
@@ -34,7 +34,7 @@ public class PaymentOptionsController {
         return paymentMethodService.getPaymentOptions(planId, itemId);
     }
 
-    @PostMapping("/v1/payment/options/{sid}")
+    @PostMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
     public PaymentOptionsDTO getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
@@ -42,7 +42,7 @@ public class PaymentOptionsController {
         return paymentMethodService.getFilteredPaymentOptions(request);
     }
 
-    @PostMapping("/v1/payment/saved/details/{sid}")
+    @PostMapping("/saved/details/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "savedDetails")
     public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedPaymentDetailsRequest<? extends AbstractProductDetails> request) {
@@ -50,13 +50,6 @@ public class PaymentOptionsController {
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());
         return detailsResponse;
-    }
-
-    @PostMapping("/s2s/v1/payment/options")
-    @AnalyseTransaction(name = "paymentOptions")
-    public PaymentOptionsDTO getFilteredPaymentMethods(@RequestBody DefaultPaymentOptionRequest<S2SPaymentOptionsRequest> request) {
-        AnalyticService.update(request);
-        return paymentMethodService.getFilteredPaymentOptions(request);
     }
 
 }

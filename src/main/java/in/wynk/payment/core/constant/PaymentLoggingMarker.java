@@ -11,11 +11,10 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
     Marker SUBSCRIPTION_ERROR = MarkerFactory.getMarker("SUBSCRIPTION_ERROR");
-
     Marker RENEWAL_ELIGIBILITY_API_ERROR = MarkerFactory.getMarker("RENEWAL_ELIGIBILITY_API_ERROR");
     Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");
     Marker PAYMENT_RECONCILIATION_FAILURE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_FAILURE");
-
+    Marker PRE_DEBIT_NOTIFICATION_QUEUE = MarkerFactory.getMarker("PRE_DEBIT_NOTIFICATION_QUEUE");
     Marker PAYMENT_RENEWAL_QUEUE = MarkerFactory.getMarker("PAYMENT_RENEWAL_QUEUE");
     Marker PAYMENT_CHARGING_QUEUE = MarkerFactory.getMarker("PAYMENT_CHARGING_QUEUE");
     Marker RENEWAL_SUBSCRIPTION_QUEUE = MarkerFactory.getMarker("RENEWAL_SUBSCRIPTION_QUEUE");
@@ -25,9 +24,12 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
     Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");
+    Marker PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS= MarkerFactory.getMarker("PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS");
     Marker PAYU_RENEWAL_TIMEOUT_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_TIMEOUT_ERROR");
     Marker PAYU_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_CALLBACK_FAILURE");
     Marker PAYU_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION");
+    Marker PAYU_PRE_DEBIT_NOTIFICATION_ERROR = MarkerFactory.getMarker("PAYU_PRE_DEBIT_NOTIFICATION_ERROR");
+    Marker PAYU_UPI_MANDATE_REVOKE_ERROR = MarkerFactory.getMarker("PAYU_UPI_MANDATE_REVOKE_ERROR");
     Marker PAYU_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_REFUND_STATUS_VERIFICATION");
     Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
     Marker PAYU_API_FAILURE = MarkerFactory.getMarker("PAYU_API_FAILURE");

@@ -44,5 +44,5 @@ public interface PaymentConstants extends BaseConstants {
 
     String PROD_ENV = "PROD";
     String SANDBOX_ENV = "Sandbox";
-
+    String DEFAULT_COUNTRY_CODE = "+91";
 }

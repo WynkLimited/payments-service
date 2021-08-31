@@ -80,5 +80,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker CALLBACK_PAYLOAD_PARSING_FAILURE = MarkerFactory.getMarker("CALLBACK_PAYLOAD_PARSING_FAILURE");
 
     Marker PAYMENT_OPTIONS_FAILURE = MarkerFactory.getMarker("PAYMENT_OPTIONS_FAILURE");
+    Marker VAS_ERROR = MarkerFactory.getMarker("VAS_ERROR");
 
 }

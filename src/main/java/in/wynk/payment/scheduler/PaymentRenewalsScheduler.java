@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
+import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import org.slf4j.MDC;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,12 +36,26 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("paymentRenewalsInit", true);
-        List<PaymentRenewal> paymentRenewals =
-                recurringPaymentManager.getCurrentDueRecurringPayments()
-                        .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
-                        .collect(Collectors.toList());
+        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueRecurringPayments()
+                .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
+                .collect(Collectors.toList());
         sendToRenewalQueue(paymentRenewals);
         AnalyticService.update("paymentRenewalsCompleted", true);
+    }
+
+    @Transactional
+    @AnalyseTransaction(name = "renewNotifications")
+    public void sendNotifications(String requestId) {
+        MDC.put(REQUEST_ID, requestId);
+        AnalyticService.update(REQUEST_ID, requestId);
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("renewNotificationsInit", true);
+        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications()
+                .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
+                .collect(Collectors.toList());
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).date(format.format(paymentRenewal.getDay().getTime())).build()));
+        AnalyticService.update("renewNotificationsCompleted", true);
     }
 
     private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals) {
@@ -54,6 +70,12 @@ public class PaymentRenewalsScheduler {
 
     @AnalyseTransaction(name = "scheduleRenewalMessage")
     private void publishRenewalMessage(PaymentRenewalMessage message) {
+        AnalyticService.update(message);
+        sqsManagerService.publishSQSMessage(message);
+    }
+
+    @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
+    private void publishPreDebitNotificationMessage(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
         sqsManagerService.publishSQSMessage(message);
     }

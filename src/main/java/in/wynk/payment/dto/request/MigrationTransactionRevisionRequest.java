@@ -11,12 +11,6 @@ import java.util.Calendar;
 @SuperBuilder
 @AnalysedEntity
 public class MigrationTransactionRevisionRequest extends AbstractTransactionRevisionRequest {
-
     @Analysed
     private final Calendar nextChargingDate;
-
-    @Override
-    public int getAttemptSequence() {
-        return 0;
-    }
 }

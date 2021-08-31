@@ -11,7 +11,6 @@ import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.spel.IRuleEvaluator;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +27,7 @@ public class PaymentOptionComputationManager<R extends PaymentOptionsComputation
 
     public PaymentOptionComputationManager(IRuleEvaluator evaluator,PaymentCachingService cachingService) {
         super(evaluator);
-        this.evaluator =evaluator;
+        this.evaluator = evaluator;
         this.cachingService = cachingService;
     }
 

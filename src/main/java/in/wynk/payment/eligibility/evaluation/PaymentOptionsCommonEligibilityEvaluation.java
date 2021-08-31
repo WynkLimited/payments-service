@@ -1,6 +1,7 @@
 package in.wynk.payment.eligibility.evaluation;
 
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.country.core.dao.entity.CountryCurrencyDetails;
 import in.wynk.country.core.service.ICountryCurrenyDetailsCache;
 import in.wynk.coupon.core.service.IUserProfileService;
@@ -20,24 +21,102 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.VAS_ERROR;
 
 @Slf4j
 @Getter
 @SuperBuilder
 public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoBaseEntity<String>, P extends PaymentOptionsEligibilityRequest> extends AbstractEligibilityEvaluation<T, P> {
 
-    @Autowired
-    private VasClientService vasClientService;
+    public boolean isAirtelUser() {
+        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
+        try {
+            final PaymentOptionsEligibilityRequest root = getRoot();
+            if (StringUtils.isBlank(root.getMsisdn())) {
+                resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
+            } else {
+                final boolean isAirtelUser = checkAirtelUserEligibility(root);
+                if (isAirtelUser) {
+                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
+                } else {
+                    resultBuilder.reason(CommonEligibilityStatusReason.IS_NON_AIRTEL_USER);
+                }
+            }
+            return resultBuilder.build().isEligible();
+        } finally {
+            result = resultBuilder.build();
+        }
+    }
 
-    @Autowired
-    private IUserProfileService userProfileService;
+    public boolean liesInSegment(String... segments) {
+        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
+        try {
+            final PaymentOptionsEligibilityRequest root = getRoot();
+            if (StringUtils.isBlank(root.getMsisdn())) {
+                resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
+            } else if (StringUtils.isBlank(root.getService())) {
+                resultBuilder.reason(PaymentsEligibilityReason.BLANK_SERVICE);
+            } else {
+                Set<String> thanksSegments = fetchThanksSegment(root.getMsisdn(), root.getService());
+                Optional<String> foundSegment = Arrays.stream(segments).filter(thanksSegments::contains).findAny();
+                if (foundSegment.isPresent()) {
+                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
+                } else {
+                    resultBuilder.reason(CommonEligibilityStatusReason.THANKS_COHORT_NOT_ELIGIBLE);
+                }
+            }
+            return resultBuilder.build().isEligible();
+        } finally {
+            result = resultBuilder.build();
+        }
+    }
 
-    @Autowired
-    private ICountryCurrenyDetailsCache cachingService;
+    private boolean checkAirtelUserEligibility(PaymentOptionsEligibilityRequest root) {
+        try {
+            VasClientService vasClientService = BeanLocatorFactory.getBean(VasClientService.class);
+            final MsisdnOperatorDetails msisdnOperatorDetails = vasClientService.allOperatorDetails(root.getMsisdn());
+            if (msisdnOperatorDetails != null && msisdnOperatorDetails.getUserMobilityInfo() != null && msisdnOperatorDetails.getUserMobilityInfo().getCircle() != null) {
+                return true;
+            }
+            return CollectionUtils.isNotEmpty(fetchThanksSegment(root.getMsisdn(), root.getService()));
+        } catch (Exception ex) {
+            log.error(VAS_ERROR,"unable to fetch vas details for msisdn {}", root.getMsisdn());
+            return false;
+        }
+    }
+
+    private Set<String> fetchThanksSegment(String msisdn, String service) {
+        IUserProfileService userProfileService = BeanLocatorFactory.getBean(IUserProfileService.class);
+        return userProfileService.fetchThanksSegment(root.getMsisdn(), root.getService()).values().stream().filter(Objects::nonNull).flatMap(Collection::stream).collect(Collectors.toSet());
+    }
+
+    public boolean hasCountryCode(String... codes) {
+        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
+        try {
+            final PaymentOptionsEligibilityRequest root = getRoot();
+            final String countryCode = root.getCountryCode();
+            if (StringUtils.isBlank(countryCode)) {
+                resultBuilder.reason(PaymentsEligibilityReason.EMPTY_COUNTRY_CODE);
+            } else {
+                ICountryCurrenyDetailsCache cachingService = BeanLocatorFactory.getBean(ICountryCurrenyDetailsCache.class);
+                Set<String> countryCurrencyDetails = cachingService.getAllByState(State.ACTIVE).stream().map(CountryCurrencyDetails::getCountryCode).collect(Collectors.toSet());
+                Optional<String> validCountryCode = Arrays.stream(codes).filter(countryCurrencyDetails::contains).filter(countryCurrencyDetail->countryCurrencyDetail.equals(countryCode)).findAny();
+                if (validCountryCode.isPresent()) {
+                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
+                } else {
+                    resultBuilder.reason(PaymentsEligibilityReason.INVALID_COUNTRY_CODE);
+                }
+            }
+            return resultBuilder.build().isEligible();
+        } finally {
+            result = resultBuilder.build();
+        }
+    }
+
 
     public boolean msisdnStartsWithCodes(String... countryCodes) {
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
@@ -136,84 +215,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         return currentBuildNo >= minBuildNum && currentBuildNo <= maxBuildNum;
     }
 
-    private boolean isAirtelUser() {
-        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
-        try {
-            final PaymentOptionsEligibilityRequest root = getRoot();
-            if (StringUtils.isBlank(root.getMsisdn())) {
-                resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
-            } else {
-                final boolean isAirtelUser = checkAirtelUserEligibility(root);
-                if (isAirtelUser) {
-                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
-                } else {
-                    resultBuilder.reason(CommonEligibilityStatusReason.IS_NON_AIRTEL_USER);
-                }
-            }
-            return resultBuilder.build().isEligible();
-        } finally {
-            result = resultBuilder.build();
-        }
-    }
-
-    private boolean liesInSegment(String... segments) {
-        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
-        try {
-            final PaymentOptionsEligibilityRequest root = getRoot();
-            if (StringUtils.isBlank(root.getMsisdn())) {
-                resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
-            } else if (StringUtils.isBlank(root.getService())) {
-                resultBuilder.reason(PaymentsEligibilityReason.BLANK_SERVICE);
-            } else {
-                Set<String> thanksSegments = fetchThanksSegment(root.getMsisdn(), root.getService());
-                Optional<String> foundSegment = Arrays.stream(segments).filter(thanksSegments::contains).findAny();
-                if (foundSegment.isPresent()) {
-                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
-                } else {
-                    resultBuilder.reason(CommonEligibilityStatusReason.THANKS_COHORT_NOT_ELIGIBLE);
-                }
-            }
-            return resultBuilder.build().isEligible();
-        } finally {
-            result = resultBuilder.build();
-        }
-    }
-
-    private boolean checkAirtelUserEligibility(PaymentOptionsEligibilityRequest root) {
-        final MsisdnOperatorDetails msisdnOperatorDetails = vasClientService.allOperatorDetails(root.getMsisdn());
-        if (msisdnOperatorDetails != null && msisdnOperatorDetails.getUserMobilityInfo() != null && msisdnOperatorDetails.getUserMobilityInfo().getCircle() != null) {
-            return true;
-        }
-        return CollectionUtils.isNotEmpty(fetchThanksSegment(root.getMsisdn(), root.getService()));
-    }
-
-    private Set<String> fetchThanksSegment(String msisdn, String service) {
-        return userProfileService.fetchThanksSegment(root.getMsisdn(), root.getService()).values().stream().filter(Objects::nonNull).flatMap(Collection::stream).collect(Collectors.toSet());
-    }
-
-    private boolean hasCountryCode(String... codes) {
-        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
-        try {
-            final PaymentOptionsEligibilityRequest root = getRoot();
-            final String countryCode = root.getCountryCode();
-            if (StringUtils.isBlank(countryCode)) {
-                resultBuilder.reason(PaymentsEligibilityReason.EMPTY_COUNTRY_CODE);
-            } else {
-                Set<String> countryCurrencyDetails = cachingService.getAllByState(State.ACTIVE).stream().map(CountryCurrencyDetails::getCountryCode).collect(Collectors.toSet());
-                Optional<String> validCountryCode = Arrays.stream(codes).filter(countryCurrencyDetails::contains).filter(countryCurrencyDetail->countryCurrencyDetail.equals(countryCode)).findAny();
-                if (validCountryCode.isPresent()) {
-                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
-                } else {
-                    resultBuilder.reason(PaymentsEligibilityReason.INVALID_COUNTRY_CODE);
-                }
-            }
-            return resultBuilder.build().isEligible();
-        } finally {
-            result = resultBuilder.build();
-        }
-    }
-
-    private boolean hasCouponId(String... coupons) {
+    public boolean hasCouponId(String... coupons) {
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
             final PaymentOptionsEligibilityRequest root = getRoot();

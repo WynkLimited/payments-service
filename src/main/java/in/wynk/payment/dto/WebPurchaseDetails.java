@@ -16,6 +16,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
+
 import static in.wynk.common.constant.BaseConstants.*;
 
 @Getter
@@ -25,8 +27,11 @@ import static in.wynk.common.constant.BaseConstants.*;
 @AllArgsConstructor
 public class WebPurchaseDetails implements IChargingDetails {
 
+    @Valid
     @Analysed
     private PaymentDetails paymentDetails;
+
+    @Valid
     @Analysed
     private AbstractProductDetails productDetails;
 
@@ -51,17 +56,17 @@ public class WebPurchaseDetails implements IChargingDetails {
     public IPageUrlDetails getPageUrlDetails() {
         final IAppDetails appDetails = getAppDetails();
         final SessionDTO session = SessionContextHolder.getBody();
-        final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.success.page}"), appDetails);
-        final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.failure.page}"), appDetails);
-        final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? session.get(PENDING_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.pending.page}"), appDetails);
-        final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? session.get(UNKNOWN_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.unknown.page}"), appDetails);
+        final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL) : buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.success.page}"), appDetails);
+        final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL) : buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.failure.page}"), appDetails);
+        final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? session.get(PENDING_WEB_URL) : buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.pending.page}"), appDetails);
+        final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? session.get(UNKNOWN_WEB_URL) : buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.unknown.page}"), appDetails);
         return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
     }
 
     @Override
     @JsonIgnore
     public ICallbackDetails getCallbackDetails() {
-        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web}") + SLASH + SessionContextHolder.getId() + SLASH +  BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentDetails().getPaymentId()).getPaymentCode().getCode();
+        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web}") + SLASH + SessionContextHolder.getId() + SLASH + BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentDetails().getPaymentId()).getPaymentCode().getCode();
     }
 
 

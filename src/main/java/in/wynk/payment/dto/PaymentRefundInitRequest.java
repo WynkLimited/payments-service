@@ -8,14 +8,21 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentRefundInitRequest extends AbstractPaymentRefundRequest {
+
+    @NotNull
     @Analysed
     private String reason;
+
+    @NotNull
     @Analysed
     private String originalTransactionId;
+
 }

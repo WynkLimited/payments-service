@@ -8,14 +8,25 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+
+import static in.wynk.common.constant.CacheBeanNameConstants.INVALID_VALUE;
+import static in.wynk.common.constant.CacheBeanNameConstants.MSISDN_REGEX;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 public class S2SWalletDeLinkRequest extends WalletDeLinkRequest {
+
+    @NotNull
     @Analysed
+    @Pattern(regexp = MSISDN_REGEX, message = INVALID_VALUE)
     private String msisdn;
+
+    @NotNull
     @Analysed
     private String deviceId;
 
@@ -23,4 +34,5 @@ public class S2SWalletDeLinkRequest extends WalletDeLinkRequest {
     public String getUid() {
         return MsisdnUtils.getUidFromMsisdn(msisdn);
     }
+
 }

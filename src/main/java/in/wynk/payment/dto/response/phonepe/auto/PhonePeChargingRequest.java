@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
 @ToString
 @SuperBuilder
@@ -17,6 +19,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PhonePeChargingRequest<T extends IPurchaseDetails> extends AbstractChargingRequest<T> {
+    @NotNull
     @Analysed
     private Long phonePeVersionCode;
 }

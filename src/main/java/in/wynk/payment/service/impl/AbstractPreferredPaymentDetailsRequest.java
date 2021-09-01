@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.Valid;
+
 import static in.wynk.common.constant.CacheBeanNameConstants.COUPON;
 
 @Getter
@@ -14,7 +16,11 @@ import static in.wynk.common.constant.CacheBeanNameConstants.COUPON;
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class AbstractPreferredPaymentDetailsRequest<T extends IProductDetails> {
+
     @MongoBaseEntityConstraint(beanName = COUPON)
     private String couponId;
+
+    @Valid
     private T productDetails;
+
 }

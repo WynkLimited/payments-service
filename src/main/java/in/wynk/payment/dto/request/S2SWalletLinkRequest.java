@@ -7,12 +7,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 public class S2SWalletLinkRequest extends WalletLinkRequest {
+    @NotNull
     @Analysed
     private String deviceId;
 }

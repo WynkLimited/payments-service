@@ -7,17 +7,27 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class WalletValidateLinkRequest extends WalletRequest {
+
+    @NotNull
     @Analysed
     private String otp;
+
+    @NotNull
     private String otpToken;
+
+    @NotNull
     private String walletUserId;
 
-    public abstract String getMsisdn();
     public abstract String getUid();
+
+    public abstract String getMsisdn();
+
 }

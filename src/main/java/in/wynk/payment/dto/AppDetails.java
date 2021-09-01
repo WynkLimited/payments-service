@@ -3,6 +3,7 @@ package in.wynk.payment.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.App;
@@ -10,7 +11,10 @@ import in.wynk.wynkservice.core.dao.entity.Os;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import lombok.*;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+
+import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
 @Getter
 @Builder
@@ -22,18 +26,32 @@ public class AppDetails implements IAppDetails, Serializable {
 
     @Analysed
     private int buildNo;
-    @Analysed
-    private String os;
-    @Analysed
-    private String appId;
-    @Analysed
-    private String service;
-    @Analysed
-    private String deviceId;
+
     @Analysed
     private String deviceType;
+
+    @NotNull
+    @Analysed
+    @MongoBaseEntityConstraint(beanName = OS)
+    private String os;
+
+    @NotNull
+    @Analysed
+    @MongoBaseEntityConstraint(beanName = APP)
+    private String appId;
+
+    @NotNull
+    @Analysed
+    @MongoBaseEntityConstraint(beanName = WYNK_SERVICE)
+    private String service;
+
+    @NotNull
     @Analysed
     private String appVersion;
+
+    @NotNull
+    @Analysed
+    private String deviceId;
 
     @JsonIgnore
     public WynkService getServiceObj() {
@@ -62,4 +80,5 @@ public class AppDetails implements IAppDetails, Serializable {
     public String getAppId() {
         return getAppObj().getId();
     }
+
 }

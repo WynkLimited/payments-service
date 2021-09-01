@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -23,14 +24,22 @@ import static in.wynk.common.constant.BaseConstants.*;
 @AllArgsConstructor
 public class S2SPurchaseDetails implements IChargingDetails {
 
+    @Valid
     @Analysed
     private AppDetails appDetails;
+
+    @Valid
     @Analysed
     private UserDetails userDetails;
+
+    @Valid
     @Analysed
     private PaymentDetails paymentDetails;
+
+    @Valid
     @Analysed
     private AbstractProductDetails productDetails;
+
     private PageUrlDetails pageUrlDetails;
 
     public IPageUrlDetails getPageUrlDetails() {

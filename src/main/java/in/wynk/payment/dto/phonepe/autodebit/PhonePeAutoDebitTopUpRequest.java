@@ -8,11 +8,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 public class PhonePeAutoDebitTopUpRequest<T extends IPurchaseDetails> extends WalletTopUpRequest<T> {
+    @NotNull
     @Analysed
-    private long phonePeVersionCode;
+    private Long phonePeVersionCode;
 }

@@ -20,8 +20,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.UUID;
 
-@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 @RunWith(SpringRunner.class)
+@SpringBootTest(classes = {HttpClientConfig.class, PaymentApplication.class})
 public class DummyAmazonIAPTest {
 
     @Autowired
@@ -41,12 +41,8 @@ public class DummyAmazonIAPTest {
                 .receipt(Receipt.builder()
                         .receiptId("DctBC8IgFADg__LOS3BrioNui8Yqdoigq9Vogm7u-ZQi-u95_74vRGjAVt1J3rzfnyccDu0cUW2iTevi8PIS62doj05PUtj-uoMCQi6UmDZIo2XvQDhqxyhpz0K8hwcaT2aZsyRoygKe2fNabUsuVM0rIeH3Bw")
                         .sku("com.amazon.sample.iap.consumable.orange")
-                        .purchaseDate("Aug 26, 2020 5:07:15 PM")
                         .build())
-                .userData(UserData.builder()
-                        .userId("l3HL7XppEMhrOGDnur9-ulvqomrSg6qyODKmah76lJU=")
-                        .marketPlace("")
-                        .build())
+                .userData(UserData.builder().userId("l3HL7XppEMhrOGDnur9-ulvqomrSg6qyODKmah76lJU=").build())
                 .build();
     }
 

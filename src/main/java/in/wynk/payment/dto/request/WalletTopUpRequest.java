@@ -12,18 +12,24 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode", visible = true, defaultImpl = WalletTopUpRequest.class)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = PhonePeAutoDebitTopUpRequest.class, name = "PHONEPE_AUTO_DEBIT")
-})
+@JsonSubTypes({@JsonSubTypes.Type(value = PhonePeAutoDebitTopUpRequest.class, name = "PHONEPE_AUTO_DEBIT")})
 public class WalletTopUpRequest<T extends IPurchaseDetails> {
-    @Analysed
-    private PaymentCode paymentCode;
+
+    @Valid
     @Analysed
     private T purchaseDetails;
+
+    @NotNull
+    @Analysed
+    private PaymentCode paymentCode;
+
 }

@@ -6,6 +6,7 @@ import lombok.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
+import static in.wynk.common.constant.CacheBeanNameConstants.INVALID_VALUE;
 import static in.wynk.common.constant.CacheBeanNameConstants.MSISDN_REGEX;
 
 @Getter
@@ -15,7 +16,7 @@ import static in.wynk.common.constant.CacheBeanNameConstants.MSISDN_REGEX;
 public class UserMappingRequest {
 
     @NotNull
-    @Pattern(regexp = MSISDN_REGEX)
+    @Pattern(regexp = MSISDN_REGEX, message = INVALID_VALUE)
     private String msisdn;
 
     @NotNull

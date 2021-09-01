@@ -8,16 +8,16 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
-@JsonIgnoreProperties(ignoreUnknown = true)
-@AnalysedEntity
 @Builder
-@AllArgsConstructor
+@AnalysedEntity
 @NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserData {
+    @NotNull
     @Analysed
     private String userId;
-    @Analysed
-    private String marketPlace;
-
 }

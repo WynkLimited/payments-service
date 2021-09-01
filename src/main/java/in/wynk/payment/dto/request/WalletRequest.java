@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -15,6 +17,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public abstract class WalletRequest {
 
+    @NotNull
     @Analysed
     private PaymentCode paymentCode;
 

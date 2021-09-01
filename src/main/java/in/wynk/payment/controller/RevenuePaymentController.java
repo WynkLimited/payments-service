@@ -24,6 +24,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +35,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wynk/v1/payment")
-public class RevenuePaymentHandler {
+public class RevenuePaymentController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
@@ -42,7 +43,7 @@ public class RevenuePaymentHandler {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @Valid @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
@@ -59,17 +60,17 @@ public class RevenuePaymentHandler {
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public ResponseEntity<?> verify(@PathVariable String sid, @RequestBody VerificationRequest request) {
+    public ResponseEntity<?> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         BaseResponse<?> baseResponse = paymentManager.doVerify(request);
         return baseResponse.getResponse();
     }
 
-    @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestParam Map<String, Object> payload) {
+    @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(@PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) {
         final PaymentCode paymentCode;
         if (StringUtils.isEmpty(pc)) {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -85,10 +86,10 @@ public class RevenuePaymentHandler {
         return paymentManager.handleCallback(request);
     }
 
-    @GetMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"})
     @ManageSession(sessionId = "#sid")
+    @GetMapping(path = "/callback/{sid}/{pc}")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackGet(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestParam MultiValueMap<String, String> payload) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackGet(@PathVariable String sid, @PathVariable String pc, @RequestParam MultiValueMap<String, String> payload) {
         final PaymentCode paymentCode;
         final Map<String, Object> terraformed = new HashMap<>(payload.toSingleValueMap());
         if (StringUtils.isEmpty(pc)) {
@@ -105,10 +106,10 @@ public class RevenuePaymentHandler {
         return paymentManager.handleCallback(request);
     }
 
-    @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
+    @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @PathVariable String pc, @RequestBody Map<String, Object> payload) {
         final PaymentCode paymentCode;
         if (StringUtils.isEmpty(pc)) {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();

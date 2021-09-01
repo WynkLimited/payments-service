@@ -45,7 +45,7 @@ public class PurchaseRecord implements ITaskEntity {
         return PurchaseRecord.builder()
                 .uid(purchaseInitEvent.getUid())
                 .msisdn(purchaseInitEvent.getMsisdn())
-                .sid(purchaseInitEvent.getSid().get())
+                .sid(purchaseInitEvent.getSid().orElse(null))
                 .clientAlias(purchaseInitEvent.getClientAlias())
                 .transactionId(purchaseInitEvent.getTransactionId())
                 .appDetails((AppDetails) purchaseInitEvent.getAppDetails())

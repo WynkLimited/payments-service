@@ -61,7 +61,7 @@ public class QuickPayLinkGeneratorImpl implements IQuickPayLinkGenerator {
 
     @Override
     public String generate(String tid, String clientAlias, String oldSid, IAppDetails appDetails, IProductDetails productDetails) {
-        return generateInternal(tid, clientAlias, Optional.of(oldSid), appDetails, productDetails);
+        return generateInternal(tid, clientAlias, Optional.ofNullable(oldSid), appDetails, productDetails);
     }
 
     @ClientAware(clientAlias = "#clientAlias")

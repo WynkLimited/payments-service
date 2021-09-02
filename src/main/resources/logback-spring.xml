@@ -251,9 +251,7 @@
     <logger name="startPaymentDumpS3Export" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-    <logger name="subscriptionProvisionThresholdExceedEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
-    </logger>
+
     <logger name="paymentReconciliationThresholdExceedEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>

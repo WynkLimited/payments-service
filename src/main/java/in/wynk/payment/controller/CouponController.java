@@ -36,7 +36,7 @@ public class CouponController {
     @GetMapping("/apply/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "applyCoupon")
-    public WynkResponse<CouponResponse> applyCoupon(@PathVariable String sid, @RequestParam @MongoBaseEntityConstraint(beanName = COUPON) String couponCode, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
+    public WynkResponse<CouponResponse> applyCoupon(@PathVariable String sid, @RequestParam String couponCode, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(MSISDN);
         String service = SessionContextHolder.<SessionDTO>getBody().get(SERVICE);

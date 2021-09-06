@@ -55,6 +55,19 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
+    public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue(@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
+                                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                             ObjectMapper objectMapper,
+                                                                                             PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
+        return new PreDebitNotificationConsumerPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                preDebitNotificationSQSMessageExtractor,
+                threadPoolExecutor(),
+                scheduledThreadPoolExecutor());
+    }
+
+    @Bean
     public PaymentRenewalChargingConsumerPollingQueue paymentRenewalChargingConsumerPollingQueue(@Value("${payment.pooling.queue.charging.name}") String queueName,
                                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                                  ObjectMapper objectMapper,
@@ -108,6 +121,12 @@ public class PaymentQueuesConfig {
     public PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor(@Value("${payment.pooling.queue.renewal.name}") String queueName,
                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentRenewalSQSMessageExtractor(queueName, sqsClient);
+    }
+
+    @Bean
+    public PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor(@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
+                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
+        return new PreDebitNotificationSQSMessageExtractor(queueName, sqsClient);
     }
 
     @Bean

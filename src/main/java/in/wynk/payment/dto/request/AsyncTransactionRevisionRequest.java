@@ -13,8 +13,7 @@ public class AsyncTransactionRevisionRequest extends AbstractTransactionRevision
     @Analysed
     private final int attemptSequence;
 
-    public int getAttemptSequence() {
-        return this.attemptSequence;
-    }
+    @Analysed
+    private final String transactionId;
 
 }

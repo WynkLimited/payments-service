@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
 
 @Getter
 @Builder
@@ -18,11 +18,11 @@ import javax.validation.constraints.NotNull;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Receipt {
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String sku;
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String receiptId;
 

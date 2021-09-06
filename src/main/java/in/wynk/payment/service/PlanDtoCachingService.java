@@ -52,6 +52,7 @@ public class PlanDtoCachingService implements ICacheService<PlanDTO, Integer> {
         if (CollectionUtils.isNotEmpty(planList) && writeLock.tryLock()) {
             try {
                 Map<Integer, PlanDTO> temp = planList.stream().collect(Collectors.toMap(PlanDTO::getId, Function.identity()));
+                planDTOMap.clear();
                 planDTOMap.putAll(temp);
             } catch (Throwable th) {
                 log.error(APPLICATION_ERROR, "Exception occurred while refreshing planDto config cache. Exception: {}", th.getMessage(), th);

@@ -3,6 +3,7 @@ package in.wynk.payment.dto.request;
 import in.wynk.payment.core.constant.PaymentCode;
 import lombok.*;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
@@ -19,10 +20,10 @@ public class UserMappingRequest {
     @Pattern(regexp = MSISDN_REGEX, message = INVALID_VALUE)
     private String msisdn;
 
-    @NotNull
+    @NotBlank
     private String wynkUserId;
 
-    @NotNull
+    @NotBlank
     private String externalUserId;
 
     @NotNull

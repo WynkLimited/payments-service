@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
@@ -27,7 +28,7 @@ public class S2SWalletBalanceRequest extends WalletBalanceRequest {
     @Pattern(regexp = MSISDN_REGEX, message = INVALID_VALUE)
     private String msisdn;
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String deviceId;
 

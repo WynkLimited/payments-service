@@ -11,6 +11,7 @@ import in.wynk.wynkservice.core.dao.entity.Os;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import lombok.*;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
@@ -45,11 +46,11 @@ public class AppDetails implements IAppDetails, Serializable {
     @MongoBaseEntityConstraint(beanName = WYNK_SERVICE)
     private String service;
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String appVersion;
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String deviceId;
 

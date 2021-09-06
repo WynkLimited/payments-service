@@ -51,6 +51,7 @@ public class ItemDtoCachingService implements ICacheService<ItemDTO, String> {
         if (CollectionUtils.isNotEmpty(itemList) && writeLock.tryLock()) {
             try {
                 Map<String, ItemDTO> temp = itemList.stream().collect(Collectors.toMap(ItemDTO::getId, Function.identity()));
+                itemDTOMap.clear();
                 itemDTOMap.putAll(temp);
             } catch (Throwable th) {
                 log.error(APPLICATION_ERROR, "Exception occurred while refreshing items config cache. Exception: {}", th.getMessage(), th);

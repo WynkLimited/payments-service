@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
@@ -38,12 +39,12 @@ public abstract class IapVerificationRequest {
     @MongoBaseEntityConstraint(beanName = OS)
     private String os;
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String uid;
 
     @Setter
-    @NotNull
+    @NotBlank
     @Analysed
     private String sid;
 
@@ -57,7 +58,7 @@ public abstract class IapVerificationRequest {
     @MongoBaseEntityConstraint(beanName = WYNK_SERVICE)
     private String service;
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String deviceId;
 

@@ -51,6 +51,7 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
         if (CollectionUtils.isNotEmpty(allMethods) && writeLock.tryLock()) {
             try {
                 Map<String, PaymentMethod> temp = allMethods.stream().collect(Collectors.toMap(PaymentMethod::getId, Function.identity()));
+                paymentMethodMap.clear();
                 paymentMethodMap.putAll(temp);
             } catch (Throwable th) {
                 log.error(APPLICATION_ERROR, "Exception occurred while refreshing paymentMethod cache. Exception: {}", th.getMessage(), th);

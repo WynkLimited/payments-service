@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
 
 @Getter
 @ToString
@@ -19,7 +19,7 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PhonePeChargingRequest<T extends IPurchaseDetails> extends AbstractChargingRequest<T> {
-    @NotNull
+    @Positive
     @Analysed
     private Long phonePeVersionCode;
 }

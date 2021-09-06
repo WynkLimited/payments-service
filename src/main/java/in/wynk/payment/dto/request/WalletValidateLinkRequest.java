@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
 
 @Getter
 @SuperBuilder
@@ -16,14 +16,14 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 public abstract class WalletValidateLinkRequest extends WalletRequest {
 
-    @NotNull
+    @NotBlank
     @Analysed
     private String otp;
 
-    @NotNull
+    @NotBlank
     private String otpToken;
 
-    @NotNull
+    @NotBlank
     private String walletUserId;
 
     public abstract String getUid();

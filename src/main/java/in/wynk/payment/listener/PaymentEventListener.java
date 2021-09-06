@@ -25,7 +25,7 @@ import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.tinylytics.constants.TinylyticsConstants;
-import in.wynk.tinylytics.dto.BranchEvent;
+import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,8 +36,8 @@ import org.springframework.stereotype.Service;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.common.constant.BaseConstants.UID;
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
@@ -184,12 +184,15 @@ public class PaymentEventListener {
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
+        publishBranchEvent(event);
     }
 
     private void publishBranchEvent(TransactionSnapshotEvent event) {
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
             Map<String, Object> meta = new HashMap<>();
+            meta.put(TinylyticsConstants.UID, event.getTransaction().getUid());
+            meta.put(EVENT,event.getTransaction().getType().getValue());
             meta.put(PACK_ID, event.getTransaction().getPlanId());
             meta.put(TRANSACTION_ID, event.getTransaction().getIdStr());
             meta.put(AMOUNT, event.getTransaction().getAmount());
@@ -203,8 +206,8 @@ public class PaymentEventListener {
                 meta.put(DID,event.getPurchaseDetails().getAppDetails().getDeviceId());
                 meta.put(TinylyticsConstants.OS,event.getPurchaseDetails().getAppDetails().getOs());
             }
-            BranchEvent branchEvent = BranchEvent.builder().uid(event.getTransaction().getUid()).eventName(event.getTransaction().getType().getValue()).meta(meta).build();
-            eventPublisher.publishEvent(branchEvent);
+            BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
+            eventPublisher.publishEvent(branchRawDataEvent);
         } catch (Exception ignored){}
     }
 }

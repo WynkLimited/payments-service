@@ -28,6 +28,9 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY019("PhonePe Recon Transaction Status Failure", "Transaction is still pending from PhonePe side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY020("Payment Refund init failure", "Failure to refund amount", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_ERROR),
     PAY021("PhonePe Charging Failure", "PhonePe Charging Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE),
+    PAY022("Payment Options Failure", "Payment Options Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE),
+    PAY023("Payment Options Failure", "Mandatory fields not passed", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE),
+
 
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),

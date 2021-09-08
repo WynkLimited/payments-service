@@ -29,11 +29,11 @@ public interface PaymentConstants extends BaseConstants {
     String MIGRATED_TXN_ID = "transactionid";
     String REQUEST_PAYLOAD = "requestPayload";
     String WALLET_USER_ID = "walletUserId";
-    
+
     String SOURCE_MODE = "mode";
     String BANK_CODE = "bankCode";
     String MERCHANT_TRANSACTION = "merchantTransaction";
-    String PAYMENT_MODE="paymentMode";
+    String PAYMENT_MODE = "paymentMode";
     String ATTEMPT_SEQUENCE = "attemptSequence";
     String ORIGINAL_TRANSACTION_ID = "ORIGINAL_TRANSACTION_ID";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
@@ -47,5 +47,6 @@ public interface PaymentConstants extends BaseConstants {
     String PROD_ENV = "PROD";
     String SANDBOX_ENV = "Sandbox";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
+    String DEFAULT_COUNTRY_CODE = "+91";
 
 }

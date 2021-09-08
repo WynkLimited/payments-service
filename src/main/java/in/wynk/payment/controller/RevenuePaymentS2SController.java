@@ -20,20 +20,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wynk/s2s")
-public class RevenuePaymentsS2SHandler {
+public class RevenuePaymentS2SController {
 
     private final PaymentManager paymentManager;
     private final IDummySessionGenerator dummySessionGenerator;
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
-    public WynkResponseEntity<AbstractChargingResponse> doCharging(@RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(@Valid @RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
@@ -47,25 +49,25 @@ public class RevenuePaymentsS2SHandler {
 
     @PostMapping("/v1/payment/refund")
     @AnalyseTransaction(name = "initRefund")
-    public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@RequestBody PaymentRefundInitRequest request) {
+    public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@Valid @RequestBody PaymentRefundInitRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = paymentManager.refund(request);
         AnalyticService.update(baseResponse.getBody());
         return baseResponse;
     }
 
-    @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     @PostMapping("/v1/verify/receipt")
     @AnalyseTransaction(name = "receiptVerification")
-    public ResponseEntity<?> verifyIap(@RequestBody IapVerificationRequest request) {
+    @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
+    public ResponseEntity<?> verifyIap(@Valid @RequestBody IapVerificationRequest request) {
         AnalyticService.update(ORIGINAL_SID, request.getSid());
         return getResponseEntity(request);
     }
 
-    @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     @PostMapping("/v2/verify/receipt")
     @AnalyseTransaction(name = "receiptVerification")
-    public ResponseEntity<?> verifyIap2(@RequestBody IapVerificationRequest request) {
+    @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
+    public ResponseEntity<?> verifyIap2(@Valid @RequestBody IapVerificationRequest request) {
         AnalyticService.update(ORIGINAL_SID, request.getSid());
         return getResponseEntity(dummySessionGenerator.initSession(request));
     }

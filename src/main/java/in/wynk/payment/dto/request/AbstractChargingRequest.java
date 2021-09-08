@@ -26,6 +26,9 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 
 @Getter
@@ -41,9 +44,11 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 })
 public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
+    @Valid
     @Analysed
     private T purchaseDetails;
 
+    @NotNull
     @Analysed
     private PaymentCode paymentCode;
 

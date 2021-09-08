@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.Valid;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -16,9 +18,11 @@ import lombok.experimental.SuperBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AmazonIapVerificationRequest extends IapVerificationRequest {
 
+    @Valid
     @Analysed
     private Receipt receipt;
 
+    @Valid
     @Analysed
     private UserData userData;
 

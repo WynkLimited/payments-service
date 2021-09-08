@@ -25,7 +25,7 @@ public class SchedulerController {
     @AnalyseTransaction(name = "paymentRenew")
     public EmptyResponse startPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(()-> paymentRenewalsScheduler.paymentRenew(requestId));
+        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId));
         return EmptyResponse.response();
     }
 
@@ -33,7 +33,7 @@ public class SchedulerController {
     @AnalyseTransaction(name = "sePaymentRenew")
     public EmptyResponse startSEPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(()-> paymentRenewalsScheduler.startSeRenewals(requestId));
+        executorService.submit(() -> paymentRenewalsScheduler.startSeRenewals(requestId));
         return EmptyResponse.response();
     }
 
@@ -41,7 +41,7 @@ public class SchedulerController {
     @AnalyseTransaction(name = "renewNotification")
     public EmptyResponse startRenewNotification() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(()-> paymentRenewalsScheduler.sendNotifications(requestId));
+        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId));
         return EmptyResponse.response();
     }
 

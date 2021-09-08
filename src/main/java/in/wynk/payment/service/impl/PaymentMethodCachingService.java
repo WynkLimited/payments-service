@@ -23,22 +23,22 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.IN_MEMORY_CACHE_CRON;
+import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 
-@Service
 @Slf4j
 @RequiredArgsConstructor
+@Service(value = PAYMENT_METHOD)
 public class PaymentMethodCachingService implements IEntityCacheService<PaymentMethod, String> {
 
+    private final Map<String, PaymentMethod> paymentMethodMap = new ConcurrentHashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock writeLock = lock.writeLock();
-    private final Map<String, PaymentMethod> paymentMethodMap = new ConcurrentHashMap<>();
-
     private final IPaymentMethodDao dao;
 
     @PostConstruct
-    @Scheduled(fixedDelay = IN_MEMORY_CACHE_CRON, initialDelay = IN_MEMORY_CACHE_CRON)
     @AnalyseTransaction(name = "refreshInMemoryCachePaymentMethod")
+    @Scheduled(fixedDelay = IN_MEMORY_CACHE_CRON, initialDelay = IN_MEMORY_CACHE_CRON)
     public void init() {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("cacheLoadInit", true);
@@ -51,6 +51,7 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
         if (CollectionUtils.isNotEmpty(allMethods) && writeLock.tryLock()) {
             try {
                 Map<String, PaymentMethod> temp = allMethods.stream().collect(Collectors.toMap(PaymentMethod::getId, Function.identity()));
+                paymentMethodMap.clear();
                 paymentMethodMap.putAll(temp);
             } catch (Throwable th) {
                 log.error(APPLICATION_ERROR, "Exception occurred while refreshing paymentMethod cache. Exception: {}", th.getMessage(), th);
@@ -77,7 +78,13 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
     }
 
     @Override
+    public boolean containsKey(String key) {
+        return paymentMethodMap.containsKey(key);
+    }
+
+    @Override
     public Collection<PaymentMethod> getAllByState(State state) {
         return dao.findAllByState(state);
     }
+
 }

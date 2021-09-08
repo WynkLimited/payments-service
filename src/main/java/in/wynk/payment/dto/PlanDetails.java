@@ -4,24 +4,32 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.validations.MongoBaseEntityConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotNull;
+
+import static in.wynk.common.constant.CacheBeanNameConstants.PLAN_DTO;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class PlanDetails extends AbstractProductDetails {
+
+    @NotNull
     @Analysed
-    private int planId;
+    @MongoBaseEntityConstraint(beanName = PLAN_DTO)
+    private Integer planId;
 
     @Override
     @JsonIgnore
     public String getId() {
-        return String.valueOf(planId);
+        return planId.toString();
     }
 
     @Override
@@ -29,4 +37,5 @@ public class PlanDetails extends AbstractProductDetails {
     public String getType() {
         return BaseConstants.PLAN;
     }
+
 }

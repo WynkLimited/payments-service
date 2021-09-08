@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotBlank;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -16,6 +18,7 @@ import lombok.experimental.SuperBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ItunesVerificationRequest extends IapVerificationRequest {
 
+    @NotBlank
     @Analysed
     private String receipt;
 

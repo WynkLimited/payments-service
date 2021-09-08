@@ -14,12 +14,11 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -35,42 +34,39 @@ import java.util.stream.Collectors;
 
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 
-@Service
+@Slf4j
 @Getter
+@Service
+@RequiredArgsConstructor
 public class PaymentCachingService {
 
-    private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
-    private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
-    @Autowired
-    private SkuDao skuDao;
-
-    private static final Logger logger = LoggerFactory.getLogger(PaymentCachingService.class);
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
+
+    private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
+    private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
+    private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
+    private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
     private final Map<String, PaymentGroup> paymentGroups = new ConcurrentHashMap<>();
     private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
-    private final Map<Integer, PlanDTO> plans = new ConcurrentHashMap<>();
-    private final Map<String, ItemDTO> items = new ConcurrentHashMap<>();
-    @Autowired
-    private IPaymentMethodDao IPaymentMethodDao;
-    @Autowired
-    private IPaymentGroupDao paymentGroupDao;
-    @Autowired
-    private ISubscriptionServiceManager subscriptionServiceManager;
-    private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
-    private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
 
-    @Scheduled(fixedDelay = 30 * 60 * 1000L, initialDelay = 30 * 60 * 1000L)
+    private final SkuDao skuDao;
+    private final IPaymentGroupDao paymentGroupDao;
+    private final IPaymentMethodDao IPaymentMethodDao;
+    private final PlanDtoCachingService planDtoCachingService;
+    private final ItemDtoCachingService itemDtoCachingService;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
+
     @PostConstruct
     @AnalyseTransaction(name = "refreshInMemoryCache")
+    @Scheduled(fixedDelay = 30 * 60 * 1000L, initialDelay = 30 * 60 * 1000L)
     public void init() {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("cacheLoadInit", true);
         loadPayments();
         loadPlans();
         loadSku();
-        loadItems();
         loadOffers();
         loadPartners();
         AnalyticService.update("cacheLoadCompleted", true);
@@ -83,38 +79,22 @@ public class PaymentCachingService {
             try {
                 List<PaymentMethod> paymentMethods = IPaymentMethodDao.findByGroupInAndState(groupsMap.keySet(), State.ACTIVE);
                 for (PaymentMethod method : paymentMethods) {
-                    if(groupsMap.containsKey(method.getGroup())) {
+                    if (groupsMap.containsKey(method.getGroup())) {
                         List<PaymentMethod> paymentMethodsInternal = newPaymentMethods.getOrDefault(method.getGroup(), new ArrayList<>());
                         paymentMethodsInternal.add(method);
                         newPaymentMethods.put(method.getGroup(), paymentMethodsInternal);
                     }
                 }
-                for(String group : groupsMap.keySet()) {
-                   if(!newPaymentMethods.containsKey(group))
-                       groupsMap.remove(group);
+                for (String group : groupsMap.keySet()) {
+                    if (!newPaymentMethods.containsKey(group))
+                        groupsMap.remove(group);
                 }
                 paymentGroups.clear();
                 paymentGroups.putAll(groupsMap);
                 groupedPaymentMethods.clear();
                 groupedPaymentMethods.putAll(newPaymentMethods);
             } catch (Throwable th) {
-                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing payment group or method config cache. Exception: {}", th.getMessage(), th);
-                throw th;
-            } finally {
-                writeLock.unlock();
-            }
-        }
-    }
-
-    private void loadItems() {
-        Collection<ItemDTO> itemList = subscriptionServiceManager.getItems();
-        if (CollectionUtils.isNotEmpty(itemList) && writeLock.tryLock()) {
-            try {
-                Map<String, ItemDTO> itemDTOMap = itemList.stream().collect(Collectors.toMap(ItemDTO::getId, Function.identity()));
-                items.clear();
-                items.putAll(itemDTOMap);
-            } catch (Throwable th) {
-                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing items config cache. Exception: {}", th.getMessage(), th);
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing payment group or method config cache. Exception: {}", th.getMessage(), th);
                 throw th;
             } finally {
                 writeLock.unlock();
@@ -123,16 +103,13 @@ public class PaymentCachingService {
     }
 
     private void loadPlans() {
-        List<PlanDTO> planList = subscriptionServiceManager.getPlans();
+        Collection<PlanDTO> planList = planDtoCachingService.getAll();
         if (CollectionUtils.isNotEmpty(planList) && writeLock.tryLock()) {
             try {
-                Map<Integer, PlanDTO> planDTOMap = planList.stream().collect(Collectors.toMap(PlanDTO::getId, Function.identity()));
-                plans.clear();
-                plans.putAll(planDTOMap);
                 Map<String, PlanDTO> skuToPlanMap = new HashMap<>();
-                for(PlanDTO planDTO: planList){
-                    if(MapUtils.isNotEmpty(planDTO.getSku())){
-                        for(String sku: planDTO.getSku().values()){
+                for (PlanDTO planDTO : planList) {
+                    if (MapUtils.isNotEmpty(planDTO.getSku())) {
+                        for (String sku : planDTO.getSku().values()) {
                             skuToPlanMap.putIfAbsent(sku, planDTO);
                         }
                     }
@@ -140,7 +117,7 @@ public class PaymentCachingService {
                 skuToPlan.clear();
                 skuToPlan.putAll(skuToPlanMap);
             } catch (Throwable th) {
-                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing plans config cache. Exception: {}", th.getMessage(), th);
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing plans config cache. Exception: {}", th.getMessage(), th);
                 throw th;
             } finally {
                 writeLock.unlock();
@@ -156,7 +133,7 @@ public class PaymentCachingService {
                 offers.clear();
                 offers.putAll(offerMap);
             } catch (Throwable th) {
-                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
                 throw th;
             } finally {
                 writeLock.unlock();
@@ -172,7 +149,7 @@ public class PaymentCachingService {
                 partners.clear();
                 partners.putAll(partnerMap);
             } catch (Throwable th) {
-                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing partner config cache. Exception: {}", th.getMessage(), th);
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing partner config cache. Exception: {}", th.getMessage(), th);
                 throw th;
             } finally {
                 writeLock.unlock();
@@ -188,7 +165,7 @@ public class PaymentCachingService {
                 skuToSku.clear();
                 skuToSku.putAll(skuToSkuMap);
             } catch (Throwable th) {
-                logger.error(APPLICATION_ERROR, "Exception occurred while refreshing old sku to new sku cache. Exception: {}", th.getMessage(), th);
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing old sku to new sku cache. Exception: {}", th.getMessage(), th);
                 throw th;
             } finally {
                 writeLock.unlock();
@@ -202,20 +179,24 @@ public class PaymentCachingService {
     }
 
 
-    public ItemDTO getItem(String itemId) { return items.get(itemId); }
+    public ItemDTO getItem(String itemId) {
+        return itemDtoCachingService.get(itemId);
+    }
 
     public PlanDTO getPlan(int planId) {
-        return plans.get(planId);
+        return planDtoCachingService.get(planId);
     }
 
     public boolean containsPlan(String planId) {
-        return plans.containsKey(NumberUtils.toInt(planId));
+        return planDtoCachingService.containsKey(NumberUtils.toInt(planId));
     }
 
-    public boolean containsItem(String itemId) { return items.containsKey(itemId); }
+    public boolean containsItem(String itemId) {
+        return itemDtoCachingService.containsKey(itemId);
+    }
 
     public PlanDTO getPlan(String planId) {
-        return plans.get(NumberUtils.toInt(planId));
+        return planDtoCachingService.get(NumberUtils.toInt(planId));
     }
 
     public OfferDTO getOffer(int offerId) {
@@ -244,4 +225,5 @@ public class PaymentCachingService {
         TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
         return System.currentTimeMillis() + timeUnit.toMillis(validity);
     }
+
 }

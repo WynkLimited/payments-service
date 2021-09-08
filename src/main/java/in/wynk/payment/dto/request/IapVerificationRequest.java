@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
@@ -13,6 +14,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+
+import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
 @Getter
 @SuperBuilder
@@ -25,20 +32,36 @@ import lombok.experimental.SuperBuilder;
 public abstract class IapVerificationRequest {
 
     @Analysed
+    private int buildNo;
+
+    @NotNull
+    @Analysed
+    @MongoBaseEntityConstraint(beanName = OS)
     private String os;
+
+    @NotBlank
     @Analysed
     private String uid;
+
     @Setter
+    @NotBlank
     @Analysed
     private String sid;
+
+    @NotNull
     @Analysed
-    private int buildNo;
-    @Analysed
+    @Pattern(regexp = MSISDN_REGEX, message = INVALID_VALUE)
     private String msisdn;
+
+    @NotNull
     @Analysed
+    @MongoBaseEntityConstraint(beanName = WYNK_SERVICE)
     private String service;
+
+    @NotBlank
     @Analysed
     private String deviceId;
+
     private PaymentCode paymentCode;
 
 }

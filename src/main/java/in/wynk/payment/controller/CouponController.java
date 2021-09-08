@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
+import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.coupon.core.constant.ProvisionSource;
 import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
@@ -15,12 +16,15 @@ import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("wynk/v1/coupon")
@@ -32,7 +36,7 @@ public class CouponController {
     @GetMapping("/apply/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "applyCoupon")
-    public WynkResponse<CouponResponse> applyCoupon(@PathVariable String sid, @RequestParam String couponCode, @RequestParam(defaultValue = "0") Integer planId, @RequestParam(defaultValue = "") String itemId) {
+    public WynkResponse<CouponResponse> applyCoupon(@PathVariable String sid, @RequestParam String couponCode, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(MSISDN);
         String service = SessionContextHolder.<SessionDTO>getBody().get(SERVICE);
@@ -54,7 +58,7 @@ public class CouponController {
     @DeleteMapping("/remove/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "removeCoupon")
-    public WynkResponse<CouponResponse> removeCoupon(@PathVariable String sid, @RequestParam String couponCode) {
+    public WynkResponse<CouponResponse> removeCoupon(@PathVariable String sid, @RequestParam @MongoBaseEntityConstraint(beanName = COUPON) String couponCode) {
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         AnalyticService.update(COUPON_CODE, couponCode);
         CouponResponse response = couponManager.removeCoupon(uid, couponCode);
@@ -65,7 +69,7 @@ public class CouponController {
     @GetMapping("/eligibility/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "eligibleCoupons")
-    public WynkResponse<List<CouponDTO>> getEligibleCoupons(@PathVariable String sid, @RequestParam Integer planId) {
+    public WynkResponse<List<CouponDTO>> getEligibleCoupons(@PathVariable String sid, @RequestParam @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId) {
         PlanDTO planDTO = cachingService.getPlan(planId);
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(MSISDN);

@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -16,6 +17,7 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,27 +35,27 @@ import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
 public class RecurringPaymentManagerManager implements IRecurringPaymentManagerService {
 
-    private final IPaymentRenewalDao paymentRenewalDao;
-    private final ApplicationEventPublisher eventPublisher;
-    private final PaymentCachingService paymentCachingService;
     @Value("${payment.recurring.offset.day}")
     private int dueRecurringOffsetDay;
+
     @Value("${payment.recurring.offset.hour}")
     private int dueRecurringOffsetTime;
+
     @Value("${payment.preDebitNotification.preOffsetDays}")
     private int preDebitNotificationPreOffsetDay;
+
     @Value("${payment.preDebitNotification.offset.day}")
     private int duePreDebitNotificationOffsetDay;
+
     @Value("${payment.preDebitNotification.offset.hour}")
     private int duePreDebitNotificationOffsetTime;
 
-    public RecurringPaymentManagerManager(@Qualifier(BeanConstant.PAYMENT_RENEWAL_DAO) IPaymentRenewalDao paymentRenewalDao,
-                                          ApplicationEventPublisher eventPublisher,
-                                          PaymentCachingService paymentCachingService) {
-        this.paymentRenewalDao = paymentRenewalDao;
-        this.eventPublisher = eventPublisher;
-        this.paymentCachingService = paymentCachingService;
-    }
+    @Autowired
+    @Qualifier(BeanConstant.PAYMENT_RENEWAL_DAO)
+    private IPaymentRenewalDao paymentRenewalDao;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
         try {
@@ -76,7 +78,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
             scheduleRecurringPayment(request.getTransaction().getIdStr(), ((MigrationTransactionRevisionRequest) request).getNextChargingDate(), 0);
         } else {
             Calendar nextRecurringDateTime = Calendar.getInstance();
-            PlanDTO planDTO = paymentCachingService.getPlan(request.getTransaction().getPlanId());
+            PlanDTO planDTO = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(request.getTransaction().getPlanId());
             if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(request.getTransaction().getType())) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));

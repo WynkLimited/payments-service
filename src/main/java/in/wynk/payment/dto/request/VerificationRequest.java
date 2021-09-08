@@ -6,16 +6,26 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.payu.VerificationType;
 import lombok.*;
 
-@ToString
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
 @Getter
 @Builder
+@ToString
+@AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@AnalysedEntity
 public class VerificationRequest {
-    @Analysed
-    private VerificationType verificationType;
+
+    @NotBlank
     @Analysed
     private String verifyValue;
+
+    @NotNull
     private PaymentCode paymentCode;
+
+    @NotNull
+    @Analysed
+    private VerificationType verificationType;
+
 }

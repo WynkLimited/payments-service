@@ -8,17 +8,22 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
+
 @Getter
-@JsonIgnoreProperties(ignoreUnknown = true)
-@AnalysedEntity
 @Builder
-@AllArgsConstructor
+@AnalysedEntity
 @NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Receipt {
-    @Analysed
-    private String receiptId;
+
+    @NotBlank
     @Analysed
     private String sku;
-    private String purchaseDate;
+
+    @NotBlank
+    @Analysed
+    private String receiptId;
 
 }

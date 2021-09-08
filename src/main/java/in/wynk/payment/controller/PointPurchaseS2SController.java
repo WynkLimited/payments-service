@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wynk/s2s/v1/point")
@@ -19,15 +21,14 @@ public class PointPurchaseS2SController {
 
     private final IPointPurchaseSessionService sessionService;
 
-    @ApiOperation("Provides session Id and the webview URL for point purchase")
     @PostMapping("/purchase")
     @AnalyseTransaction(name = "pointPurchase")
-    public SessionResponse initPointPurchase(@RequestBody SessionRequest request) {
+    @ApiOperation("Provides session Id and the webview URL for point purchase")
+    public SessionResponse initPointPurchase(@Valid @RequestBody SessionRequest request) {
         AnalyticService.update(request);
         SessionResponse response = sessionService.initSession(request);
         AnalyticService.update(response);
         return response;
     }
-
 
 }

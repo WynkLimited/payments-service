@@ -37,4 +37,12 @@ public class SchedulerController {
         return EmptyResponse.response();
     }
 
+    @GetMapping("/send/notifications")
+    @AnalyseTransaction(name = "renewNotification")
+    public EmptyResponse startRenewNotification() {
+        String requestId = MDC.get(REQUEST_ID);
+        executorService.submit(()-> paymentRenewalsScheduler.sendNotifications(requestId));
+        return EmptyResponse.response();
+    }
+
 }

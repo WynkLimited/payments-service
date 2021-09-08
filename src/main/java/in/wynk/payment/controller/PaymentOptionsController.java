@@ -6,7 +6,9 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.AbstractProductDetails;
+import in.wynk.payment.dto.WebPaymentOptionsRequest;
 import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
+import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -38,6 +40,14 @@ public class PaymentOptionsController {
         if (Objects.isNull(planId) && Objects.isNull(itemId))
             throw new WynkRuntimeException("planId or itemId is not supplied or found empty");
         return paymentMethodService.getPaymentOptions(planId.toString(), itemId);
+    }
+
+    @PostMapping("/options/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentOptions")
+    public PaymentOptionsDTO getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
+        AnalyticService.update(request);
+        return paymentMethodService.getFilteredPaymentOptions(request);
     }
 
     @ManageSession(sessionId = "#sid")

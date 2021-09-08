@@ -76,6 +76,11 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>country-currency-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>wynk-service-api</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -181,6 +186,18 @@
         <dependency>
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>eligibility-common</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>vas-client</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

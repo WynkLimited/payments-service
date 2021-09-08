@@ -228,6 +228,7 @@ public class PaymentEventListener {
             meta.put(UID, uid);
             meta.put(EVENT, eventName);
             BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
+            eventPublisher.publishEvent(branchRawDataEvent);
         } catch (Exception e) {
             log.error("error occurred while trying to build BranchRawDataEvent from payment Service,eventName {}", eventName, e);
         }

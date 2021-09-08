@@ -191,16 +191,23 @@ public class PaymentEventListener {
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
             Map<String, Object> meta = new HashMap<>();
+            meta.put(MSISDN, event.getTransaction().getMsisdn());
+            meta.put(PLAN_ID, event.getTransaction().getPlanId());
+            meta.put(ITEM_ID, event.getTransaction().getItemId());
+            meta.put(AMOUNT_PAID, event.getTransaction().getAmount());
+            meta.put(CLIENT, event.getTransaction().getClientAlias());
+            meta.put(COUPON_CODE, event.getTransaction().getCoupon());
+            meta.put(TRANSACTION_ID, event.getTransaction().getIdStr());
+            meta.put(PAYMENT_EVENT, event.getTransaction().getType().getValue());
+            meta.put(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
+            meta.put(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
+            meta.put(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
+
             meta.put(TinylyticsConstants.UID, event.getTransaction().getUid());
             meta.put(EVENT,event.getTransaction().getType().getValue());
             meta.put(PACK_ID, event.getTransaction().getPlanId());
-            meta.put(TRANSACTION_ID, event.getTransaction().getIdStr());
-            meta.put(AMOUNT, event.getTransaction().getAmount());
-            meta.put(PAYMENT_CODE,event.getTransaction().getPaymentChannel().name());
-            meta.put(CLIENT,event.getTransaction().getClientAlias());
-            meta.put(TRANSACTION_STATUS,event.getTransaction().getStatus());
-            meta.put(MSISDN, event.getTransaction().getMsisdn());
             meta.put(TRIGGER_DATE, dateFormat.format(new Date()));
+            meta.put(EVENT_PUBLISHED_BY,PAYMENT_SERVICE);
             if(Optional.ofNullable(event.getPurchaseDetails()).isPresent()){
                 meta.put(OPT_FOR_AUTO_RENEW ,event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
                 meta.put(DID,event.getPurchaseDetails().getAppDetails().getDeviceId());
@@ -208,6 +215,8 @@ public class PaymentEventListener {
             }
             BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
             eventPublisher.publishEvent(branchRawDataEvent);
-        } catch (Exception ignored){}
+        } catch (Exception e){
+            log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
+        }
     }
 }

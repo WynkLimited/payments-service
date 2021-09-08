@@ -46,5 +46,6 @@ public interface PaymentConstants extends BaseConstants {
 
     String PROD_ENV = "PROD";
     String SANDBOX_ENV = "Sandbox";
+    String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
 
 }

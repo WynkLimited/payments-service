@@ -146,6 +146,7 @@ public class PaymentEventListener {
     public void onPaymentReconciledEvent(PaymentChargingReconciledEvent event) {
         AnalyticService.update(event);
         initRefundIfApplicable(event);
+        this.publishBranchEvent(event, event.getUid(), PAYMENT_RECONCILATION_EVENT);
     }
 
     @EventListener
@@ -153,6 +154,7 @@ public class PaymentEventListener {
     public void onClientCallbackEvent(ClientCallbackEvent callbackEvent) {
         AnalyticService.update(callbackEvent);
         sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
+        this.publishBranchEvent(callbackEvent, callbackEvent.getUid(), CLIENT_CALLBACK_EVENT);
     }
 
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
@@ -204,19 +206,30 @@ public class PaymentEventListener {
             meta.put(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
 
             meta.put(TinylyticsConstants.UID, event.getTransaction().getUid());
-            meta.put(EVENT,event.getTransaction().getType().getValue());
+            meta.put(EVENT, event.getTransaction().getType().getValue());
             meta.put(PACK_ID, event.getTransaction().getPlanId());
             meta.put(TRIGGER_DATE, dateFormat.format(new Date()));
-            meta.put(EVENT_PUBLISHED_BY,PAYMENT_SERVICE);
-            if(Optional.ofNullable(event.getPurchaseDetails()).isPresent()){
-                meta.put(OPT_FOR_AUTO_RENEW ,event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
-                meta.put(DID,event.getPurchaseDetails().getAppDetails().getDeviceId());
-                meta.put(TinylyticsConstants.OS,event.getPurchaseDetails().getAppDetails().getOs());
+            meta.put(EVENT_PUBLISHED_BY, PAYMENT_SERVICE);
+            if (Optional.ofNullable(event.getPurchaseDetails()).isPresent()) {
+                meta.put(OPT_FOR_AUTO_RENEW, event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
+                meta.put(DID, event.getPurchaseDetails().getAppDetails().getDeviceId());
+                meta.put(TinylyticsConstants.OS, event.getPurchaseDetails().getAppDetails().getOs());
             }
             BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
             eventPublisher.publishEvent(branchRawDataEvent);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
+        }
+    }
+
+    private void publishBranchEvent(Object o, String uid, String eventName) {
+        try {
+            Map<String, Object> meta = mapper.convertValue(o, Map.class);
+            meta.put(UID, uid);
+            meta.put(EVENT, eventName);
+            BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
+        } catch (Exception e) {
+            log.error("error occurred while trying to build BranchRawDataEvent from payment Service,eventName {}", eventName, e);
         }
     }
 }

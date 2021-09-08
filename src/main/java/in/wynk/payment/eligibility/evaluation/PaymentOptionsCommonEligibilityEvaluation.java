@@ -3,7 +3,7 @@ package in.wynk.payment.eligibility.evaluation;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.country.core.dao.entity.CountryCurrencyDetails;
-import in.wynk.country.core.service.ICountryCurrenyDetailsCache;
+import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
 import in.wynk.coupon.core.service.IUserProfileService;
 import in.wynk.data.entity.MongoBaseEntity;
 import in.wynk.data.enums.State;
@@ -84,7 +84,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             }
             return CollectionUtils.isNotEmpty(fetchThanksSegment(root.getMsisdn(), root.getService()));
         } catch (Exception ex) {
-            log.error(VAS_ERROR,"unable to fetch vas details for msisdn {}", root.getMsisdn());
+            log.error(VAS_ERROR, "unable to fetch vas details for msisdn {}", root.getMsisdn());
             return false;
         }
     }
@@ -102,9 +102,8 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             if (StringUtils.isBlank(countryCode)) {
                 resultBuilder.reason(PaymentsEligibilityReason.EMPTY_COUNTRY_CODE);
             } else {
-                ICountryCurrenyDetailsCache cachingService = BeanLocatorFactory.getBean(ICountryCurrenyDetailsCache.class);
-                Set<String> countryCurrencyDetails = cachingService.getAllByState(State.ACTIVE).stream().map(CountryCurrencyDetails::getCountryCode).collect(Collectors.toSet());
-                Optional<String> validCountryCode = Arrays.stream(codes).filter(countryCurrencyDetails::contains).filter(countryCurrencyDetail->countryCurrencyDetail.equals(countryCode)).findAny();
+                Set<String> countryCurrencyDetails = BeanLocatorFactory.getBean(CountryCurrencyDetailsCachingService.class).getAllByState(State.ACTIVE).stream().map(CountryCurrencyDetails::getCountryCode).collect(Collectors.toSet());
+                Optional<String> validCountryCode = Arrays.stream(codes).filter(countryCurrencyDetails::contains).filter(countryCurrencyDetail -> countryCurrencyDetail.equals(countryCode)).findAny();
                 if (validCountryCode.isPresent()) {
                     resultBuilder.status(EligibilityStatus.ELIGIBLE);
                 } else {
@@ -223,7 +222,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             if (StringUtils.isBlank(couponId)) {
                 resultBuilder.reason(PaymentsEligibilityReason.EMPTY_COUPON_ID);
             } else {
-                Optional<String> validCountryCode = Arrays.stream(coupons).filter(coupon->couponId.equals(coupon)).findAny();
+                Optional<String> validCountryCode = Arrays.stream(coupons).filter(coupon -> couponId.equals(coupon)).findAny();
                 if (validCountryCode.isPresent()) {
                     resultBuilder.status(EligibilityStatus.ELIGIBLE);
                 } else {
@@ -235,6 +234,5 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             result = resultBuilder.build();
         }
     }
-
 
 }

@@ -146,7 +146,6 @@ public class PaymentEventListener {
     public void onPaymentReconciledEvent(PaymentChargingReconciledEvent event) {
         AnalyticService.update(event);
         initRefundIfApplicable(event);
-        this.publishBranchEvent(event, event.getUid(), PAYMENT_RECONCILATION_EVENT);
     }
 
     @EventListener
@@ -154,7 +153,6 @@ public class PaymentEventListener {
     public void onClientCallbackEvent(ClientCallbackEvent callbackEvent) {
         AnalyticService.update(callbackEvent);
         sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
-        this.publishBranchEvent(callbackEvent, callbackEvent.getUid(), CLIENT_CALLBACK_EVENT);
     }
 
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
@@ -193,27 +191,18 @@ public class PaymentEventListener {
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
             Map<String, Object> meta = new HashMap<>();
-            meta.put(MSISDN, event.getTransaction().getMsisdn());
-            meta.put(PLAN_ID, event.getTransaction().getPlanId());
-            meta.put(ITEM_ID, event.getTransaction().getItemId());
-            meta.put(AMOUNT_PAID, event.getTransaction().getAmount());
-            meta.put(CLIENT, event.getTransaction().getClientAlias());
-            meta.put(COUPON_CODE, event.getTransaction().getCoupon());
-            meta.put(TRANSACTION_ID, event.getTransaction().getIdStr());
-            meta.put(PAYMENT_EVENT, event.getTransaction().getType().getValue());
-            meta.put(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
-            meta.put(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
-            meta.put(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
-
-            meta.put(TinylyticsConstants.UID, event.getTransaction().getUid());
-            meta.put(EVENT, event.getTransaction().getType().getValue());
+            meta.putAll(mapper.convertValue(event.getTransaction(), Map.class));
+            meta.put(EVENT, TRANSACTION_SNAPShOT_EVENT);
             meta.put(PACK_ID, event.getTransaction().getPlanId());
             meta.put(TRIGGER_DATE, dateFormat.format(new Date()));
             meta.put(EVENT_PUBLISHED_BY, PAYMENT_SERVICE);
             if (Optional.ofNullable(event.getPurchaseDetails()).isPresent()) {
+                meta.putAll(mapper.convertValue(event.getPurchaseDetails().getAppDetails(), Map.class));
+                meta.putAll(mapper.convertValue(event.getPurchaseDetails().getPaymentDetails(),Map.class));
+                meta.putAll(mapper.convertValue(event.getPurchaseDetails().getProductDetails(),Map.class));
+                meta.putAll(mapper.convertValue(event.getPurchaseDetails().getUserDetails(),Map.class));
                 meta.put(OPT_FOR_AUTO_RENEW, event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
-                meta.put(DID, event.getPurchaseDetails().getAppDetails().getDeviceId());
-                meta.put(TinylyticsConstants.OS, event.getPurchaseDetails().getAppDetails().getOs());
+
             }
             BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
             eventPublisher.publishEvent(branchRawDataEvent);

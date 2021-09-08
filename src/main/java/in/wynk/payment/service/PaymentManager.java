@@ -41,8 +41,10 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
+import static in.wynk.common.constant.BaseConstants.UID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
+import static in.wynk.tinylytics.constants.TinylyticsConstants.*;
 
 @Slf4j
 @Service
@@ -102,7 +104,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             }
             return response;
         } finally {
-            publishBranchEvent(request, "paymentCharging");
+            publishBranchEvent(branchMeta(request), PAYMENT_CHARGING_EVENT);
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
@@ -132,7 +134,8 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            publishBranchEvent(request, "paymentCallback");
+
+            publishBranchEvent(branchMeta(request, transaction), PAYMENT_CALLBACK_EVENT);
         }
     }
 
@@ -291,29 +294,31 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         }
     }
 
-    private void publishBranchEvent(Object o, String event) {
-        if (o instanceof AbstractChargingRequest<?>) {
-            AbstractChargingRequest<?> request = (AbstractChargingRequest<?>) o;
-            Map<String, Object> meta = new HashMap<>();
-            meta.put("uid", MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn()));
-            meta.put("event", event);
-            meta.putAll(objectToMap(request.getPurchaseDetails().getAppDetails()));
-            meta.putAll(objectToMap(request.getPurchaseDetails().getPaymentDetails()));
-            meta.putAll(objectToMap(request.getPurchaseDetails().getProductDetails()));
-            meta.putAll(objectToMap(request.getPurchaseDetails().getUserDetails()));
-            BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
-            eventPublisher.publishEvent(branchRawDataEvent);
-        }
-        else if(o instanceof CallbackRequestWrapper<?>){
-            CallbackRequestWrapper<?> request = (CallbackRequestWrapper<?>)o;
-            Map<String, Object> meta = new HashMap<>(objectToMap(request));
-        }
-
-
+    private void publishBranchEvent(Map<String, Object> meta, String event) {
+        meta.put(EVENT, event);
+        BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
+        eventPublisher.publishEvent(branchRawDataEvent);
     }
 
-    private Map<String, Object> objectToMap(Object o){
+    private Map<String, Object> objectToMap(Object o) {
         return mapper.convertValue(o, Map.class);
+    }
+
+    private Map<String, Object> branchMeta(CallbackRequestWrapper<?> request, Transaction transaction) {
+        Map<String, Object> meta = new HashMap<>();
+        meta.putAll(objectToMap(transaction));
+        meta.putAll(objectToMap(request));
+        return meta;
+    }
+
+    private Map<String, Object> branchMeta(AbstractChargingRequest<?> request) {
+        Map<String, Object> meta = new HashMap<>();
+        meta.put(UID, MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn()));
+        meta.putAll(objectToMap(request.getPurchaseDetails().getAppDetails()));
+        meta.putAll(objectToMap(request.getPurchaseDetails().getPaymentDetails()));
+        meta.putAll(objectToMap(request.getPurchaseDetails().getProductDetails()));
+        meta.putAll(objectToMap(request.getPurchaseDetails().getUserDetails()));
+        return meta;
     }
 
 

@@ -71,6 +71,8 @@ import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 @Service(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
 public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, PhonePeAutoDebitCallbackRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, PhonePeChargingRequest<?>>, IWalletLinkService<WalletLinkResponse, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IWalletTopUpService<WalletTopUpResponse, PhonePeAutoDebitTopUpRequest<?>>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
 
+    @Value("${payment.encKey}")
+    private String paymentEncryptionKey;
     @Value("${payment.merchant.phonepe.api.base.url}")
     private String phonePeBaseUrl;
 
@@ -266,7 +268,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         final PhonePeWalletResponse phonePeWalletResponse = addMoney(transaction.getClientAlias(), wallet.getAccessToken(), finalAmountToAdd, request.getPhonePeVersionCode(), wallet.getId().getDeviceId());
         if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && phonePeWalletResponse.getData().getRedirectUrl() != null) {
             try {
-                final String paymentEncryptionKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ENCKEY);
                 builder.data(WalletTopUpResponse.builder().info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey)).build());
             } catch (Exception e) {
                 ErrorCode code = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
@@ -401,7 +402,6 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                         deficit = true;
                         deeplinkGenerated = true;
-                        final String paymentEncryptionKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ENCKEY);
                         chargingResponseBuilder.deficit(true).info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey));
                     } else {
                         deficit = true;

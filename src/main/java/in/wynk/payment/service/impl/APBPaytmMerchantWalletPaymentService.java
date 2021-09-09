@@ -64,6 +64,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     private String failurePage;
     @Value("${payment.merchant.apbPaytm.api.base.url}")
     private String apbPaytmBaseUrl;
+    @Value("${payment.encKey}")
+    private String paymentEncryptionKey;
 
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
@@ -113,9 +115,9 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     private HttpHeaders generateHeaders(String client) {
-        final String ABP_PAYTM_AUTHORIZATION = PropertyResolverUtils.resolve(client, BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_TOKEN);
+        final String merchantToken = PropertyResolverUtils.resolve(client, BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_TOKEN);
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, ABP_PAYTM_AUTHORIZATION);
+        headers.add(HttpHeaders.AUTHORIZATION, merchantToken);
         headers.add(CHANNEL_ID, ABP_PAYTM_CHANNEL_ID);
         headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
@@ -228,7 +230,6 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         final APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), transaction.getAmount(), getWallet(getKey(MsisdnUtils.getUidFromMsisdn(purchaseDetails.getUserDetails().getMsisdn()), purchaseDetails.getAppDetails().getDeviceId())));
         if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
             try {
-                final String paymentEncryptionKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ENCKEY);
                 builder.data(WalletTopUpResponse.builder().info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey)).build());
             } catch (Exception e) {
                 ErrorCode errorCode = errorCodesCacheServiceImpl.getDefaultUnknownErrorCode();
@@ -436,7 +437,6 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
             if (balanceResponse.isResult() && balanceResponse.getData().getBalance() < amountToCharge) {
                 final double amountToAdd = amountToCharge - balanceResponse.getData().getBalance();
                 APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), amountToAdd, wallet);
-                final String paymentEncryptionKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), BeanConstant.APB_PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ENCKEY);
                 if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
                     walletResponse.deficit(true).info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey));
                     log.info("topUp Response {}", topUpResponse);

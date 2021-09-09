@@ -230,15 +230,12 @@ payment:
       airtelxstream:
         id: WYNKUAT
         secret: 8289e078-be0b-484d-ae60-052f117f8deb
-        encKey: BSB$PORTAL@2014#
       music:
         id: WYNKUAT
         secret: 8289e078-be0b-484d-ae60-052f117f8deb
-        encKey: BSB$PORTAL@2014#
       rajtv:
         id:
         secret:
-        encKey: BSB$PORTAL@2014#
       id: WYNKUAT
       api:
         base:
@@ -263,13 +260,10 @@ payment:
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       airtelxstream:
-        encKey: BSB$PORTAL@2014#
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       music:
-        encKey: BSB$PORTAL@2014#
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       rajtv:
-        encKey:
         secret:
     #### Itunes props ######
     itunes:

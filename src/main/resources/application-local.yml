@@ -195,6 +195,17 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+      airtelxstream:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+        encKey: BSB$PORTAL@2014#
+      music:
+        key: qFDqmx
+        salt: Zbm2ZyNe
+        encKey: BSB$PORTAL@2014#
+      rajtv:
+        key:
+        salt:
       key: qFDqmx
       salt: Zbm2ZyNe
       api:
@@ -202,12 +213,50 @@ payment:
         payment: https://test.payu.in/_payment
     #### PhonePe props ######
     phonepe:
+      airtelxstream:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      music:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      rajtv:
+        id:
+        secret:
       id: WYNKUAT
       api:
         base:
           url: https://mercury-uat.phonepe.com
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
       saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
+    phonepeauto:
+      airtelxstream:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+        encKey: BSB$PORTAL@2014#
+      music:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+        encKey: BSB$PORTAL@2014#
+      rajtv:
+        id:
+        secret:
+        encKey: BSB$PORTAL@2014#
+      id: WYNKUAT
+      api:
+        base:
+          url: https://mercury-uat.phonepe.com
+      salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
+    airtelpaymentbank:
+      airtelxstream:
+        id: 180704
+        secret: d41d8cd98f00a
+      music:
+        id: 180704
+        secret: d41d8cd98f00a
+      rajtv:
+        id:
+        secret:
     #### APBPaytm props ######
     apbPaytm:
       api:
@@ -215,6 +264,15 @@ payment:
           url: https://kongqa.airtel.com/preprod-84/pg-service
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      airtelxstream:
+        encKey: BSB$PORTAL@2014#
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      music:
+        encKey: BSB$PORTAL@2014#
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      rajtv:
+        encKey:
+        secret:
     #### Itunes props ######
     itunes:
       api:
@@ -226,6 +284,25 @@ payment:
       secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
       status:
         baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
+    paytm:
+      airtelxstream:
+        id: WYNKPr93314794046826
+        secret: 2A2%#0MvWdNeg1_7
+        encKey: BSB$PORTAL@2014#
+        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
+        clientId: merchant-wynk-uat
+      music:
+        id: WYNKPr93314794046826
+        secret: 2A2%#0MvWdNeg1_7
+        encKey: BSB$PORTAL@2014#
+        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
+        clientId: merchant-wynk-uat
+      rajtv:
+        id:
+        secret:
+        encKey:
+        token:
+        clientId:
 
 subscription:
   pooling:

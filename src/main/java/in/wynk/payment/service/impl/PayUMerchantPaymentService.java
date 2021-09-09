@@ -19,7 +19,6 @@ import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
@@ -86,6 +85,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUInfoApiUrl;
     @Value("${payment.merchant.payu.api.payment}")
     private String payUPaymentApiUrl;
+    @Value("${payment.encKey}")
+    private String encryptionKey;
 
     public PayUMerchantPaymentService(Gson gson,
                                       ObjectMapper objectMapper,
@@ -148,7 +149,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             final Transaction transaction = TransactionContext.get();
             final Map<String, String> payUPayload = getPayload(chargingRequest);
             final String encryptedParams;
-            final String encryptionKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), transaction.getPaymentChannel().getCode().toLowerCase(), MERCHANT_ENCKEY);
             if (chargingRequest.isIntent()) {
                 encryptedParams = EncryptionUtils.encrypt(this.initIntentUpiPayU(payUPayload), encryptionKey);
             } else {

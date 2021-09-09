@@ -198,11 +198,9 @@ payment:
       airtelxstream:
         id: qFDqmx
         secret: Zbm2ZyNe
-        encKey: BSB$PORTAL@2014#
       music:
         key: qFDqmx
         salt: Zbm2ZyNe
-        encKey: BSB$PORTAL@2014#
       rajtv:
         key:
         salt:

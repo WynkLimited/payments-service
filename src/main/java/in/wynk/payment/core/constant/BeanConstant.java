@@ -28,6 +28,6 @@ public interface BeanConstant {
     String PAYMENT_MONGO_TEMPLATE_REF = "paymentMongoTemplateRef";
     String PAYMENT_MONGO_DB_FACTORY_REF = "paymentMongodbFactoryRef";
 
-    String PAYMENT_CHARGING_CHAIN = "paymentChargingChain";
+    String CHARGING_FRAUD_DETECTION_CHAIN = "chargingFraudDetectionChain";
 
 }

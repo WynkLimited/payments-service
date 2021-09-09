@@ -109,6 +109,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Value("${paytm.revokeAccessToken.api}")
     private String REVOKE_ACCESS_TOKEN;
 
+    @Value("${payment.encKey}")
+    private String paymentEncryptionKey;
+
     @Value("${paytm.requesting.website}")
     private String paytmRequestingWebsite;
 
@@ -211,10 +214,10 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             URI uri = new URIBuilder(REFUND).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", "application/json");
-            final String MID = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
-            final String MERCHANT_KEY = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
+            final String merchantId = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
+            final String merchantSecret = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
             PaytmRefundRequestBody body = PaytmRefundRequestBody.builder()
-                    .mid(MID)
+                    .mid(merchantId)
                     .txnType("REFUND")
                     .refId(refundTransaction.getIdStr())
                     .comments(refundRequest.getReason())
@@ -223,7 +226,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
                     .refundAmount(String.valueOf(refundTransaction.getAmount()))
                     .build();
             String jsonPayload = objectMapper.writeValueAsString(body);
-            String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
+            String signature = checkSumServiceHelper.genrateCheckSum(merchantSecret, jsonPayload);
             log.info("Generated checksum: {} for payload: {}", signature, jsonPayload);
             PaytmRequestHead paytmRequestHead = PaytmRequestHead.builder().clientId(CLIENT_ID).version("v1").requestTimestamp(System.currentTimeMillis() + "").signature(signature).channelId("WEB").build();
             RequestEntity<PaytmRequest> requestEntity = new RequestEntity<>(PaytmRequest.builder().body(body).head(paytmRequestHead).build(), headers, HttpMethod.POST, uri);
@@ -263,9 +266,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(AUTO_DEBIT).build();
             TreeMap<String, String> parameters = new TreeMap<>();
-            final String MID = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
-            final String MERCHANT_KEY = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
-            parameters.put("MID", MID);
+            final String merchantId = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
+            final String merchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
+            parameters.put("MID", merchantId);
             parameters.put("ReqType", "WITHDRAW");
             parameters.put("TxnAmount", String.valueOf(transaction.getAmount()));
             parameters.put("AppIP", "45.251.51.117");
@@ -278,7 +281,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             parameters.put("IndustryType", "Retail");
             parameters.put("Channel", "WEB");
             parameters.put("AuthMode", "USRPWD");
-            String checkSum = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters);
+            String checkSum = checkSumServiceHelper.genrateCheckSum(merchantSecret, parameters);
             parameters.put("CheckSum", checkSum);
             log.info("Generated checksum: {} for payload: {}", checkSum, parameters);
             merchantTransactionEventBuilder.request(parameters);
@@ -330,11 +333,11 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             URI uri = new URIBuilder(REFUND_STATUS).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", "application/json");
-            final String MID = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
-            final String MERCHANT_KEY = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
-            PaytmStatusRequestBody body = PaytmStatusRequestBody.builder().mid(MID).orderId(orderId).refId(transaction.getIdStr()).build();
+            final String merchantId = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
+            final String merchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
+            PaytmStatusRequestBody body = PaytmStatusRequestBody.builder().mid(merchantId).orderId(orderId).refId(transaction.getIdStr()).build();
             String jsonPayload = objectMapper.writeValueAsString(body);
-            String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
+            String signature = checkSumServiceHelper.genrateCheckSum(merchantSecret, jsonPayload);
             log.info("Generated checksum: {} for payload: {}", signature, jsonPayload);
             PaytmRequestHead paytmRequestHead = PaytmRequestHead.builder().clientId(CLIENT_ID).version("v1").requestTimestamp(System.currentTimeMillis() + "").signature(signature).channelId("WEB").build();
             RequestEntity<PaytmRequest> requestEntity = new RequestEntity<>(PaytmRequest.builder().body(body).head(paytmRequestHead).build(), headers, HttpMethod.POST, uri);
@@ -370,12 +373,12 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(TRANSACTION_STATUS).build();
             HttpHeaders headers = new HttpHeaders();
-            final String MID = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
-            final String MERCHANT_KEY = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
+            final String merchantId = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
+            final String merchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
             headers.add("Content-Type", "application/json");
-            PaytmStatusRequestBody body = PaytmStatusRequestBody.builder().mid(MID).orderId(transaction.getIdStr()).txnType("WITHDRAW").build();
+            PaytmStatusRequestBody body = PaytmStatusRequestBody.builder().mid(merchantId).orderId(transaction.getIdStr()).txnType("WITHDRAW").build();
             String jsonPayload = objectMapper.writeValueAsString(body);
-            String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
+            String signature = checkSumServiceHelper.genrateCheckSum(merchantSecret, jsonPayload);
             log.info("Generated checksum: {} for payload: {}", signature, jsonPayload);
             PaytmRequestHead paytmRequestHead = PaytmRequestHead.builder().clientId(CLIENT_ID).version("v1").requestTimestamp(System.currentTimeMillis() + "").signature(signature).channelId("WEB").build();
             RequestEntity<PaytmRequest> requestEntity = new RequestEntity<>(PaytmRequest.builder().body(body).head(paytmRequestHead).build(), headers, HttpMethod.POST, uri);
@@ -495,9 +498,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     private HttpHeaders getHttpHeaders(String client, String deviceId) {
-        final String CLIENT_ID = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_CLIENT_ID);
-        final String SECRET = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_TOKEN);
-        String authHeader = String.format("Basic %s", Utils.encodeBase64(CLIENT_ID + ":" + SECRET));
+        final String merchantClientId = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_CLIENT_ID);
+        final String token = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_TOKEN);
+        String authHeader = String.format("Basic %s", Utils.encodeBase64(merchantClientId + ":" + token));
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", authHeader);
         headers.add("Content-Type", "application/json");
@@ -552,12 +555,12 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
             userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
-            final String MID = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
-            final String MERCHANT_KEY = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
-            PaytmBalanceRequestBody body = PaytmBalanceRequestBody.builder().userToken(wallet.getAccessToken()).mid(MID).txnAmount(finalAmount).build();
+            final String merchantId = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
+            final String merchantSecret = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
+            PaytmBalanceRequestBody body = PaytmBalanceRequestBody.builder().userToken(wallet.getAccessToken()).mid(merchantId).txnAmount(finalAmount).build();
             String jsonPayload = objectMapper.writeValueAsString(body);
             log.debug("Generating signature for payload: {}", jsonPayload);
-            String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
+            String signature = checkSumServiceHelper.genrateCheckSum(merchantSecret, jsonPayload);
             PaytmRequestHead head = PaytmRequestHead.builder().clientId(CLIENT_ID).version("v1").requestTimestamp(System.currentTimeMillis() + "").signature(signature).channelId("WEB").build();
             RequestEntity<PaytmRequest> requestEntity = new RequestEntity<>(PaytmRequest.builder().head(head).body(body).build(), HttpMethod.POST, uri);
             log.info("Paytm wallet balance request: {}", requestEntity);
@@ -657,12 +660,11 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
         try {
-            final String MID = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
-            final String MERCHANT_KEY = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
-            final String paymentEncryptionKey = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ENCKEY);
+            final String merchantId = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_ID);
+            final String merchantSecret = PropertyResolverUtils.resolve(client, PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(), MERCHANT_SECRET);
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put(PAYTM_REQUEST_TYPE, ADD_MONEY);
-            parameters.put(PAYTM_MID, MID);
+            parameters.put(PAYTM_MID, merchantId);
             parameters.put(PAYTM_REQUST_ORDER_ID, TransactionContext.get().getIdStr());
             parameters.put(PAYTM_REQUEST_CUST_ID, wallet.getId().getUid());
             parameters.put(PAYTM_REQUEST_TXN_AMOUNT, String.valueOf(amount));
@@ -671,7 +673,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             parameters.put(PAYTM_REQUESTING_WEBSITE, paytmRequestingWebsite);
             parameters.put(PAYTM_SSO_TOKEN, wallet.getAccessToken());
             parameters.put(PAYTM_REQUEST_CALLBACK, callBackUrl);
-            parameters.put(PAYTM_CHECKSUMHASH, checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, parameters));
+            parameters.put(PAYTM_CHECKSUMHASH, checkSumServiceHelper.genrateCheckSum(merchantSecret, parameters));
             String payTmRequestParams = objectMapper.writeValueAsString(parameters);
             payTmRequestParams = EncryptionUtils.encrypt(payTmRequestParams, paymentEncryptionKey);
             builder.data(WalletTopUpResponse.builder().info(payTmRequestParams).build());

@@ -286,19 +286,16 @@ payment:
       airtelxstream:
         id: WYNKPr93314794046826
         secret: 2A2%#0MvWdNeg1_7
-        encKey: BSB$PORTAL@2014#
         token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
         clientId: merchant-wynk-uat
       music:
         id: WYNKPr93314794046826
         secret: 2A2%#0MvWdNeg1_7
-        encKey: BSB$PORTAL@2014#
         token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
         clientId: merchant-wynk-uat
       rajtv:
         id:
         secret:
-        encKey:
         token:
         clientId:
 

@@ -58,6 +58,21 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     }
 
     @Override
+    public String getOs() {
+        return this.purchaseDetails.getAppDetails().getOs();
+    }
+
+    @Override
+    public String getAppId() {
+        return this.purchaseDetails.getAppDetails().getAppId();
+    }
+
+    @Override
+    public int getBuildNo() {
+        return this.purchaseDetails.getAppDetails().getBuildNo();
+    }
+
+    @Override
     public String getMsisdn() {
         return this.purchaseDetails.getUserDetails().getMsisdn();
     }
@@ -70,6 +85,16 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     @Override
     public String getCouponCode() {
         return this.purchaseDetails.getPaymentDetails().getCouponId();
+    }
+
+    @Override
+    public String getCountryCode() {
+        return this.purchaseDetails.getUserDetails().getCountryCode();
+    }
+
+    @Override
+    public String getPaymentId() {
+        return this.purchaseDetails.getPaymentDetails().getPaymentId();
     }
 
     @Override

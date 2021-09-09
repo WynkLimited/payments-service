@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
-import static in.wynk.payment.core.constant.BeanConstant.PAYMENT_CHARGING_CHAIN;
+import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 
@@ -85,7 +85,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     @Override
     public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> request) {
-        BeanLocatorFactory.getBean(PAYMENT_CHARGING_CHAIN, IHandler.class).handle(request);
+        BeanLocatorFactory.getBean(CHARGING_FRAUD_DETECTION_CHAIN, IHandler.class).handle(request);
         final PaymentCode paymentCode = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()), request.getPurchaseDetails());
         final TransactionStatus existingStatus = transaction.getStatus();

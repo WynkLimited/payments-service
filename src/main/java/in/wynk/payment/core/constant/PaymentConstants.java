@@ -47,5 +47,9 @@ public interface PaymentConstants extends BaseConstants {
     String PROD_ENV = "PROD";
     String SANDBOX_ENV = "Sandbox";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
-
+    String PAYMENT_CLIENT_PLACE_HOLDER = "payment.merchant.%p.%c.%f";
+    String MERCHANT_ID = "id";
+    String MERCHANT_SECRET = "secret";
+    String MERCHANT_TOKEN = "token";
+    String MERCHANT_ENCKEY = "encKey";
 }

@@ -5,7 +5,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.AbstractProductDetails;
-import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
+import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentOptionsController {
 
     private final IPaymentOptionService paymentMethodService;
-    private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedPaymentDetailsRequest<?>> preferredPaymentService;
+    private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedWebPaymentDetailsRequest<?>> preferredPaymentService;
 
     @GetMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
@@ -34,7 +34,7 @@ public class PaymentOptionsController {
     @PostMapping("/saved/details/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "savedDetails")
-    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedPaymentDetailsRequest<? extends AbstractProductDetails> request) {
+    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedWebPaymentDetailsRequest<? extends AbstractProductDetails> request) {
         AnalyticService.update(request);
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());

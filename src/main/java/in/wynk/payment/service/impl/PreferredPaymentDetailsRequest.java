@@ -13,4 +13,5 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public class PreferredPaymentDetailsRequest<T extends IProductDetails> extends AbstractPreferredPaymentDetailsRequest<T> {
     private UserPreferredPayment preferredPayment;
+    private String clientAlias;
 }

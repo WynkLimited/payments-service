@@ -9,7 +9,7 @@ import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
+import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
@@ -42,7 +42,7 @@ import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedPaymentDetailsRequest<?>> {
+public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedWebPaymentDetailsRequest<?>> {
 
     private static final int N = 3;
     private final IUserPaymentsManager userPaymentsManager;
@@ -123,7 +123,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Override
-    public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(CombinedPaymentDetailsRequest<?> request) {
+    public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(CombinedWebPaymentDetailsRequest<?> request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(UID);
         final String deviceId = sessionDTO.get(DEVICE_ID);
@@ -143,7 +143,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {
                         MDC.put(REQUEST_ID, requestId);
-                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
+                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(request.getClient()).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
                     };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {

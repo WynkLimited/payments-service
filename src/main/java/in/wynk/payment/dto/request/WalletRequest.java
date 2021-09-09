@@ -20,4 +20,6 @@ public abstract class WalletRequest {
 
     public abstract String getDeviceId();
 
+    public abstract String getClient();
+
 }

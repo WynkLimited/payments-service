@@ -36,6 +36,7 @@ import in.wynk.payment.dto.response.WalletTopUpResponse;
 import in.wynk.payment.dto.response.paytm.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.DiscountUtils;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -60,32 +61,23 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
+import static in.wynk.payment.core.constant.BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE;
 import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
-import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
-import static in.wynk.payment.core.constant.PaymentConstants.WALLET_USER_ID;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CALLBACK_PAYLOAD_PARSING_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 
 @Slf4j
-@Service(BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE)
+@Service(PAYTM_MERCHANT_WALLET_SERVICE)
 public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, PaytmCallbackRequestPayload>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>>, IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IMerchantPaymentRefundService<PaytmPaymentRefundResponse, PaytmPaymentRefundRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>> {
-
-    @Value("${paytm.native.merchantId}")
-    private String MID;
-
-    @Value("${paytm.native.secret}")
-    private String SECRET;
 
     @Value("${paytm.refund.api}")
     private String REFUND;
 
     @Value("${paytm.sendOtp.api}")
     private String SEND_OTP;
-
-    @Value("${paytm.native.clientId}")
-    private String CLIENT_ID;
 
     @Value("${paytm.autoDebit.api}")
     private String AUTO_DEBIT;
@@ -98,9 +90,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
 
     @Value("${paytm.validateOtp.api}")
     private String VALIDATE_OTP;
-
-    @Value("${paytm.native.merchantKey}")
-    private String MERCHANT_KEY;
 
     @Value("${paytm.refundStatus.api}")
     private String REFUND_STATUS;
@@ -119,9 +108,6 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
 
     @Value("${paytm.revokeAccessToken.api}")
     private String REVOKE_ACCESS_TOKEN;
-
-    @Value("${payment.encKey}")
-    private String paymentEncryptionKey;
 
     @Value("${paytm.requesting.website}")
     private String paytmRequestingWebsite;
@@ -181,8 +167,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         if (StringUtils.isBlank(msisdn) || StringUtils.isBlank(uid)) {
             throw new WynkRuntimeException("Linked Msisdn or UID not found for user");
         }
-        Wallet wallet = getWallet(getKey(uid, deviceId));
-        UserWalletDetails userWalletDetails = this.balance(transaction.getAmount(), wallet).getBody().getData();
+        Wallet wallet = getWallet(transaction.getClientAlias(),getKey(uid, deviceId));
+        UserWalletDetails userWalletDetails = this.balance(transaction.getClientAlias(),transaction.getAmount(), wallet).getBody().getData();
         if (userWalletDetails.getDeficitBalance() > 0) {
             throw new WynkRuntimeException("Balance insufficient in linked wallet for this transaction to succeed");
         }
@@ -225,6 +211,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             URI uri = new URIBuilder(REFUND).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", "application/json");
+            final String MID = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_ID);
+            final String MERCHANT_KEY = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_SECRET);
             PaytmRefundRequestBody body = PaytmRefundRequestBody.builder()
                     .mid(MID)
                     .txnType("REFUND")
@@ -275,6 +263,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(AUTO_DEBIT).build();
             TreeMap<String, String> parameters = new TreeMap<>();
+            final String MID = PropertyResolverUtils.resolve(transaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_ID);
+            final String MERCHANT_KEY = PropertyResolverUtils.resolve(transaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_SECRET);
             parameters.put("MID", MID);
             parameters.put("ReqType", "WITHDRAW");
             parameters.put("TxnAmount", String.valueOf(transaction.getAmount()));
@@ -340,6 +330,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             URI uri = new URIBuilder(REFUND_STATUS).build();
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", "application/json");
+            final String MID = PropertyResolverUtils.resolve(transaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_ID);
+            final String MERCHANT_KEY = PropertyResolverUtils.resolve(transaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_SECRET);
             PaytmStatusRequestBody body = PaytmStatusRequestBody.builder().mid(MID).orderId(orderId).refId(transaction.getIdStr()).build();
             String jsonPayload = objectMapper.writeValueAsString(body);
             String signature = checkSumServiceHelper.genrateCheckSum(MERCHANT_KEY, jsonPayload);
@@ -378,6 +370,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(TRANSACTION_STATUS).build();
             HttpHeaders headers = new HttpHeaders();
+            final String MID = PropertyResolverUtils.resolve(transaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_ID);
+            final String MERCHANT_KEY = PropertyResolverUtils.resolve(transaction.getClientAlias(),PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_SECRET);
             headers.add("Content-Type", "application/json");
             PaytmStatusRequestBody body = PaytmStatusRequestBody.builder().mid(MID).orderId(transaction.getIdStr()).txnType("WITHDRAW").build();
             String jsonPayload = objectMapper.writeValueAsString(body);
@@ -436,7 +430,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             sessionDTO.put(WALLET_USER_ID, phone);
             log.info("Sending OTP to {} via PayTM", phone);
             URI uri = new URIBuilder(SEND_OTP).build();
-            HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID));
+            HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID),walletLinkRequest.getClient());
             PaytmWalletOtpRequest paytmWalletOtpRequest = PaytmWalletOtpRequest.builder().phone(phone).scopes(Arrays.asList("wallet")).build();
             RequestEntity<PaytmWalletOtpRequest> requestEntity = new RequestEntity<>(paytmWalletOtpRequest, headers, HttpMethod.POST, uri);
             log.info("Paytm OTP request: {}", requestEntity);
@@ -472,7 +466,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             URI uri = new URIBuilder(VALIDATE_OTP).build();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             AnalyticService.update(UID, sessionDTO.<String>get(UID));
-            HttpHeaders headers = getHttpHeaders(sessionDTO.get(DEVICE_ID));
+            HttpHeaders headers = getHttpHeaders(walletValidateLinkRequest.getClient(),sessionDTO.get(DEVICE_ID));
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put("otp", walletValidateLinkRequest.getOtp());
             parameters.put("state_token", sessionDTO.get(STATE_TOKEN));
@@ -500,7 +494,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         }
     }
 
-    private HttpHeaders getHttpHeaders(String deviceId) {
+    private HttpHeaders getHttpHeaders(String client,String deviceId) {
+        final String CLIENT_ID = PropertyResolverUtils.resolve(client,PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_CLIENT_ID);
+        final String SECRET = PropertyResolverUtils.resolve(client,PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_TOKEN);
         String authHeader = String.format("Basic %s", Utils.encodeBase64(CLIENT_ID + ":" + SECRET));
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", authHeader);
@@ -529,9 +525,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     public WynkResponseEntity<Void> deLink(WalletDeLinkRequest request) {
         try {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
-            Wallet wallet = getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
+            Wallet wallet = getWallet(request.getClient(),getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID)));
             URI uri = new URIBuilder(REVOKE_ACCESS_TOKEN).build();
-            HttpHeaders headers = getHttpHeaders(wallet.getId().getDeviceId());
+            HttpHeaders headers = getHttpHeaders(request.getClient(),wallet.getId().getDeviceId());
             headers.add(PAYTM_SESSION_TOKEN, wallet.getAccessToken());
             userPaymentsManager.delete(wallet);
             RequestEntity requestEntity = new RequestEntity(headers, HttpMethod.DELETE, uri);
@@ -545,10 +541,10 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     public WynkResponseEntity<UserWalletDetails> balance(WalletBalanceRequest request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final double finalAmount = DiscountUtils.compute(null, PlanDetails.builder().planId(request.getPlanId()).build());
-        return balance(finalAmount, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        return balance(request.getClient(),finalAmount, getWallet(request.getClient(),getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
-    public WynkResponseEntity<UserWalletDetails> balance(double finalAmount, Wallet wallet) {
+    public WynkResponseEntity<UserWalletDetails> balance(String client,double finalAmount, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
@@ -556,6 +552,8 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         try {
             URI uri = new URIBuilder(FETCH_INSTRUMENT).build();
             userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
+            final String MID = PropertyResolverUtils.resolve(client,PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_ID);
+            final String MERCHANT_KEY = PropertyResolverUtils.resolve(client,PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_SECRET);
             PaytmBalanceRequestBody body = PaytmBalanceRequestBody.builder().userToken(wallet.getAccessToken()).mid(MID).txnAmount(finalAmount).build();
             String jsonPayload = objectMapper.writeValueAsString(body);
             log.debug("Generating signature for payload: {}", jsonPayload);
@@ -619,13 +617,13 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         return false;
     }
 
-    private Wallet refreshAccessToken(Wallet wallet) {
+    private Wallet refreshAccessToken(String client,Wallet wallet) {
         try {
             String refreshToken = wallet.getRefreshToken();
             String msisdn = wallet.getWalletUserId();
             log.info("Validating access token for linked Mobile No: {}, uid: {} with PayTM", msisdn, wallet.getId().getUid());
             URI uri = new URIBuilder(REFRESH_TOKEN).build();
-            HttpHeaders headers = getHttpHeaders(wallet.getId().getDeviceId());
+            HttpHeaders headers = getHttpHeaders(client,wallet.getId().getDeviceId());
             PaytmRefreshTokenRequest paytmRefreshTokenRequest = PaytmRefreshTokenRequest.builder().deviceId(wallet.getId().getDeviceId()).grantType("refresh_token").refreshToken(refreshToken).build();
             RequestEntity<PaytmRefreshTokenRequest> requestEntity = new RequestEntity<>(paytmRefreshTokenRequest, headers, HttpMethod.POST, uri);
             log.info("Validate paytm access token request: {}", requestEntity);
@@ -651,14 +649,17 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     @Override
     public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> walletAddMoneyRequest) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return addMoney(((IChargingDetails) walletAddMoneyRequest.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), 0, getWallet(getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
+        return addMoney(sessionDTO.get(CLIENT),((IChargingDetails) walletAddMoneyRequest.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), 0, getWallet(sessionDTO.get(CLIENT),getKey(sessionDTO.get(UID), sessionDTO.get(DEVICE_ID))));
     }
 
-    public WynkResponseEntity<WalletTopUpResponse> addMoney(String callBackUrl, double amount, Wallet wallet) {
+    public WynkResponseEntity<WalletTopUpResponse> addMoney(String client,String callBackUrl, double amount, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
         try {
+            final String MID = PropertyResolverUtils.resolve(client,PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_ID);
+            final String MERCHANT_KEY = PropertyResolverUtils.resolve(client,PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_SECRET);
+            final String paymentEncryptionKey = PropertyResolverUtils.resolve(client,PAYTM_MERCHANT_WALLET_SERVICE.toLowerCase(),MERCHANT_ENCKEY);
             TreeMap<String, String> parameters = new TreeMap<>();
             parameters.put(PAYTM_REQUEST_TYPE, ADD_MONEY);
             parameters.put(PAYTM_MID, MID);
@@ -690,19 +691,19 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         try {
             final double finalAmount = DiscountUtils.compute(request.getCouponId(), request.getProductDetails());
-            return this.balance(finalAmount, getWallet(request.getPreferredPayment()));
+            return this.balance(request.getClientAlias(),finalAmount, getWallet(request.getClientAlias(),request.getPreferredPayment()));
         } catch (WynkRuntimeException e) {
             return WynkResponseEntity.<UserWalletDetails>builder().error(TechnicalErrorDetails.builder().code(e.getErrorCode()).description(e.getMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
         }
     }
 
-    private Wallet getWallet(UserPreferredPayment userPreferredPayment) {
+    private Wallet getWallet(String client,UserPreferredPayment userPreferredPayment) {
         try {
             Wallet wallet = (Wallet) userPreferredPayment;
             if (StringUtils.isBlank(wallet.getAccessToken())) {
                 throw new WynkRuntimeException(UT022);
             } else if (wallet.getTokenValidity() < System.currentTimeMillis()) {
-                return refreshAccessToken(wallet);
+                return refreshAccessToken(client,wallet);
             } else {
                 return wallet;
             }
@@ -711,9 +712,9 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         }
     }
 
-    private Wallet getWallet(SavedDetailsKey key) {
+    private Wallet getWallet(String client,SavedDetailsKey key) {
         Map<SavedDetailsKey, UserPreferredPayment> userPreferredPaymentMap = userPaymentsManager.get(key.getUid()).stream().collect(Collectors.toMap(UserPreferredPayment::getId, Function.identity()));
-        return getWallet(userPreferredPaymentMap.getOrDefault(key, null));
+        return getWallet(client,userPreferredPaymentMap.getOrDefault(key, null));
     }
 
     private SavedDetailsKey getKey(String uid, String deviceId) {

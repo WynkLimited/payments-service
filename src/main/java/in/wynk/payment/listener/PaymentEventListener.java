@@ -12,6 +12,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkErrorType;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
@@ -39,7 +40,11 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.exception.WynkErrorType.UT025;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 
 @Slf4j
@@ -93,7 +98,14 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "recurringPaymentEvent")
-    public void onRecurringPaymentEvent(RecurringPaymentEvent event) { // for auditing and stop recurring in external payment gateway
+    public void onRecurringPaymentEvent(RecurringPaymentEvent event) {
+        try {
+            AnalyticService.update(event);
+            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE)
+                BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class).cancelRecurring(event.getTransactionId());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(UT025, e);
+        }
     }
 
     @EventListener
@@ -166,7 +178,7 @@ public class PaymentEventListener {
                     .build());
         }
     }
-
+    
     @ClientAware(clientAlias = "#purchaseRecord.clientAlias")
     private void dropOutTracker(PurchaseRecord purchaseRecord) {
         try {
@@ -179,6 +191,24 @@ public class PaymentEventListener {
         } catch (Exception e) {
             log.error(WynkErrorType.UT999.getMarker(), "something went wrong while scheduling task due to {}", e.getMessage(), e);
         }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "transactionSnapshot")
+    public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
+        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
+        AnalyticService.update(UID, event.getTransaction().getUid());
+        AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
+        AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());
+        AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
+        AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
+        AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
+        AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
+        AnalyticService.update(PAYMENT_EVENT, event.getTransaction().getType().getValue());
+        AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
+        AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
+        AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
     }
 
 }

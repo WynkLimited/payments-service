@@ -49,7 +49,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
-    private final ISqsManagerService sqsManagerService;
+    private final ISqsManagerService<Object> sqsManagerService;
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
@@ -230,7 +230,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
                 sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
             }
             final TransactionStatus finalStatus = transaction.getStatus();
-            transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).attemptSequence(request.getAttemptSequence() + 1).build());
+            transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
         }
     }
 

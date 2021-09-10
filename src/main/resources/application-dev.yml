@@ -99,9 +99,27 @@ payment:
     offset:
       day: 0
       hour: 1
+  preDebitNotification:
+    preOffsetDays: 2
+    offset:
+      day: 0
+      hour: 1
   ###### lib-queue props ######
   pooling:
     queue:
+      preDebitNotification:
+        enabled: true
+        name: mandate-notification-sqs-queue
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       reconciliation:
         enabled: true
         name: wcf-staging-payment-reconciliation
@@ -315,24 +333,41 @@ wynk:
     enabled: true
     sources:
       payment:
+        appName: payment
         nodes: 10.80.0.128,10.80.0.240
         username: user_payments
         password: zS7VvjYRSE
         database: payments
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
       coupons:
+        appName: coupon
         nodes: 10.80.0.128,10.80.0.240
         username: user_coupons
         password: Sk6kzU8GU5
         database: coupons
-    ########### Mongo Pool Config ###########
-    minConnectionsPerHost: 10
-    maxConnectionsPerHost: 50
-    threadsAllowedToBlockForConnectionMultiplier: 5
-    serverSelectionTimeoutMs: 10000
-    maxWaitTime: 10000
-    connectTimeout: 2000
-    socketTimeout: 5000
-    readPreference: secondaryPreferred
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
 
 cache:
   caffeine:

@@ -101,9 +101,27 @@ payment:
     offset:
       day: 0
       hour: 1
+  preDebitNotification:
+    preOffsetDays: 2
+    offset:
+      day: 0
+      hour: 1
   ###### lib-queue props ######
   pooling:
     queue:
+      preDebitNotification:
+        enabled: true
+        name: wcf-production-mandate-notification-sqs-queue
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       reconciliation:
         enabled: true
         name: wcf-production-revenue-payment-reconcilation
@@ -322,24 +340,41 @@ wynk:
     enabled: true
     sources:
       payment:
+        appName: payment
         nodes: 10.40.12.86,10.40.12.216,10.40.12.45
         username: user_payments
         password: tHdPNyp6Du
         database: payments
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 10000
+          connectTimeout: 1000
+          socketTimeout: 5000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
       coupons:
+        appName: coupon
         nodes: 10.40.12.86,10.40.12.216,10.40.12.45
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons
-    ########### Mongo Pool Config ###########
-    minConnectionsPerHost: 50
-    maxConnectionsPerHost: 150
-    threadsAllowedToBlockForConnectionMultiplier: 5
-    serverSelectionTimeoutMs: 10000
-    maxWaitTime: 10000
-    connectTimeout: 2000
-    socketTimeout: 5000
-    readPreference: secondaryPreferred
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 5
+          maxConnectionsPerHost: 20
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 10000
+          connectTimeout: 1000
+          socketTimeout: 5000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
 
 cache:
   caffeine:

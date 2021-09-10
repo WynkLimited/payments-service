@@ -28,13 +28,13 @@ public class ChargingDetails implements IChargingDetails {
     @Analysed
     private IPaymentDetails paymentDetails;
     @Analysed
-    private IPageUrlDetails pageUrlDetails;
-    @Analysed
     private IProductDetails productDetails;
+    private IPageUrlDetails pageUrlDetails;
 
     @Override
     @JsonIgnore
     public ICallbackDetails getCallbackDetails() {
         return () -> callbackUrl;
     }
+
 }

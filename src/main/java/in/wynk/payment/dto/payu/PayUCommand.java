@@ -7,15 +7,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PayUCommand {
 
-    VERIFY_PAYMENT("verify_payment"),
-    CARD_BIN_INFO("getBinInfo"),
-    USER_CARD_DETAILS("get_user_cards"),
-    SI_TRANSACTION("si_transaction"),
     VERIFY_VPA("validateVPA"),
+    CARD_BIN_INFO("getBinInfo"),
+    PRE_DEBIT_SI("pre_debit_SI"),
+    VERIFY_PAYMENT("verify_payment"),
+    SI_TRANSACTION("si_transaction"),
+    USER_CARD_DETAILS("get_user_cards"),
+    UPI_MANDATE_STATUS("upi_mandate_status"),
+    UPI_MANDATE_REVOKE("upi_mandate_revoke"),
     CHECK_ACTION_STATUS("check_action_status"),
-    CANCEL_REFUND_TRANSACTION("cancel_refund_transaction"),
-    UPI_MANDATE_STATUS("upi_mandate_status");
-
+    CANCEL_REFUND_TRANSACTION("cancel_refund_transaction");
 
     private final String code;
 

@@ -2,22 +2,25 @@ package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.constant.PaymentCode;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
+@Builder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class WalletRequest {
+public class PreDebitNotificationRequest {
 
     @Analysed
-    private PaymentCode paymentCode;
+    private int planId;
 
-    public abstract String getDeviceId();
+    @Analysed
+    private String date;
+
+    @Analysed
+    private String transactionId;
 
 }

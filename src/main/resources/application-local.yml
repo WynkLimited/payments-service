@@ -199,11 +199,11 @@ payment:
         id: qFDqmx
         secret: Zbm2ZyNe
       music:
-        key: qFDqmx
-        salt: Zbm2ZyNe
+        id: qFDqmx
+        secret: Zbm2ZyNe
       rajtv:
-        key:
-        salt:
+        id:
+        secret:
       key: qFDqmx
       salt: Zbm2ZyNe
       api:
@@ -264,7 +264,7 @@ payment:
       music:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       rajtv:
-        secret:
+        token:
     #### Itunes props ######
     itunes:
       api:

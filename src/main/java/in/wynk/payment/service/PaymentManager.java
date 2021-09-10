@@ -6,10 +6,8 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.AbstractErrorDetails;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
-import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
@@ -30,7 +28,7 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
-import in.wynk.tinylytics.dto.BranchRawDataEvent;
+import in.wynk.payment.core.event.PaymentsBranchEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +39,6 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
-import static in.wynk.common.constant.BaseConstants.UID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.*;
@@ -104,7 +101,8 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             }
             return response;
         } finally {
-            publishBranchEvent(branchMeta(request), PAYMENT_CHARGING_EVENT);
+
+            publishBranchEvent(PaymentsBranchEvent.<AbstractChargingRequest<?>>builder().eventName(PAYMENT_CHARGING_EVENT).data(request).meta(mapper.convertValue(transaction, Map.class)).build());
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
@@ -134,8 +132,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-
-            publishBranchEvent(branchMeta(request, transaction), PAYMENT_CALLBACK_EVENT);
+            publishBranchEvent(PaymentsBranchEvent.<CallbackRequestWrapper<?>>builder().eventName(PAYMENT_CALLBACK_EVENT).data(request).meta(mapper.convertValue(transaction, Map.class)).build());
         }
     }
 
@@ -147,7 +144,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         AnalyticService.update(wrapper.getDecodedNotification());
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
-            final PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+            final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
             final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
             transactionInitRequest.setEvent(event);
             final Transaction transaction = transactionManager.init(transactionInitRequest);
@@ -266,7 +263,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final PaymentCode paymentCode = transaction.getPaymentChannel();
         final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
         });
-        request.setPlanId(transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
+        request.setPlanId(transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
         try {
             return statusService.status(request);
         } catch (WynkRuntimeException e) {
@@ -289,37 +286,13 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
-        if (!EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+        if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
         }
     }
 
-    private void publishBranchEvent(Map<String, Object> meta, String event) {
-        meta.put(EVENT, event);
-        BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
-        eventPublisher.publishEvent(branchRawDataEvent);
+       private void publishBranchEvent(PaymentsBranchEvent paymentsBranchEvent) {
+        eventPublisher.publishEvent(paymentsBranchEvent);
     }
-
-    private Map<String, Object> objectToMap(Object o) {
-        return mapper.convertValue(o, Map.class);
-    }
-
-    private Map<String, Object> branchMeta(CallbackRequestWrapper<?> request, Transaction transaction) {
-        Map<String, Object> meta = new HashMap<>();
-        meta.putAll(objectToMap(transaction));
-        meta.putAll(objectToMap(request));
-        return meta;
-    }
-
-    private Map<String, Object> branchMeta(AbstractChargingRequest<?> request) {
-        Map<String, Object> meta = new HashMap<>();
-        meta.put(UID, MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn()));
-        meta.putAll(objectToMap(request.getPurchaseDetails().getAppDetails()));
-        meta.putAll(objectToMap(request.getPurchaseDetails().getPaymentDetails()));
-        meta.putAll(objectToMap(request.getPurchaseDetails().getProductDetails()));
-        meta.putAll(objectToMap(request.getPurchaseDetails().getUserDetails()));
-        return meta;
-    }
-
 
 }

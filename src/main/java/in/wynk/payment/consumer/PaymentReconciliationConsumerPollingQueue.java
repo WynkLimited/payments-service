@@ -6,27 +6,23 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.event.PaymentsBranchEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
-import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.PAYMENT_RECONCILE_EVENT;
 
 @Slf4j
@@ -38,7 +34,6 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     private long reconciliationPoolingDelay;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
-    private ObjectMapper mapper;
     private ApplicationEventPublisher eventPublisher;
 
     private final ExecutorService messageHandlerThreadPool;
@@ -76,7 +71,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                     .build();
         }
         paymentManager.status(transactionStatusRequest);
-        publishBranchEvent(branchMeta(message), PAYMENT_RECONCILE_EVENT);
+        publishBranchEvent(PaymentsBranchEvent.<PaymentReconciliationMessage>builder().eventName(PAYMENT_RECONCILE_EVENT).data(message).build());
     }
 
     @Override
@@ -106,15 +101,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
         }
     }
 
-    private Map<String, Object> branchMeta(PaymentReconciliationMessage msg) {
-        Map<String, Object> meta = new HashMap<>(mapper.convertValue(msg, Map.class));
-        return meta;
+    private void publishBranchEvent(PaymentsBranchEvent paymentsBranchEvent) {
+        eventPublisher.publishEvent(paymentsBranchEvent);
     }
-
-    private void publishBranchEvent(Map<String, Object> meta, String event) {
-        meta.put(EVENT, event);
-        BranchRawDataEvent branchRawDataEvent = BranchRawDataEvent.builder().data(meta).build();
-        eventPublisher.publishEvent(branchRawDataEvent);
-    }
-
 }

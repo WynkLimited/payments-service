@@ -10,7 +10,9 @@ public enum PaymentsEligibilityReason implements IEligibilityStatusReason {
     EMPTY_COUNTRY_CODE,
     INVALID_COUNTRY_CODE,
     EMPTY_COUPON_ID,
-    INVALID_COUPON
+    INVALID_COUPON,
+    NOT_IN_PLAN_LIST,
+    NOT_IN_ITEM_LIST
     ;
 
     @Override

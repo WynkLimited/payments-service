@@ -236,5 +236,39 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         }
     }
 
+    public boolean hasPlanId(Integer... planIds) {
+        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
+        try {
+            final PaymentOptionsEligibilityRequest root = getRoot();
+            final Integer activePlanId = root.getPlanId();
+            final Optional<Integer> planIdOption = Arrays.stream(planIds).filter(activePlanId::equals).findAny();
+            if (!planIdOption.isPresent()) {
+                resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_PLAN_LIST);
+            } else {
+                resultBuilder.status(EligibilityStatus.ELIGIBLE);
+            }
+            return resultBuilder.build().isEligible();
+        } finally {
+            result = resultBuilder.build();
+        }
+    }
+
+    public boolean hasItemId(Integer... itemIds) {
+        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
+        try {
+            final PaymentOptionsEligibilityRequest root = getRoot();
+            final Integer activeItemId = root.getItemId();
+            final Optional<Integer> itemIdOption = Arrays.stream(itemIds).filter(activeItemId::equals).findAny();
+            if (!itemIdOption.isPresent()) {
+                resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_ITEM_LIST);
+            } else {
+                resultBuilder.status(EligibilityStatus.ELIGIBLE);
+            }
+            return resultBuilder.build().isEligible();
+        } finally {
+            result = resultBuilder.build();
+        }
+    }
+
 
 }

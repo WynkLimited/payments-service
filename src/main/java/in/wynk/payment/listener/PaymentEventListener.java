@@ -192,6 +192,8 @@ public class PaymentEventListener {
         Map<String, Object> map = new HashMap<>();
         if (event.getEventName().equalsIgnoreCase(PAYMENT_CHARGING_EVENT)) {
             map.putAll(branchMeta((AbstractChargingRequest<?>) event.getData()));
+            map.put(PAYMENT_CODE,event.getMeta().get("paymentChannel"));
+            map.put(PAYMENT_EVENT,event.getMeta().get("type"));
         } else if (event.getEventName().equalsIgnoreCase(PAYMENT_CALLBACK_EVENT)) {
             map.putAll(branchMeta((CallbackRequestWrapper<?>) event.getData()));
         } else if (event.getEventName().equalsIgnoreCase(PAYMENT_RECONCILE_EVENT)) {
@@ -245,6 +247,8 @@ public class PaymentEventListener {
             meta.put(EVENT, TRANSACTION_SNAPShOT_EVENT);
             meta.put(TRIGGER_DATE, dateFormat.format(new Date()));
             meta.put(EVENT_PUBLISHED_BY, PAYMENT_SERVICE);
+            meta.put(PAYMENT_CODE,event.getTransaction().getPaymentChannel());
+            meta.put(PAYMENT_EVENT,event.getTransaction().getType().getValue());
             if (Optional.ofNullable(event.getPurchaseDetails()).isPresent()) {
                 meta.putAll(objectToMap(event.getPurchaseDetails().getAppDetails()));
                 meta.putAll(objectToMap(event.getPurchaseDetails().getPaymentDetails()));

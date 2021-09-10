@@ -251,6 +251,16 @@ payment:
           url: https://mercury-t2.phonepe.com
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
       saltAuto: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    airtelpaymentbank:
+      airtelxstream:
+        id:
+        secret:
+      music:
+        id:
+        secret:
+      rajtv:
+        id:
+        secret:
 
     #### APBPaytm props ######
     apbPaytm:

@@ -59,7 +59,7 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
-            <artifactId>revenue-data</artifactId>
+            <artifactId>lib-data</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

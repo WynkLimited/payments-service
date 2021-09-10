@@ -31,9 +31,11 @@ public interface PaymentConstants extends BaseConstants {
     String WALLET_USER_ID = "walletUserId";
     
     String SOURCE_MODE = "mode";
+    String BANK_CODE = "bankCode";
     String MERCHANT_TRANSACTION = "merchantTransaction";
     String PAYMENT_MODE="paymentMode";
     String ATTEMPT_SEQUENCE = "attemptSequence";
+    String ORIGINAL_TRANSACTION_ID = "ORIGINAL_TRANSACTION_ID";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
@@ -49,4 +51,6 @@ public interface PaymentConstants extends BaseConstants {
     String SHOULD_WINBACK = "shouldWinBack";
     String WINBACK_CAMPAIGN ="winback_campaign";
     String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
+    String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
+
 }

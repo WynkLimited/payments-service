@@ -8,12 +8,15 @@ import in.wynk.common.adapter.SessionDTOAdapter;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.SessionResponse;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.IPointPurchaseSessionService;
 import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.service.ISessionManager;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -45,6 +48,12 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             AnalyticService.update(CLIENT, clientDetails.getAlias());
             SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
             sessionDTO.put(CLIENT, clientDetails.getAlias());
+            CountryCurrencyDetailsCachingService countryCurrencyDetailsCachingService = BeanLocatorFactory.getBean(CountryCurrencyDetailsCachingService.class);
+            if(StringUtils.isNotEmpty(request.getCountryCode()) && countryCurrencyDetailsCachingService.containsKey(request.getCountryCode())) {
+                sessionDTO.put(CURRENCY,countryCurrencyDetailsCachingService.get(request.getCountryCode()).getCurrency());
+            } else {
+                sessionDTO.put(CURRENCY,countryCurrencyDetailsCachingService.get(DEFAULT_COUNTRY_CODE).getCurrency());
+            }
             final String id = UUIDs.timeBased().toString();
             sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, duration, TimeUnit.MINUTES);
             AnalyticService.update(SESSION_ID, id);

@@ -216,7 +216,9 @@ public class PaymentEventListener {
                 eventsWrapperBuilder.appDetails(event.getPurchaseDetails().getAppDetails())
                         .paymentDetails(event.getPurchaseDetails().getPaymentDetails())
                         .productDetails(event.getPurchaseDetails().getProductDetails())
-                        .userDetails(event.getPurchaseDetails().getUserDetails()).optForAutoRenew(event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
+                        .userDetails(event.getPurchaseDetails().getUserDetails()).optForAutoRenew(event.getPurchaseDetails().getPaymentDetails().isAutoRenew())
+                        .os(event.getPurchaseDetails().getAppDetails().getOs())
+                        .deviceId(event.getPurchaseDetails().getAppDetails().getDeviceId());
             }
             publishBranchEvent(branchMeta(eventsWrapperBuilder.build()),TRANSACTION_SNAPShOT_EVENT);
 

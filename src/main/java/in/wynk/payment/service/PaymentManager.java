@@ -18,9 +18,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.ClientCallbackEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
@@ -28,7 +26,6 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
-import in.wynk.payment.core.event.PaymentsBranchEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -101,7 +98,11 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             return response;
         } finally {
 
-            publishBranchEvent(PaymentsBranchEvent.<AbstractChargingRequest<?>>builder().eventName(PAYMENT_CHARGING_EVENT).data(request).meta(transactionMapper(transaction)).build());
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(EventsWrapper.builder()
+                    .appDetails(request.getPurchaseDetails().getAppDetails())
+                    .paymentDetails(request.getPurchaseDetails().getPaymentDetails())
+                    .productDetails(request.getPurchaseDetails().getProductDetails())
+                    .userDetails(request.getPurchaseDetails().getUserDetails()).build()).build());
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
@@ -131,7 +132,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            publishBranchEvent(PaymentsBranchEvent.<CallbackRequestWrapper<?>>builder().eventName(PAYMENT_CALLBACK_EVENT).data(request).meta(transactionMapper(transaction)).build());
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(EventsWrapper.builder().callbackRequestWrapper((CallbackRequestWrapper<?>) request.getBody()).transaction(transaction).paymentCode(request.getPaymentCode().name()).build()).build());
         }
     }
 
@@ -292,14 +293,6 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     private void publishBranchEvent(PaymentsBranchEvent paymentsBranchEvent) {
         eventPublisher.publishEvent(paymentsBranchEvent);
-    }
-
-    private Map<String, Object> transactionMapper(Transaction transaction) {
-        Map<String, Object> map = new Hashtable<>();
-        map.put(PAYMENT_CODE, transaction.getPaymentChannel().name());
-        map.put(PAYMENT_EVENT, transaction.getType().name());
-        map.putAll(mapper.convertValue(transaction, Map.class));
-        return map;
     }
 
 }

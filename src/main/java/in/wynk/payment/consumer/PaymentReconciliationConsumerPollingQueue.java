@@ -7,6 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.event.PaymentsBranchEvent;
+import in.wynk.payment.dto.EventsWrapper;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
@@ -71,7 +72,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                     .build();
         }
         paymentManager.status(transactionStatusRequest);
-        publishBranchEvent(PaymentsBranchEvent.<PaymentReconciliationMessage>builder().eventName(PAYMENT_RECONCILE_EVENT).data(message).build());
+        publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(EventsWrapper.builder().paymentReconciliationMessage(message).build()).build());
     }
 
     @Override

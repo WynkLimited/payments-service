@@ -190,17 +190,11 @@ public class PaymentEventListener {
     @EventListener
     private void publishPaymentEventToBranch(PaymentsBranchEvent event) {
         Map<String, Object> map = new HashMap<>();
-        if (event.getEventName().equalsIgnoreCase(PAYMENT_CHARGING_EVENT)) {
-            map.putAll(branchMeta((AbstractChargingRequest<?>) event.getData()));
-        } else if (event.getEventName().equalsIgnoreCase(PAYMENT_CALLBACK_EVENT)) {
-            map.putAll(branchMeta((CallbackRequestWrapper<?>) event.getData()));
-        } else if (event.getEventName().equalsIgnoreCase(PAYMENT_RECONCILE_EVENT)) {
-            map.putAll(branchMeta((PaymentReconciliationMessage) event.getData()));
+        if(event.getData() instanceof EventsWrapper)
+        {
+            map.putAll(branchMeta((EventsWrapper)event.getData()));
+            publishBranchEvent(map, event.getEventName());
         }
-        if(MapUtils.isNotEmpty(event.getMeta())){
-            map.putAll(event.getMeta());
-        }
-        publishBranchEvent(map, event.getEventName());
     }
 
     private void publishBranchEvent(Map<String, Object> meta, String event) {
@@ -208,55 +202,27 @@ public class PaymentEventListener {
         eventPublisher.publishEvent(BranchRawDataEvent.builder().data(meta).build());
     }
 
+    private Map<String, Object> branchMeta(EventsWrapper eventsWrapper) {
+        return mapper.convertValue(eventsWrapper, Map.class);
+    }
+
     private void publishBranchEvent(TransactionSnapshotEvent event) {
-        eventPublisher.publishEvent(BranchRawDataEvent.builder().data(branchMeta(event)).build());
-    }
-
-    private Map<String, Object> branchMeta(AbstractChargingRequest<?> request) {
-        Map<String, Object> meta = new HashMap<>();
-        meta.put(UID, MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn()));
-        meta.put(PAYMENT_CODE, request.getPaymentCode().name());
-        meta.putAll(objectToMap(request.getPurchaseDetails().getAppDetails()));
-        meta.putAll(objectToMap(request.getPurchaseDetails().getPaymentDetails()));
-        meta.putAll(objectToMap(request.getPurchaseDetails().getProductDetails()));
-        meta.putAll(objectToMap(request.getPurchaseDetails().getUserDetails()));
-        return meta;
-    }
-
-    private Map<String, Object> branchMeta(CallbackRequestWrapper<?> request) {
-        return objectToMap(request);
-
-    }
-
-    private Map<String, Object> branchMeta(PaymentReconciliationMessage msg) {
-        return objectToMap(msg);
-    }
-
-    private Map<String, Object> objectToMap(Object o) {
-        return mapper.convertValue(o, Map.class);
-    }
-
-    private Map<String, Object> branchMeta(TransactionSnapshotEvent event) {
         Map<String, Object> meta = new HashMap<>();
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-
-            meta.putAll(mapper.convertValue(event.getTransaction(), Map.class));
-            meta.put(EVENT, TRANSACTION_SNAPShOT_EVENT);
-            meta.put(TRIGGER_DATE, dateFormat.format(new Date()));
-            meta.put(EVENT_PUBLISHED_BY, PAYMENT_SERVICE);
-            meta.put(PAYMENT_CODE,event.getTransaction().getPaymentChannel());
-            meta.put(PAYMENT_EVENT,event.getTransaction().getType().getValue());
+            EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder = EventsWrapper.builder();
+            eventsWrapperBuilder.transaction(event.getTransaction()).triggerDate(dateFormat.format(new Date())).paymentCode(event.getTransaction().getPaymentChannel().name()).paymentEvent(event.getTransaction().getType().getValue());
             if (Optional.ofNullable(event.getPurchaseDetails()).isPresent()) {
-                meta.putAll(objectToMap(event.getPurchaseDetails().getAppDetails()));
-                meta.putAll(objectToMap(event.getPurchaseDetails().getPaymentDetails()));
-                meta.putAll(objectToMap(event.getPurchaseDetails().getProductDetails()));
-                meta.putAll(objectToMap(event.getPurchaseDetails().getUserDetails()));
-                meta.put(OPT_FOR_AUTO_RENEW, event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
+                eventsWrapperBuilder.appDetails(event.getPurchaseDetails().getAppDetails())
+                        .paymentDetails(event.getPurchaseDetails().getPaymentDetails())
+                        .productDetails(event.getPurchaseDetails().getProductDetails())
+                        .userDetails(event.getPurchaseDetails().getUserDetails()).optForAutoRenew(event.getPurchaseDetails().getPaymentDetails().isAutoRenew());
             }
+            publishBranchEvent(branchMeta(eventsWrapperBuilder.build()),TRANSACTION_SNAPShOT_EVENT);
+
+
         } catch (Exception e) {
             log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
         }
-        return meta;
     }
 }

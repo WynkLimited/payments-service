@@ -21,6 +21,7 @@ public abstract class AbstractPack {
 
     private final Double dailyAmount;
     private final Integer day;
+    private final String currency;
 
     private final AbstractPartnerBenefits benefits;
 

@@ -106,8 +106,9 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
                     .transactionId(transaction.getIdStr())
                     .paymentEvent(transaction.getType().name())
                     .paymentCode(transaction.getPaymentChannel().name())
-                    .transactionStatus(transaction.getStatus().name())
+                    .transactionStatus(TransactionContext.get().getStatus().name())
                     .planId(transaction.getPlanId())
+                    .item(transaction.getItemId())
                     .isTrialOpted(request.getPurchaseDetails().getPaymentDetails().isTrialOpted())
                     .appDetails(request.getPurchaseDetails().getAppDetails())
                     .paymentDetails(request.getPurchaseDetails().getPaymentDetails())
@@ -149,8 +150,9 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
                     .transactionId(transaction.getIdStr())
                     .paymentEvent(transaction.getType().name())
                     .paymentCode(transaction.getPaymentChannel().name())
-                    .transactionStatus(transaction.getStatus().name())
+                    .transactionStatus(finalStatus.name())
                     .planId(transaction.getPlanId())
+                    .item(transaction.getItemId())
                     .isTrialOpted(TransactionContext.getPurchaseDetails().orElse(null).getPaymentDetails().isTrialOpted())
                     .callbackRequest(request.getBody()).transaction(transaction).paymentCode(request.getPaymentCode().name()).build()).build());
         }
@@ -218,6 +220,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
                     .paymentCode(transaction.getPaymentChannel().name())
                     .transactionStatus(transaction.getStatus().name())
                     .planId(transaction.getPlanId())
+                    .item(transaction.getItemId())
                     .isTrialOpted(TransactionContext.getPurchaseDetails().orElse(null).getPaymentDetails().isTrialOpted())
                     .extTxnId(request.getExtTxnId()).transaction(transaction).build()).build());
         }

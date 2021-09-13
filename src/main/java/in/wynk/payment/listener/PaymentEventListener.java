@@ -211,7 +211,12 @@ public class PaymentEventListener {
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
             EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder = EventsWrapper.builder();
-            eventsWrapperBuilder.transaction(event.getTransaction()).triggerDate(dateFormat.format(new Date())).paymentCode(event.getTransaction().getPaymentChannel().name()).paymentEvent(event.getTransaction().getType().getValue());
+            eventsWrapperBuilder.uid(event.getTransaction().getUid())
+                    .transactionId(event.getTransaction().getIdStr())
+                    .transactionStatus(event.getTransaction().getStatus().name())
+                    .paymentCode(event.getTransaction().getPaymentChannel().name())
+                    .paymentEvent(event.getTransaction().getType().name())
+                    .transaction(event.getTransaction()).triggerDate(dateFormat.format(new Date())).paymentCode(event.getTransaction().getPaymentChannel().name()).paymentEvent(event.getTransaction().getType().getValue());
             if (Optional.ofNullable(event.getPurchaseDetails()).isPresent()) {
                 eventsWrapperBuilder.appDetails(event.getPurchaseDetails().getAppDetails())
                         .paymentDetails(event.getPurchaseDetails().getPaymentDetails())

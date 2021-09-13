@@ -10,8 +10,43 @@ import lombok.Setter;
 @Setter
 @Getter
 public class EventsWrapper {
+    private String uid;
+    //app Details
     private String os;
     private String deviceId;
+    private Integer buildNo;
+    private String deviceType;
+    private String appVersion;
+    private String appId;
+    private String service;
+    //user details
+    private String msisdn;
+    private String subscriberId;
+    //payment details
+    private String couponId;
+    private String paymentId;
+    private String paymentMode;
+    private String merchantName;
+    private Boolean isTrialOpted;
+    private Boolean isAutoRenew;
+    //product details
+    private Integer planId;
+    private String itemId;
+    private String type;
+    // transaction Details
+    private String transactionId;
+    private Double amount;
+    private Double discount;
+    private String initTime;
+    private String clientAlias;
+    private String item;
+    private String paymentCode;
+    private String paymentEvent;
+    private String transactionStatus;
+    private String coupon;
+    private String exitTime;
+    private String consentTime;
+
     private IAppDetails appDetails;
     private IUserDetails userDetails;
     private IPaymentDetails paymentDetails;
@@ -20,8 +55,7 @@ public class EventsWrapper {
     private CallbackRequest callbackRequest;
     private PaymentReconciliationMessage paymentReconciliationMessage;
     private String extTxnId;
-    private String paymentCode;
-    private String paymentEvent;
-    private boolean optForAutoRenew;
+
+    private Boolean optForAutoRenew;
     private String triggerDate;
 }

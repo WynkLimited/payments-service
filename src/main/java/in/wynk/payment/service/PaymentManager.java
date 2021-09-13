@@ -15,7 +15,6 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -100,8 +99,16 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         } finally {
 
             publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(EventsWrapper.builder()
+                    .uid(transaction.getUid())
                     .os(request.getPurchaseDetails().getAppDetails().getOs())
                     .deviceId(request.getPurchaseDetails().getAppDetails().getDeviceId())
+                    .optForAutoRenew(request.getPurchaseDetails().getPaymentDetails().isAutoRenew())
+                    .transactionId(transaction.getIdStr())
+                    .paymentEvent(transaction.getType().name())
+                    .paymentCode(transaction.getPaymentChannel().name())
+                    .transactionStatus(transaction.getStatus().name())
+                    .planId(transaction.getPlanId())
+                    .isTrialOpted(request.getPurchaseDetails().getPaymentDetails().isTrialOpted())
                     .appDetails(request.getPurchaseDetails().getAppDetails())
                     .paymentDetails(request.getPurchaseDetails().getPaymentDetails())
                     .productDetails(request.getPurchaseDetails().getProductDetails())
@@ -135,7 +142,17 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(EventsWrapper.builder().os(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getOs()).deviceId(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getDeviceId()).callbackRequest(request.getBody()).transaction(transaction).paymentCode(request.getPaymentCode().name()).build()).build());
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(EventsWrapper.builder().
+                    uid(transaction.getUid())
+                    .os(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getOs())
+                    .deviceId(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getDeviceId())
+                    .transactionId(transaction.getIdStr())
+                    .paymentEvent(transaction.getType().name())
+                    .paymentCode(transaction.getPaymentChannel().name())
+                    .transactionStatus(transaction.getStatus().name())
+                    .planId(transaction.getPlanId())
+                    .isTrialOpted(TransactionContext.getPurchaseDetails().orElse(null).getPaymentDetails().isTrialOpted())
+                    .callbackRequest(request.getBody()).transaction(transaction).paymentCode(request.getPaymentCode().name()).build()).build());
         }
     }
 
@@ -191,7 +208,18 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
-            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(EventsWrapper.builder().os(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getOs()).deviceId(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getDeviceId()).extTxnId(request.getExtTxnId()).transaction(transaction).build()).build());
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(EventsWrapper.builder()
+                    .uid(transaction.getUid())
+                    .os(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getOs())
+                    .deviceId(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getDeviceId())
+                    .optForAutoRenew(TransactionContext.getPurchaseDetails().orElse(null).getPaymentDetails().isAutoRenew())
+                    .transactionId(transaction.getIdStr())
+                    .paymentEvent(transaction.getType().name())
+                    .paymentCode(transaction.getPaymentChannel().name())
+                    .transactionStatus(transaction.getStatus().name())
+                    .planId(transaction.getPlanId())
+                    .isTrialOpted(TransactionContext.getPurchaseDetails().orElse(null).getPaymentDetails().isTrialOpted())
+                    .extTxnId(request.getExtTxnId()).transaction(transaction).build()).build());
         }
     }
 

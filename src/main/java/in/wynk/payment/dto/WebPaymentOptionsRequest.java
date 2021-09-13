@@ -20,11 +20,11 @@ import static in.wynk.common.constant.BaseConstants.*;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WebPaymentOptionsRequest implements IPaymentOptionsRequest{
-    private String planId;
-    private String itemId;
+public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
+
     private String couponId;
-    private String countryCode;
+    private AbstractProductDetails productDetails;
+
     @Override
     @Analysed
     @JsonIgnore
@@ -38,6 +38,7 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest{
     @JsonIgnore
     public IUserDetails getUserDetails() {
         final SessionDTO session = SessionContextHolder.getBody();
-        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).build();
+        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
     }
+
 }

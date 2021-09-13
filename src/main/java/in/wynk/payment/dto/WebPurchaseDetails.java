@@ -48,7 +48,7 @@ public class WebPurchaseDetails implements IChargingDetails {
     @JsonIgnore
     public IUserDetails getUserDetails() {
         final SessionDTO session = SessionContextHolder.getBody();
-        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).build();
+        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
     }
 
     @Override

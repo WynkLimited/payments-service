@@ -9,8 +9,10 @@ import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
@@ -53,33 +55,48 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     private PaymentCode paymentCode;
 
     @Override
-    public IProductDetails getProductDetails() {
-        return this.purchaseDetails.getProductDetails();
-    }
-
-    @Override
     public String getOs() {
-        return this.purchaseDetails.getAppDetails().getOs();
+        return this.getAppDetails().getOs();
     }
 
     @Override
     public String getAppId() {
-        return this.purchaseDetails.getAppDetails().getAppId();
+        return this.getAppDetails().getAppId();
     }
 
     @Override
     public int getBuildNo() {
-        return this.purchaseDetails.getAppDetails().getBuildNo();
+        return this.getAppDetails().getBuildNo();
     }
 
     @Override
     public String getMsisdn() {
-        return this.purchaseDetails.getUserDetails().getMsisdn();
+        return this.getUserDetails().getMsisdn();
     }
 
     @Override
     public String getService() {
-        return this.purchaseDetails.getAppDetails().getService();
+        return this.getAppDetails().getService();
+    }
+
+    @Override
+    public String getCountryCode() {
+        return this.getUserDetails().getCountryCode();
+    }
+
+    @Override
+    public IAppDetails getAppDetails() {
+        return this.purchaseDetails.getAppDetails();
+    }
+
+    @Override
+    public IUserDetails getUserDetails() {
+        return this.purchaseDetails.getUserDetails();
+    }
+
+    @Override
+    public IProductDetails getProductDetails() {
+        return this.purchaseDetails.getProductDetails();
     }
 
     @Override
@@ -88,13 +105,13 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     }
 
     @Override
-    public String getCountryCode() {
-        return this.purchaseDetails.getUserDetails().getCountryCode();
+    public String getPaymentId() {
+        return this.purchaseDetails.getPaymentDetails().getPaymentId();
     }
 
     @Override
-    public String getPaymentId() {
-        return this.purchaseDetails.getPaymentDetails().getPaymentId();
+    public boolean isTrialOpted() {
+        return this.purchaseDetails.getPaymentDetails().isTrialOpted();
     }
 
     @Override

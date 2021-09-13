@@ -7,19 +7,20 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
 @Getter
 @Builder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
+
+    @Analysed
+    private String couponId;
     @Analysed
     private AppDetails appDetails;
     @Analysed
     private UserDetails userDetails;
-    private String planId;
-    private String itemId;
-    private String couponId;
-    private String countryCode;
+    @Analysed
+    private AbstractProductDetails productDetails;
+
 }

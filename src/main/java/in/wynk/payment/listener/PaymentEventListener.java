@@ -192,8 +192,6 @@ public class PaymentEventListener {
         Map<String, Object> map = new HashMap<>();
         if (event.getEventName().equalsIgnoreCase(PAYMENT_CHARGING_EVENT)) {
             map.putAll(branchMeta((AbstractChargingRequest<?>) event.getData()));
-            map.put(PAYMENT_CODE,event.getMeta().get("paymentChannel"));
-            map.put(PAYMENT_EVENT,event.getMeta().get("type"));
         } else if (event.getEventName().equalsIgnoreCase(PAYMENT_CALLBACK_EVENT)) {
             map.putAll(branchMeta((CallbackRequestWrapper<?>) event.getData()));
         } else if (event.getEventName().equalsIgnoreCase(PAYMENT_RECONCILE_EVENT)) {

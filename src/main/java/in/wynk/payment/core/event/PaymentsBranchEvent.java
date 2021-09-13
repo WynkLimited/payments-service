@@ -9,6 +9,4 @@ import java.util.Map;
 public class PaymentsBranchEvent<T> {
     private T data;
     private String eventName;
-    private Map<String, Object> meta;
-
 }

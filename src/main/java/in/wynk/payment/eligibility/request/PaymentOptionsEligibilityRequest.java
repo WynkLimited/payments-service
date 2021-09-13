@@ -26,6 +26,8 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     private final String appId;
     private final int buildNo;
     private final String os;
+    private final int planId;
+    private final int itemId;
 
 
     public static PaymentOptionsEligibilityRequest from(PaymentOptionsComputationDTO computationDTO) {
@@ -40,7 +42,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
             if(computationDTO.getCountryCode()==null) {
                 builder.countryCode(DEFAULT_COUNTRY_CODE);
             }
-            return builder.build();
+            return builder.planId(planDTO.getId()).build();
         } else {
             PaymentOptionsItemEligibilityRequest.PaymentOptionsItemEligibilityRequestBuilder builder = PaymentOptionsItemEligibilityRequest.builder();
             builder.itemId(String.valueOf(itemDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(itemDTO.getService()).os(computationDTO.getOs());;
@@ -50,7 +52,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
             if(computationDTO.getCountryCode()==null) {
                 builder.countryCode(DEFAULT_COUNTRY_CODE);
             }
-            return builder.build();
+            return builder.itemId(itemDTO.getId()).build();
         }
     }
 }

@@ -19,6 +19,7 @@ public class EventsWrapper {
     private Transaction transaction;
     private CallbackRequest callbackRequest;
     private PaymentReconciliationMessage paymentReconciliationMessage;
+    private String extTxnId;
     private String paymentCode;
     private String paymentEvent;
     private boolean optForAutoRenew;

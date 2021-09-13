@@ -6,8 +6,6 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.event.PaymentsBranchEvent;
-import in.wynk.payment.dto.EventsWrapper;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
@@ -35,7 +33,6 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     private long reconciliationPoolingDelay;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
-    private ApplicationEventPublisher eventPublisher;
 
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
@@ -72,7 +69,6 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                     .build();
         }
         paymentManager.status(transactionStatusRequest);
-        publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(EventsWrapper.builder().paymentReconciliationMessage(message).build()).build());
     }
 
     @Override
@@ -102,7 +98,4 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
         }
     }
 
-    private void publishBranchEvent(PaymentsBranchEvent paymentsBranchEvent) {
-        eventPublisher.publishEvent(paymentsBranchEvent);
-    }
 }

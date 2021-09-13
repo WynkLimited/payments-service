@@ -191,6 +191,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(EventsWrapper.builder().os(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getOs()).deviceId(TransactionContext.getPurchaseDetails().orElse(null).getAppDetails().getDeviceId()).extTxnId(request.getExtTxnId()).transaction(transaction).build()).build());
         }
     }
 

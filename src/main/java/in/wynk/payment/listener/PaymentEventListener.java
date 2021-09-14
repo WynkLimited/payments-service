@@ -30,15 +30,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-
 import java.util.EnumSet;
 import java.util.Optional;
-
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor

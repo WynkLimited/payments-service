@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 @Builder
 @Setter
 @Getter
@@ -58,4 +61,9 @@ public class EventsWrapper {
 
     private Boolean optForAutoRenew;
     private String triggerDate;
+
+    public static String getTriggerDate(){
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+        return dateFormat.format(new Date());
+    }
 }

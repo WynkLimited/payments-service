@@ -171,8 +171,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
     public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
-        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
-        AnalyticService.update(UID, event.getTransaction().getUid());
+        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
         AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());
         AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
@@ -207,20 +206,21 @@ public class PaymentEventListener {
     }
 
     private void publishBranchEvent(TransactionSnapshotEvent event) {
-        Map<String, Object> meta = new HashMap<>();
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
             EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder = EventsWrapper.builder();
             eventsWrapperBuilder.uid(event.getTransaction().getUid())
                     .planId(event.getTransaction().getPlanId())
                     .item(event.getTransaction().getItemId())
+                    .coupon(event.getTransaction().getCoupon())
+                    .clientAlias(event.getTransaction().getClientAlias())
                     .amount(event.getTransaction().getAmount())
                     .discount(event.getTransaction().getDiscount())
                     .transactionId(event.getTransaction().getIdStr())
+                    .msisdn(event.getTransaction().getMsisdn())
                     .transactionStatus(event.getTransaction().getStatus().name())
                     .paymentCode(event.getTransaction().getPaymentChannel().name())
                     .paymentEvent(event.getTransaction().getType().name())
-                    .triggerDate(dateFormat.format(new Date()))
+                    .triggerDate(EventsWrapper.getTriggerDate())
                     .transaction(event.getTransaction());
             if (Optional.ofNullable(event.getPurchaseDetails()).isPresent()) {
                 eventsWrapperBuilder.appDetails(event.getPurchaseDetails().getAppDetails())

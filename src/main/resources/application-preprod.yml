@@ -106,7 +106,7 @@ payment:
     queue:
       preDebitNotification:
         enabled: true
-        name: wcf-preprod-mandate-notification-sqs
+        name: wcf-preprod-mandate-notification-sqs-queue
         sqs:
           messages:
             extractor:

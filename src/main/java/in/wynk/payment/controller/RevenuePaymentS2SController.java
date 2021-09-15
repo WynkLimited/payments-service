@@ -17,12 +17,14 @@ import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
 import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @RestController
@@ -35,6 +37,7 @@ public class RevenuePaymentS2SController {
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION+" && hasAuthority(\"PAYMENT_CHARGING_WRITE\")")
     public WynkResponseEntity<AbstractChargingResponse> doCharging(@Valid @RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);

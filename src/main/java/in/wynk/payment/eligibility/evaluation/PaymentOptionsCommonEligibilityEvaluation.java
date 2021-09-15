@@ -13,6 +13,8 @@ import in.wynk.eligibility.enums.CommonEligibilityStatusReason;
 import in.wynk.eligibility.enums.EligibilityStatus;
 import in.wynk.payment.eligibility.enums.PaymentsEligibilityReason;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
+import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
+import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.VasClientService;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
@@ -116,7 +118,6 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         }
     }
 
-
     public boolean msisdnStartsWithCodes(String... countryCodes) {
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
@@ -209,7 +210,6 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         }
     }
 
-
     private boolean isBuildNoInRange(Integer minBuildNum, Integer maxBuildNum, Integer currentBuildNo) {
         return currentBuildNo >= minBuildNum && currentBuildNo <= maxBuildNum;
     }
@@ -238,8 +238,8 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
     public boolean hasPlanId(Integer... planIds) {
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
-            final PaymentOptionsEligibilityRequest root = getRoot();
-            final Integer activePlanId = root.getPlanId();
+            final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
+            final String activePlanId = root.getPlanId();
             final Optional<Integer> planIdOption = Arrays.stream(planIds).filter(activePlanId::equals).findAny();
             if (!planIdOption.isPresent()) {
                 resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_PLAN_LIST);
@@ -255,8 +255,8 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
     public boolean hasItemId(Integer... itemIds) {
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
-            final PaymentOptionsEligibilityRequest root = getRoot();
-            final Integer activeItemId = root.getItemId();
+            final PaymentOptionsItemEligibilityRequest root = (PaymentOptionsItemEligibilityRequest) getRoot();
+            final String activeItemId = root.getItemId();
             final Optional<Integer> itemIdOption = Arrays.stream(itemIds).filter(activeItemId::equals).findAny();
             if (!itemIdOption.isPresent()) {
                 resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_ITEM_LIST);

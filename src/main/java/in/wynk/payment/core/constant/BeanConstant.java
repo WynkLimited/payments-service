@@ -29,5 +29,6 @@ public interface BeanConstant {
     String PAYMENT_MONGO_DB_FACTORY_REF = "paymentMongodbFactoryRef";
 
     String CHARGING_FRAUD_DETECTION_CHAIN = "chargingFraudDetectionChain";
+    String VERIFY_IAP_FRAUD_DETECTION_CHAIN = "verifyIAPFraudDetectionChain";
 
 }

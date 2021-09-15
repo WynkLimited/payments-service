@@ -151,7 +151,7 @@
     </logger>
 
     <logger name="transactionSnapshot" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="receiptVerification" additivity="false" level="INFO">
@@ -176,7 +176,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="preDebitNotificationMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenewalMessage" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
@@ -197,7 +197,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="schedulePreDebitNotificationMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenewalErrorMessage" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
@@ -212,7 +212,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="renewNotification" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenewals" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
@@ -221,7 +221,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="renewNotifications" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="savedDetails" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
@@ -249,19 +249,19 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheCoupon" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCachePlanDto" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheItemDto" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="initRefund" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="wynkUidToExtUserIdMapping" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <springProfile name="local">
         <root level="INFO">

@@ -102,14 +102,14 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             final PaymentOptionsEligibilityRequest root = getRoot();
             final String countryCode = root.getCountryCode();
             if (StringUtils.isBlank(countryCode)) {
-                resultBuilder.reason(PaymentsEligibilityReason.EMPTY_COUNTRY_CODE);
+                resultBuilder.reason(CommonEligibilityStatusReason.EMPTY_COUNTRY_CODE);
             } else {
                 Set<String> countryCurrencyDetails = BeanLocatorFactory.getBean(CountryCurrencyDetailsCachingService.class).getAllByState(State.ACTIVE).stream().map(CountryCurrencyDetails::getCountryCode).collect(Collectors.toSet());
                 Optional<String> validCountryCode = Arrays.stream(codes).filter(countryCurrencyDetails::contains).filter(countryCurrencyDetail -> countryCurrencyDetail.equals(countryCode)).findAny();
                 if (validCountryCode.isPresent()) {
                     resultBuilder.status(EligibilityStatus.ELIGIBLE);
                 } else {
-                    resultBuilder.reason(PaymentsEligibilityReason.INVALID_COUNTRY_CODE);
+                    resultBuilder.reason(CommonEligibilityStatusReason.INVALID_COUNTRY_CODE);
                 }
             }
             return resultBuilder.build().isEligible();

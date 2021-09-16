@@ -9,7 +9,7 @@ import static in.wynk.client.core.constant.ClientErrorType.CLIENT004;
 public class ClientValidator<T extends IClientValidatorRequest> extends BaseHandler<T> {
     @Override
     public void handle(T request) {
-        if (CollectionUtils.isNotEmpty(request.getClientDetails().getWynkServices()) && request.getClientDetails().getWynkServices().contains(request.getService()))
+        if (CollectionUtils.isEmpty(request.getClientDetails().getWynkServices()) || !request.getClientDetails().getWynkServices().contains(request.getService()))
             throw new WynkRuntimeException(CLIENT004);
         super.handle(request);
     }

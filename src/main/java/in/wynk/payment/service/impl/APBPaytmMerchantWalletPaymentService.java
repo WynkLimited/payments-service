@@ -3,7 +3,6 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -30,7 +29,6 @@ import in.wynk.payment.dto.response.apb.paytm.APBPaytmResponseData;
 import in.wynk.payment.dto.response.phonepe.auto.AutoDebitWalletCallbackResponse;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.DiscountUtils;
-import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,6 +38,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 import java.util.Objects;
@@ -246,9 +245,8 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
 
     private APBPaytmResponse addMoney(String callbackUrl, double amount, Wallet wallet) {
         try {
-
-            Transaction transaction = TransactionContext.get();
-            APBPaytmTopUpRequest topUpRequest = APBPaytmTopUpRequest.builder().orderId(transaction.getIdStr())
+            final Transaction transaction = TransactionContext.get();
+            final APBPaytmTopUpRequest topUpRequest = APBPaytmTopUpRequest.builder().orderId(transaction.getIdStr())
                     .channel(CHANNEL_WEB)
                     .authType(AUTH_TYPE_UN_AUTH)
                     .encryptedToken(wallet.getAccessToken())
@@ -259,13 +257,12 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
                             .currency(CURRENCY_INR)
                             .topUpAmount(amount)
                             .walletLoginId(wallet.getWalletUserId())
-                            .data(APBPaytmRequestData.builder().returnUrl(callbackUrl).build())
+                            .data(APBPaytmRequestData.builder().returnUrl(UriComponentsBuilder.fromHttpUrl(callbackUrl).queryParam(TRANSACTION_ID, transaction.getIdStr()).build().toUriString()).build())
                             .build())
                     .build();
-            HttpHeaders headers = generateHeaders();
-            HttpEntity<APBPaytmTopUpRequest> requestEntity = new HttpEntity<>(topUpRequest, headers);
-            APBPaytmResponse response = restTemplate.exchange(apbPaytmBaseUrl + ABP_PAYTM_TOP_UP, HttpMethod.POST, requestEntity, APBPaytmResponse.class).getBody();
-            return response;
+            final HttpHeaders headers = generateHeaders();
+            final HttpEntity<APBPaytmTopUpRequest> requestEntity = new HttpEntity<>(topUpRequest, headers);
+            return restTemplate.exchange(apbPaytmBaseUrl + ABP_PAYTM_TOP_UP, HttpMethod.POST, requestEntity, APBPaytmResponse.class).getBody();
         } catch (HttpStatusCodeException hex) {
             log.error(APB_PAYTM_ADD_MONEY_FAILURE, hex.getResponseBodyAsString());
             try {
@@ -397,9 +394,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     @Override
     public ApbPaytmCallbackRequestPayload parseCallback(Map<String, Object> payload) {
         try {
-            final SessionDTO sessionDTO = SessionContextHolder.getBody();
-            final String transactionId = sessionDTO.get(TRANSACTION_ID);
-            return ApbPaytmCallbackRequestPayload.builder().transactionId(transactionId).build();
+            return ApbPaytmCallbackRequestPayload.builder().transactionId((String) payload.get(TRANSACTION_ID)).build();
         } catch (Exception e) {
             log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY006, e);

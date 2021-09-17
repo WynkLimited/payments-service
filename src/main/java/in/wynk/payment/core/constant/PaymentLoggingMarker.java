@@ -83,5 +83,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYMENT_OPTIONS_FAILURE = MarkerFactory.getMarker("PAYMENT_OPTIONS_FAILURE");
     Marker VAS_ERROR = MarkerFactory.getMarker("VAS_ERROR");
+    Marker PAYMENT_ELIGIBILITY_INFO = MarkerFactory.getMarker("PAYMENT_ELIGIBILITY_INFO");
 
 }

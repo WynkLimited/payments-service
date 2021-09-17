@@ -3,6 +3,7 @@ package in.wynk.payment.eligibility.service;
 import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
 import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.eligibility.service.AbstractEligibilityService;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
 import in.wynk.payment.eligibility.evaluation.PaymentMethodsItemEligibilityEvaluation;
@@ -38,6 +39,11 @@ public class PaymentOptionComputationManager<R extends PaymentOptionsComputation
         final List<EligibilityResult<PaymentMethod>> eligibilityResults = paymentMethodsInGroup.stream().map(paymentMethod -> (AbstractEligibilityEvaluation<PaymentMethod, T>)((request instanceof PaymentOptionsPlanEligibilityRequest)?PaymentMethodsPlanEligibilityEvaluation.builder().root(request).entity(paymentMethod).build():PaymentMethodsItemEligibilityEvaluation.builder().root(request).entity(paymentMethod).build())).map(this::evaluate).collect(Collectors.toList());
         final Set<PaymentMethod> eligiblePaymentMethods = eligibilityResults.stream().filter(EligibilityResult::isEligible).map(EligibilityResult::getEntity).collect(Collectors.toSet());
         return PaymentOptionsComputationResponse.builder().paymentMethods(eligiblePaymentMethods).build();
+    }
+
+    @Override
+    protected void onEligibilityResult(final EligibilityResult<PaymentMethod> result) {
+        log.info(PaymentLoggingMarker.PAYMENT_ELIGIBILITY_INFO, "payment method id: {} with eligibility rule: {} has been processed with eligibility status: {} and reason: {}", result.getEntity().getId(), result.getEntity().getRuleExpression(), result.getStatus(), result.getReason());
     }
 
 }

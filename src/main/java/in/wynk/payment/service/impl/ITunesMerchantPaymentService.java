@@ -260,7 +260,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                             receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
                         }
                         if (receiptType.getCancellationDate(latestReceiptInfo) <= System.currentTimeMillis()) {
-                            log.info("User has subscribed to one time plan from app store for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
+                            log.info("User has cancelled the plan from app store for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
                             code = ItunesStatusCodes.APPLE_21019;
                             transaction.setStatus(TransactionStatus.CANCELLED.name());
                         } else if (!isReceiptEligible(latestReceiptInfoList, receiptType, receiptDetails)) {

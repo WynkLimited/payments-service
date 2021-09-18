@@ -56,6 +56,14 @@ public enum ItunesReceiptType {
                 }
             }
         }
+
+        @Override
+        public long getCancellationDate(LatestReceiptInfo latestReceiptInfo) {
+            if(latestReceiptInfo.getCancellationDateMs()==null){
+                return Long.MAX_VALUE;
+            }
+            return Long.parseLong(latestReceiptInfo.getCancellationDateMs());
+        }
     },
     SEVEN {
         @Override
@@ -89,6 +97,14 @@ public enum ItunesReceiptType {
             }
             return Long.parseLong(latestReceiptInfo.getExpiresDateMs());
         }
+
+        @Override
+        public long getCancellationDate(LatestReceiptInfo latestReceiptInfo) {
+            if(latestReceiptInfo.getCancellationDateMs()==null){
+                return Long.MAX_VALUE;
+            }
+            return Long.parseLong(latestReceiptInfo.getCancellationDateMs());
+        }
     };
 
     public static ItunesReceiptType getReceiptType(String payload) {
@@ -116,6 +132,8 @@ public enum ItunesReceiptType {
     public abstract long getPurchaseDate(LatestReceiptInfo latestReceiptInfo);
 
     public abstract long getExpireDate(LatestReceiptInfo latestReceiptInfo);
+
+    public abstract long getCancellationDate(LatestReceiptInfo latestReceiptInfo);
 
     private static String encloseInDoubleQuotes(String data) {
         char doubleQuotes = '"';

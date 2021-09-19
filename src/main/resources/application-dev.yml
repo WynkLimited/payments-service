@@ -404,3 +404,6 @@ lock:
 security:
   exempt:
     paths: /wynk/v1/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
+
+logging:
+  profile: staging

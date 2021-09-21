@@ -16,6 +16,7 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.utils.CurrencyCountryUtils;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.*;
@@ -123,7 +124,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public boolean renewalPlanEligibility(int planId, String transactionId, String uid) {
         try {
-            RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).build();
+            RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).countryCode(CurrencyCountryUtils.findCountryCodeByPlanId(planId)).build();
             RequestEntity<RenewalPlanEligibilityRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
             });

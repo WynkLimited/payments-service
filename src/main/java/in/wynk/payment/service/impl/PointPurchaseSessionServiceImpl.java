@@ -15,6 +15,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.service.IPointPurchaseSessionService;
 import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.service.ISessionManager;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -52,7 +53,7 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             if(StringUtils.isNotEmpty(request.getCountryCode()) && countryCurrencyDetailsCachingService.containsKey(request.getCountryCode())) {
                 sessionDTO.put(CURRENCY,countryCurrencyDetailsCachingService.get(request.getCountryCode()).getCurrency());
             } else {
-                sessionDTO.put(CURRENCY,countryCurrencyDetailsCachingService.get(DEFAULT_COUNTRY_CODE).getCurrency());
+                sessionDTO.put(CURRENCY,countryCurrencyDetailsCachingService.get(WynkServiceUtils.fromServiceId(request.getService()).getDefaultCountryCode()).getCurrency());
             }
             final String id = UUIDs.timeBased().toString();
             sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, duration, TimeUnit.MINUTES);

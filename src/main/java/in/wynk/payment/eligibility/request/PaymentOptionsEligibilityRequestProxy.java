@@ -31,7 +31,7 @@ public class PaymentOptionsEligibilityRequestProxy {
             final MsisdnOperatorDetails msisdnOperatorDetails = vasClientService.allOperatorDetails(msisdn);
             if (msisdnOperatorDetails != null && msisdnOperatorDetails.getUserMobilityInfo() != null && msisdnOperatorDetails.getUserMobilityInfo().getCircle() != null) {
                 this.airtelUser = Boolean.TRUE;
-                return airtelUser;
+                return true;
             }
             this.airtelUser = CollectionUtils.isNotEmpty(getThanksSegments(msisdn, service));
         }

@@ -1,10 +1,12 @@
 package in.wynk.payment.eligibility.request;
 
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.eligibility.dto.IEligibilityRequest;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang.StringUtils;
@@ -23,6 +25,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     private final String couponCode;
     private final String countryCode;
     private final int buildNo;
+    private final PaymentOptionsEligibilityRequestProxy paymentOptionsEligibilityRequestProxy;
     @Setter
     private String group;
 
@@ -36,7 +39,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
             if (computationDTO.getCountryCode() == null) {
                 builder.countryCode(WynkServiceUtils.fromServiceId(planDTO.getService()).getDefaultCountryCode());
             }
-            return builder.planId(String.valueOf(planDTO.getId())).build();
+            return builder.planId(String.valueOf(planDTO.getId())).paymentOptionsEligibilityRequestProxy(BeanLocatorFactory.getBean(PaymentOptionsEligibilityRequestProxy.class)).build();
         } else {
             PaymentOptionsItemEligibilityRequest.PaymentOptionsItemEligibilityRequestBuilder builder = PaymentOptionsItemEligibilityRequest.builder();
             builder.itemId(String.valueOf(itemDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(itemDTO.getService()).os(computationDTO.getOs());
@@ -44,7 +47,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
             if (computationDTO.getCountryCode() == null) {
                 builder.countryCode(WynkServiceUtils.fromServiceId(itemDTO.getService()).getDefaultCountryCode());
             }
-            return builder.itemId(itemDTO.getId()).build();
+            return builder.itemId(itemDTO.getId()).paymentOptionsEligibilityRequestProxy(BeanLocatorFactory.getBean(PaymentOptionsEligibilityRequestProxy.class)).build();
         }
     }
 }

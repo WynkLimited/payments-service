@@ -41,7 +41,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             if (StringUtils.isBlank(root.getMsisdn())) {
                 resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
             } else {
-                final boolean isAirtelUser = checkAirtelUserEligibility(root);
+                final boolean isAirtelUser = root.getPaymentOptionsEligibilityRequestProxy().isAirtelUser(root.getMsisdn(),root.getService());
                 if (isAirtelUser) {
                     resultBuilder.status(EligibilityStatus.ELIGIBLE);
                 } else {
@@ -63,7 +63,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             } else if (StringUtils.isBlank(root.getService())) {
                 resultBuilder.reason(PaymentsEligibilityReason.BLANK_SERVICE);
             } else {
-                Set<String> thanksSegments = fetchThanksSegment(root.getMsisdn(), root.getService());
+                Set<String> thanksSegments = root.getPaymentOptionsEligibilityRequestProxy().getThanksSegments(root.getMsisdn(),root.getService());
                 Optional<String> foundSegment = Arrays.stream(segments).filter(thanksSegments::contains).findAny();
                 if (foundSegment.isPresent()) {
                     resultBuilder.status(EligibilityStatus.ELIGIBLE);
@@ -75,25 +75,6 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         } finally {
             result = resultBuilder.build();
         }
-    }
-
-    private boolean checkAirtelUserEligibility(PaymentOptionsEligibilityRequest root) {
-        try {
-            VasClientService vasClientService = BeanLocatorFactory.getBean(VasClientService.class);
-            final MsisdnOperatorDetails msisdnOperatorDetails = vasClientService.allOperatorDetails(root.getMsisdn());
-            if (msisdnOperatorDetails != null && msisdnOperatorDetails.getUserMobilityInfo() != null && msisdnOperatorDetails.getUserMobilityInfo().getCircle() != null) {
-                return true;
-            }
-            return CollectionUtils.isNotEmpty(fetchThanksSegment(root.getMsisdn(), root.getService()));
-        } catch (Exception ex) {
-            log.error(VAS_ERROR, "unable to fetch vas details for msisdn {}", root.getMsisdn());
-            return false;
-        }
-    }
-
-    private Set<String> fetchThanksSegment(String msisdn, String service) {
-        IUserProfileService userProfileService = BeanLocatorFactory.getBean(IUserProfileService.class);
-        return userProfileService.fetchThanksSegment(root.getMsisdn(), root.getService()).values().stream().filter(Objects::nonNull).flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     public boolean hasCountryCode(String... codes) {

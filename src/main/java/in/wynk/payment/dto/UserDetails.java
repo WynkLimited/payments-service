@@ -36,6 +36,9 @@ public class UserDetails implements IUserDetails, Serializable {
     @Analysed
     private String countryCode;
 
+    @Analysed
+    private String si;
+
     @Override
     public String getCountryCode() {
         return StringUtils.isNotBlank(this.countryCode) ? this.countryCode : DEFAULT_COUNTRY_CODE;

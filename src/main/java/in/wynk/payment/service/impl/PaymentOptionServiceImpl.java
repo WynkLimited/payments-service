@@ -255,6 +255,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .msisdn(request.getUserDetails().getMsisdn())
                 .buildNo(request.getAppDetails().getBuildNo())
                 .countryCode(request.getUserDetails().getCountryCode())
+                .si(request.getUserDetails().getSi())
                 .build());
         final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).isPresent();
         if (trialEligible)
@@ -271,6 +272,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .appId(request.getAppDetails().getAppId())
                 .buildNo(request.getAppDetails().getBuildNo())
                 .countryCode(request.getUserDetails().getCountryCode())
+                .si(request.getUserDetails().getSi())
                 .build());
         return PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest)).build();
     }

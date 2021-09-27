@@ -12,7 +12,7 @@ public interface BeanConstant {
     String ACB_MERCHANT_PAYMENT_SERVICE = "AirtelCarrierBilling";
     String GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE = "GoogleWallet";
     String PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE = "PhonePeAuto";
-
+    String ADD_TO_BILL_PAYMENT_SERVICE = "AddToBill";
     String PAYMENT_ERROR_DAO = "paymentErrorDao";
     String TRANSACTION_DAO = "transactionDaoBean";
     String PAYMENT_RENEWAL_DAO = "paymentRenewalDaoBean";

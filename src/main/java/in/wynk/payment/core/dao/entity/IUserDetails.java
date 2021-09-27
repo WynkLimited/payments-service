@@ -4,6 +4,8 @@ public interface IUserDetails {
 
     String getDslId();
 
+    String getSi();
+
     String getMsisdn();
 
     String getCountryCode();

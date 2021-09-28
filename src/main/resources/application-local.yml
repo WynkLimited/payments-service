@@ -86,6 +86,8 @@ spring:
 
 #### logging props ####
 logging:
+  path: /tmp
+  path.analytics: /tmp/logs
   level:
     in.wynk.*: INFO
 

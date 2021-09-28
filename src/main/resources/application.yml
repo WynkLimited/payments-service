@@ -44,6 +44,8 @@ logging:
   profile: ${env}
   level:
     org.apache.catalina: off
+  path: /data
+  path.analytics: /logs
 
 ##### resilience props for lib-queue ######
 resilience:

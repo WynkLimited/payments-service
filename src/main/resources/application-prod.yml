@@ -408,3 +408,9 @@ lock:
 security:
   exempt:
     paths: /actuator/**,/wynk/v1/**
+
+
+###### log props ######
+logging:
+  path: /tmp
+    analytics: /tmp/logs

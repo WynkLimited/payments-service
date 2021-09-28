@@ -1,30 +1,27 @@
 package in.wynk.payment.dto.request;
 
-import com.github.annotation.analytic.core.annotations.Analysed;
-import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.payment.core.dao.entity.IProductDetails;
+import in.wynk.payment.service.impl.AbstractPreferredPaymentDetailsRequest;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.context.SecurityContextHolder;
-import javax.validation.constraints.NotBlank;
+
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @SuperBuilder
-@AnalysedEntity
-@NoArgsConstructor
 @AllArgsConstructor
-public class S2SWalletLinkRequest extends WalletLinkRequest {
-    @NotBlank
-    @Analysed
-    private String deviceId;
+@NoArgsConstructor
+public class CombinedS2SPaymentDetailsRequest<T extends IProductDetails> extends AbstractPreferredPaymentDetailsRequest<T> {
+    private Map<String, List<String>> paymentGroups;
 
-    @Override
     public String getClient() {
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
         return clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()).getAlias();
     }
 }
-

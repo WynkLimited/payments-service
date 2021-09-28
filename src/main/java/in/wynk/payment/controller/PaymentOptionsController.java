@@ -7,8 +7,8 @@ import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.AbstractProductDetails;
 import in.wynk.payment.dto.WebPaymentOptionsRequest;
-import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
 import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
+import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.Objects;
 
 import static in.wynk.common.constant.CacheBeanNameConstants.ITEM_DTO;
@@ -31,7 +30,7 @@ import static in.wynk.common.constant.CacheBeanNameConstants.PLAN_DTO;
 public class PaymentOptionsController {
 
     private final IPaymentOptionService paymentMethodService;
-    private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedPaymentDetailsRequest<?>> preferredPaymentService;
+    private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedWebPaymentDetailsRequest<?>> preferredPaymentService;
 
     @GetMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
@@ -53,7 +52,7 @@ public class PaymentOptionsController {
     @ManageSession(sessionId = "#sid")
     @PostMapping("/saved/details/{sid}")
     @AnalyseTransaction(name = "savedDetails")
-    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @Valid @RequestBody CombinedPaymentDetailsRequest<? extends AbstractProductDetails> request) {
+    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedWebPaymentDetailsRequest<? extends AbstractProductDetails> request) {
         AnalyticService.update(request);
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());

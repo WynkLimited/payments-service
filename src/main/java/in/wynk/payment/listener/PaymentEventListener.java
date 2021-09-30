@@ -14,16 +14,14 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.*;
-import in.wynk.payment.dto.ClientCallbackPayloadWrapper;
-import in.wynk.payment.dto.PaymentReconciliationThresholdExceedEvent;
-import in.wynk.payment.dto.PaymentRefundInitRequest;
-import in.wynk.payment.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +30,16 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
+import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
+import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPShOT_EVENT;
 
 @Slf4j
 @Service
@@ -167,8 +169,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
     public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
-        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
-        AnalyticService.update(UID, event.getTransaction().getUid());
+        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
         AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());
         AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
@@ -180,6 +181,60 @@ public class PaymentEventListener {
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
+        publishBranchEvent(event);
     }
 
+    @EventListener
+    private void publishPaymentEventToBranch(PaymentsBranchEvent event) {
+        Map<String, Object> map = new HashMap<>();
+        if(event.getData() instanceof EventsWrapper)
+        {
+            map.putAll(branchMeta((EventsWrapper)event.getData()));
+            publishBranchEvent(map, event.getEventName());
+        }
+    }
+
+    private void publishBranchEvent(Map<String, Object> meta, String event) {
+        meta.put(EVENT, event);
+        eventPublisher.publishEvent(BranchRawDataEvent.builder().data(meta).build());
+    }
+
+    private Map<String, Object> branchMeta(EventsWrapper eventsWrapper) {
+        return mapper.convertValue(eventsWrapper, Map.class);
+    }
+
+    private void publishBranchEvent(TransactionSnapshotEvent event) {
+        try {
+            EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder = EventsWrapper.builder();
+            eventsWrapperBuilder.uid(event.getTransaction().getUid())
+                    .planId(event.getTransaction().getPlanId())
+                    .item(event.getTransaction().getItemId())
+                    .coupon(event.getTransaction().getCoupon())
+                    .clientAlias(event.getTransaction().getClientAlias())
+                    .amount(event.getTransaction().getAmount())
+                    .discount(event.getTransaction().getDiscount())
+                    .transactionId(event.getTransaction().getIdStr())
+                    .msisdn(event.getTransaction().getMsisdn())
+                    .transactionStatus(event.getTransaction().getStatus().name())
+                    .paymentCode(event.getTransaction().getPaymentChannel().name())
+                    .paymentEvent(event.getTransaction().getType().name())
+                    .triggerDate(EventsWrapper.getTriggerDate())
+                    .transaction(event.getTransaction());
+            if (Optional.ofNullable(event.getPurchaseDetails()).isPresent()) {
+                eventsWrapperBuilder.appDetails(event.getPurchaseDetails().getAppDetails())
+                        .paymentDetails(event.getPurchaseDetails().getPaymentDetails())
+                        .productDetails(event.getPurchaseDetails().getProductDetails())
+                        .userDetails(event.getPurchaseDetails().getUserDetails())
+                        .paymentMode(event.getPurchaseDetails().getPaymentDetails().getPaymentMode())
+                        .optForAutoRenew(event.getPurchaseDetails().getPaymentDetails().isAutoRenew())
+                        .os(event.getPurchaseDetails().getAppDetails().getOs())
+                        .deviceId(event.getPurchaseDetails().getAppDetails().getDeviceId());
+            }
+            publishBranchEvent(branchMeta(eventsWrapperBuilder.build()),TRANSACTION_SNAPShOT_EVENT);
+
+
+        } catch (Exception e) {
+            log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
+        }
+    }
 }

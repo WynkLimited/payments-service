@@ -43,7 +43,7 @@ public class RevenuePaymentController {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @Valid @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);

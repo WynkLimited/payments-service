@@ -5,7 +5,6 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.AbstractErrorDetails;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
-import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.IHandler;
@@ -16,12 +15,11 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.PaymentsBranchEvent;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
@@ -36,16 +34,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
+import static in.wynk.tinylytics.constants.TinylyticsConstants.*;
 
 @Slf4j
 @Service
@@ -54,8 +50,8 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
-    private final ISqsManagerService<Object> sqsManagerService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
@@ -107,6 +103,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             return response;
         } finally {
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(getEventsWrapperBuilder(transaction, Optional.ofNullable(request.getPurchaseDetails())).build()).build());
         }
     }
 
@@ -135,6 +132,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).callbackRequest(request.getBody()).build()).build());
         }
     }
 
@@ -146,7 +144,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         AnalyticService.update(wrapper.getDecodedNotification());
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
-            final PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+            final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
             final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
             transactionInitRequest.setEvent(event);
             final Transaction transaction = transactionManager.init(transactionInitRequest);
@@ -190,7 +188,35 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
+            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).extTxnId(request.getExtTxnId()).build()).build());
         }
+    }
+
+    private EventsWrapper.EventsWrapperBuilder getEventsWrapperBuilder(Transaction transaction, Optional<IPurchaseDetails> purchaseDetails) {
+        return EventsWrapper.builder()
+                .transaction(transaction)
+                .uid(transaction.getUid())
+                .item(transaction.getItemId())
+                .msisdn(transaction.getMsisdn())
+                .planId(transaction.getPlanId())
+                .amount(transaction.getAmount())
+                .coupon(transaction.getCoupon())
+                .discount(transaction.getDiscount())
+                .transactionId(transaction.getIdStr())
+                .clientAlias(transaction.getClientAlias())
+                .paymentEvent(transaction.getType().name())
+                .triggerDate(EventsWrapper.getTriggerDate())
+                .transactionStatus(transaction.getStatus().name())
+                .paymentCode(transaction.getPaymentChannel().name())
+                .appDetails(purchaseDetails.map(IPurchaseDetails::getAppDetails).orElse(null))
+                .userDetails(purchaseDetails.map(IPurchaseDetails::getUserDetails).orElse(null))
+                .productDetails(purchaseDetails.map(IPurchaseDetails::getProductDetails).orElse(null))
+                .paymentDetails(purchaseDetails.map(IPurchaseDetails::getPaymentDetails).orElse(null))
+                .os(purchaseDetails.map(IPurchaseDetails::getAppDetails).map(IAppDetails::getOs).orElse(null))
+                .deviceId(purchaseDetails.map(IPurchaseDetails::getAppDetails).map(IAppDetails::getDeviceId).orElse(null))
+                .isTrialOpted(purchaseDetails.map(IPurchaseDetails::getPaymentDetails).map(IPaymentDetails::isTrialOpted).orElse(null))
+                .paymentMode(purchaseDetails.map(IPurchaseDetails::getPaymentDetails).map(IPaymentDetails::getPaymentMode).orElse(null))
+                .optForAutoRenew(purchaseDetails.map(IPurchaseDetails::getPaymentDetails).map(IPaymentDetails::isAutoRenew).orElse(null));
     }
 
     public BaseResponse<?> doVerify(VerificationRequest request) {
@@ -267,7 +293,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final PaymentCode paymentCode = transaction.getPaymentChannel();
         final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
         });
-        request.setPlanId(transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
+        request.setPlanId(transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
         try {
             return statusService.status(request);
         } catch (WynkRuntimeException e) {
@@ -290,9 +316,13 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
 
     private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
-        if (!EnumSet.of(PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+        if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
         }
+    }
+
+    private void publishBranchEvent(PaymentsBranchEvent paymentsBranchEvent) {
+        eventPublisher.publishEvent(paymentsBranchEvent);
     }
 
 }

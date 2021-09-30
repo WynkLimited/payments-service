@@ -23,7 +23,6 @@ public class UserMappingRequest {
     @NotBlank
     private String wynkUserId;
 
-    @NotBlank
     private String externalUserId;
 
     @NotNull

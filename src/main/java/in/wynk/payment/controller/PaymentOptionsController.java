@@ -24,7 +24,6 @@ import java.util.Objects;
 import static in.wynk.common.constant.CacheBeanNameConstants.ITEM_DTO;
 import static in.wynk.common.constant.CacheBeanNameConstants.PLAN_DTO;
 
-@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wynk/v1/payment")
@@ -53,7 +52,7 @@ public class PaymentOptionsController {
     @ManageSession(sessionId = "#sid")
     @PostMapping("/saved/details/{sid}")
     @AnalyseTransaction(name = "savedDetails")
-    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @Valid @RequestBody CombinedPaymentDetailsRequest<? extends AbstractProductDetails> request) {
+    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedPaymentDetailsRequest<? extends AbstractProductDetails> request) {
         AnalyticService.update(request);
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());

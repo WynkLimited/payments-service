@@ -228,7 +228,7 @@ payment:
 subscription:
   pooling:
     queue:
-      provision:
+      provisioning:
         enabled: true
         name: wcf-production-revenue-subscription
         sqs:

@@ -44,6 +44,7 @@ public class PaymentOptionsDTO {
         private final Integer day;
         private final TrialPlanDetails trialDetails;
         private final String type = BaseConstants.PLAN;
+        private final String currency;
     }
 
     @SuperBuilder

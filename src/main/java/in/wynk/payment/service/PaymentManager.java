@@ -19,6 +19,7 @@ import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.event.PaymentsBranchEvent;
+import in.wynk.payment.core.event.PurchaseInitEvent;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
@@ -98,6 +99,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             }
             return response;
         } finally {
+            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction.getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder.getId())).build());
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
             publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(getEventsWrapperBuilder(transaction, Optional.ofNullable(request.getPurchaseDetails())).build()).build());
         }

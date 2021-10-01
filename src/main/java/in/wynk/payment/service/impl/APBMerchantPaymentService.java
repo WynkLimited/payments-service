@@ -3,7 +3,6 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.Currency;
 import in.wynk.common.enums.TransactionStatus;
@@ -31,7 +30,7 @@ import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.apb.ApbChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
-import in.wynk.session.context.SessionContextHolder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -67,14 +66,8 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     private String SALT;
     @Value("${apb.init.payment.url}")
     private String APB_INIT_PAYMENT_URL;
-    @Value("${payment.success.page}")
-    private String SUCCESS_PAGE;
     @Value("${apb.txn.inquiry.url}")
     private String APB_TXN_INQUIRY_URL;
-    @Value("${payment.pooling.queue.reconciliation.name}")
-    private String reconciliationQueue;
-    @Value("${payment.pooling.queue.reconciliation.sqs.producer.delayInSecond}")
-    private int reconciliationMessageDelay;
 
     private final Gson gson;
     private final ObjectMapper objectMapper;
@@ -82,39 +75,31 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     private final ApplicationEventPublisher eventPublisher;
     private final ITransactionManagerService transactionManager;
 
-    public APBMerchantPaymentService(Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template, IErrorCodesCacheService errorCodesCacheServiceImpl) {
-        super(cachingService, errorCodesCacheServiceImpl);
+    public APBMerchantPaymentService(Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate template, IErrorCodesCacheService errorCodesCacheService) {
+        super(cachingService, errorCodesCacheService);
         this.gson = gson;
-        this.objectMapper = objectMapper;
         this.restTemplate = template;
+        this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
         this.transactionManager = transactionManager;
     }
 
-    //TODO: use txn provided by payment manager and remove redundant code
     @Override
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(ApbCallbackRequestPayload callbackRequest) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-
-        // TODO:: create your own APB callback request that inherit CallbackRequest and update the impl accordingly
-
-        final String txnId = sessionDTO.get(TRANSACTION_ID);
-        final String code = callbackRequest.getCode();
-        final String externalMessage = callbackRequest.getMsg();
-        final String merchantId = callbackRequest.getMid();
-        final String externalTxnId = callbackRequest.getTransactionId();
-        final String amount = callbackRequest.getTransactionAmount();
-        final String txnDate = callbackRequest.getTransactionDate();
-        final String requestHash = callbackRequest.getHash();
-        final ApbStatus status = callbackRequest.getStatus();
-        final String sessionId = SessionContextHolder.get().getId().toString();
-
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(ApbCallbackRequestPayload request) {
+        final String code = request.getCode();
+        final String merchantId = request.getMid();
+        final String requestHash = request.getHash();
+        final ApbStatus status = request.getStatus();
+        final String externalMessage = request.getMsg();
+        final String txnDate = request.getTransactionDate();
+        final String amount = request.getTransactionAmount();
+        final String externalTxnId = request.getTransactionId();
         try {
-            final Transaction transaction = transactionManager.get(txnId);
-            if (verifyHash(status, merchantId, txnId, externalTxnId, amount, txnDate, code, requestHash)) {
+            final Transaction transaction = TransactionContext.get();
+            if (verifyHash(status, merchantId, transaction.getIdStr(), externalTxnId, amount, txnDate, code, requestHash)) {
                 this.fetchAPBTxnStatus(transaction);
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                    return WynkResponseUtils.redirectResponse(SUCCESS_PAGE + sessionId + SLASH + sessionDTO.get(OS));
+                    return WynkResponseUtils.redirectResponse(((IChargingDetails) TransactionContext.getPurchaseDetails().get()).getPageUrlDetails().getSuccessPageUrl());
                 } else if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY300);
@@ -154,8 +139,7 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
 
     @Override
     public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
-        Transaction transaction = TransactionContext.get();
-        String apbRedirectURL = generateApbRedirectURL((IChargingDetails) chargingRequest.getPurchaseDetails());
+        final String apbRedirectURL = generateApbRedirectURL((IChargingDetails) chargingRequest.getPurchaseDetails());
         return WynkResponseUtils.redirectResponse(apbRedirectURL);
     }
 
@@ -164,8 +148,7 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
             long txnDate = System.currentTimeMillis();
             String serviceName = ApbService.NB.name();
             String formattedDate = CommonUtils.getFormattedDate(txnDate, "ddMMyyyyHHmmss");
-            String chargingUrl = getReturnUri(chargingDetails.getCallbackDetails().getCallbackUrl(), formattedDate, serviceName);
-            return chargingUrl;
+            return getReturnUri(chargingDetails.getCallbackDetails().getCallbackUrl(), formattedDate, serviceName);
         } catch (Exception e) {
             throw new WynkRuntimeException(WynkErrorType.UT999, "Exception occurred while generating URL");
         }
@@ -173,7 +156,6 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
 
     private String getReturnUri(String callbackUrl, String formattedDate, String serviceName) throws Exception {
         Transaction txn = TransactionContext.get();
-        String sessionId = SessionContextHolder.get().getId().toString();
         String hashText = MERCHANT_ID + BaseConstants.HASH + txn.getIdStr() + BaseConstants.HASH + txn.getAmount() + BaseConstants.HASH + formattedDate + BaseConstants.HASH + serviceName + BaseConstants.HASH + SALT;
         String hash = CommonUtils.generateHash(hashText, SHA_512);
         return new URIBuilder(APB_INIT_PAYMENT_URL)
@@ -259,11 +241,12 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
         throw new UnsupportedOperationException("Unsupported operation - Renewal is not supported by APB");
     }
 
+    @Getter
     public enum ApbService {
         NB("NetBanking"),
         WT("Wallet");
 
-        String name;
+        final String name;
 
         ApbService(String name) {
             this.name = name;

@@ -235,6 +235,14 @@ subscription:
           producer:
             delayInSecond: 1
 
+
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-production-revenue-notification
+      delayInSecond: 0
+
 ####### Http Client Props #######
 http:
   enableTemplateRegistration: true
@@ -299,6 +307,21 @@ http:
               type: both
           request:
             timeout: 1000
+    externalServiceTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 20
+          timeout: 1000
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 300
+            factory:
+              type: both
+          request:
+            timeout: 500
 
 service:
   subscription:
@@ -389,6 +412,10 @@ cache:
     name: l2cache-prod
     readTimeout: 1000
     usePooling: true
+
+onelink:
+  key: key_live_kc5hbJYeDTvc99K81cvQrfbkzrbvQtEW
+  url: https://api2.branch.io/v1/url
 
 lock:
   redis:

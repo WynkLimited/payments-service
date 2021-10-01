@@ -76,6 +76,11 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>country-currency-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>wynk-service-api</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -184,9 +189,18 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>eligibility-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>vas-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>tinylytics</artifactId>
-            <version>0.0.1</version>
-            <scope>compile</scope>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

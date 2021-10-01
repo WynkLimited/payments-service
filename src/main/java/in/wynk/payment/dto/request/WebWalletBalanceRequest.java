@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import static in.wynk.common.constant.BaseConstants.CLIENT;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -34,6 +36,12 @@ public class WebWalletBalanceRequest extends WalletBalanceRequest {
     public String getUid() {
         final SessionDTO session = SessionContextHolder.getBody();
         return session.get(BaseConstants.UID);
+    }
+
+    @Override
+    @JsonIgnore
+    public String getClient() {
+        return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
     }
 
 }

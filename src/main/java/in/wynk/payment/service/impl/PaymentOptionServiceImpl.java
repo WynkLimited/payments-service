@@ -11,7 +11,7 @@ import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
-import in.wynk.payment.dto.request.CombinedPaymentDetailsRequest;
+import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
@@ -53,7 +53,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedPaymentDetailsRequest<?>> {
+public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedWebPaymentDetailsRequest<?>> {
 
     private static final int N = 3;
     private final IUserPaymentsManager userPaymentsManager;
@@ -170,10 +170,11 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Override
-    public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(CombinedPaymentDetailsRequest<?> request) {
+    public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(CombinedWebPaymentDetailsRequest<?> request) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(UID);
         final String deviceId = sessionDTO.get(DEVICE_ID);
+        final String clientAlias = request.getClient();
         final ExecutorService executorService = Executors.newFixedThreadPool(N);
         final Map<SavedDetailsKey, Future<WynkResponseEntity<AbstractPaymentDetails>>> map = new HashMap<>();
         final Map<SavedDetailsKey, UserPreferredPayment> userPreferredPaymentMap = userPaymentsManager.get(uid).stream().collect(Collectors.toMap(UserPreferredPayment::getId, Function.identity()));
@@ -190,7 +191,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {
                         MDC.put(REQUEST_ID, requestId);
-                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
+                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(clientAlias).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
                     };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {

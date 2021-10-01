@@ -52,7 +52,7 @@ public class CustomerWinBackServiceImpl implements ICustomerWinBackService {
         final IAppDetails appDetails = purchaseDetails.getAppDetails();
         try {
             final IProductDetails productDetails = purchaseDetails.getProductDetails();
-            final Session<String, SessionDTO> winBackSession = sessionGenerator.generate(SessionRequest.builder().uid(droppedTransaction.getUid()).msisdn(droppedTransaction.getMsisdn()).service(appDetails.getService()).appId(appDetails.getAppId()).buildNo(appDetails.getBuildNo()).appVersion(appDetails.getAppVersion()).createdTimestamp(System.currentTimeMillis()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).os(appDetails.getOs()).build());
+            final Session<String, SessionDTO> winBackSession = sessionGenerator.generate(SessionRequest.builder().uid(droppedTransaction.getUid()).msisdn(droppedTransaction.getMsisdn()).service(appDetails.getService()).appId(appDetails.getAppId()).buildNo(appDetails.getBuildNo()).appVersion(appDetails.getAppVersion()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).os(appDetails.getOs()).build());
             final URIBuilder queryBuilder = new URIBuilder(payUrl);
             if (productDetails instanceof PlanDetails)
                 queryBuilder.addParameter(PLAN_ID, droppedTransaction.getProductId());

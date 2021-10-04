@@ -32,6 +32,7 @@ import in.wynk.payment.dto.response.DefaultCallbackResponse;
 import in.wynk.payment.dto.response.phonepe.PhonePeChargingResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
@@ -49,22 +50,20 @@ import java.net.URLDecoder;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
-import static in.wynk.payment.core.constant.PaymentConstants.REQUEST;
+import static in.wynk.payment.core.constant.BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY021;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
-@Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_SERVICE)
+@Service(PHONEPE_MERCHANT_PAYMENT_SERVICE)
 public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PhonePeChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PhonePeCallbackRequestPayload>, IMerchantPaymentRefundService<PhonePePaymentRefundResponse, PhonePePaymentRefundRequest> {
 
     private static final String DEBIT_API = "/v4/debit";
-    @Value("${payment.merchant.phonepe.id}")
-    private String merchantId;
+
     @Value("${payment.merchant.phonepe.api.base.url}")
     private String phonePeBaseUrl;
-    @Value("${payment.merchant.phonepe.salt}")
-    private String salt;
     private final Gson gson;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
@@ -134,8 +133,9 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private String getUrlFromPhonePe(IChargingDetails chargingDetails) {
         final Transaction transaction = TransactionContext.get();
         final double amount = transaction.getAmount();
+        final String merchantId = PropertyResolverUtils.resolve(transaction.getClientAlias(),PHONEPE_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_ID);
         PhonePePaymentRequest phonePePaymentRequest = PhonePePaymentRequest.builder().amount(Double.valueOf(amount * 100).longValue()).merchantId(merchantId).merchantUserId(transaction.getUid()).transactionId(transaction.getIdStr()).build();
-        return getRedirectionUri(chargingDetails, phonePePaymentRequest).toString();
+        return getRedirectionUri(chargingDetails, phonePePaymentRequest,transaction.getClientAlias()).toString();
     }
 
     @Override
@@ -185,7 +185,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private void handleCallbackInternal(PhonePeCallbackRequestPayload callbackRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
-            Boolean validChecksum = validateChecksum(callbackRequest);
+            Boolean validChecksum = validateChecksum(transaction.getClientAlias(),callbackRequest);
             if (validChecksum) {
                 this.fetchAndUpdateTransactionFromSource(transaction);
             } else {
@@ -199,8 +199,9 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         }
     }
 
-    private URI getRedirectionUri(IChargingDetails chargingDetails, PhonePePaymentRequest phonePePaymentRequest) {
+    private URI getRedirectionUri(IChargingDetails chargingDetails, PhonePePaymentRequest phonePePaymentRequest,String client) {
         try {
+            final String salt = PropertyResolverUtils.resolve(client,PHONEPE_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);
             String requestJson = gson.toJson(phonePePaymentRequest);
             Map<String, String> requestMap = new HashMap<>();
             requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
@@ -230,6 +231,8 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     }
 
     private PhonePeResponse<PhonePeTransactionResponseWrapper> getTransactionStatus(Transaction txn) {
+        final String salt = PropertyResolverUtils.resolve(txn.getClientAlias(),PHONEPE_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);
+        final String merchantId = PropertyResolverUtils.resolve(txn.getClientAlias(),PHONEPE_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_ID);
         Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(txn.getIdStr());
         try {
             String prefixStatusApi = "/v3/transaction/" + merchantId + "/";
@@ -262,9 +265,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         }
     }
 
-    private Boolean validateChecksum(PhonePeCallbackRequestPayload requestPayload) {
+    private Boolean validateChecksum(String client,PhonePeCallbackRequestPayload requestPayload) {
         boolean validated = false;
         try {
+            final String salt = PropertyResolverUtils.resolve(client,PHONEPE_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);
             String rawCheckSum = URLDecoder.decode(requestPayload.getCode(), "UTF-8") +
                     URLDecoder.decode(requestPayload.getMerchantId(), "UTF-8") +
                     URLDecoder.decode(requestPayload.getTransactionId(), "UTF-8") +
@@ -306,6 +310,8 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkResponseEntityBuilder<PhonePePaymentRefundResponse> responseBuilder = WynkResponseEntity.builder();
         PhonePePaymentRefundResponse.PhonePePaymentRefundResponseBuilder<?, ?> refundResponseBuilder = PhonePePaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId()).itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn()).paymentEvent(refundTransaction.getType());
         try {
+            final String merchantId = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(),PHONEPE_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_ID);
+            final String salt = PropertyResolverUtils.resolve(refundTransaction.getClientAlias(),PHONEPE_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);
             PhonePeRefundRequest baseRefundRequest = PhonePeRefundRequest.builder().message(refundRequest.getReason()).merchantId(merchantId).amount(Double.valueOf(refundTransaction.getAmount() * 100).longValue()).providerReferenceId(refundRequest.getPpId()).transactionId(refundTransaction.getIdStr()).merchantOrderId(refundRequest.getOriginalTransactionId()).originalTransactionId(refundRequest.getOriginalTransactionId()).build();
             String requestJson = gson.toJson(baseRefundRequest);
             Map<String, String> requestMap = new HashMap<>();

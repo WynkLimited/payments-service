@@ -1,0 +1,44 @@
+package in.wynk.payment.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.session.context.SessionContextHolder;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import static in.wynk.common.constant.BaseConstants.*;
+
+@Getter
+@Builder
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
+public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
+
+    private String couponId;
+    private AbstractProductDetails productDetails;
+
+    @Override
+    @Analysed
+    @JsonIgnore
+    public IAppDetails getAppDetails() {
+        SessionDTO session = SessionContextHolder.getBody();
+        return AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID)).appVersion(session.get(APP_VERSION)).os(session.get(OS)).build();
+    }
+
+    @Override
+    @Analysed
+    @JsonIgnore
+    public IUserDetails getUserDetails() {
+        final SessionDTO session = SessionContextHolder.getBody();
+        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
+    }
+
+}

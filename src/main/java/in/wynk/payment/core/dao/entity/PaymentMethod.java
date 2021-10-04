@@ -26,4 +26,5 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private boolean trialSupported;
     private boolean autoRenewSupported;
     private List<String> suffixes;
+    private String ruleExpression;
 }

@@ -2,16 +2,16 @@ package in.wynk.payment.core.constant;
 
 public interface BeanConstant {
 
+    String ITUNES_PAYMENT_SERVICE = "iTunes";
     String PAYU_MERCHANT_PAYMENT_SERVICE = "PayU";
     String PAYTM_MERCHANT_WALLET_SERVICE = "PayTm";
-    String APB_PAYTM_MERCHANT_WALLET_SERVICE = "APBPayTm";
-    String ITUNES_PAYMENT_SERVICE = "iTunes";
+    String AMAZON_IAP_PAYMENT_SERVICE = "AmazonIap";
     String PHONEPE_MERCHANT_PAYMENT_SERVICE = "PhonePe";
-    String PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE="PhonePeAuto";
+    String APB_PAYTM_MERCHANT_WALLET_SERVICE = "APBPayTm";
     String APB_MERCHANT_PAYMENT_SERVICE = "AirtelPaymentBank";
     String ACB_MERCHANT_PAYMENT_SERVICE = "AirtelCarrierBilling";
     String GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE = "GoogleWallet";
-    String AMAZON_IAP_PAYMENT_SERVICE = "AmazonIap";
+    String PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE = "PhonePeAuto";
 
     String PAYMENT_ERROR_DAO = "paymentErrorDao";
     String TRANSACTION_DAO = "transactionDaoBean";
@@ -21,11 +21,14 @@ public interface BeanConstant {
     String RECURRING_PAYMENT_RENEWAL_SERVICE = "recurringPaymentRenewalManagerBean";
 
     String APB_PAYTM_PAYMENT_CLIENT_S2S_TEMPLATE = "apbPaytmHttpTemplate";
+    String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";
     String EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE = "paymentClientHttpTemplate";
     String EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE = "paymentGatewayHttpTemplate";
-    String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";
 
     String PAYMENT_MONGO_TEMPLATE_REF = "paymentMongoTemplateRef";
     String PAYMENT_MONGO_DB_FACTORY_REF = "paymentMongodbFactoryRef";
+
+    String CHARGING_FRAUD_DETECTION_CHAIN = "chargingFraudDetectionChain";
+    String VERIFY_IAP_FRAUD_DETECTION_CHAIN = "verifyIAPFraudDetectionChain";
 
 }

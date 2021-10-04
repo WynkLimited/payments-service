@@ -7,9 +7,9 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class TrialPlanEligibilityRequest {
+public class SelectivePlanEligibilityRequest {
     private int planId;
     private String service;
-    private IUserDetails userDetails;
     private IAppDetails appDetails;
+    private IUserDetails userDetails;
 }

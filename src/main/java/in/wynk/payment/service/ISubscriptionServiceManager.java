@@ -5,7 +5,7 @@ import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.subscription.common.response.TrialPlanComputationResponse;
+import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.List;
 public interface ISubscriptionServiceManager {
 
     default void subscribePlan(AbstractSubscribePlanRequest request) {
-        if(SubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
+        if (SubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
             subscribePlanSync((SubscribePlanSyncRequest) request);
         } else {
             subscribePlanAsync((SubscribePlanAsyncRequest) request);
@@ -23,14 +23,14 @@ public interface ISubscriptionServiceManager {
     boolean renewalPlanEligibility(int planId, String transactionId, String uid);
 
     default void unSubscribePlan(AbstractUnSubscribePlanRequest request) {
-        if(UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
+        if (UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
             unSubscribePlanSync((UnSubscribePlanSyncRequest) request);
         } else {
             unSubscribePlanAsync((UnSubscribePlanAsyncRequest) request);
         }
     }
 
-    TrialPlanComputationResponse compute(TrialPlanEligibilityRequest request);
+    SelectivePlansComputationResponse compute(SelectivePlanEligibilityRequest request);
 
     void subscribePlanSync(SubscribePlanSyncRequest request);
 

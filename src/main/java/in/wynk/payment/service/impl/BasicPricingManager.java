@@ -13,14 +13,14 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
 import in.wynk.payment.dto.request.PointTransactionInitRequest;
-import in.wynk.payment.dto.request.TrialPlanEligibilityRequest;
+import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
 import in.wynk.payment.service.IPricingManager;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
-import in.wynk.subscription.common.response.TrialPlanComputationResponse;
+import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -53,7 +53,7 @@ public class BasicPricingManager implements IPricingManager {
                 }
                 if (nativeRequest.isTrialOpted()) {
                     final int trialPlanId = selectedPlan.getLinkedFreePlanId();
-                    final TrialPlanComputationResponse trialEligibilityResponse = subscriptionService.compute(TrialPlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());
+                    final SelectivePlansComputationResponse trialEligibilityResponse = subscriptionService.compute(SelectivePlanEligibilityRequest.builder().planId(trialPlanId).service(service).appDetails(nativeRequest.getAppDetails()).userDetails(nativeRequest.getUserDetails()).build());
                     if (Objects.nonNull(trialEligibilityResponse) && trialEligibilityResponse.getEligiblePlans().contains(trialPlanId)) {
                         final PlanDTO trialPlan = cachingService.getPlan(trialPlanId);
                         nativeRequest.setAmount(trialPlan.getFinalPrice());

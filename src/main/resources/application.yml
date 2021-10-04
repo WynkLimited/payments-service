@@ -73,8 +73,8 @@ service:
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
-        trialPlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/trial/eligible
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
+        selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
 
 ####### payment props #######
 payment:

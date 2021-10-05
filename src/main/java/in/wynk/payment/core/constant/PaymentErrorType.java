@@ -60,7 +60,11 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY889("Refund Failure", "Refund process is not supported by the payment partner", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_REFUND_ERROR),
 
     PAY997("Point Purchase Failure", "Unable to generate session, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.POINT_PURCHASE_SESSION_INIT_FAILURE),
-    PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR);
+    PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),
+
+    ADDTOBILL01("ADDTOBILL Charging API Failure", "Could Not process transaction on ADDTOBILL", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_API_FAILURE),
+    ADDTOBILL02("ADDTOBILL Status API Failure", "Transaction is still pending from addToBill side", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),
+    ADDTOBILL03("ADDTOBILL Status API Failure", "No matching status found for addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),;
 
     /**
      * The error title.

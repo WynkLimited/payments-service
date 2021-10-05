@@ -197,8 +197,8 @@ payment:
         id: aU2Uoi
         secret: 6vbnfVtw
       rajtv:
-        id:
-        secret:
+        id: aU2Uoi
+        secret: 6vbnfVtw
       key: aU2Uoi
       salt: 6vbnfVtw
       api:
@@ -225,8 +225,8 @@ payment:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       rajtv:
-        id:
-        secret:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       id: WYNK
       api:
         base:
@@ -240,8 +240,8 @@ payment:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       rajtv:
-        id:
-        secret:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
     airtelpaymentbank:
       airtelxstream:
         id: 180704
@@ -250,8 +250,8 @@ payment:
         id: 180704
         secret: d41d8cd98f00a
       rajtv:
-        id:
-        secret:
+        id: 180704
+        secret: d41d8cd98f00a
 
     #### APBPaytm props ######
     apbPaytm:
@@ -265,7 +265,7 @@ payment:
       music:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       rajtv:
-        token:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
     paytm:
       airtelxstream:
         id: WYNKLI36809118294255
@@ -278,10 +278,10 @@ payment:
         token: 653fe766-5864-4e16-a288-68ebcccffbd0
         clientId: merchant-wynk-staging
       rajtv:
-        id:
-        secret:
-        token:
-        clientId:
+        id: WYNKLI36809118294255
+        secret: 6UePBAcq7LTfdGJI
+        token: 653fe766-5864-4e16-a288-68ebcccffbd0
+        clientId: merchant-wynk-staging
 
 subscription:
   pooling:

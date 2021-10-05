@@ -47,4 +47,5 @@ public class S2SWalletValidateLinkRequest extends WalletValidateLinkRequest {
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
         return clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()).getAlias();
     }
+
 }

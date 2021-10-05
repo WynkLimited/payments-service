@@ -294,6 +294,9 @@
 
         <?xml version="1.0" encoding="UTF-8"?>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 884967a285ccae36ed1482f65139dfbe0cc99629
 <configuration debug="false" scan="true" scanPeriod="30 seconds">
 <springProperty name="ANALYTICS_LOG_PATH" source="logging.path.analytics"/>
 <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

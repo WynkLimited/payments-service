@@ -229,7 +229,6 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
         }
     }
 
-
     private boolean verifyHash(String client,ApbStatus status, String merchantId, String txnId, String externalTxnId, String amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
         String str = StringUtils.EMPTY;
         final String merchantSecret = PropertyResolverUtils.resolve(client,BeanConstant.APB_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);

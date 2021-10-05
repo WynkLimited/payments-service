@@ -42,11 +42,11 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
     public void init() {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("cacheLoadInit", true);
-        loadWynkServices();
+        loadPaymentMethods();
         AnalyticService.update("cacheLoadCompleted", true);
     }
 
-    private void loadWynkServices() {
+    private void loadPaymentMethods() {
         Collection<PaymentMethod> allMethods = getAllByState(State.ACTIVE);
         if (CollectionUtils.isNotEmpty(allMethods) && writeLock.tryLock()) {
             try {

@@ -4,12 +4,14 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import lombok.*;
+import org.apache.commons.lang.StringUtils;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_COUNTRY_CODE;
 
 @Getter
 @Builder
@@ -19,9 +21,6 @@ import static in.wynk.common.constant.CacheBeanNameConstants.*;
 @AllArgsConstructor
 public class UserDetails implements IUserDetails, Serializable {
 
-    @Analysed
-    private String dslId;
-
     @NotNull
     @Analysed
     @Pattern(regexp = MSISDN_REGEX, message = INVALID_VALUE)
@@ -30,5 +29,16 @@ public class UserDetails implements IUserDetails, Serializable {
     @Analysed
     @Pattern(regexp = SUBSCRIBER_ID_REGEX, message = INVALID_VALUE)
     private String subscriberId;
+
+    @Analysed
+    private String dslId;
+
+    @Analysed
+    private String countryCode;
+
+    @Override
+    public String getCountryCode() {
+        return StringUtils.isNotBlank(this.countryCode) ? this.countryCode : DEFAULT_COUNTRY_CODE;
+    }
 
 }

@@ -10,6 +10,7 @@ import lombok.*;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 
 @Getter
@@ -34,4 +35,5 @@ public class VerificationRequest {
     public String getClient() {
         return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
     }
+
 }

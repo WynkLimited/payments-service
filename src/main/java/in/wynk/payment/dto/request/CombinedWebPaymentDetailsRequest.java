@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.CLIENT;
+import static in.wynk.common.constant.BaseConstants.SI;
 
 @Getter
 @SuperBuilder
@@ -23,5 +24,9 @@ public class CombinedWebPaymentDetailsRequest<T extends IProductDetails> extends
 
     public String getClient() {
         return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
+    }
+
+    public String getSi() {
+        return SessionContextHolder.<SessionDTO>getBody().get(SI);
     }
 }

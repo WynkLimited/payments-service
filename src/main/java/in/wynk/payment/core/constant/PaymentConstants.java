@@ -55,5 +55,9 @@ public interface PaymentConstants extends BaseConstants {
     String DEFAULT_COUNTRY_CODE = "IN";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
 
-
+    String PAYMENT_CLIENT_PLACE_HOLDER = "payment.merchant.%p.%c.%f";
+    String MERCHANT_ID = "id";
+    String MERCHANT_SECRET = "secret";
+    String MERCHANT_TOKEN = "token";
+    String MERCHANT_CLIENT_ID = "clientId";
 }

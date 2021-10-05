@@ -13,7 +13,6 @@ import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.ClientCallbackEvent;
@@ -103,7 +102,8 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             }
             return response;
         } finally {
-            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction.getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder.getId())).build());
+            /** TODO:: Uncomment to make it part of of subsequent release for dropout notification
+            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction.getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder.getId())).build());**/
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
             publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(getEventsWrapperBuilder(transaction, Optional.ofNullable(request.getPurchaseDetails())).build()).build());
         }
@@ -237,7 +237,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         final TransactionStatus initialStatus = transaction.getStatus();
-        SessionContextHolder.<SessionDTO>getBody().put(PaymentConstants.TXN_ID, transaction.getId());
+        SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, transaction.getId());
         try {
             return verificationService.verifyReceipt(latestReceiptResponse);
         } catch (WynkRuntimeException e) {

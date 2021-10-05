@@ -196,19 +196,16 @@
             <groupId>in.wynk</groupId>
             <artifactId>eligibility-common</artifactId>
             <version>${project.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>vas-client</artifactId>
             <version>${project.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>tinylytics</artifactId>
             <version>${project.version}</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 

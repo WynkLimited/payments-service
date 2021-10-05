@@ -48,4 +48,3 @@ public class S2SWalletValidateLinkRequest extends WalletValidateLinkRequest {
         return clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()).getAlias();
     }
 }
-

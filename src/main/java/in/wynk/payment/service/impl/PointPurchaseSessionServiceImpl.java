@@ -8,7 +8,7 @@ import in.wynk.common.adapter.SessionDTOAdapter;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.SessionResponse;
-import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.country.core.dao.entity.CountryCurrencyDetails;
 import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -33,13 +33,15 @@ import static in.wynk.session.constant.SessionConstant.SESSION_ID;
 @RequiredArgsConstructor
 public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionService {
 
-    @Value("${session.duration:15}")
-    private Integer duration;
-    @Value("${payment.payOption.page}")
-    private String PAYMENT_OPTION_URL;
-
     private final ISessionManager<String, SessionDTO> sessionManager;
     private final ClientDetailsCachingService clientDetailsCachingService;
+    private final CountryCurrencyDetailsCachingService countryCurrencyDetailsCachingService;
+
+    @Value("${session.duration:15}")
+    private Integer duration;
+
+    @Value("${payment.payOption.page}")
+    private String PAYMENT_OPTION_URL;
 
     @Override
     public SessionResponse initSession(SessionRequest request) {
@@ -47,14 +49,14 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
         ClientDetails clientDetails = (ClientDetails) clientDetailsCachingService.getClientById(clientId);
         try {
             AnalyticService.update(CLIENT, clientDetails.getAlias());
-            SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
+            final SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
             sessionDTO.put(CLIENT, clientDetails.getAlias());
-            CountryCurrencyDetailsCachingService countryCurrencyDetailsCachingService = BeanLocatorFactory.getBean(CountryCurrencyDetailsCachingService.class);
-            if(StringUtils.isNotEmpty(request.getCountryCode()) && countryCurrencyDetailsCachingService.containsKey(request.getCountryCode())) {
-                sessionDTO.put(CURRENCY,countryCurrencyDetailsCachingService.get(request.getCountryCode()).getCurrency());
-            } else {
-                sessionDTO.put(CURRENCY,countryCurrencyDetailsCachingService.get(WynkServiceUtils.fromServiceId(request.getService()).getDefaultCountryCode()).getCurrency());
-            }
+            String countryCode = request.getCountryCode();
+            if (StringUtils.isEmpty(countryCode) || !countryCurrencyDetailsCachingService.containsKey(countryCode))
+                countryCode = WynkServiceUtils.fromServiceId(request.getService()).getDefaultCountryCode();
+            CountryCurrencyDetails countryCurrencyDetails = countryCurrencyDetailsCachingService.get(countryCode);
+            sessionDTO.put(CURRENCY, countryCurrencyDetails.getCurrency());
+            sessionDTO.put(COUNTRY_CODE, countryCurrencyDetails.getCountryCode());
             final String id = UUIDs.timeBased().toString();
             sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, duration, TimeUnit.MINUTES);
             AnalyticService.update(SESSION_ID, id);

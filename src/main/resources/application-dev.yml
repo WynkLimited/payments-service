@@ -82,7 +82,12 @@ spring:
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: Asia/Kolkata
 
-
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-staging-notification
+      delayInSecond: 0
 
 ####### payment props #######
 payment:
@@ -183,6 +188,15 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+      airtelxstream:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+      music:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+      rajtv:
+        id:
+        secret:
       key: qFDqmx
       salt: Zbm2ZyNe
       api:
@@ -201,12 +215,47 @@ payment:
         baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
+      airtelxstream:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      music:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      rajtv:
+        id:
+        secret:
       id: WYNKUAT
       api:
         base:
           url: https://mercury-uat.phonepe.com
       salt: 8289e078-be0b-484d-ae60-052f117f8deb
       saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
+    phonepeauto:
+      airtelxstream:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      music:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      rajtv:
+        id:
+        secret:
+      id: WYNKUAT
+      api:
+        base:
+          url: https://mercury-uat.phonepe.com
+      salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
+    airtelpaymentbank:
+      airtelxstream:
+        id: 180704
+        secret: d41d8cd98f00a
+      music:
+        id: 180704
+        secret: d41d8cd98f00a
+      rajtv:
+        id:
+        secret:
 
     #### APBPaytm props ######
     apbPaytm:
@@ -215,6 +264,29 @@ payment:
           url: https://paydigi.airtel.in/web/pg-service
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      airtelxstream:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      music:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      rajtv:
+        secret:
+    paytm:
+      airtelxstream:
+        id: WYNKPr93314794046826
+        secret: 2A2%#0MvWdNeg1_7
+        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
+        clientId: merchant-wynk-uat
+      music:
+        id: WYNKPr93314794046826
+        secret: 2A2%#0MvWdNeg1_7
+        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
+        clientId: merchant-wynk-uat
+      rajtv:
+        id:
+        secret:
+        token:
+        clientId:
+
 
 subscription:
   pooling:
@@ -290,6 +362,21 @@ http:
               type: both
           request:
             timeout: 1000
+    externalServiceTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 20
+          timeout: 1000
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 300
+            factory:
+              type: both
+          request:
+            timeout: 500
 service:
   subscription:
     api:
@@ -385,6 +472,10 @@ cache:
     name: l2cache-local
     readTimeout: 1000
     usePooling: true
+
+onelink:
+  key: key_test_pgZfbR1czLvn25MY3jFKmejbACgrSztR
+  url: https://api2.branch.io/v1/url
 
 lock:
   redis:

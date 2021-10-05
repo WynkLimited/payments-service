@@ -41,6 +41,11 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>sms-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>payments-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -191,7 +196,6 @@
             <groupId>in.wynk</groupId>
             <artifactId>eligibility-common</artifactId>
             <version>${project.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>

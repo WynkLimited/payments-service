@@ -3,6 +3,7 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.payment.dto.CustomerWindBackRequest;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
 import in.wynk.payment.dto.S2SPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
@@ -11,7 +12,9 @@ import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;
+import in.wynk.payment.service.IQuickPayLinkGenerator;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
@@ -22,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION;
@@ -33,11 +37,13 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 public class RevenuePaymentS2SController {
 
     private final PaymentManager paymentManager;
+    private final ICustomerWinBackService winBackService;
+    private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final IDummySessionGenerator dummySessionGenerator;
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
-    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION+" && hasAuthority(\"PAYMENT_CHARGING_WRITE\")")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_CHARGING_WRITE\")")
     public WynkResponseEntity<AbstractChargingResponse> doCharging(@Valid @RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
@@ -46,12 +52,14 @@ public class RevenuePaymentS2SController {
 
     @GetMapping("/v1/payment/status/{tid}")
     @AnalyseTransaction(name = "paymentStatus")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String tid) {
         return paymentManager.status(tid);
     }
 
     @PostMapping("/v1/payment/refund")
     @AnalyseTransaction(name = "initRefund")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
     public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@Valid @RequestBody PaymentRefundInitRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = paymentManager.refund(request);
@@ -59,8 +67,24 @@ public class RevenuePaymentS2SController {
         return baseResponse;
     }
 
+    @GetMapping("/v1/customer/winback/{tid}")
+    @AnalyseTransaction(name = "customerWinBack")
+    public WynkResponseEntity<Void> winBack(@PathVariable String tid, @RequestParam Map<String, Object> params) {
+        final CustomerWindBackRequest request = CustomerWindBackRequest.builder().dropoutTransactionId(tid).params(params).build();
+        AnalyticService.update(request);
+        final WynkResponseEntity<Void> response = winBackService.winBack(request);
+        AnalyticService.update(response);
+        return response;
+    }
+
+    @GetMapping("/v1/pay/link/{tid}")
+    public WynkResponseEntity<String> quickPayLink(@PathVariable String tid) {
+        return WynkResponseEntity.<String>builder().data(quickPayLinkGenerator.generate(tid)).build();
+    }
+
     @PostMapping("/v1/verify/receipt")
     @AnalyseTransaction(name = "receiptVerification")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIap(@Valid @RequestBody IapVerificationRequest request) {
         AnalyticService.update(ORIGINAL_SID, request.getSid());
@@ -69,6 +93,7 @@ public class RevenuePaymentS2SController {
 
     @PostMapping("/v2/verify/receipt")
     @AnalyseTransaction(name = "receiptVerification")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIap2(@Valid @RequestBody IapVerificationRequest request) {
         AnalyticService.update(ORIGINAL_SID, request.getSid());

@@ -194,6 +194,15 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+      airtelxstream:
+        id: aU2Uoi
+        secret: 6vbnfVtw
+      music:
+        id: aU2Uoi
+        secret: 6vbnfVtw
+      rajtv:
+        id:
+        secret:
       key: aU2Uoi
       salt: 6vbnfVtw
       api:
@@ -212,11 +221,47 @@ payment:
         baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
+      airtelxstream:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      music:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      rajtv:
+        id:
+        secret:
       id: WYNK
       api:
         base:
           url: https://mercury-t2.phonepe.com
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    phonepeauto:
+      airtelxstream:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      music:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      rajtv:
+        id:
+        secret:
+      id: WYNK
+      api:
+        base:
+          url: https://mercury-t2.phonepe.com
+      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      saltAuto: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    airtelpaymentbank:
+      airtelxstream:
+        id:
+        secret:
+      music:
+        id:
+        secret:
+      rajtv:
+        id:
+        secret:
+
     #### APBPaytm props ######
     apbPaytm:
       api:
@@ -224,6 +269,30 @@ payment:
           url: https://paydigi.airtel.in/web/pg-service
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      airtelxstream:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      music:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      rajtv:
+        token:
+    #### Paytm props ######
+    paytm:
+      airtelxstream:
+        id: AirBSB68537227489657
+        secret: RrGHVFOJyEjbp4hN
+        token: fd13c3f9-da62-47e2-b354-8f0f18fbe90b
+        clientId: merchant-wynk
+      music:
+        id: AirBSB68537227489657
+        secret: RrGHVFOJyEjbp4hN
+        token: fd13c3f9-da62-47e2-b354-8f0f18fbe90b
+        clientId: merchant-wynk
+      rajtv:
+        id:
+        secret:
+        token:
+        clientId:
+
 
 subscription:
   pooling:
@@ -234,6 +303,14 @@ subscription:
         sqs:
           producer:
             delayInSecond: 1
+
+
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-production-revenue-notification
+      delayInSecond: 0
 
 ####### Http Client Props #######
 http:
@@ -299,6 +376,21 @@ http:
               type: both
           request:
             timeout: 1000
+    externalServiceTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 20
+          timeout: 1000
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 300
+            factory:
+              type: both
+          request:
+            timeout: 500
 
 service:
   subscription:
@@ -389,6 +481,10 @@ cache:
     name: l2cache-prod
     readTimeout: 1000
     usePooling: true
+
+onelink:
+  key: key_live_kc5hbJYeDTvc99K81cvQrfbkzrbvQtEW
+  url: https://api2.branch.io/v1/url
 
 lock:
   redis:

@@ -77,6 +77,12 @@ service:
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
 
 ####### payment props #######
+  payment:
+    api:
+      endpoint:
+        winBack: ${service.payment.api.root}/wynk/s2s/v1/customer/winback/
+
+####### payment props #######session-out
 payment:
   callback:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
@@ -91,6 +97,8 @@ payment:
     page: ${webview.host}/#/txn-state/payment-pending/
   unknown:
     page: ${webview.host}/#/txn-state/payment-unknown/
+  timeout:
+    page: ${webview.host}/#/txn-state/session-out/
 
 cors:
   maxAge: 3600
@@ -140,3 +148,8 @@ apbpaytm:
     api: ${apbpaytm.native.services.baseUrl}/paymentservices/fetch/instrument
   validateOtp:
     api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
+
+branch:
+  onelink:
+    key: ${onelink.key}
+    url: ${onelink.url}

@@ -37,4 +37,9 @@ public class WebWalletDeLinkRequest extends WalletDeLinkRequest {
         return session.get(UID);
     }
 
+    @Override
+    @JsonIgnore
+    public String getClient() {
+        return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
+    }
 }

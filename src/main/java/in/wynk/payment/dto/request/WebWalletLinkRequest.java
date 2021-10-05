@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import static in.wynk.common.constant.BaseConstants.CLIENT;
 import static in.wynk.common.constant.BaseConstants.DEVICE_ID;
 
 @Getter
@@ -24,4 +25,9 @@ public class WebWalletLinkRequest extends WalletLinkRequest {
         return session.get(DEVICE_ID);
     }
 
+    @Override
+    @JsonIgnore
+    public String getClient() {
+        return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
+    }
 }

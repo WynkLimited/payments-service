@@ -190,6 +190,15 @@ payment:
   merchant:
     ####### payu props #########
     payu:
+      airtelxstream:
+        id: aU2Uoi
+        secret: 6vbnfVtw
+      music:
+        key: aU2Uoi
+        salt: 6vbnfVtw
+      rajtv:
+        key:
+        salt:
       key: aU2Uoi
       salt: 6vbnfVtw
       api:
@@ -209,11 +218,41 @@ payment:
         baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
+      airtelxstream:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      music:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      rajtv:
+        id:
+        secret:
       id: WYNK
       api:
         base:
           url: https://mercury-t2.phonepe.com
       salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    phonepeauto:
+      airtelxstream:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      music:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      rajtv:
+        id:
+        secret:
+    airtelpaymentbank:
+      airtelxstream:
+        id: 180704
+        secret: d41d8cd98f00a
+      music:
+        id: 180704
+        secret: d41d8cd98f00a
+      rajtv:
+        id:
+        secret:
+
     #### APBPaytm props ######
     apbPaytm:
       api:
@@ -221,6 +260,28 @@ payment:
           url: https://paydigi.airtel.in/web/pg-service
       auth:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      airtelxstream:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      music:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      rajtv:
+        token:
+    paytm:
+      airtelxstream:
+        id: WYNKLI36809118294255
+        secret: 6UePBAcq7LTfdGJI
+        token: 653fe766-5864-4e16-a288-68ebcccffbd0
+        clientId: merchant-wynk-staging
+      music:
+        id: WYNKLI36809118294255
+        secret: 6UePBAcq7LTfdGJI
+        token: 653fe766-5864-4e16-a288-68ebcccffbd0
+        clientId: merchant-wynk-staging
+      rajtv:
+        id:
+        secret:
+        token:
+        clientId:
 
 subscription:
   pooling:

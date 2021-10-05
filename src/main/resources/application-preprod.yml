@@ -194,11 +194,11 @@ payment:
         id: aU2Uoi
         secret: 6vbnfVtw
       music:
-        key: aU2Uoi
-        salt: 6vbnfVtw
+        id: aU2Uoi
+        secret: 6vbnfVtw
       rajtv:
-        key:
-        salt:
+        id:
+        secret:
       key: aU2Uoi
       salt: 6vbnfVtw
       api:

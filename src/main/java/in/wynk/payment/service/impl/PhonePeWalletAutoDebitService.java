@@ -38,6 +38,7 @@ import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.DiscountUtils;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -60,24 +61,20 @@ import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.common.constant.BaseConstants.SLASH;
 import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
+import static in.wynk.payment.core.constant.BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_AUTO_DEBIT;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j
-@Service(BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
+@Service(PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE)
 public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AutoDebitWalletCallbackResponse, PhonePeAutoDebitCallbackRequest>, IMerchantPaymentChargingService<AutoDebitWalletChargingResponse, PhonePeChargingRequest<?>>, IWalletLinkService<WalletLinkResponse, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IWalletTopUpService<WalletTopUpResponse, PhonePeAutoDebitTopUpRequest<?>>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>> {
-
 
     @Value("${payment.encKey}")
     private String paymentEncryptionKey;
-    @Value("${payment.merchant.phonepe.id}")
-    private String merchantId;
     @Value("${payment.merchant.phonepe.api.base.url}")
     private String phonePeBaseUrl;
-    @Value("${payment.merchant.phonepe.salt}")
-    private String salt;
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -105,9 +102,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         try {
             String phone = request.getWalletUserId();
             log.info("Sending OTP to {} via PhonePe", phone);
+            final String merchantId = PropertyResolverUtils.resolve(request.getClient(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
             PhonePeAutoDebitLinkRequest phonePeAutoDebitLinkRequest = PhonePeAutoDebitLinkRequest.builder().merchantId(merchantId).mobileNumber(phone).build();
             String requestJson = objectMapper.writeValueAsString(phonePeAutoDebitLinkRequest);
-            HttpEntity<Map<String, String>> requestEntity = generatePayload(request.getDeviceId(), requestJson, TRIGGER_OTP_API);
+            HttpEntity<Map<String, String>> requestEntity = generatePayload(request.getClient(), request.getDeviceId(), requestJson, TRIGGER_OTP_API);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + TRIGGER_OTP_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse linkRequestResponse = response.getBody();
             if (linkRequestResponse != null && linkRequestResponse.isSuccess() && linkRequestResponse.getCode().equalsIgnoreCase(SUCCESS) && linkRequestResponse.getData().getOtpToken() != null) {
@@ -138,13 +136,14 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<Void> builder = WynkResponseEntity.builder();
         try {
+            final String merchantId = PropertyResolverUtils.resolve(request.getClient(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
             PhonePeAutoDebitValidateOtpRequest phonePeAutoDebitOtpValidateRequest = PhonePeAutoDebitValidateOtpRequest.builder().merchantId(merchantId).otp(request.getOtp()).otpToken(request.getOtpToken()).build();
             String requestJson = objectMapper.writeValueAsString(phonePeAutoDebitOtpValidateRequest);
-            HttpEntity<Map<String, String>> requestEntity = generatePayload(request.getDeviceId(), requestJson, VERIFY_OTP_API);
+            HttpEntity<Map<String, String>> requestEntity = generatePayload(request.getClient(), request.getDeviceId(), requestJson, VERIFY_OTP_API);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + VERIFY_OTP_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse verifyOtpResponse = response.getBody();
             if (verifyOtpResponse != null && verifyOtpResponse.isSuccess() && verifyOtpResponse.getCode().equalsIgnoreCase(SUCCESS) && verifyOtpResponse.getData().getUserAuthToken() != null) {
-                saveToken(request.getUid(), request.getDeviceId(), request.getWalletUserId() ,verifyOtpResponse.getData().getUserAuthToken());
+                saveToken(request.getUid(), request.getDeviceId(), request.getWalletUserId(), verifyOtpResponse.getData().getUserAuthToken());
                 log.info("Otp validated successfully. Status: {}", verifyOtpResponse.getCode());
             } else {
                 errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(verifyOtpResponse.getCode());
@@ -168,19 +167,21 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     @Override
     public WynkResponseEntity<UserWalletDetails> balance(WalletBalanceRequest request) {
         final double finalAmount = DiscountUtils.compute(null, PlanDetails.builder().planId(request.getPlanId()).build());
-        return balance(finalAmount, getWallet(getKey(request.getUid(), request.getDeviceId())));
+        return balance(request.getClient(), finalAmount, getWallet(getKey(request.getUid(), request.getDeviceId())));
     }
 
-    private WynkResponseEntity<UserWalletDetails> balance(double finalAmount, Wallet wallet) {
+    private WynkResponseEntity<UserWalletDetails> balance(String client, double finalAmount, Wallet wallet) {
         ErrorCode errorCode = null;
         HttpStatus httpStatus = HttpStatus.OK;
         UserWalletDetails.UserWalletDetailsBuilder userWalletDetailsBuilder = UserWalletDetails.builder();
         WynkResponseEntity.WynkResponseEntityBuilder<UserWalletDetails> builder = WynkResponseEntity.builder();
         try {
             userWalletDetailsBuilder.linked(true).linkedMobileNo(wallet.getWalletUserId());
+            final String merchantId = PropertyResolverUtils.resolve(client, PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
+
             PhoneAutoDebitBalanceRequest phoneAutoDebitBalanceRequest = PhoneAutoDebitBalanceRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).txnAmount(Double.valueOf(finalAmount).longValue()).build();
             String requestJson = objectMapper.writeValueAsString(phoneAutoDebitBalanceRequest);
-            HttpEntity<Map<String, String>> requestEntity = generatePayload(wallet.getId().getDeviceId(), requestJson, BALANCE_API);
+            HttpEntity<Map<String, String>> requestEntity = generatePayload(client, wallet.getId().getDeviceId(), requestJson, BALANCE_API);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + BALANCE_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse walletResponse = response.getBody();
             if (walletResponse != null && walletResponse.isSuccess() && walletResponse.getCode().equalsIgnoreCase(SUCCESS) && walletResponse.getData().getWallet().getWalletActive()) {
@@ -230,9 +231,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkResponseEntityBuilder<Void> builder = WynkResponseEntity.builder();
         try {
             Wallet wallet = getWallet(getKey(request.getUid(), request.getDeviceId()));
+            final String merchantId = PropertyResolverUtils.resolve(request.getClient(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
             PhonePeAutoDebitUnlinkRequest phonePeAutoDebitUnlinkRequest = PhonePeAutoDebitUnlinkRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).build();
             String requestJson = objectMapper.writeValueAsString(phonePeAutoDebitUnlinkRequest);
-            HttpEntity<Map<String, String>> requestEntity = generatePayload(wallet.getId().getDeviceId(), requestJson, UNLINK_API);
+            HttpEntity<Map<String, String>> requestEntity = generatePayload(request.getClient(), wallet.getId().getDeviceId(), requestJson, UNLINK_API);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + UNLINK_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse unlinkResponse = response.getBody();
             if (unlinkResponse != null && unlinkResponse.isSuccess() && unlinkResponse.getCode().equalsIgnoreCase(SUCCESS)) {
@@ -263,7 +265,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         final Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn()), request.getPurchaseDetails().getAppDetails().getDeviceId()));
         final long finalAmountToAdd = Double.valueOf(transaction.getAmount() * 100).longValue();
         final WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
-        final PhonePeWalletResponse phonePeWalletResponse = addMoney(wallet.getAccessToken(), finalAmountToAdd, request.getPhonePeVersionCode(), wallet.getId().getDeviceId());
+        final PhonePeWalletResponse phonePeWalletResponse = addMoney(transaction.getClientAlias(), wallet.getAccessToken(), finalAmountToAdd, request.getPhonePeVersionCode(), wallet.getId().getDeviceId());
         if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && phonePeWalletResponse.getData().getRedirectUrl() != null) {
             try {
                 builder.data(WalletTopUpResponse.builder().info(EncryptionUtils.encrypt(phonePeWalletResponse.getData().getRedirectUrl(), paymentEncryptionKey)).build());
@@ -279,14 +281,15 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         return builder.build();
     }
 
-    private PhonePeWalletResponse addMoney(String userAuthToken, long amount, long phonePeVersionCode, String deviceId) {
+    private PhonePeWalletResponse addMoney(String client, String userAuthToken, long amount, long phonePeVersionCode, String deviceId) {
+        final String merchantId = PropertyResolverUtils.resolve(client, PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
         PhonePeAutoDebitTopUpExternalRequest phonePeAutoDebitTopUpExternalRequest = PhonePeAutoDebitTopUpExternalRequest.builder()
                 .merchantId(merchantId).userAuthToken(userAuthToken)
                 .amount(amount).adjustAmount(true).linkType(PhonePeResponseType.WALLET_TOPUP_DEEPLINK.name())
                 .deviceContext(new DeviceContext(phonePeVersionCode)).build();
         try {
             String requestJson = objectMapper.writeValueAsString(phonePeAutoDebitTopUpExternalRequest);
-            HttpEntity<Map<String, String>> requestEntity = generatePayload(deviceId, requestJson, TOPUP_API);
+            HttpEntity<Map<String, String>> requestEntity = generatePayload(client, deviceId, requestJson, TOPUP_API);
             ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + TOPUP_API, requestEntity, PhonePeWalletResponse.class);
             PhonePeWalletResponse phonePeWalletResponse = response.getBody();
             PhonePeResponseData data = PhonePeResponseData.builder().message(phonePeWalletResponse.getMessage()).redirectUrl(phonePeWalletResponse.getData().getRedirectUrl()).code(phonePeWalletResponse.getCode()).build();
@@ -324,12 +327,13 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         WynkResponseEntity.WynkResponseEntityBuilder<AutoDebitWalletCallbackResponse> builder = WynkResponseEntity.builder();
         try {
             Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(chargingDetails.getUserDetails().getMsisdn()), chargingDetails.getAppDetails().getDeviceId()));
-            UserWalletDetails userWalletDetails = this.balance(transaction.getAmount(), wallet).getBody().getData();
+            UserWalletDetails userWalletDetails = this.balance(transaction.getClientAlias(), transaction.getAmount(), wallet).getBody().getData();
             if (userWalletDetails.getBalance() >= Double.valueOf(transaction.getAmount())) {
                 final long finalAmountToCharge = Double.valueOf(transaction.getAmount() * 100).longValue();
+                final String merchantId = PropertyResolverUtils.resolve(transaction.getClientAlias(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
                 PhonePeAutoDebitDoChargingRequest phonePeAutoDebitDoChargingRequest = PhonePeAutoDebitDoChargingRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(finalAmountToCharge).deviceContext(new DeviceContext(request.getPhonePeVersionCode())).transactionId(transaction.getId().toString()).build();
                 String requestJson = objectMapper.writeValueAsString(phonePeAutoDebitDoChargingRequest);
-                HttpEntity<Map<String, String>> requestEntity = generatePayload(wallet.getId().getDeviceId(), requestJson, AUTO_DEBIT_API);
+                HttpEntity<Map<String, String>> requestEntity = generatePayload(transaction.getClientAlias(), wallet.getId().getDeviceId(), requestJson, AUTO_DEBIT_API);
                 ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + AUTO_DEBIT_API, requestEntity, PhonePeWalletResponse.class);
                 PhonePeWalletResponse phonePeWalletResponse = response.getBody();
                 if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getResponseType().equalsIgnoreCase(PhonePeResponseType.PAYMENT.name())) {
@@ -381,7 +385,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         boolean deeplinkGenerated = false;
         try {
             Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(payload.getPurchaseDetails().getUserDetails().getMsisdn()), payload.getPurchaseDetails().getAppDetails().getDeviceId()));
-            UserWalletDetails userWalletDetails = this.balance(transaction.getAmount(), wallet).getBody().getData();
+            UserWalletDetails userWalletDetails = this.balance(transaction.getClientAlias(), transaction.getAmount(), wallet).getBody().getData();
             final long finalAmountToCharge = Double.valueOf(transaction.getAmount() * 100).longValue();
             if (!userWalletDetails.isLinked()) {
                 errorCode = errorCodesCacheServiceImpl.getErrorCodeByExternalCode(PHONEPE024);
@@ -393,7 +397,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                 if (userWalletDetails.isAddMoneyAllowed()) {
                     deficit = true;
                     log.info("Your balance is low.Sending deeplink to add money to your wallet");
-                    PhonePeWalletResponse phonePeWalletResponse = addMoney(wallet.getAccessToken(), finalAmountToCharge, payload.getPhonePeVersionCode(), wallet.getId().getDeviceId());
+                    PhonePeWalletResponse phonePeWalletResponse = addMoney(transaction.getClientAlias(), wallet.getAccessToken(), finalAmountToCharge, payload.getPhonePeVersionCode(), wallet.getId().getDeviceId());
                     if (phonePeWalletResponse.isSuccess() && phonePeWalletResponse.getData().getCode().equalsIgnoreCase(SUCCESS) && phonePeWalletResponse.getData().getRedirectUrl() != null) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                         deficit = true;
@@ -410,9 +414,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
                     log.info("your balance is low and phonePe is not allowing to add money to you wallet");
                 }
             } else {
+                final String merchantId = PropertyResolverUtils.resolve(transaction.getClientAlias(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
                 PhonePeAutoDebitDoChargingRequest phonePeAutoDebitDoChargingRequest = PhonePeAutoDebitDoChargingRequest.builder().merchantId(merchantId).userAuthToken(wallet.getAccessToken()).amount(finalAmountToCharge).deviceContext(new DeviceContext(payload.getPhonePeVersionCode())).transactionId(transaction.getId().toString()).build();
                 String requestJson = objectMapper.writeValueAsString(phonePeAutoDebitDoChargingRequest);
-                HttpEntity<Map<String, String>> requestEntity = generatePayload(wallet.getId().getDeviceId(), requestJson, AUTO_DEBIT_API);
+                HttpEntity<Map<String, String>> requestEntity = generatePayload(transaction.getClientAlias(), wallet.getId().getDeviceId(), requestJson, AUTO_DEBIT_API);
                 ResponseEntity<PhonePeWalletResponse> response = restTemplate.postForEntity(phonePeBaseUrl + AUTO_DEBIT_API, requestEntity, PhonePeWalletResponse.class);
                 PhonePeWalletResponse phonePeWalletResponse = response.getBody();
                 //TODO:  Will discuss and check with PhonePe, if PhonePe  is handling balance and deeplink flow in its debit api then two api(balance and addMoney) hits will reduce.
@@ -468,6 +473,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     private PhonePeResponse<PhonePeTransactionResponseWrapper> getTransactionStatus(Transaction txn) {
         MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(txn.getIdStr());
         try {
+            final String merchantId = PropertyResolverUtils.resolve(txn.getClientAlias(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_ID);
+            final String salt = PropertyResolverUtils.resolve(txn.getClientAlias(), PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_SECRET);
             String apiPath = TRANS_STATUS_API_PREFIX + merchantId + SLASH + txn.getIdStr() + TRANS_STATUS_API_SUFFIX;
             String xVerifyHeader = DigestUtils.sha256Hex(apiPath + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
@@ -530,7 +537,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         try {
             final double finalAmount = DiscountUtils.compute(request.getCouponId(), request.getProductDetails());
-            return this.balance(finalAmount, getWallet(request.getPreferredPayment()));
+            return this.balance(request.getClientAlias(), finalAmount, getWallet(request.getPreferredPayment()));
         } catch (WynkRuntimeException e) {
             return WynkResponseEntity.<UserWalletDetails>builder().error(TechnicalErrorDetails.builder().code(e.getErrorCode()).description(e.getMessage()).build()).data(UserWalletDetails.builder().build()).success(false).build();
         }
@@ -572,9 +579,10 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         }
     }
 
-    private HttpEntity<Map<String, String>> generatePayload(String deviceId, String requestJson, String api) {
+    private HttpEntity<Map<String, String>> generatePayload(String client, String deviceId, String requestJson, String api) {
         Map<String, String> requestMap = new HashMap<>();
         requestMap.put(REQUEST, Utils.encodeBase64(requestJson));
+        final String salt = PropertyResolverUtils.resolve(client, PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE.toLowerCase(), MERCHANT_SECRET);
         String xVerifyHeader = DigestUtils.sha256Hex(Utils.encodeBase64(requestJson) + api + salt) + X_VERIFY_SUFFIX;
         HttpHeaders headers = new HttpHeaders();
         headers.add(X_DEVICE_ID, deviceId);

@@ -20,6 +20,7 @@ import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +28,7 @@ import javax.validation.Valid;
 import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 
 @RestController
@@ -41,6 +43,7 @@ public class RevenuePaymentS2SController {
 
     @PostMapping("/v1/payment/charge")
     @AnalyseTransaction(name = "paymentCharging")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_CHARGING_WRITE\")")
     public WynkResponseEntity<AbstractChargingResponse> doCharging(@Valid @RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
@@ -49,12 +52,14 @@ public class RevenuePaymentS2SController {
 
     @GetMapping("/v1/payment/status/{tid}")
     @AnalyseTransaction(name = "paymentStatus")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String tid) {
         return paymentManager.status(tid);
     }
 
     @PostMapping("/v1/payment/refund")
     @AnalyseTransaction(name = "initRefund")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
     public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@Valid @RequestBody PaymentRefundInitRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = paymentManager.refund(request);
@@ -79,6 +84,7 @@ public class RevenuePaymentS2SController {
 
     @PostMapping("/v1/verify/receipt")
     @AnalyseTransaction(name = "receiptVerification")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIap(@Valid @RequestBody IapVerificationRequest request) {
         AnalyticService.update(ORIGINAL_SID, request.getSid());
@@ -87,6 +93,7 @@ public class RevenuePaymentS2SController {
 
     @PostMapping("/v2/verify/receipt")
     @AnalyseTransaction(name = "receiptVerification")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIap2(@Valid @RequestBody IapVerificationRequest request) {
         AnalyticService.update(ORIGINAL_SID, request.getSid());

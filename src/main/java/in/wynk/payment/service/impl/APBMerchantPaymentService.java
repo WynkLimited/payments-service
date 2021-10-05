@@ -31,6 +31,8 @@ import in.wynk.payment.dto.response.apb.ApbChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import lombok.Getter;
+import in.wynk.payment.utils.PropertyResolverUtils;
+import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,18 +54,17 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_ID;
+import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_SECRET;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APB_ERROR;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CALLBACK_PAYLOAD_PARSING_FAILURE;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
+import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
 public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, ApbCallbackRequestPayload>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
-    @Value("${apb.merchant.id}")
-    private String MERCHANT_ID;
-    @Value("${apb.salt}")
-    private String SALT;
     @Value("${apb.init.payment.url}")
     private String APB_INIT_PAYMENT_URL;
     @Value("${apb.txn.inquiry.url}")
@@ -95,8 +96,8 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
         final String amount = request.getTransactionAmount();
         final String externalTxnId = request.getTransactionId();
         try {
-            final Transaction transaction = TransactionContext.get();
-            if (verifyHash(status, merchantId, transaction.getIdStr(), externalTxnId, amount, txnDate, code, requestHash)) {
+            final Transaction transaction = transactionManager.get(request.getTransactionId());
+            if (verifyHash(transaction.getClientAlias(),status, merchantId, request.getTransactionId(), externalTxnId, amount, txnDate, code, requestHash)) {
                 this.fetchAPBTxnStatus(transaction);
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                     return WynkResponseUtils.redirectResponse(((IChargingDetails) TransactionContext.getPurchaseDetails().get()).getPageUrlDetails().getSuccessPageUrl());
@@ -156,10 +157,13 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
 
     private String getReturnUri(String callbackUrl, String formattedDate, String serviceName) throws Exception {
         Transaction txn = TransactionContext.get();
-        String hashText = MERCHANT_ID + BaseConstants.HASH + txn.getIdStr() + BaseConstants.HASH + txn.getAmount() + BaseConstants.HASH + formattedDate + BaseConstants.HASH + serviceName + BaseConstants.HASH + SALT;
+        String sessionId = SessionContextHolder.get().getId().toString();
+        final String merchantId = PropertyResolverUtils.resolve(txn.getClientAlias(),BeanConstant.APB_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_ID);
+        final String merchantSecret = PropertyResolverUtils.resolve(txn.getClientAlias(),BeanConstant.APB_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);
+        String hashText = merchantId + BaseConstants.HASH + txn.getIdStr() + BaseConstants.HASH + txn.getAmount() + BaseConstants.HASH + formattedDate + BaseConstants.HASH + serviceName + BaseConstants.HASH + merchantSecret;
         String hash = CommonUtils.generateHash(hashText, SHA_512);
         return new URIBuilder(APB_INIT_PAYMENT_URL)
-                .addParameter(MID, MERCHANT_ID)
+                .addParameter(MID, merchantId)
                 .addParameter(TXN_REF_NO, txn.getIdStr())
                 .addParameter(SUCCESS_URL, callbackUrl)
                 .addParameter(FAILURE_URL, callbackUrl)
@@ -189,7 +193,8 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
         try {
             URI uri = new URI(APB_TXN_INQUIRY_URL);
             String txnDate = CommonUtils.getFormattedDate(transaction.getInitTime().getTimeInMillis(), "ddMMyyyyHHmmss");
-            String hashText = MERCHANT_ID + BaseConstants.HASH + txnId + BaseConstants.HASH + transaction.getAmount() + BaseConstants.HASH + txnDate + BaseConstants.HASH + SALT;
+            final String merchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(),BeanConstant.APB_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);
+            String hashText = MERCHANT_ID + BaseConstants.HASH + txnId + BaseConstants.HASH + transaction.getAmount() + BaseConstants.HASH + txnDate + BaseConstants.HASH + merchantSecret;
             String hashValue = CommonUtils.generateHash(hashText, SHA_512);
             ApbTransactionInquiryRequest apbTransactionInquiryRequest = ApbTransactionInquiryRequest.builder()
                     .feSessionId(UUID.randomUUID().toString())
@@ -225,12 +230,13 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     }
 
 
-    private boolean verifyHash(ApbStatus status, String merchantId, String txnId, String externalTxnId, String amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
+    private boolean verifyHash(String client,ApbStatus status, String merchantId, String txnId, String externalTxnId, String amount, String txnDate, String code, String requestHash) throws NoSuchAlgorithmException {
         String str = StringUtils.EMPTY;
+        final String merchantSecret = PropertyResolverUtils.resolve(client,BeanConstant.APB_MERCHANT_PAYMENT_SERVICE.toLowerCase(),MERCHANT_SECRET);
         if (status == ApbStatus.SUC) {
-            str = merchantId + BaseConstants.HASH + externalTxnId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + txnDate + BaseConstants.HASH + SALT;
+            str = merchantId + BaseConstants.HASH + externalTxnId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + txnDate + BaseConstants.HASH + merchantSecret;
         } else if (status == ApbStatus.FAL) {
-            str = merchantId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + SALT + BaseConstants.HASH + code + "#FAL";
+            str = merchantId + BaseConstants.HASH + txnId + BaseConstants.HASH + amount + BaseConstants.HASH + merchantSecret + BaseConstants.HASH + code + "#FAL";
         }
         String generatedHash = CommonUtils.generateHash(str, SHA_512);
         return requestHash.equals(generatedHash);

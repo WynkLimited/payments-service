@@ -61,6 +61,9 @@ public abstract class IapVerificationRequest {
     @Analysed
     private String deviceId;
 
+    @Analysed
+    private String countryCode;
+
     private PaymentCode paymentCode;
 
 }

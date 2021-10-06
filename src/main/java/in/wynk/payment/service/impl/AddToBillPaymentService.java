@@ -39,7 +39,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARG
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
-public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService  implements IExternalPaymentEligibilityService, IMerchantPaymentChargingService<AddToBillChargingResponse, AddToBillChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService  implements IExternalPaymentEligibilityService, IMerchantPaymentChargingService<AddToBillChargingResponse, AddToBillChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
     private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
@@ -85,7 +85,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .orderMeta(null).build();
             final HttpHeaders headers = generateHeaders();
             HttpEntity<AddToBillCheckOutRequest> requestEntity = new HttpEntity<>(checkOutRequest, headers);
-            AddToBillCheckOutResponse response = restTemplate.exchange("http://10.241.129.179:8081/orderhive/s2s/auth/api/order/proceedToCheckout", HttpMethod.POST, requestEntity, AddToBillCheckOutResponse.class).getBody();
+            AddToBillCheckOutResponse response = restTemplate.exchange("https://kongqa.airtel.com/orderhive/s2s/auth/api/order/proceedToCheckout", HttpMethod.POST, requestEntity, AddToBillCheckOutResponse.class).getBody();
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
@@ -114,7 +114,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(root.getSi()).channel("DTH").pageIdentifier("DETAILS").build();
                 final HttpHeaders headers = generateHeaders();
                 HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
-                AddToBillEligibilityAndPricingResponse response = restTemplate.exchange("http://10.5.74.34:8099/shop-eligibility/getDetailsEligibilityAndPricing", HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
+                AddToBillEligibilityAndPricingResponse response = restTemplate.exchange("https://kongqa.airtel.com/shop-eligibility/getDetailsEligibilityAndPricing", HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
                 //list of services---make sure all are supporting addtobill...else return false.
                 //
                 if (response.isSuccess() && !response.getBody().getServiceList().isEmpty()) {
@@ -162,7 +162,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(si).channel("DTH").pageIdentifier("DETAILS").build();
             final HttpHeaders headers = generateHeaders();
             HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
-            AddToBillEligibilityAndPricingResponse response = restTemplate.exchange("http://10.5.74.34:8099/shop-eligibility/getDetailsEligibilityAndPricing", HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
+            AddToBillEligibilityAndPricingResponse response = restTemplate.exchange("https://kongqa.airtel.com/shop-eligibility/getDetailsEligibilityAndPricing", HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
             return response;
         } catch (Exception ex) {
             log.error("Error in AddToBill Eligibility check: {}", ex.getMessage(), ex);
@@ -179,7 +179,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         }
             try {
                 final HttpHeaders headers = generateHeaders();
-                final String url = "http://10.241.129.179:8089/emporio/getUserOrders";
+                final String url = "https://kongqa.airtel.com/emporio/getUserOrders";
                 final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
                         .queryParam("checkEligibility", false)
                         .queryParam("si", TransactionContext.getPurchaseDetails().orElse(null).getUserDetails().getSi())
@@ -218,7 +218,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
         try {
             final HttpHeaders headers = generateHeaders();
-            final String url = "http://10.241.129.179:8089/emporio/getUserOrders";
+            final String url = "https://kongqa.airtel.com/emporio/getUserOrders";
             final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam("checkEligibility", false)
                     .queryParam("si", si)
@@ -239,5 +239,29 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
         return WynkResponseEntity.<Void>builder().build();
+    }
+
+    @Override
+    public void cancelRecurring(String transactionId) {
+        TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
+        Transaction transaction = TransactionContext.get();
+        IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
+        final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+        try {
+            for (String serviceId : plan.getActivationServiceIds()) {
+                final HttpHeaders headers = generateHeaders();
+
+                AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(purchaseDetails.getUserDetails().getMsisdn()).productCode(serviceId).provisionSi(purchaseDetails.getUserDetails().getSi()).source("DIGITAL_STORE").build();
+                HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
+                String unsubscribeResponse = restTemplate.exchange("https://kongqa.airtel.com/enigma/v2/unsubscription", HttpMethod.POST, unSubscribeRequestEntity, String.class).getBody();
+                // if(unsubscribeResponse is success)
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+            }
+
+        } catch (Exception e) {
+            log.error("Unsubscribe failed: {}", e.getMessage(), e);
+            finalTransactionStatus = TransactionStatus.FAILURE;
+        }
+
     }
 }

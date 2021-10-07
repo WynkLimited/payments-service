@@ -12,7 +12,7 @@ import java.util.List;
 @SuperBuilder
 @AnalysedEntity
 public class UserAddToBillDetails extends AbstractPaymentDetails {
-    List<List<LinkedSis>> linkedSis;
+    List<LinkedSis> linkedSis;
 }
 
 

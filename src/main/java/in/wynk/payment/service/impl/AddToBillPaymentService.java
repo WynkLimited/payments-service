@@ -136,10 +136,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     @Override
     public WynkResponseEntity<UserAddToBillDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> preferredPaymentDetailsRequest) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserAddToBillDetails> builder = WynkResponseEntity.builder();
-        AddToBillEligibilityAndPricingResponse response = getDetailsEligibilityAndPricing(preferredPaymentDetailsRequest.getProductDetails().getId(), preferredPaymentDetailsRequest.getUserDetails().getSi());
-        if(Objects.nonNull(response))
+        final List<LinkedSis> linkedSisList = getDetailsEligibilityAndPricing(preferredPaymentDetailsRequest.getProductDetails().getId(), preferredPaymentDetailsRequest.getUserDetails().getSi());
+        if(Objects.nonNull(linkedSisList))
         {
-           final List<List<LinkedSis>> linkedSisList = response.getBody().getServiceList().stream().map(EligibleServices::getLinkedSis).collect(Collectors.toList());
            return  builder.data(UserAddToBillDetails.builder().linkedSis(linkedSisList).build()).build();
         }
         return WynkResponseEntity.<UserAddToBillDetails>builder().error(TechnicalErrorDetails.builder().code("ADDTOBILL01").description("saved details not found").build()).data(null).success(false).build();
@@ -154,7 +153,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         return headers;
     }
 
-    private AddToBillEligibilityAndPricingResponse getDetailsEligibilityAndPricing (String planId, String si) {
+    private List<LinkedSis> getDetailsEligibilityAndPricing (String planId, String si) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
@@ -163,7 +162,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final HttpHeaders headers = generateHeaders();
             HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
             AddToBillEligibilityAndPricingResponse response = restTemplate.exchange("https://kongqa.airtel.com/shop-eligibility/getDetailsEligibilityAndPricing", HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
-            return response;
+            for(EligibleServices eligibleServices : response.getBody().getServiceList()){
+                if(eligibleServices.isEligible() && eligibleServices.getPaymentOptions().contains("ADDTOBILL") && plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                    return eligibleServices.getLinkedSis();
+                }
+            }
+            return null;
         } catch (Exception ex) {
             log.error("Error in AddToBill Eligibility check: {}", ex.getMessage(), ex);
             return null;

@@ -11,7 +11,7 @@ import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
-import in.wynk.payment.validations.IClientValidatorRequest;
+import in.wynk.client.core.validations.IClientValidatorRequest;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
 import org.springframework.security.core.context.SecurityContextHolder;

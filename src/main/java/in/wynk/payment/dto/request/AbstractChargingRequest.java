@@ -16,7 +16,7 @@ import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
-import in.wynk.payment.validations.IClientValidatorRequest;
+import in.wynk.client.core.validations.IClientValidatorRequest;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;

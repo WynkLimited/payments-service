@@ -266,8 +266,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         if (optionalTrialPlanId.isPresent()) {
             TrialPlanComputationResponse trialPlanComputationResponse = subscriptionServiceManager.compute(TrialPlanEligibilityRequest.builder().userDetails(request.getUserDetails()).appDetails(request.getAppDetails()).planId(optionalTrialPlanId.get()).service(paidPlan.getService()).build());
             trialEligible = trialPlanComputationResponse.getEligiblePlans().contains(optionalTrialPlanId.get());
-            builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
         }
+        if (trialEligible)
+            builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
         else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest));
         return builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build();
     }

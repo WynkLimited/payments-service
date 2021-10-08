@@ -3,7 +3,7 @@ spring:
     name: paymentApi
   profiles:
     active: ${env}
-    include: base-common, coupon-core-${env}, client-core-${env}, vas-client-${env}, wynk-service-core-${env}, error-codes-core-${env}, scheduler-core-${env}, country-currency-core-${env}, tinylytics-${env}
+    include: base-common, coupon-core-${env}, client-core-${env},vas-client-${env}, wynk-service-core-${env}, error-codes-core-${env}, scheduler-core-${env}, tinylytics-${env}, country-currency-core-${env}
   main:
     banner-mode: off
   devtools:
@@ -75,8 +75,12 @@ service:
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
         trialPlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/trial/eligible
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
+  payment:
+    api:
+      endpoint:
+        winBack: ${service.payment.api.root}/wynk/s2s/v1/customer/winback/
 
-####### payment props #######
+####### payment props #######session-out
 payment:
   callback:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
@@ -91,6 +95,8 @@ payment:
     page: ${webview.host}/#/txn-state/payment-pending/
   unknown:
     page: ${webview.host}/#/txn-state/payment-unknown/
+  timeout:
+    page: ${webview.host}/#/txn-state/session-out/
 
 cors:
   maxAge: 3600
@@ -140,3 +146,8 @@ apbpaytm:
     api: ${apbpaytm.native.services.baseUrl}/paymentservices/fetch/instrument
   validateOtp:
     api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
+
+branch:
+  onelink:
+    key: ${onelink.key}
+    url: ${onelink.url}

@@ -82,7 +82,12 @@ spring:
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: Asia/Kolkata
 
-
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-staging-notification
+      delayInSecond: 0
 
 ####### payment props #######
 payment:
@@ -357,6 +362,21 @@ http:
               type: both
           request:
             timeout: 1000
+    externalServiceTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 20
+          timeout: 1000
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 300
+            factory:
+              type: both
+          request:
+            timeout: 500
 service:
   subscription:
     api:
@@ -452,6 +472,10 @@ cache:
     name: l2cache-local
     readTimeout: 1000
     usePooling: true
+
+onelink:
+  key: key_test_pgZfbR1czLvn25MY3jFKmejbACgrSztR
+  url: https://api2.branch.io/v1/url
 
 lock:
   redis:

@@ -22,9 +22,11 @@ public class PlanValidator<T extends IPlanValidatorRequest> extends BaseHandler<
             final PlanDTO planDTO = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(request.getProductDetails().getId());
             final int planId = request.isTrialOpted() ? planDTO.getLinkedFreePlanId() : planDTO.getId();
             if (planDTO.getPlanType() == PlanType.FREE) throw new WynkRuntimeException(PAY602);
-            final TrialPlanComputationResponse trialEligibilityResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(TrialPlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
-            if (Objects.isNull(trialEligibilityResponse) || (!trialEligibilityResponse.getEligiblePlans().contains(planId) && (request.isTrialOpted() || !trialEligibilityResponse.getActivePlans().contains(planId))))
-                throw new WynkRuntimeException(PAY602);
+            if (planDTO.getPlanType() == PlanType.FREE_TRIAL) {
+                final TrialPlanComputationResponse trialEligibilityResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(TrialPlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
+                if (Objects.isNull(trialEligibilityResponse) || (!trialEligibilityResponse.getEligiblePlans().contains(planId) && (request.isTrialOpted() || !trialEligibilityResponse.getActivePlans().contains(planId))))
+                    throw new WynkRuntimeException(PAY602);
+            }
         }
         super.handle(request);
     }

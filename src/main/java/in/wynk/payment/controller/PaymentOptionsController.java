@@ -6,21 +6,17 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.AbstractProductDetails;
-
 import in.wynk.payment.dto.WebPaymentOptionsRequest;
-import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
-
+import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.IUserPreferredPaymentService;
 import in.wynk.session.aspect.advice.ManageSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.Objects;
 
 import static in.wynk.common.constant.CacheBeanNameConstants.ITEM_DTO;

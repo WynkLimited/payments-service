@@ -35,4 +35,5 @@ public class VerificationRequest {
     public String getClient() {
         return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
     }
+
 }

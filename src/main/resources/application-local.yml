@@ -201,6 +201,12 @@ payment:
       music:
         id: qFDqmx
         secret: Zbm2ZyNe
+      webviewclient:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+      subscriptionApi:
+        id: qFDqmx
+        secret: Zbm2ZyNe
       rajtv:
         id:
         secret:

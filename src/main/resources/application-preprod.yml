@@ -196,6 +196,12 @@ payment:
       music:
         id: aU2Uoi
         secret: 6vbnfVtw
+      webviewclient:
+        id: aU2Uoi
+        secret: 6vbnfVtw
+      subscriptionApi:
+        id: aU2Uoi
+        secret: 6vbnfVtw
       rajtv:
         id: aU2Uoi
         secret: 6vbnfVtw

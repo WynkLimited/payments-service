@@ -203,6 +203,9 @@ payment:
       webviewclient:
         id: aU2Uoi
         secret: 6vbnfVtw
+      subscriptionApi:
+        id: aU2Uoi
+        secret: 6vbnfVtw
       rajtv:
         id:
         secret:

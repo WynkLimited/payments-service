@@ -1,25 +1,31 @@
 package in.wynk.payment.dto.response.addtobill;
 
-import lombok.Builder;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
 @Getter
-@Builder
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public class AddToBillEligibilityAndPricingResponse  {
-    private final EligibilityResponseBody body;
-    private final EligibilityErrors errors;
-    private final boolean success;
+    private  EligibilityResponseBody body;
+    @JsonIgnore
+    private  EligibilityErrors errors;
+    private  boolean success;
 
 
 
     @Getter
-    @Builder
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class EligibilityErrors {
-        private String code;
-        private String field;
-        private String message;
+        private  String code;
+        private  String field;
+        private  String message;
 
     }
 

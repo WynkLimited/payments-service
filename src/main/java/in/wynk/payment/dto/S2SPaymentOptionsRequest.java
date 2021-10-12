@@ -22,7 +22,5 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
     private UserDetails userDetails;
     @Analysed
     private AbstractProductDetails productDetails;
-    @Analysed
-    private String si;
 
 }

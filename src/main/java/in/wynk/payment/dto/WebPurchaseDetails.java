@@ -35,6 +35,10 @@ public class WebPurchaseDetails implements IChargingDetails {
     @Analysed
     private AbstractProductDetails productDetails;
 
+    @Valid
+    @Analysed
+    private UserBillingDetail.BillingSiDetail billingSiDetail;
+
     @Override
     @Analysed
     @JsonIgnore
@@ -48,6 +52,9 @@ public class WebPurchaseDetails implements IChargingDetails {
     @JsonIgnore
     public IUserDetails getUserDetails() {
         final SessionDTO session = SessionContextHolder.getBody();
+        if(paymentDetails.getPaymentId().equalsIgnoreCase(ADDTOBILL)){
+            return UserBillingDetail.builder().billingSiDetail(billingSiDetail).msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
+        }
         return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
     }
 

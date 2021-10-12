@@ -1,13 +1,17 @@
 package in.wynk.payment.dto.response.addtobill;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.Map;
 
 @Builder
 @Getter
+@AllArgsConstructor
+@NoArgsConstructor
 public class AddToBillOrder {
     private String orderId;
     private String serviceId;

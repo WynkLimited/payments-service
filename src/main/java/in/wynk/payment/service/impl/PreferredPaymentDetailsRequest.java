@@ -15,5 +15,5 @@ import lombok.experimental.SuperBuilder;
 public class PreferredPaymentDetailsRequest<T extends IProductDetails> extends AbstractPreferredPaymentDetailsRequest<T> {
     private UserPreferredPayment preferredPayment;
     private String clientAlias;
-    private IUserDetails userDetails;
+    private String si;
 }

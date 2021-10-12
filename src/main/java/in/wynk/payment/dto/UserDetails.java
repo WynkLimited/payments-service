@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang.StringUtils;
 
 import javax.validation.constraints.NotNull;
@@ -14,8 +15,8 @@ import static in.wynk.common.constant.CacheBeanNameConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_COUNTRY_CODE;
 
 @Getter
-@Builder
 @ToString
+@SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,6 +43,11 @@ public class UserDetails implements IUserDetails, Serializable {
     @Override
     public String getCountryCode() {
         return StringUtils.isNotBlank(this.countryCode) ? this.countryCode : DEFAULT_COUNTRY_CODE;
+    }
+
+    @Override
+    public String getType() {
+        return UserDetails.class.getName();
     }
 
 }

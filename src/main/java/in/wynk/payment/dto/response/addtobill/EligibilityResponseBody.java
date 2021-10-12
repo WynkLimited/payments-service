@@ -1,14 +1,15 @@
 package in.wynk.payment.dto.response.addtobill;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 import java.util.List;
 
 @Getter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class EligibilityResponseBody {
-    private String channel;
-    private String si;
-    private List<EligibleServices> serviceList;
+    private  String channel;
+    private  String si;
+    private  List<EligibleServices> serviceList;
 }

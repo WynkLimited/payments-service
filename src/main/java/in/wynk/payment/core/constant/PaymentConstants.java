@@ -52,6 +52,7 @@ public interface PaymentConstants extends BaseConstants {
     String WINBACK_CAMPAIGN ="winback_campaign";
     String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
+
     String DEFAULT_COUNTRY_CODE = "IN";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
     String PAYMENT_CLIENT_PLACE_HOLDER = "payment.merchant.%p.%c.%f";

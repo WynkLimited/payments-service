@@ -49,7 +49,7 @@ public interface PaymentConstants extends BaseConstants {
     String USER_WINBACK = "user_winback";
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
     String SHOULD_WINBACK = "shouldWinBack";
-    String WINBACK_CAMPAIGN ="winback_campaign";
+    String WINBACK_CAMPAIGN = "winback_campaign";
     String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
@@ -58,4 +58,5 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_SECRET = "secret";
     String MERCHANT_TOKEN = "token";
     String MERCHANT_CLIENT_ID = "clientId";
+
 }

@@ -12,6 +12,7 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
+import in.wynk.payment.dto.request.TrialPlanEligibilityRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
@@ -30,6 +31,7 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import in.wynk.subscription.common.response.TrialPlanComputationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -59,6 +61,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
     private final IPaymentOptionComputationManager paymentOptionManager;
+    private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @Override
     @Deprecated
@@ -258,7 +261,12 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .buildNo(request.getAppDetails().getBuildNo())
                 .countryCode(request.getUserDetails().getCountryCode())
                 .build());
-        final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).isPresent();
+        boolean trialEligible = false;
+        final Optional<Integer> optionalTrialPlanId = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL);
+        if (optionalTrialPlanId.isPresent()) {
+            TrialPlanComputationResponse trialPlanComputationResponse = subscriptionServiceManager.compute(TrialPlanEligibilityRequest.builder().userDetails(request.getUserDetails()).appDetails(request.getAppDetails()).planId(optionalTrialPlanId.get()).service(paidPlan.getService()).build());
+            trialEligible = trialPlanComputationResponse.getEligiblePlans().contains(optionalTrialPlanId.get());
+        }
         if (trialEligible)
             builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
         else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest));

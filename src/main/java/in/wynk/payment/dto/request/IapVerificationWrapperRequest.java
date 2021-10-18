@@ -1,8 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.client.core.dao.entity.ClientDetails;
-import in.wynk.client.service.ClientDetailsCachingService;
-import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
@@ -11,10 +9,8 @@ import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
-import in.wynk.payment.validations.IClientValidatorRequest;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 public class IapVerificationWrapperRequest implements IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
@@ -44,11 +40,6 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     @Override
     public PaymentCode getPaymentCode() {
         return this.iapVerificationRequest.getPaymentCode();
-    }
-
-    @Override
-    public ClientDetails getClientDetails() {
-        return (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
     }
 
     @Override

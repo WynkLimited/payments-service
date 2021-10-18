@@ -1,5 +1,7 @@
 package in.wynk.payment.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.IUserDetails;
@@ -19,6 +21,8 @@ import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_COUNTRY_COD
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserDetails implements IUserDetails, Serializable {
 
     @NotNull

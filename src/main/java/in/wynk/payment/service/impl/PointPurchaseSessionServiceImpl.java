@@ -52,11 +52,12 @@ public class PointPurchaseSessionServiceImpl implements IPointPurchaseSessionSer
             final SessionDTO sessionDTO = SessionDTOAdapter.generateSessionDTO(request);
             sessionDTO.put(CLIENT, clientDetails.getAlias());
             String countryCode = request.getCountryCode();
-            if (StringUtils.isEmpty(countryCode) || !countryCurrencyDetailsCachingService.containsKey(countryCode))
+            if (StringUtils.isEmpty(countryCode)) {
                 countryCode = WynkServiceUtils.fromServiceId(request.getService()).getDefaultCountryCode();
-            CountryCurrencyDetails countryCurrencyDetails = countryCurrencyDetailsCachingService.get(countryCode);
-            sessionDTO.put(CURRENCY, countryCurrencyDetails.getCurrency());
-            sessionDTO.put(COUNTRY_CODE, countryCurrencyDetails.getCountryCode());
+                sessionDTO.put(COUNTRY_CODE, countryCurrencyDetailsCachingService.get(countryCode).getCountryCode());
+            } else {
+                sessionDTO.put(COUNTRY_CODE, countryCode);
+            }
             final String id = UUIDs.timeBased().toString();
             sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, duration, TimeUnit.MINUTES);
             AnalyticService.update(SESSION_ID, id);

@@ -39,6 +39,11 @@ public abstract class IapVerificationRequest {
     @MongoBaseEntityConstraint(beanName = OS)
     private String os;
 
+//    @NotNull TODO Uncomment the following release
+    @Analysed
+    @MongoBaseEntityConstraint(beanName = APP)
+    private String appId;
+
     @NotBlank
     @Analysed
     private String uid;

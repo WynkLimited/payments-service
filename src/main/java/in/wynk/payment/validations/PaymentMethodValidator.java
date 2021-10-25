@@ -33,6 +33,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
                             .msisdn(request.getMsisdn())
                             .appId(request.getAppId())
                             .os(request.getOs())
+                            .si(request.getSi())
                             .build())
                     .entity(paymentMethod)
                     .build();

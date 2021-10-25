@@ -53,7 +53,7 @@ public class WebPurchaseDetails implements IChargingDetails {
     public IUserDetails getUserDetails() {
         final SessionDTO session = SessionContextHolder.getBody();
         if(paymentDetails.getPaymentId().equalsIgnoreCase(ADDTOBILL)){
-            return UserBillingDetail.builder().billingSiDetail(billingSiDetail).msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
+            return UserBillingDetail.builder().billingSiDetail(billingSiDetail).msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).si(session.get(SI)).build();
         }
         return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
     }

@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
@@ -119,7 +120,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
 
     @Override
-    public boolean isEligible(PaymentOptionsPlanEligibilityRequest root) {
+    // Add @Cacheable and set ttl set 30 min and keep unique key si
+    public Boolean isEligible(PaymentOptionsPlanEligibilityRequest root) {
         try {
             final PlanDTO plan = cachingService.getPlan(root.getPlanId());
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
@@ -133,7 +135,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
                 if (response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                        if (!eligibleServices.isEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                        //as isEligible is not coming true so commented out for now
+                     //   if (!eligibleServices.isEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                        if  (!eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
                             return false;
                         }
                     }

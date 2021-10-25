@@ -190,7 +190,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {
                         MDC.put(REQUEST_ID, requestId);
-                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(clientAlias).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
+                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(clientAlias).si(request.getSi()).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
                     };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {

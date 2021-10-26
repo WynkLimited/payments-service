@@ -297,7 +297,7 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
             final String calculatedChecksum = DigestUtils.sha256Hex(rawCheckSum + salt) + "###1";
             validated = calculatedChecksum.equals(requestPayload.getChecksum());
         } catch (Exception e) {
-            log.error(PHONEPE_CHARGING_CALLBACK_FAILURE, "Exception while Checksum validation");
+            log.error(PHONEPE_CHARGING_CALLBACK_FAILURE, "Exception while Checksum validation", e);
         }
         return validated;
     }

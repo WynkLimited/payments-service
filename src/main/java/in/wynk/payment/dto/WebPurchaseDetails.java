@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.Valid;
 
@@ -79,7 +80,7 @@ public class WebPurchaseDetails implements IChargingDetails {
 
     private String buildUrlFrom(String url, IAppDetails appDetails) {
         final SessionDTO session = SessionContextHolder.getBody();
-        return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo() + AND + THEME + EQUAL + session.get(THEME);
+        return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo() + (StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "");
     }
 
 }

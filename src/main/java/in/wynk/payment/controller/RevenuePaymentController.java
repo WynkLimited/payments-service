@@ -43,7 +43,7 @@ public class RevenuePaymentController {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @Valid @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
@@ -108,8 +108,8 @@ public class RevenuePaymentController {
 
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
-    @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @PathVariable String pc, @RequestBody Map<String, Object> payload) {
+    @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
         final PaymentCode paymentCode;
         if (StringUtils.isEmpty(pc)) {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();

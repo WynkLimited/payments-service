@@ -242,7 +242,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
             final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
-            final String activePlanId = root.getPlanId();
+            final Integer activePlanId = Integer.valueOf(root.getPlanId());
             final Optional<Integer> planIdOption = Arrays.stream(planIds).filter(activePlanId::equals).findAny();
             if (!planIdOption.isPresent()) {
                 resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_PLAN_LIST);
@@ -259,7 +259,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
             final PaymentOptionsItemEligibilityRequest root = (PaymentOptionsItemEligibilityRequest) getRoot();
-            final String activeItemId = root.getItemId();
+            final Integer activeItemId = Integer.valueOf(root.getItemId());
             final Optional<Integer> itemIdOption = Arrays.stream(itemIds).filter(activeItemId::equals).findAny();
             if (!itemIdOption.isPresent()) {
                 resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_ITEM_LIST);

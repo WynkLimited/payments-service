@@ -44,7 +44,6 @@ public abstract class IapVerificationRequest {
     private String uid;
 
     @Setter
-    @NotBlank
     @Analysed
     private String sid;
 

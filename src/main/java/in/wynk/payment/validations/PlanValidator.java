@@ -7,6 +7,7 @@ import in.wynk.payment.dto.request.TrialPlanEligibilityRequest;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.enums.PlanType;
 import in.wynk.subscription.common.response.TrialPlanComputationResponse;
 
 import java.util.Objects;
@@ -20,9 +21,11 @@ public class PlanValidator<T extends IPlanValidatorRequest> extends BaseHandler<
         if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
             final PlanDTO planDTO = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(request.getProductDetails().getId());
             final int planId = request.isTrialOpted() ? planDTO.getLinkedFreePlanId() : planDTO.getId();
-            final TrialPlanComputationResponse trialEligibilityResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(TrialPlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
-            if (Objects.isNull(trialEligibilityResponse) || !trialEligibilityResponse.getEligiblePlans().contains(planId)) {
-                throw new WynkRuntimeException(PAY602);
+            if (planDTO.getPlanType() == PlanType.FREE) throw new WynkRuntimeException(PAY602);
+            if (planDTO.getPlanType() == PlanType.FREE_TRIAL) {
+                final TrialPlanComputationResponse trialEligibilityResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(TrialPlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
+                if (Objects.isNull(trialEligibilityResponse) || (!trialEligibilityResponse.getEligiblePlans().contains(planId) && (request.isTrialOpted() || !trialEligibilityResponse.getActivePlans().contains(planId))))
+                    throw new WynkRuntimeException(PAY602);
             }
         }
         super.handle(request);

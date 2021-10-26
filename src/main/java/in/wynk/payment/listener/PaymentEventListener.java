@@ -4,9 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.core.constant.ClientErrorType;
+import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.exception.WynkErrorType;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -17,21 +22,27 @@ import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
+import in.wynk.payment.handler.CustomerWinBackHandler;
 import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
+import in.wynk.scheduler.task.dto.TaskDefinition;
+import in.wynk.scheduler.task.service.ITaskScheduler;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.quartz.SimpleScheduleBuilder;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -49,6 +60,7 @@ public class PaymentEventListener {
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
+    private final ITaskScheduler taskScheduler;
     private final ISqsManagerService sqsManagerService;
     private final IPaymentErrorService paymentErrorService;
     private final ApplicationEventPublisher eventPublisher;
@@ -153,6 +165,12 @@ public class PaymentEventListener {
         sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
     }
 
+
+    @EventListener
+    public void onPurchaseInit(PurchaseInitEvent purchaseInitEvent) {
+        dropOutTracker(PurchaseRecord.from(purchaseInitEvent));
+    }
+
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
@@ -163,6 +181,20 @@ public class PaymentEventListener {
                     .reason("trial plan amount refund")
                     .originalTransactionId(event.getTransactionId())
                     .build());
+        }
+    }
+    
+    @ClientAware(clientAlias = "#purchaseRecord.clientAlias")
+    private void dropOutTracker(PurchaseRecord purchaseRecord) {
+        try {
+            final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+            if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
+                taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
+            }
+            final long delayedBy = clientDetails.<Long>getMeta(PaymentConstants.PAYMENT_DROPOUT_DELAY_KEY).orElse(3600L);
+            taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder().entity(purchaseRecord).handler(CustomerWinBackHandler.class).triggerConfiguration(TaskDefinition.TriggerConfiguration.builder().startAt(new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy))).scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0)).build()).build());
+        } catch (Exception e) {
+            log.error(WynkErrorType.UT999.getMarker(), "something went wrong while scheduling task due to {}", e.getMessage(), e);
         }
     }
 

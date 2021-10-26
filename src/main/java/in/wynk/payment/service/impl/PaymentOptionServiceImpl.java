@@ -12,6 +12,7 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
+import in.wynk.payment.dto.request.TrialPlanEligibilityRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
@@ -30,6 +31,7 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import in.wynk.subscription.common.response.TrialPlanComputationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -59,6 +61,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private final IUserPaymentsManager userPaymentsManager;
     private final PaymentCachingService paymentCachingService;
     private final IPaymentOptionComputationManager paymentOptionManager;
+    private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @Override
     @Deprecated
@@ -160,6 +163,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .freeTrialAvailable(trialEligible)
                 .partnerName(partner.getName())
                 .dailyAmount(plan.getPrice().getDailyAmount())
+                .currency(plan.getPrice().getCurrency())
                 .day(plan.getPeriod().getDay());
         if (trialEligible) {
             final PlanDTO trialPlan = paymentCachingService.getPlan(plan.getLinkedFreePlanId());
@@ -173,6 +177,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         final String uid = sessionDTO.get(UID);
         final String deviceId = sessionDTO.get(DEVICE_ID);
+        final String si = sessionDTO.get(SI);
         final String clientAlias = request.getClient();
         final ExecutorService executorService = Executors.newFixedThreadPool(N);
         final Map<SavedDetailsKey, Future<WynkResponseEntity<AbstractPaymentDetails>>> map = new HashMap<>();
@@ -190,7 +195,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {
                         MDC.put(REQUEST_ID, requestId);
-                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(clientAlias).si(request.getSi()).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
+                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(clientAlias).si(si).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
                     };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {
@@ -258,7 +263,12 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .countryCode(request.getUserDetails().getCountryCode())
                 .si(request.getUserDetails().getSi())
                 .build());
-        final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).isPresent();
+        boolean trialEligible = false;
+        final Optional<Integer> optionalTrialPlanId = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL);
+        if (optionalTrialPlanId.isPresent()) {
+            TrialPlanComputationResponse trialPlanComputationResponse = subscriptionServiceManager.compute(TrialPlanEligibilityRequest.builder().userDetails(request.getUserDetails()).appDetails(request.getAppDetails()).planId(optionalTrialPlanId.get()).service(paidPlan.getService()).build());
+            trialEligible = trialPlanComputationResponse.getEligiblePlans().contains(optionalTrialPlanId.get());
+        }
         if (trialEligible)
             builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
         else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest));

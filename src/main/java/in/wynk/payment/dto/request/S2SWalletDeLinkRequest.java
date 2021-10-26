@@ -46,5 +46,6 @@ public class S2SWalletDeLinkRequest extends WalletDeLinkRequest {
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
         return clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()).getAlias();
     }
+
 }
 

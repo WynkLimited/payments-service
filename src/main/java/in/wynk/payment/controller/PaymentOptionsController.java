@@ -15,7 +15,6 @@ import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.IUserPreferredPaymentService;
 import in.wynk.session.aspect.advice.ManageSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
@@ -23,7 +22,6 @@ import java.util.Objects;
 import static in.wynk.common.constant.CacheBeanNameConstants.ITEM_DTO;
 import static in.wynk.common.constant.CacheBeanNameConstants.PLAN_DTO;
 
-@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wynk/v1/payment")

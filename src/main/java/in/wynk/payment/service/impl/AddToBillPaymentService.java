@@ -91,12 +91,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final String serviceId = plan.getActivationServiceIds().stream().findFirst().get();
         try {
             List<ServiceOrderItem> serviceOrderItems = new LinkedList<>();
-            ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(transaction.getAmount()).build()).serviceOrderMeta(null).build();
+            ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(89).build()).serviceOrderMeta(null).build();
             serviceOrderItems.add(serviceOrderItem);
             AddToBillCheckOutRequest checkOutRequest = AddToBillCheckOutRequest.builder()
                     .channel(DTH)
                     .loggedInSi(userBillingDetail.getSi())
-                    .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(transaction.getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
+                    .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(89).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
                     .orderMeta(null).build();
             final HttpHeaders headers = generateHeaders();
@@ -203,16 +203,17 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             throw new WynkRuntimeException("No merchant transaction found for Subscription");
         }
         try {
-            final HttpHeaders headers = generateHeaders();
+            final HttpHeaders headers = new HttpHeaders();
+            headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
             final String url = addToBillBaseUrl + ADDTOBILL_ORDER_STATUS_API;
             final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam(CHECK_ELIGIBILITY, false)
                     .queryParam(SI, TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null))
                     .queryParam(CHANNEL, DTH);
-            HttpEntity<?> entity = new HttpEntity<>(headers);
-            HttpEntity<AddToBillStatusResponse> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class);
-            if (response.getBody().isSuccess() && !response.getBody().getBody().getOrdersList().isEmpty()) {
-                for (AddToBillOrder order : response.getBody().getBody().getOrdersList()) {
+            HttpEntity<?> entity = new HttpEntity<>(null,headers);
+            AddToBillStatusResponse response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class).getBody();
+            if (response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
+                for (AddToBillOrder order : response.getBody().getOrdersList()) {
                     //need to check what can be possible value of getOrderStatus;
                     if (order.getOrderId().equals(merchantTransaction.getExternalTransactionId()) && order.getOrderStatus().equalsIgnoreCase("COMPLETED")) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;

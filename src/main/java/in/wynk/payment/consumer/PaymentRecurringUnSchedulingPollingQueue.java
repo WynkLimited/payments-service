@@ -3,13 +3,19 @@ package in.wynk.payment.consumer;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.common.messages.PaymentRecurringUnSchedulingMessage;
+import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.RecurringPaymentEvent;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +33,8 @@ public class PaymentRecurringUnSchedulingPollingQueue extends AbstractSQSMessage
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
     private final IRecurringPaymentManagerService recurringPaymentManager;
+    private final ITransactionManagerService transactionManagerService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PaymentRecurringUnSchedulingPollingQueue(String queueName,
                                                     AmazonSQS sqs,
@@ -34,17 +42,26 @@ public class PaymentRecurringUnSchedulingPollingQueue extends AbstractSQSMessage
                                                     ISQSMessageExtractor messagesExtractor,
                                                     ExecutorService messageHandlerThreadPool,
                                                     ScheduledExecutorService pollingThreadPool,
-                                                    IRecurringPaymentManagerService recurringPaymentManager) {
+                                                    IRecurringPaymentManagerService recurringPaymentManager, ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.recurringPaymentManager = recurringPaymentManager;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
+        this.transactionManagerService = transactionManagerService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
     public void consume(PaymentRecurringUnSchedulingMessage message) {
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentRecurringUnSchedulingMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId(), message.getPaymentEvent(), message.getValidUntil(), message.getDeferredUntil());
+        // TODO : This is temporary solution. need to discuss with Zuber sir how we can remove this check of ADDTOBILL
+        final Transaction transaction = transactionManagerService.get(message.getTransactionId());
+        if(Objects.nonNull(transaction) && transaction.getPaymentChannel() == PaymentCode.ADD_TO_BILL) {
+            eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(message.getTransactionId()).paymentEvent(message.getPaymentEvent()).build());
+        }
+        else {
+            recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId(), message.getPaymentEvent(), message.getValidUntil(), message.getDeferredUntil());
+        }
     }
 
     @Override

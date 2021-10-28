@@ -275,6 +275,9 @@
     <logger name="wynkUidToExtUserIdMapping" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="userChurnLocator" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
 
     <springProfile name="local">
         <root level="INFO">
@@ -573,6 +576,9 @@
             </logger>
             <logger name="wynkUidToExtUserIdMapping" additivity="false" level="INFO">
                 <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+            </logger>
+            <logger name="userChurnLocator" additivity="false" level="INFO">
+                <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
             </logger>
             <springProfile name="local">
                 <root level="INFO">

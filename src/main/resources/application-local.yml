@@ -308,7 +308,7 @@ payment:
 subscription:
   pooling:
     queue:
-      provision:
+      provisioning:
         enabled: true
         name: wcf-staging-subscription
         sqs:

@@ -13,8 +13,8 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 
+import static in.wynk.common.constant.BaseConstants.DEFAULT_COUNTRY_CODE;
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_COUNTRY_CODE;
 
 @Getter
 @ToString

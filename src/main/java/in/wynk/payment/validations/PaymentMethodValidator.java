@@ -21,37 +21,25 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
     @Override
     public void handle(T request) {
         PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(request.getPaymentId());
-        AbstractEligibilityEvaluation<PaymentMethod, PaymentOptionsEligibilityRequest> abstractEligibilityEvaluation;
-        if (request.getProductDetails().getType() == PLAN) {
-            abstractEligibilityEvaluation = PaymentMethodsPlanEligibilityEvaluation.builder()
-                    .root(PaymentOptionsPlanEligibilityRequest.builder()
-                            .planId(request.getProductDetails().getId())
-                            .countryCode(request.getCountryCode())
-                            .couponCode(request.getCouponCode())
-                            .service(request.getService())
-                            .buildNo(request.getBuildNo())
-                            .msisdn(request.getMsisdn())
-                            .appId(request.getAppId())
-                            .os(request.getOs())
-                            .si(request.getSi())
-                            .build())
-                    .entity(paymentMethod)
-                    .build();
-        } else {
-            abstractEligibilityEvaluation = PaymentMethodsItemEligibilityEvaluation.builder()
-                    .root(PaymentOptionsItemEligibilityRequest.builder()
-                            .itemId(request.getProductDetails().getId())
-                            .countryCode(request.getCountryCode())
-                            .couponCode(request.getCouponCode())
-                            .service(request.getService())
-                            .buildNo(request.getBuildNo())
-                            .msisdn(request.getMsisdn())
-                            .appId(request.getAppId())
-                            .os(request.getOs())
-                            .build())
-                    .entity(paymentMethod)
-                    .build();
-        }
+
+        PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (request.getProductDetails().getType() == PLAN ?
+                PaymentOptionsPlanEligibilityRequest.builder().planId(request.getProductDetails().getId()) :
+                PaymentOptionsItemEligibilityRequest.builder().itemId(request.getProductDetails().getId()))
+                .countryCode(request.getCountryCode())
+                .couponCode(request.getCouponCode())
+                .service(request.getService())
+                .buildNo(request.getBuildNo())
+                .msisdn(request.getMsisdn())
+                .appId(request.getAppId())
+                .os(request.getOs())
+                .si(request.getSi())
+                .build();
+        AbstractEligibilityEvaluation<PaymentMethod, PaymentOptionsEligibilityRequest> abstractEligibilityEvaluation = (request.getProductDetails().getType() == PLAN ?
+                PaymentMethodsPlanEligibilityEvaluation.builder() :
+                PaymentMethodsItemEligibilityEvaluation.builder())
+                .root(paymentOptionsEligibilityRequest)
+                .entity(paymentMethod)
+                .build();
         EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
         if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
         super.handle(request);

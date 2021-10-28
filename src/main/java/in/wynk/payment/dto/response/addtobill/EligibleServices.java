@@ -13,5 +13,5 @@ public class EligibleServices {
     private String serviceId;
     private List<LinkedSis> linkedSis;
     private List<String> paymentOptions;
-
+    private AddToBillPricingDetails pricingDetails;
 }

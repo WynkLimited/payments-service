@@ -11,7 +11,7 @@ import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
-import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
+import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
 import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
@@ -55,7 +55,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedWebPaymentDetailsRequest<?>> {
+public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPreferredPaymentService<CombinedPaymentDetailsResponse, AbstractPreferredPaymentDetailsControllerRequest<?>> {
 
     private static final int N = 3;
     private final IUserPaymentsManager userPaymentsManager;
@@ -173,12 +173,11 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Override
-    public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(CombinedWebPaymentDetailsRequest<?> request) {
-        SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String uid = sessionDTO.get(UID);
-        final String deviceId = sessionDTO.get(DEVICE_ID);
-        final String si = sessionDTO.get(SI);
+    public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(AbstractPreferredPaymentDetailsControllerRequest<?> request) {
+        final String uid = request.getUid();
+        final String deviceId = request.getDeviceId();
         final String clientAlias = request.getClient();
+        final String si = request.getSi();
         final ExecutorService executorService = Executors.newFixedThreadPool(N);
         final Map<SavedDetailsKey, Future<WynkResponseEntity<AbstractPaymentDetails>>> map = new HashMap<>();
         final Map<SavedDetailsKey, UserPreferredPayment> userPreferredPaymentMap = userPaymentsManager.get(uid).stream().collect(Collectors.toMap(UserPreferredPayment::getId, Function.identity()));

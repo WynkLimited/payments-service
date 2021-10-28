@@ -91,12 +91,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final String serviceId = plan.getActivationServiceIds().stream().findFirst().get();
         try {
             List<ServiceOrderItem> serviceOrderItems = new LinkedList<>();
-            ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(89).build()).serviceOrderMeta(null).build();
+            ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(userBillingDetail.getBillingSiDetail().getAmount()).build()).serviceOrderMeta(null).build();
             serviceOrderItems.add(serviceOrderItem);
             AddToBillCheckOutRequest checkOutRequest = AddToBillCheckOutRequest.builder()
                     .channel(DTH)
                     .loggedInSi(userBillingDetail.getSi())
-                    .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(89).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
+                    .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userBillingDetail.getBillingSiDetail().getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
                     .orderMeta(null).build();
             final HttpHeaders headers = generateHeaders();
@@ -104,6 +104,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             AddToBillCheckOutResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_CHECKOUT_API, HttpMethod.POST, requestEntity, AddToBillCheckOutResponse.class).getBody();
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
+                log.info("ADDTOBILL orderId: {}", response.getBody().getOrderId());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
                 MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(requestEntity).response(response).build();
                 eventPublisher.publishEvent(merchantTransactionEvent);
@@ -157,9 +158,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     public WynkResponseEntity<UserAddToBillDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> preferredPaymentDetailsRequest) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserAddToBillDetails> builder = WynkResponseEntity.builder();
         if (StringUtils.isNotBlank(preferredPaymentDetailsRequest.getSi())) {
-            final List<LinkedSis> linkedSisList = getDetailsEligibilityAndPricing(preferredPaymentDetailsRequest.getProductDetails().getId(), preferredPaymentDetailsRequest.getSi());
-            if (Objects.nonNull(linkedSisList)) {
-                return builder.data(UserAddToBillDetails.builder().linkedSis(linkedSisList).build()).build();
+            final UserAddToBillDetails userAddToBillDetails = getDetailsEligibilityAndPricing(preferredPaymentDetailsRequest.getProductDetails().getId(), preferredPaymentDetailsRequest.getSi());
+            if (Objects.nonNull(userAddToBillDetails)) {
+                return builder.data(userAddToBillDetails).build();
             }
         }
         final PaymentErrorType errorType = PAY201;
@@ -175,7 +176,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         return headers;
     }
 
-    private List<LinkedSis> getDetailsEligibilityAndPricing(String planId, String si) {
+    private UserAddToBillDetails getDetailsEligibilityAndPricing(String planId, String si) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
@@ -184,8 +185,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
             AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
             for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                if (eligibleServices.isEligible() && eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
-                    return eligibleServices.getLinkedSis();
+                if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                    return UserAddToBillDetails.builder().linkedSis(eligibleServices.getLinkedSis()).amount(eligibleServices.getPricingDetails().getDiscountedPrice()).build();
                 }
             }
             return null;

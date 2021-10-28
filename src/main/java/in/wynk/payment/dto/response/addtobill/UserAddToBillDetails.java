@@ -15,6 +15,7 @@ import java.util.List;
 @AnalysedEntity
 public class UserAddToBillDetails extends AbstractPaymentDetails {
     private List<LinkedSis> linkedSis;
+    private double amount;
 }
 
 

@@ -121,7 +121,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
 
     @Override
-    // Add @Cacheable and set ttl set 30 min and keep unique key si
     public Boolean isEligible(PaymentOptionsPlanEligibilityRequest root) {
         try {
             final PlanDTO plan = cachingService.getPlan(root.getPlanId());
@@ -136,9 +135,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
                 if (response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                        //as isEligible is not coming true so commented out for now
-                     //   if (!eligibleServices.isEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
-                        if  (!eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                        if (!eligibleServices.isEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
                             return false;
                         }
                     }
@@ -197,13 +194,17 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
+        IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
+        final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
+        final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
         if (Objects.isNull(merchantTransaction)) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException("No merchant transaction found for Subscription");
         }
         try {
+
             final HttpHeaders headers = new HttpHeaders();
             headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
             final String url = addToBillBaseUrl + ADDTOBILL_ORDER_STATUS_API;
@@ -215,8 +216,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             AddToBillStatusResponse response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class).getBody();
             if (response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
-                    //need to check what can be possible value of getOrderStatus;
-                    if (order.getOrderId().equals(merchantTransaction.getExternalTransactionId()) && order.getOrderStatus().equalsIgnoreCase("COMPLETED")) {
+                    if (order.getServiceId().equalsIgnoreCase(offer.getServiceGroupId()) && plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getEndDate().after(new Date())) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         transaction.setStatus(finalTransactionStatus.getValue());
                         return;

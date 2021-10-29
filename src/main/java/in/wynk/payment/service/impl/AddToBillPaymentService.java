@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -280,7 +281,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(purchaseDetails.getUserDetails().getMsisdn()).productCode(serviceId).provisionSi(purchaseDetails.getUserDetails().getSi()).source("DIGITAL_STORE").build();
                 HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
                 AddToBillUnsubscribeResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_UNSUBSCRIBE_API, HttpMethod.POST, unSubscribeRequestEntity, AddToBillUnsubscribeResponse.class).getBody();
-                if (response.isMarkedForCancel()) {
+                if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
+                    AnalyticService.update(response);
                     finalTransactionStatus = TransactionStatus.SUCCESS;
                 }
                 finalTransactionStatus = TransactionStatus.FAILURE;

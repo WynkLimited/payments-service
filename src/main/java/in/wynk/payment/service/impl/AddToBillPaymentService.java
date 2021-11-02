@@ -220,7 +220,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             AddToBillStatusResponse response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class).getBody();
             if (response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
-                    if (order.getServiceId().equalsIgnoreCase(offer.getServiceGroupId()) && plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getEndDate().after(new Date())) {
+                    if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getOrderCreationDate().equals(new Date())) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         transaction.setStatus(finalTransactionStatus.getValue());
                         return;
@@ -258,7 +258,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             HttpEntity<AddToBillStatusResponse> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class);
             if (response.getBody().isSuccess() && !response.getBody().getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getBody().getOrdersList()) {
-                    if (order.getServiceId().equalsIgnoreCase(serviceGroupId) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getEndDate().after(new Date())) {
+                    if (order.getServiceId().equalsIgnoreCase(serviceGroupId) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") ) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         transaction.setStatus(finalTransactionStatus.getValue());
                     }

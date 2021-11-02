@@ -66,11 +66,10 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
 
     @Override
     @Deprecated
-    public PaymentOptionsDTO getPaymentOptions(String planId, String itemId) {
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentOptions(String planId, String itemId) {
         if (!StringUtils.isEmpty(planId) && paymentCachingService.containsPlan(planId)) {
             return getPaymentOptionsForPlan(planId);
         }
-
         if (!StringUtils.isEmpty(itemId) && paymentCachingService.containsItem(itemId)) {
             return getPaymentOptionsForItem(planId);
         }
@@ -95,7 +94,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Deprecated
-    private PaymentOptionsDTO getPaymentOptionsForPlan(String planId) {
+    private WynkResponseEntity<PaymentOptionsDTO> getPaymentOptionsForPlan(String planId) {
+        HttpStatus httpStatus = HttpStatus.OK;
+        WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
         final PlanDTO paidPlan = paymentCachingService.getPlan(planId);
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -104,12 +105,14 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         if (trialEligible)
             builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported)));
         else builder.paymentGroups(getPaymentGroups((paymentMethod -> true)));
-        return builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build();
+        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build()).build();
     }
 
     @Deprecated
-    private PaymentOptionsDTO getPaymentOptionsForItem(String itemId) {
-        return PaymentOptionsDTO.builder().productDetails(buildPointDetails(itemId)).paymentGroups(getPaymentGroups((paymentMethod -> true))).build();
+    private WynkResponseEntity<PaymentOptionsDTO> getPaymentOptionsForItem(String itemId) {
+        HttpStatus httpStatus = HttpStatus.OK;
+        WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
+        return responseEntityBuilder.status(httpStatus).data(PaymentOptionsDTO.builder().productDetails(buildPointDetails(itemId)).paymentGroups(getPaymentGroups((paymentMethod -> true))).build()).build();
     }
 
     private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate) {

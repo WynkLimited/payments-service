@@ -33,7 +33,7 @@ public class PaymentOptionsController {
     @GetMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
-    public PaymentOptionsDTO getPaymentMethods(@PathVariable String sid, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
+    public WynkResponseEntity<PaymentOptionsDTO>  getPaymentMethods(@PathVariable String sid, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
         if (Objects.isNull(planId) && Objects.isNull(itemId))
             throw new WynkRuntimeException("planId or itemId is not supplied or found empty");
         return paymentMethodService.getPaymentOptions(planId.toString(), itemId);

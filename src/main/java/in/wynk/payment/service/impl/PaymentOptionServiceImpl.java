@@ -36,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -77,7 +78,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Override
-    public PaymentOptionsDTO getFilteredPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
+    public WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         try {
             if (request.getPaymentOptionRequest().getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 return getFilteredPaymentOptionsForPlan(request.getPaymentOptionRequest());
@@ -249,7 +250,9 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         }
     }
 
-    private PaymentOptionsDTO getFilteredPaymentOptionsForPlan(IPaymentOptionsRequest request) {
+    private WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptionsForPlan(IPaymentOptionsRequest request) {
+        HttpStatus httpStatus = HttpStatus.OK;
+        WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
         final PlanDTO paidPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder()
@@ -271,10 +274,12 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         if (trialEligible)
             builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
         else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest));
-        return builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build();
+        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build()).build();
     }
 
-    private PaymentOptionsDTO getFilteredPaymentOptionsForItem(IPaymentOptionsRequest request) {
+    private WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptionsForItem(IPaymentOptionsRequest request) {
+        HttpStatus httpStatus = HttpStatus.OK;
+        final WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
         final ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item)
                 .couponCode(request.getCouponId())
@@ -284,7 +289,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .countryCode(request.getUserDetails().getCountryCode())
                 .si(request.getUserDetails().getSi())
                 .build());
-        return PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest)).build();
+        return responseEntityBuilder.status(httpStatus).data(PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest)).build()).build();
     }
 
     private List<PaymentOptionsDTO.PaymentGroupsDTO> getFilteredPaymentGroups(Predicate<PaymentMethod> filterPredicate, PaymentOptionsEligibilityRequest request) {

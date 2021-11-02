@@ -45,6 +45,7 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY201;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
+import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
@@ -85,10 +86,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final WynkResponseEntity.WynkResponseEntityBuilder<AddToBillChargingResponse> builder = WynkResponseEntity.builder();
         final Transaction transaction = TransactionContext.get();
         final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
-        final String modeId = userBillingDetail.getBillingSiDetail().getLob().equalsIgnoreCase(POSTPAID)?MOBILITY:TELEMEDIA;
+        final String modeId = userBillingDetail.getBillingSiDetail().getLob().equalsIgnoreCase(POSTPAID) ? MOBILITY : TELEMEDIA;
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-        //As bundle of serviceIds is not supported by AddTOBill checkout api, plan will always be configured with only one serviceId
         final String serviceId = plan.getActivationServiceIds().stream().findFirst().get();
         try {
             List<ServiceOrderItem> serviceOrderItems = new LinkedList<>();
@@ -123,33 +123,37 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     public Boolean isEligible(PaymentOptionsPlanEligibilityRequest root) {
+        return checkEligibility(root.getPlanId(), root.getSi());
+    }
+
+    @Cacheable(cacheName = "AddToBillEligibilityCheck", cacheKey = "'addToBill-eligibility:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
+    private Boolean checkEligibility(String planId, String si) {
         try {
-            final PlanDTO plan = cachingService.getPlan(root.getPlanId());
+            final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             if (Objects.isNull(plan.getActivationServiceIds()) || StringUtils.isBlank(offer.getServiceGroupId())) {
                 log.error("plan serviceIds or offer serviceGroup is not present");
-                return false;
             } else {
-                final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(root.getSi()).channel("DTH").pageIdentifier("DETAILS").build();
+                final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(si).channel("DTH").pageIdentifier("DETAILS").build();
                 final HttpHeaders headers = generateHeaders();
                 HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
                 AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
                 if (response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                        if (!eligibleServices.isEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                        if (!eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
                             return false;
                         }
                     }
                     return true;
 
                 }
-                return false;
-
             }
+            return false;
         } catch (Exception e) {
             log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return false;
         }
+
     }
 
     @Override
@@ -205,7 +209,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             throw new WynkRuntimeException("No merchant transaction found for Subscription");
         }
         try {
-
             final HttpHeaders headers = new HttpHeaders();
             headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
             final String url = addToBillBaseUrl + ADDTOBILL_ORDER_STATUS_API;
@@ -213,7 +216,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .queryParam(CHECK_ELIGIBILITY, false)
                     .queryParam(SI, TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null))
                     .queryParam(CHANNEL, DTH);
-            HttpEntity<?> entity = new HttpEntity<>(null,headers);
+            HttpEntity<?> entity = new HttpEntity<>(null, headers);
             AddToBillStatusResponse response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class).getBody();
             if (response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
@@ -223,6 +226,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                         return;
                     }
                 }
+            } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
         } catch (Exception e) {
@@ -277,15 +281,15 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         try {
             for (String serviceId : plan.getActivationServiceIds()) {
                 final HttpHeaders headers = generateHeaders();
-
                 AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(purchaseDetails.getUserDetails().getMsisdn()).productCode(serviceId).provisionSi(purchaseDetails.getUserDetails().getSi()).source("DIGITAL_STORE").build();
                 HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
                 AddToBillUnsubscribeResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_UNSUBSCRIBE_API, HttpMethod.POST, unSubscribeRequestEntity, AddToBillUnsubscribeResponse.class).getBody();
                 if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
                     AnalyticService.update(response);
                     finalTransactionStatus = TransactionStatus.SUCCESS;
+                } else {
+                    finalTransactionStatus = TransactionStatus.FAILURE;
                 }
-                finalTransactionStatus = TransactionStatus.FAILURE;
             }
 
         } catch (Exception e) {

@@ -42,7 +42,7 @@ public class PaymentOptionsController {
     @PostMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
-    public PaymentOptionsDTO getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
         AnalyticService.update(request);
         return paymentMethodService.getFilteredPaymentOptions(request);
     }

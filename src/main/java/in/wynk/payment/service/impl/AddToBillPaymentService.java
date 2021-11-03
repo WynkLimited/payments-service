@@ -202,7 +202,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
-        final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
         if (Objects.isNull(merchantTransaction)) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -239,6 +238,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        boolean status=false;
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
@@ -259,16 +259,26 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (response.getBody().isSuccess() && !response.getBody().getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getBody().getOrdersList()) {
                     if (order.getServiceId().equalsIgnoreCase(serviceGroupId) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase("ACTIVE")) {
-                        finalTransactionStatus = TransactionStatus.SUCCESS;
-                        transaction.setStatus(finalTransactionStatus.getValue());
+                        status =true;
+                        AnalyticService.update(order);
+                        break;
                     }
                 }
+                if(status){
+                    finalTransactionStatus = TransactionStatus.SUCCESS;
+                } else {
+                    finalTransactionStatus = TransactionStatus.FAILURE;
+                }
+            }
+            else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
+
         } catch (Exception e) {
             log.error("Failed to get renewal Status from AddToBill: {} ", e.getMessage(), e);
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
+        transaction.setStatus(finalTransactionStatus.getValue());
         return WynkResponseEntity.<Void>builder().build();
     }
 

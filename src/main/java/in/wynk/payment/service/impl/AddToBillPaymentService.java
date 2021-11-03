@@ -222,6 +222,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getOrderCreationDate().equals(new Date()) && order.getServiceStatus().equalsIgnoreCase("ACTIVE")) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         transaction.setStatus(finalTransactionStatus.getValue());
+                        log.info("Order subscription details :", order);
                         return;
                     }
                 }
@@ -260,7 +261,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 for (AddToBillOrder order : response.getBody().getBody().getOrdersList()) {
                     if (order.getServiceId().equalsIgnoreCase(serviceGroupId) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase("ACTIVE")) {
                         status =true;
-                        AnalyticService.update(order);
+                        log.info("Order renewal details :", order);
                         break;
                     }
                 }

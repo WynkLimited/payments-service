@@ -40,8 +40,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
 
-import static in.wynk.payment.core.constant.PaymentErrorType.ADDTOBILL01;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY201;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
@@ -92,9 +91,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final String serviceId = plan.getActivationServiceIds().stream().findFirst().get();
         try {
             List<ServiceOrderItem> serviceOrderItems = new LinkedList<>();
-            ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(userBillingDetail.getBillingSiDetail().getAmount()).build()).serviceOrderMeta(null).build();
+            final ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(userBillingDetail.getBillingSiDetail().getAmount()).build()).serviceOrderMeta(null).build();
             serviceOrderItems.add(serviceOrderItem);
-            AddToBillCheckOutRequest checkOutRequest = AddToBillCheckOutRequest.builder()
+            final AddToBillCheckOutRequest checkOutRequest = AddToBillCheckOutRequest.builder()
                     .channel(DTH)
                     .loggedInSi(userBillingDetail.getSi())
                     .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userBillingDetail.getBillingSiDetail().getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
@@ -102,12 +101,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .orderMeta(null).build();
             final HttpHeaders headers = generateHeaders();
             HttpEntity<AddToBillCheckOutRequest> requestEntity = new HttpEntity<>(checkOutRequest, headers);
-            AddToBillCheckOutResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_CHECKOUT_API, HttpMethod.POST, requestEntity, AddToBillCheckOutResponse.class).getBody();
+            final AddToBillCheckOutResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_CHECKOUT_API, HttpMethod.POST, requestEntity, AddToBillCheckOutResponse.class).getBody();
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-                log.info("ADDTOBILL orderId: {}", response.getBody().getOrderId());
+                log.info("ADDTOBILL charging orderId: {}", response.getBody().getOrderId());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
-                MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(requestEntity).response(response).build();
+                final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(requestEntity).response(response).build();
                 eventPublisher.publishEvent(merchantTransactionEvent);
             }
 
@@ -137,7 +136,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(si).channel("DTH").pageIdentifier("DETAILS").build();
                 final HttpHeaders headers = generateHeaders();
                 HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
-                AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
+                final AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
                 if (response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
                         if (!eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
@@ -201,6 +200,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
+        final String si = TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null);
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
         if (Objects.isNull(merchantTransaction)) {
@@ -208,21 +208,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             throw new WynkRuntimeException("No merchant transaction found for Subscription");
         }
         try {
-            final HttpHeaders headers = new HttpHeaders();
-            headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
-            final String url = addToBillBaseUrl + ADDTOBILL_ORDER_STATUS_API;
-            final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
-                    .queryParam(CHECK_ELIGIBILITY, false)
-                    .queryParam(SI, TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null))
-                    .queryParam(CHANNEL, DTH);
-            HttpEntity<?> entity = new HttpEntity<>(null, headers);
-            AddToBillStatusResponse response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class).getBody();
-            if (response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
+            final AddToBillStatusResponse response = getOrderList(si);
+            if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
-                    if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getOrderCreationDate().equals(new Date()) && order.getServiceStatus().equalsIgnoreCase("ACTIVE")) {
+                    if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         transaction.setStatus(finalTransactionStatus.getValue());
-                        log.info("Order subscription details :", order);
+                        log.info("Order subscription details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
                         return;
                     }
                 }
@@ -239,39 +231,28 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-        boolean status=false;
+        boolean status = false;
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         final String si = purchaseDetails.getUserDetails().getSi();
         final PlanDTO plan = cachingService.getPlan(paymentRenewalChargingRequest.getPlanId());
-        final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-        final String serviceGroupId = offer.getServiceGroupId();
-
         try {
-            final HttpHeaders headers = generateHeaders();
-            final String url = addToBillBaseUrl + ADDTOBILL_ORDER_STATUS_API;
-            final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
-                    .queryParam(CHECK_ELIGIBILITY, false)
-                    .queryParam(SI, si)
-                    .queryParam(CHANNEL, DTH);
-            HttpEntity<?> entity = new HttpEntity<>(headers);
-            HttpEntity<AddToBillStatusResponse> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class);
-            if (response.getBody().isSuccess() && !response.getBody().getBody().getOrdersList().isEmpty()) {
-                for (AddToBillOrder order : response.getBody().getBody().getOrdersList()) {
-                    if (order.getServiceId().equalsIgnoreCase(serviceGroupId) && order.getOrderStatus().equalsIgnoreCase("COMPLETED") && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase("ACTIVE")) {
-                        status =true;
-                        log.info("Order renewal details :", order);
+            final AddToBillStatusResponse response = getOrderList(si);
+            if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
+                for (AddToBillOrder order : response.getBody().getOrdersList()) {
+                    if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
+                        status = true;
+                        log.info("Order subscription details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
                         break;
                     }
                 }
-                if(status){
+                if (status) {
                     finalTransactionStatus = TransactionStatus.SUCCESS;
                 } else {
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 }
-            }
-            else {
+            } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
 
@@ -285,28 +266,62 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     public void cancelRecurring(String transactionId) {
+        boolean isUnsubscribed = false;
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         try {
+            final String si = purchaseDetails.getUserDetails().getSi();
             for (String serviceId : plan.getActivationServiceIds()) {
-                final HttpHeaders headers = generateHeaders();
-                AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(purchaseDetails.getUserDetails().getMsisdn()).productCode(serviceId).provisionSi(purchaseDetails.getUserDetails().getSi()).source("DIGITAL_STORE").build();
-                HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
-                AddToBillUnsubscribeResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_UNSUBSCRIBE_API, HttpMethod.POST, unSubscribeRequestEntity, AddToBillUnsubscribeResponse.class).getBody();
-                if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
-                    AnalyticService.update(response);
-                    finalTransactionStatus = TransactionStatus.SUCCESS;
-                } else {
-                    finalTransactionStatus = TransactionStatus.FAILURE;
+                final AddToBillStatusResponse resp = getOrderList(si);
+                if (Objects.nonNull(resp) && resp.isSuccess() && !resp.getBody().getOrdersList().isEmpty()) {
+                    for (AddToBillOrder order : resp.getBody().getOrdersList()) {
+                        if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getServiceStatus().equalsIgnoreCase(ACTIVE) && (order.getEndDate().after(new Date()) || order.getEndDate().equals(new Date()))) {
+                            final HttpHeaders headers = generateHeaders();
+                            final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(purchaseDetails.getUserDetails().getMsisdn()).productCode(serviceId).provisionSi(purchaseDetails.getUserDetails().getSi()).source(DIGITAL_STORE).build();
+                            final HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
+                            final AddToBillUnsubscribeResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_UNSUBSCRIBE_API, HttpMethod.POST, unSubscribeRequestEntity, AddToBillUnsubscribeResponse.class).getBody();
+                            if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
+                                AnalyticService.update(response);
+                                isUnsubscribed = true;
+                                log.info("unsubscribe order details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
+                                break;
+                            }
+                        }
+                    }
                 }
+
             }
 
         } catch (Exception e) {
             log.error("Unsubscribe failed: {}", e.getMessage(), e);
-            finalTransactionStatus = TransactionStatus.FAILURE;
+        } finally {
+            if (isUnsubscribed) {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+            } else {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+            }
+            log.info("AddtoBill unsubscribe transaction Status {}", finalTransactionStatus.getValue());
         }
 
+    }
+
+    private AddToBillStatusResponse getOrderList(String si) {
+        try {
+            final HttpHeaders headers = new HttpHeaders();
+            headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
+            final String url = addToBillBaseUrl + ADDTOBILL_ORDER_STATUS_API;
+            final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
+                    .queryParam(CHECK_ELIGIBILITY, false)
+                    .queryParam(SI, si)
+                    .queryParam(CHANNEL, DTH);
+            HttpEntity<?> entity = new HttpEntity<>(null, headers);
+            AddToBillStatusResponse response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class).getBody();
+            return response;
+        } catch (Exception e) {
+            log.error("Failed to get orderList from AddToBill: {} ", e.getMessage(), e);
+            return null;
+        }
     }
 }

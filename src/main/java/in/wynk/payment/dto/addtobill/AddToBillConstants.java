@@ -12,6 +12,9 @@ public interface AddToBillConstants {
     String SI = "si";
     String CHANNEL = "channel";
     String ADDTOBILL = "ADDTOBILL";
+    String COMPLETED = "COMPLETED";
+    String ACTIVE = "ACTIVE";
+    String DIGITAL_STORE = "DIGITAL_STORE";
 
     String ADDTOBILL_ELIGIBILITY_API="/shop-eligibility/getDetailsEligibilityAndPricing";
     String ADDTOBILL_CHECKOUT_API="/orderhive/s2s/auth/api/order/proceedToCheckout";

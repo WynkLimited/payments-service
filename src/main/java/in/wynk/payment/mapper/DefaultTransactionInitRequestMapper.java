@@ -20,6 +20,7 @@ import in.wynk.payment.service.IPricingManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -35,9 +36,9 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final Client client = WebPurchaseDetails.class.isAssignableFrom(purchaseDetails.getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)) : clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
         final AbstractTransactionInitRequest transactionInitRequest;
         if (PlanDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
-            transactionInitRequest = planInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getAppDetails() ,purchaseDetails.getPaymentDetails(), (PlanDetails) purchaseDetails.getProductDetails());
+            transactionInitRequest = planInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getAppDetails(), purchaseDetails.getPaymentDetails(), (PlanDetails) purchaseDetails.getProductDetails());
         } else if (PointDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
-            transactionInitRequest = pointInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getPaymentDetails(), (PointDetails) purchaseDetails.getProductDetails());
+            transactionInitRequest = pointInit(client, paymentCode, purchaseDetails.getUserDetails(), purchaseDetails.getAppDetails(), purchaseDetails.getPaymentDetails(), (PointDetails) purchaseDetails.getProductDetails());
         } else {
             throw new WynkRuntimeException("Method is not implemented!");
         }
@@ -77,11 +78,11 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     }
 
     private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails) {
-        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentCode(paymentCode).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
+        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentCode(paymentCode).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn(), WynkServiceUtils.fromServiceId(appDetails.getService()).getSalt())).build();
     }
 
-    private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails,  IPaymentDetails paymentDetails, PointDetails pointDetails) {
-        return PointTransactionInitRequest.builder().paymentCode(paymentCode).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn())).build();
+    private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentCode paymentCode, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PointDetails pointDetails) {
+        return PointTransactionInitRequest.builder().paymentCode(paymentCode).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(payerDetails.getMsisdn(), WynkServiceUtils.fromServiceId(appDetails.getService()).getSalt())).build();
     }
 
 }

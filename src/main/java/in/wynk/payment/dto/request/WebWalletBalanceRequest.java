@@ -33,6 +33,13 @@ public class WebWalletBalanceRequest extends WalletBalanceRequest {
 
     @Override
     @JsonIgnore
+    public String getService() {
+        final SessionDTO session = SessionContextHolder.getBody();
+        return session.get(BaseConstants.SERVICE);
+    }
+
+    @Override
+    @JsonIgnore
     public String getUid() {
         final SessionDTO session = SessionContextHolder.getBody();
         return session.get(BaseConstants.UID);

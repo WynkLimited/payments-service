@@ -2,6 +2,7 @@ package in.wynk.payment.test;
 
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
@@ -25,7 +26,7 @@ public class PaymentMethodServiceTest {
     @Test
     public void testPaymentOptions() {
         SessionDTO dummySession = PaymentTestUtils.dummySession();
-        PaymentOptionsDTO dto = paymentOptionService.getPaymentOptions("123", "");
+        WynkResponseEntity<PaymentOptionsDTO> dto = paymentOptionService.getPaymentOptions("123", "");
         System.out.println(gson.toJson(dto));
     }
 

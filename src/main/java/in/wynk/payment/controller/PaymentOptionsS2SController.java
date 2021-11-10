@@ -27,7 +27,7 @@ public class PaymentOptionsS2SController {
 
     @PostMapping("/options")
     @AnalyseTransaction(name = "paymentOptions")
-    public PaymentOptionsDTO getFilteredPaymentMethods(@RequestBody DefaultPaymentOptionRequest<S2SPaymentOptionsRequest> request) {
+    public WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentMethods(@RequestBody DefaultPaymentOptionRequest<S2SPaymentOptionsRequest> request) {
         AnalyticService.update(request);
         return paymentMethodService.getFilteredPaymentOptions(request);
     }

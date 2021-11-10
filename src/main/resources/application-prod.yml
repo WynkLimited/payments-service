@@ -304,6 +304,13 @@ payment:
         secret:
         token:
         clientId:
+    #### AddToBill props ######
+    addtobill:
+      api:
+        base:
+          url: http://myairtelapp-internal-kong.india.airtel.itm:8081
+      auth:
+        token: Basic b3JkZXJoaXZlLW1pdHJhOmNvbnN1bWVyQG1pdHJh
 
 
 subscription:

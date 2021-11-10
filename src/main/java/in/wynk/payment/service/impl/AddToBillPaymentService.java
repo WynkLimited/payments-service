@@ -139,12 +139,11 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
                 if (response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                        if (!eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                        if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
                             return false;
                         }
                     }
                     return true;
-
                 }
             }
             return false;
@@ -218,12 +217,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                         return;
                     }
                 }
-            } else {
-                finalTransactionStatus = TransactionStatus.FAILURE;
             }
         } catch (Exception e) {
             log.error("Failed to get Status from AddToBill: {} ", e.getMessage(), e);
-            finalTransactionStatus = TransactionStatus.FAILURE;
         }
 
         transaction.setStatus(finalTransactionStatus.getValue());

@@ -9,8 +9,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EligibleServices {
-    private boolean isEligible;
     private String serviceId;
+    private EligibilityDetails eligibilityDetails;
     private List<LinkedSis> linkedSis;
     private List<String> paymentOptions;
     private AddToBillPricingDetails pricingDetails;

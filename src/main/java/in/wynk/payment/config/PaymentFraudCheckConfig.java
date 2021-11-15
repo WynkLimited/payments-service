@@ -28,11 +28,9 @@ public class PaymentFraudCheckConfig {
 
     @Bean(VERIFY_IAP_FRAUD_DETECTION_CHAIN)
     public IHandler verifyIAPFraudDetectionChain() {
-        final PlanValidator planValidator = new PlanValidator();
         final CouponValidator couponValidator = new CouponValidator();
         final ClientValidator clientValidator = new ClientValidator();
-        planValidator.setNext(couponValidator);
-        clientValidator.setNext(planValidator);
+        clientValidator.setNext(couponValidator);
         return clientValidator;
     }
 

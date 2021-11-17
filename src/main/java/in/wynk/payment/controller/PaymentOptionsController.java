@@ -5,8 +5,8 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.dto.AbstractProductDetails;
 import in.wynk.payment.dto.WebPaymentOptionsRequest;
+import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
 import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
 import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
@@ -28,12 +28,12 @@ import static in.wynk.common.constant.CacheBeanNameConstants.PLAN_DTO;
 public class PaymentOptionsController {
 
     private final IPaymentOptionService paymentMethodService;
-    private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, CombinedWebPaymentDetailsRequest<?>> preferredPaymentService;
+    private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, AbstractPreferredPaymentDetailsControllerRequest<?>> preferredPaymentService;
 
     @GetMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
-    public PaymentOptionsDTO getPaymentMethods(@PathVariable String sid, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethods(@PathVariable String sid, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
         if (Objects.isNull(planId) && Objects.isNull(itemId))
             throw new WynkRuntimeException("planId or itemId is not supplied or found empty");
         return paymentMethodService.getPaymentOptions(planId.toString(), itemId);
@@ -42,7 +42,7 @@ public class PaymentOptionsController {
     @PostMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
-    public PaymentOptionsDTO getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
         AnalyticService.update(request);
         return paymentMethodService.getFilteredPaymentOptions(request);
     }
@@ -50,7 +50,7 @@ public class PaymentOptionsController {
     @ManageSession(sessionId = "#sid")
     @PostMapping("/saved/details/{sid}")
     @AnalyseTransaction(name = "savedDetails")
-    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedWebPaymentDetailsRequest<? extends AbstractProductDetails> request) {
+    public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedWebPaymentDetailsRequest request) {
         AnalyticService.update(request);
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());

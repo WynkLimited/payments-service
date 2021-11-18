@@ -9,6 +9,7 @@ import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
@@ -25,7 +26,7 @@ public class CouponValidator<T extends ICouponValidatorRequest> extends BaseHand
                     .service(request.getService())
                     .couponCode(request.getCouponCode())
                     .paymentCode(request.getPaymentCode().getCode())
-                    .uid(MsisdnUtils.getUidFromMsisdn(request.getMsisdn()));
+                    .uid(MsisdnUtils.getUidFromMsisdn(request.getMsisdn(), WynkServiceUtils.fromServiceId(request.getService()).getSalt()));
             if (request.getProductDetails().getType().equalsIgnoreCase(POINT))
                 builder.itemId(request.getProductDetails().getId());
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN))

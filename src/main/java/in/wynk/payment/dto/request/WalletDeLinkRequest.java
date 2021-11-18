@@ -13,5 +13,6 @@ public abstract class WalletDeLinkRequest extends WalletRequest {
 
     public abstract String getUid();
     public abstract String getMsisdn();
+    public abstract String getService();
 
 }

@@ -71,15 +71,18 @@ public class PaymentDumpService {
     }
 
     private PaymentDump getPaymentDbDump(Calendar cal, int days) throws ParseException {
-        // cal.add(Calendar.DATE, -7);
-        cal.add(Calendar.DATE, -days);
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+        String endDateFormat = dateFormat.format(cal.getTime());
+        AnalyticService.update("EndDateOfDump", endDateFormat);
+        Date endDate = dateFormat.parse(endDateFormat);
+        log.info("end Date {}", endDate);
+        cal.add(Calendar.DATE, -days);
         String fromDateFormat = dateFormat.format(cal.getTime());
         AnalyticService.update("FromDateOfDump", fromDateFormat);
         AnalyticService.update("DumpOfDays", days);
         Date fromDate = dateFormat.parse(fromDateFormat);
         log.info("from Date {}", fromDate);
-        return PaymentDump.builder().transactions(transactionDao.getTransactionWeeklyDump(fromDate)).build();
+        return PaymentDump.builder().transactions(transactionDao.getTransactionDailyDump(fromDate, endDate)).build();
     }
 
     private void putTransactionsOnS3Bucket(List<Transaction> transactions, Calendar cal) {

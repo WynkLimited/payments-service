@@ -55,6 +55,7 @@ public class PaymentDumpService {
         try {
             List<Transaction> transactionList = getPaymentDbDump(cal, days).getTransactions().collect(Collectors.toList());
             AnalyticService.update("TotalRecordsInDump", transactionList.size());
+            cal.add(Calendar.DATE, days);
             try {
                 putTransactionsOnS3Bucket(transactionList, cal);
             } catch (AmazonServiceException ex) {

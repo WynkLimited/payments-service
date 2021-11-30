@@ -72,10 +72,10 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         this.fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.error(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at addToBill end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.ADDTOBILL02);
+            throw new WynkRuntimeException(PaymentErrorType.ATB02);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
             log.error(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.ADDTOBILL03);
+            throw new WynkRuntimeException(PaymentErrorType.ATB03);
         }
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).data(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
     }
@@ -87,16 +87,16 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final String modeId = userBillingDetail.getBillingSiDetail().getLob().equalsIgnoreCase(POSTPAID) ? MOBILITY : TELEMEDIA;
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
-        final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
+        final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(transaction.getPlanId().toString(), userBillingDetail.getSi());
         final String serviceId = plan.getActivationServiceIds().stream().findFirst().get();
         try {
             List<ServiceOrderItem> serviceOrderItems = new LinkedList<>();
-            final ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(userBillingDetail.getBillingSiDetail().getAmount()).build()).serviceOrderMeta(null).build();
+            final ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(userAddToBillDetails.getAmount()).build()).serviceOrderMeta(null).build();
             serviceOrderItems.add(serviceOrderItem);
             final AddToBillCheckOutRequest checkOutRequest = AddToBillCheckOutRequest.builder()
                     .channel(DTH)
                     .loggedInSi(userBillingDetail.getSi())
-                    .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userBillingDetail.getBillingSiDetail().getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
+                    .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userAddToBillDetails.getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
                     .orderMeta(null).build();
             final HttpHeaders headers = generateHeaders();
@@ -104,7 +104,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final AddToBillCheckOutResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_CHECKOUT_API, HttpMethod.POST, requestEntity, AddToBillCheckOutResponse.class).getBody();
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-                log.info("ADDTOBILL charging orderId: {}", response.getBody().getOrderId());
+                log.info("ATB charging orderId: {}", response.getBody().getOrderId());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
                 final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(requestEntity).response(response).build();
                 eventPublisher.publishEvent(merchantTransactionEvent);
@@ -112,7 +112,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            final PaymentErrorType errorType = ADDTOBILL01;
+            final PaymentErrorType errorType = ATB01;
             builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).success(false);
             log.error(errorType.getMarker(), e.getMessage(), e);
         }
@@ -151,14 +151,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return false;
         }
-
     }
 
     @Override
     public WynkResponseEntity<UserAddToBillDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> preferredPaymentDetailsRequest) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserAddToBillDetails> builder = WynkResponseEntity.builder();
         if (StringUtils.isNotBlank(preferredPaymentDetailsRequest.getSi())) {
-            final UserAddToBillDetails userAddToBillDetails = getDetailsEligibilityAndPricing(preferredPaymentDetailsRequest.getProductDetails().getId(), preferredPaymentDetailsRequest.getSi());
+            final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(preferredPaymentDetailsRequest.getProductDetails().getId(), preferredPaymentDetailsRequest.getSi());
             if (Objects.nonNull(userAddToBillDetails)) {
                 return builder.data(userAddToBillDetails).build();
             }
@@ -175,8 +174,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
         return headers;
     }
-
-    private UserAddToBillDetails getDetailsEligibilityAndPricing(String planId, String si) {
+    @Cacheable(cacheName = "AddToBilLinkedSisAndPricing", cacheKey = "'addToBill-linkedSisAndPricing:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
+    private UserAddToBillDetails getLinkedSisAndPricingDetails(String planId, String si) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
@@ -298,7 +297,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
-            log.info("AddtoBill unsubscribe transaction Status {}", finalTransactionStatus.getValue());
+            log.info("ATB unsubscribe transaction Status {}", finalTransactionStatus.getValue());
         }
 
     }

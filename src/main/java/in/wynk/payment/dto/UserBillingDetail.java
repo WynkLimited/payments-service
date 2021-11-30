@@ -27,7 +27,6 @@ public class UserBillingDetail extends UserDetails {
     public static class BillingSiDetail {
         private String billingSi;
         private String lob;
-        private double amount;
     }
 
     @Override

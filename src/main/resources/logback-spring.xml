@@ -266,7 +266,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="userChurnLocator" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <springProfile name="local">
         <root level="INFO">

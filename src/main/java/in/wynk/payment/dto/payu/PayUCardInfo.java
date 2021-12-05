@@ -2,30 +2,39 @@ package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 @Getter
+@AnalysedEntity
 public class PayUCardInfo {
 
-    @Getter(onMethod_ = {@JsonGetter(value = "issuingBank")})
-    private String issuingBank;
+    @Analysed
+    private boolean valid = true;
 
-    @Getter(onMethod_ = {@JsonGetter(value = "isDomestic")})
-    private String isDomestic;
+    @Analysed
+    private boolean autoRenewSupported;
 
+    @Analysed
     @Getter(onMethod_ = {@JsonGetter(value = "cardType")})
     private String cardType;
 
+    @Analysed
+    @Getter(onMethod_ = {@JsonGetter(value = "isDomestic")})
+    private String isDomestic;
+
+    @Analysed
+    @Getter(onMethod_ = {@JsonGetter(value = "issuingBank")})
+    private String issuingBank;
+
+    @Analysed
     @Getter(onMethod_ = {@JsonGetter(value = "cardCategory")})
     private String cardCategory;
 
     @JsonProperty(value = "is_si_supported", access = JsonProperty.Access.WRITE_ONLY)
     private String siSupport;
-
-    private boolean autoRenewSupported;
-
-    private boolean valid = true;
 
     @JsonProperty(value = "issuing_bank")
     public void setIssuingBank(String issuingBank) {
@@ -56,7 +65,7 @@ public class PayUCardInfo {
     }
 
     public boolean isAutoRenewSupported() {
-        return StringUtils.isNotEmpty(getSiSupport()) ? getSiSupport().equalsIgnoreCase("1"): false;
+        return StringUtils.isNotEmpty(getSiSupport()) ? getSiSupport().equalsIgnoreCase("1") : false;
     }
 
 }

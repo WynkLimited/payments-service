@@ -64,6 +64,7 @@ public class RevenuePaymentController {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         BaseResponse<?> baseResponse = paymentManager.doVerify(request);
+        AnalyticService.update(baseResponse.getBody());
         return baseResponse.getResponse();
     }
 

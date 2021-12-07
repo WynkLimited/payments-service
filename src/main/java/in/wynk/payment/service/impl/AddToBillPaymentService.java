@@ -1,18 +1,16 @@
 package in.wynk.payment.service.impl;
 
-import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.addtobill.*;
@@ -38,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
@@ -57,13 +56,15 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
+    private final IRecurringDetailsDao paymentDetailsDao;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, PaymentCachingService cachingService1, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, PaymentCachingService cachingService1, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService, IRecurringDetailsDao paymentDetailsDao) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.restTemplate = restTemplate;
         this.cachingService = cachingService1;
         this.eventPublisher = eventPublisher;
         this.merchantTransactionService = merchantTransactionService;
+        this.paymentDetailsDao = paymentDetailsDao;
     }
 
     @Override
@@ -174,6 +175,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
         return headers;
     }
+
     @Cacheable(cacheName = "AddToBilLinkedSisAndPricing", cacheKey = "'addToBill-linkedSisAndPricing:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
     private UserAddToBillDetails getLinkedSisAndPricingDetails(String planId, String si) {
         try {
@@ -196,6 +198,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final String si = TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null);
@@ -225,12 +228,15 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     @Override
+    @TransactionAware(txnId = "#paymentRenewalChargingRequest")
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        log.info("inside AddToBill renewal");
         boolean status = false;
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
-        IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
+        IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
         final String si = purchaseDetails.getUserDetails().getSi();
+        log.info("inside AddToBill renewal si: {}", si);
         final PlanDTO plan = cachingService.getPlan(paymentRenewalChargingRequest.getPlanId());
         try {
             final AddToBillStatusResponse response = getOrderList(si);
@@ -260,46 +266,36 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     @Override
+    @TransactionAware(txnId = "#transactionId")
     public void cancelRecurring(String transactionId) {
-        boolean isUnsubscribed = false;
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
-        IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         try {
-            final String si = purchaseDetails.getUserDetails().getSi();
-            for (String serviceId : plan.getActivationServiceIds()) {
-                final AddToBillStatusResponse resp = getOrderList(si);
-                if (Objects.nonNull(resp) && resp.isSuccess() && !resp.getBody().getOrdersList().isEmpty()) {
-                    for (AddToBillOrder order : resp.getBody().getOrdersList()) {
-                        if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getServiceStatus().equalsIgnoreCase(ACTIVE) && (order.getEndDate().after(new Date()) || order.getEndDate().equals(new Date()))) {
-                            final HttpHeaders headers = generateHeaders();
-                            final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(purchaseDetails.getUserDetails().getMsisdn()).productCode(serviceId).provisionSi(purchaseDetails.getUserDetails().getSi()).source(DIGITAL_STORE).build();
-                            final HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
-                            final AddToBillUnsubscribeResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_UNSUBSCRIBE_API, HttpMethod.POST, unSubscribeRequestEntity, AddToBillUnsubscribeResponse.class).getBody();
-                            if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
-                                AnalyticService.update(response);
-                                isUnsubscribed = true;
-                                log.info("unsubscribe order details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
-                                break;
-                            }
-                        }
+            Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
+            if (purchaseDetails.isPresent()) {
+                final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();
+                log.info("purchase details provision Si {} , linkedSi {} ", userDetails.getSi(), userDetails.getBillingSiDetail().getBillingSi());
+                for (String serviceId : plan.getActivationServiceIds()) {
+                    final HttpHeaders headers = generateHeaders();
+                    final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(serviceId).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
+                    final HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
+                    final AddToBillUnsubscribeResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_UNSUBSCRIBE_API, HttpMethod.POST, unSubscribeRequestEntity, AddToBillUnsubscribeResponse.class).getBody();
+                    if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
+                        finalTransactionStatus = TransactionStatus.SUCCESS;
+                        log.info("unsubscribe order details si: {},service :{}, markedForCanceled {} :", response.getSi(), response.getProductCode(), response.isIsMarkedForCancel());
+                        break;
                     }
                 }
-
+            } else {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+                log.error("Unsubscribe failed because Purchase Details not found");
             }
 
         } catch (Exception e) {
+            finalTransactionStatus = TransactionStatus.FAILURE;
             log.error("Unsubscribe failed: {}", e.getMessage(), e);
-        } finally {
-            if (isUnsubscribed) {
-                finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else {
-                finalTransactionStatus = TransactionStatus.FAILURE;
-            }
-            log.info("ATB unsubscribe transaction Status {}", finalTransactionStatus.getValue());
         }
-
     }
 
     private AddToBillStatusResponse getOrderList(String si) {

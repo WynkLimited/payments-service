@@ -4,13 +4,16 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.dto.response.VerificationResponse;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 @Getter
 @AnalysedEntity
-public class PayUCardInfo {
+public class PayUCardInfo implements VerificationResponse {
 
+    @Setter
     @Analysed
     private boolean valid = true;
 
@@ -54,14 +57,6 @@ public class PayUCardInfo {
     @JsonProperty(value = "category")
     public void setCardCategory(String cardCategory) {
         this.cardCategory = cardCategory;
-    }
-
-    public boolean isValid() {
-        return valid;
-    }
-
-    public void setValid(boolean valid) {
-        this.valid = valid;
     }
 
     public boolean isAutoRenewSupported() {

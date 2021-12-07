@@ -5,15 +5,14 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.dto.response.AbstractCallbackResponse;
-import in.wynk.payment.dto.response.AbstractChargingResponse;
-import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.*;
+import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
@@ -57,15 +56,16 @@ public class RevenuePaymentController {
         return paymentManager.status(sessionDTO.<String>get(TRANSACTION_ID));
     }
 
+    @Deprecated
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public ResponseEntity<?> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
-        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+    public ResponseEntity<VerificationResponse> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.doVerify(request);
-        AnalyticService.update(baseResponse.getBody());
-        return baseResponse.getResponse();
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+        WynkResponseEntity<VerificationResponse> verificationResponseWynkResponseEntity = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), IMerchantVerificationService.class).doVerify(request);
+        BaseResponse<VerificationResponse> verificationResponseBaseResponse = BaseResponse.<VerificationResponse>builder().body(verificationResponseWynkResponseEntity.getBody().getData()).status(verificationResponseWynkResponseEntity.getStatus()).build();
+        return verificationResponseBaseResponse.getResponse();
     }
 
     @ManageSession(sessionId = "#sid")

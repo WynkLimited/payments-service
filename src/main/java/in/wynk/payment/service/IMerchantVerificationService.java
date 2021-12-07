@@ -1,9 +1,9 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.VerificationResponse;
 
 public interface IMerchantVerificationService {
-
-    BaseResponse<?> doVerify(VerificationRequest verificationRequest);
+    WynkResponseEntity<VerificationResponse> doVerify(VerificationRequest verificationRequest);
 }

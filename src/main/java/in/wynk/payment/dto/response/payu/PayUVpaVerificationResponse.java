@@ -2,13 +2,13 @@ package in.wynk.payment.dto.response.payu;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.response.VerificationResponse;
+import in.wynk.payment.dto.response.IVerificationResponse;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @AnalysedEntity
-public class PayUVpaVerificationResponse implements VerificationResponse {
+public class PayUVpaVerificationResponse implements IVerificationResponse {
 
     @Setter
     @Analysed

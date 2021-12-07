@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.response.VerificationResponse;
+import in.wynk.payment.dto.response.IVerificationResponse;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 @Getter
 @AnalysedEntity
-public class PayUCardInfo implements VerificationResponse {
+public class PayUCardInfo implements IVerificationResponse {
 
     @Setter
     @Analysed

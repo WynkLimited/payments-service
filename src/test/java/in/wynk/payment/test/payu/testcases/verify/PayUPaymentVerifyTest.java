@@ -7,7 +7,7 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.dto.response.VerificationResponse;
+import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.test.config.PaymentTestConfiguration;
@@ -59,7 +59,7 @@ public class PayUPaymentVerifyTest {
     @Order(1)
     public void verifyValidVPA() {
         PayUVpaVerificationResponse payuVpaVerificationResponse = gson.fromJson(PayUTestData.buildValidVPAPayUTransactionStatusResponse(), PayUVpaVerificationResponse.class);
-        WynkResponseEntity<VerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.VPA).verifyValue("valid_random_vpa").build());
+        WynkResponseEntity<IVerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.VPA).verifyValue("valid_random_vpa").build());
         PayUVpaVerificationResponse payUResponse = gson.fromJson(verificationResponseWynkResponseEntity.getBody().getData().toString(), PayUVpaVerificationResponse.class);
         Assert.assertNotNull(payUResponse);
         Assert.assertEquals(verificationResponseWynkResponseEntity.getStatus(), HttpStatus.OK);
@@ -75,7 +75,7 @@ public class PayUPaymentVerifyTest {
     @Order(2)
     public void verifyInValidVPA() {
         PayUVpaVerificationResponse payuVpaVerificationResponse = gson.fromJson(PayUTestData.buildInvalidVPAPayUTransactionStatusResponse(), PayUVpaVerificationResponse.class);
-        WynkResponseEntity<VerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.VPA).verifyValue("invalid_random_vpa").build());
+        WynkResponseEntity<IVerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.VPA).verifyValue("invalid_random_vpa").build());
         PayUVpaVerificationResponse payUResponse = gson.fromJson(verificationResponseWynkResponseEntity.getBody().getData().toString(), PayUVpaVerificationResponse.class);
         Assert.assertNotNull(payUResponse);
         Assert.assertEquals(verificationResponseWynkResponseEntity.getStatus(), HttpStatus.OK);
@@ -91,7 +91,7 @@ public class PayUPaymentVerifyTest {
     @Order(3)
     public void verifyValidBIN() {
         PayUCardInfo cardInfo = gson.fromJson(PayUTestData.buildValidBINPayUTransactionStatusResponse(), PayUCardInfo.class);
-        WynkResponseEntity<VerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.BIN).verifyValue("valid_random_bin").build());
+        WynkResponseEntity<IVerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.BIN).verifyValue("valid_random_bin").build());
         PayUCardInfo responseBody = gson.fromJson(verificationResponseWynkResponseEntity.getBody().getData().toString(), PayUCardInfo.class);
         Assert.assertNotNull(responseBody);
         Assert.assertEquals(verificationResponseWynkResponseEntity.getStatus(), HttpStatus.OK);
@@ -106,7 +106,7 @@ public class PayUPaymentVerifyTest {
     @Order(4)
     public void verifyInValidBIN() {
         PayUCardInfo cardInfo = gson.fromJson(PayUTestData.buildInvalidBINPayUTransactionStatusResponse(), PayUCardInfo.class);
-        WynkResponseEntity<VerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.BIN).verifyValue("invalid_random_bin").build());
+        WynkResponseEntity<IVerificationResponse> verificationResponseWynkResponseEntity = verificationService.doVerify(VerificationRequest.builder().paymentCode(PaymentCode.PAYU).verificationType(VerificationType.BIN).verifyValue("invalid_random_bin").build());
         PayUCardInfo responseBody = gson.fromJson(verificationResponseWynkResponseEntity.getBody().getData().toString(), PayUCardInfo.class);
         Assert.assertNotNull(responseBody);
         Assert.assertEquals(verificationResponseWynkResponseEntity.getStatus(), HttpStatus.OK);

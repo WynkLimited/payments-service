@@ -60,11 +60,11 @@ public class RevenuePaymentController {
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public ResponseEntity<VerificationResponse> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
+    public ResponseEntity<IVerificationResponse> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
         AnalyticService.update(request);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
-        WynkResponseEntity<VerificationResponse> verificationResponseWynkResponseEntity = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), IMerchantVerificationService.class).doVerify(request);
-        BaseResponse<VerificationResponse> verificationResponseBaseResponse = BaseResponse.<VerificationResponse>builder().body(verificationResponseWynkResponseEntity.getBody().getData()).status(verificationResponseWynkResponseEntity.getStatus()).build();
+        WynkResponseEntity<IVerificationResponse> verificationResponseWynkResponseEntity = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), IMerchantVerificationService.class).doVerify(request);
+        BaseResponse<IVerificationResponse> verificationResponseBaseResponse = BaseResponse.<IVerificationResponse>builder().body(verificationResponseWynkResponseEntity.getBody().getData()).status(verificationResponseWynkResponseEntity.getStatus()).build();
         return verificationResponseBaseResponse.getResponse();
     }
 

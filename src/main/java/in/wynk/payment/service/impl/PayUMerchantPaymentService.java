@@ -666,7 +666,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public WynkResponseEntity<VerificationResponse> doVerify(VerificationRequest verificationRequest) {
+    public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest verificationRequest) {
         switch (verificationRequest.getVerificationType()) {
             case VPA:
                 MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
@@ -674,7 +674,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 });
                 if (verificationResponse.getIsVPAValid() == 1)
                     verificationResponse.setValid(true);
-                return WynkResponseEntity.<VerificationResponse>builder().data(verificationResponse).status(HttpStatus.OK).build();
+                return WynkResponseEntity.<IVerificationResponse>builder().data(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{verificationRequest.getVerifyValue(), null, null, "1"});
                 PayUCardInfo cardInfo;
@@ -689,9 +689,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     cardInfo.setCardType(UNKNOWN.toUpperCase());
                     cardInfo.setCardCategory(UNKNOWN.toUpperCase());
                 }
-                return WynkResponseEntity.<VerificationResponse>builder().data(cardInfo).status(cardInfo.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
+                return WynkResponseEntity.<IVerificationResponse>builder().data(cardInfo).status(cardInfo.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
             default:
-                return WynkResponseEntity.<VerificationResponse>builder().build();
+                return WynkResponseEntity.<IVerificationResponse>builder().build();
         }
     }
 

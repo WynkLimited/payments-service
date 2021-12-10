@@ -1,15 +1,12 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.cache.aspect.advice.CacheEvict;
+import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.cache.constant.CacheConstant;
-import in.wynk.common.enums.PaymentEvent;
-import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.RecurringDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
-import in.wynk.payment.dto.ChargingDetails;
-import in.wynk.payment.dto.IChargingDetails;
 import in.wynk.payment.service.IPurchaseDetailsManger;
 import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;
@@ -18,7 +15,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+
+import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_DETAILS_KEY;
 
 @Service
 @RequiredArgsConstructor
@@ -28,24 +27,35 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     private final ISessionManager<String, IPurchaseDetails> sessionManager;
 
     @Override
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #details.getProductDetails().getId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save(Transaction transaction, IPurchaseDetails details) {
-        if (details.getPaymentDetails().isAutoRenew()) {
-            paymentDetailsDao.save(RecurringDetails.builder().id(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(details.getProductDetails().getId()).build()).sourceTransactionId(transaction.getIdStr()).appDetails(details.getAppDetails()).productDetails(details.getProductDetails()).paymentDetails(details.getPaymentDetails()).userDetails(details.getUserDetails()).build());
-        }
-        final String identity = PaymentConstants.PAYMENT_DETAILS_KEY + transaction.getUid() + CacheConstant.COLON_DELIMITER + details.getProductDetails().getId();
-        final ChargingDetails chargingDetails = ChargingDetails.builder().appDetails(details.getAppDetails()).productDetails(details.getProductDetails()).paymentDetails(details.getPaymentDetails()).userDetails(details.getUserDetails()).pageUrlDetails(((IChargingDetails) details).getPageUrlDetails()).callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl()).build();
-        sessionManager.put(identity, Session.<String, IPurchaseDetails>builder().id(identity).body(chargingDetails).build(), 3, TimeUnit.DAYS);
+        paymentDetailsDao.save(RecurringDetails.builder()
+                .appDetails(details.getAppDetails())
+                .userDetails(details.getUserDetails())
+                .sourceTransactionId(transaction.getIdStr())
+                .productDetails(details.getProductDetails())
+                .paymentDetails(details.getPaymentDetails())
+                .id(RecurringDetails.PurchaseKey.builder()
+                        .uid(transaction.getUid())
+                        .productKey(details.getProductDetails().getId())
+                        .build())
+                .build());
     }
 
     @Override
+    @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #details.getProductDetails().getId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public Optional<? extends IPurchaseDetails> get(Transaction transaction) {
-        if (transaction.getType() == PaymentEvent.RENEW && transaction.getStatus() != TransactionStatus.MIGRATED) {
-            return paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
-        }
-        Session<String, IPurchaseDetails> pdSession = sessionManager.get(PaymentConstants.PAYMENT_DETAILS_KEY + transaction.getUid() + CacheConstant.COLON_DELIMITER + transaction.getProductId());
-        if (Objects.nonNull(pdSession)) {
-            return Optional.ofNullable(pdSession.getBody());
-        }
+        Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
+        if (purchaseDetails.isPresent()) return purchaseDetails;
+        return getOldData(transaction);
+    }
+
+    @Deprecated
+    //TODO One time hack to support data retrieval of current users till 3 days. Kindly remove it in subsequent release. Remove above added if condition also
+    public Optional<? extends IPurchaseDetails> getOldData(Transaction transaction) {
+        Session<String, IPurchaseDetails> pdSession = sessionManager.get(PAYMENT_DETAILS_KEY + transaction.getUid() + CacheConstant.COLON_DELIMITER + transaction.getProductId());
+        if (Objects.nonNull(pdSession)) return Optional.ofNullable(pdSession.getBody());
         return Optional.empty();
     }
+
 }

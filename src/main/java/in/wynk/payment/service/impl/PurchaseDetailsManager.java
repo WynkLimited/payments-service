@@ -27,7 +27,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     private final ISessionManager<String, IPurchaseDetails> sessionManager;
 
     @Override
-    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #details.getProductDetails().getId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #transaction.getProductId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save(Transaction transaction, IPurchaseDetails details) {
         paymentDetailsDao.save(RecurringDetails.builder()
                 .appDetails(details.getAppDetails())
@@ -43,7 +43,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #details.getProductDetails().getId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #transaction.getProductId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public Optional<? extends IPurchaseDetails> get(Transaction transaction) {
         Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
         if (purchaseDetails.isPresent()) return purchaseDetails;

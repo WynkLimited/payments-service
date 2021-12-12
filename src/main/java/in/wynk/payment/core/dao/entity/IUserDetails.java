@@ -1,6 +1,8 @@
 package in.wynk.payment.core.dao.entity;
 
-public interface IUserDetails {
+import java.io.Serializable;
+
+public interface IUserDetails extends Serializable {
 
     String getDslId();
 

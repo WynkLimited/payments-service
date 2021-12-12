@@ -1,10 +1,19 @@
 package in.wynk.payment.core.dao.entity;
 
-public interface IPaymentDetails {
-    String getCouponId();
-    String getPaymentId();
-    String getPaymentMode();
-    String getMerchantName();
+import java.io.Serializable;
+
+public interface IPaymentDetails extends Serializable {
+
     boolean isTrialOpted();
+
     boolean isAutoRenew();
+
+    String getCouponId();
+
+    String getPaymentId();
+
+    String getPaymentMode();
+
+    String getMerchantName();
+
 }

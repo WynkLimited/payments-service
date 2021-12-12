@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -71,7 +72,7 @@ public class TransactionAwareAspect {
     private void processTxnId(String txnId) {
         final Transaction transaction = transactionManager.get(txnId);
         final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder().transaction(transaction);
-        payerDetailsManager.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        Optional.ofNullable(payerDetailsManager.get(transaction)).ifPresent(transactionDetailsBuilder::purchaseDetails);
         TransactionContext.set(transactionDetailsBuilder.build());
     }
 

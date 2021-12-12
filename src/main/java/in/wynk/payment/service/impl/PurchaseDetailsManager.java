@@ -44,10 +44,10 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
 
     @Override
     @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #transaction.getProductId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
-    public Optional<? extends IPurchaseDetails> get(Transaction transaction) {
+    public IPurchaseDetails get(Transaction transaction) {
         Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
-        if (purchaseDetails.isPresent()) return purchaseDetails;
-        return getOldData(transaction);
+        if (purchaseDetails.isPresent()) return purchaseDetails.get();
+        return getOldData(transaction).orElse(null);
     }
 
     @Deprecated

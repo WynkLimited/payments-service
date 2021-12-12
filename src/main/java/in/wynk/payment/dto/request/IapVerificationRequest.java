@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -39,7 +40,7 @@ public abstract class IapVerificationRequest {
     @MongoBaseEntityConstraint(beanName = OS)
     private String os;
 
-//    @NotNull TODO Uncomment the following release
+    //    @NotNull TODO Uncomment the following release
     @Analysed
     @MongoBaseEntityConstraint(beanName = APP)
     private String appId;
@@ -70,5 +71,11 @@ public abstract class IapVerificationRequest {
     private String countryCode;
 
     private PaymentCode paymentCode;
+
+    private boolean originalSid;
+
+    public void setOriginalSid() {
+        this.originalSid = StringUtils.isNotBlank(this.sid);
+    }
 
 }

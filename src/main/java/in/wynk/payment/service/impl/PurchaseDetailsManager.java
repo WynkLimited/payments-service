@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.cache.constant.CacheConstant;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.RecurringDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -35,6 +36,8 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 .sourceTransactionId(transaction.getIdStr())
                 .productDetails(details.getProductDetails())
                 .paymentDetails(details.getPaymentDetails())
+                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
+                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
                 .id(RecurringDetails.PurchaseKey.builder()
                         .uid(transaction.getUid())
                         .productKey(details.getProductDetails().getId())

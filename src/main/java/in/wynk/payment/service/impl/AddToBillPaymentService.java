@@ -228,7 +228,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     @Override
-    @TransactionAware(txnId = "#paymentRenewalChargingRequest")
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         log.info("inside AddToBill renewal");
         boolean status = false;

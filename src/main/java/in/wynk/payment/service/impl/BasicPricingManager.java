@@ -1,8 +1,10 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponManager;
+import in.wynk.coupon.core.service.impl.CouponCodeLinkServiceImpl;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -30,6 +33,7 @@ public class BasicPricingManager implements IPricingManager {
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final CouponCachingService couponCachingService;
+    private final CouponCodeLinkServiceImpl couponCodeLinkService;
 
     @Override
     public void computePriceAndApplyDiscount(AbstractTransactionInitRequest request) {
@@ -53,9 +57,12 @@ public class BasicPricingManager implements IPricingManager {
             pointRequest.setAmount(Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY106)).getPrice());
         }
         if (StringUtils.isNotEmpty(request.getCouponId())) {
-            final Double discountPercent = couponCachingService.get(request.getCouponId()).getDiscountPercent();
-            request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(request.getAmount() * (1 - discountPercent / 100))));
-            request.setDiscount(discountPercent);
+            final CouponCodeLink codeLink = couponCodeLinkService.fetchCouponCodeLink(request.getCouponId());
+            if (Objects.nonNull(codeLink)) {
+                final Double discountPercent = couponCachingService.get(codeLink.getCouponId()).getDiscountPercent();
+                request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(request.getAmount() * (1 - discountPercent / 100))));
+                request.setDiscount(discountPercent);
+            }
         }
     }
 }

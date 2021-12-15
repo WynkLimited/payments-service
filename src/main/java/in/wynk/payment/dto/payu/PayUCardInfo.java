@@ -2,30 +2,42 @@ package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.dto.response.IVerificationResponse;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 @Getter
-public class PayUCardInfo {
+@AnalysedEntity
+public class PayUCardInfo implements IVerificationResponse {
 
-    @Getter(onMethod_ = {@JsonGetter(value = "issuingBank")})
-    private String issuingBank;
+    @Setter
+    @Analysed
+    private boolean valid = true;
 
-    @Getter(onMethod_ = {@JsonGetter(value = "isDomestic")})
-    private String isDomestic;
+    @Analysed
+    private boolean autoRenewSupported;
 
+    @Analysed
     @Getter(onMethod_ = {@JsonGetter(value = "cardType")})
     private String cardType;
 
+    @Analysed
+    @Getter(onMethod_ = {@JsonGetter(value = "isDomestic")})
+    private String isDomestic;
+
+    @Analysed
+    @Getter(onMethod_ = {@JsonGetter(value = "issuingBank")})
+    private String issuingBank;
+
+    @Analysed
     @Getter(onMethod_ = {@JsonGetter(value = "cardCategory")})
     private String cardCategory;
 
     @JsonProperty(value = "is_si_supported", access = JsonProperty.Access.WRITE_ONLY)
     private String siSupport;
-
-    private boolean autoRenewSupported;
-
-    private boolean valid = true;
 
     @JsonProperty(value = "issuing_bank")
     public void setIssuingBank(String issuingBank) {
@@ -47,16 +59,8 @@ public class PayUCardInfo {
         this.cardCategory = cardCategory;
     }
 
-    public boolean isValid() {
-        return valid;
-    }
-
-    public void setValid(boolean valid) {
-        this.valid = valid;
-    }
-
     public boolean isAutoRenewSupported() {
-        return StringUtils.isNotEmpty(getSiSupport()) ? getSiSupport().equalsIgnoreCase("1"): false;
+        return StringUtils.isNotEmpty(getSiSupport()) ? getSiSupport().equalsIgnoreCase("1") : false;
     }
 
 }

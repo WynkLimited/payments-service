@@ -13,58 +13,54 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.addtobill.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.UserBillingDetail;
-import in.wynk.payment.dto.response.addtobill.*;
+import in.wynk.payment.dto.response.addtobill.AddToBillChargingResponse;
+import in.wynk.payment.dto.response.addtobill.UserAddToBillDetails;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.service.*;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.vas.client.dto.atb.*;
+import in.wynk.vas.client.dto.atb.AddToBillEligibilityAndPricingRequest;
+import in.wynk.vas.client.service.ATBVasClientService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
-import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
 public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService implements IExternalPaymentEligibilityService, IMerchantPaymentChargingService<AddToBillChargingResponse, DefaultChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
-    @Value("${payment.merchant.addtobill.api.base.url}")
-    private String addToBillBaseUrl;
-    @Value("${payment.merchant.addtobill.auth.token}")
-    private String addToBillAuthToken;
-    private final RestTemplate restTemplate;
+
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
     private final IRecurringDetailsDao paymentDetailsDao;
+    private final ATBVasClientService atbVasClientService;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, PaymentCachingService cachingService1, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService, IRecurringDetailsDao paymentDetailsDao) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentCachingService cachingService1, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService, IRecurringDetailsDao paymentDetailsDao, ATBVasClientService atbVasClientService) {
         super(cachingService, errorCodesCacheServiceImpl);
-        this.restTemplate = restTemplate;
         this.cachingService = cachingService1;
         this.eventPublisher = eventPublisher;
         this.merchantTransactionService = merchantTransactionService;
         this.paymentDetailsDao = paymentDetailsDao;
+        this.atbVasClientService = atbVasClientService;
     }
 
     @Override
@@ -75,7 +71,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             log.error(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at addToBill end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.ATB02);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-            log.error(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.error(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at addToBill end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.ATB03);
         }
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).data(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
@@ -100,14 +96,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userAddToBillDetails.getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
                     .orderMeta(null).build();
-            final HttpHeaders headers = generateHeaders();
-            HttpEntity<AddToBillCheckOutRequest> requestEntity = new HttpEntity<>(checkOutRequest, headers);
-            final AddToBillCheckOutResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_CHECKOUT_API, HttpMethod.POST, requestEntity, AddToBillCheckOutResponse.class).getBody();
+            final AddToBillCheckOutResponse response = atbVasClientService.checkout(checkOutRequest);
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                 log.info("ATB charging orderId: {}", response.getBody().getOrderId());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
-                final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(requestEntity).response(response).build();
+                final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(checkOutRequest).response(response).build();
                 eventPublisher.publishEvent(merchantTransactionEvent);
             }
 
@@ -126,7 +120,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         return checkEligibility(root.getPlanId(), root.getSi());
     }
 
-    @Cacheable(cacheName = "AddToBillEligibilityCheck", cacheKey = "'addToBill-eligibility:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
     private Boolean checkEligibility(String planId, String si) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
@@ -134,11 +127,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (Objects.isNull(plan.getActivationServiceIds()) || StringUtils.isBlank(offer.getServiceGroupId())) {
                 log.error("plan serviceIds or offer serviceGroup is not present");
             } else {
-                final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(si).channel("DTH").pageIdentifier("DETAILS").build();
-                final HttpHeaders headers = generateHeaders();
-                HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
-                final AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
-                if (response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
+                final AddToBillEligibilityAndPricingResponse response = getEligibility(planId, si);
+                if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
                         if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
                             return false;
@@ -151,6 +141,26 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         } catch (Exception e) {
             log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return false;
+        }
+    }
+
+
+    @Cacheable(cacheName = "AddToBillEligibilityCheck", cacheKey = "'addToBill-eligibility:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
+    private AddToBillEligibilityAndPricingResponse getEligibility(String planId, String si) {
+        try {
+            final PlanDTO plan = cachingService.getPlan(planId);
+            final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
+            if (Objects.isNull(plan.getActivationServiceIds()) || StringUtils.isBlank(offer.getServiceGroupId())) {
+                log.error("plan serviceIds or offer serviceGroup is not present");
+                return null;
+            } else {
+                final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).build();
+                final AddToBillEligibilityAndPricingResponse response = atbVasClientService.getEligibility(request);
+                return response;
+            }
+        } catch (Exception e) {
+            log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
+            return null;
         }
     }
 
@@ -167,27 +177,16 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         return WynkResponseEntity.<UserAddToBillDetails>builder().error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).data(null).success(false).build();
     }
 
-    private HttpHeaders generateHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, addToBillAuthToken);
-        headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
-        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-        return headers;
-    }
-
     @Cacheable(cacheName = "AddToBilLinkedSisAndPricing", cacheKey = "'addToBill-linkedSisAndPricing:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
     private UserAddToBillDetails getLinkedSisAndPricingDetails(String planId, String si) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
-            final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-            final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).build();
-            final HttpHeaders headers = generateHeaders();
-            HttpEntity<AddToBillEligibilityAndPricingRequest> requestEntity = new HttpEntity<>(request, headers);
-            AddToBillEligibilityAndPricingResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_ELIGIBILITY_API, HttpMethod.POST, requestEntity, AddToBillEligibilityAndPricingResponse.class).getBody();
-            for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
-                    return UserAddToBillDetails.builder().linkedSis(eligibleServices.getLinkedSis()).amount(eligibleServices.getPricingDetails().getDiscountedPrice()).build();
+            AddToBillEligibilityAndPricingResponse response = this.getEligibility(planId, si);
+            if (Objects.nonNull(response)) {
+                for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
+                    if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                        return UserAddToBillDetails.builder().linkedSis(eligibleServices.getLinkedSis()).amount(eligibleServices.getPricingDetails().getDiscountedPrice()).build();
+                    }
                 }
             }
             return null;
@@ -196,6 +195,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             return null;
         }
     }
+
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -276,10 +276,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();
                 log.info("purchase details provision Si {} , linkedSi {} ", userDetails.getSi(), userDetails.getBillingSiDetail().getBillingSi());
                 for (String serviceId : plan.getActivationServiceIds()) {
-                    final HttpHeaders headers = generateHeaders();
                     final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(serviceId).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
-                    final HttpEntity<AddToBillUnsubscribeRequest> unSubscribeRequestEntity = new HttpEntity<>(unsubscribeRequest, headers);
-                    final AddToBillUnsubscribeResponse response = restTemplate.exchange(addToBillBaseUrl + ADDTOBILL_UNSUBSCRIBE_API, HttpMethod.POST, unSubscribeRequestEntity, AddToBillUnsubscribeResponse.class).getBody();
+                    final AddToBillUnsubscribeResponse response = atbVasClientService.unsubscribe(unsubscribeRequest);
                     if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         log.info("unsubscribe order details si: {},service :{}, markedForCanceled {} :", response.getSi(), response.getProductCode(), response.isIsMarkedForCancel());
@@ -301,13 +299,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         try {
             final HttpHeaders headers = new HttpHeaders();
             headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
-            final String url = addToBillBaseUrl + ADDTOBILL_ORDER_STATUS_API;
-            final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url)
-                    .queryParam(CHECK_ELIGIBILITY, false)
-                    .queryParam(SI, si)
-                    .queryParam(CHANNEL, DTH);
-            HttpEntity<?> entity = new HttpEntity<>(null, headers);
-            AddToBillStatusResponse response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, AddToBillStatusResponse.class).getBody();
+            AddToBillStatusResponse response = atbVasClientService.ordersStatus(si);
             return response;
         } catch (Exception e) {
             log.error("Failed to get orderList from AddToBill: {} ", e.getMessage(), e);

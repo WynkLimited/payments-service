@@ -292,12 +292,6 @@ payment:
         secret:
         token:
         clientId:
-    addtobill:
-      api:
-        base:
-          url: https://kongqa.airtel.com
-      auth:
-        token: Basic b3JkZXJoaXZlLW1pdHJhOmNvbnN1bWVyQG1pdHJh
 
 
 subscription:

@@ -2,10 +2,8 @@ package in.wynk.payment.dto.response.addtobill;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.response.AbstractPaymentDetails;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import in.wynk.vas.client.dto.atb.LinkedSis;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;

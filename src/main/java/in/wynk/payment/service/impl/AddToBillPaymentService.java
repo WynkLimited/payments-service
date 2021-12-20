@@ -30,7 +30,6 @@ import in.wynk.vas.client.dto.atb.AddToBillEligibilityAndPricingRequest;
 import in.wynk.vas.client.service.ATBVasClientService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.MDC;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,6 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
-import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
@@ -229,13 +227,11 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-        log.info("inside AddToBill renewal");
         boolean status = false;
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
         final String si = purchaseDetails.getUserDetails().getSi();
-        log.info("inside AddToBill renewal si: {}", si);
         final PlanDTO plan = cachingService.getPlan(paymentRenewalChargingRequest.getPlanId());
         try {
             final AddToBillStatusResponse response = getOrderList(si);
@@ -274,7 +270,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
             if (purchaseDetails.isPresent()) {
                 final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();
-                log.info("purchase details provision Si {} , linkedSi {} ", userDetails.getSi(), userDetails.getBillingSiDetail().getBillingSi());
                 for (String serviceId : plan.getActivationServiceIds()) {
                     final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(serviceId).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
                     final AddToBillUnsubscribeResponse response = atbVasClientService.unsubscribe(unsubscribeRequest);
@@ -297,8 +292,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     private AddToBillStatusResponse getOrderList(String si) {
         try {
-            final HttpHeaders headers = new HttpHeaders();
-            headers.add(UNIQUE_TRACKING, MDC.get(REQUEST_ID));
             AddToBillStatusResponse response = atbVasClientService.ordersStatus(si);
             return response;
         } catch (Exception e) {

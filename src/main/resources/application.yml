@@ -15,7 +15,7 @@ spring:
     default-property-inclusion: non_null
   scheduler:
     jobStore:
-      keyPrefix: 'payment:'
+      keyPrefix: 'payment:${env}:'
 
 debug: false
 

@@ -2,6 +2,7 @@ package in.wynk.payment.dto.addtobill;
 
 public interface AddToBillConstants {
     String DTH = "DTH";
+    String ATB = "atb";
     String POSTPAID = "POSTPAID";
     String MOBILITY = "Mobility";
     String TELEMEDIA = "Telemedia";

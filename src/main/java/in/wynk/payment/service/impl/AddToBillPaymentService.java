@@ -29,6 +29,7 @@ import in.wynk.vas.client.dto.atb.*;
 import in.wynk.vas.client.dto.atb.AddToBillEligibilityAndPricingRequest;
 import in.wynk.vas.client.service.ATBVasClientService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
@@ -83,10 +84,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final String modeId = userBillingDetail.getBillingSiDetail().getLob().equalsIgnoreCase(POSTPAID) ? MOBILITY : TELEMEDIA;
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(transaction.getPlanId().toString(), userBillingDetail.getSi());
-        final String serviceId = plan.getActivationServiceIds().stream().findFirst().get();
         try {
             List<ServiceOrderItem> serviceOrderItems = new LinkedList<>();
-            final ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(serviceId).paymentDetails(PaymentDetails.builder().paymentAmount(userAddToBillDetails.getAmount()).build()).serviceOrderMeta(null).build();
+            final ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getBillingSiDetail().getBillingSi()).serviceId(plan.getSku().get(ATB)).paymentDetails(PaymentDetails.builder().paymentAmount(userAddToBillDetails.getAmount()).build()).serviceOrderMeta(null).build();
             serviceOrderItems.add(serviceOrderItem);
             final AddToBillCheckOutRequest checkOutRequest = AddToBillCheckOutRequest.builder()
                     .channel(DTH)
@@ -122,13 +122,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-            if (Objects.isNull(plan.getActivationServiceIds()) || StringUtils.isBlank(offer.getServiceGroupId())) {
+            if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
                 log.error("plan serviceIds or offer serviceGroup is not present");
             } else {
-                final AddToBillEligibilityAndPricingResponse response = getEligibility(planId, si);
+                final AddToBillEligibilityAndPricingResponse response = this.getEligibility(planId, si);
                 if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                        if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                        if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
                             return false;
                         }
                     }
@@ -148,11 +148,11 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-            if (Objects.isNull(plan.getActivationServiceIds()) || StringUtils.isBlank(offer.getServiceGroupId())) {
+            if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
                 log.error("plan serviceIds or offer serviceGroup is not present");
                 return null;
             } else {
-                final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(plan.getActivationServiceIds()).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).build();
+                final AddToBillEligibilityAndPricingRequest request = AddToBillEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).build();
                 final AddToBillEligibilityAndPricingResponse response = atbVasClientService.getEligibility(request);
                 return response;
             }
@@ -175,14 +175,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         return WynkResponseEntity.<UserAddToBillDetails>builder().error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).data(null).success(false).build();
     }
 
-    @Cacheable(cacheName = "AddToBilLinkedSisAndPricing", cacheKey = "'addToBill-linkedSisAndPricing:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
     private UserAddToBillDetails getLinkedSisAndPricingDetails(String planId, String si) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
-            AddToBillEligibilityAndPricingResponse response = this.getEligibility(planId, si);
+            final AddToBillEligibilityAndPricingResponse response = this.getEligibility(planId, si);
             if (Objects.nonNull(response)) {
                 for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                    if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getActivationServiceIds().contains(eligibleServices.getServiceId())) {
+                    if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
                         return UserAddToBillDetails.builder().linkedSis(eligibleServices.getLinkedSis()).amount(eligibleServices.getPricingDetails().getDiscountedPrice()).build();
                     }
                 }
@@ -196,7 +195,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
 
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final String si = TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null);
@@ -210,7 +208,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final AddToBillStatusResponse response = getOrderList(si);
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
-                    if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
+                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         transaction.setStatus(finalTransactionStatus.getValue());
                         log.info("Order subscription details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
@@ -237,7 +235,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final AddToBillStatusResponse response = getOrderList(si);
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
-                    if (plan.getActivationServiceIds().contains(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
+                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
                         status = true;
                         log.info("Order subscription details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
                         break;
@@ -270,15 +268,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
             if (purchaseDetails.isPresent()) {
                 final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();
-                for (String serviceId : plan.getActivationServiceIds()) {
-                    final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(serviceId).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
+                    final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(plan.getSku().get(ATB)).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
                     final AddToBillUnsubscribeResponse response = atbVasClientService.unsubscribe(unsubscribeRequest);
-                    if (serviceId.equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
+                    if (plan.getSku().get(ATB).equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         log.info("unsubscribe order details si: {},service :{}, markedForCanceled {} :", response.getSi(), response.getProductCode(), response.isIsMarkedForCancel());
-                        break;
                     }
-                }
             } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
                 log.error("Unsubscribe failed because Purchase Details not found");
@@ -292,8 +287,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     private AddToBillStatusResponse getOrderList(String si) {
         try {
-            AddToBillStatusResponse response = atbVasClientService.ordersStatus(si);
-            return response;
+            return atbVasClientService.ordersStatus(si);
         } catch (Exception e) {
             log.error("Failed to get orderList from AddToBill: {} ", e.getMessage(), e);
             return null;

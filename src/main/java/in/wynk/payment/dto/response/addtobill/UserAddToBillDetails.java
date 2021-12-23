@@ -12,8 +12,8 @@ import java.util.List;
 @SuperBuilder
 @AnalysedEntity
 public class UserAddToBillDetails extends AbstractPaymentDetails {
-    private List<LinkedSis> linkedSis;
-    private double amount;
+    private final List<LinkedSis> linkedSis;
+    private final double amount;
 }
 
 

@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
+
 import static in.wynk.common.constant.BaseConstants.ADDTOBILL;
 
 @SuperBuilder
@@ -24,7 +26,7 @@ public class UserBillingDetail extends UserDetails {
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class BillingSiDetail {
+    public static class BillingSiDetail implements Serializable {
         private String billingSi;
         private String lob;
     }

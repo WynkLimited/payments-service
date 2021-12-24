@@ -35,7 +35,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
@@ -49,15 +48,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
-    private final IMerchantTransactionService merchantTransactionService;
     private final IRecurringDetailsDao paymentDetailsDao;
     private final ATBVasClientService atbVasClientService;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentCachingService cachingService1, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService, IRecurringDetailsDao paymentDetailsDao, ATBVasClientService atbVasClientService) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentCachingService cachingService1, ApplicationEventPublisher eventPublisher, IRecurringDetailsDao paymentDetailsDao, ATBVasClientService atbVasClientService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.cachingService = cachingService1;
         this.eventPublisher = eventPublisher;
-        this.merchantTransactionService = merchantTransactionService;
         this.paymentDetailsDao = paymentDetailsDao;
         this.atbVasClientService = atbVasClientService;
     }
@@ -199,11 +196,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final String si = TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null);
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
-        final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
-        if (Objects.isNull(merchantTransaction)) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException("No merchant transaction found for Subscription");
-        }
         try {
             final AddToBillStatusResponse response = getOrderList(si);
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {

@@ -207,8 +207,8 @@ payment:
         id: aU2Uoi
         secret: 6vbnfVtw
       rajtv:
-        id:
-        secret:
+        id: fJOBvL
+        secret: Z4YXGVoZ9EKk5H48RGL09AsdRTMIiHCZ
       key: aU2Uoi
       salt: 6vbnfVtw
       api:
@@ -515,4 +515,4 @@ lock:
 ######## lib-auth props #######
 security:
   exempt:
-    paths: /actuator/**,/wynk/v1/**
+    paths: /actuator/**,/wynk/v1/**,/wynk/v2/**

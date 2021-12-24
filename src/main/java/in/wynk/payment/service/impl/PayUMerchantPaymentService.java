@@ -666,16 +666,15 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public BaseResponse<?> doVerify(VerificationRequest verificationRequest) {
-        VerificationType verificationType = verificationRequest.getVerificationType();
-        switch (verificationType) {
+    public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest verificationRequest) {
+        switch (verificationRequest.getVerificationType()) {
             case VPA:
                 MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
                 PayUVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
                 });
                 if (verificationResponse.getIsVPAValid() == 1)
                     verificationResponse.setValid(true);
-                return BaseResponse.<PayUVpaVerificationResponse>builder().body(verificationResponse).status(HttpStatus.OK).build();
+                return WynkResponseEntity.<IVerificationResponse>builder().data(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{verificationRequest.getVerifyValue(), null, null, "1"});
                 PayUCardInfo cardInfo;
@@ -690,9 +689,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     cardInfo.setCardType(UNKNOWN.toUpperCase());
                     cardInfo.setCardCategory(UNKNOWN.toUpperCase());
                 }
-                return BaseResponse.<PayUCardInfo>builder().body(cardInfo).status(cardInfo.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
+                return WynkResponseEntity.<IVerificationResponse>builder().data(cardInfo).status(cardInfo.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
+            default:
+                return WynkResponseEntity.<IVerificationResponse>builder().build();
         }
-        return BaseResponse.status(false);
     }
 
     @Override

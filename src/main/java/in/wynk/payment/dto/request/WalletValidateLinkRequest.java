@@ -30,4 +30,6 @@ public abstract class WalletValidateLinkRequest extends WalletRequest {
 
     public abstract String getMsisdn();
 
+    public abstract String getService();
+
 }

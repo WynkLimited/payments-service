@@ -221,12 +221,6 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
                 .optForAutoRenew(purchaseDetails.map(IPurchaseDetails::getPaymentDetails).map(IPaymentDetails::isAutoRenew).orElse(null));
     }
 
-    public BaseResponse<?> doVerify(VerificationRequest request) {
-        final PaymentCode paymentCode = request.getPaymentCode();
-        final IMerchantVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantVerificationService.class);
-        return verificationService.doVerify(request);
-    }
-
     @ClientAware(clientId = "#clientId")
     public BaseResponse<?> doVerifyIap(String clientId, IapVerificationRequest request) {
         final PaymentCode paymentCode = request.getPaymentCode();

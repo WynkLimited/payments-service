@@ -5,10 +5,7 @@ import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.scheduler.PaymentDumpService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.ExecutorService;
 
@@ -27,6 +24,14 @@ public class PaymentDumpController {
     public EmptyResponse transactionWeeklyDump(@PathVariable int days) {
         String requestId = MDC.get(REQUEST_ID);
         executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, days));
+        return EmptyResponse.response();
+    }
+
+    @GetMapping("/dump")
+    @AnalyseTransaction(name = "transactionDailyDump")
+    public EmptyResponse transactionDailyDump(@RequestParam long startTime) {
+        String requestId = MDC.get(REQUEST_ID);
+        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, startTime));
         return EmptyResponse.response();
     }
 

@@ -6,6 +6,8 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.common.validations.MongoBaseEntityConstraint;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,8 +18,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
-import static in.wynk.common.constant.CacheBeanNameConstants.INVALID_VALUE;
-import static in.wynk.common.constant.CacheBeanNameConstants.MSISDN_REGEX;
+import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
 @Getter
 @SuperBuilder
@@ -33,12 +34,17 @@ public class S2SWalletBalanceRequest extends WalletBalanceRequest {
 
     @NotBlank
     @Analysed
+    @MongoBaseEntityConstraint(beanName = WYNK_SERVICE)
+    private String service;
+
+    @NotBlank
+    @Analysed
     private String deviceId;
 
     @Override
     @JsonIgnore
     public String getUid() {
-        return MsisdnUtils.getUidFromMsisdn(msisdn);
+        return MsisdnUtils.getUidFromMsisdn(this.msisdn, WynkServiceUtils.fromServiceId(this.service).getSalt());
     }
 
     @Override
@@ -47,5 +53,5 @@ public class S2SWalletBalanceRequest extends WalletBalanceRequest {
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
         return clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()).getAlias();
     }
-}
 
+}

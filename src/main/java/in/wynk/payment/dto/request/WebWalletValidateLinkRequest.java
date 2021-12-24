@@ -31,6 +31,13 @@ public class WebWalletValidateLinkRequest extends WalletValidateLinkRequest {
 
     @Override
     @JsonIgnore
+    public String getService() {
+        final SessionDTO session = SessionContextHolder.getBody();
+        return session.get(SERVICE);
+    }
+
+    @Override
+    @JsonIgnore
     public String getUid() {
         final SessionDTO session = SessionContextHolder.getBody();
         return session.get(UID);

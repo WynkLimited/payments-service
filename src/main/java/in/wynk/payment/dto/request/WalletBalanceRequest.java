@@ -33,4 +33,6 @@ public abstract class WalletBalanceRequest extends WalletRequest {
 
     public abstract String getMsisdn();
 
+    public abstract String getService();
+
 }

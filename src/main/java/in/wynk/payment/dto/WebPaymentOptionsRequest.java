@@ -38,7 +38,7 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     @JsonIgnore
     public IUserDetails getUserDetails() {
         final SessionDTO session = SessionContextHolder.getBody();
-        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
+        return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).si(session.get(SI)).build();
     }
 
 }

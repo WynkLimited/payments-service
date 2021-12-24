@@ -70,7 +70,6 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         if (!StringUtils.isEmpty(planId) && paymentCachingService.containsPlan(planId)) {
             return getPaymentOptionsForPlan(planId);
         }
-
         if (!StringUtils.isEmpty(itemId) && paymentCachingService.containsItem(itemId)) {
             return getPaymentOptionsForItem(planId);
         }
@@ -182,6 +181,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         final String uid = request.getUid();
         final String deviceId = request.getDeviceId();
         final String clientAlias = request.getClient();
+        final String si = request.getSi();
         final ExecutorService executorService = Executors.newFixedThreadPool(N);
         final Map<SavedDetailsKey, Future<WynkResponseEntity<AbstractPaymentDetails>>> map = new HashMap<>();
         final Map<SavedDetailsKey, UserPreferredPayment> userPreferredPaymentMap = userPaymentsManager.get(uid).stream().collect(Collectors.toMap(UserPreferredPayment::getId, Function.identity()));
@@ -198,7 +198,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {
                         MDC.put(REQUEST_ID, requestId);
-                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(clientAlias).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
+                        return userPreferredPaymentService.getUserPreferredPayments(PreferredPaymentDetailsRequest.builder().clientAlias(clientAlias).si(si).productDetails(request.getProductDetails()).couponId(request.getCouponId()).preferredPayment(userPreferredPaymentMap.getOrDefault(keyBuilder.build(), UserPreferredPayment.builder().id(keyBuilder.build()).build())).build());
                     };
                     map.put(keyBuilder.build(), executorService.submit(task));
                 } catch (Exception e) {
@@ -266,6 +266,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .msisdn(request.getUserDetails().getMsisdn())
                 .buildNo(request.getAppDetails().getBuildNo())
                 .countryCode(request.getUserDetails().getCountryCode())
+                .si(request.getUserDetails().getSi())
                 .build());
         boolean trialEligible = false;
         final Optional<Integer> optionalTrialPlanId = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL);
@@ -281,7 +282,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
 
     private WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptionsForItem(IPaymentOptionsRequest request) {
         HttpStatus httpStatus = HttpStatus.OK;
-        WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
+        final WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
         final ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item)
                 .couponCode(request.getCouponId())
@@ -289,6 +290,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .appId(request.getAppDetails().getAppId())
                 .buildNo(request.getAppDetails().getBuildNo())
                 .countryCode(request.getUserDetails().getCountryCode())
+                .si(request.getUserDetails().getSi())
                 .build());
         return responseEntityBuilder.status(httpStatus).data(PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest)).build()).build();
     }

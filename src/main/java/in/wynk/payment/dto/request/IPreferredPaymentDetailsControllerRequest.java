@@ -8,4 +8,6 @@ public interface IPreferredPaymentDetailsControllerRequest {
 
     String getDeviceId();
 
+    String getSi();
+
 }

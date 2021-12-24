@@ -95,6 +95,11 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     }
 
     @Override
+    public String  getSi() {
+        return this.purchaseDetails.getUserDetails().getSi();
+    }
+
+    @Override
     public IProductDetails getProductDetails() {
         return this.purchaseDetails.getProductDetails();
     }

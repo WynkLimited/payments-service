@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
+import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.service.impl.PaymentMethodCachingService;
 import lombok.AllArgsConstructor;
@@ -34,6 +35,10 @@ public class S2SPurchaseDetails implements IChargingDetails {
 
     @Valid
     @Analysed
+    private UserBillingDetail.BillingSiDetail billingSiDetail;
+
+    @Valid
+    @Analysed
     private PaymentDetails paymentDetails;
 
     @Valid
@@ -42,6 +47,12 @@ public class S2SPurchaseDetails implements IChargingDetails {
 
     private PageUrlDetails pageUrlDetails;
 
+    public UserDetails getUserDetails() {
+        if(paymentDetails.getPaymentId().equalsIgnoreCase(ADDTOBILL)){
+            return UserBillingDetail.builder().billingSiDetail(billingSiDetail).msisdn(MsisdnUtils.normalizePhoneNumber(userDetails.getMsisdn())).si(userDetails.getSi()).build();
+        }
+            return userDetails;
+        }
     public IPageUrlDetails getPageUrlDetails() {
         if (Objects.nonNull(pageUrlDetails)) return pageUrlDetails;
         final String successPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.success.page}"), appDetails);

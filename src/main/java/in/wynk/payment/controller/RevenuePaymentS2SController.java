@@ -87,6 +87,7 @@ public class RevenuePaymentS2SController {
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIap(@Valid @RequestBody IapVerificationRequest request) {
+        request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSid());
         return getResponseEntity(request);
     }
@@ -96,6 +97,7 @@ public class RevenuePaymentS2SController {
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIap2(@Valid @RequestBody IapVerificationRequest request) {
+        request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSid());
         return getResponseEntity(dummySessionGenerator.initSession(request));
     }

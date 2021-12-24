@@ -429,7 +429,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     if (optionalReceiptDetails.isPresent()) {
                         ReceiptDetails details = optionalReceiptDetails.get();
                         return UserPlanMapping.<LatestReceiptInfo>builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
-                                .uid(details.getUid()).message(latestReceiptInfo).build();
+                                .uid(details.getUid()).receiptDetails(details).message(latestReceiptInfo).build();
                     }
                 }
             }
@@ -443,7 +443,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
             final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
             final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-            return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(receiptDetailsDao.existsById(iTunesId)).build();
+            Optional<ReceiptDetails> lastProcessedReceiptDetails = receiptDetailsDao.findById(iTunesId);
+            boolean isEligible = lastProcessedReceiptDetails.isPresent() && ((ItunesReceiptDetails) lastProcessedReceiptDetails.get()).getTransactionId() != Long.parseLong(latestReceiptInfo.getTransactionId());
+            return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(isEligible).build();
         }
         return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(false).build();
     }

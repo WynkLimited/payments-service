@@ -429,7 +429,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     if (optionalReceiptDetails.isPresent()) {
                         ReceiptDetails details = optionalReceiptDetails.get();
                         return UserPlanMapping.<LatestReceiptInfo>builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
-                                .uid(details.getUid()).receiptDetails(details).message(latestReceiptInfo).build();
+                                .uid(details.getUid()).message(latestReceiptInfo).build();
                     }
                 }
             }

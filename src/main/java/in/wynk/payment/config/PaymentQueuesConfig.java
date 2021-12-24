@@ -12,6 +12,7 @@ import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -101,14 +102,14 @@ public class PaymentQueuesConfig {
                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                              ObjectMapper objectMapper,
                                                                                              PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor,
-                                                                                             @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager) {
+                                                                                             @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager, ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
         return new PaymentRecurringUnSchedulingPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 paymentRecurringUnSchedulingSQSMessageExtractor,
                 threadPoolExecutor(),
                 scheduledThreadPoolExecutor(),
-                recurringPaymentManager);
+                recurringPaymentManager, transactionManagerService, eventPublisher);
     }
 
     @Bean

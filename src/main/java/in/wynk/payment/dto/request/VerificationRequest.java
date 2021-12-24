@@ -7,12 +7,9 @@ import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.*;
-
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
 import static in.wynk.common.constant.BaseConstants.CLIENT;
-
 @Getter
 @Builder
 @ToString
@@ -37,3 +34,4 @@ public class VerificationRequest {
     }
 
 }
+

@@ -6,7 +6,7 @@ import in.wynk.payment.dto.response.PaymentOptionsDTO;
 
 public interface IPaymentOptionService {
 
-    WynkResponseEntity<PaymentOptionsDTO> getPaymentOptions(String planId, String itemId);
+    WynkResponseEntity<PaymentOptionsDTO>  getPaymentOptions(String planId, String itemId);
     WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptions(AbstractPaymentOptionsRequest<?> request);
 
 }

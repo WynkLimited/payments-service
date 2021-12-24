@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.context.SecurityContextHolder;
-
 import javax.validation.constraints.NotBlank;
 
 @Getter
@@ -29,3 +28,4 @@ public class S2SWalletLinkRequest extends WalletLinkRequest {
     }
 
 }
+

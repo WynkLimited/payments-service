@@ -46,6 +46,8 @@ logging:
   appName: payment
   profile: ${env}
   level:
+    org.quartz: DEBUG
+    in.wynk.scheduler.core: DEBUG
     org.apache.catalina: off
   path: /data
   path.analytics: /logs

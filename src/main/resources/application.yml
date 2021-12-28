@@ -47,6 +47,8 @@ logging:
   profile: ${env}
   level:
     org.apache.catalina: off
+    org.quartz: DEBUG
+    in.wynk.scheduler.core: DEBUG
   path: /data
   path.analytics: /logs
 

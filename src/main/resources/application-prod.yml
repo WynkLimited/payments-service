@@ -159,7 +159,7 @@ payment:
           producer:
             delayInSecond: 0
           consumer:
-            delay: 180
+            delay: 10
             delayTimeUnit: SECONDS
       schedule:
         enabled: true

@@ -31,7 +31,7 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentReconciliationSQSMessageExtractor,
-                threadPoolExecutor(paymentReconciliationSQSMessageExtractor.getBatchSize()),
+                threadPoolExecutor(4),
                 scheduledThreadPoolExecutor());
     }
 

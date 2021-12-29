@@ -128,12 +128,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
-              waitTimeInSeconds: 20
+              batchSize: 10
+              waitTimeInSeconds: 5
           producer:
-            delayInSecond: 600
+            delayInSecond: 5
           consumer:
-            delay: 20
+            delay: 5
             delayTimeUnit: SECONDS
       renewal:
         enabled: true
@@ -154,12 +154,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 10
-              waitTimeInSeconds: 5
+              batchSize: 5
+              waitTimeInSeconds: 10
           producer:
             delayInSecond: 0
           consumer:
-            delay: 5
+            delay: 180
             delayTimeUnit: SECONDS
       schedule:
         enabled: true

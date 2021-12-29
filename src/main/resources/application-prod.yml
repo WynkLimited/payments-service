@@ -154,12 +154,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
+              batchSize: 10
+              waitTimeInSeconds: 5
           producer:
             delayInSecond: 0
           consumer:
-            delay: 10
+            delay: 5
             delayTimeUnit: SECONDS
       schedule:
         enabled: true

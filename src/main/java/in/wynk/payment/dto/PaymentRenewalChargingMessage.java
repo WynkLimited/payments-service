@@ -3,6 +3,7 @@ package in.wynk.payment.dto;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.queue.dto.FIFOQueueMessageMarker;
 import in.wynk.queue.dto.QueueType;
 import in.wynk.queue.dto.WynkQueue;
@@ -30,21 +31,24 @@ public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
     private String msisdn;
     @Analysed
     private String clientAlias;
+    @Analysed
+    private String paymentCode;
 
     @Analysed
     private Integer planId;
 
-    @Analysed
-    private PaymentCode paymentCode;
-
     @Override
     public String getMessageGroupId() {
-        return paymentCode.getCode();
+        return this.getPaymentCode().getCode();
     }
 
     @Override
     public String getMessageDeDuplicationId() {
         return id;
+    }
+
+    public PaymentCode getPaymentCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 
 }

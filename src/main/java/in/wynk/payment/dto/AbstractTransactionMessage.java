@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,8 @@ public abstract class AbstractTransactionMessage {
     private String msisdn;
     @Analysed
     private String itemId;
+    @Analysed
+    private String paymentCode;
     @Analysed(name = BaseConstants.TRANSACTION_ID)
     private String transactionId;
 
@@ -30,7 +33,8 @@ public abstract class AbstractTransactionMessage {
     @Analysed
     private PaymentEvent paymentEvent;
 
-    @Analysed
-    private PaymentCode paymentCode;
+    public PaymentCode getPaymentCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
+    }
 
 }

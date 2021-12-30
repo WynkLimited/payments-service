@@ -3,6 +3,7 @@ package in.wynk.payment.dto.request;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,7 +20,11 @@ public abstract class WalletRequest {
 
     @NotNull
     @Analysed
-    private PaymentCode paymentCode;
+    private String paymentCode;
+
+    public PaymentCode getPaymentCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
+    }
 
     public abstract String getDeviceId();
 

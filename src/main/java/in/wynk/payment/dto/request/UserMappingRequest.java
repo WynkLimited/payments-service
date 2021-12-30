@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.request;
 
 import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -17,6 +18,9 @@ import static in.wynk.common.constant.CacheBeanNameConstants.MSISDN_REGEX;
 public class UserMappingRequest {
 
     @NotNull
+    private String code;
+
+    @NotNull
     @Pattern(regexp = MSISDN_REGEX, message = INVALID_VALUE)
     private String msisdn;
 
@@ -25,7 +29,8 @@ public class UserMappingRequest {
 
     private String externalUserId;
 
-    @NotNull
-    private PaymentCode code;
+    public PaymentCode getCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.code);
+    }
 
 }

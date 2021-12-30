@@ -106,11 +106,11 @@ public class PayUTestData {
     }
 
     public static AbstractChargingRequest<?> buildOneTimeChargingRequest() {
-        return DefaultChargingRequest.builder().paymentCode(PaymentCodeCachingService.getFromPaymentCode(PAYU)).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build()).build();
+        return DefaultChargingRequest.builder().paymentCode(PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build()).build();
     }
 
     public static AbstractChargingRequest<?> buildRecurringChargingRequest() {
-        return DefaultChargingRequest.builder().paymentCode(PaymentCodeCachingService.getFromPaymentCode(PAYU)).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build()).build();
+        return DefaultChargingRequest.builder().paymentCode(PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build()).build();
     }
 
     public static CallbackRequest buildOneTimeCallbackRequest() {

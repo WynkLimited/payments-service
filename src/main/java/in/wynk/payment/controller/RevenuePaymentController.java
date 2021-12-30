@@ -6,7 +6,8 @@ import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
@@ -77,9 +78,9 @@ public class RevenuePaymentController {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
             final String transactionId = sessionDTO.get(TRANSACTION_ID);
             payload.put(TRANSACTION_ID_FULL, transactionId);
-            paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+            paymentCode = PaymentCodeCachingService.getFromCode(sessionDTO.get(PAYMENT_CODE));
         } else {
-            paymentCode = PaymentCode.getFromCode(pc);
+            paymentCode = PaymentCodeCachingService.getFromCode(pc);
         }
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
@@ -97,9 +98,9 @@ public class RevenuePaymentController {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
             final String transactionId = sessionDTO.get(TRANSACTION_ID);
             terraformed.put(TRANSACTION_ID_FULL, transactionId);
-            paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+            paymentCode = PaymentCodeCachingService.getFromCode(sessionDTO.get(PAYMENT_CODE));
         } else {
-            paymentCode = PaymentCode.getFromCode(pc);
+            paymentCode = PaymentCodeCachingService.getFromCode(pc);
         }
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(terraformed).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
@@ -116,9 +117,9 @@ public class RevenuePaymentController {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
             final String transactionId = sessionDTO.get(TRANSACTION_ID);
             payload.put(TRANSACTION_ID_FULL, transactionId);
-            paymentCode = PaymentCode.getFromCode(sessionDTO.get(PAYMENT_CODE));
+            paymentCode = PaymentCodeCachingService.getFromCode(sessionDTO.get(PAYMENT_CODE));
         } else {
-            paymentCode = PaymentCode.getFromCode(pc);
+            paymentCode = PaymentCodeCachingService.getFromCode(pc);
         }
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());

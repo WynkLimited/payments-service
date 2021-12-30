@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
 import lombok.Getter;
@@ -39,7 +39,7 @@ public abstract class IapVerificationRequest {
     @MongoBaseEntityConstraint(beanName = OS)
     private String os;
 
-//    @NotNull TODO Uncomment the following release
+    //    @NotNull TODO Uncomment the following release
     @Analysed
     @MongoBaseEntityConstraint(beanName = APP)
     private String appId;

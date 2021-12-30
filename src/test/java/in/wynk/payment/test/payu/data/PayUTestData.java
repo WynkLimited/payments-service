@@ -3,9 +3,10 @@ package in.wynk.payment.test.payu.data;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.WebPurchaseDetails;
@@ -13,11 +14,11 @@ import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.test.payu.constant.PayUDataConstant;
 import in.wynk.session.dto.Session;
-import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.PriceDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import in.wynk.subscription.common.response.AllPlansResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
@@ -28,57 +29,57 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 public class PayUTestData {
 
-
     public static Transaction initOneTimePaymentTransaction() {
         return Transaction.builder()
-                .id(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
+                .paymentChannel("PAYU")
                 .uid(PayUDataConstant.UID)
                 .msisdn(PayUDataConstant.MSISDN)
-                .planId(PayUDataConstant.ONE_TIME_PLAN_ID)
-                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
-                .paymentChannel(PaymentCode.PAYU.name())
-                .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
-                .status(TransactionStatus.INPROGRESS.name())
+                .initTime(Calendar.getInstance())
                 .type(PaymentEvent.PURCHASE.name())
+                .planId(PayUDataConstant.ONE_TIME_PLAN_ID)
+                .status(TransactionStatus.INPROGRESS.name())
+                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .id(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
                 .build();
     }
 
     public static Transaction initRecurringPaymentTransaction() {
         return Transaction.builder()
-                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
+                .paymentChannel("PAYU")
                 .uid(PayUDataConstant.UID)
                 .msisdn(PayUDataConstant.MSISDN)
-                .planId(PayUDataConstant.RECURRING_PLAN_ID)
-                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
-                .paymentChannel(PaymentCode.PAYU.name())
-                .initTime(Calendar.getInstance())
                 .consent(Calendar.getInstance())
-                .status(TransactionStatus.INPROGRESS.name())
+                .initTime(Calendar.getInstance())
                 .type(PaymentEvent.PURCHASE.name())
+                .planId(PayUDataConstant.RECURRING_PLAN_ID)
+                .status(TransactionStatus.INPROGRESS.name())
+                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
                 .build();
     }
 
     public static Transaction initRecurringSubscribeTransaction() {
         return Transaction.builder()
-                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .paymentChannel("PAYU")
+                .uid(PayUDataConstant.UID)
                 .consent(Calendar.getInstance())
-                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
-                .initTime(Calendar.getInstance())
                 .msisdn(PayUDataConstant.MSISDN)
-                .paymentChannel(PaymentCode.PAYU.name())
+                .initTime(Calendar.getInstance())
+                .type(PaymentEvent.SUBSCRIBE.name())
                 .planId(PayUDataConstant.RECURRING_PLAN_ID)
                 .status(TransactionStatus.INPROGRESS.name())
-                .type(PaymentEvent.SUBSCRIBE.name())
-                .uid(PayUDataConstant.UID)
+                .amount(PayUDataConstant.SELECTED_PLAN_AMOUNT)
+                .id(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
                 .build();
     }
 
-    public static Session<String,SessionDTO> initSession() {
+    public static Session<String, SessionDTO> initSession() {
         Map<String, Object> payload = new HashMap<>();
         payload.put(UID, PayUDataConstant.UID);
         payload.put(MSISDN, PayUDataConstant.MSISDN);
@@ -88,7 +89,7 @@ public class PayUTestData {
         payload.put(BUILD_NO, PayUDataConstant.BUILD_NO);
         payload.put(OS, PayUDataConstant.OS);
         payload.put(PACK_GROUP, "");
-        return Session.<String,SessionDTO>builder()
+        return Session.<String, SessionDTO>builder()
                 .id(UUID.randomUUID().toString())
                 .body(SessionDTO.builder().sessionPayload(payload).build())
                 .build();
@@ -105,37 +106,37 @@ public class PayUTestData {
     }
 
     public static AbstractChargingRequest<?> buildOneTimeChargingRequest() {
-       return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build()).build();
+        return DefaultChargingRequest.builder().paymentCode(PaymentCodeCachingService.getFromPaymentCode(PAYU)).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.ONE_TIME_PLAN_ID).build()).build()).build();
     }
 
     public static AbstractChargingRequest<?> buildRecurringChargingRequest() {
-        return DefaultChargingRequest.builder().paymentCode(PaymentCode.PAYU).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build()).build();
+        return DefaultChargingRequest.builder().paymentCode(PaymentCodeCachingService.getFromPaymentCode(PAYU)).purchaseDetails(WebPurchaseDetails.builder().paymentDetails(PaymentDetails.builder().build()).productDetails(PlanDetails.builder().planId(PayUDataConstant.RECURRING_PLAN_ID).build()).build()).build();
     }
 
     public static CallbackRequest buildOneTimeCallbackRequest() {
         Map<String, Object> map = new HashMap<>();
-        map.put("mihpayid","10616026107");
-        map.put("mode","CC");
-        map.put("status","success");
-        map.put("unmappedstatus","captured");
-        map.put("key","aU2Uoi");
-        map.put("txnid","5a9119b0bae411eab235c98f59a5b6411111");
-        map.put("amount",1.00);
-        map.put("cardCategory","domestic");
-        map.put("discount",0.00);
-        map.put("net_amount_debit",1);
-        map.put("addedon","2020-06-30+20,47,36");
-        map.put("productinfo","Monthly");
-        map.put("firstname","B8NClsZs5cnDYbsHS0");
-        map.put("lastname","");
+        map.put("mihpayid", "10616026107");
+        map.put("mode", "CC");
+        map.put("status", "success");
+        map.put("unmappedstatus", "captured");
+        map.put("key", "aU2Uoi");
+        map.put("txnid", "5a9119b0bae411eab235c98f59a5b6411111");
+        map.put("amount", 1.00);
+        map.put("cardCategory", "domestic");
+        map.put("discount", 0.00);
+        map.put("net_amount_debit", 1);
+        map.put("addedon", "2020-06-30+20,47,36");
+        map.put("productinfo", "Monthly");
+        map.put("firstname", "B8NClsZs5cnDYbsHS0");
+        map.put("lastname", "");
         map.put("address1", "");
-        map.put("address2","");
-        map.put("city","");
-        map.put("state","");
-        map.put("country","");
-        map.put("zipcode","");
-        map.put("email","B8NClsZs5cnDYbsHS0@wynk.in");
-        map.put("phone","8887528761");
+        map.put("address2", "");
+        map.put("city", "");
+        map.put("state", "");
+        map.put("country", "");
+        map.put("zipcode", "");
+        map.put("email", "B8NClsZs5cnDYbsHS0@wynk.in");
+        map.put("phone", "8887528761");
         map.put("udf1", "");
         map.put("udf2", "");
         map.put("udf3", "");
@@ -146,53 +147,53 @@ public class PayUTestData {
         map.put("udf8", "");
         map.put("udf9", "");
         map.put("udf10", "");
-        map.put("hash",PayUDataConstant.SUCCESS_ONE_TIME_CALLBACK_PAYU_HASH);
-        map.put("field1","5935302770396731405036");
-        map.put("field2","060812");
-        map.put("field3",1.00);
-        map.put("field4","10616026107");
-        map.put("field5",100);
-        map.put("field6","05");
-        map.put("field7","AUTHPOSITIVE");
-        map.put("field8","");
-        map.put("field9","Transaction+is+Successful");
-        map.put("payment_source","payu");
-        map.put("PG_TYPE","AxisCYBER");
-        map.put("bank_ref_num","5935302770396731405036");
-        map.put("bankcode","CC");
-        map.put("error","E000");
-        map.put("error_Message","No+Error");
-        map.put("cardToken","2aec9d61ceb65918965823");
-        map.put("name_on_card","SICard");
-        map.put("cardnum","489377XXXXXX2986");
-        map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
-       return CallbackRequestWrapper.builder().payload(map).build();
+        map.put("hash", PayUDataConstant.SUCCESS_ONE_TIME_CALLBACK_PAYU_HASH);
+        map.put("field1", "5935302770396731405036");
+        map.put("field2", "060812");
+        map.put("field3", 1.00);
+        map.put("field4", "10616026107");
+        map.put("field5", 100);
+        map.put("field6", "05");
+        map.put("field7", "AUTHPOSITIVE");
+        map.put("field8", "");
+        map.put("field9", "Transaction+is+Successful");
+        map.put("payment_source", "payu");
+        map.put("PG_TYPE", "AxisCYBER");
+        map.put("bank_ref_num", "5935302770396731405036");
+        map.put("bankcode", "CC");
+        map.put("error", "E000");
+        map.put("error_Message", "No+Error");
+        map.put("cardToken", "2aec9d61ceb65918965823");
+        map.put("name_on_card", "SICard");
+        map.put("cardnum", "489377XXXXXX2986");
+        map.put("cardhash", "This+field+is+no+longer+supported+in+postback+params");
+        return CallbackRequestWrapper.builder().payload(map).build();
     }
 
     public static CallbackRequest buildRecurringCallbackRequest() {
         Map<String, Object> map = new HashMap<>();
-        map.put("mihpayid","10616026107");
-        map.put("mode","CC");
-        map.put("status","success");
-        map.put("unmappedstatus","captured");
-        map.put("key","aU2Uoi");
-        map.put("txnid","5a9119b0bae411eab235c98f59a5b6411111");
-        map.put("amount",1.00);
-        map.put("cardCategory","domestic");
-        map.put("discount",0.00);
-        map.put("net_amount_debit",1);
-        map.put("addedon","2020-06-30+20,47,36");
-        map.put("productinfo","Monthly");
-        map.put("firstname","B8NClsZs5cnDYbsHS0");
-        map.put("lastname","");
+        map.put("mihpayid", "10616026107");
+        map.put("mode", "CC");
+        map.put("status", "success");
+        map.put("unmappedstatus", "captured");
+        map.put("key", "aU2Uoi");
+        map.put("txnid", "5a9119b0bae411eab235c98f59a5b6411111");
+        map.put("amount", 1.00);
+        map.put("cardCategory", "domestic");
+        map.put("discount", 0.00);
+        map.put("net_amount_debit", 1);
+        map.put("addedon", "2020-06-30+20,47,36");
+        map.put("productinfo", "Monthly");
+        map.put("firstname", "B8NClsZs5cnDYbsHS0");
+        map.put("lastname", "");
         map.put("address1", "");
-        map.put("address2","");
-        map.put("city","");
-        map.put("state","");
-        map.put("country","");
-        map.put("zipcode","");
-        map.put("email","B8NClsZs5cnDYbsHS0@wynk.in");
-        map.put("phone","8887528761");
+        map.put("address2", "");
+        map.put("city", "");
+        map.put("state", "");
+        map.put("country", "");
+        map.put("zipcode", "");
+        map.put("email", "B8NClsZs5cnDYbsHS0@wynk.in");
+        map.put("phone", "8887528761");
         map.put("udf1", "si");
         map.put("udf2", "");
         map.put("udf3", "");
@@ -203,26 +204,26 @@ public class PayUTestData {
         map.put("udf8", "");
         map.put("udf9", "");
         map.put("udf10", "");
-        map.put("hash",PayUDataConstant.SUCCESS_RECURRING_CALLBACK_PAYU_HASH);
-        map.put("field1","5935302770396731405036");
-        map.put("field2","060812");
-        map.put("field3",1.00);
-        map.put("field4","10616026107");
-        map.put("field5",100);
-        map.put("field6","05");
-        map.put("field7","AUTHPOSITIVE");
-        map.put("field8","");
-        map.put("field9","Transaction+is+Successful");
-        map.put("payment_source","payu");
-        map.put("PG_TYPE","AxisCYBER");
-        map.put("bank_ref_num","5935302770396731405036");
-        map.put("bankcode","CC");
-        map.put("error","E000");
-        map.put("error_Message","No+Error");
-        map.put("cardToken","2aec9d61ceb65918965823");
-        map.put("name_on_card","SICard");
-        map.put("cardnum","489377XXXXXX2986");
-        map.put("cardhash","This+field+is+no+longer+supported+in+postback+params");
+        map.put("hash", PayUDataConstant.SUCCESS_RECURRING_CALLBACK_PAYU_HASH);
+        map.put("field1", "5935302770396731405036");
+        map.put("field2", "060812");
+        map.put("field3", 1.00);
+        map.put("field4", "10616026107");
+        map.put("field5", 100);
+        map.put("field6", "05");
+        map.put("field7", "AUTHPOSITIVE");
+        map.put("field8", "");
+        map.put("field9", "Transaction+is+Successful");
+        map.put("payment_source", "payu");
+        map.put("PG_TYPE", "AxisCYBER");
+        map.put("bank_ref_num", "5935302770396731405036");
+        map.put("bankcode", "CC");
+        map.put("error", "E000");
+        map.put("error_Message", "No+Error");
+        map.put("cardToken", "2aec9d61ceb65918965823");
+        map.put("name_on_card", "SICard");
+        map.put("cardnum", "489377XXXXXX2986");
+        map.put("cardhash", "This+field+is+no+longer+supported+in+postback+params");
         return CallbackRequestWrapper.builder().payload(map).build();
     }
 
@@ -318,8 +319,8 @@ public class PayUTestData {
 
     public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentCode code) {
         return ChargingTransactionReconciliationStatusRequest.builder()
-                                    .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
-                                    .build();
+                .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
+                .build();
     }
 
     public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentCode code) {
@@ -350,4 +351,5 @@ public class PayUTestData {
     public static ResponseEntity<AllPlansResponse> buildAllPlanResponse() {
         return new ResponseEntity<>(AllPlansResponse.builder().plans(Collections.EMPTY_LIST).build(), HttpStatus.OK);
     }
+
 }

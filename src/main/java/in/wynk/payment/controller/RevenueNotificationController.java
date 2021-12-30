@@ -5,7 +5,8 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.dto.EmptyResponse;
 import in.wynk.common.dto.WynkResponseEntity;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentManager;
@@ -33,7 +34,7 @@ public class RevenueNotificationController {
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<Void> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
-        PaymentCode paymentCode = PaymentCode.getFromCode(partner);
+        PaymentCode paymentCode = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
         return paymentManager.handleNotification(NotificationRequest.builder().paymentCode(paymentCode).payload(payload).clientAlias(applicationAlias).build());
@@ -42,7 +43,7 @@ public class RevenueNotificationController {
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
-        final PaymentCode paymentCode = PaymentCode.getFromCode(partner);
+        final PaymentCode paymentCode = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build());

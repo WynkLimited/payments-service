@@ -11,7 +11,6 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.*;

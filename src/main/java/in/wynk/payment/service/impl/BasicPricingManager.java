@@ -6,7 +6,6 @@ import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.coupon.core.service.impl.CouponCodeLinkServiceImpl;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
@@ -21,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
-import java.util.EnumSet;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -49,7 +48,7 @@ public class BasicPricingManager implements IPricingManager {
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
-            if (EnumSet.of(PaymentCode.ITUNES, PaymentCode.AMAZON_IAP).contains(request.getPaymentCode()))
+            if (Arrays.asList("ITUNES", "AMAZON_IAP").contains(request.getPaymentCode().getId()))
                 couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {

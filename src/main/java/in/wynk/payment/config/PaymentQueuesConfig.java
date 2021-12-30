@@ -31,7 +31,7 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentReconciliationSQSMessageExtractor,
-                threadPoolExecutor(),
+                threadPoolExecutor(4),
                 scheduledThreadPoolExecutor());
     }
 
@@ -47,7 +47,7 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRenewalSQSMessageExtractor,
-                threadPoolExecutor(),
+                threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(),
                 sqsManagerService,
                 transactionManager,
@@ -63,7 +63,7 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 preDebitNotificationSQSMessageExtractor,
-                threadPoolExecutor(),
+                threadPoolExecutor(2),
                 scheduledThreadPoolExecutor());
     }
 
@@ -77,7 +77,7 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRenewalChargingSQSMessageExtractor,
-                paymentManager, threadPoolExecutor(),
+                paymentManager, threadPoolExecutor(2),
                 scheduledThreadPoolExecutor());
     }
 
@@ -92,7 +92,7 @@ public class PaymentQueuesConfig {
                 objectMapper,
                 paymentRecurringSchedulingSQSMessageExtractor,
                 paymentManager,
-                threadPoolExecutor(),
+                threadPoolExecutor(2),
                 scheduledThreadPoolExecutor());
     }
 
@@ -106,7 +106,7 @@ public class PaymentQueuesConfig {
                 sqsClient,
                 objectMapper,
                 paymentRecurringUnSchedulingSQSMessageExtractor,
-                threadPoolExecutor(),
+                threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(),
                 recurringPaymentManager);
     }
@@ -147,8 +147,8 @@ public class PaymentQueuesConfig {
         return new PaymentRecurringUnSchedulingSQSMessageExtractor(queueName, sqsClients);
     }
 
-    private ExecutorService threadPoolExecutor() {
-        return Executors.newFixedThreadPool(2);
+    private ExecutorService threadPoolExecutor(int threadCount) {
+        return Executors.newFixedThreadPool(threadCount);
     }
 
     private ScheduledExecutorService scheduledThreadPoolExecutor() {

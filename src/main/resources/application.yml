@@ -13,6 +13,9 @@ spring:
     exclude: org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   jackson:
     default-property-inclusion: non_null
+  scheduler:
+    jobStore:
+      keyPrefix: 'payment:${env}:'
 
 debug: false
 
@@ -44,6 +47,8 @@ logging:
   profile: ${env}
   level:
     org.apache.catalina: off
+    org.quartz: DEBUG
+    in.wynk.scheduler.core: DEBUG
   path: /data
   path.analytics: /logs
 

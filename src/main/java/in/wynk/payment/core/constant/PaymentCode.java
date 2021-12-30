@@ -11,8 +11,9 @@ import static in.wynk.payment.core.constant.BeanConstant.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 
 @Getter
-@RequiredArgsConstructor
+@Deprecated
 @AnalysedEntity
+@RequiredArgsConstructor
 public enum PaymentCode {
 
     AMAZON_IAP(AMAZON_IAP_PAYMENT_SERVICE, false, false, false),

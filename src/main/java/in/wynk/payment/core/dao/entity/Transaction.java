@@ -2,7 +2,7 @@ package in.wynk.payment.core.dao.entity;
 
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.GenericGenerator;
@@ -89,14 +89,11 @@ public class Transaction {
     }
 
     public PaymentCode getPaymentChannel() {
-        return PaymentCode.valueOf(paymentChannel);
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentChannel);
     }
 
     public String getProductId() {
-        if (!StringUtils.isEmpty(itemId)) {
-            return itemId;
-        }
-        return String.valueOf(planId);
+        return !StringUtils.isEmpty(this.itemId) ? this.itemId : String.valueOf(this.planId);
     }
 
 }

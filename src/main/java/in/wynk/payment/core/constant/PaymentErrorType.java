@@ -36,6 +36,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY105("Renewal Eligibility API Failure", "Renewal Eligibility API Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_ELIGIBILITY_API_ERROR),
     PAY106("Invalid Item", "Invalid item is is supplied", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY107("Selective Computation Failed", "Unable to compute selective eligibility for purchase", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_ERROR),
+    PAY108("Client Context Not Loaded", "Client Context Not Loaded", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.CLIENT_CONTEXT_NOT_LOADED),
 
     PAY111("PayU Pre Debit Notification Failure", "Pre Debit Notification Failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR),
     PAY112("PayU UPI Mandate Revoke Failure", "Cancelling Recurring failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_UPI_MANDATE_REVOKE_ERROR),
@@ -64,7 +65,8 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     ATB01("ATB Charging API Failure", "Could Not process transaction on addToBill", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_API_FAILURE),
     ATB02("ATB Status API Failure", "Transaction is still pending from addToBill side", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),
-    ATB03("ATB Status API Failure", "No matching status found at addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),;
+    ATB03("ATB Status API Failure", "No matching status found at addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),
+    ;
 
     /**
      * The error title.

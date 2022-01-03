@@ -1,28 +1,26 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.repository.IPaymentErrorDao;
 import in.wynk.payment.service.IPaymentErrorService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY108;
 
 @Service
 public class PaymentErrorServiceImpl implements IPaymentErrorService {
 
-    private final IPaymentErrorDao paymentErrorDao;
-
-    public PaymentErrorServiceImpl(@Qualifier(BeanConstant.PAYMENT_ERROR_DAO) IPaymentErrorDao paymentErrorDao) {
-        this.paymentErrorDao = paymentErrorDao;
-    }
-
     @Override
     public void upsert(PaymentError error) {
-        paymentErrorDao.save(error);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(PAY108)).getAlias(), IPaymentErrorDao.class).save(error);
     }
 
     @Override
     public PaymentError getPaymentError(String id) {
-        return paymentErrorDao.findById(id).get();
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(PAY108)).getAlias(), IPaymentErrorDao.class).findById(id).get();
     }
+
 }

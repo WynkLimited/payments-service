@@ -463,7 +463,7 @@ wynk:
     sql:
       enabled: true
       clients:
-        airteltv:
+        airtelxstream:
           enabled: true
           sources:
             payments:

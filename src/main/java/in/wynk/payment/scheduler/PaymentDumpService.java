@@ -6,14 +6,15 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
-import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentDump;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ import static in.wynk.logging.BaseLoggingMarkers.MYSQL_ERROR;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_DUMP;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_TRANSACTION;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY108;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_SERVICE_ERROR;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.SDK_CLIENT_ERROR;
 
@@ -46,10 +48,6 @@ public class PaymentDumpService {
 
     @Autowired
     private AmazonS3 amazonS3Client;
-
-    @Autowired
-    @Qualifier(BeanConstant.TRANSACTION_DAO)
-    private ITransactionDao transactionDao;
 
     private void putTransactionDataOnS3(Calendar cal, int days) {
         try {
@@ -83,7 +81,7 @@ public class PaymentDumpService {
         AnalyticService.update("DumpOfDays", days);
         Date fromDate = dateFormat.parse(fromDateFormat);
         log.info("from Date {}", fromDate);
-        return PaymentDump.builder().transactions(transactionDao.getTransactionDailyDump(fromDate, endDate)).build();
+        return PaymentDump.builder().transactions(RepositoryUtils.getRepositoryForClient(ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(PAY108)).getAlias(), ITransactionDao.class).getTransactionDailyDump(fromDate, endDate)).build();
     }
 
     private void putTransactionsOnS3Bucket(List<Transaction> transactions, Calendar cal) {

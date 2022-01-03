@@ -1,11 +1,12 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
@@ -21,8 +22,8 @@ import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -31,27 +32,20 @@ import java.util.EnumSet;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY108;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
-    private final ITransactionDao transactionDao;
     private final IPurchaseDetailsManger purchaseDetailsManger;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    public TransactionManagerServiceImpl(@Qualifier(BeanConstant.TRANSACTION_DAO) ITransactionDao transactionDao, IPurchaseDetailsManger purchaseDetailsManger, ApplicationEventPublisher applicationEventPublisher, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
-        this.transactionDao = transactionDao;
-        this.purchaseDetailsManger = purchaseDetailsManger;
-        this.applicationEventPublisher = applicationEventPublisher;
-        this.subscriptionServiceManager = subscriptionServiceManager;
-        this.recurringPaymentManagerService = recurringPaymentManagerService;
-    }
-
     private Transaction upsert(Transaction transaction) {
-        Transaction persistedEntity = transactionDao.save(transaction);
+        Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(PAY108)).getAlias(), ITransactionDao.class).save(transaction);
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
         purchaseDetailsManger.get(transaction).ifPresent(builder::purchaseDetails);
         applicationEventPublisher.publishEvent(builder.build());
@@ -61,7 +55,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction get(String id) {
-        return transactionDao.findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(PAY108)).getAlias(), ITransactionDao.class).findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
     }
 
     private Transaction initTransaction(Transaction txn) {

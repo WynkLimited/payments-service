@@ -554,7 +554,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
                   username: admin
                   password: o7QZ?!n=eu
                   driver-class-name: com.mysql.cj.jdbc.Driver

@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.SessionDTO;
@@ -32,7 +33,6 @@ import java.util.EnumSet;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY108;
 
 @Slf4j
 @Service
@@ -45,7 +45,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
     private Transaction upsert(Transaction transaction) {
-        Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(PAY108)).getAlias(), ITransactionDao.class).save(transaction);
+        Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), ITransactionDao.class).save(transaction);
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
         purchaseDetailsManger.get(transaction).ifPresent(builder::purchaseDetails);
         applicationEventPublisher.publishEvent(builder.build());
@@ -55,7 +55,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction get(String id) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(PAY108)).getAlias(), ITransactionDao.class).findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), ITransactionDao.class).findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
     }
 
     private Transaction initTransaction(Transaction txn) {

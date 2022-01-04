@@ -49,6 +49,8 @@ logging:
     org.quartz: DEBUG
     in.wynk.scheduler.core: DEBUG
     org.apache.catalina: off
+    org.quartz: DEBUG
+    in.wynk.scheduler.core: DEBUG
   path: /data
   path.analytics: /logs
 

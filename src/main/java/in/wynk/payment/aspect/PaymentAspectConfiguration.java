@@ -13,8 +13,8 @@ public class PaymentAspectConfiguration {
     }
 
     @Bean
-    public ClientAwareWrapperAspect clientAwareWrapperAspect() {
-        return Aspects.aspectOf(ClientAwareWrapperAspect.class);
+    public WrapperClientAwareAspect wrapperClientAwareAspect() {
+        return Aspects.aspectOf(WrapperClientAwareAspect.class);
     }
 
 }

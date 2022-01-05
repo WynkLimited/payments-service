@@ -463,7 +463,8 @@ wynk:
     sql:
       enabled: true
       clients:
-        paymentApi:
+        ##### below property is paymentApi, just to test failed cases this is changed, revert it afterwards
+        paymentAPI:
           enabled: true
           sources:
             payments:

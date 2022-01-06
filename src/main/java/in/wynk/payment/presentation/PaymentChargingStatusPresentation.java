@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class PaymentChargingStatusPresentation implements IPresentation<WynkResponse<TransactionDetailsDto>, TransactionSnapShot> {
-    private final PaymentStatusCommonPresentation commonPresentation;
+    private final PaymentCommonPresentation commonPresentation;
     private final PaymentCachingService cachingService;
 
     @Override
@@ -21,7 +21,7 @@ public class PaymentChargingStatusPresentation implements IPresentation<WynkResp
         int planId = payload.getTransactionDetails().getTransaction().getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(payload.getTransactionDetails().getTransaction().getPlanId()).getLinkedFreePlanId() : payload.getTransactionDetails().getTransaction().getPlanId();
         final Transaction transaction = payload.getTransactionDetails().getTransaction();
         TransactionDetailsDto.TransactionDetailsDtoBuilder transactionDetailsBuilder = TransactionDetailsDto.builder();
-        transactionDetailsBuilder.transactionId(transaction.getIdStr()).amountPaid(transaction.getAmount()).discount(transaction.getDiscount()).creationDate(transaction.getInitTime()).status(transaction.getStatus());
+        transactionDetailsBuilder.tid(transaction.getIdStr()).planId(transaction.getPlanId()).amountPaid(transaction.getAmount()).discount(transaction.getDiscount()).creationDate(transaction.getInitTime()).status(transaction.getStatus()).validity(cachingService.validTillDate(planId));
         transactionDetailsBuilder.purchaseDetails(commonPresentation.getPurchaseDetails(payload.getTransactionDetails().getPurchaseDetails()));
         transactionDetailsBuilder.packDetails(commonPresentation.getPackDetails(payload.getTransactionDetails().getTransaction(), ChargingTransactionStatusRequest.builder().transactionId(payload.getTransactionDetails().getTransaction().getIdStr()).planId(planId).build()));
         return WynkResponse.<TransactionDetailsDto>builder().body(transactionDetailsBuilder.build()).build();

@@ -1,6 +1,5 @@
 package in.wynk.payment.presentation;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
@@ -21,7 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentStatusCommonPresentation {
+public class PaymentCommonPresentation {
     private final PaymentCachingService cachingService;
     private final ObjectMapper objectMapper;
 
@@ -89,7 +88,7 @@ public class PaymentStatusCommonPresentation {
 
     private UserDetailsDto from(IUserDetails userDetails) {
         try {
-            return objectMapper.readValue((JsonParser) userDetails, UserDetailsDto.class);
+            return objectMapper.readValue(objectMapper.writeValueAsString(userDetails), UserDetailsDto.class);
         } catch (Exception exc) {
             return null;
         }

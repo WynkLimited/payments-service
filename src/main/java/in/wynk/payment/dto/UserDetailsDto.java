@@ -2,10 +2,7 @@ package in.wynk.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 @Getter
@@ -21,4 +18,14 @@ public class UserDetailsDto {
     private String dslId;
     private String countryCode;
     private String si;
+    private BillingSiDetail billingSiDetail;
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class BillingSiDetail {
+        private String billingSi;
+        private String lob;
+    }
 }

@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
@@ -177,6 +178,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Override
+    @ClientAware(clientAlias = "#request.clientAlias()")
     public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(AbstractPreferredPaymentDetailsControllerRequest<?> request) {
         final String uid = request.getUid();
         final String deviceId = request.getDeviceId();

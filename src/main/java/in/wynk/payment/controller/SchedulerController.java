@@ -5,6 +5,7 @@ import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +26,7 @@ public class SchedulerController {
     @AnalyseTransaction(name = "paymentRenew")
     public EmptyResponse startPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId));
+        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
         return EmptyResponse.response();
     }
 
@@ -33,7 +34,7 @@ public class SchedulerController {
     @AnalyseTransaction(name = "sePaymentRenew")
     public EmptyResponse startSEPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.startSeRenewals(requestId));
+        executorService.submit(() -> paymentRenewalsScheduler.startSeRenewals(requestId, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
         return EmptyResponse.response();
     }
 
@@ -41,7 +42,7 @@ public class SchedulerController {
     @AnalyseTransaction(name = "renewNotification")
     public EmptyResponse startRenewNotification() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId));
+        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
         return EmptyResponse.response();
     }
 

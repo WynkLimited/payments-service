@@ -32,6 +32,7 @@ import java.util.EnumSet;
 import java.util.stream.Stream;
 
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -52,7 +53,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
 
     private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
         try {
-            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
+            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
                     .day(nextRecurringDateTime)
                     .transactionId(transactionId)
                     .hour(nextRecurringDateTime.getTime())
@@ -112,7 +113,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, offsetTime);
         final Date currentTime = currentDay.getTime();
         final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
-        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), IPaymentRenewalDao.class);
+        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
         if (currentDay.get(Calendar.DAY_OF_MONTH) != currentDayTimeWithOffset.get(Calendar.DAY_OF_MONTH)) {
             currentDay.set(Calendar.HOUR_OF_DAY, 23);
             currentDay.set(Calendar.MINUTE, 59);
@@ -132,7 +133,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Override
     public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
         try {
-            final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), IPaymentRenewalDao.class);
+            final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
             paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
                 final Calendar hour = Calendar.getInstance();
                 final Calendar day = recurringPayment.getDay();

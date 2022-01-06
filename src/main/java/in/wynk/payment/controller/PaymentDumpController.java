@@ -5,6 +5,7 @@ import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.scheduler.PaymentDumpService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.ExecutorService;
@@ -23,7 +24,7 @@ public class PaymentDumpController {
     @AnalyseTransaction(name = "transactionWeeklyDump")
     public EmptyResponse transactionWeeklyDump(@PathVariable int days) {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, days));
+        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, days, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
         return EmptyResponse.response();
     }
 
@@ -31,7 +32,7 @@ public class PaymentDumpController {
     @AnalyseTransaction(name = "transactionDailyDump")
     public EmptyResponse transactionDailyDump(@RequestParam long startTime) {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, startTime));
+        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, startTime, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
         return EmptyResponse.response();
     }
 

@@ -16,6 +16,7 @@ import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.IQuickPayLinkGenerator;
 import in.wynk.payment.service.PaymentManager;
+import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class RevenuePaymentS2SController {
     @AnalyseTransaction(name = "paymentCharging")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_CHARGING_WRITE\")")
     public WynkResponseEntity<AbstractChargingResponse> doCharging(@Valid @RequestBody AbstractChargingRequest<S2SPurchaseDetails> request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
@@ -54,6 +56,7 @@ public class RevenuePaymentS2SController {
     @AnalyseTransaction(name = "paymentStatus")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String tid) {
+        LoadClientUtils.loadClient(true);
         return paymentManager.status(tid);
     }
 
@@ -61,6 +64,7 @@ public class RevenuePaymentS2SController {
     @AnalyseTransaction(name = "initRefund")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
     public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@Valid @RequestBody PaymentRefundInitRequest request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(request);
         WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = paymentManager.refund(request);
         AnalyticService.update(baseResponse.getBody());
@@ -70,6 +74,7 @@ public class RevenuePaymentS2SController {
     @GetMapping("/v1/customer/winback/{tid}")
     @AnalyseTransaction(name = "customerWinBack")
     public WynkResponseEntity<Void> winBack(@PathVariable String tid, @RequestParam Map<String, Object> params) {
+        LoadClientUtils.loadClient(true);
         final CustomerWindBackRequest request = CustomerWindBackRequest.builder().dropoutTransactionId(tid).params(params).build();
         AnalyticService.update(request);
         final WynkResponseEntity<Void> response = winBackService.winBack(request);
@@ -79,6 +84,7 @@ public class RevenuePaymentS2SController {
 
     @GetMapping("/v1/pay/link/{tid}")
     public WynkResponseEntity<String> quickPayLink(@PathVariable String tid) {
+        LoadClientUtils.loadClient(true);
         return WynkResponseEntity.<String>builder().data(quickPayLinkGenerator.generate(tid)).build();
     }
 
@@ -104,6 +110,7 @@ public class RevenuePaymentS2SController {
 
     @ManageSession(sessionId = "#request.sid")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequest request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);

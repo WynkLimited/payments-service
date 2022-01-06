@@ -10,8 +10,8 @@ import in.wynk.coupon.core.dto.CouponDTO;
 import in.wynk.coupon.core.dto.CouponProvisionRequest;
 import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
-import in.wynk.payment.aspect.advice.WrapperClientAware;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -36,9 +36,9 @@ public class CouponController {
 
     @GetMapping("/apply/{sid}")
     @ManageSession(sessionId = "#sid")
-    @WrapperClientAware(isS2S = false)
     @AnalyseTransaction(name = "applyCoupon")
     public WynkResponse<CouponResponse> applyCoupon(@PathVariable String sid, @RequestParam String couponCode, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId, @RequestParam(required = false) @MongoBaseEntityConstraint(beanName = ITEM_DTO) String itemId) {
+        LoadClientUtils.loadClient(false);
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(MSISDN);
         String service = SessionContextHolder.<SessionDTO>getBody().get(SERVICE);
@@ -59,9 +59,9 @@ public class CouponController {
 
     @DeleteMapping("/remove/{sid}")
     @ManageSession(sessionId = "#sid")
-    @WrapperClientAware(isS2S = false)
     @AnalyseTransaction(name = "removeCoupon")
     public WynkResponse<CouponResponse> removeCoupon(@PathVariable String sid, @RequestParam @MongoBaseEntityConstraint(beanName = COUPON) String couponCode) {
+        LoadClientUtils.loadClient(false);
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         AnalyticService.update(COUPON_CODE, couponCode);
         CouponResponse response = couponManager.removeCoupon(uid, couponCode);
@@ -71,9 +71,9 @@ public class CouponController {
 
     @GetMapping("/eligibility/{sid}")
     @ManageSession(sessionId = "#sid")
-    @WrapperClientAware(isS2S = false)
     @AnalyseTransaction(name = "eligibleCoupons")
     public WynkResponse<List<CouponDTO>> getEligibleCoupons(@PathVariable String sid, @RequestParam @MongoBaseEntityConstraint(beanName = PLAN_DTO) Integer planId) {
+        LoadClientUtils.loadClient(false);
         PlanDTO planDTO = cachingService.getPlan(planId);
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(MSISDN);

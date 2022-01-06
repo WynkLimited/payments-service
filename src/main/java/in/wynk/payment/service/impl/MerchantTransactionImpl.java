@@ -8,22 +8,24 @@ import in.wynk.payment.core.dao.repository.IMerchantTransactionDao;
 import in.wynk.payment.service.IMerchantTransactionService;
 import org.springframework.stereotype.Service;
 
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+
 @Service
 public class MerchantTransactionImpl implements IMerchantTransactionService {
 
     @Override
     public void upsert(MerchantTransaction merchantTransaction) {
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), IMerchantTransactionDao.class).save(merchantTransaction);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IMerchantTransactionDao.class).save(merchantTransaction);
     }
 
     @Override
     public MerchantTransaction getMerchantTransaction(String id) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), IMerchantTransactionDao.class).findById(id).get();
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IMerchantTransactionDao.class).findById(id).get();
     }
 
     @Override
     public String getPartnerReferenceId(String id) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), IMerchantTransactionDao.class).findPartnerReferenceById(id).get();
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IMerchantTransactionDao.class).findPartnerReferenceById(id).get();
     }
 
 }

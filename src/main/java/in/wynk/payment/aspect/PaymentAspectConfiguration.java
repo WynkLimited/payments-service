@@ -6,15 +6,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class PaymentAspectConfiguration {
-
     @Bean
     public TransactionAwareAspect transactionAwareAspect() {
         return Aspects.aspectOf(TransactionAwareAspect.class);
     }
-
-    @Bean
-    public WrapperClientAwareAspect wrapperClientAwareAspect() {
-        return Aspects.aspectOf(WrapperClientAwareAspect.class);
-    }
-
 }

@@ -2,6 +2,7 @@ package in.wynk.payment.scheduler;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
@@ -30,8 +31,9 @@ public class PaymentRenewalsScheduler {
     private SeRenewalService seRenewalService;
 
     @Transactional
+    @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "paymentRenewals")
-    public void paymentRenew(String requestId) {
+    public void paymentRenew(String requestId, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
@@ -44,8 +46,9 @@ public class PaymentRenewalsScheduler {
     }
 
     @Transactional
+    @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "renewNotifications")
-    public void sendNotifications(String requestId) {
+    public void sendNotifications(String requestId, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
@@ -80,8 +83,9 @@ public class PaymentRenewalsScheduler {
         sqsManagerService.publishSQSMessage(message);
     }
 
+    @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "sePaymentRenewals")
-    public void startSeRenewals(String requestId) {
+    public void startSeRenewals(String requestId, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());

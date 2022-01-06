@@ -2,16 +2,14 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.dto.IPresentation;
+import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.dto.WynkResponseEntity;
-import in.wynk.payment.dto.CustomerWindBackRequest;
-import in.wynk.payment.dto.PaymentRefundInitRequest;
-import in.wynk.payment.dto.S2SPurchaseDetails;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.response.AbstractChargingResponse;
-import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
-import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
-import in.wynk.payment.dto.response.BaseResponse;
+import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.IQuickPayLinkGenerator;
@@ -19,6 +17,7 @@ import in.wynk.payment.service.PaymentManager;
 import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,6 +54,17 @@ public class RevenuePaymentS2SController {
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String tid) {
         return paymentManager.status(tid);
+    }
+
+    @GetMapping("/v2/payment/status/{tid}")
+    @AnalyseTransaction(name = "paymentStatusV2")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
+    public WynkResponse<TransactionDetailsDto> statusV2(@PathVariable String tid) {
+        final TransactionSnapShot transactionSnapShot = paymentManager.statusV2(tid);
+        final WynkResponse<TransactionDetailsDto> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponse<TransactionDetailsDto>, TransactionSnapShot>>() {
+        }).transform(transactionSnapShot);
+        AnalyticService.update(response);
+        return response;
     }
 
     @PostMapping("/v1/payment/refund")

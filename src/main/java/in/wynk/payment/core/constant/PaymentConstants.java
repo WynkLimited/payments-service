@@ -59,5 +59,6 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_SECRET = "secret";
     String MERCHANT_TOKEN = "token";
     String MERCHANT_CLIENT_ID = "clientId";
+    String PAYMENT_API_CLIENT = "paymentApi";
 
 }

@@ -2,21 +2,28 @@ package in.wynk.payment.core.event;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+
 @Getter
 @AnalysedEntity
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentErrorEvent {
+
     @Analysed(name = BaseConstants.TRANSACTION_ID)
     private final String id;
     @Analysed
     private final String code;
     @Analysed
     private final String description;
+    @Analysed
+    private final String clientAlias;
 
     public static Builder builder(String transactionId) {
         return new Builder(transactionId);
@@ -33,7 +40,7 @@ public class PaymentErrorEvent {
         }
 
         public PaymentErrorEvent build() {
-            return new PaymentErrorEvent(transactionId, code, description);
+            return new PaymentErrorEvent(transactionId, code, description, ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT));
         }
 
         public Builder code(String code) {
@@ -45,6 +52,5 @@ public class PaymentErrorEvent {
             this.description = description;
             return this;
         }
-
     }
 }

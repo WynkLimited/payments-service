@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.queue.dto.MessageToEventMapper;
 import in.wynk.queue.dto.ProducerType;
 import in.wynk.queue.dto.WynkQueue;
@@ -38,10 +39,10 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
                 .itemId(getItemId())
                 .msisdn(getMsisdn())
                 .extTxnId(getExtTxnId())
-                .paymentCode(getPaymentCode())
                 .clientAlias(getClientAlias())
                 .paymentEvent(getPaymentEvent())
                 .transactionId(getTransactionId())
+                .paymentCode(PaymentCodeCachingService.getFromPaymentCode(getPaymentCode()))
                 .build();
     }
 }

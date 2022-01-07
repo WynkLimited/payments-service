@@ -6,6 +6,7 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentManager;
@@ -79,7 +80,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
                 .msisdn(message.getMsisdn())
                 .attemptSequence(message.getAttemptSequence())
                 .clientAlias(message.getClientAlias())
-                .paymentCode(message.getPaymentCode())
+                .paymentCode(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
                 .build());
     }
 

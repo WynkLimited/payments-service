@@ -49,7 +49,6 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
-import static in.wynk.payment.core.constant.PaymentCode.APB_PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_TOKEN;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
@@ -181,7 +180,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     private SavedDetailsKey getKey(String uid, String deviceId) {
-        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode(APB_PAYTM_WALLET.name()).build();
+        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode("APB_PAYTM_WALLET").build();
     }
 
     @Override

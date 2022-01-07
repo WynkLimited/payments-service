@@ -2,7 +2,8 @@ package in.wynk.payment.dto.request;
 
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -27,7 +28,7 @@ public class MigrationTransactionRequest {
     }
 
     public PaymentCode getPaymentCode() {
-        return PaymentCode.getFromPaymentCode(paymentCode);
+        return PaymentCodeCachingService.getFromPaymentCode(paymentCode);
     }
 
 }

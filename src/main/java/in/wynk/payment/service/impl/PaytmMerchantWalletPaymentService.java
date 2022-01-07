@@ -62,7 +62,6 @@ import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
 import static in.wynk.payment.core.constant.BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE;
-import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CALLBACK_PAYLOAD_PARSING_FAILURE;
@@ -73,54 +72,41 @@ import static in.wynk.payment.dto.paytm.PayTmConstants.*;
 @Service(PAYTM_MERCHANT_WALLET_SERVICE)
 public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<PaytmCallbackResponse, PaytmCallbackRequestPayload>, IMerchantPaymentChargingService<PaytmAutoDebitChargingResponse, AbstractChargingRequest<?>>, IUserPreferredPaymentService<UserWalletDetails, PreferredPaymentDetailsRequest<?>>, IWalletLinkService<Void, WalletLinkRequest>, IWalletValidateLinkService<Void, WalletValidateLinkRequest>, IWalletDeLinkService<Void, WalletDeLinkRequest>, IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>, IMerchantPaymentRefundService<PaytmPaymentRefundResponse, PaytmPaymentRefundRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>> {
 
-    @Value("${paytm.refund.api}")
-    private String REFUND;
-
-    @Value("${paytm.sendOtp.api}")
-    private String SEND_OTP;
-
-    @Value("${paytm.autoDebit.api}")
-    private String AUTO_DEBIT;
-
-    @Value("${payment.success.page}")
-    private String successPage;
-
-    @Value("${payment.failure.page}")
-    private String failurePage;
-
-    @Value("${paytm.validateOtp.api}")
-    private String VALIDATE_OTP;
-
-    @Value("${paytm.refundStatus.api}")
-    private String REFUND_STATUS;
-
-    @Value("${paytm.refreshToken.api}")
-    private String REFRESH_TOKEN;
-
-    @Value("${paytm.validateToken.api}")
-    private String VALIDATE_TOKEN;
-
-    @Value("${paytm.fetchInstrument.api}")
-    private String FETCH_INSTRUMENT;
-
-    @Value("${paytm.transactionStatus.api}")
-    private String TRANSACTION_STATUS;
-
-    @Value("${paytm.revokeAccessToken.api}")
-    private String REVOKE_ACCESS_TOKEN;
-
-    @Value("${payment.encKey}")
-    private String paymentEncryptionKey;
-
-    @Value("${paytm.requesting.website}")
-    private String paytmRequestingWebsite;
-
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
     private final IUserPaymentsManager userPaymentsManager;
     private final CheckSumServiceHelper checkSumServiceHelper;
-    private final ApplicationEventPublisher applicationEventPublisher;
     private final IErrorCodesCacheService errorCodesCacheServiceImpl;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    @Value("${paytm.refund.api}")
+    private String REFUND;
+    @Value("${paytm.sendOtp.api}")
+    private String SEND_OTP;
+    @Value("${paytm.autoDebit.api}")
+    private String AUTO_DEBIT;
+    @Value("${payment.success.page}")
+    private String successPage;
+    @Value("${payment.failure.page}")
+    private String failurePage;
+    @Value("${paytm.validateOtp.api}")
+    private String VALIDATE_OTP;
+    @Value("${paytm.refundStatus.api}")
+    private String REFUND_STATUS;
+    @Value("${paytm.refreshToken.api}")
+    private String REFRESH_TOKEN;
+    @Value("${paytm.validateToken.api}")
+    private String VALIDATE_TOKEN;
+    @Value("${paytm.fetchInstrument.api}")
+    private String FETCH_INSTRUMENT;
+    @Value("${paytm.transactionStatus.api}")
+    private String TRANSACTION_STATUS;
+    @Value("${paytm.revokeAccessToken.api}")
+    private String REVOKE_ACCESS_TOKEN;
+    @Value("${payment.encKey}")
+    private String paymentEncryptionKey;
+    @Value("${paytm.requesting.website}")
+    private String paytmRequestingWebsite;
 
     public PaytmMerchantWalletPaymentService(ObjectMapper objectMapper, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IUserPaymentsManager userPaymentsManager, PaymentCachingService paymentCachingService, ApplicationEventPublisher applicationEventPublisher, IErrorCodesCacheService errorCodesCacheServiceImpl) {
         super(paymentCachingService, errorCodesCacheServiceImpl);
@@ -720,7 +706,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
     }
 
     private SavedDetailsKey getKey(String uid, String deviceId) {
-        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode(PAYTM_WALLET.name()).build();
+        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode("PAYTM_WALLET").build();
     }
 
     private ErrorCode handleWynkRunTimeException(WynkRuntimeException e) {

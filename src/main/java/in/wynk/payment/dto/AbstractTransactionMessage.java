@@ -3,7 +3,8 @@ package in.wynk.payment.dto;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,9 +12,10 @@ import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public abstract class AbstractTransactionMessage {
+
     @Analysed
     private String uid;
     @Analysed
@@ -21,11 +23,18 @@ public abstract class AbstractTransactionMessage {
     @Analysed
     private String itemId;
     @Analysed
-    private Integer planId;
+    private String paymentCode;
     @Analysed(name = BaseConstants.TRANSACTION_ID)
     private String transactionId;
+
+    @Analysed
+    private Integer planId;
+
     @Analysed
     private PaymentEvent paymentEvent;
-    @Analysed
-    private PaymentCode paymentCode;
+
+    public PaymentCode getPaymentCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
+    }
+
 }

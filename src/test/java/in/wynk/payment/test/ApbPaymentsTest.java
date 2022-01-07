@@ -3,7 +3,8 @@ package in.wynk.payment.test;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.session.context.SessionContextHolder;
@@ -19,12 +20,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.APB_GATEWAY;
 
 public class ApbPaymentsTest extends PaymentsTest {
 
-    private static final PaymentCode CODE = PaymentCode.APB_GATEWAY;
     private static final String TXN_ID = "c912c207-ca52-11ea-a7b4-1bdc0febe120";
     private static final String FAILURE_TXN_ID = "c912c207-ca52-11ea-a7b4-1bdc0febe120";
+    private static final PaymentCode CODE = PaymentCodeCachingService.getFromPaymentCode(APB_GATEWAY);
 
     private static SessionDTO dummyAPBSession() {
         Map<String, Object> map = new HashMap<>();
@@ -87,7 +89,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     }
 
     @Test
-    public void apbLocalFailedStatusTest(){
+    public void apbLocalFailedStatusTest() {
         WynkResponseEntity<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(CODE));
         System.out.println(response);
         ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody().getData();
@@ -103,7 +105,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     }
 
     @Test
-    public void apbSourceStatusFailureTest(){
+    public void apbSourceStatusFailureTest() {
         WynkResponseEntity<?> response = statusTest(CODE, dummyChargingStatusSourceRequest(CODE));
         System.out.println(response);
         ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody().getData();
@@ -130,4 +132,5 @@ public class ApbPaymentsTest extends PaymentsTest {
         System.out.println(response);
         assert response.getStatus().is3xxRedirection();
     }
+
 }

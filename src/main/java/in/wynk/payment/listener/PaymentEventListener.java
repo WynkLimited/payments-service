@@ -96,8 +96,8 @@ public class PaymentEventListener {
                 .planId(transaction.getPlanId())
                 .msisdn(transaction.getMsisdn())
                 .clientAlias(transaction.getClientAlias())
-                .paymentCode(transaction.getPaymentChannel())
                 .attemptSequence(event.getAttemptSequence())
+                .paymentCode(transaction.getPaymentChannel().getId())
                 .build());
     }
 

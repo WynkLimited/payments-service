@@ -416,7 +416,6 @@ webview:
   host: https://pay-stage.wynk.in
 
 wynk:
-
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true
@@ -457,7 +456,6 @@ wynk:
           socketTimeout: 2000
         readPreference: secondaryPreferred
         replicaSet: wcf
-
   ##### SQS SaaS Props #####
   saas:
     sql:

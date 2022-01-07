@@ -1,7 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
 import in.wynk.data.entity.MongoBaseEntity;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,15 +16,24 @@ import java.util.Map;
 @Document("payment_methods")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentMethod extends MongoBaseEntity<String> {
-    private String group;
-    private Map<String, Object> meta;
-    private String displayName;
-    private String subtitle;
-    private String iconUrl;
-    private PaymentCode paymentCode;
+
     private int hierarchy;
+
     private boolean trialSupported;
     private boolean autoRenewSupported;
-    private List<String> suffixes;
+
+    private String group;
+    private String iconUrl;
+    private String subtitle;
+    private String displayName;
+    private String paymentCode;
     private String ruleExpression;
+
+    private List<String> suffixes;
+    private Map<String, Object> meta;
+
+    public PaymentCode getPaymentCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
+    }
+
 }

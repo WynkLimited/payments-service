@@ -18,7 +18,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.paytm.*;

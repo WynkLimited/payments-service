@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import java.util.Calendar;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -53,7 +54,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = transactionDao.save(transaction);
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
-        purchaseDetailsManger.get(transaction).ifPresent(builder::purchaseDetails);
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
         applicationEventPublisher.publishEvent(builder.build());
         publishAnalytics(persistedEntity);
         return persistedEntity;
@@ -79,7 +80,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     public Transaction init(AbstractTransactionInitRequest transactionInitRequest) {
         final Transaction transaction = PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) : initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
         final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
-        purchaseDetailsManger.get(transaction).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(transactionDetailsBuilder::purchaseDetails);
         TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
         return transaction;
     }

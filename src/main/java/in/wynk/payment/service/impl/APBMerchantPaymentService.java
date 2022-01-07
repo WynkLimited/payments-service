@@ -17,7 +17,7 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
-import in.wynk.payment.dto.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;

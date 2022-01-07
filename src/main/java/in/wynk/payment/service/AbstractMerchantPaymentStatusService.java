@@ -11,6 +11,7 @@ import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;

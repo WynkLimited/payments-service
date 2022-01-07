@@ -178,7 +178,6 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     @Override
-    @ClientAware(clientAlias = "#request.clientAlias()")
     public WynkResponseEntity<CombinedPaymentDetailsResponse> getUserPreferredPayments(AbstractPreferredPaymentDetailsControllerRequest<?> request) {
         final String uid = request.getUid();
         final String deviceId = request.getDeviceId();

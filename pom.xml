@@ -59,6 +59,11 @@
             <artifactId>lib-queue</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
+            <artifactId>client-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

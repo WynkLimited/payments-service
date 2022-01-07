@@ -48,6 +48,7 @@ public interface PaymentConstants extends BaseConstants {
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PHONEPE_WALLET = "PHONEPE_WALLET";
+    String PAYMENT_API_CLIENT = "paymentApi";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";

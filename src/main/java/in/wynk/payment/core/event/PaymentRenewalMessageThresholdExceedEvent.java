@@ -10,8 +10,12 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public class PaymentRenewalMessageThresholdExceedEvent extends MessageThresholdExceedEvent {
+
     @Analysed
     private int attemptSequence;
     @Analysed
     private String transactionId;
+    @Analysed
+    private String clientAlias;
+
 }

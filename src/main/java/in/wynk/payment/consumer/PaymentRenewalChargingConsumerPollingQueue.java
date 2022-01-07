@@ -4,6 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
@@ -20,16 +21,15 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRenewalChargingMessage> {
 
+    private final PaymentManager paymentManager;
+    private final ExecutorService messageHandlerThreadPool;
+    private final ScheduledExecutorService pollingThreadPool;
     @Value("${payment.pooling.queue.charging.enabled}")
     private boolean chargingPollingEnabled;
     @Value("${payment.pooling.queue.charging.sqs.consumer.delay}")
     private long chargingPoolingDelay;
     @Value("${payment.pooling.queue.charging.sqs.consumer.delayTimeUnit}")
     private TimeUnit chargingPoolingDelayTimeUnit;
-
-    private final PaymentManager paymentManager;
-    private final ExecutorService messageHandlerThreadPool;
-    private final ScheduledExecutorService pollingThreadPool;
 
     public PaymentRenewalChargingConsumerPollingQueue(String queueName,
                                                       AmazonSQS sqs,
@@ -67,6 +67,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     }
 
     @Override
+    @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalChargingMessage")
     public void consume(PaymentRenewalChargingMessage message) {
         AnalyticService.update(message);
@@ -83,6 +84,8 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     }
 
     @Override
-    public Class<PaymentRenewalChargingMessage> messageType() { return PaymentRenewalChargingMessage.class; }
+    public Class<PaymentRenewalChargingMessage> messageType() {
+        return PaymentRenewalChargingMessage.class;
+    }
 
 }

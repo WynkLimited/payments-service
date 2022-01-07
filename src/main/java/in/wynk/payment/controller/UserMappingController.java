@@ -20,8 +20,7 @@ public class UserMappingController {
     @AnalyseTransaction(name = "wynkUidToExtUserIdMapping")
     public EmptyResponse updateUserMapping(@Valid @RequestBody UserMappingRequest request) {
         LoadClientUtils.loadClient(true);
-        IUserMappingService mappingService = BeanLocatorFactory.getBean(request.getCode().getCode(), IUserMappingService.class);
-        mappingService.addUserMapping(request);
+        BeanLocatorFactory.getBean(request.getCode().getCode(), IUserMappingService.class).addUserMapping(request);
         return EmptyResponse.response();
     }
 }

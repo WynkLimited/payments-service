@@ -21,7 +21,9 @@ public class PaymentReconciliationThresholdExceedEvent extends MessageThresholdE
     @Analysed
     private String itemId;
     @Analysed
-    private Integer planId;
+    private String extTxnId;
+    @Analysed
+    private String clientAlias;
     @Analysed(name = BaseConstants.TRANSACTION_ID)
     private String transactionId;
     @Analysed
@@ -29,6 +31,6 @@ public class PaymentReconciliationThresholdExceedEvent extends MessageThresholdE
     @Analysed
     private PaymentCode paymentCode;
     @Analysed
-    private String extTxnId;
+    private Integer planId;
 
 }

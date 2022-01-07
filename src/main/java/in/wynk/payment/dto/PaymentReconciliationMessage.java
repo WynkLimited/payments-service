@@ -2,15 +2,20 @@ package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
 import in.wynk.queue.dto.MessageToEventMapper;
 import in.wynk.queue.dto.ProducerType;
 import in.wynk.queue.dto.WynkQueue;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.concurrent.TimeUnit;
+
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 @Getter
 @SuperBuilder
@@ -22,6 +27,8 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
 
     @Analysed
     private String extTxnId;
+    @Builder.Default
+    private String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT);
 
     @Override
     public PaymentReconciliationThresholdExceedEvent map() {
@@ -32,6 +39,7 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
                 .msisdn(getMsisdn())
                 .extTxnId(getExtTxnId())
                 .paymentCode(getPaymentCode())
+                .clientAlias(getClientAlias())
                 .paymentEvent(getPaymentEvent())
                 .transactionId(getTransactionId())
                 .build();

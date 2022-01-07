@@ -1,11 +1,21 @@
 package in.wynk.payment.core.dao.entity;
 
-public interface IAppDetails {
+import java.io.Serializable;
+
+public interface IAppDetails extends Serializable {
+
     int getBuildNo();
-    String getDeviceId();
-    String getDeviceType();
-    String getAppVersion();
+
     String getOs();
+
     String getAppId();
+
     String getService();
+
+    String getDeviceId();
+
+    String getDeviceType();
+
+    String getAppVersion();
+
 }

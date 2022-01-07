@@ -4,6 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
@@ -16,27 +17,22 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.tinylytics.constants.TinylyticsConstants.PAYMENT_RECONCILE_EVENT;
-
 @Slf4j
 public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentReconciliationMessage> {
 
+    private final ExecutorService messageHandlerThreadPool;
+    private final ScheduledExecutorService pollingThreadPool;
     @Value("${payment.pooling.queue.reconciliation.enabled}")
     private boolean reconciliationPollingEnabled;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delay}")
     private long reconciliationPoolingDelay;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
-
-    private final ExecutorService messageHandlerThreadPool;
-    private final ScheduledExecutorService pollingThreadPool;
-
     @Autowired
     private PaymentManager paymentManager;
 
@@ -52,6 +48,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     }
 
     @Override
+    @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentReconciliation")
     public void consume(PaymentReconciliationMessage message) {
         AnalyticService.update(message);

@@ -15,6 +15,7 @@ import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.PaymentManager;
+import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class RevenuePaymentController {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
     public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
@@ -53,6 +55,7 @@ public class RevenuePaymentController {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentStatus")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String sid) {
+        LoadClientUtils.loadClient(false);
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         return paymentManager.status(sessionDTO.<String>get(TRANSACTION_ID));
     }
@@ -62,6 +65,7 @@ public class RevenuePaymentController {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
     public ResponseEntity<IVerificationResponse> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         WynkResponseEntity<IVerificationResponse> verificationResponseWynkResponseEntity = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), IMerchantVerificationService.class).doVerify(request);
@@ -73,6 +77,7 @@ public class RevenuePaymentController {
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback(@PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) {
+        LoadClientUtils.loadClient(false);
         final PaymentCode paymentCode;
         if (StringUtils.isEmpty(pc)) {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -92,6 +97,7 @@ public class RevenuePaymentController {
     @GetMapping(path = "/callback/{sid}/{pc}")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<AbstractCallbackResponse> handleCallbackGet(@PathVariable String sid, @PathVariable String pc, @RequestParam MultiValueMap<String, String> payload) {
+        LoadClientUtils.loadClient(false);
         final PaymentCode paymentCode;
         final Map<String, Object> terraformed = new HashMap<>(payload.toSingleValueMap());
         if (StringUtils.isEmpty(pc)) {
@@ -112,6 +118,7 @@ public class RevenuePaymentController {
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
     public WynkResponseEntity<AbstractCallbackResponse> handleCallbackJSON(@PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
+        LoadClientUtils.loadClient(false);
         final PaymentCode paymentCode;
         if (StringUtils.isEmpty(pc)) {
             final SessionDTO sessionDTO = SessionContextHolder.getBody();

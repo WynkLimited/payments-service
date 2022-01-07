@@ -11,6 +11,7 @@ import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.IUserPreferredPaymentService;
+import in.wynk.payment.utils.LoadClientUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +29,7 @@ public class PaymentOptionsS2SController {
     @PostMapping("/options")
     @AnalyseTransaction(name = "paymentOptions")
     public WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentMethods(@RequestBody DefaultPaymentOptionRequest<S2SPaymentOptionsRequest> request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(request);
         return paymentMethodService.getFilteredPaymentOptions(request);
     }
@@ -35,6 +37,7 @@ public class PaymentOptionsS2SController {
     @PostMapping("/saved/details")
     @AnalyseTransaction(name = "savedDetails")
     public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@RequestBody CombinedS2SPaymentDetailsRequest request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(request);
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());

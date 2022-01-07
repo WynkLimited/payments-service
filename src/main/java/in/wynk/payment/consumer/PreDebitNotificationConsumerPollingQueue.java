@@ -4,6 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -24,15 +25,14 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PreDebitNotificationMessage> {
 
+    private final ExecutorService messageHandlerThreadPool;
+    private final ScheduledExecutorService pollingThreadPool;
     @Value("${payment.pooling.queue.preDebitNotification.enabled}")
     private boolean pollingEnabled;
     @Value("${payment.pooling.queue.preDebitNotification.sqs.consumer.delay}")
     private long poolingDelay;
     @Value("${payment.pooling.queue.preDebitNotification.sqs.consumer.delayTimeUnit}")
     private TimeUnit poolingDelayTimeUnit;
-
-    private final ExecutorService messageHandlerThreadPool;
-    private final ScheduledExecutorService pollingThreadPool;
 
     public PreDebitNotificationConsumerPollingQueue(String queueName,
                                                     AmazonSQS sqs,
@@ -68,6 +68,7 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     }
 
     @Override
+    @ClientAware(clientAlias = "#message.clientAlias")
     @TransactionAware(txnId = "#message.transactionId")
     @AnalyseTransaction(name = "preDebitNotificationMessage")
     public void consume(PreDebitNotificationMessage message) {
@@ -83,6 +84,8 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     }
 
     @Override
-    public Class<PreDebitNotificationMessage> messageType() { return PreDebitNotificationMessage.class; }
+    public Class<PreDebitNotificationMessage> messageType() {
+        return PreDebitNotificationMessage.class;
+    }
 
 }

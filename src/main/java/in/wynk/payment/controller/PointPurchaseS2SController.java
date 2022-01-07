@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.payment.service.IPointPurchaseSessionService;
+import in.wynk.payment.utils.LoadClientUtils;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ public class PointPurchaseS2SController {
     @AnalyseTransaction(name = "pointPurchase")
     @ApiOperation("Provides session Id and the webview URL for point purchase")
     public SessionResponse initPointPurchase(@Valid @RequestBody SessionRequest request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(request);
         SessionResponse response = sessionService.initSession(request);
         AnalyticService.update(response);

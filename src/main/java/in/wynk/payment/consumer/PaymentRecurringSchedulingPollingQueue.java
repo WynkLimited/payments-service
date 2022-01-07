@@ -4,6 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.request.MigrationTransactionRequest;
@@ -61,6 +62,7 @@ public class PaymentRecurringSchedulingPollingQueue extends AbstractSQSMessageCo
     }
 
     @Override
+    @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "renewalSubscriptionMessage")
     public void consume(PaymentRecurringSchedulingMessage message) {
         log.info(PaymentLoggingMarker.RENEWAL_SUBSCRIPTION_QUEUE, "processing PaymentRecurringSchedulingMessage {}", message);

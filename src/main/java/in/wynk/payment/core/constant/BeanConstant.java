@@ -3,32 +3,29 @@ package in.wynk.payment.core.constant;
 public interface BeanConstant {
 
     String ITUNES_PAYMENT_SERVICE = "iTunes";
+    String PAYMENT_ERROR_DAO = "paymentErrorDao";
     String PAYU_MERCHANT_PAYMENT_SERVICE = "PayU";
+    String TRANSACTION_DAO = "transactionDaoBean";
     String PAYTM_MERCHANT_WALLET_SERVICE = "PayTm";
     String AMAZON_IAP_PAYMENT_SERVICE = "AmazonIap";
+    String ADD_TO_BILL_PAYMENT_SERVICE = "AddToBill";
+    String TRANSACTION_MANAGER = "transactionManager";
     String PHONEPE_MERCHANT_PAYMENT_SERVICE = "PhonePe";
+    String PAYMENT_RENEWAL_DAO = "paymentRenewalDaoBean";
     String APB_PAYTM_MERCHANT_WALLET_SERVICE = "APBPayTm";
     String APB_MERCHANT_PAYMENT_SERVICE = "AirtelPaymentBank";
-    String ACB_MERCHANT_PAYMENT_SERVICE = "AirtelCarrierBilling";
-    String GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE = "GoogleWallet";
-    String PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE = "PhonePeAuto";
-    String ADD_TO_BILL_PAYMENT_SERVICE = "AddToBill";
-    String PAYMENT_ERROR_DAO = "paymentErrorDao";
-    String TRANSACTION_DAO = "transactionDaoBean";
-    String PAYMENT_RENEWAL_DAO = "paymentRenewalDaoBean";
     String MERCHANT_TRANSACTION_DAO = "merchantTransactionDao";
-
-    String RECURRING_PAYMENT_RENEWAL_SERVICE = "recurringPaymentRenewalManagerBean";
-
+    String ACB_MERCHANT_PAYMENT_SERVICE = "AirtelCarrierBilling";
+    String PAYMENT_MONGO_TEMPLATE_REF = "paymentMongoTemplateRef";
+    String GOOGLE_WALLET_MERCHANT_PAYMENT_SERVICE = "GoogleWallet";
+    String PAYMENT_MONGO_DB_FACTORY_REF = "paymentMongodbFactoryRef";
+    String PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE = "PhonePeAuto";
     String APB_PAYTM_PAYMENT_CLIENT_S2S_TEMPLATE = "apbPaytmHttpTemplate";
     String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";
-    String EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE = "paymentClientHttpTemplate";
-    String EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE = "paymentGatewayHttpTemplate";
-
-    String PAYMENT_MONGO_TEMPLATE_REF = "paymentMongoTemplateRef";
-    String PAYMENT_MONGO_DB_FACTORY_REF = "paymentMongodbFactoryRef";
-
     String CHARGING_FRAUD_DETECTION_CHAIN = "chargingFraudDetectionChain";
     String VERIFY_IAP_FRAUD_DETECTION_CHAIN = "verifyIAPFraudDetectionChain";
+    String EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE = "paymentClientHttpTemplate";
+    String EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE = "paymentGatewayHttpTemplate";
+    String RECURRING_PAYMENT_RENEWAL_SERVICE = "recurringPaymentRenewalManagerBean";
 
 }

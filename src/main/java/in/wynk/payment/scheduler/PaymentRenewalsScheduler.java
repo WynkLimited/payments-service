@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
+import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
 
 @Service
 public class PaymentRenewalsScheduler {
@@ -30,9 +31,9 @@ public class PaymentRenewalsScheduler {
     @Autowired
     private SeRenewalService seRenewalService;
 
-    @Transactional
     @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "paymentRenewals")
+    @Transactional(transactionManager = TRANSACTION_MANAGER)
     public void paymentRenew(String requestId, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
@@ -45,9 +46,9 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("paymentRenewalsCompleted", true);
     }
 
-    @Transactional
     @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "renewNotifications")
+    @Transactional(transactionManager = TRANSACTION_MANAGER)
     public void sendNotifications(String requestId, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);

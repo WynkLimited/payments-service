@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 
+import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
@@ -94,13 +95,13 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    @Transactional
+    @Transactional(transactionManager = TRANSACTION_MANAGER)
     public Stream<PaymentRenewal> getCurrentDueNotifications() {
         return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
     }
 
     @Override
-    @Transactional
+    @Transactional(transactionManager = TRANSACTION_MANAGER)
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments() {
         return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
     }

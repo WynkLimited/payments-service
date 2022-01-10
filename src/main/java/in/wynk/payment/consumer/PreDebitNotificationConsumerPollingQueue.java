@@ -6,13 +6,12 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
-import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.PreDebitNotificationRequest;
 import in.wynk.payment.service.IPreDebitNotificationService;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +26,7 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
 
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
+    private final ITransactionManagerService transactionManagerService;
     @Value("${payment.pooling.queue.preDebitNotification.enabled}")
     private boolean pollingEnabled;
     @Value("${payment.pooling.queue.preDebitNotification.sqs.consumer.delay}")
@@ -39,10 +39,12 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
                                                     ObjectMapper objectMapper,
                                                     ISQSMessageExtractor messagesExtractor,
                                                     ExecutorService messageHandlerThreadPool,
-                                                    ScheduledExecutorService pollingThreadPool) {
+                                                    ScheduledExecutorService pollingThreadPool,
+                                                    ITransactionManagerService transactionManagerService) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
+        this.transactionManagerService = transactionManagerService;
     }
 
     @Override
@@ -69,12 +71,11 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
-    @TransactionAware(txnId = "#message.transactionId")
     @AnalyseTransaction(name = "preDebitNotificationMessage")
     public void consume(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
-        Transaction transaction = TransactionContext.get();
+        Transaction transaction = transactionManagerService.get(message.getTransactionId());
         BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class)
                 .sendPreDebitNotification(PreDebitNotificationRequest.builder()
                         .transactionId(message.getTransactionId())

@@ -492,7 +492,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     @Override
-    @ClientAware(clientAlias = "#request.clientAlias()")
+    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserWalletDetails> builder = WynkResponseEntity.builder();
         Wallet wallet = getWallet(request.getPreferredPayment());

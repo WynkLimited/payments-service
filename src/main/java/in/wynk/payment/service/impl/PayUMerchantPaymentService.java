@@ -720,7 +720,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    @ClientAware(clientAlias = "#request.clientAlias()")
+    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<UserCardDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest request) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserCardDetails> builder = WynkResponseEntity.builder();
         final String payUMerchantKey = PropertyResolverUtils.resolve(request.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);

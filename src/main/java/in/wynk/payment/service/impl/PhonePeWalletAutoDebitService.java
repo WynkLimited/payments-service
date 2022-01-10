@@ -537,7 +537,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     @Override
-    @ClientAware(clientAlias = "#request.clientAlias()")
+    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         try {
             final double finalAmount = DiscountUtils.compute(request.getCouponId(), request.getProductDetails());

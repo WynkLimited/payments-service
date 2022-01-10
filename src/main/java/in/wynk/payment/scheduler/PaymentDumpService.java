@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.logging.BaseLoggingMarkers.MYSQL_ERROR;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
+import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_DUMP;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_TRANSACTION;
@@ -38,7 +39,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.SDK_CLIENT_ERRO
 
 @Slf4j
 @Service
-@Transactional
+@Transactional(transactionManager = TRANSACTION_MANAGER)
 public class PaymentDumpService {
 
     @Autowired

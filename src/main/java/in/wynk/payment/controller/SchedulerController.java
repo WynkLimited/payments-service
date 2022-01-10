@@ -26,7 +26,8 @@ public class SchedulerController {
     @AnalyseTransaction(name = "paymentRenew")
     public EmptyResponse startPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId, clientId));
         return EmptyResponse.response();
     }
 
@@ -34,7 +35,8 @@ public class SchedulerController {
     @AnalyseTransaction(name = "sePaymentRenew")
     public EmptyResponse startSEPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.startSeRenewals(requestId, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentRenewalsScheduler.startSeRenewals(requestId, clientId));
         return EmptyResponse.response();
     }
 
@@ -42,7 +44,8 @@ public class SchedulerController {
     @AnalyseTransaction(name = "renewNotification")
     public EmptyResponse startRenewNotification() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, clientId));
         return EmptyResponse.response();
     }
 

@@ -24,7 +24,8 @@ public class PaymentDumpController {
     @AnalyseTransaction(name = "transactionWeeklyDump")
     public EmptyResponse transactionWeeklyDump(@PathVariable int days) {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, days, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, days, clientId));
         return EmptyResponse.response();
     }
 
@@ -32,7 +33,8 @@ public class PaymentDumpController {
     @AnalyseTransaction(name = "transactionDailyDump")
     public EmptyResponse transactionDailyDump(@RequestParam long startTime) {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, startTime, SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentDumpService.startPaymentDumpS3Export(requestId, startTime, clientId));
         return EmptyResponse.response();
     }
 

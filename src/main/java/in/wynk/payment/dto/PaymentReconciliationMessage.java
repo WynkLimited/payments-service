@@ -23,6 +23,12 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
     @Analysed
     private String extTxnId;
 
+    @Analysed
+    private String originalTransactionId;
+
+    @Analysed
+    private int originalAttemptSequence;
+
     @Override
     public PaymentReconciliationThresholdExceedEvent map() {
         return PaymentReconciliationThresholdExceedEvent.builder()
@@ -36,4 +42,5 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
                 .transactionId(getTransactionId())
                 .build();
     }
+
 }

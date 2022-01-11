@@ -10,33 +10,29 @@ import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.RenewalChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.tinylytics.constants.TinylyticsConstants.PAYMENT_RECONCILE_EVENT;
-
 @Slf4j
 public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentReconciliationMessage> {
 
+    private final ExecutorService messageHandlerThreadPool;
+    private final ScheduledExecutorService pollingThreadPool;
     @Value("${payment.pooling.queue.reconciliation.enabled}")
     private boolean reconciliationPollingEnabled;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delay}")
     private long reconciliationPoolingDelay;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
-
-    private final ExecutorService messageHandlerThreadPool;
-    private final ScheduledExecutorService pollingThreadPool;
-
     @Autowired
     private PaymentManager paymentManager;
 
@@ -61,6 +57,13 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
             transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder()
                     .extTxnId(message.getExtTxnId())
                     .transactionId(message.getTransactionId())
+                    .build();
+        } else if (message.getPaymentEvent() == PaymentEvent.RENEW) {
+            transactionStatusRequest = RenewalChargingTransactionReconciliationStatusRequest.builder()
+                    .extTxnId(message.getExtTxnId())
+                    .transactionId(message.getTransactionId())
+                    .originalTransactionId(message.getOriginalTransactionId())
+                    .originalAttemptSequence(message.getOriginalAttemptSequence())
                     .build();
         } else {
             transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder()

@@ -31,6 +31,12 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
     @Builder.Default
     private String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT);
 
+    @Analysed
+    private String originalTransactionId;
+
+    @Analysed
+    private int originalAttemptSequence;
+
     @Override
     public PaymentReconciliationThresholdExceedEvent map() {
         return PaymentReconciliationThresholdExceedEvent.builder()
@@ -45,4 +51,5 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
                 .paymentCode(PaymentCodeCachingService.getFromPaymentCode(getPaymentCode()))
                 .build();
     }
+
 }

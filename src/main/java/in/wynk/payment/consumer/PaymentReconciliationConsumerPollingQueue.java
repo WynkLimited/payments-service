@@ -11,6 +11,7 @@ import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.RenewalChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -58,6 +59,13 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
             transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder()
                     .extTxnId(message.getExtTxnId())
                     .transactionId(message.getTransactionId())
+                    .build();
+        } else if (message.getPaymentEvent() == PaymentEvent.RENEW) {
+            transactionStatusRequest = RenewalChargingTransactionReconciliationStatusRequest.builder()
+                    .extTxnId(message.getExtTxnId())
+                    .transactionId(message.getTransactionId())
+                    .originalTransactionId(message.getOriginalTransactionId())
+                    .originalAttemptSequence(message.getOriginalAttemptSequence())
                     .build();
         } else {
             transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder()

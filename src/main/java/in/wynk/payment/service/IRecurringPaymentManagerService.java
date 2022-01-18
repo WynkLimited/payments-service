@@ -8,9 +8,9 @@ import java.util.stream.Stream;
 
 public interface IRecurringPaymentManagerService {
 
-    Stream<PaymentRenewal> getCurrentDueNotifications();
+    Stream<PaymentRenewal> getCurrentDueNotifications(String clientAlias);
 
-    Stream<PaymentRenewal> getCurrentDueRecurringPayments();
+    Stream<PaymentRenewal> getCurrentDueRecurringPayments(String clientAlias);
 
     void scheduleRecurringPayment(AbstractTransactionRevisionRequest request);
 

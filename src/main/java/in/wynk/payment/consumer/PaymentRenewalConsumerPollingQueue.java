@@ -4,7 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.common.enums.PaymentEvent;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
@@ -24,19 +24,18 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRenewalMessage> {
 
-    @Value("${payment.pooling.queue.renewal.enabled}")
-    private boolean renewalPollingEnabled;
-    @Value("${payment.pooling.queue.renewal.sqs.consumer.delay}")
-    private long renewalPoolingDelay;
-    @Value("${payment.pooling.queue.renewal.sqs.consumer.delayTimeUnit}")
-    private TimeUnit renewalPoolingDelayTimeUnit;
-
     private final ObjectMapper objectMapper;
     private final ISqsManagerService sqsManagerService;
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
     private final ITransactionManagerService transactionManager;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    @Value("${payment.pooling.queue.renewal.enabled}")
+    private boolean renewalPollingEnabled;
+    @Value("${payment.pooling.queue.renewal.sqs.consumer.delay}")
+    private long renewalPoolingDelay;
+    @Value("${payment.pooling.queue.renewal.sqs.consumer.delayTimeUnit}")
+    private TimeUnit renewalPoolingDelayTimeUnit;
 
     public PaymentRenewalConsumerPollingQueue(String queueName,
                                               AmazonSQS sqs,
@@ -78,6 +77,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     }
 
     @Override
+    @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalMessage")
     public void consume(PaymentRenewalMessage message) {
         AnalyticService.update(message);
@@ -90,13 +90,15 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                     .planId(transaction.getPlanId())
                     .msisdn(transaction.getMsisdn())
                     .clientAlias(transaction.getClientAlias())
-                    .paymentCode(transaction.getPaymentChannel())
                     .attemptSequence(message.getAttemptSequence())
+                    .paymentCode(transaction.getPaymentChannel().getId())
                     .build());
         }
     }
 
     @Override
-    public Class<PaymentRenewalMessage> messageType() {return PaymentRenewalMessage.class; }
+    public Class<PaymentRenewalMessage> messageType() {
+        return PaymentRenewalMessage.class;
+    }
 
 }

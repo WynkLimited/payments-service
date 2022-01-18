@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,12 +12,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PaymentRenewalChargingRequest {
 
+    private int attemptSequence;
+
+    private Integer planId;
+
     private String id;
     private String uid;
     private String msisdn;
-    private Integer planId;
-    private int attemptSequence;
     private String clientAlias;
+
     private PaymentCode paymentCode;
 
 }

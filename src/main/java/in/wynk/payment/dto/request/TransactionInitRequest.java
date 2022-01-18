@@ -2,31 +2,32 @@ package in.wynk.payment.dto.request;
 
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * @author Abhishek
- * @created 17/08/20
- */
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionInitRequest {
-    private String uid;//done
-    private String msisdn;//done
-    private String clientAlias;//done
+
     private int planId;
-    private String itemId;
-    private double amount; //done
-    private PaymentCode paymentCode; //done
-    private PaymentEvent event; //done
-    private String couponId;// done
+
+    private double amount;
     private double discount;
+
+    private String uid;
+    private String msisdn;
+    private String itemId;
+    private String couponId;
+    private String clientAlias;
     @Builder.Default
     private String status = TransactionStatus.INPROGRESS.getValue();
+
+    private PaymentEvent event;
+    private PaymentCode paymentCode;
+
 }

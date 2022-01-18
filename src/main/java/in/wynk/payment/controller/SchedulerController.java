@@ -1,10 +1,12 @@
 package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,13 +21,15 @@ import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 public class SchedulerController {
 
     private final ExecutorService executorService;
+    private final ClientDetailsCachingService cachingService;
     private final PaymentRenewalsScheduler paymentRenewalsScheduler;
 
     @GetMapping("/start/renewals")
     @AnalyseTransaction(name = "paymentRenew")
     public EmptyResponse startPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId, cachingService.getClientById(clientId).getAlias()));
         return EmptyResponse.response();
     }
 
@@ -33,7 +37,8 @@ public class SchedulerController {
     @AnalyseTransaction(name = "sePaymentRenew")
     public EmptyResponse startSEPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.startSeRenewals(requestId));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentRenewalsScheduler.startSeRenewals(requestId, clientId));
         return EmptyResponse.response();
     }
 
@@ -41,7 +46,8 @@ public class SchedulerController {
     @AnalyseTransaction(name = "renewNotification")
     public EmptyResponse startRenewNotification() {
         String requestId = MDC.get(REQUEST_ID);
-        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, cachingService.getClientById(clientId).getAlias()));
         return EmptyResponse.response();
     }
 

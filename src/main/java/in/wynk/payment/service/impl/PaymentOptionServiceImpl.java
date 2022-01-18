@@ -1,14 +1,15 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
@@ -193,7 +194,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                     keyBuilder.deviceId(deviceId);
                 }
                 try {
-                    IUserPreferredPaymentService<AbstractPaymentDetails, AbstractPreferredPaymentDetailsRequest<?>> userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCode.getFromPaymentCode(paymentCode).getCode(), new ParameterizedTypeReference<IUserPreferredPaymentService<AbstractPaymentDetails, AbstractPreferredPaymentDetailsRequest<?>>>() {
+                    IUserPreferredPaymentService<AbstractPaymentDetails, AbstractPreferredPaymentDetailsRequest<?>> userPreferredPaymentService = BeanLocatorFactory.getBean(PaymentCodeCachingService.getFromPaymentCode(paymentCode).getCode(), new ParameterizedTypeReference<IUserPreferredPaymentService<AbstractPaymentDetails, AbstractPreferredPaymentDetailsRequest<?>>>() {
                     });
                     String requestId = MDC.get(REQUEST_ID);
                     task = () -> {

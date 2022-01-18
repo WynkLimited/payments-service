@@ -7,6 +7,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
+import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,7 @@ public class RevenuePaymentControllerV2 {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
     public WynkResponseEntity<IVerificationResponse> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
         WynkResponseEntity<IVerificationResponse> verificationResponseWynkResponseEntity = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), IMerchantVerificationService.class).doVerify(request);

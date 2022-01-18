@@ -4,7 +4,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
@@ -29,6 +29,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -37,15 +38,12 @@ import static org.mockito.ArgumentMatchers.eq;
 public class PayUPaymentChargingTest {
 
     @MockBean
+    protected ISubscriptionServiceManager subscriptionServiceManager;
+    @MockBean
     private ITransactionManagerService transactionManager;
-
     @MockBean
     private PaymentCachingService paymentCachingService;
-
     private IMerchantPaymentChargingService chargingService;
-
-    @MockBean
-    protected ISubscriptionServiceManager subscriptionServiceManager;
 
     @Before
     @SneakyThrows
@@ -56,7 +54,7 @@ public class PayUPaymentChargingTest {
         Mockito.when((transactionManager.init(any()))).thenReturn(PayUTestData.initRecurringPaymentTransaction());
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.ONE_TIME_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.ONE_TIME_PLAN_ID, PlanType.ONE_TIME_SUBSCRIPTION));
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.RECURRING_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.RECURRING_PLAN_ID, PlanType.SUBSCRIPTION));
-        chargingService = BeanLocatorFactory.getBean(PaymentCode.PAYU.getCode(), IMerchantPaymentChargingService.class);
+        chargingService = BeanLocatorFactory.getBean(PaymentCodeCachingService.getFromPaymentCode(PAYU).getCode(), IMerchantPaymentChargingService.class);
     }
 
     @Test
@@ -84,7 +82,7 @@ public class PayUPaymentChargingTest {
     @Test
     @Order(3)
     public void testSiDetails() {
-       // TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
+        // TransactionContext.set(PayUTestData.initRecurringSubscribeTransaction());
         AbstractChargingRequest<?> request = PayUTestData.buildRecurringChargingRequest();
         WynkResponseEntity<?> response = chargingService.charge(request);
         Assert.assertEquals(response.getStatusCode(), HttpStatus.OK);

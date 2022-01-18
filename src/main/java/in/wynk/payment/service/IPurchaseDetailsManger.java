@@ -3,12 +3,10 @@ package in.wynk.payment.service;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 
-import java.util.Optional;
-
 public interface IPurchaseDetailsManger {
 
-    void save(Transaction transaction, IPurchaseDetails details);
+    IPurchaseDetails get(Transaction transaction);
 
-    Optional<? extends IPurchaseDetails> get(Transaction transaction);
+    void save(Transaction transaction, IPurchaseDetails details);
 
 }

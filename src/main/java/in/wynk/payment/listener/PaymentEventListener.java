@@ -76,6 +76,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentReconciliationThresholdExceedEvent")
     public void onPaymentReconThresholdExceedEvent(PaymentReconciliationThresholdExceedEvent event) {
         AnalyticService.update(event);
@@ -86,6 +87,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalMessageThresholdExceedEvent")
     public void onPaymentRenewalMessageThresholdExceedEvent(PaymentRenewalMessageThresholdExceedEvent event) {
         AnalyticService.update(event);
@@ -96,12 +98,13 @@ public class PaymentEventListener {
                 .planId(transaction.getPlanId())
                 .msisdn(transaction.getMsisdn())
                 .clientAlias(transaction.getClientAlias())
-                .paymentCode(transaction.getPaymentChannel())
                 .attemptSequence(event.getAttemptSequence())
+                .paymentCode(transaction.getPaymentChannel().getId())
                 .build());
     }
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "recurringPaymentEvent")
     public void onRecurringPaymentEvent(RecurringPaymentEvent event) {
         try {
@@ -114,6 +117,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "merchantTransactionEvent")
     public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
         AnalyticService.update(event);
@@ -128,6 +132,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "paymentErrorEvent")
+    @ClientAware(clientAlias = "#event.clientAlias")
     public void onPaymentErrorEvent(PaymentErrorEvent event) {
         AnalyticService.update(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
@@ -138,6 +143,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
         AnalyticService.update(event);
@@ -152,6 +158,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentReconciledEvent")
     public void onPaymentReconciledEvent(PaymentChargingReconciledEvent event) {
         AnalyticService.update(event);
@@ -160,6 +167,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "clientCallback")
+    @ClientAware(clientAlias = "#event.clientAlias")
     public void onClientCallbackEvent(ClientCallbackEvent callbackEvent) {
         AnalyticService.update(callbackEvent);
         sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
@@ -167,6 +175,7 @@ public class PaymentEventListener {
 
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
     public void onPurchaseInit(PurchaseInitEvent purchaseInitEvent) {
         dropOutTracker(PurchaseRecord.from(purchaseInitEvent));
     }

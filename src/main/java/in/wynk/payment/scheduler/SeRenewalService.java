@@ -10,7 +10,7 @@ import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.MsisdnUtils;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.service.PaymentManager;
@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.SE_BILLING;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.SE_PAYMENT_RENEWAL_ERROR;
 
 @Slf4j
@@ -173,7 +174,7 @@ public class SeRenewalService {
                             .msisdn(msisdn)
                             .id(extTransactionId)
                             .planId(planDTO.getId())
-                            .paymentCode(PaymentCode.SE_BILLING)
+                            .paymentCode(PaymentCodeCachingService.getFromPaymentCode(SE_BILLING))
                             .clientAlias(wynkApplicationContext.getClientAlias())
                             .build();
                     paymentManager.doRenewal(request);

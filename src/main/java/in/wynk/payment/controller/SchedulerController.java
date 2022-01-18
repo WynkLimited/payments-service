@@ -1,6 +1,7 @@
 package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 public class SchedulerController {
 
     private final ExecutorService executorService;
+    private final ClientDetailsCachingService cachingService;
     private final PaymentRenewalsScheduler paymentRenewalsScheduler;
 
     @GetMapping("/start/renewals")
@@ -27,7 +29,7 @@ public class SchedulerController {
     public EmptyResponse startPaymentRenew() {
         String requestId = MDC.get(REQUEST_ID);
         String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId, clientId));
+        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId, cachingService.getClientById(clientId).getAlias()));
         return EmptyResponse.response();
     }
 
@@ -45,7 +47,7 @@ public class SchedulerController {
     public EmptyResponse startRenewNotification() {
         String requestId = MDC.get(REQUEST_ID);
         String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, clientId));
+        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, cachingService.getClientById(clientId).getAlias()));
         return EmptyResponse.response();
     }
 

@@ -63,7 +63,7 @@ public class PayUPaymentRenewTest {
 
     @Before
     public void setup() {
-        Mockito.when(recurringPaymentManagerService.getCurrentDueRecurringPayments()).thenReturn(PayUTestData.buildPaymentRenewalTestData());
+        Mockito.when(recurringPaymentManagerService.getCurrentDueRecurringPayments("airtelXstream")).thenReturn(PayUTestData.buildPaymentRenewalTestData());
         Mockito.when(restTemplate.postForObject(anyString(), anyMap(), eq(String.class))).thenReturn(PayUTestData.buildSuccessRecurringPayUTransactionStatusResponse());
     }
 

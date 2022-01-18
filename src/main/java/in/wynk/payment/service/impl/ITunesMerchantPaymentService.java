@@ -216,8 +216,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 .uid(transaction.getUid())
                 .msisdn(transaction.getMsisdn())
                 .planId(transaction.getPlanId())
-                .transactionId(Long.parseLong(receiptInfo.getTransactionId()))
-                .expiry(receiptType.getCancellationDate(receiptInfo))
+                .transactionId(receiptType.getTransactionId(receiptInfo))
+                .expiry(receiptType.getExpireDate(receiptInfo))
                 .receipt(receiptDetails.getReceipt())
                 .build();
         receiptDetailsDao.save(itunesIdUidMapping);

@@ -202,7 +202,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         LatestReceiptInfo receiptInfo = mapping.getMessage().getFirst();
         ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage().getSecond();
-        ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getReceipt());
+        ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
         //Need to add check for itunes txn Id in merchant transaction table to achieve idempotency
         final long expireTimestamp = NumberUtils.toLong(receiptInfo.getExpiresDateMs());
         final long cancellationTimestamp = NumberUtils.toLong(receiptInfo.getCancellationDateMs());

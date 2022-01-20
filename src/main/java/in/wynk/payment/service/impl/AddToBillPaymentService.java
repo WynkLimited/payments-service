@@ -162,10 +162,10 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     @ClientAware(clientAlias = "#request.clientAlias")
-    public WynkResponseEntity<UserAddToBillDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> preferredPaymentDetailsRequest) {
+    public WynkResponseEntity<UserAddToBillDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserAddToBillDetails> builder = WynkResponseEntity.builder();
-        if (StringUtils.isNotBlank(preferredPaymentDetailsRequest.getSi())) {
-            final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(preferredPaymentDetailsRequest.getProductDetails().getId(), preferredPaymentDetailsRequest.getSi());
+        if (StringUtils.isNotBlank(request.getSi())) {
+            final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(request.getProductDetails().getId(), request.getSi());
             if (Objects.nonNull(userAddToBillDetails)) {
                 return builder.data(userAddToBillDetails).build();
             }

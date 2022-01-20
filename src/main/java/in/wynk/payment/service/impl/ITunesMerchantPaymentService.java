@@ -440,10 +440,16 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     } catch (Exception e) {
                         log.error(PAYMENT_ERROR, "unable to stringify receipt");
                     }
-                    if (optionalReceiptDetails.isPresent()) {
-                        ReceiptDetails details = optionalReceiptDetails.get();
-                        return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
-                                .uid(details.getUid()).message(Pair.of(latestReceiptInfo, details)).build();
+                    String skuId = latestReceiptInfo.getProductId();
+                    if (StringUtils.isNotBlank(skuId)) {
+                        if (cachingService.containsSku(skuId)) {
+                            skuId = cachingService.getNewSku(skuId);
+                        }
+                        PlanDTO planToBeSubscribed = cachingService.getPlanFromSku(skuId);
+                        if (optionalReceiptDetails.isPresent()) {
+                            ReceiptDetails details = optionalReceiptDetails.get();
+                            return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planToBeSubscribed.getId()).msisdn(details.getMsisdn()).uid(details.getUid()).message(Pair.of(latestReceiptInfo, details)).build();
+                        }
                     }
                 }
             }

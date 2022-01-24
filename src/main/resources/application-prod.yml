@@ -65,7 +65,7 @@ spring:
       connectionTimeout: 2000
       idleTimeout: 10000
       maxLifetime: 30000
-      poolName: payment-datasource-pool-dev
+      poolName: payment-datasource-pool-prod
       minimum-idle: 50
       maximumPoolSize: 200
 
@@ -479,7 +479,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-payment-api-prod
                   minimum-idle: 50
                   maximumPoolSize: 200
                 jpa:
@@ -518,7 +518,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-airtelxstream-prod
                   minimum-idle: 50
                   maximumPoolSize: 200
                 jpa:
@@ -557,7 +557,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-music-prod
                   minimum-idle: 50
                   maximumPoolSize: 200
                 jpa:
@@ -596,7 +596,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-rajtv-prod
                   minimum-idle: 50
                   maximumPoolSize: 200
                 jpa:

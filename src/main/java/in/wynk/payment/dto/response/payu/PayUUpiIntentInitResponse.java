@@ -47,6 +47,8 @@ public class PayUUpiIntentInitResponse {
             stringBuilder.append("&am=").append(map.getOrDefault("am", this.result.amount));
             stringBuilder.append("&cu=").append(map.getOrDefault("cu", "INR"));
             stringBuilder.append("&tn=").append(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get("tn"));
+            stringBuilder.append("&mc=5815");
+            stringBuilder.append("&tid=").append(TransactionContext.get().getId().toString());
             return stringBuilder.toString();
         }
         throw new WynkRuntimeException(PAY104);

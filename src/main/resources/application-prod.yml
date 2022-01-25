@@ -66,8 +66,8 @@ spring:
       idleTimeout: 10000
       maxLifetime: 30000
       poolName: payment-datasource-pool-prod
-      minimum-idle: 50
-      maximumPoolSize: 200
+      minimum-idle: 10
+      maximumPoolSize: 100
 
   #### JPA props ######
   jpa:
@@ -480,8 +480,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-payment-api-prod
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  minimum-idle: 20
+                  maximumPoolSize: 100
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -519,8 +519,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-airtelxstream-prod
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  minimum-idle: 20
+                  maximumPoolSize: 50
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -558,8 +558,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-music-prod
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  minimum-idle: 20
+                  maximumPoolSize: 50
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -597,8 +597,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-rajtv-prod
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  minimum-idle: 10
+                  maximumPoolSize: 50
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

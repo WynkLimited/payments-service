@@ -51,5 +51,5 @@ public interface PayUConstants {
     String PAYU_CHARGING_TRANSACTION_TYPE = "CHARGE_TYPE";
     String PAYU_DECODED_S2S_RESPONSE = "decoded_s2s_response";
     String PAYU_INVOICE_DISPLAY_NUMBER = "invoiceDisplayNumber";
-
+    String PAYU_MERCHANT_CODE = "5815";
 }

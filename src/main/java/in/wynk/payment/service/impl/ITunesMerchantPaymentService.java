@@ -47,6 +47,7 @@ import org.json.simple.JSONValue;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -70,7 +71,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<LatestReceiptInfo>, IReceiptDetailService<LatestReceiptInfo, ItunesCallbackRequest> {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<Pair<LatestReceiptInfo, ReceiptDetails>>, IReceiptDetailService<Pair<LatestReceiptInfo, ReceiptDetails>, ItunesCallbackRequest> {
 
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
     private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
@@ -197,9 +198,11 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public void handleNotification(Transaction transaction, UserPlanMapping<LatestReceiptInfo> mapping) {
+    public void handleNotification(Transaction transaction, UserPlanMapping<Pair<LatestReceiptInfo, ReceiptDetails>> mapping) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
-        LatestReceiptInfo receiptInfo = mapping.getMessage();
+        LatestReceiptInfo receiptInfo = mapping.getMessage().getFirst();
+        ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage().getSecond();
+        ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
         //Need to add check for itunes txn Id in merchant transaction table to achieve idempotency
         final long expireTimestamp = NumberUtils.toLong(receiptInfo.getExpiresDateMs());
         final long cancellationTimestamp = NumberUtils.toLong(receiptInfo.getCancellationDateMs());
@@ -207,6 +210,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
         transaction.setStatus(finalTransactionStatus.name());
+        final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
+                .type(receiptType.name())
+                .id(receiptInfo.getOriginalTransactionId())
+                .uid(transaction.getUid())
+                .msisdn(transaction.getMsisdn())
+                .planId(transaction.getPlanId())
+                .transactionId(receiptType.getTransactionId(receiptInfo))
+                .expiry(receiptType.getExpireDate(receiptInfo))
+                .receipt(receiptDetails.getReceipt())
+                .build();
+        receiptDetailsDao.save(itunesIdUidMapping);
     }
 
     private ItunesLatestReceiptResponse getItunesLatestReceiptResponse(Transaction transaction, String decodedReceipt) {
@@ -406,7 +420,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public UserPlanMapping<LatestReceiptInfo> getUserPlanMapping(DecodedNotificationWrapper<ItunesCallbackRequest> wrapper) {
+    public UserPlanMapping<Pair<LatestReceiptInfo, ReceiptDetails>> getUserPlanMapping(DecodedNotificationWrapper<ItunesCallbackRequest> wrapper) {
         ItunesCallbackRequest itunesCallbackRequest = wrapper.getDecodedNotification();
         if (itunesCallbackRequest.getUnifiedReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
             //verify the receipt from server and then add txnType to mapping
@@ -428,8 +442,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     }
                     if (optionalReceiptDetails.isPresent()) {
                         ReceiptDetails details = optionalReceiptDetails.get();
-                        return UserPlanMapping.<LatestReceiptInfo>builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
-                                .uid(details.getUid()).message(latestReceiptInfo).build();
+                        return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(details.getPlanId()).msisdn(details.getMsisdn())
+                                .uid(details.getUid()).message(Pair.of(latestReceiptInfo, details)).build();
                     }
                 }
             }

@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -18,7 +19,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.paytm.*;
@@ -49,7 +50,6 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
-import static in.wynk.payment.core.constant.PaymentCode.APB_PAYTM_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_TOKEN;
 import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
@@ -181,7 +181,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     private SavedDetailsKey getKey(String uid, String deviceId) {
-        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode(APB_PAYTM_WALLET.name()).build();
+        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode("APB_PAYTM_WALLET").build();
     }
 
     @Override
@@ -491,6 +491,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
     }
 
     @Override
+    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserWalletDetails> builder = WynkResponseEntity.builder();
         Wallet wallet = getWallet(request.getPreferredPayment());

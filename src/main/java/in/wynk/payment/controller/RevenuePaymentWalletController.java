@@ -10,6 +10,7 @@ import in.wynk.payment.dto.response.UserWalletDetails;
 import in.wynk.payment.dto.response.WalletLinkResponse;
 import in.wynk.payment.dto.response.WalletTopUpResponse;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -24,10 +25,11 @@ public class RevenuePaymentWalletController {
 
     private final PaymentManager paymentManager;
 
-    @PostMapping("/link/request/{sid}")
     @ManageSession(sessionId = "#sid")
+    @PostMapping("/link/request/{sid}")
     @AnalyseTransaction(name = "walletLink")
     public WynkResponseEntity<WalletLinkResponse> linkRequest(@PathVariable String sid, @Valid @RequestBody WebWalletLinkRequest request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         WynkResponseEntity<WalletLinkResponse> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletLinkService<WalletLinkResponse, WalletLinkRequest>>() {
         }).link(request);
@@ -35,10 +37,11 @@ public class RevenuePaymentWalletController {
         return response;
     }
 
-    @PostMapping("/link/validate/{sid}")
     @ManageSession(sessionId = "#sid")
+    @PostMapping("/link/validate/{sid}")
     @AnalyseTransaction(name = "walletValidateLink")
     public WynkResponseEntity<Void> linkValidate(@PathVariable String sid, @Valid @RequestBody WebWalletValidateLinkRequest request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         WynkResponseEntity<Void> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletValidateLinkService<Void, WalletValidateLinkRequest>>() {
         }).validate(request);
@@ -46,10 +49,11 @@ public class RevenuePaymentWalletController {
         return response;
     }
 
-    @PostMapping("/unlink/request/{sid}")
     @ManageSession(sessionId = "#sid")
+    @PostMapping("/unlink/request/{sid}")
     @AnalyseTransaction(name = "walletUnlink")
     public WynkResponseEntity<Void> unlink(@PathVariable String sid, @Valid @RequestBody WebWalletDeLinkRequest request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         WynkResponseEntity<Void> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletDeLinkService<Void, WalletDeLinkRequest>>() {
         }).deLink(request);
@@ -61,6 +65,7 @@ public class RevenuePaymentWalletController {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletBalance")
     public WynkResponseEntity<UserWalletDetails> balance(@PathVariable String sid, @Valid @RequestBody WebWalletBalanceRequest request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         WynkResponseEntity<UserWalletDetails> response = BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IWalletBalanceService<UserWalletDetails, WalletBalanceRequest>>() {
         }).balance(request);
@@ -72,6 +77,7 @@ public class RevenuePaymentWalletController {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "walletAddMoney")
     public WynkResponseEntity<WalletTopUpResponse> addMoney(@PathVariable String sid, @Valid @RequestBody WalletTopUpRequest<WebPurchaseDetails> request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         WynkResponseEntity<WalletTopUpResponse> response = paymentManager.topUp(request);
         AnalyticService.update(response.getBody());

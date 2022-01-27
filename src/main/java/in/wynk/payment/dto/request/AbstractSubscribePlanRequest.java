@@ -3,6 +3,7 @@ package in.wynk.payment.dto.request;
 import in.wynk.common.dto.IObjectMapper;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.payment.core.dao.entity.PaymentCode;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -15,9 +16,9 @@ public class AbstractSubscribePlanRequest implements IObjectMapper {
     private final String uid;
     private final String msisdn;
     private final String subscriberId;
-    private final String paymentCode;
     private final String transactionId;
 
+    private final PaymentCode paymentCode;
     private final PaymentEvent paymentEvent;
     private final TransactionStatus transactionStatus;
 

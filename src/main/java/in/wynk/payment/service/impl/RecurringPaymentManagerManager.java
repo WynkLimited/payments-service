@@ -1,6 +1,10 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.aspect.advice.Transactional;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -16,50 +20,41 @@ import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 
+import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
 public class RecurringPaymentManagerManager implements IRecurringPaymentManagerService {
 
+    private final ApplicationEventPublisher eventPublisher;
     @Value("${payment.recurring.offset.day}")
     private int dueRecurringOffsetDay;
-
     @Value("${payment.recurring.offset.hour}")
     private int dueRecurringOffsetTime;
-
     @Value("${payment.preDebitNotification.preOffsetDays}")
     private int preDebitNotificationPreOffsetDay;
-
     @Value("${payment.preDebitNotification.offset.day}")
     private int duePreDebitNotificationOffsetDay;
-
     @Value("${payment.preDebitNotification.offset.hour}")
     private int duePreDebitNotificationOffsetTime;
 
-    @Autowired
-    @Qualifier(BeanConstant.PAYMENT_RENEWAL_DAO)
-    private IPaymentRenewalDao paymentRenewalDao;
-
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
-
     private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
         try {
-            paymentRenewalDao.save(PaymentRenewal.builder()
+            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
                     .day(nextRecurringDateTime)
                     .transactionId(transactionId)
                     .hour(nextRecurringDateTime.getTime())
@@ -100,14 +95,14 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     }
 
     @Override
-    @Transactional
-    public Stream<PaymentRenewal> getCurrentDueNotifications() {
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public Stream<PaymentRenewal> getCurrentDueNotifications(String clientAlias) {
         return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
     }
 
     @Override
-    @Transactional
-    public Stream<PaymentRenewal> getCurrentDueRecurringPayments() {
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public Stream<PaymentRenewal> getCurrentDueRecurringPayments(String clientAlias) {
         return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
     }
 
@@ -119,6 +114,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         currentDayTimeWithOffset.add(Calendar.HOUR_OF_DAY, offsetTime);
         final Date currentTime = currentDay.getTime();
         final Date currentTimeWithOffset = currentDayTimeWithOffset.getTime();
+        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
         if (currentDay.get(Calendar.DAY_OF_MONTH) != currentDayTimeWithOffset.get(Calendar.DAY_OF_MONTH)) {
             currentDay.set(Calendar.HOUR_OF_DAY, 23);
             currentDay.set(Calendar.MINUTE, 59);
@@ -138,6 +134,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Override
     public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
         try {
+            final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
             paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
                 final Calendar hour = Calendar.getInstance();
                 final Calendar day = recurringPayment.getDay();
@@ -169,5 +166,4 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
             throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
         }
     }
-
 }

@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -21,7 +22,7 @@ import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.dao.entity.Wallet;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.PhonePeResponse;
@@ -63,7 +64,6 @@ import static in.wynk.common.constant.BaseConstants.SLASH;
 import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.payment.core.constant.BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE;
-import static in.wynk.payment.core.constant.PaymentCode.PHONEPE_AUTO_DEBIT;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
@@ -535,6 +535,8 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         }
     }
 
+    @Override
+    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<UserWalletDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         try {
             final double finalAmount = DiscountUtils.compute(request.getCouponId(), request.getProductDetails());
@@ -563,7 +565,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     }
 
     private SavedDetailsKey getKey(String uid, String deviceId) {
-        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode(PHONEPE_AUTO_DEBIT.name()).build();
+        return SavedDetailsKey.builder().uid(uid).deviceId(deviceId).paymentGroup(WALLET).paymentCode("PHONEPE_AUTO_DEBIT").build();
     }
 
     private ErrorCode handleWynkRunTimeException(WynkRuntimeException e) {

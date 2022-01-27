@@ -6,7 +6,8 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.S2SPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
@@ -30,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.concurrent.TimeUnit;
 
+import static in.wynk.payment.core.constant.PaymentConstants.PHONEPE_WALLET;
 import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -54,10 +56,9 @@ public class PaymentsTest {
         Mockito.doReturn(dummyPlanDTO()).when(cachingService).getPlan(anyInt());
     }
 
-
     @Test
     public void phonePeChargingTest() {
-        PaymentCode code = PaymentCode.PHONEPE_WALLET;
+        PaymentCode code = PaymentCodeCachingService.getFromPaymentCode(PHONEPE_WALLET);
         WynkResponseEntity<?> response = doChargingTest(code);
         assert response.getStatus().is3xxRedirection();
     }
@@ -73,15 +74,15 @@ public class PaymentsTest {
         return callbackService.handleCallback(request);
     }
 
-    protected WynkResponseEntity<?> statusTest(PaymentCode paymentCode, AbstractTransactionStatusRequest statusRequest){
+    protected WynkResponseEntity<?> statusTest(PaymentCode paymentCode, AbstractTransactionStatusRequest statusRequest) {
         IMerchantPaymentStatusService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
         return callbackService.status(statusRequest);
     }
 
     @After
-    public void finish(){
+    public void finish() {
         Session<String, SessionDTO> session = SessionContextHolder.get();
-        sessionManager.put(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + UUIDs.timeBased().toString(), session,  10, TimeUnit.MINUTES);
+        sessionManager.put(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + UUIDs.timeBased().toString(), session, 10, TimeUnit.MINUTES);
     }
 
 }

@@ -4,7 +4,6 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.data.enums.State;
 import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
-import in.wynk.payment.core.constant.PaymentCode;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
@@ -15,10 +14,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentCode.PAYTM_WALLET;
-import static in.wynk.payment.core.constant.PaymentCode.PAYU;
 import static in.wynk.payment.core.constant.PaymentConstants.CARD;
-import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public class PaymentTestUtils {
 
@@ -50,15 +47,15 @@ public class PaymentTestUtils {
         meta.put("promo_msg", "Save and Pay via Cards.");
         meta.put("disable_message", "");
         return PaymentMethod.builder().displayName("Credit / Debit Cards").group("WALLET").hierarchy(10)
-                .meta(meta).paymentCode(PaymentCode.PAYTM_WALLET).state(State.ACTIVE).build();
+                .meta(meta).paymentCode(PAYTM_WALLET).state(State.ACTIVE).build();
     }
 
     public static UserPreferredPayment dummyPreferredWallet() {
-        return Wallet.builder().id(SavedDetailsKey.builder().paymentCode(PAYTM_WALLET.name()).paymentGroup(WALLET).uid(DUMMY_UID).build()).build();
+        return Wallet.builder().id(SavedDetailsKey.builder().paymentCode(PAYTM_WALLET).paymentGroup(WALLET).uid(DUMMY_UID).build()).build();
     }
 
     public static UserPreferredPayment dummyPreferredCard() {
-        return Card.builder().id(SavedDetailsKey.builder().paymentCode(PAYU.name()).paymentGroup(CARD).uid(DUMMY_UID).build()).build();
+        return Card.builder().id(SavedDetailsKey.builder().paymentCode(PAYU).paymentGroup(CARD).uid(DUMMY_UID).build()).build();
     }
 
     public static SessionDTO dummySession() {

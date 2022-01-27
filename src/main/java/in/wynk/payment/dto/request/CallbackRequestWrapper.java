@@ -2,7 +2,7 @@ package in.wynk.payment.dto.request;
 
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import lombok.Getter;
@@ -47,7 +47,8 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
          * Always supply payment code first before payload
          **/
         public B payload(Map<String, Object> payload) {
-            if (Objects.isNull(paymentCode)) throw new WynkRuntimeException("You must supply payment code first, before supplying payload");
+            if (Objects.isNull(paymentCode))
+                throw new WynkRuntimeException("You must supply payment code first, before supplying payload");
             this.body = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentCallbackService<AbstractCallbackResponse, T>>() {
             }).parseCallback(payload);
             return self();
@@ -87,4 +88,5 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
             return new CallbackRequestWrapper<>(this);
         }
     }
+
 }

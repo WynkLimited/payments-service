@@ -6,14 +6,16 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
-import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.payment.core.dao.entity.PaymentDump;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,8 @@ import java.util.stream.Collectors;
 
 import static in.wynk.logging.BaseLoggingMarkers.MYSQL_ERROR;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
+import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_DUMP;
 import static in.wynk.payment.core.constant.PaymentDumpConstants.PAYMENT_TRANSACTION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_SERVICE_ERROR;
@@ -35,7 +39,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.SDK_CLIENT_ERRO
 
 @Slf4j
 @Service
-@Transactional
+@Transactional(transactionManager = TRANSACTION_MANAGER)
 public class PaymentDumpService {
 
     @Autowired
@@ -46,10 +50,6 @@ public class PaymentDumpService {
 
     @Autowired
     private AmazonS3 amazonS3Client;
-
-    @Autowired
-    @Qualifier(BeanConstant.TRANSACTION_DAO)
-    private ITransactionDao transactionDao;
 
     private void putTransactionDataOnS3(Calendar cal, int days) {
         try {
@@ -83,7 +83,7 @@ public class PaymentDumpService {
         AnalyticService.update("DumpOfDays", days);
         Date fromDate = dateFormat.parse(fromDateFormat);
         log.info("from Date {}", fromDate);
-        return PaymentDump.builder().transactions(transactionDao.getTransactionDailyDump(fromDate, endDate)).build();
+        return PaymentDump.builder().transactions(RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).getTransactionDailyDump(fromDate, endDate)).build();
     }
 
     private void putTransactionsOnS3Bucket(List<Transaction> transactions, Calendar cal) {
@@ -112,8 +112,9 @@ public class PaymentDumpService {
         }
     }
 
+    @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "startPaymentDumpS3Export")
-    public void startPaymentDumpS3Export(String requestId, int days) {
+    public void startPaymentDumpS3Export(String requestId, int days, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
@@ -123,8 +124,9 @@ public class PaymentDumpService {
         putTransactionDataOnS3(cal, days);
     }
 
+    @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "startPaymentDumpS3Export")
-    public void startPaymentDumpS3Export(String requestId, long startTime) {
+    public void startPaymentDumpS3Export(String requestId, long startTime, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());

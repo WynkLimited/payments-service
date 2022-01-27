@@ -6,16 +6,13 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.core.constant.PaymentCode;
-import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IProductDetails;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.phonepe.autodebit.PhonePeAutoDebitTopUpRequest;
-import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
@@ -46,7 +43,11 @@ public class WalletTopUpRequest<T extends IPurchaseDetails> implements IPaymentM
 
     @NotNull
     @Analysed
-    private PaymentCode paymentCode;
+    private String paymentCode;
+
+    public PaymentCode getPaymentCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
+    }
 
     @Override
     public String getOs() {

@@ -278,6 +278,10 @@
                             <groupId>in.wynk</groupId>
                             <artifactId>client-api</artifactId>
                         </aspectLibrary>
+                        <aspectLibrary>
+                            <groupId>in.wynk</groupId>
+                            <artifactId>client-data-common</artifactId>
+                        </aspectLibrary>
                     </aspectLibraries>
                 </configuration>
                 <dependencies>

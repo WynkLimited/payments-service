@@ -63,7 +63,7 @@ public class PayUPaymentRenewTest {
 
     @Before
     public void setup() {
-        Mockito.when(recurringPaymentManagerService.getCurrentDueRecurringPayments()).thenReturn(PayUTestData.buildPaymentRenewalTestData());
+        Mockito.when(recurringPaymentManagerService.getCurrentDueRecurringPayments("airtelXstream")).thenReturn(PayUTestData.buildPaymentRenewalTestData());
         Mockito.when(restTemplate.postForObject(anyString(), anyMap(), eq(String.class))).thenReturn(PayUTestData.buildSuccessRecurringPayUTransactionStatusResponse());
     }
 
@@ -71,7 +71,7 @@ public class PayUPaymentRenewTest {
     public void paymentRenewalsSchedulerTest() {
         // This test case is run in debugger mode and seen that whether only 2 paymentRenewal messages are pushed into queue or not?
         // And this test case passes successfully
-        paymentRenewalsScheduler.paymentRenew("requestId");
+        paymentRenewalsScheduler.paymentRenew("requestId", "");
     }
 
     @Test

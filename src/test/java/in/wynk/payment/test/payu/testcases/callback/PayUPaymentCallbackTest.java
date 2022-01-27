@@ -4,7 +4,7 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.core.constant.PaymentCode;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.SubscribePlanAsyncRequest;
 import in.wynk.payment.dto.request.SyncTransactionRevisionRequest;
@@ -31,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
 import static in.wynk.common.constant.BaseConstants.TRANSACTION_ID;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -64,7 +65,7 @@ public class PayUPaymentCallbackTest {
     @Before
     @SneakyThrows
     public void setup() {
-        if(SessionContextHolder.<String, SessionDTO>get() == null || SessionContextHolder.<String, SessionDTO>get().getBody() == null) {
+        if (SessionContextHolder.<String, SessionDTO>get() == null || SessionContextHolder.<String, SessionDTO>get().getBody() == null) {
             SessionContextHolder.set(PayUTestData.initSession());
         }
         Mockito.doNothing().when(recurringPaymentManager).scheduleRecurringPayment(any(SyncTransactionRevisionRequest.class));
@@ -78,7 +79,7 @@ public class PayUPaymentCallbackTest {
         Mockito.when(restTemplate.postForObject(eq(payUInfoApiUrl), eq(PayUTestData.buildOneTimePayUTransactionStatusRequest(payUMerchantKey)), eq(String.class))).thenReturn(PayUTestData.buildSuccessOneTimePayUTransactionStatusResponse());
         Mockito.when(restTemplate.postForObject(eq(payUInfoApiUrl), eq(PayUTestData.buildRecurringPayUTransactionStatusRequest(payUMerchantKey)), eq(String.class))).thenReturn(PayUTestData.buildSuccessRecurringPayUTransactionStatusResponse());
 
-        callbackService = BeanLocatorFactory.getBean(PaymentCode.PAYU.getCode(), IMerchantPaymentCallbackService.class);
+        callbackService = BeanLocatorFactory.getBean(PaymentCodeCachingService.getFromPaymentCode(PAYU).getCode(), IMerchantPaymentCallbackService.class);
     }
 
     @Test

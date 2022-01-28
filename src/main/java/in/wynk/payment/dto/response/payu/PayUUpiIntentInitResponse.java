@@ -48,8 +48,8 @@ public class PayUUpiIntentInitResponse {
             stringBuilder.append("&am=").append(map.getOrDefault("am", this.result.amount));
             stringBuilder.append("&cu=").append(map.getOrDefault("cu", "INR"));
             stringBuilder.append("&tn=").append(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get("tn"));
-            stringBuilder.append("&mc=").append(PAYU_MERCHANT_CODE);
-            stringBuilder.append("&tid=").append(TransactionContext.get().getIdStr());
+            // stringBuilder.append("&mc=").append(PAYU_MERCHANT_CODE);
+            // stringBuilder.append("&tid=").append(TransactionContext.get().getIdStr());
             return stringBuilder.toString();
         }
         throw new WynkRuntimeException(PAY104);

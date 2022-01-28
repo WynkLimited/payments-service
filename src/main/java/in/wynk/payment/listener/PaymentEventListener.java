@@ -210,7 +210,8 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
     public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
-        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);AnalyticService.update(UID, event.getTransaction().getUid());
+        Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
+        AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
         AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());
         AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());

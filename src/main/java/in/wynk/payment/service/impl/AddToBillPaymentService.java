@@ -14,6 +14,7 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.addtobill.ATBOrderStatus;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
@@ -41,6 +42,7 @@ import java.util.*;
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.dto.addtobill.ATBOrderStatus.COMPLETED;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 
 @Slf4j
@@ -52,9 +54,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private final IRecurringDetailsDao paymentDetailsDao;
     private final ATBVasClientService atbVasClientService;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentCachingService cachingService1, ApplicationEventPublisher eventPublisher, IRecurringDetailsDao paymentDetailsDao, ATBVasClientService atbVasClientService) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, ApplicationEventPublisher eventPublisher, IRecurringDetailsDao paymentDetailsDao, ATBVasClientService atbVasClientService) {
         super(cachingService, errorCodesCacheServiceImpl);
-        this.cachingService = cachingService1;
+        this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.paymentDetailsDao = paymentDetailsDao;
         this.atbVasClientService = atbVasClientService;
@@ -95,7 +97,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final AddToBillCheckOutResponse response = atbVasClientService.checkout(checkOutRequest);
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-                log.info("ATB charging orderId: {}", response.getBody().getOrderId());
+                log.info("ATB checkout success: {}, txnId: {} and OrderId: {}",true, transaction.getIdStr(), response.getBody().getOrderId());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
                 final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(checkOutRequest).response(response).build();
                 eventPublisher.publishEvent(merchantTransactionEvent);
@@ -196,16 +198,21 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private void fetchAndUpdateTransactionFromSource(Transaction transaction) {
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
-        final String si = TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).map(IUserDetails::getSi).orElse(null);
+        final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         try {
-            final AddToBillStatusResponse response = getOrderList(si);
+            final AddToBillStatusResponse response = getOrderList(userBillingDetail.getBillingSiDetail().getBillingSi());
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
-                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
+                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getBillingSiDetail().getBillingSi()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                         transaction.setStatus(finalTransactionStatus.getValue());
-                        log.info("Order subscription details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
+                        log.info("ATB order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
+                        return;
+                    } else if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getBillingSiDetail().getBillingSi()) && order.getOrderStatus().equalsIgnoreCase(ATBOrderStatus.FAILED.name())) {
+                        finalTransactionStatus = TransactionStatus.FAILURE;
+                        transaction.setStatus(finalTransactionStatus.getValue());
+                        log.info("ATB order status success: {}, for provisionSi: {}, loggedInSi: {} and service: {}", false, order.getSi(), order.getLoggedInSi(), order.getServiceId());
                         return;
                     }
                 }
@@ -224,14 +231,19 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         Transaction transaction = TransactionContext.get();
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
         final String si = purchaseDetails.getUserDetails().getSi();
+        final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final PlanDTO plan = cachingService.getPlan(paymentRenewalChargingRequest.getPlanId());
         try {
-            final AddToBillStatusResponse response = getOrderList(si);
+            final AddToBillStatusResponse response = getOrderList(userBillingDetail.getBillingSiDetail().getBillingSi());
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (AddToBillOrder order : response.getBody().getOrdersList()) {
-                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
+                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getBillingSiDetail().getBillingSi()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
                         status = true;
-                        log.info("Order subscription details si: {},service :{}, endDate {} :", order.getSi(), order.getServiceId(), order.getEndDate());
+                        log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
+                        break;
+                    } else if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getBillingSiDetail().getBillingSi()) && order.getOrderStatus().equalsIgnoreCase(ATBOrderStatus.FAILED.name())) {
+                        status = false;
+                        log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} and service: {}", false, order.getSi(), order.getLoggedInSi(), order.getServiceId());
                         break;
                     }
                 }

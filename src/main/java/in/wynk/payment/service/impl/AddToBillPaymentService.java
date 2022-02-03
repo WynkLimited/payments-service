@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.TechnicalErrorDetails;
@@ -100,6 +101,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 log.info("ATB checkout success: {}, txnId: {} and OrderId: {}",true, transaction.getIdStr(), response.getBody().getOrderId());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
                 final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(checkOutRequest).response(response).build();
+                flushEligibilityCache(String.valueOf(plan.getId()), userBillingDetail.getSi());
                 eventPublisher.publishEvent(merchantTransactionEvent);
             }
 
@@ -160,6 +162,11 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return null;
         }
+    }
+
+    @CacheEvict(cacheName = "AddToBillEligibilityCheck", cacheKey = "'addToBill-eligibility:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
+    private void flushEligibilityCache(String planId, String si){
+        log.info("eligibility cache Cleared for planId {} and si {}",planId, si);
     }
 
     @Override

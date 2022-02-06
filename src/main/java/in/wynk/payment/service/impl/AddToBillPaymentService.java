@@ -98,7 +98,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final AddToBillCheckOutResponse response = atbVasClientService.checkout(checkOutRequest);
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-                log.info("ATB checkout success: {}, txnId: {} and OrderId: {}",true, transaction.getIdStr(), response.getBody().getOrderId());
+                log.info("ATB checkout success: {}, txnId: {} and OrderId: {}", true, transaction.getIdStr(), response.getBody().getOrderId());
                 builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
                 final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(checkOutRequest).response(response).build();
                 flushEligibilityCache(String.valueOf(plan.getId()), userBillingDetail.getSi());
@@ -165,8 +165,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     @CacheEvict(cacheName = "AddToBillEligibilityCheck", cacheKey = "'addToBill-eligibility:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
-    private void flushEligibilityCache(String planId, String si){
-        log.info("eligibility cache Cleared for planId {} and si {}",planId, si);
+    private void flushEligibilityCache(String planId, String si) {
+        log.info("eligibility cache Cleared for planId {} and si {}", planId, si);
     }
 
     @Override
@@ -237,7 +237,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
-        final String si = purchaseDetails.getUserDetails().getSi();
         final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final PlanDTO plan = cachingService.getPlan(paymentRenewalChargingRequest.getPlanId());
         try {
@@ -281,12 +280,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
             if (purchaseDetails.isPresent()) {
                 final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();
-                    final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(plan.getSku().get(ATB)).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
-                    final AddToBillUnsubscribeResponse response = atbVasClientService.unsubscribe(unsubscribeRequest);
-                    if (plan.getSku().get(ATB).equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
-                        finalTransactionStatus = TransactionStatus.SUCCESS;
-                        log.info("unsubscribe order details si: {},service :{}, markedForCanceled {} :", response.getSi(), response.getProductCode(), response.isIsMarkedForCancel());
-                    }
+                final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(plan.getSku().get(ATB)).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
+                final AddToBillUnsubscribeResponse response = atbVasClientService.unsubscribe(unsubscribeRequest);
+                if (plan.getSku().get(ATB).equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
+                    finalTransactionStatus = TransactionStatus.SUCCESS;
+                    log.info("unsubscribe order details si: {},service :{}, markedForCanceled {} :", response.getSi(), response.getProductCode(), response.isIsMarkedForCancel());
+                }
             } else {
                 finalTransactionStatus = TransactionStatus.FAILURE;
                 log.error("Unsubscribe failed because Purchase Details not found");

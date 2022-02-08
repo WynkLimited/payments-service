@@ -104,7 +104,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             /** TODO:: Uncomment to make it part of of subsequent release for dropout notification
              eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction.getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder.getId())).build());**/
             sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
-            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(getEventsWrapperBuilder(transaction, Optional.ofNullable(request.getPurchaseDetails())).build()).build());
+            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(getEventsWrapperBuilder(transaction, Optional.ofNullable(request.getPurchaseDetails())).build()).build());
         }
     }
 
@@ -133,7 +133,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).callbackRequest(request.getBody()).build()).build());
+            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).callbackRequest(request.getBody()).build()).build());
         }
     }
 
@@ -194,7 +194,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
             transactionManager.revision(builder.build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
-            publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).extTxnId(request.getExtTxnId()).build()).build());
+            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).extTxnId(request.getExtTxnId()).build()).build());
         }
     }
 

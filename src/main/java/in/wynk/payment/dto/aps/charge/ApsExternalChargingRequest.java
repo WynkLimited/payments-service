@@ -1,0 +1,35 @@
+package in.wynk.payment.dto.aps.charge;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.aps.common.AbstractPaymentInfo;
+import in.wynk.payment.dto.aps.common.ChannelInfo;
+import in.wynk.payment.dto.aps.common.UserInfo;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.ToString;
+
+@Getter
+@ToString
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ApsExternalChargingRequest<T extends AbstractPaymentInfo> {
+
+    /**
+    * Partner Correlation ID. i.e self
+    */
+    private String orderId;
+
+    /**
+     * Payment Info
+     */
+    private T paymentInfo;
+    /**
+     * User Info
+     */
+    private UserInfo userInfo;
+
+    /**
+     * Redirection info
+     */
+    private ChannelInfo channelInfo;
+}

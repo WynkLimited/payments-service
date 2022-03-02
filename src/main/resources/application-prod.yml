@@ -65,9 +65,9 @@ spring:
       connectionTimeout: 2000
       idleTimeout: 10000
       maxLifetime: 30000
-      poolName: payment-datasource-pool-dev
-      minimum-idle: 50
-      maximumPoolSize: 200
+      poolName: payment-datasource-pool-prod
+      minimum-idle: 5
+      maximumPoolSize: 20
 
   #### JPA props ######
   jpa:
@@ -479,9 +479,9 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  poolName: payment-datasource-pool-payment-api-prod
+                  minimum-idle: 10
+                  maximumPoolSize: 50
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -518,9 +518,9 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  poolName: payment-datasource-pool-airtelxstream-prod
+                  minimum-idle: 10
+                  maximumPoolSize: 40
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -557,9 +557,9 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  poolName: payment-datasource-pool-music-prod
+                  minimum-idle: 10
+                  maximumPoolSize: 40
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -596,9 +596,9 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
-                  minimum-idle: 50
-                  maximumPoolSize: 200
+                  poolName: payment-datasource-pool-rajtv-prod
+                  minimum-idle: 10
+                  maximumPoolSize: 20
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

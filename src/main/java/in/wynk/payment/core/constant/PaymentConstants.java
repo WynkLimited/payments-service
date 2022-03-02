@@ -35,7 +35,11 @@ public interface PaymentConstants extends BaseConstants {
     String APB_GATEWAY = "APB_GATEWAY";
     String ADD_TO_BILL = "ADD_TO_BILL";
     String DEFAULT_COUNTRY_CODE = "IN";
+    String DEBIT_CARD = "DEBIT_CARD";
+    String PAY_APP_NAME = "PAY_APP_NAME";
     String BASE_USER_EMAIL = "@wynk.in";
+    String CREDIT_CARD = "CREDIT_CARD";
+    String NET_BANKING = "NET_BANKING";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";

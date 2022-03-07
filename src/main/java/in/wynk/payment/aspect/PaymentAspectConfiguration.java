@@ -12,6 +12,11 @@ import org.springframework.context.annotation.Configuration;
 public class PaymentAspectConfiguration {
 
     @Bean
+    public FraudAwareAspect fraudAwareAspect() {
+        return Aspects.aspectOf(FraudAwareAspect.class);
+    }
+
+    @Bean
     public TransactionAwareAspect transactionAwareAspect() {
         return Aspects.aspectOf(TransactionAwareAspect.class);
     }

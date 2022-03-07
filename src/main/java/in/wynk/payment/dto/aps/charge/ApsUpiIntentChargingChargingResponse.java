@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-public class ApsUpiIntentChargingResponse extends AbstractApsExternalChargingResponse {
+public class ApsUpiIntentChargingChargingResponse extends AbstractApsExternalChargingResponse {
     @JsonProperty("isApbDirectUpi")
     private boolean apbDirectUpi;
     private String upiLink;

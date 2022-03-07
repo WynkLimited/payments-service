@@ -1,8 +1,8 @@
 package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
-import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
@@ -13,16 +13,20 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.ApsChargingResponse;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.charge.AbstractApsExternalChargingResponse;
 import in.wynk.payment.dto.aps.charge.ApsExternalChargingRequest;
-import in.wynk.payment.dto.aps.charge.ApsUpiIntentChargingResponse;
+import in.wynk.payment.dto.aps.charge.ApsUpiIntentChargingChargingResponse;
 import in.wynk.payment.dto.aps.common.ApsApiResponseWrapper;
 import in.wynk.payment.dto.aps.common.UpiPaymentInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
+import in.wynk.payment.dto.aps.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
+import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
 import in.wynk.payment.service.PaymentCachingService;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,9 +88,27 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         return chargingDelegate.get(paymentGroup).charge(request);
     }
 
+    private <R extends AbstractApsExternalChargingResponse, T> ResponseEntity<ApsApiResponseWrapper<R>> exchange(RequestEntity<T> entity) {
+        try {
+            return httpTemplate.exchange(entity, new ParameterizedTypeReference<ApsApiResponseWrapper<R>>() {
+            });
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY024, e);
+        }
+    }
+
     @Override
-    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
-        return null;
+    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest request) {
+        final Transaction transaction = TransactionContext.get();
+        final String txnId = request.getTransactionId();
+        final boolean fetchHistoryTransaction = false;
+        ApsChargeStatusResponse  response = httpTemplate.getForObject(CHARGING_STATUS_ENDPOINT, ApsChargeStatusResponse.class, txnId, fetchHistoryTransaction);
+        if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
+            transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+        } else if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+        }
+        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.success(transaction.getIdStr(), -1L, transaction.getPlanId())).build();
     }
 
     private static class NetBankingCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
@@ -127,6 +149,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         private class UpiSeamlessCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
 
             @Override
+            @SneakyThrows
             public WynkResponseEntity<ApsChargingResponse> charge(ApsChargingRequest<?> request) {
                 final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
                 final Transaction transaction = TransactionContext.get();
@@ -138,22 +161,14 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 final ApsExternalChargingRequest<UpiPaymentInfo<UpiPaymentInfo.UpiIntentDetails>> payRequest = ApsExternalChargingRequest.<UpiPaymentInfo<UpiPaymentInfo.UpiIntentDetails>>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiPaymentInfo).build();
                 final HttpHeaders headers = new HttpHeaders();
                 final RequestEntity<ApsExternalChargingRequest<UpiPaymentInfo<UpiPaymentInfo.UpiIntentDetails>>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
-                try {
-                    final ResponseEntity<ApsApiResponseWrapper<ApsUpiIntentChargingResponse>> response  = httpTemplate.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingResponse>>() {});
-                    if (Objects.nonNull(response.getBody())) {
-                        final String encryptedParams = EncryptionUtils.encrypt(gson.toJson(response.getBody().getData().getUpiLink()), encryptionKey);
-                        builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(encryptedParams).build());
-                        return builder.build();
-                    }
-                    throw new WynkRuntimeException(PaymentErrorType.PAY024);
-                } catch (Exception e) {
-                    final PaymentErrorType errorType = PaymentErrorType.PAY024;
-                    builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).success(false);
-                    log.error(errorType.getMarker(), e.getMessage(), e);
+                final ResponseEntity<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>> response = exchange(requestEntity);
+                if (Objects.nonNull(response.getBody())) {
+                    final String encryptedParams = EncryptionUtils.encrypt(gson.toJson(response.getBody().getData().getUpiLink()), encryptionKey);
+                    builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(encryptedParams).build());
+                    return builder.build();
                 }
-                return builder.build();
+                throw new WynkRuntimeException(PaymentErrorType.PAY024);
             }
-
         }
 
         private class UpiNonSeamlessCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {

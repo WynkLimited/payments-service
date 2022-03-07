@@ -36,7 +36,7 @@ public interface PaymentConstants extends BaseConstants {
     String ADD_TO_BILL = "ADD_TO_BILL";
     String DEFAULT_COUNTRY_CODE = "IN";
     String DEBIT_CARD = "DEBIT_CARD";
-    String PAY_APP_NAME = "PAY_APP_NAME";
+    String APP_NAME = "APP_NAME";
     String BASE_USER_EMAIL = "@wynk.in";
     String CREDIT_CARD = "CREDIT_CARD";
     String NET_BANKING = "NET_BANKING";

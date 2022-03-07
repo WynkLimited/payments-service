@@ -23,6 +23,7 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private boolean autoRenewSupported;
 
     private String group;
+    private String flowType;
     private String iconUrl;
     private String subtitle;
     private String displayName;

@@ -8,12 +8,14 @@ public interface PaymentConstants extends BaseConstants {
     String PAYU = "PAYU";
     String TXN_ID = "tid";
     String ERROR = "error";
+    String VERSION_2 = "V2";
     String WALLET = "WALLET";
     String SUBSID = "subsId";
     String STATUS = "status";
     String FAILED = "failed";
     String QUEUED = "queued";
     String PROD_ENV = "PROD";
+    int MERCHANT_CODE = 5815;
     String ITUNES = "ITUNES";
     String MERCHANT_ID = "id";
     String FAILURE = "failure";
@@ -24,10 +26,12 @@ public interface PaymentConstants extends BaseConstants {
     String MESSAGE = "message";
     String PIPE_SEPARATOR = "|";
     String SOURCE_MODE = "mode";
+    String PN = "UPI_PAYEE_NAME";
     String BANK_CODE = "bankCode";
     String SANDBOX_ENV = "Sandbox";
     String MERCHANT_TOKEN = "token";
     String SE_BILLING = "SE_BILLING";
+    String UPI_PREFIX = "upi_prefix";
     String AMAZON_IAP = "AMAZON_IAP";
     String SUBTITLE_TEXT = "subtitle";
     String BUTTON_TEXT = "buttonText";
@@ -36,6 +40,8 @@ public interface PaymentConstants extends BaseConstants {
     String ADD_TO_BILL = "ADD_TO_BILL";
     String DEFAULT_COUNTRY_CODE = "IN";
     String BASE_USER_EMAIL = "@wynk.in";
+    String DEFAULT_PN = "Wynk Limited";
+    String APP_PACKAGE = "package_name";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";

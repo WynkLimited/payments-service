@@ -8,25 +8,25 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.common.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
-import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.service.*;
 import org.springframework.stereotype.Service;
 
 @Service(BeanConstant.ACB_MERCHANT_PAYMENT_SERVICE)
-public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class ACBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>, IPaymentChargingService<AbstractPaymentChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     protected ACBMerchantPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
         super(cachingService, errorCodesCacheServiceImpl);
     }
 
     @Override
-    public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
+    public AbstractPaymentChargingResponse charge(AbstractChargingRequest<?> chargingRequest) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
 

@@ -14,17 +14,16 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.*;
-import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.apb.internal.charge.APBGatewayChargingResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
-import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.apb.ApbChargingStatusResponse;
@@ -63,7 +62,7 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
 @Service(BeanConstant.APB_MERCHANT_PAYMENT_SERVICE)
-public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, ApbCallbackRequestPayload>, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentCallbackService<AbstractCallbackResponse, ApbCallbackRequestPayload>, IPaymentChargingService<APBGatewayChargingResponse, DefaultChargingRequest<?>> {
 
     @Value("${apb.init.payment.url}")
     private String APB_INIT_PAYMENT_URL;
@@ -139,9 +138,9 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
     }
 
     @Override
-    public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> chargingRequest) {
+    public APBGatewayChargingResponse charge(DefaultChargingRequest<?> chargingRequest) {
         final String apbRedirectURL = generateApbRedirectURL((IChargingDetails) chargingRequest.getPurchaseDetails());
-        return WynkResponseUtils.redirectResponse(apbRedirectURL);
+        return APBGatewayChargingResponse.builder().redirectUrl(apbRedirectURL).build();
     }
 
     private String generateApbRedirectURL(IChargingDetails chargingDetails) {
@@ -239,11 +238,6 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
         }
         String generatedHash = CommonUtils.generateHash(str, SHA_512);
         return requestHash.equals(generatedHash);
-    }
-
-    @Override
-    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-        throw new UnsupportedOperationException("Unsupported operation - Renewal is not supported by APB");
     }
 
     @Getter

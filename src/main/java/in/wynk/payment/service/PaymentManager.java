@@ -40,7 +40,6 @@ import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTIO
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
-import static in.wynk.tinylytics.constants.TinylyticsConstants.*;
 
 @Slf4j
 @Service

@@ -11,44 +11,46 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.RecurringDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.UserBillingDetail;
 import in.wynk.payment.dto.addtobill.ATBOrderStatus;
+import in.wynk.payment.dto.atb.AddToBillChargingResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.UserBillingDetail;
-import in.wynk.payment.dto.response.addtobill.AddToBillChargingResponse;
 import in.wynk.payment.dto.response.addtobill.UserAddToBillDetails;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.service.*;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.atb.*;
-import in.wynk.vas.client.dto.atb.AddToBillEligibilityAndPricingRequest;
 import in.wynk.vas.client.service.ATBVasClientService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
-import static in.wynk.payment.core.constant.PaymentErrorType.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.ATB01;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY201;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.ATBOrderStatus.COMPLETED;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
-public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService implements IExternalPaymentEligibilityService, IMerchantPaymentChargingService<AddToBillChargingResponse, DefaultChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
+public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService implements IExternalPaymentEligibilityService, IPaymentChargingService<AddToBillChargingResponse, DefaultChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
 
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
@@ -78,8 +80,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     @Override
-    public WynkResponseEntity<AddToBillChargingResponse> charge(DefaultChargingRequest<?> request) {
-        final WynkResponseEntity.WynkResponseEntityBuilder<AddToBillChargingResponse> builder = WynkResponseEntity.builder();
+    public AddToBillChargingResponse charge(DefaultChargingRequest<?> request) {
         final Transaction transaction = TransactionContext.get();
         final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final String modeId = userBillingDetail.getBillingSiDetail().getLob().equalsIgnoreCase(POSTPAID) ? MOBILITY : TELEMEDIA;
@@ -101,7 +102,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                 log.info("ATB checkout success: {}, txnId: {} and OrderId: {}", true, transaction.getIdStr(), response.getBody().getOrderId());
-                builder.data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build());
                 final MerchantTransactionEvent merchantTransactionEvent = MerchantTransactionEvent.builder(transaction.getIdStr()).externalTransactionId(response.getBody().getOrderId()).request(checkOutRequest).response(response).build();
                 flushEligibilityCache(String.valueOf(plan.getId()), userBillingDetail.getSi());
                 eventPublisher.publishEvent(merchantTransactionEvent);
@@ -110,10 +110,10 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             final PaymentErrorType errorType = ATB01;
-            builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build()).success(false);
-            log.error(errorType.getMarker(), e.getMessage(), e);
+            //TODO: throw standard wynk runtime
         }
-        return builder.build();
+
+        return AddToBillChargingResponse.builder().build();
     }
 
 

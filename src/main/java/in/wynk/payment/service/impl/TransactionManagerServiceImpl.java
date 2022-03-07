@@ -95,12 +95,12 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     private Transaction initPlanTransaction(PlanTransactionInitRequest transactionInitRequest) {
-        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentCode().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
+        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
         return initTransaction(txn);
     }
 
     private Transaction initPointTransaction(PointTransactionInitRequest transactionInitRequest) {
-        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentCode().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).itemId(transactionInitRequest.getItemId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
+        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).itemId(transactionInitRequest.getItemId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
         return initTransaction(txn);
     }
 

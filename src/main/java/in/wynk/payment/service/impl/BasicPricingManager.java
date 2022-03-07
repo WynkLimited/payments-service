@@ -48,7 +48,7 @@ public class BasicPricingManager implements IPricingManager {
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
-            if (Arrays.asList("ITUNES", "AMAZON_IAP").contains(request.getPaymentCode().getId()))
+            if (Arrays.asList("ITUNES", "AMAZON_IAP").contains(request.getPaymentGateway().getId()))
                 couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {

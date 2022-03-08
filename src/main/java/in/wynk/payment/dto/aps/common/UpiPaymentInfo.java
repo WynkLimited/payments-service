@@ -48,7 +48,7 @@ public class UpiPaymentInfo<T extends UpiPaymentInfo.AbstractUpiDetails> extends
         /**
          * Static Value - COLLECT_S2S
          */
-        private final String upiFlow = "COLLECT_S2S";
+        private final String upiFlow = "INTENT_CUSTOM";
     }
 
 }

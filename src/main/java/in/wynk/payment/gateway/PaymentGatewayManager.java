@@ -1,4 +1,4 @@
-package in.wynk.payment.service;
+package in.wynk.payment.gateway;
 
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -19,6 +19,7 @@ import in.wynk.payment.dto.manager.ChargingGatewayResponseWrapper;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.SyncTransactionRevisionRequest;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.VERSION_2;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentGatewayManager implements IPaymentChargingService<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>> {
+public class PaymentGatewayManager implements IPaymentCharging<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -47,7 +48,7 @@ public class PaymentGatewayManager implements IPaymentChargingService<ChargingGa
         final PaymentCode pg = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()), request.getPurchaseDetails());
         final TransactionStatus existingStatus = transaction.getStatus();
-        final IPaymentChargingService<AbstractChargingGatewayResponse, AbstractChargingRequest<?>> chargingService = BeanLocatorFactory.getBean(pg.getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentChargingService<AbstractChargingGatewayResponse, AbstractChargingRequest<?>>>() {
+        final IPaymentCharging<AbstractChargingGatewayResponse, AbstractChargingRequest<?>> chargingService = BeanLocatorFactory.getBean(pg.getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentCharging<AbstractChargingGatewayResponse, AbstractChargingRequest<?>>>() {
         });
         try {
             final AbstractChargingGatewayResponse response = chargingService.charge(request);

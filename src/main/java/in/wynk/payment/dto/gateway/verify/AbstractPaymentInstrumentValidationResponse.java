@@ -1,0 +1,12 @@
+package in.wynk.payment.dto.gateway.verify;
+
+import lombok.Getter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+
+@Getter
+@ToString
+@SuperBuilder
+public abstract class AbstractPaymentInstrumentValidationResponse {
+    private boolean valid;
+}

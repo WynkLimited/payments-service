@@ -2,17 +2,32 @@ package in.wynk.payment.gateway.payu.common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.ICacheService;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
+import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
+import in.wynk.payment.dto.payu.PayUCommand;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Component;
@@ -26,8 +41,10 @@ import java.net.URI;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
+@Slf4j
 @Component
 public class PayUCommonGateway {
 
@@ -40,13 +57,17 @@ public class PayUCommonGateway {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final PaymentCachingService cachingService;
+    private final ApplicationEventPublisher eventPublisher;
     @Getter
     private final ICacheService<PaymentMethod, String> cache;
 
-    public PayUCommonGateway(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache) {
+    public PayUCommonGateway(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher) {
         this.cache = cache;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.cachingService = cachingService;
+        this.eventPublisher = eventPublisher;
     }
 
     public  <T> T exchange(String uri, MultiValueMap<String, String> request, TypeReference<T> target) {
@@ -87,6 +108,64 @@ public class PayUCommonGateway {
                 PIPE_SEPARATOR +
                 payUSalt;
         return EncryptionUtils.generateSHA512Hash(builder);
+    }
+
+    public void syncChargingTransactionFromSource(Transaction transaction) {
+        final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        try {
+            final MultiValueMap<String, String> payUChargingVerificationRequest = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
+            merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
+            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            });
+            merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
+            final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))
+                AnalyticService.update(PAYMENT_MODE, payUChargingTransactionDetails.getMode());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode()))
+                AnalyticService.update(BANK_CODE, payUChargingTransactionDetails.getBankCode());
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType()))
+                AnalyticService.update(PAYU_CARD_TYPE, payUChargingTransactionDetails.getCardType());
+            merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
+            AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
+            syncTransactionWithSourceResponse(payUChargingVerificationResponse);
+            if (transaction.getStatus() == TransactionStatus.FAILURE) {
+                if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage()).build());
+                }
+            }
+        } catch (HttpStatusCodeException e) {
+            merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        } catch (Exception e) {
+            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        } finally {
+            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)
+                eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+        }
+    }
+
+    private void syncTransactionWithSourceResponse(PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
+        TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
+        final Transaction transaction = TransactionContext.get();
+        int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
+        if (transactionDetailsWrapper.getStatus() == 1) {
+            final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
+            if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
+                finalTransactionStatus = TransactionStatus.INPROGRESS;
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
+                finalTransactionStatus = TransactionStatus.INPROGRESS;
+            }
+        } else {
+            finalTransactionStatus = TransactionStatus.FAILURE;
+        }
+        transaction.setStatus(finalTransactionStatus.getValue());
     }
 
 }

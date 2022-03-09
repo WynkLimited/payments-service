@@ -12,8 +12,4 @@ public class UserInfo {
     * LoginID where KCI being sent
     */
     private String loginId;
-    /**
-     * optional
-     */
-    private String circleId;
 }

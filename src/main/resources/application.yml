@@ -104,6 +104,8 @@ payment:
     page: ${webview.host}/#/txn-state/payment-unknown/
   timeout:
     page: ${webview.host}/#/txn-state/session-out/
+  polling:
+    page: ${webview.host}/#/txn-state/payment-poll/
 
 cors:
   maxAge: 3600

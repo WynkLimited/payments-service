@@ -18,5 +18,7 @@ import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApsChargingRequest<T extends IPurchaseDetails> extends AbstractChargingRequest<T> {
     @Analysed
+    private String vpa;
+    @Analysed
     private boolean intent;
 }

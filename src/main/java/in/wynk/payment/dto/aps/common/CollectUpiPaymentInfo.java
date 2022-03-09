@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-public class FreshCardPaymentInfo extends AbstractCardPaymentInfo {
-    private String cardDetails;
+public class CollectUpiPaymentInfo extends AbstractUpiPaymentInfo {
+    private String vpa;
+    private final String upiFlow = "INTENT_CUSTOM";
 }

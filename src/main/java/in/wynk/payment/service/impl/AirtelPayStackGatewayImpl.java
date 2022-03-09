@@ -13,13 +13,13 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.ApsChargingResponse;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.charge.AbstractApsExternalChargingResponse;
-import in.wynk.payment.dto.aps.charge.ApsExternalChargingRequest;
-import in.wynk.payment.dto.aps.charge.ApsUpiIntentChargingChargingResponse;
-import in.wynk.payment.dto.aps.common.ApsApiResponseWrapper;
-import in.wynk.payment.dto.aps.common.UpiPaymentInfo;
-import in.wynk.payment.dto.aps.common.UserInfo;
-import in.wynk.payment.dto.aps.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.dto.aps.common.*;
+import in.wynk.payment.dto.aps.response.charge.AbstractApsExternalChargingResponse;
+import in.wynk.payment.dto.aps.request.charge.ApsExternalChargingRequest;
+import in.wynk.payment.dto.aps.response.charge.ApsCardChargingResponse;
+import in.wynk.payment.dto.aps.response.charge.ApsUpiCollectChargingResponse;
+import in.wynk.payment.dto.aps.response.charge.ApsUpiIntentChargingChargingResponse;
+import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -65,6 +65,8 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private String REFUND_STATUS_ENDPOINT;
     @Value("${aps.payment.status.api}")
     private String CHARGING_STATUS_ENDPOINT;
+    @Value("${payment.polling.page}")
+    private String CLIENT_POLLING_SCREEN_URL;
 
     private final Gson gson;
     private final RestTemplate httpTemplate;
@@ -84,8 +86,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     @Override
     public WynkResponseEntity<ApsChargingResponse> charge(ApsChargingRequest<?> request) {
         final PaymentMethod method = cache.getPaymentMethod(request.getPaymentId());
-        final String paymentGroup = method.getGroup();
-        return chargingDelegate.get(paymentGroup).charge(request);
+        return chargingDelegate.get(method.getGroup().toUpperCase()).charge(request);
     }
 
     private <R extends AbstractApsExternalChargingResponse, T> ResponseEntity<ApsApiResponseWrapper<R>> exchange(RequestEntity<T> entity) {
@@ -111,21 +112,49 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.success(transaction.getIdStr(), -1L, transaction.getPlanId())).build();
     }
 
-    private static class NetBankingCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
+    private class NetBankingCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
 
         @Override
         public WynkResponseEntity<ApsChargingResponse> charge(ApsChargingRequest<?> request) {
-
-            return null;
+            final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
+            final Transaction transaction = TransactionContext.get();
+            final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
+            // TODO: get the card info and card type, bank code etc from request
+            final NetBankingPaymentInfo netBankingInfo = NetBankingPaymentInfo.builder().bankCode("UTIB").build();
+            final ApsExternalChargingRequest<NetBankingPaymentInfo> payRequest = ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo).build();
+            final HttpHeaders headers = new HttpHeaders();
+            final RequestEntity<ApsExternalChargingRequest<NetBankingPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
+            final ResponseEntity<ApsApiResponseWrapper<ApsCardChargingResponse>> response = exchange(requestEntity);
+            if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
+                final ApsCardChargingResponse cardChargingResponse = response.getBody().getData();
+                builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(cardChargingResponse.getForm()).build());
+                return builder.build();
+            }
+            throw new WynkRuntimeException(PaymentErrorType.PAY024);
         }
 
     }
 
-    private static class CardCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
+    private class CardCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
 
         @Override
         public WynkResponseEntity<ApsChargingResponse> charge(ApsChargingRequest<?> request) {
-            return null;
+            final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
+            final Transaction transaction = TransactionContext.get();
+            final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
+            final String encCardInfo = "";
+            // TODO: get the card info and card type, bank code etc from request
+            final FreshCardPaymentInfo freshCardInfo = FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode("UTIB").paymentMode("CREDIT_CARD").build();
+            final ApsExternalChargingRequest<FreshCardPaymentInfo> payRequest = ApsExternalChargingRequest.<FreshCardPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(freshCardInfo).build();
+            final HttpHeaders headers = new HttpHeaders();
+            final RequestEntity<ApsExternalChargingRequest<FreshCardPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
+            final ResponseEntity<ApsApiResponseWrapper<ApsCardChargingResponse>> response = exchange(requestEntity);
+            if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
+                final ApsCardChargingResponse cardChargingResponse = response.getBody().getData();
+                builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(cardChargingResponse.getForm()).build());
+                return builder.build();
+            }
+            throw new WynkRuntimeException(PaymentErrorType.PAY024);
         }
 
     }
@@ -156,13 +185,12 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 final PaymentMethod method = cache.getPaymentMethod(request.getPaymentId());
                 final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                 final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
-                final UpiPaymentInfo.UpiIntentDetails upiIntentDetails = UpiPaymentInfo.UpiIntentDetails.builder().upiApp(payAppName).build();
-                final UpiPaymentInfo<UpiPaymentInfo.UpiIntentDetails> upiPaymentInfo = UpiPaymentInfo.<UpiPaymentInfo.UpiIntentDetails>builder().upiDetails(upiIntentDetails).build();
-                final ApsExternalChargingRequest<UpiPaymentInfo<UpiPaymentInfo.UpiIntentDetails>> payRequest = ApsExternalChargingRequest.<UpiPaymentInfo<UpiPaymentInfo.UpiIntentDetails>>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiPaymentInfo).build();
+                final IntentUpiPaymentInfo upiIntentDetails = IntentUpiPaymentInfo.builder().upiDetails(IntentUpiPaymentInfo.UpiDetails.builder().appName(payAppName).build()).build();
+                final ApsExternalChargingRequest<IntentUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails).build();
                 final HttpHeaders headers = new HttpHeaders();
-                final RequestEntity<ApsExternalChargingRequest<UpiPaymentInfo<UpiPaymentInfo.UpiIntentDetails>>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
+                final RequestEntity<ApsExternalChargingRequest<IntentUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
                 final ResponseEntity<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>> response = exchange(requestEntity);
-                if (Objects.nonNull(response.getBody())) {
+                if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
                     final String encryptedParams = EncryptionUtils.encrypt(gson.toJson(response.getBody().getData().getUpiLink()), encryptionKey);
                     builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(encryptedParams).build());
                     return builder.build();
@@ -175,10 +203,21 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
 
             @Override
             public WynkResponseEntity<ApsChargingResponse> charge(ApsChargingRequest<?> request) {
-                throw new WynkRuntimeException("Method is not implemented");
+                final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
+                final Transaction transaction = TransactionContext.get();
+                final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
+                final CollectUpiPaymentInfo upiCollectInfo = CollectUpiPaymentInfo.builder().vpa(request.getVpa()).build();
+                final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiCollectInfo).build();
+                final HttpHeaders headers = new HttpHeaders();
+                final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
+                final ResponseEntity<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>> response = exchange(requestEntity);
+                if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
+                    builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(CLIENT_POLLING_SCREEN_URL).build());
+                    return builder.build();
+                }
+                throw new WynkRuntimeException(PaymentErrorType.PAY024);
             }
         }
-
     }
 
 }

@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
+import in.wynk.common.constant.BaseConstants;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -16,7 +17,8 @@ public abstract class AbstractPaymentInfo {
     /**
      * Static Value - TBD
      */
-    private String lob;
+    @Builder.Default
+    private String lob = BaseConstants.WYNK;
     /**
      * Static Value - INR
      */

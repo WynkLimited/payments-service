@@ -11,6 +11,7 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
@@ -39,7 +40,8 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode", visible = true, defaultImpl = DefaultChargingRequest.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PayUChargingRequest.class, name = "PAYU"),
-        @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PHONEPE_AUTO_DEBIT")
+        @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PHONEPE_AUTO_DEBIT"),
+        @JsonSubTypes.Type(value = ApsChargingRequest.class, name = "APS")
 })
 public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 

@@ -8,6 +8,7 @@ import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.ApsChargingRequest;
@@ -106,10 +107,12 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         ApsChargeStatusResponse  response = httpTemplate.getForObject(CHARGING_STATUS_ENDPOINT, ApsChargeStatusResponse.class, txnId, fetchHistoryTransaction);
         if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
             transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+            return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.success(transaction.getIdStr(), cache.validTillDate(transaction.getPlanId()), transaction.getPlanId())).build();
         } else if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.failure(transaction.getIdStr(), transaction.getPlanId())).build();
         }
-        return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.success(transaction.getIdStr(), -1L, transaction.getPlanId())).build();
+        throw new WynkRuntimeException(PaymentErrorType.PAY025);
     }
 
     private class NetBankingCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {

@@ -11,8 +11,8 @@ import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.exception.WynkErrorType;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
@@ -22,14 +22,16 @@ import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
+import in.wynk.payment.dto.request.PaymentSettlementRequest;
+import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
 import in.wynk.payment.handler.CustomerWinBackHandler;
 import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
+import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,12 +40,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
@@ -205,6 +203,14 @@ public class PaymentEventListener {
         } catch (Exception e) {
             log.error(WynkErrorType.UT999.getMarker(), "something went wrong while scheduling task due to {}", e.getMessage(), e);
         }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentSettlement")
+    public void onPaymentSettlementEvent(PaymentSettlementEvent event) {
+        final AbstractPaymentSettlementResponse response = paymentManager.settle(PaymentSettlementRequest.builder().tid(event.getTid()).build());
+        AnalyticService.update(event);
+        AnalyticService.update(response);
     }
 
     @EventListener

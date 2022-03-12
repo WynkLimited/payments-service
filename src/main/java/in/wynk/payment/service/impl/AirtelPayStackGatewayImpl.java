@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.gson.Gson;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
@@ -17,6 +18,7 @@ import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.ApsChargingResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.*;
+import in.wynk.payment.dto.aps.request.sattlement.ApsSettlementRequest;
 import in.wynk.payment.dto.aps.response.charge.AbstractApsExternalChargingResponse;
 import in.wynk.payment.dto.aps.request.charge.ApsExternalChargingRequest;
 import in.wynk.payment.dto.aps.response.charge.ApsCardChargingResponse;
@@ -24,11 +26,15 @@ import in.wynk.payment.dto.aps.response.charge.ApsUpiCollectChargingResponse;
 import in.wynk.payment.dto.aps.response.charge.ApsUpiIntentChargingChargingResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.PaymentGatewaySettlementRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
+import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
 import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
 import in.wynk.payment.service.IMerchantPaymentChargingService;
+import in.wynk.payment.service.IMerchantPaymentSettlement;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -44,13 +50,12 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service("APS")
-public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
+public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
 
     @Value("${payment.encKey}")
     private String encryptionKey;
@@ -141,6 +146,19 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 eventPublisher.publishEvent(builder.build());
             }
         }
+    }
+
+    @Override
+    public DefaultPaymentSettlementResponse settle(PaymentGatewaySettlementRequest request) {
+        final String settlementOrderId = UUIDs.random().toString();
+        final Transaction transaction = TransactionContext.get();
+        final PlanDTO purchasedPlan = cache.getPlan(transaction.getPlanId());
+        final List<ApsSettlementRequest.OrderDetails> orderDetails = purchasedPlan.getActivationServiceIds().stream().map(serviceId -> ApsSettlementRequest.OrderDetails.builder().serviceOrderId(request.getTid()).serviceId(serviceId).paymentDetails(ApsSettlementRequest.OrderDetails.PaymentDetails.builder().paymentAmount(Double.toString(transaction.getAmount())).build()).build()).collect(Collectors.toList());
+        final ApsSettlementRequest settlementRequest = ApsSettlementRequest.builder().channel("DIGITAL_STORE").orderId(settlementOrderId).paymentDetails(ApsSettlementRequest.PaymentDetails.builder().paymentTransactionId(request.getTid()).orderPaymentAmount(transaction.getAmount()).build()).serviceOrderDetails(orderDetails).build();
+        final HttpHeaders headers = new HttpHeaders();
+        final RequestEntity<ApsSettlementRequest> requestEntity = new RequestEntity<>(settlementRequest, headers, HttpMethod.POST, URI.create(SETTLEMENT_ENDPOINT));
+        final ResponseEntity<String> response = httpTemplate.exchange(requestEntity, String.class);
+        return DefaultPaymentSettlementResponse.builder().referenceId(settlementOrderId).build();
     }
 
 

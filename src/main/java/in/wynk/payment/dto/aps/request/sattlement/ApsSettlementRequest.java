@@ -19,7 +19,7 @@ public class ApsSettlementRequest {
     @Getter
     @Builder
     @ToString
-    private static class PaymentDetails {
+    public static class PaymentDetails {
         private double orderPaymentAmount;
         private String paymentTransactionId;
     }
@@ -27,7 +27,7 @@ public class ApsSettlementRequest {
     @Getter
     @Builder
     @ToString
-    private static class OrderDetails {
+    public static class OrderDetails {
         private String serviceOrderId;
         private String serviceId;
         private PaymentDetails paymentDetails;
@@ -35,7 +35,7 @@ public class ApsSettlementRequest {
         @Getter
         @Builder
         @ToString
-        private static class PaymentDetails {
+        public static class PaymentDetails {
             private String paymentAmount;
         }
 

@@ -2,6 +2,7 @@ package in.wynk.payment.service.impl;
 
 import com.google.gson.Gson;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -11,6 +12,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.ApsChargingResponse;
 import in.wynk.payment.dto.TransactionContext;
@@ -31,12 +33,14 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
@@ -72,13 +76,15 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private final Gson gson;
     private final RestTemplate httpTemplate;
     private final PaymentCachingService cache;
+    private final ApplicationEventPublisher eventPublisher;
     private final Map<String, IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>>> chargingDelegate = new HashMap<>();
 
-    public AirtelPayStackGatewayImpl(Gson gson, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, PaymentCachingService cache, IErrorCodesCacheService errorCache) {
+    public AirtelPayStackGatewayImpl(Gson gson, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, PaymentCachingService cache, IErrorCodesCacheService errorCache, ApplicationEventPublisher eventPublisher) {
         super(cache, errorCache);
         this.gson = gson;
         this.cache = cache;
         this.httpTemplate = httpTemplate;
+        this.eventPublisher = eventPublisher;
         chargingDelegate.put("UPI", new UpiCharging());
         chargingDelegate.put("CARD", new CardCharging());
         chargingDelegate.put("NET_BANKING", new NetBankingCharging());
@@ -102,18 +108,41 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     @Override
     public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
-        final String txnId = request.getTransactionId();
-        final boolean fetchHistoryTransaction = false;
-        ApsChargeStatusResponse  response = httpTemplate.getForObject(CHARGING_STATUS_ENDPOINT, ApsChargeStatusResponse.class, txnId, fetchHistoryTransaction);
-        if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
-            transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+        this.syncChargingTransactionFromSource(transaction);
+        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.success(transaction.getIdStr(), cache.validTillDate(transaction.getPlanId()), transaction.getPlanId())).build();
-        } else if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+        } else if (transaction.getStatus() == TransactionStatus.FAILURE)  {
             return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.failure(transaction.getIdStr(), transaction.getPlanId())).build();
         }
         throw new WynkRuntimeException(PaymentErrorType.PAY025);
     }
+
+    public void syncChargingTransactionFromSource(Transaction transaction) {
+        final String txnId = transaction.getIdStr();
+        final boolean fetchHistoryTransaction = false;
+        final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        try {
+            final ApsChargeStatusResponse response = httpTemplate.getForObject(CHARGING_STATUS_ENDPOINT, ApsChargeStatusResponse.class, txnId, fetchHistoryTransaction);
+            if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
+                transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+            } else if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            }
+            builder.response(response);
+            builder.externalTransactionId(response.getPgId());
+        } catch (HttpStatusCodeException e) {
+            builder.response(e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        } finally {
+            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
+                eventPublisher.publishEvent(builder.build());
+            }
+        }
+    }
+
 
     private class NetBankingCharging implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>> {
 

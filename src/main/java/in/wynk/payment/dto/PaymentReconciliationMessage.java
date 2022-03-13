@@ -23,7 +23,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 60, 60, 60, 60, 300, 300, 300, 2400, 3600, 79200, 172800, 179800).get(#n)", publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
+@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 60, 60, 60, 60, 300, 300, 300, 890, 890, 2400, 3600, 79200, 172800, 179800).get(#n)", publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
 public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent> {
 
     @Analysed

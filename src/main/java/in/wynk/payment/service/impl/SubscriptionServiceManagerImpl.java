@@ -8,6 +8,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
@@ -93,9 +94,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Autowired
     private IRecurringPaymentManagerService recurringPaymentManagerService;
 
-    @Autowired
-    private PaymentCachingService cachingService;
-
     @Override
     public List<PlanDTO> getPlans() {
         RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
@@ -149,7 +147,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanAsync(SubscribePlanAsyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId())) {
+        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentCode().getCode().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanAsync flow", request.getPlanId(), request.getUid());
             return;
         }
@@ -185,7 +183,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanSync(SubscribePlanSyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId())) {
+        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentCode().getCode().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanSync flow", request.getPlanId(), request.getUid());
             return;
         }
@@ -245,6 +243,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private boolean isExternallyProvisionablePlan(int planId){
-        return cachingService.getPlan(planId).isProvisionNotRequired();
+        return BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).isProvisionNotRequired();
     }
 }

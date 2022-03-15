@@ -147,7 +147,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanAsync(SubscribePlanAsyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentCode().getCode().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
+        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentCode().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanAsync flow", request.getPlanId(), request.getUid());
             return;
         }
@@ -183,7 +183,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanSync(SubscribePlanSyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentCode().getCode().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
+        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentCode().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanSync flow", request.getPlanId(), request.getUid());
             return;
         }

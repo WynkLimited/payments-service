@@ -85,6 +85,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker CALLBACK_PAYLOAD_PARSING_FAILURE = MarkerFactory.getMarker("CALLBACK_PAYLOAD_PARSING_FAILURE");
 
     Marker APS_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_CHARGING_STATUS_VERIFICATION");
+    Marker APS_VPA_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
+    Marker APS_BIN_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
 
 
     Marker PAYMENT_OPTIONS_FAILURE = MarkerFactory.getMarker("PAYMENT_OPTIONS_FAILURE");

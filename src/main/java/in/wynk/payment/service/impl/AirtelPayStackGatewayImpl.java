@@ -97,6 +97,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private final RestTemplate httpTemplate;
     private final PaymentCachingService cache;
     private final ApplicationEventPublisher eventPublisher;
+    private final VerificationWrapper verificationWrapper = new VerificationWrapper();
     private final Map<String, IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>>> chargingDelegate = new HashMap<>();
 
     public AirtelPayStackGatewayImpl(Gson gson, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, PaymentCachingService cache, IErrorCodesCacheService errorCache, ApplicationEventPublisher eventPublisher) {
@@ -151,14 +152,22 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         final boolean fetchHistoryTransaction = false;
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            final ApsChargeStatusResponse response = httpTemplate.getForObject(CHARGING_STATUS_ENDPOINT, ApsChargeStatusResponse.class, txnId, fetchHistoryTransaction);
-            if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
-                transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-            } else if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
+            final ResponseEntity<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>> response = httpTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>>() {
+            });
+            final ApsApiResponseWrapper<List<ApsChargeStatusResponse>> wrapper = response.getBody();
+            assert wrapper != null;
+            if (wrapper.isResult()) {
+                final List<ApsChargeStatusResponse> body =  wrapper.getData();
+                final ApsChargeStatusResponse status = body.get(0);
+                if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
+                    transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+                } else if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
+                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                }
+                builder.request(status).response(status);
+                builder.externalTransactionId(status.getPgId());
             }
-            builder.request(response).response(response);
-            builder.externalTransactionId(response.getPgId());
         } catch (HttpStatusCodeException e) {
             builder.request(e.getResponseBodyAsString()).response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
@@ -187,7 +196,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
 
     @Override
     public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest request) {
-        return null;
+        return verificationWrapper.doVerify(request);
     }
 
     private class VerificationWrapper implements IMerchantVerificationService {
@@ -235,7 +244,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                     final ApsApiResponseWrapper<ApsVpaVerificationResponse> response = wrapper.getBody();
                     if (!response.isResult()) throw new WynkRuntimeException("Vpa verification failure");
                     final ApsVpaVerificationResponse body = response.getData();
-                    builder.data(PayUVpaVerificationResponse.builder().isVPAValid(body.isVpaValid() ? 1 : 0).vpa(body.getVpa()).payerAccountName(body.getPayeeAccountName()).status(body.getStatus()).build());
+                    builder.data(PayUVpaVerificationResponse.builder().isValid(body.isVpaValid()).isVPAValid(body.isVpaValid() ? 1 : 0).vpa(body.getVpa()).payerAccountName(body.getPayeeAccountName()).status(body.getStatus()).build());
                 } catch (Exception e) {
                     log.error(PaymentLoggingMarker.APS_VPA_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
                     builder.data(PayUVpaVerificationResponse.builder().isValid(false).build());

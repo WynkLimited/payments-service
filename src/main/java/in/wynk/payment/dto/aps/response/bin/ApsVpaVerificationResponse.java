@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.response.bin;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Getter
@@ -14,7 +15,10 @@ public class ApsVpaVerificationResponse {
     private ResponseStatus responseStatus;
 
 
-    private class ResponseStatus {
+    @Getter
+    @ToString
+    @NoArgsConstructor
+    public class ResponseStatus {
         private String code;
         private String pgStatus;
         private String description;

@@ -10,6 +10,8 @@ public class ApsBinVerificationResponse {
    private String cardNetwork;
    private String cardCategory;
    private String bankCode;
+   private String cvvLength;
+   private boolean blocked;
    private String bankName;
    private String healthState;
    private boolean autoPayEnable;

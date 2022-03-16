@@ -60,6 +60,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/** 
+ * @Author Zuber Khan
+ * Refer: https://airteldigital.atlassian.net/browse/RG-2926
+ * Next Action: Decouple Presentation logic and Global exception handling
+*/
+
 @Slf4j
 @Service("APS")
 public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>, IMerchantVerificationService {

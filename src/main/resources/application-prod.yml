@@ -677,3 +677,6 @@ lock:
 security:
   exempt:
     paths: /actuator/**,/wynk/v1/**,/wynk/v2/**
+
+aps:
+  base: https://paydigi.airtel.in

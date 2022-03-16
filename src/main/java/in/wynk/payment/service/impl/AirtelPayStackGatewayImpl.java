@@ -8,6 +8,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -49,7 +50,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,23 +60,31 @@ import java.util.stream.Collectors;
 @Service("APS")
 public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
 
+    @Value("${aps.auth.api.username}")
+    private String username;
+    @Value("${aps.auth.api.password}")
+    private String password;
     @Value("${payment.encKey}")
     private String encryptionKey;
-    @Value("${aps.payment.refund.init.api}")
+    @Value("${aps.payment.init.refund.api}")
     private String REFUND_ENDPOINT;
-    @Value("${aps.payment.init.api}")
+    @Value("${aps.payment.init.charge.api}")
     private String CHARGING_ENDPOINT;
-    @Value("${aps.payment.settlement.api}")
+    @Value("${aps.payment.init.charge.upi.api}")
+    private String UPI_CHARGING_ENDPOINT;
+    @Value("${aps.payment.init.settlement.api}")
     private String SETTLEMENT_ENDPOINT;
-    @Value("${aps.bin.verify.api}")
+    @Value("${aps.payment.verify.bin.api}")
     private String BIN_VERIFY_ENDPOINT;
+    @Value("${aps.payment.verify.vpa.api}")
+    private String VPA_VERIFY_ENDPOINT;
     @Value("${aps.payment.option.api}")
     private String PAYMENT_OPTION_ENDPOINT;
-    @Value("${aps.saved.details.api}")
+    @Value("${aps.payment.saved.details.api}")
     private String SAVED_DETAILS_ENDPOINT;
     @Value("${aps.payment.refund.status.api}")
     private String REFUND_STATUS_ENDPOINT;
-    @Value("${aps.payment.status.api}")
+    @Value("${aps.payment.charge.status.api}")
     private String CHARGING_STATUS_ENDPOINT;
     @Value("${payment.polling.page}")
     private String CLIENT_POLLING_SCREEN_URL;
@@ -93,6 +104,15 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         chargingDelegate.put("UPI", new UpiCharging());
         chargingDelegate.put("CARD", new CardCharging());
         chargingDelegate.put("NET_BANKING", new NetBankingCharging());
+    }
+
+    @PostConstruct
+    private void init() {
+        final String token = Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
+        this.httpTemplate.getInterceptors().add((request, body, execution) -> {
+            request.getHeaders().set(HttpHeaders.AUTHORIZATION, token);
+            return execution.execute(request, body);
+        });
     }
 
     @Override
@@ -127,6 +147,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         final boolean fetchHistoryTransaction = false;
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
+
             final ApsChargeStatusResponse response = httpTemplate.getForObject(CHARGING_STATUS_ENDPOINT, ApsChargeStatusResponse.class, txnId, fetchHistoryTransaction);
             if (response.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
@@ -238,7 +259,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 final IntentUpiPaymentInfo upiIntentDetails = IntentUpiPaymentInfo.builder().upiDetails(IntentUpiPaymentInfo.UpiDetails.builder().appName(payAppName).build()).build();
                 final ApsExternalChargingRequest<IntentUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails).build();
                 final HttpHeaders headers = new HttpHeaders();
-                final RequestEntity<ApsExternalChargingRequest<IntentUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
+                final RequestEntity<ApsExternalChargingRequest<IntentUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
                 final ResponseEntity<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>> response = exchange(requestEntity);
                 if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
                     final String encryptedParams = EncryptionUtils.encrypt(gson.toJson(response.getBody().getData().getUpiLink()), encryptionKey);

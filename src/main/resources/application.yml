@@ -81,7 +81,7 @@ service:
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
 
-####### payment props #######
+  ####### payment props #######
   payment:
     api:
       endpoint:
@@ -155,6 +155,37 @@ apbpaytm:
     api: ${apbpaytm.native.services.baseUrl}/paymentservices/fetch/instrument
   validateOtp:
     api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
+
+aps:
+  payment:
+    init:
+      settlement:
+        api: ${aps.base}/pg-service/v1/payment/hive-split-payment
+      charge:
+        api: ${aps.base}/pg-service/v1/payment/initiate
+        upi:
+          api: ${aps.base}/pg-service/v1/payment/initiate/upi
+      refund:
+        api: ${aps.base}/pg-service/v1/payment/refund
+    verify:
+      bin:
+        api: ${aps.base}/ps/payment-options/v2/card-details
+      vpa:
+        api: ${aps.base}/pg-service/v1/validate/vpa
+    option:
+      api: ${aps.base}/ps/payment-options/v3/fetch
+    saved:
+      option:
+        api: ${aps.base}/ps/payment-options/saved-options
+      details:
+        api:
+    refund:
+      status:
+        api: ${aps.base}/pg-service/v1/payment/refund/enquiry
+    charge:
+      status:
+        api: ${aps.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
+
 
 branch:
   onelink:

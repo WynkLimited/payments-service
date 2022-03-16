@@ -672,3 +672,6 @@ security:
 
 logging:
   profile: staging
+
+aps:
+  base: https://kongqa.airtel.com/preprod-236

@@ -350,6 +350,21 @@ http:
               type: both
           request:
             timeout: 5000
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 25
+          maxPerHost: 5
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 5000
     paymentClientHttpTemplate:
       pool:
         connection:
@@ -687,3 +702,6 @@ lock:
       maxTotal: 100
       minIdle: 25
       maxIdle: 50
+
+aps:
+  base: https://kongqa.airtel.com/preprod-236

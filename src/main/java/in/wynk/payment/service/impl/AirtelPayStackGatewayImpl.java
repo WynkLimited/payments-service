@@ -190,7 +190,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         final ApsSettlementRequest settlementRequest = ApsSettlementRequest.builder().channel("DIGITAL_STORE").orderId(settlementOrderId).paymentDetails(ApsSettlementRequest.PaymentDetails.builder().paymentTransactionId(request.getTid()).orderPaymentAmount(transaction.getAmount()).build()).serviceOrderDetails(orderDetails).build();
         final HttpHeaders headers = new HttpHeaders();
         final RequestEntity<ApsSettlementRequest> requestEntity = new RequestEntity<>(settlementRequest, headers, HttpMethod.POST, URI.create(SETTLEMENT_ENDPOINT));
-        final ResponseEntity<String> response = httpTemplate.exchange(requestEntity, String.class);
+        httpTemplate.exchange(requestEntity, String.class);
         return DefaultPaymentSettlementResponse.builder().referenceId(settlementOrderId).build();
     }
 
@@ -216,13 +216,14 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         private class CardVerification implements IMerchantVerificationService {
             @Override
             public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest request) {
-                final WynkResponseEntity.WynkResponseEntityBuilder<IVerificationResponse> builder = WynkResponseEntity.<IVerificationResponse>builder();
+                final WynkResponseEntity.WynkResponseEntityBuilder<IVerificationResponse> builder = WynkResponseEntity.builder();
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
                     final ResponseEntity<ApsApiResponseWrapper<ApsBinVerificationResponse>> response = httpTemplate.exchange(entity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsBinVerificationResponse>>() {
                     });
                     final ApsApiResponseWrapper<ApsBinVerificationResponse> wrapper = response.getBody();
+                    assert wrapper != null;
                     if (!wrapper.isResult()) throw new WynkRuntimeException("Bin Verification Request failure");
                     final ApsBinVerificationResponse body = wrapper.getData();
                     builder.data(PayUCardInfo.builder().cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode()).autoRenewSupported(body.isAutoPayEnable()).isDomestic(body.isDomestic() ? "1" : "0").build());
@@ -237,11 +238,12 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         private class VpaVerification implements IMerchantVerificationService {
             @Override
             public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest request) {
-                final WynkResponseEntity.WynkResponseEntityBuilder<IVerificationResponse> builder = WynkResponseEntity.<IVerificationResponse>builder();
+                final WynkResponseEntity.WynkResponseEntityBuilder<IVerificationResponse> builder = WynkResponseEntity.builder();
                 try {
                     final ResponseEntity<ApsApiResponseWrapper<ApsVpaVerificationResponse>> wrapper = httpTemplate.exchange(VPA_VERIFY_ENDPOINT.replace("{vpa}", request.getVerifyValue()), HttpMethod.GET, null, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsVpaVerificationResponse>>() {
                     });
                     final ApsApiResponseWrapper<ApsVpaVerificationResponse> response = wrapper.getBody();
+                    assert response != null;
                     if (!response.isResult()) throw new WynkRuntimeException("Vpa verification failure");
                     final ApsVpaVerificationResponse body = response.getData();
                     builder.data(PayUVpaVerificationResponse.builder().isValid(body.isVpaValid()).isVPAValid(body.isVpaValid() ? 1 : 0).vpa(body.getVpa()).payerAccountName(body.getPayeeAccountName()).status(body.getStatus()).build());

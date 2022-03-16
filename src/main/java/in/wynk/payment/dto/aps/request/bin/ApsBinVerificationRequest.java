@@ -1,5 +1,7 @@
 package in.wynk.payment.dto.aps.request.bin;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.common.constant.BaseConstants;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -10,8 +12,10 @@ import lombok.ToString;
 @Getter
 @Builder
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApsBinVerificationRequest {
     private String cardBin;
-    private String lob;
+    @Builder.Default
+    private String lob = BaseConstants.WYNK;
     private String subLob;
 }

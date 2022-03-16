@@ -171,7 +171,7 @@ aps:
       bin:
         api: ${aps.base}/ps/payment-options/v2/card-details
       vpa:
-        api: ${aps.base}/pg-service/v1/validate/vpa
+        api: ${aps.base}/pg-service/v1/validate/vpa/{vpa}
     option:
       api: ${aps.base}/ps/payment-options/v3/fetch
     saved:

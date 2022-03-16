@@ -2,6 +2,7 @@ package in.wynk.payment.service.impl;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.gson.Gson;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -19,22 +20,27 @@ import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.ApsChargingResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.*;
+import in.wynk.payment.dto.aps.request.bin.ApsBinVerificationRequest;
 import in.wynk.payment.dto.aps.request.sattlement.ApsSettlementRequest;
+import in.wynk.payment.dto.aps.response.bin.ApsBinVerificationResponse;
+import in.wynk.payment.dto.aps.response.bin.ApsVpaVerificationResponse;
 import in.wynk.payment.dto.aps.response.charge.AbstractApsExternalChargingResponse;
 import in.wynk.payment.dto.aps.request.charge.ApsExternalChargingRequest;
 import in.wynk.payment.dto.aps.response.charge.ApsCardChargingResponse;
 import in.wynk.payment.dto.aps.response.charge.ApsUpiCollectChargingResponse;
 import in.wynk.payment.dto.aps.response.charge.ApsUpiIntentChargingChargingResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.PaymentGatewaySettlementRequest;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
-import in.wynk.payment.service.AbstractMerchantPaymentStatusService;
-import in.wynk.payment.service.IMerchantPaymentChargingService;
-import in.wynk.payment.service.IMerchantPaymentSettlement;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.dto.response.IVerificationResponse;
+import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
+import in.wynk.payment.service.*;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +64,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service("APS")
-public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
+public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, ApsChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>, IMerchantVerificationService {
 
     @Value("${aps.auth.api.username}")
     private String username;
@@ -136,7 +142,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         this.syncChargingTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.SUCCESS) {
             return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.success(transaction.getIdStr(), cache.validTillDate(transaction.getPlanId()), transaction.getPlanId())).build();
-        } else if (transaction.getStatus() == TransactionStatus.FAILURE)  {
+        } else if (transaction.getStatus() == TransactionStatus.FAILURE) {
             return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.failure(transaction.getIdStr(), transaction.getPlanId())).build();
         }
         throw new WynkRuntimeException(PaymentErrorType.PAY025);
@@ -180,6 +186,67 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         final RequestEntity<ApsSettlementRequest> requestEntity = new RequestEntity<>(settlementRequest, headers, HttpMethod.POST, URI.create(SETTLEMENT_ENDPOINT));
         final ResponseEntity<String> response = httpTemplate.exchange(requestEntity, String.class);
         return DefaultPaymentSettlementResponse.builder().referenceId(settlementOrderId).build();
+    }
+
+    @Override
+    public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest request) {
+        return null;
+    }
+
+    private class VerificationWrapper implements IMerchantVerificationService {
+
+        private final Map<VerificationType, IMerchantVerificationService> verificationHolder = new HashMap<>();
+
+        public VerificationWrapper() {
+            verificationHolder.put(VerificationType.VPA, new VpaVerification());
+            verificationHolder.put(VerificationType.BIN, new CardVerification());
+        }
+
+        @Override
+        public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest request) {
+            return verificationHolder.get(request.getVerificationType()).doVerify(request);
+        }
+
+        private class CardVerification implements IMerchantVerificationService {
+            @Override
+            public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest request) {
+                final WynkResponseEntity.WynkResponseEntityBuilder<IVerificationResponse> builder = WynkResponseEntity.<IVerificationResponse>builder();
+                final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
+                final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
+                try {
+                    final ResponseEntity<ApsApiResponseWrapper<ApsBinVerificationResponse>> response = httpTemplate.exchange(entity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsBinVerificationResponse>>() {
+                    });
+                    final ApsApiResponseWrapper<ApsBinVerificationResponse> wrapper = response.getBody();
+                    if (!wrapper.isResult()) throw new WynkRuntimeException("Bin Verification Request failure");
+                    final ApsBinVerificationResponse body = wrapper.getData();
+                    builder.data(PayUCardInfo.builder().cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode()).autoRenewSupported(body.isAutoPayEnable()).isDomestic(body.isDomestic() ? "1" : "0").build());
+                } catch (Exception e) {
+                    log.error(PaymentLoggingMarker.APS_BIN_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+                    builder.data(PayUCardInfo.builder().valid(Boolean.FALSE).isDomestic(BaseConstants.UNKNOWN.toUpperCase()).cardType(BaseConstants.UNKNOWN.toUpperCase()).cardCategory(BaseConstants.UNKNOWN.toUpperCase()).build());
+                }
+                return builder.build();
+            }
+        }
+
+        private class VpaVerification implements IMerchantVerificationService {
+            @Override
+            public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest request) {
+                final WynkResponseEntity.WynkResponseEntityBuilder<IVerificationResponse> builder = WynkResponseEntity.<IVerificationResponse>builder();
+                try {
+                    final ResponseEntity<ApsApiResponseWrapper<ApsVpaVerificationResponse>> wrapper = httpTemplate.exchange(VPA_VERIFY_ENDPOINT.replace("{vpa}", request.getVerifyValue()), HttpMethod.GET, null, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsVpaVerificationResponse>>() {
+                    });
+                    final ApsApiResponseWrapper<ApsVpaVerificationResponse> response = wrapper.getBody();
+                    if (!response.isResult()) throw new WynkRuntimeException("Vpa verification failure");
+                    final ApsVpaVerificationResponse body = response.getData();
+                    builder.data(PayUVpaVerificationResponse.builder().isVPAValid(body.isVpaValid() ? 1 : 0).vpa(body.getVpa()).payerAccountName(body.getPayeeAccountName()).status(body.getStatus()).build());
+                } catch (Exception e) {
+                    log.error(PaymentLoggingMarker.APS_VPA_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+                    builder.data(PayUVpaVerificationResponse.builder().isValid(false).build());
+                }
+                return builder.build();
+            }
+        }
+
     }
 
 

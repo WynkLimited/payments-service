@@ -1,13 +1,11 @@
 package in.wynk.payment.dto.aps.response.charge;
 
 
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
 
 @Getter
 @ToString
-@SuperBuilder
+@NoArgsConstructor
 public class ApsUpiIntentChargingChargingResponse extends AbstractApsUpiChargingResponse {
     private String upiLink;
 }

@@ -308,6 +308,21 @@ subscription:
 http:
   enableTemplateRegistration: true
   templates:
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 25
+          maxPerHost: 5
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 5000
+            factory:
+              type: both
+          request:
+            timeout: 5000
     paymentGatewayHttpTemplate:
       pool:
         connection:
@@ -674,4 +689,8 @@ logging:
   profile: staging
 
 aps:
+  auth:
+    api:
+      username: payment
+      password: pay@qckslvr
   base: https://kongqa.airtel.com/preprod-236

@@ -1,12 +1,10 @@
 package in.wynk.payment.dto.aps.response.charge;
 
-import lombok.Getter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
 
 @Getter
 @ToString
-@SuperBuilder
+@NoArgsConstructor
 public abstract class AbstractApsExternalChargingResponse {
     private String pgId;
     private String pgSystemOrderId;

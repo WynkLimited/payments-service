@@ -360,7 +360,7 @@ http:
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
           socket:
-            timeout: 2500
+            timeout: 10000
             factory:
               type: both
           request:
@@ -704,4 +704,8 @@ lock:
       maxIdle: 50
 
 aps:
+  auth:
+    api:
+      username: payment
+      password: pay@qckslvr
   base: https://kongqa.airtel.com/preprod-236

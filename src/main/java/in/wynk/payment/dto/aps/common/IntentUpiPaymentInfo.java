@@ -17,7 +17,7 @@ public class IntentUpiPaymentInfo extends AbstractUpiPaymentInfo {
     @Builder
     @Getter
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public class UpiDetails {
+    public static class UpiDetails {
         private String appName;
     }
 

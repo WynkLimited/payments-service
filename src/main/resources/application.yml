@@ -186,7 +186,6 @@ aps:
       status:
         api: ${aps.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
 
-
 branch:
   onelink:
     key: ${onelink.key}

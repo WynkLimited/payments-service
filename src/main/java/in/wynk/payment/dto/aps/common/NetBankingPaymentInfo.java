@@ -4,10 +4,11 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Getter
-@Builder
 @ToString
+@SuperBuilder
 public class NetBankingPaymentInfo extends AbstractPaymentInfo {
 
     private String bankCode;

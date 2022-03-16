@@ -310,6 +310,21 @@ sms:
 http:
   enableTemplateRegistration: true
   templates:
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 25
+          maxPerHost: 5
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 5000
     paymentGatewayHttpTemplate:
       pool:
         connection:
@@ -672,4 +687,8 @@ security:
     paths: /wynk/v1/**,/wynk/v2/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**
 
 aps:
+  auth:
+    api:
+      username: payment
+      password: pay@qckslvr
   base: https://paydigi.airtel.in

@@ -6,4 +6,6 @@ import lombok.ToString;
 
 @Getter
 @ToString
-public class ApsPaymentRefundResponse extends RefundInfo { }
+public class ApsExternalPaymentRefundStatusResponse extends RefundInfo {
+
+}

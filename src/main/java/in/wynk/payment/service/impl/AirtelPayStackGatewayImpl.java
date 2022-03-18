@@ -369,9 +369,9 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         public WynkResponseEntity<ApsChargingResponse> charge(DefaultChargingRequest<?> request) {
             final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
             final Transaction transaction = TransactionContext.get();
+            final PaymentMethod method = cache.getPaymentMethod(request.getPaymentId());
             final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
-            // TODO: get the card info and card type, bank code etc from request
-            final NetBankingPaymentInfo netBankingInfo = NetBankingPaymentInfo.builder().bankCode("UTIB").build();
+            final NetBankingPaymentInfo netBankingInfo = NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get("bankCode")).build();
             final ApsExternalChargingRequest<NetBankingPaymentInfo> payRequest = ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo).build();
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsExternalChargingRequest<NetBankingPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));

@@ -8,6 +8,7 @@ import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.service.impl.PaymentMethodCachingService;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,7 +41,7 @@ public class S2SPurchaseDetails implements IChargingDetails {
 
     @Valid
     @Analysed
-    private PaymentDetails paymentDetails;
+    private AbstractPaymentDetails paymentDetails;
 
     @Valid
     @Analysed

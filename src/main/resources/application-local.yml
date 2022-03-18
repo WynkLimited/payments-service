@@ -704,6 +704,8 @@ lock:
       maxIdle: 50
 
 aps:
+  encryption:
+    key: classpath:/airtel_pay_stack.pub
   auth:
     api:
       username: payment

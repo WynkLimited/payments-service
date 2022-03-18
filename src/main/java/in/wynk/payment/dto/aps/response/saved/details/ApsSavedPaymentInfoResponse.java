@@ -11,8 +11,8 @@ import java.util.Map;
 @ToString
 public class ApsSavedPaymentInfoResponse {
 
-    private List<SavedVPADetailsWrapper> cardDetails;
-    private List<SavedCardDetailsWrapper> vpaDetails;
+    private List<SavedCardDetailsWrapper> cardDetails;
+    private List<SavedVPADetailsWrapper> vpaDetails;
     private List<SavedWalletDetailsWrapper> walletDetails;
     private Map<HealthStatus, ApsHealthCheckConfig> healthCheckConfig;
 

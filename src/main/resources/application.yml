@@ -158,6 +158,9 @@ apbpaytm:
 
 aps:
   payment:
+    encryption:
+      key:
+        path: ${aps.encryption.key}
     init:
       settlement:
         api: ${aps.base}/pg-service/v1/payment/hive-split-payment

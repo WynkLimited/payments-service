@@ -40,8 +40,7 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode", visible = true, defaultImpl = DefaultChargingRequest.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PayUChargingRequest.class, name = "PAYU"),
-        @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PHONEPE_AUTO_DEBIT"),
-        @JsonSubTypes.Type(value = ApsChargingRequest.class, name = "APS")
+        @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PHONEPE_AUTO_DEBIT")
 })
 public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 

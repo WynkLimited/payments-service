@@ -694,6 +694,8 @@ security:
     paths: /actuator/**,/wynk/v1/**,/wynk/v2/**
 
 aps:
+  encryption:
+    key: classpath:/airtel_pay_stack_prod.pub
   auth:
     api:
       username: payment

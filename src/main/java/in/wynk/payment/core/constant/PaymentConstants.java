@@ -4,6 +4,8 @@ import in.wynk.common.constant.BaseConstants;
 
 public interface PaymentConstants extends BaseConstants {
 
+    String SAVED = "SAVED";
+    String UPI = "UPI";
     String CARD = "CARD";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
@@ -34,6 +36,8 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_SECRET = "secret";
     String APB_GATEWAY = "APB_GATEWAY";
     String ADD_TO_BILL = "ADD_TO_BILL";
+    String SEAMLESS = "SEAMLESS";
+    String NON_SEAMLESS = "NON_SEAMLESS";
     String DEFAULT_COUNTRY_CODE = "IN";
     String DEBIT_CARD = "DEBIT_CARD";
     String APP_NAME = "APP_NAME";

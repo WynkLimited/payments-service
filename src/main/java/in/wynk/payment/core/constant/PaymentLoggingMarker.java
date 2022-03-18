@@ -34,6 +34,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
     Marker PAYU_API_FAILURE = MarkerFactory.getMarker("PAYU_API_FAILURE");
     Marker APS_API_FAILURE = MarkerFactory.getMarker("APS_API_FAILURE");
+    Marker APS_OPERATION_FAILURE = MarkerFactory.getMarker("APS_OPERATION_FAILURE");
     Marker ADDTOBILL_API_FAILURE = MarkerFactory.getMarker("ADDTOBILL_API_FAILURE");
     Marker PAYU_UPI_INIT_TXN_FAILURE = MarkerFactory.getMarker("PAYU_UPI_INIT_TXN_FAILURE");
 

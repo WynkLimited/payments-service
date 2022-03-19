@@ -23,7 +23,7 @@ import javax.validation.constraints.NotNull;
 @AnalysedEntity
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", defaultImpl = PaymentDetails.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentGroup", defaultImpl = PaymentDetails.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = UpiPaymentDetails.class, name =  PaymentConstants.UPI),
         @JsonSubTypes.Type(value = CardPaymentDetails.class, name = PaymentConstants.CARD),

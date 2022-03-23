@@ -19,10 +19,7 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.charge.AbstractChargingGatewayResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.manager.ChargingGatewayResponseWrapper;
-import in.wynk.payment.dto.request.AbstractChargingRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.CallbackRequestWrapper;
-import in.wynk.payment.dto.request.SyncTransactionRevisionRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -40,7 +37,10 @@ import static in.wynk.payment.core.constant.PaymentConstants.VERSION_2;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentGatewayManager implements IPaymentCharging<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>> {
+public class PaymentGatewayManager implements
+        IPaymentCharging<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>>,
+        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
+        IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -93,6 +93,25 @@ public class PaymentGatewayManager implements IPaymentCharging<ChargingGatewayRe
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).callbackRequest(request.getBody()).build()).build());
+        }
+    }
+
+    //todo : complete calling code in queue
+    @Override
+    public void doRenewal(PaymentRenewalChargingRequest request) {
+        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias()).build());
+        final Transaction transaction = transactionManager.init(transactionInitRequest);
+        final TransactionStatus initialStatus = transaction.getStatus();
+        final IPaymentRenewal<PaymentRenewalChargingRequest> renewalService = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentRenewal<PaymentRenewalChargingRequest>>() {
+        });
+        try {
+            renewalService.doRenewal(request);
+        } finally {
+            if (renewalService.supportsRenewalReconciliation()) {
+                sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
+            }
+            final TransactionStatus finalStatus = transaction.getStatus();
+            transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
         }
     }
 

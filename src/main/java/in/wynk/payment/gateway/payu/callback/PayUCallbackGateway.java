@@ -1,8 +1,10 @@
 package in.wynk.payment.gateway.payu.callback;
 
+import com.google.gson.Gson;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
@@ -19,20 +21,22 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.text.DecimalFormat;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Optional;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
 public class PayUCallbackGateway implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
     private final PayUCommonGateway common;
-
-    public PayUCallbackGateway(PayUCommonGateway common) {
+    private final Gson gson;
+    public PayUCallbackGateway(Gson gson, PayUCommonGateway common) {
         this.common = common;
+        this.gson = gson;
     }
 
     /**
@@ -65,6 +69,16 @@ public class PayUCallbackGateway implements IPaymentCallback<AbstractPaymentCall
             }
         }
         return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
+    }
+
+    @Override
+    public PayUCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        try {
+            return gson.fromJson(gson.toJsonTree(payload), PayUCallbackRequestPayload.class);
+        } catch (Exception e) {
+            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PAY006, e);
+        }
     }
 
     private void handleCallbackInternal(PayUCallbackRequestPayload payUCallbackRequestPayload) {

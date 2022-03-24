@@ -22,6 +22,8 @@ public class AbstractSubscribePlanRequest implements IObjectMapper {
     private final PaymentEvent paymentEvent;
     private final TransactionStatus transactionStatus;
 
+    private final String os;
+
     public static AbstractSubscribePlanRequest from(AbstractTransactionRevisionRequest request) {
         if(SyncTransactionRevisionRequest.class.isAssignableFrom(request.getClass())) {
             return SubscribePlanSyncRequest.from((SyncTransactionRevisionRequest) request);

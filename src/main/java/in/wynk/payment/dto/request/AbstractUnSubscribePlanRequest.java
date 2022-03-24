@@ -19,6 +19,8 @@ public abstract class AbstractUnSubscribePlanRequest implements IObjectMapper {
     private PaymentEvent paymentEvent;
     private TransactionStatus transactionStatus;
 
+    private String os;
+
     public static AbstractUnSubscribePlanRequest from(AbstractTransactionRevisionRequest request) {
         if (SyncTransactionRevisionRequest.class.isAssignableFrom(request.getClass())) {
             return UnSubscribePlanSyncRequest.from((SyncTransactionRevisionRequest) request);

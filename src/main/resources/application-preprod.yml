@@ -447,6 +447,161 @@ wynk:
         replicaSet: wcf
   ##### SQS SaaS Props #####
   saas:
+    mongodb:
+      enabled: true
+      clients:
+        paymentApi:
+          enabled: true
+          payment:
+            appName: payment
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_payments_preprod
+            password: t2KXcR8dnW
+            database: payments_preprod
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
+          coupons:
+            appName: coupon
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_coupons_preprod
+            password: yC3weM5K2Q
+            database: coupons_preprod
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
+        airtelxstream:
+          enabled: true
+          payment:
+            appName: payment
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_payments_preprod
+            password: t2KXcR8dnW
+            database: payments_preprod
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
+          coupons:
+            appName: coupon
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_coupons_preprod
+            password: yC3weM5K2Q
+            database: coupons_preprod
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
+        music:
+          enabled: true
+          payment:
+            appName: payment
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_payments_preprod
+            password: t2KXcR8dnW
+            database: payments_preprod
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
+          coupons:
+            appName: coupon
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_coupons_preprod
+            password: yC3weM5K2Q
+            database: coupons_preprod
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
+        rajtv:
+          enabled: true
+          payment:
+            appName: payment
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_payments_rajtv
+            password: VlRKek1tRXpjRlpQU
+            database: payments_preprod_rajtv
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
+          coupons:
+            appName: coupon
+            nodes: 10.80.0.128,10.80.0.240
+            username: user_coupons_rajtv
+            password: VTJzMmEzcFZ
+            database: coupons_preprod_rajtv
+            ########### Mongo Pool Config ###########
+            connectionSettings:
+              minConnectionsPerHost: 1
+              maxConnectionsPerHost: 5
+              threadsAllowedToBlockForConnectionMultiplier: 2
+            timeOutSettings:
+              serverSelectionTimeoutMs: 10000
+              maxWaitTime: 1000
+              connectTimeout: 1000
+              socketTimeout: 2000
+            readPreference: secondaryPreferred
+            replicaSet: wcf
     sql:
       enabled: true
       clients:

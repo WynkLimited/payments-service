@@ -20,7 +20,7 @@ public class NetBankingPaymentDetails extends AbstractPaymentDetails {
     private ENACHMandateInfo mandateInfo;
 
     @Override
-    public String getPaymentGroup() {
+    public String getPaymentMode() {
         return PaymentConstants.NET_BANKING;
     }
 }

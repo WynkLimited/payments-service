@@ -4,26 +4,29 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.constant.CacheBeanNameConstants;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.common.validations.MongoBaseEntityConstraint;
+import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.PaymentDetails;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.request.charge.netbanking.NetBankingPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.charge.wallet.WalletPaymentDetails;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.annotation.PersistenceConstructor;
 
 import javax.validation.constraints.NotNull;
 
 @Getter
 @SuperBuilder
 @AnalysedEntity
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentGroup", defaultImpl = PaymentDetails.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = UpiPaymentDetails.class, name =  PaymentConstants.UPI),
         @JsonSubTypes.Type(value = CardPaymentDetails.class, name = PaymentConstants.CARD),
@@ -33,10 +36,12 @@ import javax.validation.constraints.NotNull;
 public abstract class AbstractPaymentDetails implements IPaymentDetails {
 
     @Analysed
+    @MongoBaseEntityConstraint(beanName = CacheBeanNameConstants.COUPON)
     private String couponId;
 
     @NotNull
     @Analysed
+    @MongoBaseEntityConstraint(beanName = CacheBeanNameConstants.PAYMENT_METHOD)
     private String paymentId;
 
     @Analysed(name = "paymentMode")
@@ -51,6 +56,22 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     @Analysed
     private boolean trialOpted;
 
-    public abstract String getPaymentGroup();
+    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted) {
+        this.couponId = couponId;
+        this.paymentId = paymentId;
+        this.paymentMode = paymentMode;
+        this.merchantName = merchantName;
+        this.autoRenew = autoRenew;
+        this.trialOpted = trialOpted;
+    }
+
+    @PersistenceConstructor
+    public AbstractPaymentDetails() {
+    }
+
+    public boolean isTrialOpted() {
+        return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
+        }).get(paymentId).isTrialSupported() && trialOpted;
+    }
 
 }

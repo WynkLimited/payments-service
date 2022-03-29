@@ -20,7 +20,7 @@ public class UpiPaymentDetails extends AbstractPaymentDetails {
     private UpiDetails upiDetails;
 
     @Override
-    public String getPaymentGroup() {
+    public String getPaymentMode() {
         return PaymentConstants.UPI;
     }
 }

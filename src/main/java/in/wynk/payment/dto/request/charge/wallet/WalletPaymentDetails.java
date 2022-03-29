@@ -22,7 +22,7 @@ public class WalletPaymentDetails extends AbstractPaymentDetails {
     private WalletDetails walletDetails;
 
     @Override
-    public String getPaymentGroup() {
+    public String getPaymentMode() {
         return PaymentConstants.WALLET;
     }
 

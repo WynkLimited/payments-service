@@ -21,7 +21,7 @@ public class CardPaymentDetails extends AbstractPaymentDetails {
     private AbstractCardDetails cardDetails;
 
     @Override
-    public String getPaymentGroup() {
+    public String getPaymentMode() {
         return PaymentConstants.CARD;
     }
 }

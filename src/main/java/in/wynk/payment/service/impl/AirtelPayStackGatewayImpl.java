@@ -466,7 +466,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
                 final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPurchaseDetails().getPaymentDetails();
                 final CollectUpiPaymentInfo upiCollectInfo = CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).build();
-                final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiCollectInfo).build();
+                final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiCollectInfo).channelInfo(ChannelInfo.builder().redirectionUrl(CLIENT_POLLING_SCREEN_URL).build()).build();
                 final HttpHeaders headers = new HttpHeaders();
                 final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
                 final ResponseEntity<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>> response = exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {

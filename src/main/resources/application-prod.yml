@@ -695,7 +695,7 @@ security:
 
 aps:
   encryption:
-    key: classpath:/airtel_pay_stack_prod.pub
+    key: classpath:/cryptography/aps/public.key
   auth:
     api:
       username: payment

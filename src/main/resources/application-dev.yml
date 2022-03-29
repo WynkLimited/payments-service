@@ -690,7 +690,7 @@ logging:
 
 aps:
   encryption:
-    key: classpath:/airtel_pay_stack.pub
+    key: classpath:/cryptography/aps/public.key
   auth:
     api:
       username: payment

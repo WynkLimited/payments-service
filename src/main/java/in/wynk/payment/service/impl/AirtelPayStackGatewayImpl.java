@@ -371,7 +371,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             final PaymentMethod method = cache.getPaymentMethod(request.getPaymentId());
             final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
             final String redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl();
-            final NetBankingPaymentInfo netBankingInfo = NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).build();
+            final NetBankingPaymentInfo netBankingInfo = NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount()).build();
             final ApsExternalChargingRequest<NetBankingPaymentInfo> payRequest = ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsExternalChargingRequest<NetBankingPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
@@ -399,7 +399,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             try {
                 final String encCardInfo = rsa.encrypt(gson.toJson(credentials));
                 final String redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl();
-                final FreshCardPaymentInfo freshCardInfo = FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode(cardDetails.getCardInfo().getBankCode()).paymentMode(cardDetails.getCardInfo().getCategory()).build();
+                final FreshCardPaymentInfo freshCardInfo = FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode(cardDetails.getCardInfo().getBankCode()).paymentAmount(transaction.getAmount()).paymentMode(cardDetails.getCardInfo().getCategory()).build();
                 final ApsExternalChargingRequest<FreshCardPaymentInfo> payRequest = ApsExternalChargingRequest.<FreshCardPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(freshCardInfo).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                 final HttpHeaders headers = new HttpHeaders();
                 final RequestEntity<ApsExternalChargingRequest<FreshCardPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));

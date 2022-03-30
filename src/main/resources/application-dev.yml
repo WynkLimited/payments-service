@@ -187,6 +187,26 @@ payment:
             delayTimeUnit: SECONDS
   merchant:
     ####### payu props #########
+    aps:
+      api:
+        base: https://kongqa.airtel.com/preprod-236
+      encryption:
+        key: classpath:/cryptography/aps/public.key
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+      music:
+        id: payment
+        secret: pay@qckslvr
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
     payu:
       airtelxstream:
         id: qFDqmx
@@ -687,12 +707,3 @@ security:
 
 logging:
   profile: staging
-
-aps:
-  encryption:
-    key: classpath:/cryptography/aps/public.key
-  auth:
-    api:
-      username: payment
-      password: pay@qckslvr
-  base: https://kongqa.airtel.com/preprod-236

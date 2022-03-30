@@ -193,6 +193,34 @@ payment:
       url: http://localhost:4200/status
   merchant:
     ####### payu props #########
+    aps:
+      api:
+        base: https://paydigi.airtel.in
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      music:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
     payu:
       airtelxstream:
         id: aU2Uoi
@@ -692,12 +720,3 @@ lock:
 security:
   exempt:
     paths: /actuator/**,/wynk/v1/**,/wynk/v2/**
-
-aps:
-  encryption:
-    key: classpath:/cryptography/aps/public.key
-  auth:
-    api:
-      username: payment
-      password: pay@qckslvr
-  base: https://paydigi.airtel.in

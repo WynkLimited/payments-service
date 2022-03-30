@@ -160,34 +160,34 @@ aps:
   payment:
     encryption:
       key:
-        path: ${aps.encryption.key}
+        path: ${payment.merchant.aps.encryption.key}
     init:
       settlement:
-        api: ${aps.base}/pg-service/v1/payment/hive-split-payment
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/hive-split-payment
       charge:
-        api: ${aps.base}/pg-service/v1/payment/initiate
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate
         upi:
-          api: ${aps.base}/pg-service/v1/payment/initiate/upi
+          api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate/upi
       refund:
-        api: ${aps.base}/pg-service/v1/payment/refund
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund
     verify:
       bin:
-        api: ${aps.base}/ps/payment-options/v2/card-details
+        api: ${payment.merchant.aps.api.base}/ps/payment-options/v2/card-details
       vpa:
-        api: ${aps.base}/pg-service/v1/validate/vpa/{vpa}
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/validate/vpa/{vpa}
     option:
-      api: ${aps.base}/ps/payment-options/v3/fetch
+      api: ${payment.merchant.aps.api.base}/ps/payment-options/v3/fetch
     saved:
       option:
-        api: ${aps.base}/ps/payment-options/saved-options
+        api: ${payment.merchant.aps.api.base}/ps/payment-options/saved-options
       details:
         api:
     refund:
       status:
-        api: ${aps.base}/pg-service/v1/payment/refund/enquiry
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund/enquiry
     charge:
       status:
-        api: ${aps.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
 
 branch:
   onelink:

@@ -2,6 +2,8 @@ package in.wynk.payment.service.impl;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.gson.Gson;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -47,6 +49,7 @@ import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -82,10 +85,6 @@ import java.util.stream.Collectors;
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
 public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>, IMerchantVerificationService, IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
 
-    @Value("${aps.auth.api.username}")
-    private String username;
-    @Value("${aps.auth.api.password}")
-    private String password;
     @Value("${payment.encKey}")
     private String encryptionKey;
     @Value("${aps.payment.encryption.key.path}")
@@ -139,8 +138,11 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private void init() {
         final Resource resource = this.resourceLoader.getResource(RSA_PUBLIC_KEY);
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
-        final String token = AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
         this.httpTemplate.getInterceptors().add((request, body, execution) -> {
+            final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
+            final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
+            final String password = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
+            final String token = AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
             request.getHeaders().add(HttpHeaders.AUTHORIZATION, token);
             request.getHeaders().add(APBPaytmConstants.CHANNEL_ID, APBPaytmConstants.AUTH_TYPE_WEB_UNAUTH);
             return execution.execute(request, body);

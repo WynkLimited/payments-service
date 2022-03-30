@@ -580,8 +580,8 @@ wynk:
           payment:
             appName: payment
             nodes: 10.40.12.86,10.40.12.75,10.40.12.45
-            username: user_payments
-            password: dEhkUE55cDZEdQ
+            username: user_payments_rajtv
+            password: 91F306FC2BEBF8D2E75E699D74014
             database: payments_rajtv
             ########### Mongo Pool Config ###########
             connectionSettings:
@@ -598,8 +598,8 @@ wynk:
           coupons:
             appName: coupon
             nodes: 10.40.12.86,10.40.12.75,10.40.12.45
-            username: user_coupons
-            password: NnNTVVpjcDJneQ
+            username: user_coupons_rajtv
+            password: BE750841543CCFC2F932478ED
             database: coupons_rajtv
             ########### Mongo Pool Config ###########
             connectionSettings:

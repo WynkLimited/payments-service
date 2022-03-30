@@ -9,5 +9,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class CollectUpiPaymentInfo extends AbstractUpiPaymentInfo {
     private String vpa;
-    private final String upiFlow = "INTENT_CUSTOM";
+    private final String upiFlow = "COLLECT";
 }

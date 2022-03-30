@@ -397,7 +397,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPurchaseDetails().getPaymentDetails();
             final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
-            final CardDetails credentials = CardDetails.builder().cardNumber(cardDetails.getCardNumber()).expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCvv()).build();
+            final CardDetails credentials = CardDetails.builder().nameOnCard(((FreshCardDetails) paymentDetails.getCardDetails()).getCardHolderName()).cardNumber(cardDetails.getCardNumber()).expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCvv()).build();
             try {
                 final String encCardInfo = rsa.encrypt(gson.toJson(credentials));
                 final String redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl();

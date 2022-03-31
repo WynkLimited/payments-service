@@ -102,8 +102,7 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
     private void initDelegate() {
         for (String bean : context.getBeanNamesForType(ResolvableType.forType(new ParameterizedTypeReference<IPaymentCodeDao>() {
         }))) {
-            final PaymentCodeClientCaching cache = new PaymentCodeClientCaching(BeanLocatorFactory.getBean(bean, new ParameterizedTypeReference<IPaymentCodeDao>() {
-            }));
+            final PaymentCodeClientCaching cache = new PaymentCodeClientCaching(context.getBean(bean, IPaymentCodeDao.class));
             delegate.put(bean, cache);
             cache.init();
         }

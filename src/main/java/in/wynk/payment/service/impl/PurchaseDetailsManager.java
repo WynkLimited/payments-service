@@ -45,7 +45,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #transaction.getProductId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public IPurchaseDetails get(Transaction transaction) {
         final Optional<? extends IPurchaseDetails> purchaseDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IRecurringDetailsDao.class).findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
-        return purchaseDetails.get();
+        return purchaseDetails.orElse(null);
     }
 
 }

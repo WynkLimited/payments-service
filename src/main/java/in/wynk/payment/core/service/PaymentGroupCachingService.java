@@ -64,31 +64,31 @@ public class PaymentGroupCachingService implements IEntityCacheService<PaymentGr
 
     @Override
     public PaymentGroup get(String key) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + IPaymentGroupDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentGroupDao.class.getName();
         return delegate.get(cacheBean).get(key);
     }
 
     @Override
     public PaymentGroup save(PaymentGroup method) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + IPaymentGroupDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentGroupDao.class.getName();
         return delegate.get(cacheBean).save(method);
     }
 
     @Override
     public Collection<PaymentGroup> getAll() {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + IPaymentGroupDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentGroupDao.class.getName();
         return delegate.get(cacheBean).getAll();
     }
 
     @Override
     public boolean containsKey(String key) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + IPaymentGroupDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentGroupDao.class.getName();
         return delegate.get(cacheBean).containsKey(key);
     }
 
     @Override
     public Collection<PaymentGroup> getAllByState(State state) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + IPaymentGroupDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentGroupDao.class.getName();
         return delegate.get(cacheBean).getAllByState(state);
     }
 

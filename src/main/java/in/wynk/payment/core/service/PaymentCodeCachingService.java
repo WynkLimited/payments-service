@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static in.wynk.common.constant.BaseConstants.COLON;
 import static in.wynk.common.constant.BaseConstants.IN_MEMORY_CACHE_CRON;
 import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_CODE;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
@@ -71,31 +72,31 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
 
     @Override
     public PaymentCode get(String key) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + IPaymentCodeDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).get(key);
     }
 
     @Override
     public PaymentCode save(PaymentCode item) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + IPaymentCodeDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).save(item);
     }
 
     @Override
     public Collection<PaymentCode> getAll() {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + IPaymentCodeDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).getAll();
     }
 
     @Override
     public boolean containsKey(String key) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + IPaymentCodeDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).containsKey(key);
     }
 
     @Override
     public Collection<PaymentCode> getAllByState(State state) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + IPaymentCodeDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).getAllByState(state);
     }
 

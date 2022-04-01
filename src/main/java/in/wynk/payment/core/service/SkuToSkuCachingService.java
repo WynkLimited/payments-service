@@ -64,25 +64,25 @@ public class SkuToSkuCachingService implements IEntityCacheService<SkuMapping, S
 
     @Override
     public SkuMapping get(String key) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + SkuDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + SkuDao.class.getName();
         return delegate.get(cacheBean).get(key);
     }
 
     @Override
     public SkuMapping save(SkuMapping method) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + SkuDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + SkuDao.class.getName();
         return delegate.get(cacheBean).save(method);
     }
 
     @Override
     public Collection<SkuMapping> getAll() {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + SkuDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + SkuDao.class.getName();
         return delegate.get(cacheBean).getAll();
     }
 
     @Override
     public boolean containsKey(String key) {
-        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + SkuDao.class.getName();
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + SkuDao.class.getName();
         return delegate.get(cacheBean).containsKey(key);
     }
 

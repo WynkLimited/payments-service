@@ -478,7 +478,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.80.0.128,10.80.0.240
@@ -525,7 +525,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.80.0.128,10.80.0.240
@@ -572,7 +572,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.80.0.128,10.80.0.240
@@ -619,7 +619,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.80.0.128,10.80.0.240

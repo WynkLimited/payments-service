@@ -489,7 +489,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.40.12.86,10.40.12.75,10.40.12.45
@@ -503,7 +503,7 @@ wynk:
                   threadsAllowedToBlockForConnectionMultiplier: 2
                 timeOutSettings:
                   serverSelectionTimeoutMs: 10000
-                  maxWaitTime: 10000
+                  maxWaitTime: 1000
                   connectTimeout: 1000
                   socketTimeout: 5000
                 readPreference: secondaryPreferred
@@ -536,7 +536,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.40.12.86,10.40.12.75,10.40.12.45
@@ -550,7 +550,7 @@ wynk:
                   threadsAllowedToBlockForConnectionMultiplier: 2
                 timeOutSettings:
                   serverSelectionTimeoutMs: 10000
-                  maxWaitTime: 10000
+                  maxWaitTime: 1000
                   connectTimeout: 1000
                   socketTimeout: 5000
                 readPreference: secondaryPreferred
@@ -583,7 +583,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.40.12.86,10.40.12.75,10.40.12.45
@@ -597,7 +597,7 @@ wynk:
                   threadsAllowedToBlockForConnectionMultiplier: 2
                 timeOutSettings:
                   serverSelectionTimeoutMs: 10000
-                  maxWaitTime: 10000
+                  maxWaitTime: 1000
                   connectTimeout: 1000
                   socketTimeout: 5000
                 readPreference: secondaryPreferred
@@ -630,7 +630,7 @@ wynk:
             coupons:
               enabled: true
               repoConfig:
-                basePackages: in.wynk.payment.core.dao
+                basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
                 nodes: 10.40.12.86,10.40.12.75,10.40.12.45
@@ -644,7 +644,7 @@ wynk:
                   threadsAllowedToBlockForConnectionMultiplier: 2
                 timeOutSettings:
                   serverSelectionTimeoutMs: 10000
-                  maxWaitTime: 10000
+                  maxWaitTime: 1000
                   connectTimeout: 1000
                   socketTimeout: 5000
                 readPreference: secondaryPreferred

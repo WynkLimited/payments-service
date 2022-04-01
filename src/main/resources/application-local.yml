@@ -418,7 +418,7 @@ webview:
 wynk:
   ########### MONGO CONFIG ###########
   mongodb:
-    enabled: false
+    enabled: true
     sources:
       payment:
         appName: payment
@@ -672,8 +672,8 @@ wynk:
                   idleTimeout: 100000
                   maxLifetime: 300000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 1
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: true
@@ -713,8 +713,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 1
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: true
@@ -754,8 +754,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 1
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: true
@@ -795,8 +795,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 1
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

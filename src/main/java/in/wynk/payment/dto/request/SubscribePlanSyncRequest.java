@@ -12,7 +12,7 @@ public class SubscribePlanSyncRequest extends AbstractSubscribePlanRequest {
         final Transaction transaction = request.getTransaction();
         final SubscribePlanSyncRequest.SubscribePlanSyncRequestBuilder<?,?> builder = SubscribePlanSyncRequest.builder();
         TransactionContext.getPurchaseDetails().map(IPurchaseDetails::getUserDetails).ifPresent(userDetails -> builder.subscriberId(userDetails.getSubscriberId()));
-        return builder.uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).transactionStatus(transaction.getStatus()).paymentCode(transaction.getPaymentChannel()).build();
+        return builder.uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType()).transactionStatus(transaction.getStatus()).paymentCode(transaction.getPaymentChannel()).triggerDataRequest(getTriggerData()).build();
     }
 
 }

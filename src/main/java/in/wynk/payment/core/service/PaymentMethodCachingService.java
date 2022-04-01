@@ -56,6 +56,7 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
     private void initDelegate() {
         for (String bean : context.getBeanNamesForType(ResolvableType.forType(new ParameterizedTypeReference<IPaymentMethodDao>() {
         }))) {
+            if (bean.equalsIgnoreCase(IPaymentMethodDao.class.getSimpleName())) continue;
             final PaymentMethodClientCaching cache = new PaymentMethodClientCaching(context.getBean(bean, IPaymentMethodDao.class));
             delegate.put(bean, cache);
             cache.init();

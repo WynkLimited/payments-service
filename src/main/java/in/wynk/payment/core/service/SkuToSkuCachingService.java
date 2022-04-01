@@ -55,6 +55,7 @@ public class SkuToSkuCachingService implements IEntityCacheService<SkuMapping, S
     private void initDelegate() {
         for (String bean : context.getBeanNamesForType(ResolvableType.forType(new ParameterizedTypeReference<SkuDao>() {
         }))) {
+            if (bean.equalsIgnoreCase(SkuDao.class.getSimpleName())) continue;
             final SkuMappingClientCaching cache = new SkuMappingClientCaching(context.getBean(bean, SkuDao.class));
             delegate.put(bean, cache);
             cache.init();

@@ -47,6 +47,7 @@ public class GroupedPaymentMethodCachingService implements ICacheService<List<Pa
     private void load() {
         for (String bean : context.getBeanNamesForType(ResolvableType.forType(new ParameterizedTypeReference<IPaymentGroupDao>() {
         }))) {
+            if (bean.equalsIgnoreCase(IPaymentGroupDao.class.getSimpleName())) continue;
             final String client = bean.replace(IPaymentGroupDao.class.getName(), "");
             if (!delegate.containsKey(client)) delegate.put(client, new GroupedPaymentMethodClientCaching());
             ((GroupedPaymentMethodClientCaching) delegate.get(client)).load(client);

@@ -89,12 +89,12 @@ public class GroupedPaymentMethodCachingService implements ICacheService<List<Pa
         private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
 
         private void load(String client) {
-            final String groupBean = client + IPaymentGroupDao.class.getName();
+            final String groupBean = client + BaseConstants.COLON + IPaymentGroupDao.class.getName();
             List<PaymentGroup> activeGroups = context.getBean(groupBean, IPaymentGroupDao.class).findAllByState(State.ACTIVE);
             if (CollectionUtils.isNotEmpty(activeGroups) && writeLock.tryLock()) {
                 try {
                     for (PaymentGroup group : activeGroups) {
-                        final List<PaymentMethod> activeGroupMethods = context.getBean(client + IPaymentMethodDao.class.getName(), IPaymentMethodDao.class).findAllByState(State.ACTIVE).stream().filter(method -> method.getGroup().equalsIgnoreCase(group.getId())).collect(Collectors.toList());
+                        final List<PaymentMethod> activeGroupMethods = context.getBean(client + BaseConstants.COLON + IPaymentMethodDao.class.getName(), IPaymentMethodDao.class).findAllByState(State.ACTIVE).stream().filter(method -> method.getGroup().equalsIgnoreCase(group.getId())).collect(Collectors.toList());
                         groupedPaymentMethods.put(group.getId(), activeGroupMethods);
                     }
                 } catch (Throwable th) {

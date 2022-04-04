@@ -124,11 +124,11 @@ payment:
           messages:
             extractor:
               batchSize: 5
-              waitTimeInSeconds: 10
+              waitTimeInSeconds: 2
           producer:
-            delayInSecond: 180
+            delayInSecond: 1
           consumer:
-            delay: 20
+            delay: 3
             delayTimeUnit: SECONDS
       renewal:
         enabled: true

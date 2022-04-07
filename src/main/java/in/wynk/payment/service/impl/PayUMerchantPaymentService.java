@@ -341,6 +341,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
+            } else if (AUTO_REFUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+                finalTransactionStatus = TransactionStatus.AUTO_REFUND;
             } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
                     (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;

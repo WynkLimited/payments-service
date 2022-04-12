@@ -30,7 +30,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 .productDetails(details.getProductDetails())
                 .paymentDetails(details.getPaymentDetails())
                 .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
-                .callbackDetails(((IChargingDetails) details).getCallbackDetails())
+                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
                 .build());
     }
 

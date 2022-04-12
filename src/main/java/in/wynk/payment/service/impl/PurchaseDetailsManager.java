@@ -21,7 +21,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     private final IPurchasingDetailsDao purchasingDetailsDao;
 
     @Override
-    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #transaction.getProductId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save(Transaction transaction, IPurchaseDetails details) {
         purchasingDetailsDao.save(PurchaseDetails.builder()
                 .id(transaction.getIdStr())
@@ -35,7 +35,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getUid() + ':' + #transaction.getProductId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public IPurchaseDetails get(Transaction transaction) {
         Optional<? extends IPurchaseDetails> purchaseDetails = purchasingDetailsDao.findById(transaction.getIdStr());
         if (purchaseDetails.isPresent()) return purchaseDetails.get();

@@ -25,7 +25,7 @@ import javax.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/(wynk|iq)/s2s")
+@RequestMapping(value = {"/wynk/s2s", "/iq/s2s"})
 public class PurchaseS2SController {
 
     private final IPurchaseSessionService sessionService;
@@ -41,7 +41,7 @@ public class PurchaseS2SController {
         return response;
     }
 
-    @PostMapping("/v2/(point|plan)/purchase")
+    @PostMapping( value = {"/v2/plan/purchase", "/v2/point/purchase"})
     @AnalyseTransaction(name = "purchaseRequest")
     @ApiOperation("Provides session Id and the webview URL for plan/point purchase")
     @PreAuthorize(PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PURCHASE_INIT\")")

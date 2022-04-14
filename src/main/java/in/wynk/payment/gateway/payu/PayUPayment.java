@@ -6,7 +6,6 @@ import in.wynk.payment.dto.gateway.charge.AbstractChargingGatewayResponse;
 import in.wynk.payment.dto.gateway.verify.AbstractPaymentInstrumentValidationResponse;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.gateway.IPaymentCharging;
@@ -16,8 +15,6 @@ import in.wynk.payment.gateway.payu.charge.PayUChargingGateway;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.gateway.payu.verify.PayUVerificationGateway;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
@@ -34,16 +31,7 @@ public class PayUPayment implements
     private final IPaymentInstrumentValidator<AbstractPaymentInstrumentValidationResponse, VerificationRequest> verifyGateway;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> callbackGateway;
 
-    @Value("${payment.merchant.payu.api.info}")
-    private String INFO_API;
-    @Value("${payment.merchant.payu.api.payment}")
-    private String PAYMENT_API;
-    @Value("${payment.encKey}")
-    private String encryptionKey;
-    @Autowired
-    private Gson gson;
-
-    public PayUPayment(PayUCommonGateway common) {
+    public PayUPayment(PayUCommonGateway common, Gson gson) {
         this.chargeGateway = new PayUChargingGateway(common);
         this.verifyGateway = new PayUVerificationGateway(common);
         this.callbackGateway = new PayUCallbackGateway(gson, common);

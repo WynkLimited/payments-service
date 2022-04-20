@@ -210,6 +210,9 @@ payment:
       rajtv:
         id: QyT13U
         secret: wov2FQWE
+      enterr10:
+        id: QyT13U
+        secret: wov2FQWE
       key: qFDqmx
       salt: Zbm2ZyNe
       api:
@@ -224,6 +227,9 @@ payment:
         id: WYNKUAT
         secret: 8289e078-be0b-484d-ae60-052f117f8deb
       rajtv:
+        id:
+        secret:
+      enterr10:
         id:
         secret:
       id: WYNKUAT
@@ -242,6 +248,9 @@ payment:
       rajtv:
         id:
         secret:
+      enterr10:
+        id:
+        secret:
       id: WYNKUAT
       api:
         base:
@@ -258,6 +267,9 @@ payment:
       rajtv:
         id:
         secret:
+      enterr10:
+        id:
+        secret:
     #### APBPaytm props ######
     apbPaytm:
       api:
@@ -270,6 +282,8 @@ payment:
       music:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       rajtv:
+        token:
+      enterr10:
         token:
     #### Itunes props ######
     itunes:
@@ -294,6 +308,11 @@ payment:
         token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
         clientId: merchant-wynk-uat
       rajtv:
+        id:
+        secret:
+        token:
+        clientId:
+      enterr10:
         id:
         secret:
         token:
@@ -481,8 +500,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: true
@@ -522,8 +541,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: true
@@ -563,8 +582,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: true
@@ -604,8 +623,47 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 10
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        enterr10:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 5
+                  maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

@@ -17,6 +17,7 @@ public interface PaymentConstants extends BaseConstants {
     String ITUNES = "ITUNES";
     String MERCHANT_ID = "id";
     String FAILURE = "failure";
+    String AUTO_REFUND = "autoRefund";
     String RENEWAL = "renewal";
     String REQUEST = "request";
     String PENDING = "pending";

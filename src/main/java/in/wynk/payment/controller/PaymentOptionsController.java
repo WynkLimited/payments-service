@@ -54,6 +54,7 @@ public class PaymentOptionsController {
     @PostMapping("/saved/details/{sid}")
     @AnalyseTransaction(name = "savedDetails")
     public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@PathVariable String sid, @RequestBody CombinedWebPaymentDetailsRequest request) {
+        LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());

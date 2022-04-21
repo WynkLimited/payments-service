@@ -58,7 +58,6 @@ public class PaymentGroupCachingService implements IEntityCacheService<PaymentGr
             if (bean.equalsIgnoreCase(IPaymentGroupDao.class.getSimpleName())) continue;
             final PaymentGroupClientCaching cache = new PaymentGroupClientCaching(context.getBean(bean, IPaymentGroupDao.class));
             delegate.put(bean, cache);
-            cache.init();
         }
     }
 

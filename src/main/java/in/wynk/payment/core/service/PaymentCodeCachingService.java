@@ -106,7 +106,6 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
             if (bean.equalsIgnoreCase(IPaymentCodeDao.class.getSimpleName())) continue;
             final PaymentCodeClientCaching cache = new PaymentCodeClientCaching(context.getBean(bean, IPaymentCodeDao.class));
             delegate.put(bean, cache);
-            cache.init();
         }
     }
 

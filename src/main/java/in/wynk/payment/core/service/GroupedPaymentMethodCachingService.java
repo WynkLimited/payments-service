@@ -44,7 +44,7 @@ public class GroupedPaymentMethodCachingService implements ICacheService<List<Pa
     @PostConstruct
     @AnalyseTransaction(name = "refreshInMemoryCacheGroupedPaymentMethod")
     @Scheduled(fixedDelay = BaseConstants.IN_MEMORY_CACHE_CRON, initialDelay = BaseConstants.IN_MEMORY_CACHE_CRON)
-    private void load() {
+    public void load() {
         for (String bean : context.getBeanNamesForType(ResolvableType.forType(new ParameterizedTypeReference<IPaymentGroupDao>() {
         }))) {
             if (bean.equalsIgnoreCase(IPaymentGroupDao.class.getSimpleName())) continue;

@@ -382,7 +382,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 500
+            timeout: 500!
 service:
   subscription:
     api:

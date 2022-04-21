@@ -38,12 +38,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
@@ -219,6 +215,8 @@ public class PaymentEventListener {
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
         AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
+        AnalyticService.update(INIT_TIMESTAMP, event.getTransaction().getInitTime().getTime().getTime());
+        if (Objects.nonNull(event.getTransaction().getExitTime())) AnalyticService.update(EXIT_TIMESTAMP, event.getTransaction().getExitTime().getTime().getTime());
         AnalyticService.update(PAYMENT_EVENT, event.getTransaction().getType().getValue());
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());

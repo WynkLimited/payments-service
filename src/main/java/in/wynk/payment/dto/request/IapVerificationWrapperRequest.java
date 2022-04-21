@@ -11,9 +11,10 @@ import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
+import in.wynk.payment.validations.IReceiptValidatorRequest;
 import org.apache.commons.lang.StringUtils;
 
-public class IapVerificationWrapperRequest implements IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
+public class IapVerificationWrapperRequest implements IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest, IReceiptValidatorRequest<LatestReceiptResponse> {
 
     private final LatestReceiptResponse latestReceiptResponse;
     private final IapVerificationRequest iapVerificationRequest;
@@ -69,4 +70,9 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
         return PlanDetails.builder().planId(this.latestReceiptResponse.getPlanId()).build();
     }
 
+
+    @Override
+    public LatestReceiptResponse getLatestReceiptInfo() {
+        return latestReceiptResponse;
+    }
 }

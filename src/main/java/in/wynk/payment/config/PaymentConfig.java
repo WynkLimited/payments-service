@@ -64,7 +64,7 @@ public class PaymentConfig implements WebMvcConfigurer {
         return eventMulticaster;
     }
 
-    @Bean
+    @Bean(destroyMethod = "shutdown")
     public ExecutorService executorService() {
         return Executors.newWorkStealingPool();
     }

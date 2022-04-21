@@ -58,7 +58,6 @@ public class SkuToSkuCachingService implements IEntityCacheService<SkuMapping, S
             if (bean.equalsIgnoreCase(SkuDao.class.getSimpleName())) continue;
             final SkuMappingClientCaching cache = new SkuMappingClientCaching(context.getBean(bean, SkuDao.class));
             delegate.put(bean, cache);
-            cache.init();
         }
     }
 

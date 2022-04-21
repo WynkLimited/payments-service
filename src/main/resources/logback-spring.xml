@@ -104,6 +104,18 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
+    <logger name="refreshInMemoryCachePaymentGroup" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="refreshInMemoryCacheSkuMapping" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="refreshInMemoryCacheGroupedPaymentMethod" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <logger name="pointPurchase" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>

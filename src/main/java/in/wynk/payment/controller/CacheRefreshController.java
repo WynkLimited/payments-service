@@ -7,7 +7,7 @@ import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.service.ItemDtoCachingService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.service.PlanDtoCachingService;
-import in.wynk.payment.service.impl.PaymentMethodCachingService;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.wynkservice.api.service.AppIdCachingService;
 import in.wynk.wynkservice.api.service.OsCachingService;

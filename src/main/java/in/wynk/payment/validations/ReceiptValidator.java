@@ -1,6 +1,8 @@
 package in.wynk.payment.validations;
 
-import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -41,7 +43,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
             final LatestReceiptInfo latestReceiptInfo = receiptResponse.getLatestReceiptInfo().get(0);
             final long transactionId = receiptResponse.getItunesReceiptType().getTransactionId(latestReceiptInfo);
             final long originalTransactionId = receiptResponse.getItunesReceiptType().getOriginalTransactionId(latestReceiptInfo);
-            final Optional<ReceiptDetails> receiptDetailsOption = BeanLocatorFactory.getBean(ReceiptDetailsDao.class).findById(String.valueOf(originalTransactionId));
+            final Optional<ReceiptDetails> receiptDetailsOption = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(String.valueOf(originalTransactionId));
             if(receiptDetailsOption.isPresent()) {
                 final ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) receiptDetailsOption.get();
                 if (receiptDetails.getTransactionId() == transactionId) {
@@ -59,7 +61,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         public void handle(IReceiptValidatorRequest<AmazonLatestReceiptResponse> request) {
             LatestReceiptResponse receiptResponse = request.getLatestReceiptInfo();
             final String receiptId = receiptResponse.getExtTxnId();
-            if (BeanLocatorFactory.getBean(ReceiptDetailsDao.class).existsById(receiptId)) throw new WynkRuntimeException(PaymentErrorType.PAY701);
+            if (RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(receiptId)) throw new WynkRuntimeException(PaymentErrorType.PAY701);
         }
     }
 

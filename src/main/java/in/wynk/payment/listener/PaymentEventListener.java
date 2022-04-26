@@ -225,6 +225,8 @@ public class PaymentEventListener {
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
         AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
+        AnalyticService.update(INIT_TIMESTAMP, event.getTransaction().getInitTime().getTime().getTime());
+        if (Objects.nonNull(event.getTransaction().getExitTime())) AnalyticService.update(EXIT_TIMESTAMP, event.getTransaction().getExitTime().getTime().getTime());
         AnalyticService.update(PAYMENT_EVENT, event.getTransaction().getType().getValue());
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());

@@ -12,7 +12,7 @@ import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvalu
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
-import in.wynk.payment.service.impl.PaymentMethodCachingService;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY601;

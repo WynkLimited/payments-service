@@ -5,6 +5,7 @@ import in.wynk.client.validations.ClientValidator;
 import in.wynk.payment.validations.CouponValidator;
 import in.wynk.payment.validations.PaymentMethodValidator;
 import in.wynk.payment.validations.PlanValidator;
+import in.wynk.payment.validations.ReceiptValidator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,7 +31,9 @@ public class PaymentFraudCheckConfig {
     public IHandler verifyIAPFraudDetectionChain() {
         final CouponValidator couponValidator = new CouponValidator();
         final ClientValidator clientValidator = new ClientValidator();
+        final ReceiptValidator receiptValidator = new ReceiptValidator();
         clientValidator.setNext(couponValidator);
+        couponValidator.setNext(receiptValidator);
         return clientValidator;
     }
 

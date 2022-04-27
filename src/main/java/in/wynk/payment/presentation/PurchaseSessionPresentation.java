@@ -1,0 +1,55 @@
+package in.wynk.payment.presentation;
+
+import in.wynk.common.dto.IPresentation;
+import in.wynk.common.dto.SessionResponse;
+import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
+import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.dto.PurchaseRequest;
+import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.subscription.common.dto.ItemDTO;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import org.apache.http.client.utils.URIBuilder;
+import org.springframework.data.util.Pair;
+import org.springframework.stereotype.Component;
+
+import java.net.URISyntaxException;
+
+import static in.wynk.common.constant.BaseConstants.*;
+
+@Component
+public class PurchaseSessionPresentation implements IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>> {
+    @Override
+    public WynkResponseEntity<SessionResponse.SessionData> transform(Pair<String, PurchaseRequest> pair) {
+        final String id = pair.getFirst();
+        final PurchaseRequest request = pair.getSecond();
+        final String optionUrl = EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.payOption.page}");
+        try {
+            final URIBuilder queryBuilder = new URIBuilder(optionUrl);
+            final PaymentCachingService cache = BeanLocatorFactory.getBean(PaymentCachingService.class);
+            if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
+                queryBuilder.addParameter(PLAN_ID, request.getProductDetails().getId());
+            } else {
+                final ItemDTO item = cache.getItem(request.getProductDetails().getId());
+                queryBuilder.addParameter(TITLE, item.getName());
+                queryBuilder.addParameter(SUBTITLE, item.getName());
+                queryBuilder.addParameter(ITEM_ID, item.getId());
+                queryBuilder.addParameter(POINT_PURCHASE_ITEM_PRICE, String.valueOf(item.getPrice()));
+            }
+            queryBuilder.addParameter(UID, MsisdnUtils.getUidFromMsisdn(request.getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(request.getAppDetails().getService()).getSalt()));
+            queryBuilder.addParameter(APP_ID, String.valueOf(request.getAppDetails().getAppId()));
+            queryBuilder.addParameter(SERVICE, String.valueOf(request.getAppDetails().getService()));
+            queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
+            queryBuilder.addParameter(DEVICE_ID_SHORT, String.valueOf(request.getAppDetails().getDeviceId()));
+            queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
+            String builder = optionUrl + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
+            SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
+            return WynkResponseEntity.<SessionResponse.SessionData>builder().data(response).build();
+        } catch (URISyntaxException e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY997, e);
+        }
+    }
+}

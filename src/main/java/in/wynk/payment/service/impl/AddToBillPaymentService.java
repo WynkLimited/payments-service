@@ -1,8 +1,11 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
@@ -10,6 +13,7 @@ import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
@@ -52,14 +56,12 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
-    private final IRecurringDetailsDao paymentDetailsDao;
     private final CatalogueVasClientService catalogueVasClientService;
 
     public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, ApplicationEventPublisher eventPublisher, IRecurringDetailsDao paymentDetailsDao, CatalogueVasClientService catalogueVasClientService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
-        this.paymentDetailsDao = paymentDetailsDao;
         this.catalogueVasClientService = catalogueVasClientService;
     }
 
@@ -280,6 +282,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         Transaction transaction = TransactionContext.get();
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         try {
+            final IRecurringDetailsDao paymentDetailsDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IRecurringDetailsDao.class);
             Optional<? extends IPurchaseDetails> purchaseDetails = paymentDetailsDao.findById(RecurringDetails.PurchaseKey.builder().uid(transaction.getUid()).productKey(String.valueOf(transaction.getPlanId())).build());
             if (purchaseDetails.isPresent()) {
                 final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();

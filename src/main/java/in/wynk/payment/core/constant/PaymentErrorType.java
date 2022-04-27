@@ -58,6 +58,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY602("Validation Failure", "Given Plan Id Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
+    PAY701("Validation Failure", "Receipt is already processed", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+
     PAY888("Not Supported", "This service is currently not supported", HttpStatus.NOT_FOUND, PaymentLoggingMarker.NOT_SUPPORTED_SERVICE),
     PAY889("Refund Failure", "Refund process is not supported by the payment partner", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_REFUND_ERROR),
 

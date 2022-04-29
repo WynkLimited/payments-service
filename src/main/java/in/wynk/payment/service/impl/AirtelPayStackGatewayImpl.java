@@ -118,19 +118,19 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private final RestTemplate httpTemplate;
     private final ResourceLoader resourceLoader;
     private final PaymentCachingService cache;
+    private final PaymentMethodCachingService paymentMethodCachingService;
     private final ApplicationEventPublisher eventPublisher;
-    private final PaymentMethodCachingService payMethodCache;
     private final VerificationWrapper verificationWrapper = new VerificationWrapper();
     private final Map<String, IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>>> chargingDelegate = new HashMap<>();
 
-    public AirtelPayStackGatewayImpl(Gson gson, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, PaymentCachingService cache, IErrorCodesCacheService errorCache, ApplicationEventPublisher eventPublisher, ResourceLoader resourceLoader, PaymentMethodCachingService payMethodCache) {
+    public AirtelPayStackGatewayImpl(Gson gson, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, PaymentCachingService cache, IErrorCodesCacheService errorCache, ApplicationEventPublisher eventPublisher, ResourceLoader resourceLoader, PaymentMethodCachingService paymentMethodCachingService) {
         super(cache, errorCache);
         this.gson = gson;
         this.cache = cache;
         this.httpTemplate = httpTemplate;
         this.eventPublisher = eventPublisher;
         this.resourceLoader = resourceLoader;
-        this.payMethodCache = payMethodCache;
+        this.paymentMethodCachingService = paymentMethodCachingService;
         chargingDelegate.put(PaymentConstants.UPI, new UpiCharging());
         chargingDelegate.put(PaymentConstants.CARD, new CardCharging());
         chargingDelegate.put(PaymentConstants.NET_BANKING, new NetBankingCharging());
@@ -139,8 +139,8 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     @SneakyThrows
     @PostConstruct
     private void init() {
-        final Resource resource = this.resourceLoader.getResource(RSA_PUBLIC_KEY);
-        rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
+        //final Resource resource = this.resourceLoader.getResource(RSA_PUBLIC_KEY);
+        //rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
         this.httpTemplate.getInterceptors().add((request, body, execution) -> {
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
             final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
@@ -154,7 +154,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
 
     @Override
     public WynkResponseEntity<ApsChargingResponse> charge(DefaultChargingRequest<?> request) {
-        final PaymentMethod method = payMethodCache.get(request.getPaymentId());
+        final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentId());
         return chargingDelegate.get(method.getGroup().toUpperCase()).charge(request);
     }
 
@@ -373,7 +373,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         public WynkResponseEntity<ApsChargingResponse> charge(DefaultChargingRequest<?> request) {
             final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
             final Transaction transaction = TransactionContext.get();
-            final PaymentMethod method = payMethodCache.get(request.getPaymentId());
+            final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentId());
             final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
             final String redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl();
             final NetBankingPaymentInfo netBankingInfo = NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount()).build();
@@ -452,7 +452,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
                 final Transaction transaction = TransactionContext.get();
                 final String redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl();
-                final PaymentMethod method = payMethodCache.get(request.getPaymentId());
+                final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentId());
                 final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                 final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
                 final IntentUpiPaymentInfo upiIntentDetails = IntentUpiPaymentInfo.builder().upiDetails(IntentUpiPaymentInfo.UpiDetails.builder().appName(payAppName).build()).paymentAmount(transaction.getAmount()).build();

@@ -194,6 +194,26 @@ payment:
       url: http://localhost:4200/status
   merchant:
     ####### payu props #########
+    aps:
+      api:
+        base: https://kongqa.airtel.com/preprod-236
+      encryption:
+        key: classpath:/cryptography/aps/public.key
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+      music:
+        id: payment
+        secret: pay@qckslvr
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
     payu:
       airtelxstream:
         id: qFDqmx
@@ -346,6 +366,21 @@ http:
           validateAfterInActivity: 100
           socket:
             timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 5000
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 25
+          maxPerHost: 5
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 10000
             factory:
               type: both
           request:

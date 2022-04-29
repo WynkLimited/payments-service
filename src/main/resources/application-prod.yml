@@ -193,6 +193,34 @@ payment:
       url: http://localhost:4200/status
   merchant:
     ####### payu props #########
+    aps:
+      api:
+        base: https://paydigi.airtel.in
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      music:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
     payu:
       airtelxstream:
         id: aU2Uoi
@@ -328,6 +356,21 @@ sms:
 http:
   enableTemplateRegistration: true
   templates:
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 200
+          maxPerHost: 200
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 2000
     subscriptionHttpTemplate:
       pool:
         connection:

@@ -81,7 +81,7 @@ service:
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
 
-####### payment props #######
+  ####### payment props #######
   payment:
     api:
       endpoint:
@@ -104,6 +104,8 @@ payment:
     page: ${webview.host}/#/txn-state/payment-unknown/
   timeout:
     page: ${webview.host}/#/txn-state/session-out/
+  polling:
+    page: ${webview.host}/#/txn-state/payment-poll/
 
 cors:
   maxAge: 3600
@@ -153,6 +155,39 @@ apbpaytm:
     api: ${apbpaytm.native.services.baseUrl}/paymentservices/fetch/instrument
   validateOtp:
     api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
+
+aps:
+  payment:
+    encryption:
+      key:
+        path: ${payment.merchant.aps.encryption.key}
+    init:
+      settlement:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/hive-split-payment
+      charge:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate
+        upi:
+          api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate/upi
+      refund:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund
+    verify:
+      bin:
+        api: ${payment.merchant.aps.api.base}/ps/payment-options/v2/card-details
+      vpa:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/validate/vpa/{vpa}
+    option:
+      api: ${payment.merchant.aps.api.base}/ps/payment-options/v3/fetch
+    saved:
+      option:
+        api: ${payment.merchant.aps.api.base}/ps/payment-options/saved-options
+      details:
+        api:
+    refund:
+      status:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund/enquiry
+    charge:
+      status:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
 
 branch:
   onelink:

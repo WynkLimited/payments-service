@@ -4,17 +4,22 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.dto.aps.response.bin.ApsBinVerificationResponse;
+import in.wynk.payment.dto.aps.response.bin.ApsVpaVerificationResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 
 @Getter
+@Builder
 @AnalysedEntity
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class PayUCardInfo implements IVerificationResponse {
 
     @Setter
     @Analysed
+    @Builder.Default
     private boolean valid = true;
 
     @Analysed

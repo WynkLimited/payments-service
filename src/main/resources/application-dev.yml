@@ -202,7 +202,7 @@ payment:
         secret: Zbm2ZyNe
       rajtv:
         id: QyT13U
-        secret: wov2FQWE
+        secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
       key: qFDqmx
       salt: Zbm2ZyNe
       api:
@@ -382,7 +382,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 500
+            timeout: 500!
 service:
   subscription:
     api:
@@ -443,6 +443,197 @@ wynk:
         replicaSet: wcf
   ##### SQS SaaS Props #####
   saas:
+    mongodb:
+      enabled: true
+      clients:
+        paymentApi:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments
+                password: zS7VvjYRSE
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupons
+                password: Sk6kzU8GU5
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        airtelxstream:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments
+                password: zS7VvjYRSE
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupons
+                password: Sk6kzU8GU5
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        music:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments
+                password: zS7VvjYRSE
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupons
+                password: Sk6kzU8GU5
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        rajtv:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments_rajtv
+                password: 53411B8BEBE9E8ABC5F1B21
+                database: payments_rajtv
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupon_rajtv
+                password: C9E1144068F12EF2038B8AE29F6
+                database: coupon_rajtv
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
     sql:
       enabled: true
       clients:

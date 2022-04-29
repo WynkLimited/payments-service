@@ -37,6 +37,7 @@ public class PaymentOptionsS2SController {
     @PostMapping("/saved/details")
     @AnalyseTransaction(name = "savedDetails")
     public WynkResponseEntity<CombinedPaymentDetailsResponse> getPaymentDetails(@RequestBody CombinedS2SPaymentDetailsRequest request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(request);
         WynkResponseEntity<CombinedPaymentDetailsResponse> detailsResponse = preferredPaymentService.getUserPreferredPayments(request);
         AnalyticService.update(detailsResponse.getBody());

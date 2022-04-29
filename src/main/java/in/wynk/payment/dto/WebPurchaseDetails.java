@@ -10,7 +10,7 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
-import in.wynk.payment.service.impl.PaymentMethodCachingService;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -4,6 +4,8 @@ import in.wynk.common.constant.BaseConstants;
 
 public interface PaymentConstants extends BaseConstants {
 
+    String SAVED = "SAVED";
+    String UPI = "UPI";
     String CARD = "CARD";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
@@ -35,8 +37,14 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_SECRET = "secret";
     String APB_GATEWAY = "APB_GATEWAY";
     String ADD_TO_BILL = "ADD_TO_BILL";
+    String SEAMLESS = "SEAMLESS";
+    String NON_SEAMLESS = "NON_SEAMLESS";
     String DEFAULT_COUNTRY_CODE = "IN";
+    String DEBIT_CARD = "DEBIT_CARD";
+    String APP_NAME = "APP_NAME";
     String BASE_USER_EMAIL = "@wynk.in";
+    String CREDIT_CARD = "CREDIT_CARD";
+    String NET_BANKING = "NET_BANKING";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";
@@ -50,6 +58,7 @@ public interface PaymentConstants extends BaseConstants {
     String MIGRATED_TXN_ID = "transactionid";
     String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
+    String AIRTEL_PAY_STACK = "aps";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";

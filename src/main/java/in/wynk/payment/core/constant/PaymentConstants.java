@@ -58,8 +58,8 @@ public interface PaymentConstants extends BaseConstants {
     String MIGRATED_TXN_ID = "transactionid";
     String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
-    String AIRTEL_PAY_STACK = "APS";
-    String APS = "aps";
+    String AIRTEL_PAY_STACK = "aps";
+    String APS = "APS";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";

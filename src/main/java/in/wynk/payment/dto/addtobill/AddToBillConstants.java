@@ -10,8 +10,8 @@ public interface AddToBillConstants {
     String BILL = "BILL";
     String CHANNEL = "channel";
     String ADDTOBILL = "ADDTOBILL";
-    String COMPLETED = "COMPLETED";
     String ACTIVE = "ACTIVE";
     String DIGITAL_STORE = "DIGITAL_STORE";
+    String TXN_ID = "txnId";
 
 }

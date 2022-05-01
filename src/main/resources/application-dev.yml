@@ -669,6 +669,57 @@ wynk:
                   socketTimeout: 2000
                 readPreference: secondaryPreferred
                 replicaSet: wcf
+
+
+iqvideo:
+  enabled: true
+  sources:
+    payment:
+      enabled: true
+      repoConfig:
+        basePackages: in.wynk.payment.core.dao
+      source:
+        appName: payment
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_payments_iqvideo
+        password: 53411B8BEBE9E8ABC6F1B11
+        database: payments_iqvideo
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
+    coupons:
+      enabled: true
+      repoConfig:
+        basePackages: in.wynk.coupon.core.dao
+      source:
+        appName: coupon
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_coupon_iqvideo
+        password: 53411B8BEBE9E8ABZ5F1Z21
+        database: coupon_iqvideo
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
+
+
     sql:
       enabled: true
       clients:

@@ -66,7 +66,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
             // NOTE: Added backward support to avoid failure for transaction created pre payment refactoring build, once the build is live it has no significance
             final SessionDTO session = SessionContextHolder.getBody();
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse("");
-            final String clientPagePlaceHolder = "${payment.%c.%p.page}".replace("%c", clientAlias);
+            final String clientPagePlaceHolder = PAYMENT_PAGE_PLACE_HOLDER.replace("%c", clientAlias);
             final IAppDetails appDetails = AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID)).appVersion(APP_VERSION).os(session.get(OS)).build();
             final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"),"${payment.success.page}"), appDetails);
             final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL): buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}"), appDetails);

@@ -92,6 +92,19 @@ payment:
   callback:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
     s2s: ${service.payment.api.root}/wynk/v1/callback
+  rajtv:
+    payOption:
+      page: ${webview.rajtv.host}/#/payment-option/
+    success:
+      page: ${webview.rajtv.host}/#/subscription/success/
+    failure:
+      page: ${webview.rajtv.host}/#/txn-state/payment-failed/
+    pending:
+      page: ${webview.rajtv.host}/#/txn-state/payment-pending/
+    unknown:
+      page: ${webview.rajtv.host}/#/txn-state/payment-unknown/
+    timeout:
+      page: ${webview.rajtv.host}/#/txn-state/session-out/
   payOption:
     page: ${webview.host}/#/payment-option/
   success:

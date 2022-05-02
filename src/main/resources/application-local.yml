@@ -413,6 +413,8 @@ cors:
 debug: false
 
 webview:
+  rajtv:
+    host: https://pay-stage.iqvideo.in
   host: https://pay-stage.wynk.in
 
 wynk:

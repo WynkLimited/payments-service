@@ -68,7 +68,7 @@ public class WebPurchaseDetails implements IChargingDetails {
     public IPageUrlDetails getPageUrlDetails() {
         final IAppDetails appDetails = getAppDetails();
         final SessionDTO session = SessionContextHolder.getBody();
-        final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse("");
+        final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(appDetails.getService());
         final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", clientAlias);
         final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL) : buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}"), appDetails);
         final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL) : buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}"), appDetails);

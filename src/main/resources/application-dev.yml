@@ -1,648 +1,290 @@
-iqvideo:
-  enabled: 'true'
-  sources:
-    payment:
-      source:
-        connectionSettings:
-          minConnectionsPerHost: '1'
-          threadsAllowedToBlockForConnectionMultiplier: '2'
-          maxConnectionsPerHost: '5'
-        timeOutSettings:
-          connectTimeout: '1000'
-          maxWaitTime: '1000'
-          serverSelectionTimeoutMs: '10000'
-          socketTimeout: '2000'
-        password: 53411B8BEBE9E8ABC6F1B11
-        appName: payment
-        readPreference: secondaryPreferred
-        nodes: 10.80.0.128,10.80.0.240
-        database: payments_iqvideo
-        username: user_payments_iqvideo
-        replicaSet: wcf
-      repoConfig:
-        basePackages: in.wynk.payment.core.dao
-      enabled: 'true'
-    sql:
-      clients:
-        iqvideo:
-          sources:
-            payments:
-              source:
-                jpa:
-                  open-in-view: 'false'
-                  properties:
-                    hibernate:
-                      cache:
-                        use_query_cache: 'false'
-                        use_second_level_cache: 'false'
-                      id:
-                        new_generator_mappings: 'true'
-                      jdbc:
-                        time_zone: Asia/Kolkata
-                      format_sql: 'false'
-                      connection:
-                        provider_disables_autocommit: 'true'
-                      hbm2ddl:
-                        auto: validate
-                      generate_statistics: 'false'
-                  database-platform: org.hibernate.dialect.MySQL8Dialect
-                  show-sql: 'false'
-                hibernate:
-                  ddl-auto: validate
-                  naming:
-                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-                hikari:
-                  driver-class-name: com.mysql.cj.jdbc.Driver
-                  username: admin
-                  idleTimeout: '10000'
-                  maximumPoolSize: '100'
-                  registerMbeans: 'true'
-                  maxLifetime: '30000'
-                  minimum-idle: '10'
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_iqvideo
-                  password: o7QZ?!n=eu
-                  auto-commit: 'false'
-                  connectionTimeout: '2000'
-                  poolName: payment-datasource-pool-dev
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              enabled: 'true'
-          enabled: 'true'
-        rajtv:
-          sources:
-            payments:
-              source:
-                jpa:
-                  open-in-view: 'false'
-                  properties:
-                    hibernate:
-                      cache:
-                        use_query_cache: 'false'
-                        use_second_level_cache: 'false'
-                      id:
-                        new_generator_mappings: 'true'
-                      jdbc:
-                        time_zone: Asia/Kolkata
-                      format_sql: 'false'
-                      connection:
-                        provider_disables_autocommit: 'true'
-                      hbm2ddl:
-                        auto: validate
-                      generate_statistics: 'false'
-                  database-platform: org.hibernate.dialect.MySQL8Dialect
-                  show-sql: 'false'
-                hibernate:
-                  ddl-auto: validate
-                  naming:
-                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-                hikari:
-                  driver-class-name: com.mysql.cj.jdbc.Driver
-                  username: admin
-                  idleTimeout: '10000'
-                  maximumPoolSize: '100'
-                  registerMbeans: 'true'
-                  maxLifetime: '30000'
-                  minimum-idle: '10'
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
-                  password: o7QZ?!n=eu
-                  auto-commit: 'false'
-                  connectionTimeout: '2000'
-                  poolName: payment-datasource-pool-dev
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              enabled: 'true'
-          enabled: 'true'
-        airtelxstream:
-          sources:
-            payments:
-              source:
-                jpa:
-                  properties:
-                    hibernate:
-                      types:
-                        print:
-                          banner: 'false'
-                      cache:
-                        use_query_cache: 'false'
-                        use_second_level_cache: 'false'
-                      connection:
-                        provider_disables_autocommit: 'true'
-                      enable_lazy_load_no_trans: 'true'
-                      hbm2ddl:
-                        auto: validate
-                      id:
-                        new_generator_mappings: 'true'
-                      generate_statistics: 'false'
-                      nodeValue: format_sql=true
-                      jdbc:
-                        time_zone: Asia/Kolkata
-                  open-in-view: 'true'
-                  database-platform: org.hibernate.dialect.MySQL8Dialect
-                  show-sql: 'true'
-                hikari:
-                  password: o7QZ?!n=eu
-                  minimum-idle: '10'
-                  driver-class-name: com.mysql.cj.jdbc.Driver
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-                  registerMbeans: 'true'
-                  poolName: payment-datasource-pool-dev
-                  maxLifetime: '30000'
-                  idleTimeout: '10000'
-                  connectionTimeout: '5000'
-                  maximumPoolSize: '100'
-                  username: admin
-                  auto-commit: 'false'
-                hibernate:
-                  naming:
-                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-                  ddl-auto: validate
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              enabled: 'true'
-          enabled: 'true'
-        paymentApi:
-          sources:
-            payments:
-              source:
-                hikari:
-                  maxLifetime: '30000'
-                  maximumPoolSize: '100'
-                  password: o7QZ?!n=eu
-                  idleTimeout: '10000'
-                  auto-commit: 'false'
-                  connectionTimeout: '5000'
-                  driver-class-name: com.mysql.cj.jdbc.Driver
-                  registerMbeans: 'true'
-                  minimum-idle: '10'
-                  poolName: payment-datasource-pool-dev
-                  username: admin
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-                jpa:
-                  properties:
-                    hibernate:
-                      cache:
-                        use_second_level_cache: 'false'
-                        use_query_cache: 'false'
-                      hbm2ddl:
-                        auto: validate
-                      id:
-                        new_generator_mappings: 'true'
-                      jdbc:
-                        time_zone: Asia/Kolkata
-                      generate_statistics: 'false'
-                      enable_lazy_load_no_trans: 'true'
-                      types:
-                        print:
-                          banner: 'false'
-                      nodeValue: format_sql=true
-                      connection:
-                        provider_disables_autocommit: 'true'
-                  show-sql: 'true'
-                  database-platform: org.hibernate.dialect.MySQL8Dialect
-                  open-in-view: 'true'
-                hibernate:
-                  naming:
-                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-                  ddl-auto: validate
-              enabled: 'true'
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-          enabled: 'true'
-        music:
-          sources:
-            payments:
-              source:
-                jpa:
-                  properties:
-                    hibernate:
-                      cache:
-                        use_query_cache: 'false'
-                        use_second_level_cache: 'false'
-                      hbm2ddl:
-                        auto: validate
-                      id:
-                        new_generator_mappings: 'true'
-                      nodeValue: format_sql=true
-                      generate_statistics: 'false'
-                      types:
-                        print:
-                          banner: 'false'
-                      enable_lazy_load_no_trans: 'true'
-                      connection:
-                        provider_disables_autocommit: 'true'
-                      jdbc:
-                        time_zone: Asia/Kolkata
-                  database-platform: org.hibernate.dialect.MySQL8Dialect
-                  show-sql: 'true'
-                  open-in-view: 'true'
-                hikari:
-                  auto-commit: 'false'
-                  maximumPoolSize: '100'
-                  password: o7QZ?!n=eu
-                  driver-class-name: com.mysql.cj.jdbc.Driver
-                  poolName: payment-datasource-pool-dev
-                  registerMbeans: 'true'
-                  connectionTimeout: '5000'
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-                  minimum-idle: '10'
-                  maxLifetime: '30000'
-                  username: admin
-                  idleTimeout: '10000'
-                hibernate:
-                  ddl-auto: validate
-                  naming:
-                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-              enabled: 'true'
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-          enabled: 'true'
-      enabled: 'true'
-    coupons:
-      source:
-        replicaSet: wcf
-        connectionSettings:
-          minConnectionsPerHost: '1'
-          maxConnectionsPerHost: '5'
-          threadsAllowedToBlockForConnectionMultiplier: '2'
-        timeOutSettings:
-          socketTimeout: '2000'
-          connectTimeout: '1000'
-          serverSelectionTimeoutMs: '10000'
-          maxWaitTime: '1000'
-        username: user_coupon_iqvideo
-        nodes: 10.80.0.128,10.80.0.240
-        appName: coupon
-        password: 53411B8BEBE9E8ABZ5F1Z21
-        database: coupon_iqvideo
-        readPreference: secondaryPreferred
-      enabled: 'true'
-      repoConfig:
-        basePackages: in.wynk.coupon.core.dao
+######  Properties #########
+paytm:
+  native:
+    clientId: merchant-wynk-uat
+    merchantKey: 2A2%#0MvWdNeg1_7
+    merchantId: WYNKPr93314794046826
+    secret: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
+    accounts:
+      baseUrl: https://accounts-uat.paytm.com
+    services:
+      baseUrl: https://securegw-stage.paytm.in
+    wcf:
+      addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
+  requesting:
+    website: WEBSTAGING
+
 apb:
   txn:
     inquiry:
       url: https://apptest.airtelbank.com/ecom/v2/inquiry
-  salt: d41d8cd98f00a
   merchant:
-    id: '180704'
+    id: 180704
+  salt: d41d8cd98f00a
   init:
     payment:
       url: https://apptest.airtelbank.com/ecom/v2/initiatePayment
-wynk:
-  saas:
-    mongodb:
-      clients:
-        airtelxstream:
-          sources:
-            coupons:
-              source:
-                replicaSet: wcf
-                timeOutSettings:
-                  maxWaitTime: '1000'
-                  socketTimeout: '2000'
-                  connectTimeout: '1000'
-                  serverSelectionTimeoutMs: '10000'
-                connectionSettings:
-                  minConnectionsPerHost: '1'
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                  maxConnectionsPerHost: '5'
-                appName: coupon
-                password: Sk6kzU8GU5
-                nodes: 10.80.0.128,10.80.0.240
-                database: coupons
-                readPreference: secondaryPreferred
-                username: user_coupons
-              enabled: 'true'
-              repoConfig:
-                basePackages: in.wynk.coupon.core.dao
-            payment:
-              source:
-                password: zS7VvjYRSE
-                nodes: 10.80.0.128,10.80.0.240
-                timeOutSettings:
-                  maxWaitTime: '1000'
-                  serverSelectionTimeoutMs: '10000'
-                  socketTimeout: '2000'
-                  connectTimeout: '1000'
-                connectionSettings:
-                  maxConnectionsPerHost: '5'
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                  minConnectionsPerHost: '1'
-                readPreference: secondaryPreferred
-                replicaSet: wcf
-                appName: payment
-                database: payments
-                username: user_payments
-              enabled: 'true'
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-          enabled: 'true'
-        rajtv:
-          sources:
-            payment:
-              source:
-                nodes: 10.80.0.128,10.80.0.240
-                connectionSettings:
-                  maxConnectionsPerHost: '5'
-                  minConnectionsPerHost: '1'
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                timeOutSettings:
-                  socketTimeout: '2000'
-                  serverSelectionTimeoutMs: '10000'
-                  connectTimeout: '1000'
-                  maxWaitTime: '1000'
-                appName: payment
-                username: user_payments_rajtv
-                database: payments_rajtv
-                replicaSet: wcf
-                password: 53411B8BEBE9E8ABC5F1B21
-                readPreference: secondaryPreferred
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              enabled: 'true'
-            coupons:
-              source:
-                readPreference: secondaryPreferred
-                appName: coupon
-                connectionSettings:
-                  maxConnectionsPerHost: '5'
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                  minConnectionsPerHost: '1'
-                password: C9E1144068F12EF2038B8AE29F6
-                username: user_coupon_rajtv
-                timeOutSettings:
-                  socketTimeout: '2000'
-                  serverSelectionTimeoutMs: '10000'
-                  connectTimeout: '1000'
-                  maxWaitTime: '1000'
-                database: coupon_rajtv
-                nodes: 10.80.0.128,10.80.0.240
-                replicaSet: wcf
-              enabled: 'true'
-              repoConfig:
-                basePackages: in.wynk.coupon.core.dao
-          enabled: 'true'
-        paymentApi:
-          sources:
-            payment:
-              source:
-                database: payments
-                connectionSettings:
-                  minConnectionsPerHost: '1'
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                  maxConnectionsPerHost: '5'
-                readPreference: secondaryPreferred
-                appName: payment
-                username: user_payments
-                timeOutSettings:
-                  maxWaitTime: '1000'
-                  socketTimeout: '2000'
-                  connectTimeout: '1000'
-                  serverSelectionTimeoutMs: '10000'
-                password: zS7VvjYRSE
-                nodes: 10.80.0.128,10.80.0.240
-                replicaSet: wcf
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              enabled: 'true'
-            coupons:
-              source:
-                connectionSettings:
-                  minConnectionsPerHost: '1'
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                  maxConnectionsPerHost: '5'
-                readPreference: secondaryPreferred
-                appName: coupon
-                timeOutSettings:
-                  serverSelectionTimeoutMs: '10000'
-                  maxWaitTime: '1000'
-                  socketTimeout: '2000'
-                  connectTimeout: '1000'
-                nodes: 10.80.0.128,10.80.0.240
-                username: user_coupons
-                database: coupons
-                password: Sk6kzU8GU5
-                replicaSet: wcf
-              repoConfig:
-                basePackages: in.wynk.coupon.core.dao
-              enabled: 'true'
-          enabled: 'true'
-        music:
-          sources:
-            payment:
-              source:
-                connectionSettings:
-                  maxConnectionsPerHost: '5'
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                  minConnectionsPerHost: '1'
-                database: payments
-                replicaSet: wcf
-                nodes: 10.80.0.128,10.80.0.240
-                username: user_payments
-                timeOutSettings:
-                  serverSelectionTimeoutMs: '10000'
-                  connectTimeout: '1000'
-                  socketTimeout: '2000'
-                  maxWaitTime: '1000'
-                readPreference: secondaryPreferred
-                appName: payment
-                password: zS7VvjYRSE
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              enabled: 'true'
-            coupons:
-              source:
-                timeOutSettings:
-                  connectTimeout: '1000'
-                  serverSelectionTimeoutMs: '10000'
-                  maxWaitTime: '1000'
-                  socketTimeout: '2000'
-                replicaSet: wcf
-                readPreference: secondaryPreferred
-                username: user_coupons
-                connectionSettings:
-                  threadsAllowedToBlockForConnectionMultiplier: '2'
-                  maxConnectionsPerHost: '5'
-                  minConnectionsPerHost: '1'
-                password: Sk6kzU8GU5
-                database: coupons
-                appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
-              enabled: 'true'
-              repoConfig:
-                basePackages: in.wynk.coupon.core.dao
-          enabled: 'true'
-      enabled: 'true'
-  mongodb:
-    sources:
-      coupons:
-        database: coupons
-        timeOutSettings:
-          maxWaitTime: '1000'
-          serverSelectionTimeoutMs: '10000'
-          connectTimeout: '1000'
-          socketTimeout: '2000'
-        connectionSettings:
-          maxConnectionsPerHost: '5'
-          minConnectionsPerHost: '1'
-          threadsAllowedToBlockForConnectionMultiplier: '2'
-        username: user_coupons
-        readPreference: secondaryPreferred
-        replicaSet: wcf
-        nodes: 10.80.0.128,10.80.0.240
-        password: Sk6kzU8GU5
-        appName: coupon
-      payment:
-        replicaSet: wcf
-        password: zS7VvjYRSE
-        appName: payment
-        database: payments
-        timeOutSettings:
-          connectTimeout: '1000'
-          socketTimeout: '2000'
-          maxWaitTime: '1000'
-          serverSelectionTimeoutMs: '10000'
-        connectionSettings:
-          minConnectionsPerHost: '1'
-          maxConnectionsPerHost: '5'
-          threadsAllowedToBlockForConnectionMultiplier: '2'
-        readPreference: secondaryPreferred
-        username: user_payments
-        nodes: 10.80.0.128,10.80.0.240
-    enabled: 'true'
+
+
+###### Redis Store Props #######
+session:
+  duration: 1440
+  redis:
+    name: session-store:local
+    mode: cluster
+    usePooling: true
+    readTimeout: 1000
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
+
+##### mysql database props #####
 spring:
+  datasource:
+    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+    username: admin
+    password: o7QZ?!n=eu
+    hikari:
+      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+      username: admin
+      password: o7QZ?!n=eu
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      registerMbeans: true
+      auto-commit: false
+      connectionTimeout: 5000
+      idleTimeout: 10000
+      maxLifetime: 30000
+      poolName: payment-datasource-pool-dev
+      minimum-idle: 10
+      maximumPoolSize: 100
+
+  #### JPA props ######
   jpa:
-    properties:
-      hibernate:
-        generate_statistics: 'false'
-        connection:
-          provider_disables_autocommit: 'true'
-        format_sql: 'false'
-        jdbc:
-          time_zone: Asia/Kolkata
-        hbm2ddl:
-          auto: validate
-        cache:
-          use_second_level_cache: 'false'
-          use_query_cache: 'false'
-        id:
-          new_generator_mappings: 'true'
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: false
+    open-in-view: false
     hibernate:
       ddl-auto: validate
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-    open-in-view: 'false'
-    show-sql: 'false'
-    database-platform: org.hibernate.dialect.MySQL8Dialect
-  datasource:
-    hikari:
-      auto-commit: 'false'
-      connectionTimeout: '5000'
-      username: admin
-      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-      maxLifetime: '30000'
-      idleTimeout: '10000'
-      poolName: payment-datasource-pool-dev
-      registerMbeans: 'true'
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      maximumPoolSize: '100'
-      password: o7QZ?!n=eu
-      minimum-idle: '10'
-    username: admin
-    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-    password: o7QZ?!n=eu
+    properties:
+      hibernate.format_sql: false
+      hibernate.id.new_generator_mappings: true
+      hibernate.connection.provider_disables_autocommit: true
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
+      hibernate.generate_statistics: false
+      hibernate.hbm2ddl.auto: validate
+      hibernate.jdbc.time_zone: Asia/Kolkata
+
+####### sms props #######
+sms:
+  notification:
+    queue:
+      name: wcf-staging-notification
+      delayInSecond: 0
+
+####### payment props #######
 payment:
+  se:
+    s3:
+      bucket: wynk-framework-dev-ap-south-1
+  encKey: BSB$PORTAL@2014#
+  recurring:
+    offset:
+      day: 0
+      hour: 1
+  preDebitNotification:
+    preOffsetDays: 2
+    offset:
+      day: 0
+      hour: 1
+  ###### lib-queue props ######
+  pooling:
+    queue:
+      preDebitNotification:
+        enabled: true
+        name: mandate-notification-sqs-queue
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      reconciliation:
+        enabled: true
+        name: wcf-staging-payment-reconciliation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      renewal:
+        enabled: true
+        name: wcf-staging-payment-renewal
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      charging:
+        enabled: true
+        name: wcf-staging-payment-charging.fifo
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      schedule:
+        enabled: true
+        name: wcf-staging-subscription-payment
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      unschedule:
+        enabled: true
+        name: wcf-staging-payment-recurring
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
   merchant:
+    ####### payu props #########
+    aps:
+      api:
+        base: https://kongqa.airtel.com/preprod-236
+      encryption:
+        key: file:/data/logs/public.key
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+      music:
+        id: payment
+        secret: pay@qckslvr
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
+    payu:
+      airtelxstream:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+      music:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+      webviewclient:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+      subscriptionApi:
+        id: qFDqmx
+        secret: Zbm2ZyNe
+      rajtv:
+        id: QyT13U
+        secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
+      key: qFDqmx
+      salt: Zbm2ZyNe
+      api:
+        info: https://test.payu.in/merchant/postservice.php?form=2
+        payment: https://test.payu.in/_payment
+    #### Itunes props ######
+    itunes:
+      api:
+        url: https://buy.itunes.apple.com/verifyReceipt
+        alt:
+          url: https://sandbox.itunes.apple.com/verifyReceipt
+    #### AmazonIap props ######
+    amazonIap:
+      secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
+      status:
+        baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
+    #### PhonePe props ######
+    phonepe:
+      airtelxstream:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      music:
+        id: WYNKUAT
+        secret: 8289e078-be0b-484d-ae60-052f117f8deb
+      rajtv:
+        id:
+        secret:
+      id: WYNKUAT
+      api:
+        base:
+          url: https://mercury-uat.phonepe.com
+      salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
     phonepeauto:
       airtelxstream:
         id: WYNKUAT
         secret: 8289e078-be0b-484d-ae60-052f117f8deb
-      salt: 8289e078-be0b-484d-ae60-052f117f8deb
-      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
-      rajtv:
-        secret: 'null'
-        id: 'null'
-      api:
-        base:
-          url: https://mercury-uat.phonepe.com
       music:
         id: WYNKUAT
         secret: 8289e078-be0b-484d-ae60-052f117f8deb
-      id: WYNKUAT
-    paytm:
       rajtv:
-        id: 'null'
-        secret: 'null'
-        clientId: 'null'
-        token: 'null'
-      airtelxstream:
-        id: WYNKPr93314794046826
-        secret: 2A2%#0MvWdNeg1_7
-        clientId: merchant-wynk-uat
-        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
-      music:
-        secret: 2A2%#0MvWdNeg1_7
-        id: WYNKPr93314794046826
-        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
-        clientId: merchant-wynk-uat
+        id:
+        secret:
+      id: WYNKUAT
+      api:
+        base:
+          url: https://mercury-uat.phonepe.com
+      salt: 8289e078-be0b-484d-ae60-052f117f8deb
+      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
     airtelpaymentbank:
-      rajtv:
-        secret: 'null'
-        id: 'null'
-      music:
+      airtelxstream:
+        id: 180704
         secret: d41d8cd98f00a
-        id: '180704'
-      airtelxstream:
+      music:
+        id: 180704
         secret: d41d8cd98f00a
-        id: '180704'
-    phonepe:
-      music:
-        id: WYNKUAT
-        secret: 8289e078-be0b-484d-ae60-052f117f8deb
-      api:
-        base:
-          url: https://mercury-uat.phonepe.com
       rajtv:
-        id: 'null'
-        secret: 'null'
-      saltAuto: 8289e078-be0b-484d-ae60-052f117f8deb
-      airtelxstream:
-        id: WYNKUAT
-        secret: 8289e078-be0b-484d-ae60-052f117f8deb
-      id: WYNKUAT
-      salt: 8289e078-be0b-484d-ae60-052f117f8deb
-    payu:
-      rajtv:
-        secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
-        id: QyT13U
-      music:
-        secret: Zbm2ZyNe
-        id: qFDqmx
-      airtelxstream:
-        secret: Zbm2ZyNe
-        id: qFDqmx
-      salt: Zbm2ZyNe
-      webviewclient:
-        secret: Zbm2ZyNe
-        id: qFDqmx
-      api:
-        info: https://test.payu.in/merchant/postservice.php?form=2
-        payment: https://test.payu.in/_payment
-      subscriptionApi:
-        id: qFDqmx
-        secret: Zbm2ZyNe
-      key: qFDqmx
+        id:
+        secret:
+
+    #### APBPaytm props ######
     apbPaytm:
-      music:
-        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
-      rajtv:
-        secret: 'null'
       api:
         base:
           url: https://paydigi.airtel.in/web/pg-service
@@ -650,244 +292,132 @@ payment:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       airtelxstream:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
-    amazonIap:
-      status:
-        baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
-      secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
-    itunes:
-      api:
-        alt:
-          url: https://sandbox.itunes.apple.com/verifyReceipt
-        url: https://buy.itunes.apple.com/verifyReceipt
+      music:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      rajtv:
+        secret:
+    paytm:
+      airtelxstream:
+        id: WYNKPr93314794046826
+        secret: 2A2%#0MvWdNeg1_7
+        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
+        clientId: merchant-wynk-uat
+      music:
+        id: WYNKPr93314794046826
+        secret: 2A2%#0MvWdNeg1_7
+        token: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
+        clientId: merchant-wynk-uat
+      rajtv:
+        id:
+        secret:
+        token:
+        clientId:
+
+
+subscription:
   pooling:
     queue:
-      charging:
-        enabled: 'true'
+      provisioning:
+        enabled: true
+        name: wcf-staging-subscription
         sqs:
           producer:
-            delayInSecond: '180'
-          consumer:
-            delay: '20'
-            delayTimeUnit: SECONDS
-          messages:
-            extractor:
-              waitTimeInSeconds: '10'
-              batchSize: '5'
-        name: wcf-staging-payment-charging.fifo
-      reconciliation:
-        sqs:
-          consumer:
-            delay: '20'
-            delayTimeUnit: SECONDS
-          messages:
-            extractor:
-              waitTimeInSeconds: '10'
-              batchSize: '5'
-          producer:
-            delayInSecond: '180'
-        enabled: 'true'
-        name: wcf-staging-payment-reconciliation
-      preDebitNotification:
-        sqs:
-          consumer:
-            delayTimeUnit: SECONDS
-            delay: '20'
-          producer:
-            delayInSecond: '180'
-          messages:
-            extractor:
-              waitTimeInSeconds: '10'
-              batchSize: '5'
-        name: mandate-notification-sqs-queue
-        enabled: 'true'
-      unschedule:
-        sqs:
-          consumer:
-            delayTimeUnit: SECONDS
-            delay: '20'
-          messages:
-            extractor:
-              batchSize: '5'
-              waitTimeInSeconds: '10'
-          producer:
-            delayInSecond: '180'
-        name: wcf-staging-payment-recurring
-        enabled: 'true'
-      schedule:
-        sqs:
-          consumer:
-            delay: '20'
-            delayTimeUnit: SECONDS
-          producer:
-            delayInSecond: '180'
-          messages:
-            extractor:
-              batchSize: '5'
-              waitTimeInSeconds: '10'
-        enabled: 'true'
-        name: wcf-staging-subscription-payment
-      renewal:
-        sqs:
-          consumer:
-            delay: '20'
-            delayTimeUnit: SECONDS
-          messages:
-            extractor:
-              waitTimeInSeconds: '10'
-              batchSize: '5'
-          producer:
-            delayInSecond: '180'
-        name: wcf-staging-payment-renewal
-        enabled: 'true'
-  preDebitNotification:
-    offset:
-      hour: '1'
-      day: '0'
-    preOffsetDays: '2'
-  recurring:
-    offset:
-      day: '0'
-      hour: '1'
-  encKey: BSB$PORTAL@2014#
-  se:
-    s3:
-      bucket: wynk-framework-dev-ap-south-1
+            delayInSecond: 1
+
+####### Http Client Props #######
 http:
+  enableTemplateRegistration: true
   templates:
-    externalServiceTemplate:
+    apsHttpTemplate:
       pool:
         connection:
+          max: 25
+          maxPerHost: 5
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
           socket:
+            timeout: 5000
             factory:
               type: both
-            timeout: '300'
-          validateAfterInActivity: '100'
-          maxPerHost: '20'
-          defaultKeepAliveTime: '30000'
           request:
-            timeout: 500!
-          closeIdleWaitTime: '1000'
-          max: '20'
-          timeout: '1000'
+            timeout: 5000
     paymentGatewayHttpTemplate:
       pool:
         connection:
-          maxPerHost: '60'
-          validateAfterInActivity: '100'
+          max: 300
+          maxPerHost: 60
+          timeout: 10000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
           socket:
-            timeout: '2500'
+            timeout: 2500
             factory:
               type: both
           request:
-            timeout: '10000'
-          timeout: '10000'
-          max: '300'
-          defaultKeepAliveTime: '500'
-          closeIdleWaitTime: '500'
+            timeout: 10000
     apbPaytmHttpTemplate:
       pool:
         connection:
-          max: '5'
-          validateAfterInActivity: '100'
+          max: 5
+          maxPerHost: 1
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
           socket:
+            timeout: 2500
             factory:
               type: both
-            timeout: '2500'
-          maxPerHost: '1'
-          timeout: '1000'
-          defaultKeepAliveTime: '500'
-          closeIdleWaitTime: '500'
           request:
-            timeout: '5000'
+            timeout: 5000
     paymentClientHttpTemplate:
       pool:
         connection:
-          request:
-            timeout: '1000'
-          defaultKeepAliveTime: '500'
+          max: 300
+          maxPerHost: 60
+          timeout: 2000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
           socket:
+            timeout: 2500
             factory:
               type: both
-            timeout: '2500'
-          validateAfterInActivity: '100'
-          timeout: '2000'
-          closeIdleWaitTime: '500'
-          max: '300'
-          maxPerHost: '60'
+          request:
+            timeout: 1000
     subscriptionHttpTemplate:
       pool:
         connection:
-          timeout: '4000'
-          validateAfterInActivity: '100'
-          closeIdleWaitTime: '500'
-          request:
-            timeout: '1000'
+          max: 250
+          maxPerHost: 200
+          validateAfterInActivity: 100
+          timeout: 4000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
           socket:
+            timeout: 6000
             factory:
               type: both
-            timeout: '6000'
-          maxPerHost: '200'
-          max: '250'
-          defaultKeepAliveTime: '500'
-  enableTemplateRegistration: 'true'
-cache:
-  caffeine:
-    eviction:
-      size:
-        maximum: '500'
-        initial: '10'
-      time:
-        expireAfterAccess: '0'
-        fixed: 'true'
-        timeunit: seconds
-        expireAfterWrite: '0'
-    nullable: 'false'
-    metrics: 'false'
-  redis:
-    connection:
-      timeout: '2000'
-      minIdle: '5'
-      maxTotal: '10'
-      maxIdle: '8'
-    mode: cluster
-    cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-    cache:
-      timeunit: minutes
-      ttl: '15'
-      keyPrefix: LOCAL
-      usePrefix: 'false'
-      cacheNullValues: 'false'
-    name: l2cache-local
-    enabled: 'true'
-    usePooling: 'true'
-    readTimeout: '1000'
-    jmxPrefix: local
-    enableJmx: 'true'
-  enabled: 'true'
-  mode: composite
-paytm:
-  native:
-    merchantId: WYNKPr93314794046826
-    merchantKey: 2A2%#0MvWdNeg1_7
-    accounts:
-      baseUrl: https://accounts-uat.paytm.com
-    wcf:
-      addMoneyUrl: http://wcfpay-dev.wynk.in/paytm-native/add-money
-    secret: TR22tCjNwWIrRcPp4kDzHBNDfede3ewW
-    services:
-      baseUrl: https://securegw-stage.paytm.in
-    clientId: merchant-wynk-uat
-  requesting:
-    website: WEBSTAGING
-security:
-  exempt:
-    paths: /wynk/v1/**,/wynk/v2/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
-sms:
-  notification:
-    queue:
-      delayInSecond: '0'
-      name: wcf-staging-notification
+          request:
+            timeout: 1000
+    externalServiceTemplate:
+      pool:
+        connection:
+          max: 20
+          maxPerHost: 20
+          timeout: 1000
+          defaultKeepAliveTime: 30000
+          closeIdleWaitTime: 1000
+          validateAfterInActivity: 100
+          socket:
+            timeout: 300
+            factory:
+              type: both
+          request:
+            timeout: 500
 service:
   subscription:
     api:
@@ -895,50 +425,566 @@ service:
   payment:
     api:
       root: https://payments-staging.wynk.in
-session:
-  redis:
-    name: session-store:local
-    connection:
-      timeout: '1000'
-      maxIdle: '100'
-      maxTotal: '200'
-      minIdle: '50'
-    mode: cluster
-    readTimeout: '1000'
-    usePooling: 'true'
-    cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-  duration: '1440'
-subscription:
-  pooling:
-    queue:
-      provisioning:
-        enabled: 'true'
-        name: wcf-staging-subscription
-        sqs:
-          producer:
-            delayInSecond: '1'
-onelink:
-  url: https://api2.branch.io/v1/url
-  key: key_test_pgZfbR1czLvn25MY3jFKmejbACgrSztR
-lock:
-  redis:
-    connection:
-      timeout: '1000'
-      minIdle: '50'
-      maxTotal: '200'
-      maxIdle: '100'
-    usePooling: 'true'
-    name: redis-lock:local
-    mode: cluster
-    cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-    readTimeout: '1000'
-logging:
-  profile: staging
+
 cors:
   allowed:
-    origins: '*'
+    origins: "*"
+
+debug: false
+
 webview:
   host: https://pay-stage.wynk.in
-debug: 'false'
+
+wynk:
+  ########### MONGO CONFIG ###########
+  mongodb:
+    enabled: true
+    sources:
+      payment:
+        appName: payment
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_payments
+        password: zS7VvjYRSE
+        database: payments
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
+      coupons:
+        appName: coupon
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_coupons
+        password: Sk6kzU8GU5
+        database: coupons
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
+  ##### SQS SaaS Props #####
+  saas:
+    mongodb:
+      enabled: true
+      clients:
+        paymentApi:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments
+                password: zS7VvjYRSE
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupons
+                password: Sk6kzU8GU5
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        airtelxstream:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments
+                password: zS7VvjYRSE
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupons
+                password: Sk6kzU8GU5
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        music:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments
+                password: zS7VvjYRSE
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupons
+                password: Sk6kzU8GU5
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        rajtv:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments_rajtv
+                password: 53411B8BEBE9E8ABC5F1B21
+                database: payments_rajtv
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupon_rajtv
+                password: C9E1144068F12EF2038B8AE29F6
+                database: coupon_rajtv
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+
+
+iqvideo:
+  enabled: true
+  sources:
+    payment:
+      enabled: true
+      repoConfig:
+        basePackages: in.wynk.payment.core.dao
+      source:
+        appName: payment
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_payments_iqvideo
+        password: 53411B8BEBE9E8ABC6F1B11
+        database: payments_iqvideo
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
+    coupons:
+      enabled: true
+      repoConfig:
+        basePackages: in.wynk.coupon.core.dao
+      source:
+        appName: coupon
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_coupon_iqvideo
+        password: 53411B8BEBE9E8ABZ5F1Z21
+        database: coupon_iqvideo
+        ########### Mongo Pool Config ###########
+        connectionSettings:
+          minConnectionsPerHost: 1
+          maxConnectionsPerHost: 5
+          threadsAllowedToBlockForConnectionMultiplier: 2
+        timeOutSettings:
+          serverSelectionTimeoutMs: 10000
+          maxWaitTime: 1000
+          connectTimeout: 1000
+          socketTimeout: 2000
+        readPreference: secondaryPreferred
+        replicaSet: wcf
+
+
+    sql:
+      enabled: true
+      clients:
+        ##### below property is paymentApi, just to test failed cases this is changed, revert it afterwards
+        paymentApi:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 5000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 10
+                  maximumPoolSize: 100
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: true
+                  open-in-view: true
+                  properties:
+                    hibernate:format_sql: true
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                    hibernate.enable_lazy_load_no_trans: true
+                    hibernate.types.print.banner: false
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        airtelxstream:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 5000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 10
+                  maximumPoolSize: 100
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: true
+                  open-in-view: true
+                  properties:
+                    hibernate:format_sql: true
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                    hibernate.enable_lazy_load_no_trans: true
+                    hibernate.types.print.banner: false
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        music:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 5000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 10
+                  maximumPoolSize: 100
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: true
+                  open-in-view: true
+                  properties:
+                    hibernate:format_sql: true
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                    hibernate.enable_lazy_load_no_trans: true
+                    hibernate.types.print.banner: false
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        iqvideo:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_iqvideo
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 10
+                  maximumPoolSize: 100
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        rajtv:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 10
+                  maximumPoolSize: 100
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+
+cache:
+  caffeine:
+    eviction:
+      size:
+        initial: 10
+        maximum: 500
+      time:
+        expireAfterAccess: 0
+        expireAfterWrite: 0
+        fixed: true
+        timeunit: seconds
+    metrics: false
+    nullable: false
+  enabled: true
+  mode: composite
+  redis:
+    cache:
+      cacheNullValues: false
+      keyPrefix: LOCAL
+      timeunit: minutes
+      ttl: 15
+      usePrefix: false
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      maxIdle: 8
+      maxTotal: 10
+      minIdle: 5
+      timeout: 2000
+    enableJmx: true
+    enabled: true
+    jmxPrefix: local
+    mode: cluster
+    name: l2cache-local
+    readTimeout: 1000
+    usePooling: true
+
+onelink:
+  key: key_test_pgZfbR1czLvn25MY3jFKmejbACgrSztR
+  url: https://api2.branch.io/v1/url
+
+lock:
+  redis:
+    name: redis-lock:local
+    mode: cluster
+    usePooling: true
+    readTimeout: 1000
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /wynk/v1/**,/wynk/v2/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
+
+logging:
+  profile: staging

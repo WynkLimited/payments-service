@@ -78,7 +78,7 @@
     </logger>
 
     <logger name="paymentStatusV2" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
 

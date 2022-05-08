@@ -878,8 +878,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 20
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

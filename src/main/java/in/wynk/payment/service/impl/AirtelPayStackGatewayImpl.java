@@ -433,9 +433,15 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
 
         @Override
         public WynkResponseEntity<ApsChargingResponse> charge(DefaultChargingRequest<?> request) {
-            final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPurchaseDetails().getPaymentDetails();
-            final String flowType = paymentDetails.getUpiDetails().isIntent() ? PaymentConstants.SEAMLESS : PaymentConstants.NON_SEAMLESS;
-            return upiDelegate.get(flowType).charge(request);
+            Optional<String> flowType;
+            if (request.isIntent()) {
+                flowType = Optional.of(PaymentConstants.SEAMLESS);
+            } else {
+                final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPurchaseDetails().getPaymentDetails();
+                flowType = paymentDetails.getUpiDetails().isIntent() ? Optional.of(PaymentConstants.SEAMLESS) : Optional.of(PaymentConstants.NON_SEAMLESS);
+
+            }
+            return upiDelegate.get(flowType.orElse(PaymentConstants.NON_SEAMLESS)).charge(request);
         }
 
         private class UpiSeamlessCharging implements IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>> {

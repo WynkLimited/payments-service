@@ -209,6 +209,9 @@ payment:
       rajtv:
         id: payment
         secret: pay@qckslvr
+      enterr10:
+        id: payment
+        secret: pay@qckslvr
     payu:
       airtelxstream:
         id: aU2Uoi
@@ -226,6 +229,9 @@ payment:
         id: fJOBvL
         secret: Z4YXGVoZ9EKk5H48RGL09AsdRTMIiHCZ
       iqvideo:
+        id: fJOBvL
+        secret: Z4YXGVoZ9EKk5H48RGL09AsdRTMIiHCZ
+      enterr10:
         id: fJOBvL
         secret: Z4YXGVoZ9EKk5H48RGL09AsdRTMIiHCZ
       key: aU2Uoi
@@ -259,6 +265,9 @@ payment:
       iqvideo:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      enterr10:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       id: WYNK
       api:
         base:
@@ -277,6 +286,9 @@ payment:
       iqvideo:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      enterr10:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
     airtelpaymentbank:
       airtelxstream:
         id: 180704
@@ -288,6 +300,9 @@ payment:
         id: 180704
         secret: d41d8cd98f00a
       rajtv:
+        id: 180704
+        secret: d41d8cd98f00a
+      enterr10:
         id: 180704
         secret: d41d8cd98f00a
 
@@ -306,6 +321,8 @@ payment:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       rajtv:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      enterr10:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
     paytm:
       airtelxstream:
         id: WYNKLI36809118294255
@@ -323,6 +340,11 @@ payment:
         token: 653fe766-5864-4e16-a288-68ebcccffbd0
         clientId: merchant-wynk-staging
       rajtv:
+        id: WYNKLI36809118294255
+        secret: 6UePBAcq7LTfdGJI
+        token: 653fe766-5864-4e16-a288-68ebcccffbd0
+        clientId: merchant-wynk-staging
+      enterr10:
         id: WYNKLI36809118294255
         secret: 6UePBAcq7LTfdGJI
         token: 653fe766-5864-4e16-a288-68ebcccffbd0
@@ -919,6 +941,45 @@ wynk:
                   poolName: payment-datasource-pool-dev
                   minimum-idle: 5
                   maximumPoolSize: 20
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        enterr10:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_preprod_enterr10
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 10
+                  maximumPoolSize: 100
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

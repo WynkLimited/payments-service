@@ -214,6 +214,9 @@ payment:
       rajtv:
         id: payment
         secret: pay@qckslvr
+      enterr10:
+        id: payment
+        secret: pay@qckslvr
     payu:
       airtelxstream:
         id: qFDqmx
@@ -231,6 +234,9 @@ payment:
         id: QyT13U
         secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
       rajtv:
+        id: QyT13U
+        secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
+      enterr10:
         id: QyT13U
         secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
       key: qFDqmx
@@ -252,6 +258,9 @@ payment:
       rajtv:
         id:
         secret:
+      enterr10:
+        id:
+        secret:
       id: WYNKUAT
       api:
         base:
@@ -269,6 +278,9 @@ payment:
         id:
         secret:
       rajtv:
+        id:
+        secret:
+      enterr10:
         id:
         secret:
       id: WYNKUAT
@@ -290,6 +302,9 @@ payment:
       rajtv:
         id:
         secret:
+      enterr10:
+        id:
+        secret:
     #### APBPaytm props ######
     apbPaytm:
       api:
@@ -304,6 +319,8 @@ payment:
       iqvideo:
         token:
       rajtv:
+        token:
+      enterr10:
         token:
     #### Itunes props ######
     itunes:
@@ -333,6 +350,11 @@ payment:
         token:
         clientId:
       rajtv:
+        id:
+        secret:
+        token:
+        clientId:
+      enterr10:
         id:
         secret:
         token:
@@ -528,7 +550,7 @@ wynk:
                 username: user_payments
                 password: zS7VvjYRSE
                 database: payments
-              ########### Mongo Pool Config ###########
+                ########### Mongo Pool Config ###########
                 connectionSettings:
                   minConnectionsPerHost: 1
                   maxConnectionsPerHost: 5
@@ -550,7 +572,7 @@ wynk:
                 username: user_coupons
                 password: Sk6kzU8GU5
                 database: coupons
-                 ########### Mongo Pool Config ###########
+                ########### Mongo Pool Config ###########
                 connectionSettings:
                   minConnectionsPerHost: 1
                   maxConnectionsPerHost: 5
@@ -750,9 +772,53 @@ wynk:
                   socketTimeout: 2000
                 readPreference: secondaryPreferred
                 replicaSet: wcf
-
-
-
+        enterr10:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments_enterr10
+                password: 53411B8BEBE9E8ABC5F1B21
+                database: payments_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupon_enterr10
+                password: C9E1144068F12EF2038B8AE29F6
+                database: coupon_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
     sql:
       enabled: true
       clients:
@@ -776,7 +842,7 @@ wynk:
                   idleTimeout: 100000
                   maxLifetime: 300000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 1
+                  minimum-idle: 5
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
@@ -817,7 +883,7 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 1
+                  minimum-idle: 5
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
@@ -858,7 +924,6 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 1
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
@@ -938,7 +1003,46 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 1
+                  minimum-idle: 5
+                  maximumPoolSize: 10
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        enterr10:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 5
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect

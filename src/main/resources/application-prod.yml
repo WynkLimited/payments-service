@@ -196,6 +196,8 @@ payment:
     aps:
       api:
         base: https://paydigi.airtel.in
+      encryption:
+        key: classpath:/cryptography/aps/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr

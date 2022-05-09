@@ -408,7 +408,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-preprod.wcf.internal
+      root: https://subscription-preprod.wynk.in
   payment:
     api:
       root: https://payments-preprod.wynk.in
@@ -642,7 +642,7 @@ wynk:
               source:
                 appName: coupon
                 nodes: 10.80.0.128,10.80.0.240
-                username: user_coupon_iqvideo
+                username: user_coupons_iqvideo
                 password: 53411B8BEBE9E8ABC5F1B21
                 database: coupon_iqvideo_preprod
                 ########### Mongo Pool Config ###########
@@ -845,6 +845,7 @@ wynk:
                   poolName: payment-datasource-pool-dev
                   minimum-idle: 5
                   maximumPoolSize: 20
+
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

@@ -191,7 +191,7 @@ payment:
       api:
         base: https://kongqa.airtel.com/preprod-236
       encryption:
-        key: classpath:/cryptography/aps/public.key
+        key: file:/data/logs/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr
@@ -458,7 +458,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 500!
+            timeout: 500
 service:
   subscription:
     api:

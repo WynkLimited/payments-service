@@ -206,6 +206,9 @@ payment:
       subscriptionApi:
         id: payment
         secret: pay@qckslvr
+      iqvideo:
+        id: payment
+        secret: pay@qckslvr  
       rajtv:
         id: payment
         secret: pay@qckslvr

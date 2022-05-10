@@ -3,7 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="in.wynk.payment.PaymentApplication" />
     <module name="payments" />
     <method v="2">
-      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean install -P revenue-payment -Denv=dev -DskipTests" />
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean install -P revenue-payment -Denv=local -DskipTests" />
     </method>
   </configuration>
 </component>

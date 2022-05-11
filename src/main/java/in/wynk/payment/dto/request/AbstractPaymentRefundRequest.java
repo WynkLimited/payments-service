@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.paytm.PaytmPaymentRefundRequest;
 import in.wynk.payment.dto.payu.PayUPaymentRefundRequest;
 import in.wynk.payment.dto.phonepe.PhonePePaymentRefundRequest;
@@ -32,6 +33,8 @@ public abstract class AbstractPaymentRefundRequest {
                 return PaytmPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case PHONEPE_WALLET:
                 return PhonePePaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
+            case AIRTEL_PAY_STACK:
+                return ApsPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY889);
         }

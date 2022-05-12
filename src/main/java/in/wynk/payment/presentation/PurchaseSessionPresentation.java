@@ -1,12 +1,14 @@
 package in.wynk.payment.presentation;
 
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.PaymentCachingService;
@@ -14,6 +16,7 @@ import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.data.util.Pair;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
@@ -26,9 +29,11 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
     public WynkResponseEntity<SessionResponse.SessionData> transform(Pair<String, PurchaseRequest> pair) {
         final String id = pair.getFirst();
         final PurchaseRequest request = pair.getSecond();
-        final String optionUrl = EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.payOption.page}");
+        final String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        final Client client = BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(clientId);
+        final String PAYMENT_OPTION_URL = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", client.getAlias()).replace("%p", "payOption");
         try {
-            final URIBuilder queryBuilder = new URIBuilder(optionUrl);
+            final URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             final PaymentCachingService cache = BeanLocatorFactory.getBean(PaymentCachingService.class);
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 queryBuilder.addParameter(PLAN_ID, request.getProductDetails().getId());
@@ -45,7 +50,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
             queryBuilder.addParameter(DEVICE_ID_SHORT, String.valueOf(request.getAppDetails().getDeviceId()));
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
-            String builder = optionUrl + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
+            String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
             return WynkResponseEntity.<SessionResponse.SessionData>builder().data(response).build();
         } catch (URISyntaxException e) {

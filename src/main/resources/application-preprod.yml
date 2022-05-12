@@ -437,6 +437,8 @@ cors:
 debug: true
 
 webview:
+  rajtv:
+    host: https://pay-preprod.iqvideo.in
   host: https://pay-preprod.wynk.in
 
 wynk:

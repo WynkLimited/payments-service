@@ -6,6 +6,7 @@ import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -31,7 +32,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
         final PurchaseRequest request = pair.getSecond();
         final String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         final Client client = BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(clientId);
-        final String PAYMENT_OPTION_URL = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", client.getAlias()).replace("%p", "payOption");
+        final String PAYMENT_OPTION_URL = EmbeddedPropertyResolver.resolveEmbeddedValue(PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", client.getAlias()).replace("%p", "payOption"), "${payment.payOption.page}");;
         try {
             final URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             final PaymentCachingService cache = BeanLocatorFactory.getBean(PaymentCachingService.class);

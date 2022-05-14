@@ -1,10 +1,12 @@
 package in.wynk.payment.dto.payu;
 
 import com.google.gson.annotations.SerializedName;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.request.CallbackRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 
@@ -34,6 +36,15 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     @SerializedName("hash")
     private String responseHash;
 
+    @SerializedName("field7")
+    private String mostSpecificFailureReason;
+
+    @SerializedName("field8")
+    private String specificFailureReason;
+
+    @SerializedName("field9")
+    private String failureReason;
+
     @SerializedName("error_Message")
     private String errorMessage;
 
@@ -42,5 +53,17 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
 
     @SerializedName("mihpayid")
     private String externalTransactionId;
+
+    public String getTransactionFailureReason() {
+        final StringBuilder reason = new StringBuilder();
+        if (StringUtils.isNotEmpty(mostSpecificFailureReason))
+            reason.append(mostSpecificFailureReason).append(PaymentConstants.PIPE_SEPARATOR);
+        else if (StringUtils.isNotEmpty(specificFailureReason))
+            reason.append(specificFailureReason).append(PaymentConstants.PIPE_SEPARATOR);
+        else if (StringUtils.isNotEmpty(failureReason))
+            reason.append(failureReason).append(PaymentConstants.PIPE_SEPARATOR);
+        reason.append(error);
+        return reason.toString();
+    }
 
 }

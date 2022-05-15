@@ -187,6 +187,26 @@ payment:
             delayTimeUnit: SECONDS
   merchant:
     ####### payu props #########
+    aps:
+      api:
+        base: https://kongqa.airtel.com/preprod-236
+      encryption:
+        key: file:/data/logs/public.key
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+      music:
+        id: payment
+        secret: pay@qckslvr
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
     payu:
       airtelxstream:
         id: qFDqmx
@@ -308,6 +328,21 @@ subscription:
 http:
   enableTemplateRegistration: true
   templates:
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 25
+          maxPerHost: 5
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 5000
+            factory:
+              type: both
+          request:
+            timeout: 5000
     paymentGatewayHttpTemplate:
       pool:
         connection:
@@ -382,7 +417,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 500!
+            timeout: 500
 service:
   subscription:
     api:

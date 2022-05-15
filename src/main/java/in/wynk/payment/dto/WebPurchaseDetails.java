@@ -10,6 +10,7 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.AllArgsConstructor;
@@ -31,7 +32,7 @@ public class WebPurchaseDetails implements IChargingDetails {
 
     @Valid
     @Analysed
-    private PaymentDetails paymentDetails;
+    private AbstractPaymentDetails paymentDetails;
 
     @Valid
     @Analysed

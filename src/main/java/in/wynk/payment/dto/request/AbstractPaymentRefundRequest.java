@@ -33,7 +33,7 @@ public abstract class AbstractPaymentRefundRequest {
                 return PaytmPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case PHONEPE_WALLET:
                 return PhonePePaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
-            case AIRTEL_PAY_STACK:
+            case APS:
                 return ApsPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             default:
                 throw new WynkRuntimeException(PaymentErrorType.PAY889);

@@ -315,8 +315,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
-                if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                    final String failureReason = failureReasonOption.orElse(payUChargingTransactionDetails.getErrorMessage());
+                if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getTransactionFailureReason())) {
+                    final String failureReason = failureReasonOption.orElse(payUChargingTransactionDetails.getTransactionFailureReason());
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(failureReason).build());
                 }
             }

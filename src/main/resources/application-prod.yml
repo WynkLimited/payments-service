@@ -458,6 +458,8 @@ service:
       root: https://payments.wynk.in
 
 webview:
+  rajtv:
+    host: https://pay.rajdigitaltv.com
   host: https://pay.wynk.in
 
 ########### MONGO CONFIG ###########

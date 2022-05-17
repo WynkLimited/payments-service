@@ -37,7 +37,7 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     @SerializedName("error_Message")
     private String errorMessage;
 
-    @SerializedName("txnid")
+    @SerializedName(value = "txnid", alternate = {"merchantTxnId"})
     private String transactionId;
 
     @SerializedName("mihpayid")

@@ -58,9 +58,9 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
         final StringBuilder reason = new StringBuilder();
         if (StringUtils.isNotEmpty(mostSpecificFailureReason))
             reason.append(mostSpecificFailureReason).append(PaymentConstants.PIPE_SEPARATOR);
-        else if (StringUtils.isNotEmpty(specificFailureReason))
+        if (StringUtils.isNotEmpty(specificFailureReason))
             reason.append(specificFailureReason).append(PaymentConstants.PIPE_SEPARATOR);
-        else if (StringUtils.isNotEmpty(failureReason))
+        if (StringUtils.isNotEmpty(failureReason))
             reason.append(failureReason).append(PaymentConstants.PIPE_SEPARATOR);
         reason.append(error);
         return reason.toString();

@@ -53,6 +53,7 @@ public interface PaymentConstants extends BaseConstants {
     String WALLET_USER_ID = "walletUserId";
     String MERCHANT_CLIENT_ID = "clientId";
     String GOOGLE_WALLET = "GOOGLE_WALLET";
+    String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";

@@ -36,6 +36,7 @@ import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
@@ -73,7 +74,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<Pair<LatestReceiptInfo, ReceiptDetails>>, IReceiptDetailService<Pair<LatestReceiptInfo, ReceiptDetails>, ItunesCallbackRequest> {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<Pair<LatestReceiptInfo, ReceiptDetails>>, IReceiptDetailService<Pair<LatestReceiptInfo, ReceiptDetails>, ItunesCallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
     private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
@@ -164,6 +165,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(request.getReceipt());
         final ItunesReceipt itunesReceipt = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn());
+        return getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
+    }
+
+    private ItunesLatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {
         if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
             final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
             boolean autoRenewal = false;
@@ -182,7 +187,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                             .planId(planDTO.getId())
                             .autoRenewal(autoRenewal)
                             .itunesReceiptType(receiptType)
-                            .decodedReceipt(request.getReceipt())
+                            .decodedReceipt(decodedReceipt)
                             .couponCode(latestReceiptInfo.getOfferCodeRefName())
                             .extTxnId(latestReceiptInfo.getOriginalTransactionId())
                             .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())
@@ -214,6 +219,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 .uid(transaction.getUid())
                 .msisdn(transaction.getMsisdn())
                 .planId(transaction.getPlanId())
+                .paymentTransactionId(transaction.getIdStr())
                 .transactionId(receiptType.getTransactionId(receiptInfo))
                 .expiry(receiptType.getExpireDate(receiptInfo))
                 .receipt(receiptDetails.getReceipt())
@@ -287,6 +293,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                                         .uid(transaction.getUid())
                                         .msisdn(transaction.getMsisdn())
                                         .planId(transaction.getPlanId())
+                                        .paymentTransactionId(transaction.getIdStr())
                                         .transactionId(receiptType.getTransactionId(latestReceiptInfo))
                                         .expiry(receiptType.getExpireDate(latestReceiptInfo))
                                         .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
@@ -490,6 +497,21 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     private boolean isAutoRenewalOff(String autoRenewableProductId, List<PendingRenewalInfo> pendingRenewalInfo) {
         return pendingRenewalInfo.stream().filter(pendingRenew -> pendingRenew.getAutoRenewProductId().equals(autoRenewableProductId) || pendingRenew.getProductId().equals(autoRenewableProductId)).anyMatch(pendingInfo -> pendingInfo.getAutoRenewStatus().equalsIgnoreCase("0"));
+    }
+
+    @Override
+    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        final Transaction transaction = TransactionContext.get();
+        final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+        final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
+        final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
+        final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
+        fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
+        return WynkResponseEntity.<Void>builder().success(true).build();
+    }
+
+    public boolean supportsRenewalReconciliation() {
+        return false;
     }
 
 }

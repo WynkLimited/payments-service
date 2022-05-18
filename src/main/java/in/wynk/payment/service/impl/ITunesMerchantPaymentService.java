@@ -168,7 +168,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         return getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
     }
 
-    private LatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {
+    private ItunesLatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {
         if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
             final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
             boolean autoRenewal = false;
@@ -501,11 +501,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        final Transaction transaction = TransactionContext.get();
         final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
         final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
         final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
-        final LatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-        return null;
+        final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
+        fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
+        return WynkResponseEntity.<Void>builder().success(true).build();
+    }
+
+    public boolean supportsRenewalReconciliation() {
+        return false;
     }
 
 }

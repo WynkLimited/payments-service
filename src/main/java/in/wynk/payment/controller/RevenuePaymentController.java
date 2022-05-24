@@ -57,7 +57,7 @@ public class RevenuePaymentController {
     public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String sid) {
         LoadClientUtils.loadClient(false);
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        return paymentManager.status(sessionDTO.<String>get(TRANSACTION_ID));
+        return paymentManager.status(sessionDTO.<String>get(TRANSACTION_ID), sessionDTO.get("appId").toString());
     }
 
     @Deprecated

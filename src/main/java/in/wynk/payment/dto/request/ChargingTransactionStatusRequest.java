@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.StatusMode;
 import lombok.Getter;
@@ -9,6 +10,9 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public class ChargingTransactionStatusRequest extends AbstractTransactionStatusRequest {
+
+    @Analysed
+    private String appId;
 
     @Override
     public StatusMode getMode() {

@@ -115,8 +115,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public List<OfferDTO> getOffers() {
         RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allOfferApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-        return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
-        }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
+      return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
+      }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
     }
 
 
@@ -130,16 +130,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public List<ProductDTO> getProducts() {
         RequestEntity<Void> allProductRequest = ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-
-        List<ProductDTO> products = null;
-        try {
-            products = Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
-            }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
-
-        }catch (Exception x){
-            System.out.println(x);
-        }
-        return products;
+        return  Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
+        }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
     }
 
 

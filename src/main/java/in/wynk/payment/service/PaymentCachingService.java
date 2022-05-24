@@ -46,6 +46,8 @@ public class PaymentCachingService {
     private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
+    private final Map<String, ProductDTO> products = new ConcurrentHashMap<>();
+
     private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
 
     private final PlanDtoCachingService planDtoCachingService;
@@ -66,8 +68,22 @@ public class PaymentCachingService {
     }
 
     private void loadProducts() {
-        List<ProductDTO> products = subscriptionServiceManager.getProducts();
+        List<ProductDTO> productList = subscriptionServiceManager.getProducts();
+        if (CollectionUtils.isNotEmpty(productList) && writeLock.tryLock()) {
+            try {
+                Map<String, ProductDTO> productMap = productList.stream().collect(Collectors.toMap(ProductDTO::getId, Function.identity()));
+                products.clear();
+                products.putAll(productMap);
+            } catch (Throwable th) {
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
+                throw th;
+            } finally {
+                writeLock.unlock();
+            }
+        }
+
     }
+
 
 
     private void loadPlans() {

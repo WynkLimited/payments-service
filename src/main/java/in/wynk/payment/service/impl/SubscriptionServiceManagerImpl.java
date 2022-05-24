@@ -57,6 +57,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${payment.recurring.offset.hour}")
     private int hour;
 
+    @Value("${service.subscription.api.endpoint.allProducts}")
+    private String allProductApiEndPoint;
+
+
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
 
@@ -122,6 +126,22 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         return Objects.requireNonNull(restTemplate.exchange(allItemRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<AllItemsResponse>>() {
         }).getBody()).getData().getItems();
     }
+
+    @Override
+    public List<ProductDTO> getProducts() {
+        RequestEntity<Void> allProductRequest = ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+
+        List<ProductDTO> products = null;
+        try {
+            products = Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
+            }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
+
+        }catch (Exception x){
+            System.out.println(x);
+        }
+        return products;
+    }
+
 
     @Override
     public boolean renewalPlanEligibility(int planId, String transactionId, String uid) {

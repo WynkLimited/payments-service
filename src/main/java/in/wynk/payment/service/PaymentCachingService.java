@@ -8,10 +8,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.SkuToSkuCachingService;
-import in.wynk.subscription.common.dto.ItemDTO;
-import in.wynk.subscription.common.dto.OfferDTO;
-import in.wynk.subscription.common.dto.PartnerDTO;
-import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,11 +58,17 @@ public class PaymentCachingService {
     public void init() {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("cacheLoadInit", true);
+        loadProducts();
         loadPlans();
         loadOffers();
         loadPartners();
         AnalyticService.update("cacheLoadCompleted", true);
     }
+
+    private void loadProducts() {
+        List<ProductDTO> products = subscriptionServiceManager.getProducts();
+    }
+
 
     private void loadPlans() {
         Collection<PlanDTO> planList = planDtoCachingService.getAll();

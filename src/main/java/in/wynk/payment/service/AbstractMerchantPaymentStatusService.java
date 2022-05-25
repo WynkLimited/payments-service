@@ -148,7 +148,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         Set<String> packgroupAppIdHierarchySet = new HashSet<>();
         for( String productId : cachingService.getProducts().keySet()) {
             ProductDTO product = cachingService.getProducts().get(productId);
-            if (product.getAppIdHierarchy() != null && product.getAppIdHierarchy().size() >0 && product.getAppIdHierarchy().containsKey(appId) && product.getAppIdHierarchy().get(appId) == -5)
+            if (product.getAppIdHierarchy() != null && product.getAppIdHierarchy().size() >0 && product.getAppIdHierarchy().containsKey(appId) && product.getAppIdHierarchy().get(appId) < 0)
                 packgroupAppIdHierarchySet.add(product.getPackGroup());
         }
         return packgroupAppIdHierarchySet;

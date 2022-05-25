@@ -108,14 +108,11 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).packGroup(channelPartner.getPackGroup()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
 
                 if(request.getAppId() != null && !request.getAppId().isEmpty()){
-
                     Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(request.getAppId().toUpperCase());
-
-                  for(int i =0; i <channelBenefits.size(); i++){
-                      ChannelBenefits channelBenefit = channelBenefits.get(i);
-                     if(!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
-                         channelBenefit.setNotVisible(true);
-                   }
+                    channelBenefits.stream().forEach(channelBenefit ->{
+                        if(!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
+                            channelBenefit.setNotVisible(true);
+                    });
                  }
                 trialPackBuilder.benefits(bundleBenefitsBuilder.channelsBenefits(channelBenefits).build());
 
@@ -131,14 +128,11 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().packGroup(channelPartner.getPackGroup()).name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
 
                 if(request.getAppId() != null && !request.getAppId().isEmpty()){
-
                     Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(request.getAppId().toUpperCase());
-
-                    for(int i =0; i <channelBenefits.size(); i++){
-                        ChannelBenefits channelBenefit = channelBenefits.get(i);
+                    channelBenefits.stream().forEach(channelBenefit -> {
                         if(!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
                             channelBenefit.setNotVisible(true);
-                    }
+                    });
                  }
                 paidPackBuilder.benefits(benefitsBuilder.channelsBenefits(channelBenefits).build());
             } else {

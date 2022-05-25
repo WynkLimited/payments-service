@@ -92,6 +92,45 @@ payment:
   callback:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
     s2s: ${service.payment.api.root}/wynk/v1/callback
+  rajtv:
+    payOption:
+      page: ${webview.rajtv.host}/#/payment-option/
+    success:
+      page: ${webview.rajtv.host}/#/subscription/success/
+    failure:
+      page: ${webview.rajtv.host}/#/txn-state/payment-failed/
+    pending:
+      page: ${webview.rajtv.host}/#/txn-state/payment-pending/
+    unknown:
+      page: ${webview.rajtv.host}/#/txn-state/payment-unknown/
+    timeout:
+      page: ${webview.rajtv.host}/#/txn-state/session-out/
+  iqvideo:
+    payOption:
+      page: ${webview.iqvideo.host}/#/payment-option/
+    success:
+      page: ${webview.iqvideo.host}/#/subscription/success/
+    failure:
+      page: ${webview.iqvideo.host}/#/txn-state/payment-failed/
+    pending:
+      page: ${webview.iqvideo.host}/#/txn-state/payment-pending/
+    unknown:
+      page: ${webview.iqvideo.host}/#/txn-state/payment-unknown/
+    timeout:
+      page: ${webview.iqvideo.host}/#/txn-state/session-out/
+  enterr10:
+    payOption:
+      page: ${webview.enterr10.host}/#/payment-option/
+    success:
+      page: ${webview.enterr10.host}/#/subscription/success/
+    failure:
+      page: ${webview.enterr10.host}/#/txn-state/payment-failed/
+    pending:
+      page: ${webview.enterr10.host}/#/txn-state/payment-pending/
+    unknown:
+      page: ${webview.enterr10.host}/#/txn-state/payment-unknown/
+    timeout:
+      page: ${webview.enterr10.host}/#/txn-state/session-out/
   payOption:
     page: ${webview.host}/#/payment-option/
   success:

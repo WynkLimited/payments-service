@@ -101,8 +101,10 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
         AbstractPack abstractPack= null;
+        String appId = null;
         final Optional<IPurchaseDetails> purchaseDetails = TransactionContext.getPurchaseDetails();
-        String appId = purchaseDetails.get().getAppDetails().getAppId();
+        if(purchaseDetails.isPresent() && purchaseDetails.get().getAppDetails() != null)
+         appId = purchaseDetails.get().getAppDetails().getAppId();
         if (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
             final PlanDTO paidPlan = cachingService.getPlan(transaction.getPlanId());
             final TrialPack.TrialPackBuilder<?, ?> trialPackBuilder = TrialPack.builder().title(offer.getTitle()).day(plan.getPeriod().getDay()).amount(plan.getFinalPrice()).month(plan.getPeriod().getMonth()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name()).currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());

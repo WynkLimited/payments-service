@@ -14,6 +14,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -100,20 +101,21 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
         AbstractPack abstractPack= null;
+        final Optional<IPurchaseDetails> purchaseDetails = TransactionContext.getPurchaseDetails();
+        String appId = purchaseDetails.get().getAppDetails().getAppId();
         if (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
             final PlanDTO paidPlan = cachingService.getPlan(transaction.getPlanId());
             final TrialPack.TrialPackBuilder<?, ?> trialPackBuilder = TrialPack.builder().title(offer.getTitle()).day(plan.getPeriod().getDay()).amount(plan.getFinalPrice()).month(plan.getPeriod().getMonth()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name()).currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());
             if (offer.isCombo()) {
                 final BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).packGroup(channelPartner.getPackGroup()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
-
-                if(request.getAppId() != null && !request.getAppId().isEmpty()){
-                    Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(request.getAppId().toUpperCase());
-                    channelBenefits.stream().forEach(channelBenefit ->{
-                        if(!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
-                            channelBenefit.setNotVisible(true);
-                    });
-                 }
+                if(appId != null || !appId.isEmpty()) {
+                        Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(appId.toUpperCase());
+                        channelBenefits.stream().forEach(channelBenefit -> {
+                            if (!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
+                                channelBenefit.setNotVisible(true);
+                        });
+                }
                 trialPackBuilder.benefits(bundleBenefitsBuilder.channelsBenefits(channelBenefits).build());
 
             }else {
@@ -127,13 +129,13 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 final BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().packGroup(channelPartner.getPackGroup()).name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
 
-                if(request.getAppId() != null && !request.getAppId().isEmpty()){
-                    Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(request.getAppId().toUpperCase());
+                if(appId != null || !appId.isEmpty()) {
+                    Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(appId.toUpperCase());
                     channelBenefits.stream().forEach(channelBenefit -> {
                         if(!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
                             channelBenefit.setNotVisible(true);
                     });
-                 }
+                }
                 paidPackBuilder.benefits(benefitsBuilder.channelsBenefits(channelBenefits).build());
             } else {
                 final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).packGroup(partner.getPackGroup()).notVisible(partner.isNotVisible()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));

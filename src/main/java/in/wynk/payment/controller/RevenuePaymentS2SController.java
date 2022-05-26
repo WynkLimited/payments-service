@@ -56,7 +56,7 @@ public class RevenuePaymentS2SController {
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(@PathVariable String tid) {
         LoadClientUtils.loadClient(true);
-        return paymentManager.status(tid, null);
+        return paymentManager.status(tid);
     }
 
     @GetMapping("/v2/payment/status/{tid}")

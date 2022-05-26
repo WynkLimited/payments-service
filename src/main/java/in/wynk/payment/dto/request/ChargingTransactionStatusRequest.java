@@ -11,9 +11,6 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 public class ChargingTransactionStatusRequest extends AbstractTransactionStatusRequest {
 
-    @Analysed
-    private String appId;
-
     @Override
     public StatusMode getMode() {
         return StatusMode.LOCAL;

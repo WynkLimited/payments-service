@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import com.google.common.base.Strings;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
@@ -112,7 +113,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
             if (offer.isCombo()) {
                 final BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).packGroup(channelPartner.getPackGroup()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
-                if(appId != null && !appId.isEmpty()) {
+                if(!Strings.isNullOrEmpty(appId)) {
                         Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(appId.toUpperCase());
                         channelBenefits.stream().forEach(channelBenefit -> {
                             if (!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
@@ -132,7 +133,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 final BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().packGroup(channelPartner.getPackGroup()).name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
 
-                if(appId != null && !appId.isEmpty()) {
+                if(!Strings.isNullOrEmpty(appId)) {
                     Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(appId.toUpperCase());
                     channelBenefits.stream().forEach(channelBenefit -> {
                         if(!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packgroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))

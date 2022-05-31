@@ -12,6 +12,7 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -83,10 +84,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private String itunesApiUrl;
     @Value("${payment.merchant.itunes.api.alt.url}")
     private String itunesApiAltUrl;
-    @Value("${payment.success.page}")
-    private String SUCCESS_PAGE;
-    @Value("${payment.failure.page}")
-    private String FAILURE_PAGE;
 
     private final Gson gson;
     private final ObjectMapper mapper;
@@ -113,8 +110,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final Transaction transaction = TransactionContext.get();
             final ItunesLatestReceiptResponse response = (ItunesLatestReceiptResponse) latestReceiptResponse;
             fetchAndUpdateFromReceipt(transaction, response, null);
+            final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
+                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"),"${payment.success.page}");
+                builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
                         .append(SLASH)
                         .append(sessionDTO.<String>get(OS))
                         .append(QUESTION_MARK)
@@ -127,7 +126,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                         .append(sessionDTO.<Integer>get(BUILD_NO))
                         .toString());
             } else {
-                builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.failure.page}");
+                builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
                         .append(SLASH)
                         .append(sessionDTO.<String>get(OS))
                         .append(QUESTION_MARK)
@@ -142,7 +142,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+            final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
+            final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.failure.page}");
+            builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
                     .append(SLASH)
                     .append(sessionDTO.<String>get(OS))
                     .append(QUESTION_MARK)

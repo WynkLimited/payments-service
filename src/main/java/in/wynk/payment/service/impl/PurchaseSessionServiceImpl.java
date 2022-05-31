@@ -8,8 +8,10 @@ import in.wynk.common.adapter.SessionDTOAdapter;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.dto.SessionResponse;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.IPurchaseSessionService;
@@ -40,14 +42,14 @@ public class PurchaseSessionServiceImpl implements IPurchaseSessionService {
     @Value("${session.duration:15}")
     private Integer duration;
 
-    @Value("${payment.payOption.page}")
-    private String PAYMENT_OPTION_URL;
-
     @Override
     public SessionResponse initSession(SessionRequest request) {
 
         try {
             final String id = generate(request);
+            final String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+            final ClientDetails clientDetails = (ClientDetails) clientDetailsCachingService.getClientById(clientId);
+            final String PAYMENT_OPTION_URL = EmbeddedPropertyResolver.resolveEmbeddedValue(PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", clientDetails.getAlias()).replace("%p", "payOption"), "${payment.payOption.page}");
             URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             if (request.getParams() != null) {
                 queryBuilder.addParameter(TITLE, request.getParams().get(TITLE));

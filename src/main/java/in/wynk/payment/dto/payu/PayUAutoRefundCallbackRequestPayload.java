@@ -1,16 +1,30 @@
 package in.wynk.payment.dto.payu;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Getter
+@SuperBuilder
+@NoArgsConstructor
 public class PayUAutoRefundCallbackRequestPayload extends PayUCallbackRequestPayload {
 
-    @SerializedName("bank_arn")
+    @JsonProperty("bank_arn")
     private String bankArn;
-    @SerializedName("bank_ref_num")
+    @JsonProperty("bank_ref_num")
     private String bankReference;
-
-
+    @JsonProperty("request_id")
+    private String requestId;
+    private String token;
+    private String action;
+    @JsonProperty("amt")
+    private String amount;
+    private String key;
+    private String remark;
+    private String additionalValue1;
+    private String additionalValue2;
+    @JsonProperty("refund_mode")
+    private String refundMode;
 
 }

@@ -7,7 +7,6 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.common.dto.ICacheService;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -25,7 +24,6 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
@@ -80,7 +78,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final ApplicationEventPublisher eventPublisher;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     private final IMerchantTransactionService merchantTransactionService;
-    private final ICacheService<PaymentMethod, String> paymentMethodCachingService;
+    private final IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
 
     @Value("${payment.merchant.payu.api.info}")
     private String payUInfoApiUrl;
@@ -95,52 +93,25 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                                       PaymentCachingService cachingService,
                                       IMerchantTransactionService merchantTransactionService,
                                       IErrorCodesCacheService errorCodesCacheServiceImpl,
-                                      @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate,
-                                      ICacheService<PaymentMethod, String> paymentMethodCachingService) {
+                                      @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
+        this.callbackHandler = new DelegatePayUCallbackHandler();
         this.merchantTransactionService = merchantTransactionService;
-        this.paymentMethodCachingService = paymentMethodCachingService;
     }
 
     @Override
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PayUCallbackRequestPayload callbackRequest) {
-        handleCallbackInternal(callbackRequest);
-        final Transaction transaction = TransactionContext.get();
-        if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
-            Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
-            if (optionalDetails.isPresent()) {
-                final String redirectionUrl;
-                IChargingDetails chargingDetails = (IChargingDetails) optionalDetails.get();
-                if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                    log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    redirectionUrl = chargingDetails.getPageUrlDetails().getPendingPageUrl();
-                } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                    log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                    redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
-                } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                    redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
-                } else {
-                    redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
-                }
-                return WynkResponseUtils.redirectResponse(redirectionUrl);
-            }
-        }
-        return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
+        return callbackHandler.handleCallback(callbackRequest);
     }
 
     @Override
     public PayUCallbackRequestPayload parseCallback(Map<String, Object> payload) {
-        try {
-            return gson.fromJson(gson.toJsonTree(payload), PayUCallbackRequestPayload.class);
-        } catch (Exception e) {
-            log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
-            throw new WynkRuntimeException(PAY006, e);
-        }
+        return callbackHandler.parseCallback(payload);
     }
 
     @Override
@@ -340,8 +311,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else if (PayUChargingTransactionDetails.class.isAssignableFrom(transactionDetails.getClass()) && FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) && AUTO_REFUND.equalsIgnoreCase(((PayUChargingTransactionDetails) transactionDetails).getUnMappedStatus())) {
-                finalTransactionStatus = TransactionStatus.AUTO_REFUND;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
@@ -602,42 +571,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return EncryptionUtils.generateSHA512Hash(builder);
     }
 
-    private void handleCallbackInternal(PayUCallbackRequestPayload payUCallbackRequestPayload) {
-        final Transaction transaction = TransactionContext.get();
-        final String transactionId = transaction.getIdStr();
-        try {
-            final String errorCode = payUCallbackRequestPayload.getError();
-            final String errorMessage = payUCallbackRequestPayload.getErrorMessage();
-            final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
-            final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
-            final boolean isValidHash = validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId,
-                    payUCallbackRequestPayload.getStatus(),
-                    payUCallbackRequestPayload.getUdf1(),
-                    payUCallbackRequestPayload.getEmail(),
-                    payUCallbackRequestPayload.getFirstName(),
-                    String.valueOf(transaction.getPlanId()),
-                    transaction.getAmount(),
-                    payUCallbackRequestPayload.getResponseHash());
-            if (isValidHash) {
-                syncChargingTransactionFromSource(transaction, Optional.ofNullable(payUCallbackRequestPayload.getTransactionFailureReason()));
-            } else {
-                log.error(PAYU_CHARGING_CALLBACK_FAILURE,
-                        "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
-                        payUCallbackRequestPayload.getStatus(),
-                        transactionId,
-                        payUCallbackRequestPayload.getExternalTransactionId(),
-                        errorCode,
-                        errorMessage,
-                        transaction.getUid());
-                throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + transactionId);
-            }
-        } catch (PaymentRuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
-        }
-    }
-
     /*
     Below function not used anywhere
      */
@@ -814,6 +747,104 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } catch (Exception e) {
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY112);
+        }
+    }
+
+    private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {
+
+        private final Map<Class<? extends IMerchantPaymentCallbackService<? extends AbstractCallbackResponse, ? extends PayUCallbackRequestPayload>>, IMerchantPaymentCallbackService> delegator = new HashMap<>();
+
+        public DelegatePayUCallbackHandler() {
+            this.delegator.put(GenericPayUCallbackHandler.class, new GenericPayUCallbackHandler());
+            this.delegator.put(RefundPayUCallBackHandler.class, new RefundPayUCallBackHandler());
+        }
+
+        @Override
+        public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PayUCallbackRequestPayload callbackRequest) {
+            final Transaction transaction = TransactionContext.get();
+            final String transactionId = transaction.getIdStr();
+            try {
+                final String errorCode = callbackRequest.getError();
+                final String errorMessage = callbackRequest.getErrorMessage();
+                if (delegator.get(callbackRequest.getClass()).validate(callbackRequest)) {
+                    return delegator.get(callbackRequest.getClass()).handleCallback(callbackRequest);
+                } else {
+                    log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}", callbackRequest.getStatus(), transactionId, callbackRequest.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
+                    throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + transactionId);
+                }
+            } catch (Exception e) {
+                throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+            }
+        }
+
+        @Override
+        public PayUCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+            try {
+                final String json = objectMapper.writeValueAsString(payload);
+                return objectMapper.readValue(json, PayUCallbackRequestPayload.class);
+            } catch (Exception e) {
+                log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
+                throw new WynkRuntimeException(PAY006, e);
+            }
+        }
+
+        private class GenericPayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {
+
+            @Override
+            public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PayUCallbackRequestPayload callbackRequest) {
+                final Transaction transaction = TransactionContext.get();
+                syncChargingTransactionFromSource(transaction, Optional.ofNullable(callbackRequest.getTransactionFailureReason()));
+                if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
+                    Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
+                    if (optionalDetails.isPresent()) {
+                        final String redirectionUrl;
+                        IChargingDetails chargingDetails = (IChargingDetails) optionalDetails.get();
+                        if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                            redirectionUrl = chargingDetails.getPageUrlDetails().getPendingPageUrl();
+                        } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+                            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                            redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
+                        } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+                            redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
+                        } else {
+                            redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
+                        }
+                        return WynkResponseUtils.redirectResponse(redirectionUrl);
+                    }
+                }
+                return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
+            }
+
+            public boolean validate(PayUCallbackRequestPayload callbackRequest) {
+                final Transaction transaction = TransactionContext.get();
+                final String transactionId = transaction.getIdStr();
+                final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
+                final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
+                return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId,
+                        callbackRequest.getStatus(),
+                        callbackRequest.getUdf1(),
+                        callbackRequest.getEmail(),
+                        callbackRequest.getFirstName(),
+                        String.valueOf(transaction.getPlanId()),
+                        transaction.getAmount(),
+                        callbackRequest.getResponseHash());
+            }
+
+        }
+
+        private class RefundPayUCallBackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUAutoRefundCallbackRequestPayload> {
+
+            @Override
+            public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PayUAutoRefundCallbackRequestPayload callbackRequest) {
+                final Transaction transaction = TransactionContext.get();
+                syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
+                // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
+                if (transaction.getStatus() == TransactionStatus.SUCCESS)
+                    transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
+                return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
+            }
+
         }
     }
 

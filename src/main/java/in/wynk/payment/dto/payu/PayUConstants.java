@@ -2,6 +2,7 @@ package in.wynk.payment.dto.payu;
 
 public interface PayUConstants {
 
+    String GENERIC_CALLBACK = "genericCallback";
     String PAYU_PG = "pg";
     String PAYU_SI = "SI";
     String PAYU_UPI = "UPI";

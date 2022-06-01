@@ -52,6 +52,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
     private final Gson gson;
     private final PaymentCachingService paymentCache;
     private final IEntityCacheService<ClientDetails, String> clientCache;
+    private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final Map<String, IPaymentPresentation<? extends AbstractChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
     @PostConstruct
@@ -64,7 +65,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     @Override
     public WynkResponseEntity<AbstractChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
-        final PaymentMethod method = paymentCache.getPaymentMethod(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
+        final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
         return (WynkResponseEntity<AbstractChargingResponse>) delegate.get(method.getGroup()).transform(payload);
     }
 
@@ -87,7 +88,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         @Override
         public WynkResponseEntity<AbstractUpiChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
-            final PaymentMethod method = paymentCache.getPaymentMethod(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
+            final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractUpiChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
 
@@ -96,7 +97,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             @SneakyThrows
             @Override
             public WynkResponseEntity<SeamlessUpiChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
-                final PaymentMethod method = paymentCache.getPaymentMethod(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
+                final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
                 final PlanDTO planToBePurchased = paymentCache.getPlan(payload.getTransaction().getPlanId());
                 final OfferDTO offerToBePurchased = paymentCache.getOffer(planToBePurchased.getLinkedOfferId());
                 final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
@@ -150,7 +151,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         @Override
         public WynkResponseEntity<AbstractNetBankingChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
-            final PaymentMethod method = paymentCache.getPaymentMethod(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
+            final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractNetBankingChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
 
@@ -186,7 +187,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         @Override
         public WynkResponseEntity<AbstractCardChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
-            final PaymentMethod method = paymentCache.getPaymentMethod(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
+            final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractCardChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
 
@@ -230,7 +231,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         @Override
         public WynkResponseEntity<AbstractWalletChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
-            final PaymentMethod method = paymentCache.getPaymentMethod(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
+            final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractWalletChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
 

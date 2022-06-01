@@ -38,9 +38,9 @@ import static in.wynk.payment.core.constant.PaymentConstants.VERSION_2;
 @Service
 @RequiredArgsConstructor
 public class PaymentGatewayManager implements
-        IPaymentCharging<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>>,
+        IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
-        IPaymentRenewal<PaymentRenewalChargingRequest> {
+        IPaymentCharging<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;

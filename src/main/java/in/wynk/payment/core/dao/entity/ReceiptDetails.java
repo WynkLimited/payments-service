@@ -10,7 +10,7 @@ import java.io.Serializable;
 @Getter
 @ToString
 @SuperBuilder
-@Document(collection = "ReceiptDetails")
+@Document(collection = "receipt_details")
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 public abstract class ReceiptDetails extends MongoBaseEntity<String> implements Serializable {
 

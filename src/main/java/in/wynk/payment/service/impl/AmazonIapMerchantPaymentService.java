@@ -266,8 +266,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId) {
         AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
-                .receiptId(receiptId)
-                .id(receiptId).amazonUserId(amzUserId)
+                .receiptTransactionId(receiptId)
+                .id(receiptId)
+                .amazonUserId(amzUserId)
                 .uid(uid)
                 .msisdn(msisdn)
                 .planId(planId)

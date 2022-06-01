@@ -222,7 +222,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 .msisdn(transaction.getMsisdn())
                 .planId(transaction.getPlanId())
                 .paymentTransactionId(transaction.getIdStr())
-                .transactionId(receiptType.getTransactionId(receiptInfo))
+                .receiptTransactionId(receiptType.getTransactionId(receiptInfo))
                 .expiry(receiptType.getExpireDate(receiptInfo))
                 .receipt(receiptDetails.getReceipt())
                 .build();
@@ -296,7 +296,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                                         .msisdn(transaction.getMsisdn())
                                         .planId(transaction.getPlanId())
                                         .paymentTransactionId(transaction.getIdStr())
-                                        .transactionId(receiptType.getTransactionId(latestReceiptInfo))
+                                        .receiptTransactionId(receiptType.getTransactionId(latestReceiptInfo))
                                         .expiry(receiptType.getExpireDate(latestReceiptInfo))
                                         .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
                                         .build();
@@ -324,12 +324,12 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private boolean isReceiptEligible(List<LatestReceiptInfo> allReceipt, ItunesReceiptType newReceiptType, ItunesReceiptDetails oldReceipt) {
         if (oldReceipt != null && oldReceipt.getState() == State.ACTIVE) {
             ItunesReceiptType oldReceiptType = ItunesReceiptType.valueOf(oldReceipt.getType());
-            Optional<LatestReceiptInfo> oldReceiptOption = allReceipt.stream().filter(receipt -> (((oldReceipt.isTransactionIdPresent() && oldReceipt.getTransactionId() == oldReceiptType.getTransactionId(receipt)) || oldReceiptType.getExpireDate(receipt) == oldReceipt.getExpiry()))).findAny();
+            Optional<LatestReceiptInfo> oldReceiptOption = allReceipt.stream().filter(receipt -> (((oldReceipt.isTransactionIdPresent() && oldReceiptType.getTransactionId(receipt).equalsIgnoreCase(oldReceipt.getReceiptTransactionId())) || oldReceiptType.getExpireDate(receipt) == oldReceipt.getExpiry()))).findAny();
             if (oldReceiptOption.isPresent()) {
                 LatestReceiptInfo oldReceiptInfo = oldReceiptOption.get();
                 if (!oldReceipt.isTransactionIdPresent())
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).transactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
-                return allReceipt.stream().anyMatch(receipt -> newReceiptType.getTransactionId(receipt) != oldReceiptType.getTransactionId(oldReceiptInfo) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).receiptTransactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
+                return allReceipt.stream().anyMatch(receipt -> newReceiptType.getTransactionId(receipt).equalsIgnoreCase(oldReceiptType.getTransactionId(oldReceiptInfo)) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
             }
         }
         return true;
@@ -471,7 +471,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
             final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
             Optional<ReceiptDetails> lastProcessedReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(iTunesId);
-            boolean isEligible = lastProcessedReceiptDetails.isPresent() && ((ItunesReceiptDetails) lastProcessedReceiptDetails.get()).getTransactionId() != Long.parseLong(latestReceiptInfo.getTransactionId());
+            boolean isEligible = lastProcessedReceiptDetails.isPresent() && !latestReceiptInfo.getTransactionId().equalsIgnoreCase(lastProcessedReceiptDetails.get().getReceiptTransactionId());
             return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(isEligible).build();
         }
         return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(false).build();

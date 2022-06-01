@@ -8,6 +8,7 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -79,10 +80,6 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Value("${payment.merchant.amazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
     private final RestTemplate restTemplate;
-    @Value("${payment.success.page}")
-    private String SUCCESS_PAGE;
-    @Value("${payment.failure.page}")
-    private String FAILURE_PAGE;
 
     public AmazonIapMerchantPaymentService(ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl) {
         super(cachingService, errorCodesCacheServiceImpl);
@@ -180,10 +177,13 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             final Transaction transaction = TransactionContext.get();
             final AmazonLatestReceiptResponse response = (AmazonLatestReceiptResponse) latestReceiptResponse;
             fetchAndUpdateTransaction(transaction, response);
+            final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                builder.url(SUCCESS_PAGE + sid + BaseConstants.SLASH + os);
+                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"),"${payment.success.page}");
+                builder.url(success_url + sid + BaseConstants.SLASH + os);
             } else {
-                builder.url(FAILURE_PAGE + sid + BaseConstants.SLASH + os);
+                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.success.page}");
+                builder.url(failure_url + sid + BaseConstants.SLASH + os);
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {

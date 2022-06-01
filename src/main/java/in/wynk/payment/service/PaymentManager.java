@@ -40,12 +40,11 @@ import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTIO
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
-import static in.wynk.tinylytics.constants.TinylyticsConstants.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper<?>>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class PaymentManager implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper<?>>, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>, IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantPaymentSettlement<AbstractPaymentSettlementResponse, PaymentSettlementRequest> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -176,6 +175,13 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         return internalStatus(ChargingTransactionStatusRequest.builder().transactionId(transactionId).planId(transaction.getPlanId()).build());
     }
 
+    @TransactionAware(txnId = "#transactionId", lock = false)
+    public TransactionSnapShot statusV2(String transactionId) {
+        final Transaction transaction = TransactionContext.get();
+        final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElse(null);
+        return TransactionSnapShot.builder().transactionDetails(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build()).build();
+    }
+
     @Override
     @TransactionAware(txnId = "#request.transactionId")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest request) {
@@ -294,12 +300,7 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
         });
         request.setPlanId(transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
-        try {
-            return statusService.status(request);
-        } catch (WynkRuntimeException e) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
-            throw e;
-        }
+        return statusService.status(request);
     }
 
     private void exhaustCouponIfApplicable(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
@@ -325,4 +326,12 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         eventPublisher.publishEvent(paymentsBranchEvent);
     }
 
+    @Override
+    @TransactionAware(txnId = "#request.tid", lock = false)
+    public AbstractPaymentSettlementResponse settle(PaymentSettlementRequest request) {
+        final Transaction transaction = TransactionContext.get();
+        final String pgId = merchantTransactionService.getPartnerReferenceId(request.getTid());
+        return BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>>() {
+        }).settle(PaymentGatewaySettlementRequest.builder().pgId(pgId).tid(transaction.getIdStr()).build());
+    }
 }

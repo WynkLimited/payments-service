@@ -13,18 +13,18 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
+import in.wynk.payment.core.event.PaymentSettlementEvent;
 import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.service.IPurchaseDetailsManger;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.enums.SettlementType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +41,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @RequiredArgsConstructor
 public class TransactionManagerServiceImpl implements ITransactionManagerService {
 
+    private final PaymentCachingService cachingService;
     private final IPurchaseDetailsManger purchaseDetailsManger;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
@@ -116,6 +117,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     recurringPaymentManagerService.scheduleRecurringPayment(request);
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) || (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
                         subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                        if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT)
+                            applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getTransactionId()).build());
                     }
                 }
             }

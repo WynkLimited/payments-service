@@ -315,8 +315,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 try {
                     AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
                     //TODO: check for eligibility cases.
-                    if ((!RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId()) && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
-                    || (RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId()) && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
+                    final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
+                    if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
+                    || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
                         return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
                     }
                 } catch (Exception e) {

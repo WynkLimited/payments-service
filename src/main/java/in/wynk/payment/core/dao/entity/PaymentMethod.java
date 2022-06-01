@@ -29,6 +29,7 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private String displayName;
     private String paymentCode;
     private String ruleExpression;
+    private String flowType;
 
     private List<String> suffixes;
     private Map<String, Object> meta;

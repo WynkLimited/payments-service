@@ -231,7 +231,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         Optional<ReceiptDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId(), transaction.getIdStr());
                 AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
@@ -264,15 +264,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
     }
 
-    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId) {
-        AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
-                .receiptTransactionId(receiptId)
-                .id(receiptId)
-                .amazonUserId(amzUserId)
-                .uid(uid)
-                .msisdn(msisdn)
-                .planId(planId)
-                .build();
+    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId) {
+        final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).build();
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
     }
 
@@ -309,8 +302,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).findByExternalUserId(message.getAppUserId());
-        saveReceipt(mapping.getId(), mapping.getMsisdn(), planDTO.getId(), message.getReceiptId(), message.getAppUserId());
-        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(receiptResponse).planId(planDTO.getId()).build();
+        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build()).planId(planDTO.getId()).build();
     }
 
     @Override
@@ -354,6 +346,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     @Override
     public void handleNotification(Transaction transaction, UserPlanMapping<AmazonIapReceiptResponse> mapping) {
+        final AmazonIapReceiptResponseWrapper wrapper = (AmazonIapReceiptResponseWrapper) mapping.getMessage();
+        saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr());
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         AmazonIapReceiptResponse amazonIapReceipt = mapping.getMessage();
         if(amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED ) {

@@ -329,7 +329,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 LatestReceiptInfo oldReceiptInfo = oldReceiptOption.get();
                 if (!oldReceipt.isTransactionIdPresent())
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).receiptTransactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
-                return allReceipt.stream().anyMatch(receipt -> newReceiptType.getTransactionId(receipt).equalsIgnoreCase(oldReceiptType.getTransactionId(oldReceiptInfo)) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
+                return allReceipt.stream().anyMatch(receipt -> !newReceiptType.getTransactionId(receipt).equalsIgnoreCase(oldReceiptType.getTransactionId(oldReceiptInfo)) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
             }
         }
         return true;

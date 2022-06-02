@@ -766,8 +766,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             try {
                 final String errorCode = callbackRequest.getError();
                 final String errorMessage = callbackRequest.getErrorMessage();
-                if (delegator.get(callbackRequest.getClass()).validate(callbackRequest)) {
-                    return delegator.get(callbackRequest.getClass()).handleCallback(callbackRequest);
+                final IMerchantPaymentCallbackService callbackService = delegator.get(PayUAutoRefundCallbackRequestPayload.class.isAssignableFrom(callbackRequest.getClass()) ? RefundPayUCallBackHandler.class : GenericPayUCallbackHandler.class);
+                if (callbackService.validate(callbackRequest)) {
+                    return callbackService.handleCallback(callbackRequest);
                 } else {
                     log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}", callbackRequest.getStatus(), transactionId, callbackRequest.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + transactionId);

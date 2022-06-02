@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.PAYMENT_ERROR;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY011;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY026;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
@@ -356,7 +357,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
         }
         final String errorMessage = Objects.nonNull(responseITunesCode) ? responseITunesCode.getErrorCode() + " : " + responseITunesCode.getErrorTitle() : "Invalid Receipt and status code";
-        throw new WynkRuntimeException(PAY011, errorMessage);
+        throw new WynkRuntimeException(PAY026, errorMessage);
     }
 
     private ItunesReceipt itunesResponse(String receipt, String secret, ItunesReceiptType itunesReceiptType, String url) {
@@ -516,6 +517,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
             return WynkResponseEntity.<Void>builder().success(true).build();
         } catch (Exception e) {
+            if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
+                final WynkRuntimeException exception = (WynkRuntimeException) e;
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
+            }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(e);
         }

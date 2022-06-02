@@ -280,7 +280,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     private ChargingStatusResponse fetchChargingStatusFromPayUSource(Transaction transaction) {
-        syncChargingTransactionFromSource(transaction);
+        syncChargingTransactionFromSource(transaction, Optional.empty());
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
@@ -296,7 +296,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return responseBuilder.build();
     }
 
-    public void syncChargingTransactionFromSource(Transaction transaction) {
+    public void syncChargingTransactionFromSource(Transaction transaction, Optional<String> failureReasonOption) {
         final Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             final MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
@@ -315,8 +315,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
-                if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage()).build());
+                if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getTransactionFailureReason())) {
+                    final String failureReason = failureReasonOption.orElse(payUChargingTransactionDetails.getTransactionFailureReason());
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(failureReason).build());
                 }
             }
         } catch (HttpStatusCodeException e) {
@@ -341,6 +342,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
+            } else if (AUTO_REFUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+                finalTransactionStatus = TransactionStatus.AUTO_REFUND;
             } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
                     (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
@@ -617,7 +620,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     payUCallbackRequestPayload.getResponseHash());
 
             if (isValidHash) {
-                syncChargingTransactionFromSource(transaction);
+                syncChargingTransactionFromSource(transaction, Optional.ofNullable(payUCallbackRequestPayload.getTransactionFailureReason()));
             } else {
                 log.error(PAYU_CHARGING_CALLBACK_FAILURE,
                         "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",

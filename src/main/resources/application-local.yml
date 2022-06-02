@@ -194,6 +194,26 @@ payment:
       url: http://localhost:4200/status
   merchant:
     ####### payu props #########
+    aps:
+      api:
+        base: https://kongqa.airtel.com/preprod-236
+      encryption:
+        key: classpath:/cryptography/aps/public.key
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+      music:
+        id: payment
+        secret: pay@qckslvr
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
     payu:
       airtelxstream:
         id: qFDqmx
@@ -209,10 +229,10 @@ payment:
         secret: Zbm2ZyNe
       rajtv:
         id: QyT13U
-        secret: wov2FQWE
+        secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
       enterr10:
-        id: QyT13U
-        secret: wov2FQWE
+        id: qFDqmx
+        secret: Zbm2ZyNe
       key: qFDqmx
       salt: Zbm2ZyNe
       api:
@@ -369,6 +389,21 @@ http:
               type: both
           request:
             timeout: 5000
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 25
+          maxPerHost: 5
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 10000
+            factory:
+              type: both
+          request:
+            timeout: 5000
     paymentClientHttpTemplate:
       pool:
         connection:
@@ -432,6 +467,12 @@ cors:
 debug: false
 
 webview:
+  rajtv:
+    host: https://pay-stage.iqvideo.in
+  iqvideo:
+    host: https://pay-stage.iqvideo.in
+  enterr10:
+    host: https://pay-stage.iqvideo.in
   host: https://pay-stage.wynk.in
 
 wynk:
@@ -734,11 +775,11 @@ wynk:
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
-                  connectionTimeout: 5000
-                  idleTimeout: 10000
-                  maxLifetime: 30000
+                  connectionTimeout: 50000
+                  idleTimeout: 100000
+                  maxLifetime: 300000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 5
+                  minimum-idle: 1
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
@@ -820,7 +861,7 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 5
+                  minimum-idle: 1
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect

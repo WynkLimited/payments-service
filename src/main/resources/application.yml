@@ -71,6 +71,7 @@ service:
     api:
       endpoint:
         allPlans: ${service.subscription.api.root}/wynk/s2s/v1/data/allPlans
+        allProducts: ${service.subscription.api.root}/wynk/s2s/v1/data/allProducts
         allOffers: ${service.subscription.api.root}/wynk/s2s/v1/data/allOffers
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
@@ -81,7 +82,7 @@ service:
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
 
-####### payment props #######
+  ####### payment props #######
   payment:
     api:
       endpoint:
@@ -92,6 +93,45 @@ payment:
   callback:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
     s2s: ${service.payment.api.root}/wynk/v1/callback
+  rajtv:
+    payOption:
+      page: ${webview.rajtv.host}/#/payment-option/
+    success:
+      page: ${webview.rajtv.host}/#/subscription/success/
+    failure:
+      page: ${webview.rajtv.host}/#/txn-state/payment-failed/
+    pending:
+      page: ${webview.rajtv.host}/#/txn-state/payment-pending/
+    unknown:
+      page: ${webview.rajtv.host}/#/txn-state/payment-unknown/
+    timeout:
+      page: ${webview.rajtv.host}/#/txn-state/session-out/
+  iqvideo:
+    payOption:
+      page: ${webview.iqvideo.host}/#/payment-option/
+    success:
+      page: ${webview.iqvideo.host}/#/subscription/success/
+    failure:
+      page: ${webview.iqvideo.host}/#/txn-state/payment-failed/
+    pending:
+      page: ${webview.iqvideo.host}/#/txn-state/payment-pending/
+    unknown:
+      page: ${webview.iqvideo.host}/#/txn-state/payment-unknown/
+    timeout:
+      page: ${webview.iqvideo.host}/#/txn-state/session-out/
+  enterr10:
+    payOption:
+      page: ${webview.enterr10.host}/#/payment-option/
+    success:
+      page: ${webview.enterr10.host}/#/subscription/success/
+    failure:
+      page: ${webview.enterr10.host}/#/txn-state/payment-failed/
+    pending:
+      page: ${webview.enterr10.host}/#/txn-state/payment-pending/
+    unknown:
+      page: ${webview.enterr10.host}/#/txn-state/payment-unknown/
+    timeout:
+      page: ${webview.enterr10.host}/#/txn-state/session-out/
   payOption:
     page: ${webview.host}/#/payment-option/
   success:
@@ -104,6 +144,8 @@ payment:
     page: ${webview.host}/#/txn-state/payment-unknown/
   timeout:
     page: ${webview.host}/#/txn-state/session-out/
+  polling:
+    page: ${webview.host}/#/txn-state/payment-poll/
 
 cors:
   maxAge: 3600
@@ -153,6 +195,39 @@ apbpaytm:
     api: ${apbpaytm.native.services.baseUrl}/paymentservices/fetch/instrument
   validateOtp:
     api: ${apbpaytm.native.accounts.baseUrl}/v4/signin/validate/otp/sv1?locale=en-IN&anchor=enc_user_id
+
+aps:
+  payment:
+    encryption:
+      key:
+        path: ${payment.merchant.aps.encryption.key}
+    init:
+      settlement:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/hive-split-payment
+      charge:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate
+        upi:
+          api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate/upi
+      refund:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund
+    verify:
+      bin:
+        api: ${payment.merchant.aps.api.base}/ps/payment-options/v2/card-details
+      vpa:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/validate/vpa/{vpa}
+    option:
+      api: ${payment.merchant.aps.api.base}/ps/payment-options/v3/fetch
+    saved:
+      option:
+        api: ${payment.merchant.aps.api.base}/ps/payment-options/saved-options
+      details:
+        api:
+    refund:
+      status:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund/enquiry
+    charge:
+      status:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
 
 branch:
   onelink:

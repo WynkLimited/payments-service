@@ -7,10 +7,12 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.Utils;
 import in.wynk.data.enums.State;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -19,6 +21,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.lock.WynkRedisLockService;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
@@ -81,30 +84,22 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private String itunesApiUrl;
     @Value("${payment.merchant.itunes.api.alt.url}")
     private String itunesApiAltUrl;
-    @Value("${payment.success.page}")
-    private String SUCCESS_PAGE;
-    @Value("${payment.failure.page}")
-    private String FAILURE_PAGE;
 
     private final Gson gson;
     private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
-    private final ReceiptDetailsDao receiptDetailsDao;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final WynkRedisLockService wynkRedisLockService;
-    private final TestingByPassNumbersDao testingByPassNumbersDao;
 
-    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, ReceiptDetailsDao receiptDetailsDao, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, TestingByPassNumbersDao testingByPassNumbersDao, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
-        this.receiptDetailsDao = receiptDetailsDao;
         this.wynkRedisLockService = wynkRedisLockService;
-        this.testingByPassNumbersDao = testingByPassNumbersDao;
     }
 
     @Override
@@ -115,8 +110,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final Transaction transaction = TransactionContext.get();
             final ItunesLatestReceiptResponse response = (ItunesLatestReceiptResponse) latestReceiptResponse;
             fetchAndUpdateFromReceipt(transaction, response, null);
+            final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                builder.url(new StringBuilder(SUCCESS_PAGE).append(SessionContextHolder.getId())
+                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"),"${payment.success.page}");
+                builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
                         .append(SLASH)
                         .append(sessionDTO.<String>get(OS))
                         .append(QUESTION_MARK)
@@ -129,7 +126,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                         .append(sessionDTO.<Integer>get(BUILD_NO))
                         .toString());
             } else {
-                builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.failure.page}");
+                builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
                         .append(SLASH)
                         .append(sessionDTO.<String>get(OS))
                         .append(QUESTION_MARK)
@@ -144,7 +142,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            builder.url(new StringBuilder(FAILURE_PAGE).append(SessionContextHolder.getId())
+            final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
+            final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.failure.page}");
+            builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
                     .append(SLASH)
                     .append(sessionDTO.<String>get(OS))
                     .append(QUESTION_MARK)
@@ -220,7 +220,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 .expiry(receiptType.getExpireDate(receiptInfo))
                 .receipt(receiptDetails.getReceipt())
                 .build();
-        receiptDetailsDao.save(itunesIdUidMapping);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(itunesIdUidMapping);
     }
 
     private ItunesLatestReceiptResponse getItunesLatestReceiptResponse(Transaction transaction, String decodedReceipt) {
@@ -234,7 +234,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     @ClientAware(clientAlias = "#transaction.clientAlias")
     private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction, String extTxnId, int planId) {
         if (transaction.getStatus() == TransactionStatus.FAILURE) {
-            final ItunesReceiptDetails receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), extTxnId);
+            final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPlanIdAndId(transaction.getPlanId(), extTxnId);
             if (Objects.nonNull(receiptDetails)) {
                 fetchAndUpdateFromReceipt(transaction, getItunesLatestReceiptResponse(transaction, receiptDetails.getReceipt()), receiptDetails);
             } else {
@@ -271,7 +271,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     Lock lock = wynkRedisLockService.getWynkRedisLock(originalITunesTrxnId);
                     if (lock.tryLock(3, TimeUnit.SECONDS)) {
                         if (Objects.isNull(receiptDetails)) {
-                            receiptDetails = receiptDetailsDao.findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
+                            receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPlanIdAndId(transaction.getPlanId(), originalITunesTrxnId);
                         }
                         if (receiptType.getCancellationDate(latestReceiptInfo) <= System.currentTimeMillis()) {
                             log.info("User has cancelled the plan from app store for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
@@ -293,7 +293,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                                         .expiry(receiptType.getExpireDate(latestReceiptInfo))
                                         .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
                                         .build();
-                                receiptDetailsDao.save(itunesIdUidMapping);
+                                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(itunesIdUidMapping);
                                 transaction.setStatus(TransactionStatus.SUCCESS.name());
                             } else {
                                 log.info("originalITunesTrxnId or itunesTrxnId found empty for uid: {}, ITunesId :{} , planId: {}", transaction.getUid(), originalITunesTrxnId, transaction.getPlanId());
@@ -321,7 +321,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             if (oldReceiptOption.isPresent()) {
                 LatestReceiptInfo oldReceiptInfo = oldReceiptOption.get();
                 if (!oldReceipt.isTransactionIdPresent())
-                    receiptDetailsDao.save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).transactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).transactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
                 return allReceipt.stream().anyMatch(receipt -> newReceiptType.getTransactionId(receipt) != oldReceiptType.getTransactionId(oldReceiptInfo) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
             }
         }
@@ -338,7 +338,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         ItunesStatusCodes responseITunesCode = ItunesStatusCodes.getItunesStatusCodes(status);
         if (responseITunesCode != null && FAILURE_CODES.contains(responseITunesCode)) {
             if (ALTERNATE_URL_FAILURE_CODES.contains(responseITunesCode)) {
-                Optional<TestingByPassNumbers> optionalTestingByPassNumbers = testingByPassNumbersDao.findById(msisdn);
+                Optional<TestingByPassNumbers> optionalTestingByPassNumbers = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), TestingByPassNumbersDao.class).findById(msisdn);
                 if (optionalTestingByPassNumbers.isPresent()) {
                     receiptObj = itunesResponse(receipt, getSecret(), itunesReceiptType, itunesApiAltUrl);
                     status = Integer.parseInt(receiptObj.getStatus());
@@ -434,7 +434,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 if (Integer.parseInt(receipt.getStatus()) == 0) {
                     final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
                     final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-                    Optional<ReceiptDetails> optionalReceiptDetails = receiptDetailsDao.findById(iTunesId);
+                    Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(iTunesId);
                     try {
                         AnalyticService.update(LATEST_RECEIPT_INFO, mapper.writeValueAsString(latestReceiptInfo));
                     } catch (Exception e) {
@@ -463,7 +463,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         if (itunesCallbackRequest.getUnifiedReceipt() != null && itunesCallbackRequest.getUnifiedReceipt().getLatestReceipt() != null && NOTIFICATIONS_TYPE_ALLOWED.contains(itunesCallbackRequest.getNotificationType())) {
             final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
             final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-            Optional<ReceiptDetails> lastProcessedReceiptDetails = receiptDetailsDao.findById(iTunesId);
+            Optional<ReceiptDetails> lastProcessedReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(iTunesId);
             boolean isEligible = lastProcessedReceiptDetails.isPresent() && ((ItunesReceiptDetails) lastProcessedReceiptDetails.get()).getTransactionId() != Long.parseLong(latestReceiptInfo.getTransactionId());
             return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(isEligible).build();
         }

@@ -113,7 +113,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             fetchAndUpdateFromReceipt(transaction, response, null);
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"),"${payment.success.page}");
+                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
                 builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
                         .append(SLASH)
                         .append(sessionDTO.<String>get(OS))
@@ -127,7 +127,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                         .append(sessionDTO.<Integer>get(BUILD_NO))
                         .toString());
             } else {
-                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.failure.page}");
+                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
                 builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
                         .append(SLASH)
                         .append(sessionDTO.<String>get(OS))
@@ -144,7 +144,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
-            final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.failure.page}");
+            final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
             builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
                     .append(SLASH)
                     .append(sessionDTO.<String>get(OS))
@@ -355,7 +355,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 }
             }
         }
-        throw new WynkRuntimeException(PAY011, "Invalid receipt");
+        final String errorMessage = Objects.nonNull(responseITunesCode) ? responseITunesCode.getErrorCode() + " : " + responseITunesCode.getErrorTitle() : "Invalid Receipt and status code";
+        throw new WynkRuntimeException(PAY011, errorMessage);
     }
 
     private ItunesReceipt itunesResponse(String receipt, String secret, ItunesReceiptType itunesReceiptType, String url) {

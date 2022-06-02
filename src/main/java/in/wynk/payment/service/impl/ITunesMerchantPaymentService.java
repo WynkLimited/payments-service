@@ -398,8 +398,11 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             if (itunesReceiptType.equals(ItunesReceiptType.SEVEN)) {
                 receiptObj = mapper.readValue(appStoreResponseBody, ItunesReceipt.class);
             } else {
+                String receiptBodyPlace = LATEST_EXPIRED_RECEIPT_INFO;
+                if (appStoreResponseBody.contains(LATEST_RECEIPT_INFO))
+                    receiptBodyPlace = LATEST_RECEIPT_INFO;
                 JSONObject receiptFullJsonObj = (JSONObject) JSONValue.parseWithException(appStoreResponseBody);
-                LatestReceiptInfo latestReceiptInfo = mapper.readValue(receiptFullJsonObj.get(LATEST_RECEIPT_INFO).toString(), LatestReceiptInfo.class);
+                LatestReceiptInfo latestReceiptInfo = mapper.readValue(receiptFullJsonObj.get(receiptBodyPlace).toString(), LatestReceiptInfo.class);
                 receiptObj.setStatus(receiptFullJsonObj.get(STATUS).toString());
                 List<LatestReceiptInfo> latestReceiptInfoList = new ArrayList<>();
                 latestReceiptInfoList.add(latestReceiptInfo);
@@ -416,7 +419,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             return receiptObj;
         } catch (Exception ex) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Error occurred while parsing receipt.");
+            throw new WynkRuntimeException(PaymentErrorType.PAY400, ex, "Error occurred while parsing receipt.");
         }
     }
 

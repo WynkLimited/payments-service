@@ -508,12 +508,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         final Transaction transaction = TransactionContext.get();
-        final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
-        final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
-        final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
-        final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-        fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
-        return WynkResponseEntity.<Void>builder().success(true).build();
+        try {
+            final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+            final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
+            final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
+            final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
+            fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
+            return WynkResponseEntity.<Void>builder().success(true).build();
+        } catch (Exception e) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            throw new WynkRuntimeException(e);
+        }
     }
 
     public boolean supportsRenewalReconciliation() {

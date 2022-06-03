@@ -237,8 +237,8 @@ payment:
         id: QyT13U
         secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
       enterr10:
-        id: QyT13U
-        secret: UnJ0FGO0kt3dUgnHo9Xgwi0lpipBV0hB
+        id: qFDqmx
+        secret: Zbm2ZyNe
       key: qFDqmx
       salt: Zbm2ZyNe
       api:
@@ -848,7 +848,7 @@ wynk:
                   idleTimeout: 100000
                   maxLifetime: 300000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 5
+                  minimum-idle: 1
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
@@ -930,6 +930,7 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
+                  minimum-idle: 1
                   maximumPoolSize: 10
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect

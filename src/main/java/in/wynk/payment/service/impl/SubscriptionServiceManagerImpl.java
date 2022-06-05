@@ -57,6 +57,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${payment.recurring.offset.hour}")
     private int hour;
 
+    @Value("${service.subscription.api.endpoint.allProducts}")
+    private String allProductApiEndPoint;
+
+
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
 
@@ -111,8 +115,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public List<OfferDTO> getOffers() {
         RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allOfferApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-        return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
-        }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
+      return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
+      }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
     }
 
 
@@ -122,6 +126,14 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         return Objects.requireNonNull(restTemplate.exchange(allItemRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<AllItemsResponse>>() {
         }).getBody()).getData().getItems();
     }
+
+    @Override
+    public List<ProductDTO> getProducts() {
+        RequestEntity<Void> allProductRequest = ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        return  Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
+        }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
+    }
+
 
     @Override
     public boolean renewalPlanEligibility(int planId, String transactionId, String uid) {

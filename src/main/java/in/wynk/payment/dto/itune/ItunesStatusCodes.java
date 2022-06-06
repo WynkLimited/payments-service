@@ -11,6 +11,8 @@ public enum ItunesStatusCodes {
     APPLE_21004("The shared secret you provided does not match the shared secret on file for your account..", 21004),
     /* 21005 */
     APPLE_21005("The receipt server is not currently available.", 21005),
+    /* 21006 */
+    APPLE_21006("This receipt is valid but the subscription has expired. When this status code is returned to your server, the receipt data is also decoded and returned as part of the response. Only returned for iOS 6-style transaction receipts for auto-renewable subscriptions." , 21006),
     /* 21007 */
     APPLE_21007("This receipt is from the test environment, but it was sent to the production environment for verification. Send it to the test environment instead.", 21007),
     /* 21008 */

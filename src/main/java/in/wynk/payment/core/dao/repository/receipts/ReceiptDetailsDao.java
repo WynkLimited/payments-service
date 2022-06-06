@@ -11,6 +11,12 @@ public interface ReceiptDetailsDao extends MongoRepository<ReceiptDetails, Strin
     @Query("{ 'planId' : ?0, '_id' : ?1 }")
     <T extends ReceiptDetails> T findByPlanIdAndId(int planId, String id);
 
+    @Query("{'uid': ?0, 'planId': ?1}")
+    <T extends ReceiptDetails> T findByUidAndPlanId(String uid, int planId);
+
+    @Query("{'paymentTransactionId': ?0}")
+    <T extends ReceiptDetails> T findByPaymentTransactionId(String transactionId);
+
 //    <T extends ReceiptDetails> T findById(String itunesId);
 
 }

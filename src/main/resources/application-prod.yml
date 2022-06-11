@@ -146,7 +146,7 @@ payment:
           producer:
             delayInSecond: 180
           consumer:
-            delay: 1
+            delay: 10
             delayTimeUnit: SECONDS
       charging:
         enabled: true

@@ -141,12 +141,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
+              batchSize: 10
+              waitTimeInSeconds: 1
           producer:
             delayInSecond: 180
           consumer:
-            delay: 20
+            delay: 1
             delayTimeUnit: SECONDS
       charging:
         enabled: true

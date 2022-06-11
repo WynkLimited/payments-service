@@ -146,7 +146,7 @@ payment:
           producer:
             delayInSecond: 180
           consumer:
-            delay: 10
+            delay: 1
             delayTimeUnit: SECONDS
       charging:
         enabled: true
@@ -154,12 +154,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
+              batchSize: 10
               waitTimeInSeconds: 10
           producer:
             delayInSecond: 0
           consumer:
-            delay: 180
+            delay: 10
             delayTimeUnit: SECONDS
       schedule:
         enabled: true

@@ -207,6 +207,9 @@ payment:
       rajtv:
         id: payment
         secret: pay@qckslvr
+      iqvideo:
+        id: payment
+        secret: pay@qckslvr
     payu:
       airtelxstream:
         id: qFDqmx

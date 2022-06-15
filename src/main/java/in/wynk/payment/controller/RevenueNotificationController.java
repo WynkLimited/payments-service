@@ -1,11 +1,15 @@
 package in.wynk.payment.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.common.dto.EmptyResponse;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
@@ -16,6 +20,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
@@ -28,6 +35,8 @@ public class RevenueNotificationController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
+
+    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList("ITUNES", "AMAZON_IAP");
 
     @Value("${spring.application.name}")
     private String applicationAlias;
@@ -45,31 +54,39 @@ public class RevenueNotificationController {
     }
 
     private WynkResponseEntity<Void> getVoidWynkResponseEntity(String partner, String clientAlias, String payload) {
-        PaymentCode paymentCode = PaymentCodeCachingService.getFromCode(partner);
+        final PaymentCode paymentCode = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
+        if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentCode.name())) {
+            try {
+                return handleCallback(partner, clientAlias, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
+                }));
+            } catch (JsonProcessingException e) {
+                throw new WynkRuntimeException("Malformed payload is posted", e);
+            }
+        }
         return paymentManager.handleNotification(NotificationRequest.builder().paymentCode(paymentCode).payload(payload).clientAlias(clientAlias).build());
     }
 
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public EmptyResponse handlePartnerCallback(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
-        return getEmptyResponse(partner, applicationAlias, payload);
+    public WynkResponseEntity<Void> handlePartnerCallback(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
+        return handleCallback(partner, applicationAlias, payload);
     }
 
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public EmptyResponse handlePartnerCallbackWithClientAlias(@PathVariable String partner, @PathVariable String clientAlias, @RequestParam Map<String, Object> payload) {
-        return getEmptyResponse(partner, clientAlias, payload);
+    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@PathVariable String partner, @PathVariable String clientAlias, @RequestParam Map<String, Object> payload) {
+        return handleCallback(partner, clientAlias, payload);
     }
 
     @ClientAware(clientAlias = "#clientAlias")
-    private EmptyResponse getEmptyResponse(String partner, String clientAlias, Map<String, Object> payload) {
+    private WynkResponseEntity<Void> handleCallback(String partner, String clientAlias, Map<String, Object> payload) {
         final PaymentCode paymentCode = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build());
-        return EmptyResponse.response();
+        return WynkResponseEntity.<Void>builder().success(true).build();
     }
 
 }

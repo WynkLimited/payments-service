@@ -159,7 +159,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return null;
             } else {
                 final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).build();
-                final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request);
+                final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request, Boolean.TRUE);
                 return response;
             }
         } catch (Exception e) {
@@ -305,7 +305,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     private AddToBillStatusResponse getOrderList(String si) {
         try {
-            return catalogueVasClientService.ordersStatus(si);
+            return catalogueVasClientService.ordersStatus(si,Boolean.TRUE);
         } catch (Exception e) {
             log.error("Failed to get orderList from AddToBill: {} ", e.getMessage(), e);
             return null;

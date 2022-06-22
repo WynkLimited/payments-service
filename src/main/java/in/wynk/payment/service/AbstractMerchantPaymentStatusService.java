@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -24,6 +23,7 @@ import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.FailureChargingStatusResponse;
+import in.wynk.payment.utils.PresentationUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
@@ -112,7 +112,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
             final PlanDTO paidPlan = cachingService.getPlan(transaction.getPlanId());
             final TrialPack.TrialPackBuilder<?, ?> trialPackBuilder = TrialPack.builder().title(offer.getTitle()).day(plan.getPeriod().getDay()).amount(plan.getFinalPrice()).month(plan.getPeriod().getMonth()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name()).currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());
             if (offer.isCombo()) {
-                final BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                final BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner,offer));
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).packGroup(channelPartner.getPackGroup()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
                 if(!Strings.isNullOrEmpty(appId)) {
                         Set<String> packgroupAppIdHierarchySet = getPackgroupAppIdHierarchySet(appId.toUpperCase());
@@ -124,14 +124,14 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 trialPackBuilder.benefits(bundleBenefitsBuilder.channelsBenefits(channelBenefits).build());
 
             }else {
-                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).notVisible(partner.isNotVisible()).packGroup(partner.getPackGroup()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).notVisible(partner.isNotVisible()).packGroup(partner.getPackGroup()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner,offer));
                 trialPackBuilder.benefits(channelBenefitsBuilder.build());
             }
             abstractPack = trialPackBuilder.paidPack(PaidPack.builder().title(paidPlan.getTitle()).amount(paidPlan.getFinalPrice()).period(paidPlan.getPeriod().getValidity()).timeUnit(paidPlan.getPeriod().getTimeUnit().name()).month(paidPlan.getPeriod().getMonth()).perMonthValue(paidPlan.getPrice().getMonthlyAmount()).day(paidPlan.getPeriod().getDay()).dailyAmount(paidPlan.getPrice().getDailyAmount()).currency(paidPlan.getPrice().getCurrency()).build()).isCombo(offer.isCombo()).build();
         } else {
             PaidPack.PaidPackBuilder<?, ?> paidPackBuilder = PaidPack.builder().title(offer.getTitle()).amount(plan.getFinalPrice()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name()).month(plan.getPeriod().getMonth()).perMonthValue(plan.getPrice().getMonthlyAmount()).dailyAmount(plan.getPrice().getDailyAmount()).day(plan.getPeriod().getDay()).currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());
             if (offer.isCombo()) {
-                final BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                final BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner,offer));
                 final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().packGroup(channelPartner.getPackGroup()).name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
 
                 if(!Strings.isNullOrEmpty(appId)) {
@@ -143,7 +143,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                 }
                 paidPackBuilder.benefits(benefitsBuilder.channelsBenefits(channelBenefits).build());
             } else {
-                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).packGroup(partner.getPackGroup()).notVisible(partner.isNotVisible()).icon(partner.getIcon()).logo(partner.getLogo()).rails(partner.getContentImages().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).packGroup(partner.getPackGroup()).notVisible(partner.isNotVisible()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner,offer));
                 paidPackBuilder.benefits(channelBenefitsBuilder.build());
             }
             abstractPack = paidPackBuilder.build();

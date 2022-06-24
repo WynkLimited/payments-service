@@ -8,7 +8,7 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
-import in.wynk.identity.common.utils.MsisdnUtils;
+import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;

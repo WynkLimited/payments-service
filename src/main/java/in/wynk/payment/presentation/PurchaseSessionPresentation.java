@@ -7,13 +7,13 @@ import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
-import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
+import in.wynk.user.utils.IdentityUtils;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.data.util.Pair;
@@ -45,7 +45,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
                 queryBuilder.addParameter(ITEM_ID, item.getId());
                 queryBuilder.addParameter(POINT_PURCHASE_ITEM_PRICE, String.valueOf(item.getPrice()));
             }
-            queryBuilder.addParameter(UID, MsisdnUtils.getUidFromMsisdn(request.getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(request.getAppDetails().getService()).getSalt()));
+            queryBuilder.addParameter(UID, IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(), request.getAppDetails().getService()));
             queryBuilder.addParameter(APP_ID, String.valueOf(request.getAppDetails().getAppId()));
             queryBuilder.addParameter(SERVICE, String.valueOf(request.getAppDetails().getService()));
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));

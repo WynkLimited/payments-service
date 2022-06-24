@@ -9,7 +9,6 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
-import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.utils.Utils;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -40,6 +39,7 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.DiscountUtils;
 import in.wynk.payment.utils.PropertyResolverUtils;
+import in.wynk.user.utils.IdentityUtils;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -263,7 +263,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
     @Override
     public WynkResponseEntity<WalletTopUpResponse> topUp(PhonePeAutoDebitTopUpRequest<?> request) {
         final Transaction transaction = TransactionContext.get();
-        final Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(request.getService()).getSalt()), request.getPurchaseDetails().getAppDetails().getDeviceId()));
+        final Wallet wallet = getWallet(getKey(IdentityUtils.getUidFromUserName(request.getPurchaseDetails().getUserDetails().getMsisdn(), request.getService()), request.getPurchaseDetails().getAppDetails().getDeviceId()));
         final long finalAmountToAdd = Double.valueOf(transaction.getAmount() * 100).longValue();
         final WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
         final PhonePeWalletResponse phonePeWalletResponse = addMoney(transaction.getClientAlias(), wallet.getAccessToken(), finalAmountToAdd, request.getPhonePeVersionCode(), wallet.getId().getDeviceId());
@@ -327,7 +327,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         transaction.setStatus(TransactionStatus.FAILURE.getValue());
         WynkResponseEntity.WynkResponseEntityBuilder<AutoDebitWalletCallbackResponse> builder = WynkResponseEntity.builder();
         try {
-            Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(chargingDetails.getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(chargingDetails.getAppDetails().getService()).getSalt()), chargingDetails.getAppDetails().getDeviceId()));
+            Wallet wallet = getWallet(getKey(IdentityUtils.getUidFromUserName(chargingDetails.getUserDetails().getMsisdn(), chargingDetails.getAppDetails().getService()), chargingDetails.getAppDetails().getDeviceId()));
             UserWalletDetails userWalletDetails = this.balance(transaction.getClientAlias(), transaction.getAmount(), wallet).getBody().getData();
             if (userWalletDetails.getBalance() >= Double.valueOf(transaction.getAmount())) {
                 final long finalAmountToCharge = Double.valueOf(transaction.getAmount() * 100).longValue();
@@ -385,7 +385,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         boolean deficit = false;
         boolean deeplinkGenerated = false;
         try {
-            Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(payload.getPurchaseDetails().getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(payload.getService()).getSalt()), payload.getPurchaseDetails().getAppDetails().getDeviceId()));
+            Wallet wallet = getWallet(getKey(IdentityUtils.getUidFromUserName(payload.getPurchaseDetails().getUserDetails().getMsisdn(), payload.getService()), payload.getPurchaseDetails().getAppDetails().getDeviceId()));
             UserWalletDetails userWalletDetails = this.balance(transaction.getClientAlias(), transaction.getAmount(), wallet).getBody().getData();
             final long finalAmountToCharge = Double.valueOf(transaction.getAmount() * 100).longValue();
             if (!userWalletDetails.isLinked()) {

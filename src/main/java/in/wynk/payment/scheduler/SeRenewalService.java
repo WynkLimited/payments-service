@@ -9,12 +9,13 @@ import com.opencsv.CSVReader;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.identity.common.utils.MsisdnUtils;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.user.utils.IdentityUtils;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -162,7 +163,7 @@ public class SeRenewalService {
             AnalyticService.update(EXTERNAL_TRANSACTION_STATUS, transactionStatus);
             AnalyticService.update(EXTERNAL_PRODUCT_ID, extProductId);
             PlanDTO planDTO = cachingService.getPlanFromSku(extProductId);
-            String uid = MsisdnUtils.getUidFromMsisdn(msisdn, WynkServiceUtils.fromServiceId(planDTO.getService()).getSalt());
+            String uid = IdentityUtils.getUidFromUserName(msisdn, planDTO.getService());
             if (planDTO != null) {
                 TransactionStatus seTxnStatus = getSETransactionStatus(transactionType, transactionStatus);
                 AnalyticService.update(seTxnStatus);

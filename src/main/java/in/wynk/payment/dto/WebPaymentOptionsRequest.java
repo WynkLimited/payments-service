@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.identity.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.session.context.SessionContextHolder;

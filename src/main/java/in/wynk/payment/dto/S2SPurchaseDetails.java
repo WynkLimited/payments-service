@@ -5,7 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
-import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.identity.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;

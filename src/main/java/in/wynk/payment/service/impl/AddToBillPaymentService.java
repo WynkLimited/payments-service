@@ -211,9 +211,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         try {
-            final AddToBillStatusResponse response = getOrderList(userBillingDetail.getSi());
+            final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
-                for (AddToBillOrder order : response.getBody().getOrdersList()) {
+                for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
                         if (order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
                             finalTransactionStatus = TransactionStatus.SUCCESS;
@@ -245,9 +245,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final PlanDTO plan = cachingService.getPlan(paymentRenewalChargingRequest.getPlanId());
         try {
-            final AddToBillStatusResponse response = getOrderList(userBillingDetail.getSi());
+            final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
-                for (AddToBillOrder order : response.getBody().getOrdersList()) {
+                for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getSi()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
                         status = true;
                         log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
@@ -303,9 +303,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         }
     }
 
-    private AddToBillStatusResponse getOrderList(String si) {
+    private OrderStatusResponse getOrderList(String si) {
         try {
-            return catalogueVasClientService.ordersStatus(si,Boolean.TRUE);
+            return catalogueVasClientService.ordersStatus(si);
         } catch (Exception e) {
             log.error("Failed to get orderList from AddToBill: {} ", e.getMessage(), e);
             return null;

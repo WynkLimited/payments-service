@@ -58,7 +58,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private final ApplicationEventPublisher eventPublisher;
     private final CatalogueVasClientService catalogueVasClientService;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, ApplicationEventPublisher eventPublisher, IRecurringDetailsDao paymentDetailsDao, CatalogueVasClientService catalogueVasClientService) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;

@@ -14,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 @Builder
 @Getter
@@ -107,7 +108,7 @@ public class PaymentOptionsDTO {
         private final boolean autoRenewSupported;
         private final List<String> suffixes;
 
-        public PaymentMethodDTO(PaymentMethod method) {
+        public PaymentMethodDTO(PaymentMethod method, Supplier<Boolean> autoRenewSupplier) {
             this.paymentId = method.getId();
             this.group = method.getGroup();
             this.meta = method.getMeta();
@@ -116,7 +117,7 @@ public class PaymentOptionsDTO {
             this.paymentCode = method.getPaymentCode().name();
             this.subtitle = method.getSubtitle();
             this.iconUrl = method.getIconUrl();
-            this.autoRenewSupported = method.isAutoRenewSupported();
+            this.autoRenewSupported = autoRenewSupplier.get() && method.isAutoRenewSupported();
             this.suffixes = method.getSuffixes();
         }
     }

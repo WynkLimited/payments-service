@@ -214,6 +214,24 @@ public class PaymentEventListener {
     }
 
     @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "paymentUserDeactivationEvent")
+    public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
+        try {
+            AnalyticService.update(event);
+            transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(UT025, e);
+        }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "migrateITunesReceiptEvent")
+    public void onMigrateITunesReceiptEvent(MigrateITunesReceiptEvent event) {
+        //todo: update txn id in itunes receipt
+    }
+
+    @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
     public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
         Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);

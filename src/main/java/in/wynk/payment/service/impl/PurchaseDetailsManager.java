@@ -5,6 +5,7 @@ import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.data.entity.MongoBaseEntity;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
@@ -15,8 +16,10 @@ import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.dao.repository.receipts.IPurchasingDetailsDao;
 import in.wynk.payment.service.IPurchaseDetailsManger;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
-
+import java.util.stream.Collectors;
+import java.util.List;
 import java.util.Optional;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
@@ -45,6 +48,14 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
         final Optional<? extends IPurchaseDetails> purchaseDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findById(transaction.getIdStr());
         if (purchaseDetails.isPresent()) return purchaseDetails.get();
         return getOldData(transaction).orElse(null);
+    }
+
+    @Override
+    //@Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    public List<String> getByUserId(String userId) {
+        final List<PurchaseDetails> purchaseDetailsList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findByUserId(userId);
+        if (CollectionUtils.isEmpty(purchaseDetailsList)) return null;
+        return purchaseDetailsList.stream().map(MongoBaseEntity::getId).collect(Collectors.toList());
     }
 
     @Deprecated

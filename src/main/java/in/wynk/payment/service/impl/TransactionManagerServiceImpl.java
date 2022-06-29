@@ -13,6 +13,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
+import in.wynk.payment.core.event.MigrateITunesReceiptEvent;
 import in.wynk.payment.core.event.PaymentSettlementEvent;
 import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.TransactionContext;
@@ -28,10 +29,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
@@ -59,6 +58,28 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction get(String id) {
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
+    }
+
+    @Override
+    public List<Transaction> getAll(List<String> idList) {
+        return idList.stream().map(this::get).collect(Collectors.toList());
+    }
+
+    public List<Transaction> saveAll(List<Transaction> transactionsList) {
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).saveAll(transactionsList);
+    }
+
+    public void migrateOldTransactions(String userId, String uid, String oldUid){
+        final List<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
+        //get from receipt_details also
+        final List<Transaction> transactionsList = getAll(transactionIds);
+        transactionsList.forEach(txn -> {
+            txn.setUid(uid);
+            if(txn.getPaymentChannel().name().equalsIgnoreCase(ITUNES)){
+                applicationEventPublisher.publishEvent(MigrateITunesReceiptEvent.builder().tid(txn.getIdStr()).build());
+            }
+        });
+        saveAll(transactionsList);
     }
 
     private Transaction initTransaction(Transaction txn) {

@@ -4,9 +4,14 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.service.ICouponCodeLinkService;
+import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -26,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.Calendar;
@@ -144,10 +150,18 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(COUPON_CODE, transaction.getCoupon());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
+        if (Objects.nonNull(transaction.getCoupon())) {
+            String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(transaction.getCoupon()).getCouponId();
+            Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
+            }).get(couponId);
+            AnalyticService.update(COUPON_GROUP, coupon.getId());
+            AnalyticService.update(BaseConstants.DISCOUNT_TYPE, coupon.getDiscountPercent());
+        }
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
         AnalyticService.update(INIT_TIMESTAMP, transaction.getInitTime().getTime().getTime());
-        if (Objects.nonNull(transaction.getExitTime())) AnalyticService.update(EXIT_TIMESTAMP, transaction.getExitTime().getTime().getTime());
+        if (Objects.nonNull(transaction.getExitTime()))
+            AnalyticService.update(EXIT_TIMESTAMP, transaction.getExitTime().getTime().getTime());
         AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }

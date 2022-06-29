@@ -267,6 +267,9 @@
     <logger name="startPaymentDumpS3Export" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
+    <logger name="userChurnLocator" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
 
     <logger name="paymentReconciliationThresholdExceedEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
@@ -278,6 +281,9 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheItemDto" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="refreshInMemoryCacheCountryCurrencyDetails" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="initRefund" additivity="false" level="INFO">
@@ -297,7 +303,14 @@
     <springProfile name="local">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_APPLOG"/>
+            <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
+        <logger name="in.wynk" additivity="false" level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_APPLOG"/>
+            <appender-ref ref="ASYNC_ERRORLOG"/>
+        </logger>
     </springProfile>
     <springProfile name="dev,preprod">
         <root level="INFO">

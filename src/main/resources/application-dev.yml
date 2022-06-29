@@ -327,6 +327,7 @@ payment:
       rajtv:
         secret:
       iqvideo:
+        id:
         secret:
       enterr10:
         secret:

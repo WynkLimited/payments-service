@@ -12,6 +12,10 @@ public interface IMerchantPaymentCallbackService<R extends AbstractCallbackRespo
 
     WynkResponseEntity<R> handleCallback(T callbackRequest);
 
+    default boolean validate(T callbackRequest) {
+        return true;
+    }
+
     default T parseCallback(Map<String, Object> payload) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }

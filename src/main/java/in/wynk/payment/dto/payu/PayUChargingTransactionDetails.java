@@ -46,6 +46,9 @@ public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetai
     @JsonProperty("card_type")
     private String cardType;
 
+    @JsonProperty("unmappedstatus")
+    private String unMappedStatus;
+
     public String getBankCode() {
         if (StringUtils.isNotEmpty(bankCode)) return bankCode.replace(PayUConstants.PAYU_SI, StringUtils.EMPTY);
         return bankCode;

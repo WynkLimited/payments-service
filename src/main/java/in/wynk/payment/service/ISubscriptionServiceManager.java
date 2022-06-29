@@ -1,10 +1,7 @@
 package in.wynk.payment.service;
 
 import in.wynk.payment.dto.request.*;
-import in.wynk.subscription.common.dto.ItemDTO;
-import in.wynk.subscription.common.dto.OfferDTO;
-import in.wynk.subscription.common.dto.PartnerDTO;
-import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 
 import java.util.Collection;
@@ -47,5 +44,7 @@ public interface ISubscriptionServiceManager {
     List<OfferDTO> getOffers();
 
     List<PartnerDTO> getPartners();
+
+    List<ProductDTO> getProducts();
 
 }

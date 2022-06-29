@@ -10,6 +10,6 @@ import java.util.List;
 @Repository
 public interface IPurchasingDetailsDao extends MongoRepository<PurchaseDetails, String> {
     @Query("{ 'payer_details.msisdn' : ?0 }")
-    List<PurchaseDetails> findByUserId(String userId);
+    <T extends PurchaseDetails> List<T> findByUserId(String userId);
 
 }

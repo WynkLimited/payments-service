@@ -4,6 +4,7 @@ import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 
 import java.util.List;
+import java.util.Set;
 
 public interface IPurchaseDetailsManger {
 
@@ -11,6 +12,6 @@ public interface IPurchaseDetailsManger {
 
     void save(Transaction transaction, IPurchaseDetails details);
 
-    List<String> getByUserId(String userId);
+    Set<String> getByUserId(String userId);
 
 }

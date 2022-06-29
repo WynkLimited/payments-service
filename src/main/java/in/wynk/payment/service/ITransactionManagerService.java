@@ -6,6 +6,7 @@ import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 
 import java.util.List;
+import java.util.Set;
 
 public interface ITransactionManagerService {
 
@@ -17,7 +18,7 @@ public interface ITransactionManagerService {
 
     void revision(AbstractTransactionRevisionRequest request);
 
-    List<Transaction> getAll(List<String> idList);
+    Set<Transaction> getAll(Set<String> idList);
 
     void migrateOldTransactions(String userId, String uid, String oldUid);
 

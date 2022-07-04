@@ -487,7 +487,7 @@ wynk:
         replicaSet: wcf
       coupons:
         appName: coupon
-        nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+        nodes: 10.40.12.101,10.40.12.75,10.40.12.45
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons
@@ -517,7 +517,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -539,7 +539,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -564,7 +564,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -586,7 +586,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -611,7 +611,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -633,7 +633,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -658,7 +658,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments_rajtv
                 password: 91F306FC2BEBF8D2E75E699D74014
                 database: payments_rajtv
@@ -680,7 +680,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons_rajtv
                 password: BE750841543CCFC2F932478ED
                 database: coupons_rajtv

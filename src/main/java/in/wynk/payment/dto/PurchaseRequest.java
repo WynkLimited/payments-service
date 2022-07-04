@@ -6,7 +6,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.user.utils.IdentityUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.wynkservice.api.validations.IWynkServiceValidatorRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

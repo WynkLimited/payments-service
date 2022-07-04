@@ -15,7 +15,7 @@ import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.user.utils.IdentityUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;

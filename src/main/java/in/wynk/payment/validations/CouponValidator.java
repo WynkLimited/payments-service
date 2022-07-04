@@ -8,7 +8,7 @@ import in.wynk.coupon.core.dto.CouponResponse;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.service.PaymentCachingService;
-import in.wynk.user.utils.IdentityUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;

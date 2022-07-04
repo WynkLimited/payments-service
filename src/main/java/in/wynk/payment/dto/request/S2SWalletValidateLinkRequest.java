@@ -6,7 +6,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
-import in.wynk.user.utils.IdentityUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

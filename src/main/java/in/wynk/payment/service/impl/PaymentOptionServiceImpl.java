@@ -169,6 +169,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .partnerName(partner.getName())
                 .dailyAmount(plan.getPrice().getDailyAmount())
                 .currency(plan.getPrice().getCurrency())
+                .title(offer.getTitle())
                 .day(plan.getPeriod().getDay());
         if (trialEligible) {
             final PlanDTO trialPlan = paymentCachingService.getPlan(plan.getLinkedFreePlanId());

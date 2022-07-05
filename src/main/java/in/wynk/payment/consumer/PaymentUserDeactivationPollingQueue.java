@@ -7,7 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.common.messages.PaymentUserDeactivationMigrationMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.event.PaymentUserDeactivationEvent;
+import in.wynk.payment.core.event.PaymentUserDeactivationMigrationEvent;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -69,7 +69,7 @@ public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsu
     public void consume(PaymentUserDeactivationMigrationMessage message) {
         log.info(PaymentLoggingMarker.USER_DEACTIVATION_SUBSCRIPTION_QUEUE, "processing PaymentUserDeactivationMigrationMessage {}", message);
         AnalyticService.update(message);
-        eventPublisher.publishEvent(PaymentUserDeactivationEvent.builder().id(message.getId()).uid(message.getUid()).oldUid(message.getOldUid()).clientAlias(message.getClientAlias()).build());
+        eventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(message.getId()).uid(message.getUid()).oldUid(message.getOldUid()).clientAlias(message.getClientAlias()).build());
     }
 
     @Override

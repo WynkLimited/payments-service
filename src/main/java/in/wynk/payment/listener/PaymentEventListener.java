@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
+import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
@@ -215,20 +216,14 @@ public class PaymentEventListener {
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
-    @AnalyseTransaction(name = "paymentUserDeactivationEvent")
-    public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
+    @AnalyseTransaction(name = "paymentUserDeactivationMigrationEvent")
+    public void onPaymentUserDeactivationEvent(PaymentUserDeactivationMigrationEvent event) {
         try {
             AnalyticService.update(event);
             transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid());
         } catch (Exception e) {
-            throw new WynkRuntimeException(UT025, e);
+            throw new WynkRuntimeException(UT999, e);
         }
-    }
-
-    @EventListener
-    @AnalyseTransaction(name = "migrateITunesReceiptEvent")
-    public void onMigrateITunesReceiptEvent(MigrateITunesReceiptEvent event) {
-        //todo: update txn id in itunes receipt
     }
 
     @EventListener

@@ -15,7 +15,6 @@ import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
-import in.wynk.payment.core.event.MigrateITunesReceiptEvent;
 import in.wynk.payment.core.event.PaymentSettlementEvent;
 import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.TransactionContext;
@@ -71,23 +70,27 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).saveAll(transactionsList);
     }
 
-    //todo : refactor it into different methods
+    //Update new uid in all transactions & update uid in receipt_details
     public void migrateOldTransactions(String userId, String uid, String oldUid){
-        final Set<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
         final List<ReceiptDetails> allReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
-        transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toSet()));
-        final Set<Transaction> transactions = transactionIds.stream().map(this::get).collect(Collectors.toSet());
-        transactions.forEach(txn -> {
-            txn.setUid(uid);
-            if(txn.getPaymentChannel().name().equalsIgnoreCase(ITUNES)){
-                applicationEventPublisher.publishEvent(MigrateITunesReceiptEvent.builder().tid(txn.getIdStr()).build());
-            }
-        });
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).saveAll(transactions);
+        updateTransactions(userId, uid, allReceiptDetails);
         allReceiptDetails.forEach(receiptDetails -> {
             receiptDetails.setUid(uid);
         });
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
+    }
+
+    private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
+        final Set<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
+        transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toSet()));
+        final Set<Transaction> transactionsList = transactionIds.stream().map(this::get).collect(Collectors.toSet());
+        transactionsList.forEach(txn -> {
+            txn.setUid(uid);
+            /*if(txn.getPaymentChannel().name().equalsIgnoreCase(ITUNES)){
+                applicationEventPublisher.publishEvent(MigrateITunesReceiptEvent.builder().tid(txn.getIdStr()).build());
+            }*/
+        });
+        saveAll(transactionsList);
     }
 
     private Transaction initTransaction(Transaction txn) {

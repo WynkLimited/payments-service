@@ -12,7 +12,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @Getter
 @Builder
 @AnalysedEntity
-public class PaymentUserDeactivationEvent {
+public class PaymentUserDeactivationMigrationEvent {
     @Builder.Default
     private String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT);
     @Analysed

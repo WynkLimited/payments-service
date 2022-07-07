@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.payment.common.messages.PaymentUserDeactivationMigrationMessage;
+import in.wynk.payment.common.messages.PaymentUserDeactivationMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.event.PaymentUserDeactivationMigrationEvent;
+import in.wynk.payment.core.event.PaymentUserDeactivationEvent;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -20,7 +21,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentUserDeactivationMigrationMessage> {
+public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentUserDeactivationMessage> {
     @Value("${payment.pooling.queue.userDeactivation.enabled}")
     private boolean userDeactivationPollingEnabled;
     @Value("${payment.pooling.queue.userDeactivation.sqs.consumer.delay}")
@@ -32,19 +33,21 @@ public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsu
     private final ExecutorService threadPoolExecutor;
     private final ScheduledExecutorService scheduledThreadPoolExecutor;
     private final ApplicationEventPublisher eventPublisher;
+    private final ITransactionManagerService transactionManagerService;
 
-    public PaymentUserDeactivationPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ExecutorService handlerThreadPool, ScheduledExecutorService scheduledThreadPoolExecutor, ApplicationEventPublisher eventPublisher) {
+    public PaymentUserDeactivationPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ExecutorService handlerThreadPool, ScheduledExecutorService scheduledThreadPoolExecutor, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManagerService) {
         super(queueName, sqs, objectMapper, messagesExtractor, handlerThreadPool);
         this.paymentManager = paymentManager;
         this.threadPoolExecutor = handlerThreadPool;
         this.scheduledThreadPoolExecutor = scheduledThreadPoolExecutor;
         this.eventPublisher = eventPublisher;
+        this.transactionManagerService = transactionManagerService;
     }
 
     @Override
     public void start() {
         if (userDeactivationPollingEnabled) {
-            log.info("Starting PaymentUserDeactivationMigrationMessage...");
+            log.info("Starting PaymentUserDeactivationMessage...");
             scheduledThreadPoolExecutor.scheduleWithFixedDelay(
                     this::poll,
                     0,
@@ -57,7 +60,7 @@ public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsu
     @Override
     public void stop() {
         if (userDeactivationPollingEnabled) {
-            log.info("Shutting down PaymentUserDeactivationMigrationMessage ...");
+            log.info("Shutting down PaymentUserDeactivationMessage ...");
             scheduledThreadPoolExecutor.shutdownNow();
             threadPoolExecutor.shutdown();
         }
@@ -65,15 +68,16 @@ public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsu
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
-    @AnalyseTransaction(name = "userDeactivationMigrationMessage")
-    public void consume(PaymentUserDeactivationMigrationMessage message) {
-        log.info(PaymentLoggingMarker.USER_DEACTIVATION_SUBSCRIPTION_QUEUE, "processing PaymentUserDeactivationMigrationMessage {}", message);
+    @AnalyseTransaction(name = "paymentUserDeactivationMessage")
+    public void consume(PaymentUserDeactivationMessage message) {
+        log.info(PaymentLoggingMarker.USER_DEACTIVATION_SUBSCRIPTION_QUEUE, "processing PaymentUserDeactivationMessage {}", message);
         AnalyticService.update(message);
-        eventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(message.getId()).uid(message.getUid()).oldUid(message.getOldUid()).clientAlias(message.getClientAlias()).build());
+        //transactionManagerService.migrateOldTransactions(message.getId(), message.getUid(), message.getOldUid());
+        eventPublisher.publishEvent(PaymentUserDeactivationEvent.builder().id(message.getId()).uid(message.getUid()).oldUid(message.getOldUid()).clientAlias(message.getClientAlias()).service(message.getService()).build());
     }
 
     @Override
-    public Class<PaymentUserDeactivationMigrationMessage> messageType() {
-        return PaymentUserDeactivationMigrationMessage.class;
+    public Class<PaymentUserDeactivationMessage> messageType() {
+        return PaymentUserDeactivationMessage.class;
     }
 }

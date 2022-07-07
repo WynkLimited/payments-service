@@ -16,6 +16,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentSettlementEvent;
+import in.wynk.payment.core.event.PaymentUserDeactivationMigrationEvent;
 import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
@@ -78,6 +79,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             receiptDetails.setUid(uid);
         });
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
+        applicationEventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(userId).uid(uid).oldUid(oldUid).build());
     }
 
     private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {

@@ -34,6 +34,7 @@ public class PaymentOptionsDTO {
         private final String id;
         private final String partnerName;
         private final String partnerLogo;
+        private final String title;
         private final String discount;
         private final String validityUnit;
         private final Integer month;

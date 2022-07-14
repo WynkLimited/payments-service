@@ -34,6 +34,7 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -270,7 +271,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
-        String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
+        final String iapSecret = ClientContext.getClient().map((client) -> PropertyResolverUtils.resolve(client.getAlias(), BeanConstant.AMAZON_IAP_PAYMENT_SERVICE, PaymentConstants.MERCHANT_SECRET)).orElse(amazonIapSecret);
+        String requestUrl = amazonIapStatusUrl + iapSecret + "/user/" + userId + "/receiptId/" + receiptId;
         RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
         ResponseEntity<AmazonIapReceiptResponse> responseEntity = restTemplate.exchange(requestEntity, AmazonIapReceiptResponse.class);
         if (responseEntity.getBody() != null)

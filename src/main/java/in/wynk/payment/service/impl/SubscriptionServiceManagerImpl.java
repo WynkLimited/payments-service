@@ -79,6 +79,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.selectivePlanComputation}")
     private String selectivePlanComputeEndPoint;
 
+    @Value("${service.subscription.api.endpoint.selectivePlanComputationV2}")
+    private String selectivePlanComputeEndPointV2;
+
     @Value("${service.subscription.api.endpoint.unSubscribePlan}")
     private String unSubscribePlanEndPoint;
 
@@ -97,6 +100,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Autowired
     private IRecurringPaymentManagerService recurringPaymentManagerService;
+
+    @Autowired
+    private PaymentCachingService cachingService;
 
     @Override
     public List<PlanDTO> getPlans() {
@@ -181,7 +187,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             final IAppDetails appDetails = request.getAppDetails();
             final IUserDetails userDetails = request.getUserDetails();
             final SelectivePlansComputationRequest selectivePlansComputationRequest = SelectivePlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(userDetails.getMsisdn(), WynkServiceUtils.fromServiceId(request.getService()).getSalt())).service(request.getService()).appId(appDetails.getAppId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).countryCode(userDetails.getCountryCode()).build();
-            final RequestEntity<SelectivePlansComputationRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST);
+            final RequestEntity<SelectivePlansComputationRequest> requestEntity = cachingService.isV2SubscriptionJourney(request.getPlanId())?ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPointV2, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST):ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST);
             final ResponseEntity<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>>() {
             });
             return response.getBody().getData();

@@ -9,6 +9,7 @@ import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.SkuToSkuCachingService;
 import in.wynk.subscription.common.dto.*;
+import in.wynk.subscription.common.enums.Category;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -195,6 +193,12 @@ public class PaymentCachingService {
 
     public Map<String, List<PaymentMethod>> getGroupedPaymentMethods() {
         return BeanLocatorFactory.getBean(GroupedPaymentMethodCachingService.class).getGroupPaymentMethods();
+    }
+
+
+    public boolean isV2SubscriptionJourney(int planId) {
+        final OfferDTO offer = offers.get(getPlan(planId).getLinkedOfferId());
+        return Objects.nonNull(offer)?EnumSet.of(Category.BUNDLE,Category.SVOD,Category.AVOD,Category.TVOD).contains(offer.getCategory()):Boolean.FALSE;
     }
 
 }

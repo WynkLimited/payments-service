@@ -76,9 +76,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private static final List<String> AMAZON_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
-    @Value("${payment.merchant.amazonIap.secret}")
+    @Value("${payment.merchant.AmazonIap.secret}")
     private String amazonIapSecret;
-    @Value("${payment.merchant.amazonIap.status.baseUrl}")
+    @Value("${payment.merchant.AmazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
     private final RestTemplate restTemplate;
 

@@ -256,8 +256,8 @@ payment:
         secret: 2:ffQanjuPk3n8Kz6N34ImxKRsfYhCurJTd0FxpbFBJi7Yuu2-AIUESD_nhyOE7SVT6n5SrcKy1SYidcG1kofWgg==:NvFr8M_0ram6V2n-aj_bDg==
       secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
       status:
-        ##baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
-        baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
+        baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
+        #baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
       airtelxstream:

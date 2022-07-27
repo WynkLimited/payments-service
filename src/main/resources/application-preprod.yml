@@ -249,7 +249,7 @@ payment:
         alt:
           url: https://sandbox.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
-    amazonIap:
+    AmazonIap:
       airtelxstream:
         secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
       enterr10:

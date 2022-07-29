@@ -7,9 +7,12 @@ import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
+import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -80,6 +83,13 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         });
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
         applicationEventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(userId).uid(uid).oldUid(oldUid).build());
+        AvailedCouponsDao availedCouponsRepository = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), AvailedCouponsDao.class);
+        availedCouponsRepository.findById(oldUid).ifPresent(userCouponAvailedRecord -> availedCouponsRepository
+                .save(UserCouponAvailedRecord.builder()
+                        .id(uid)
+                        .couponPairs(userCouponAvailedRecord.getCouponPairs())
+                        .build()));
+        log.info(PaymentLoggingMarker.USER_DEACTIVATION_COUPON_MIGRATION_INFO, "Coupon data migrated from old uid : {} to new uid : {}", oldUid, uid);
     }
 
     private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {

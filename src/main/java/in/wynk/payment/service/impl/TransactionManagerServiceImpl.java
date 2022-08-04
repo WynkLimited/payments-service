@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -77,32 +78,62 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     //Update new uid in all transactions & update uid in receipt_details
     public void migrateOldTransactions(String userId, String uid, String oldUid){
         final List<ReceiptDetails> allReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
+        //update new uid in all transactions
         updateTransactions(userId, uid, allReceiptDetails);
-        allReceiptDetails.forEach(receiptDetails -> {
-            receiptDetails.setUid(uid);
-        });
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
+        //update new uid in all receipts
+        updateReceiptDetails(uid, allReceiptDetails);
+        //update new uid in availed coupons
+        updateCouponData(uid, oldUid);
         applicationEventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(userId).uid(uid).oldUid(oldUid).build());
-        AvailedCouponsDao availedCouponsRepository = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), AvailedCouponsDao.class);
-        availedCouponsRepository.findById(oldUid).ifPresent(userCouponAvailedRecord -> availedCouponsRepository
-                .save(UserCouponAvailedRecord.builder()
-                        .id(uid)
-                        .couponPairs(userCouponAvailedRecord.getCouponPairs())
-                        .build()));
-        log.info(PaymentLoggingMarker.USER_DEACTIVATION_COUPON_MIGRATION_INFO, "Coupon data migrated from old uid : {} to new uid : {}", oldUid, uid);
+    }
+
+    private void updateCouponData(String uid, String oldUid) {
+        try{
+            AvailedCouponsDao availedCouponsRepository = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), AvailedCouponsDao.class);
+            availedCouponsRepository.findById(oldUid).ifPresent(userCouponAvailedRecord -> availedCouponsRepository
+                    .save(UserCouponAvailedRecord.builder()
+                            .id(uid)
+                            .couponPairs(userCouponAvailedRecord.getCouponPairs())
+                            .build()));
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_COUPON_MIGRATION_INFO, "Coupon data migrated from old uid : {} to new uid : {}", oldUid, uid);
+        } catch(Exception e){
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to migrate Coupon data from old uid : {} to new uid : {} due to {}", oldUid, uid, e.getMessage());
+            throw e;
+        }
+    }
+
+    private void updateReceiptDetails(String uid, List<ReceiptDetails> allReceiptDetails) {
+        try{
+            if(!CollectionUtils.isEmpty(allReceiptDetails)){
+                allReceiptDetails.forEach(receiptDetails -> {
+                    receiptDetails.setUid(uid);
+                });
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
+                log.info(PaymentLoggingMarker.USER_DEACTIVATION_RECEIPT_MIGRATION_INFO, "Receipt data updated to new uid : {} ", uid);
+            }
+        } catch(Exception e){
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to update Receipt data to new uid : {} due to {}", uid, e.getMessage());
+            throw e;
+        }
     }
 
     private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
-        final Set<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
-        transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toSet()));
-        final Set<Transaction> transactionsList = transactionIds.stream().map(this::get).collect(Collectors.toSet());
-        transactionsList.forEach(txn -> {
-            txn.setUid(uid);
+        try{
+            final Set<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
+            transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toSet()));
+            final Set<Transaction> transactionsList = transactionIds.stream().map(this::get).collect(Collectors.toSet());
+            transactionsList.forEach(txn -> {
+                txn.setUid(uid);
             /*if(txn.getPaymentChannel().name().equalsIgnoreCase(ITUNES)){
                 applicationEventPublisher.publishEvent(MigrateITunesReceiptEvent.builder().tid(txn.getIdStr()).build());
             }*/
-        });
-        saveAll(transactionsList);
+            });
+            saveAll(transactionsList);
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_TRANSACTION_MIGRATION_INFO, "Transaction data updated to new uid : {} for user : {}", uid, userId);
+        } catch(Exception e){
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to update transactions data to new uid : {} for user : {} due to {}", uid, userId, e.getMessage());
+            throw e;
+        }
     }
 
     private Transaction initTransaction(Transaction txn) {

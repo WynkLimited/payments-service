@@ -29,19 +29,15 @@ public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsu
     @Value("${payment.pooling.queue.userDeactivation.sqs.consumer.delayTimeUnit}")
     private TimeUnit userDeactivationPoolingDelayTimeUnit;
 
-    private final PaymentManager paymentManager;
     private final ExecutorService threadPoolExecutor;
     private final ScheduledExecutorService scheduledThreadPoolExecutor;
     private final ApplicationEventPublisher eventPublisher;
-    private final ITransactionManagerService transactionManagerService;
 
-    public PaymentUserDeactivationPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, PaymentManager paymentManager, ExecutorService handlerThreadPool, ScheduledExecutorService scheduledThreadPoolExecutor, ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManagerService) {
+    public PaymentUserDeactivationPollingQueue(String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, ExecutorService handlerThreadPool, ScheduledExecutorService scheduledThreadPoolExecutor, ApplicationEventPublisher eventPublisher) {
         super(queueName, sqs, objectMapper, messagesExtractor, handlerThreadPool);
-        this.paymentManager = paymentManager;
         this.threadPoolExecutor = handlerThreadPool;
         this.scheduledThreadPoolExecutor = scheduledThreadPoolExecutor;
         this.eventPublisher = eventPublisher;
-        this.transactionManagerService = transactionManagerService;
     }
 
     @Override
@@ -70,7 +66,7 @@ public class PaymentUserDeactivationPollingQueue extends AbstractSQSMessageConsu
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentUserDeactivationMessage")
     public void consume(PaymentUserDeactivationMessage message) {
-        log.info(PaymentLoggingMarker.USER_DEACTIVATION_SUBSCRIPTION_QUEUE, "processing PaymentUserDeactivationMessage {}", message);
+        log.info(PaymentLoggingMarker.USER_DEACTIVATION_SUBSCRIPTION_QUEUE, "processing PaymentUserDeactivationMessage for uid {} and id {}", message.getUid(), message.getId());
         AnalyticService.update(message);
         //transactionManagerService.migrateOldTransactions(message.getId(), message.getUid(), message.getOldUid());
         eventPublisher.publishEvent(PaymentUserDeactivationEvent.builder().id(message.getId()).uid(message.getUid()).oldUid(message.getOldUid()).clientAlias(message.getClientAlias()).service(message.getService()).build());

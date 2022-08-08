@@ -11,6 +11,7 @@ public enum PayUCommand {
     CARD_BIN_INFO("getBinInfo"),
     PRE_DEBIT_SI("pre_debit_SI"),
     VERIFY_PAYMENT("verify_payment"),
+    PAYU_GETTDR("get_TDR"),
     SI_TRANSACTION("si_transaction"),
     USER_CARD_DETAILS("get_user_cards"),
     UPI_MANDATE_STATUS("upi_mandate_status"),

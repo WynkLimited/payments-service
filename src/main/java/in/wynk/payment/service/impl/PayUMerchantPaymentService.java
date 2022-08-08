@@ -63,13 +63,12 @@ import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_S
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.dto.payu.PayUCommand.PRE_DEBIT_SI;
-import static in.wynk.payment.dto.payu.PayUCommand.UPI_MANDATE_REVOKE;
+import static in.wynk.payment.dto.payu.PayUCommand.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>, IPreDebitNotificationService, ICancellingRecurringService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>, IPreDebitNotificationService, ICancellingRecurringService,IMerchantTDRService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -86,6 +85,12 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUPaymentApiUrl;
     @Value("${payment.encKey}")
     private String encryptionKey;
+
+    @Value("${payment.merchant.payu.key}")
+    private String payUMerchantKey;
+    @Value("${payment.merchant.payu.salt}")
+    private String payUSalt;
+
 
     public PayUMerchantPaymentService(Gson gson,
                                       ObjectMapper objectMapper,
@@ -748,6 +753,30 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY112);
         }
+    }
+
+    @Override
+    public PayUTdrResponse getTDR (String transactionId) {
+        PayUTdrResponse response = null;
+        try {
+            LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
+            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
+            String var1 = merchantTransaction.getExternalTransactionId();
+            orderedMap.put(PAYU_MERCHANT_KEY, payUMerchantKey);
+            orderedMap.put(PAYU_TDRCOMMAND, "get_TDR");
+            orderedMap.put(PAYU_ID, var1);
+            String variable = gson.toJson(orderedMap);
+            IMerchantTDRService iMerchantTDRService = BeanLocatorFactory.getBean(IMerchantTDRService.class);
+            PayUTdrResponse tdr = iMerchantTDRService.getTDR(transactionId);
+            MultiValueMap<String, String> requestMap = buildPayUInfoRequest(String.valueOf(tdr), PAYU_GETTDR.getCode(), variable);
+             response = this.getInfoFromPayU(requestMap, new TypeReference<PayUTdrResponse>() {
+            });
+            AnalyticService.update(PAYU_GETTDR.getCode(), gson.toJson(response));
+        }
+        catch (Exception e) {
+            log.error(PAYU_TDR_ERROR,e.getMessage());
+        }
+        return response;
     }
 
     private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {

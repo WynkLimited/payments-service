@@ -59,7 +59,6 @@ import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPS
 @Service
 @RequiredArgsConstructor
 public class PaymentEventListener {
-
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
@@ -70,9 +69,6 @@ public class PaymentEventListener {
     private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManagerService;
     private final IMerchantTransactionService merchantTransactionService;
-
-
-
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
     public void onAnyOrderMessageThresholdExceedEvent (MessageThresholdExceedEvent event) throws JsonProcessingException {

@@ -2,6 +2,7 @@ package in.wynk.payment.core.event;
 
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.TransactionDiscountrate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

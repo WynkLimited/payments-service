@@ -42,7 +42,6 @@ public interface PayUConstants {
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";
     String PAYU_REQUEST_TRANSACTION_ID = "txnid";
     String PAYU_RESPONSE_AUTH_PAYUID = "authPayuId";
-
     String PAYU_ID ="mihpayid";
     String PAYU_TDRCOMMAND ="tdrCommand";
     String PAYU_ENFORCE_PAYMENT = "enforce_payment";

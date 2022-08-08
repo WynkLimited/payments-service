@@ -7,8 +7,7 @@ import lombok.Getter;
 public class PayUTdrResponse {
      private String message;
      private boolean status;
-
-    public PayUTdDetails getTdr() {
+    static PayUTdDetails getTdr() {
         PayUTdDetails tdr = new PayUTdDetails();
         return tdr;
     }

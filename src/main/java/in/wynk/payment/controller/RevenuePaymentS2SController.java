@@ -9,7 +9,6 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.request.TransactionrateRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;

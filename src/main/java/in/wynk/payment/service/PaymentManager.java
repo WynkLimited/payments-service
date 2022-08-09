@@ -182,14 +182,6 @@ public class PaymentManager implements IMerchantPaymentChargingService<AbstractC
         return TransactionSnapShot.builder().transactionDetails(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build()).build();
     }
 
-    @TransactionAware(txnId = "#transactionId", lock = false)
-    public TransactionSnapShotV2 statusV3(String transactionId) {
-        final Transaction transaction = TransactionContext.get();
-        final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElse(null);
-        final PaymentErrorDetails paymentErrorDetails;
-        return TransactionSnapShotV2.builder().transactionDetails(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build()).build();
-    }
-
     @Override
     @TransactionAware(txnId = "#request.transactionId")
     public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest request) {

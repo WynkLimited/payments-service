@@ -2,10 +2,9 @@ package in.wynk.payment.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
+@Builder
 public class TransactionSnapShot {
     private final TransactionDetails transactionDetails;
 }

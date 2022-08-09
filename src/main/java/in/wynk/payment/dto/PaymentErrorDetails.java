@@ -11,6 +11,5 @@ import lombok.experimental.SuperBuilder;
 public class PaymentErrorDetails {
     private String code;
     private String title;
-    private String subtitle;
     private String description;
 }

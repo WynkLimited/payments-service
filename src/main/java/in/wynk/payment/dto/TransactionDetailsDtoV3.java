@@ -1,12 +1,10 @@
 package in.wynk.payment.dto;
 
-import lombok.Builder;
-import lombok.Getter;
 import lombok.experimental.SuperBuilder;
+import lombok.Getter;
 
-@Getter
-//@Builder
 @SuperBuilder
-public class TransactionSnapShotV2 extends TransactionSnapShot{
+@Getter
+public class TransactionDetailsDtoV3 extends TransactionDetailsDto {
     private final PaymentErrorDetails errorDetails;
 }

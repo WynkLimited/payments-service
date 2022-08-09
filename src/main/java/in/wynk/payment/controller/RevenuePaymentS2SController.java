@@ -73,9 +73,9 @@ public class RevenuePaymentS2SController {
     @GetMapping("/v3/payment/status/{tid}")
     @AnalyseTransaction(name = "paymentStatusV3")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
-    public WynkResponse<TransactionDetailsDtoV2> statusV3(@PathVariable String tid) {
+    public WynkResponse<TransactionDetailsDtoV3> statusV3(@PathVariable String tid) {
         final TransactionSnapShot transactionSnapShot = paymentManager.statusV2(tid);
-        final WynkResponse<TransactionDetailsDtoV2> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponse<TransactionDetailsDtoV2>, TransactionSnapShot>>() {
+        final WynkResponse<TransactionDetailsDtoV3> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponse<TransactionDetailsDtoV3>, TransactionSnapShot>>() {
         }).transform(transactionSnapShot);
         AnalyticService.update(response);
         return response;

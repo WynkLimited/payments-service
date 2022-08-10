@@ -8,10 +8,8 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.SkuToSkuCachingService;
-import in.wynk.subscription.common.dto.ItemDTO;
-import in.wynk.subscription.common.dto.OfferDTO;
-import in.wynk.subscription.common.dto.PartnerDTO;
-import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.*;
+import in.wynk.subscription.common.enums.Category;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,10 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -49,6 +44,8 @@ public class PaymentCachingService {
     private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
+    private final Map<String, ProductDTO> products = new ConcurrentHashMap<>();
+
     private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
 
     private final PlanDtoCachingService planDtoCachingService;
@@ -61,11 +58,31 @@ public class PaymentCachingService {
     public void init() {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("cacheLoadInit", true);
+        loadProducts();
         loadPlans();
         loadOffers();
         loadPartners();
         AnalyticService.update("cacheLoadCompleted", true);
     }
+
+    private void loadProducts() {
+        List<ProductDTO> productList = subscriptionServiceManager.getProducts();
+        if (CollectionUtils.isNotEmpty(productList) && writeLock.tryLock()) {
+            try {
+                Map<String, ProductDTO> productMap = productList.stream().collect(Collectors.toMap(ProductDTO::getId, Function.identity()));
+                products.clear();
+                products.putAll(productMap);
+            } catch (Throwable th) {
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
+                throw th;
+            } finally {
+                writeLock.unlock();
+            }
+        }
+
+    }
+
+
 
     private void loadPlans() {
         Collection<PlanDTO> planList = planDtoCachingService.getAll();
@@ -176,6 +193,12 @@ public class PaymentCachingService {
 
     public Map<String, List<PaymentMethod>> getGroupedPaymentMethods() {
         return BeanLocatorFactory.getBean(GroupedPaymentMethodCachingService.class).getGroupPaymentMethods();
+    }
+
+
+    public boolean isV2SubscriptionJourney(int planId) {
+        final OfferDTO offer = offers.get(getPlan(planId).getLinkedOfferId());
+        return Objects.nonNull(offer)?EnumSet.of(Category.BUNDLE,Category.SVOD,Category.AVOD,Category.TVOD).contains(offer.getCategory()):Boolean.FALSE;
     }
 
 }

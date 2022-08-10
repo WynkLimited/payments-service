@@ -141,12 +141,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
+              batchSize: 10
+              waitTimeInSeconds: 1
           producer:
             delayInSecond: 180
           consumer:
-            delay: 20
+            delay: 1
             delayTimeUnit: SECONDS
       charging:
         enabled: true
@@ -154,12 +154,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
+              batchSize: 10
               waitTimeInSeconds: 10
           producer:
             delayInSecond: 0
           consumer:
-            delay: 180
+            delay: 10
             delayTimeUnit: SECONDS
       schedule:
         enabled: true
@@ -251,7 +251,11 @@ payment:
         alt:
           url: https://sandbox.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
-    amazonIap:
+    AmazonIap:
+      airtelxstream:
+        secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
+      enterr10:
+        secret: 2:ffQanjuPk3n8Kz6N34ImxKRsfYhCurJTd0FxpbFBJi7Yuu2-AIUESD_nhyOE7SVT6n5SrcKy1SYidcG1kofWgg==:NvFr8M_0ram6V2n-aj_bDg==
       secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
       status:
         baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
@@ -487,7 +491,7 @@ wynk:
         replicaSet: wcf
       coupons:
         appName: coupon
-        nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+        nodes: 10.40.12.101,10.40.12.75,10.40.12.45
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons
@@ -517,7 +521,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -539,7 +543,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -564,7 +568,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -586,7 +590,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -611,7 +615,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -633,7 +637,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -658,7 +662,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_payments_rajtv
                 password: 91F306FC2BEBF8D2E75E699D74014
                 database: payments_rajtv
@@ -680,7 +684,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
                 username: user_coupons_rajtv
                 password: BE750841543CCFC2F932478ED
                 database: coupons_rajtv

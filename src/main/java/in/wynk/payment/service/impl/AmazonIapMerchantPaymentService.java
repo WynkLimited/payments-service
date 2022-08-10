@@ -34,6 +34,7 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -75,9 +76,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private static final List<String> AMAZON_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
-    @Value("${payment.merchant.amazonIap.secret}")
+    @Value("${payment.merchant.AmazonIap.secret}")
     private String amazonIapSecret;
-    @Value("${payment.merchant.amazonIap.status.baseUrl}")
+    @Value("${payment.merchant.AmazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
     private final RestTemplate restTemplate;
 
@@ -231,7 +232,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         Optional<ReceiptDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId(), transaction.getIdStr());
                 AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
@@ -264,19 +265,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
     }
 
-    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId) {
-        AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder()
-                .receiptId(receiptId)
-                .id(receiptId).amazonUserId(amzUserId)
-                .uid(uid)
-                .msisdn(msisdn)
-                .planId(planId)
-                .build();
+    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId) {
+        final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).build();
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
     }
 
     private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
-        String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
+        final String iapSecret = ClientContext.getClient().map((client) -> PropertyResolverUtils.resolve(client.getAlias(), BeanConstant.AMAZON_IAP_PAYMENT_SERVICE, PaymentConstants.MERCHANT_SECRET)).orElse(amazonIapSecret);
+        String requestUrl = amazonIapStatusUrl + iapSecret + "/user/" + userId + "/receiptId/" + receiptId;
         RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
         ResponseEntity<AmazonIapReceiptResponse> responseEntity = restTemplate.exchange(requestEntity, AmazonIapReceiptResponse.class);
         if (responseEntity.getBody() != null)
@@ -308,8 +304,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).findByExternalUserId(message.getAppUserId());
-        saveReceipt(mapping.getId(), mapping.getMsisdn(), planDTO.getId(), message.getReceiptId(), message.getAppUserId());
-        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(receiptResponse).planId(planDTO.getId()).build();
+        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build()).planId(planDTO.getId()).build();
     }
 
     @Override
@@ -322,8 +317,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 try {
                     AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
                     //TODO: check for eligibility cases.
-                    if ((!RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId()) && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
-                    || (RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId()) && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
+                    final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
+                    if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
+                    || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
                         return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
                     }
                 } catch (Exception e) {
@@ -353,6 +349,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     @Override
     public void handleNotification(Transaction transaction, UserPlanMapping<AmazonIapReceiptResponse> mapping) {
+        final AmazonIapReceiptResponseWrapper wrapper = (AmazonIapReceiptResponseWrapper) mapping.getMessage();
+        saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr());
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         AmazonIapReceiptResponse amazonIapReceipt = mapping.getMessage();
         if(amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED ) {

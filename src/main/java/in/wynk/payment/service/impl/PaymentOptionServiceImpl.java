@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -103,8 +104,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         final Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
         final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).map(trialPlanId -> !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(trialPlanId)).orElse(false);
         if (trialEligible)
-            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported)));
-        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true)));
+            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported), () -> paidPlan.supportAutoRenew()));
+        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true), () -> paidPlan.supportAutoRenew()));
         return responseEntityBuilder.status(httpStatus).data(builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build()).build();
     }
 
@@ -112,14 +113,14 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private WynkResponseEntity<PaymentOptionsDTO> getPaymentOptionsForItem(String itemId) {
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
-        return responseEntityBuilder.status(httpStatus).data(PaymentOptionsDTO.builder().productDetails(buildPointDetails(itemId)).paymentGroups(getPaymentGroups((paymentMethod -> true))).build()).build();
+        return responseEntityBuilder.status(httpStatus).data(PaymentOptionsDTO.builder().productDetails(buildPointDetails(itemId)).paymentGroups(getPaymentGroups((paymentMethod -> true), () -> false)).build()).build();
     }
 
-    private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate) {
+    private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
-            List<PaymentMethodDTO> methodDTOS = availableMethods.get(group.getId()).stream().filter(filterPredicate).map(PaymentMethodDTO::new).collect(Collectors.toList());
+            List<PaymentMethodDTO> methodDTOS = availableMethods.get(group.getId()).stream().filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
                 paymentGroupsDTOS.add(groupsDTO);
@@ -168,6 +169,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .partnerName(partner.getName())
                 .dailyAmount(plan.getPrice().getDailyAmount())
                 .currency(plan.getPrice().getCurrency())
+                .title(offer.getTitle())
                 .day(plan.getPeriod().getDay());
         if (trialEligible) {
             final PlanDTO trialPlan = paymentCachingService.getPlan(plan.getLinkedFreePlanId());
@@ -275,8 +277,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
             trialEligible = trialPlanComputationResponse.getEligiblePlans().contains(optionalTrialPlanId.get());
         }
         if (trialEligible)
-            builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), eligibilityRequest));
-        else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest));
+            builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest));
+        else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest));
         return responseEntityBuilder.status(httpStatus).data(builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build()).build();
     }
 
@@ -292,10 +294,10 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .countryCode(request.getUserDetails().getCountryCode())
                 .si(request.getUserDetails().getSi())
                 .build());
-        return responseEntityBuilder.status(httpStatus).data(PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), eligibilityRequest)).build()).build();
+        return responseEntityBuilder.status(httpStatus).data(PaymentOptionsDTO.builder().productDetails(buildPointDetails(item)).paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), (() -> false), eligibilityRequest)).build()).build();
     }
 
-    private List<PaymentOptionsDTO.PaymentGroupsDTO> getFilteredPaymentGroups(Predicate<PaymentMethod> filterPredicate, PaymentOptionsEligibilityRequest request) {
+    private List<PaymentOptionsDTO.PaymentGroupsDTO> getFilteredPaymentGroups(Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier, PaymentOptionsEligibilityRequest request) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
@@ -303,7 +305,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
             List<PaymentMethod> methods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
             final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
             methods = filterPaymentMethodsBasedOnEligibility(response, methods);
-            List<PaymentMethodDTO> methodDTOS = methods.stream().map(PaymentMethodDTO::new).collect(Collectors.toList());
+            List<PaymentMethodDTO> methodDTOS = methods.stream().map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
                 paymentGroupsDTOS.add(groupsDTO);

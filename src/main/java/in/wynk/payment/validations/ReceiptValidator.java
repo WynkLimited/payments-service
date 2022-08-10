@@ -41,12 +41,12 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         public void handle(IReceiptValidatorRequest<ItunesLatestReceiptResponse> request) {
             final ItunesLatestReceiptResponse receiptResponse = request.getLatestReceiptInfo();
             final LatestReceiptInfo latestReceiptInfo = receiptResponse.getLatestReceiptInfo().get(0);
-            final long transactionId = receiptResponse.getItunesReceiptType().getTransactionId(latestReceiptInfo);
+            final String receiptTransactionId = receiptResponse.getItunesReceiptType().getTransactionId(latestReceiptInfo);
             final long originalTransactionId = receiptResponse.getItunesReceiptType().getOriginalTransactionId(latestReceiptInfo);
             final Optional<ReceiptDetails> receiptDetailsOption = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(String.valueOf(originalTransactionId));
             if(receiptDetailsOption.isPresent()) {
                 final ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) receiptDetailsOption.get();
-                if (receiptDetails.getTransactionId() == transactionId) {
+                if (receiptTransactionId.equalsIgnoreCase(receiptDetails.getReceiptTransactionId())) {
                     throw new WynkRuntimeException(PaymentErrorType.PAY701);
                 }
             }

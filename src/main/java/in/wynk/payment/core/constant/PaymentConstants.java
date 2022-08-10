@@ -62,6 +62,7 @@ public interface PaymentConstants extends BaseConstants {
     String SEAMLESS_FLOW = "SEAMLESS";
     String NON_SEAMLESS_FLOW = "NON_SEAMLESS";
     String NON_SEAMLESS_REDIRECT_FLOW = "NON_SEAMLESS_REDIRECT_FLOW";
+    String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";

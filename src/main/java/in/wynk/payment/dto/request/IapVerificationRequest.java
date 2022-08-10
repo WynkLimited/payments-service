@@ -11,6 +11,7 @@ import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
+import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -72,6 +73,9 @@ public abstract class IapVerificationRequest {
     private String countryCode;
 
     private String paymentCode;
+
+    @Analysed
+    private GeoLocation geoLocation;
 
     public PaymentCode getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);

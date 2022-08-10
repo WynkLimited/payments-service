@@ -19,6 +19,7 @@ import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -51,6 +52,9 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     @NotNull
     @Analysed
     private String paymentCode;
+
+    @Analysed
+    private GeoLocation geoLocation;
 
     public PaymentCode getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);

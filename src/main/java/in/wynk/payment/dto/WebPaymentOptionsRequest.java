@@ -8,6 +8,7 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,6 +25,9 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
 
     private String couponId;
     private AbstractProductDetails productDetails;
+
+    @Analysed
+    private GeoLocation geoLocation;
 
     @Override
     @Analysed

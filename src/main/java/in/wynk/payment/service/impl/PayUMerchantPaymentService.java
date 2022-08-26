@@ -24,6 +24,7 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
@@ -68,7 +69,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>, IPreDebitNotificationService, ICancellingRecurringService,IMerchantTDRService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>, IPreDebitNotificationService, ICancellingRecurringService, IMerchantTDRService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -756,27 +757,19 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public PayUTdrResponse getTDR (String transactionId) {
-        PayUTdrResponse response = null;
+    public BaseTDRResponse getTDR(String transactionId) {
         try {
-            LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
-            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
-            String var1 = merchantTransaction.getExternalTransactionId();
-            orderedMap.put(PAYU_MERCHANT_KEY, payUMerchantKey);
-            orderedMap.put(PAYU_TDRCOMMAND, "get_TDR");
-            orderedMap.put(PAYU_ID, var1);
-            String variable = gson.toJson(orderedMap);
-            IMerchantTDRService iMerchantTDRService = BeanLocatorFactory.getBean(IMerchantTDRService.class);
-            PayUTdrResponse tdr = iMerchantTDRService.getTDR(transactionId);
-            MultiValueMap<String, String> requestMap = buildPayUInfoRequest(String.valueOf(tdr), PAYU_GETTDR.getCode(), variable);
-             response = this.getInfoFromPayU(requestMap, new TypeReference<PayUTdrResponse>() {
+            final Transaction transaction = TransactionContext.get();
+            final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
+            final String midPayId = merchantTransaction.getExternalTransactionId();
+            final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PAYU_GETTDR.getCode(), midPayId);
+            final PayUTdrResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUTdrResponse>() {
             });
-            AnalyticService.update(PAYU_GETTDR.getCode(), gson.toJson(response));
+            return BaseTDRResponse.from(response.getMessage().getTdr());
+        } catch (Exception e) {
+            log.error(PAYU_TDR_ERROR, e.getMessage());
         }
-        catch (Exception e) {
-            log.error(PAYU_TDR_ERROR,e.getMessage());
-        }
-        return response;
+        return BaseTDRResponse.from(-2);
     }
 
     private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {

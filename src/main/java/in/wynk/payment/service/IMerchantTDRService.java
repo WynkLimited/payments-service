@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
-import in.wynk.payment.dto.payu.PayUTdrResponse;
+
+import in.wynk.payment.dto.BaseTDRResponse;
 public interface IMerchantTDRService {
-    PayUTdrResponse getTDR(String transactionId );
+    BaseTDRResponse getTDR(String transactionId);
 }

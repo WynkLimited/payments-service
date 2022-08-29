@@ -45,6 +45,9 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 })
 public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
+    @Analysed
+    private GeoLocation geoLocation;
+
     @Valid
     @Analysed
     private T purchaseDetails;
@@ -52,9 +55,6 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     @NotNull
     @Analysed
     private String paymentCode;
-
-    @Analysed
-    private GeoLocation geoLocation;
 
     public PaymentCode getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);

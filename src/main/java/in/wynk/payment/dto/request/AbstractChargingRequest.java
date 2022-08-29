@@ -45,8 +45,6 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 })
 public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
-    @Analysed
-    private GeoLocation geoLocation;
 
     @Valid
     @Analysed

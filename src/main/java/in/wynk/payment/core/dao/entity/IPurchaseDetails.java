@@ -7,5 +7,5 @@ public interface IPurchaseDetails {
     IUserDetails getUserDetails();
     IPaymentDetails getPaymentDetails();
     IProductDetails getProductDetails();
-    GeoLocation getGeoLocation();
+
 }

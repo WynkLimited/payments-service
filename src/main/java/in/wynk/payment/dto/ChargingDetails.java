@@ -29,13 +29,11 @@ public class ChargingDetails implements IChargingDetails {
     private IProductDetails productDetails;
     private IPageUrlDetails pageUrlDetails;
 
-    @Analysed
-    private GeoLocation geoLocation;
-
     @Override
     @JsonIgnore
     public ICallbackDetails getCallbackDetails() {
         return () -> callbackUrl;
     }
+
 
 }

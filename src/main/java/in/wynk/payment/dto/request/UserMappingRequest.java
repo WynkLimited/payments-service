@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.subscription.common.dto.GeoLocation;
@@ -16,6 +17,7 @@ import static in.wynk.common.constant.CacheBeanNameConstants.MSISDN_REGEX;
 @Getter
 @Builder
 @AllArgsConstructor
+@AnalysedEntity
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserMappingRequest {
 

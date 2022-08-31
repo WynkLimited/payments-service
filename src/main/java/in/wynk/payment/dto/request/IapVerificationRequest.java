@@ -33,6 +33,15 @@ import static in.wynk.common.constant.CacheBeanNameConstants.*;
 @JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")})
 public abstract class IapVerificationRequest {
 
+
+
+
+    @Analysed
+    private String successUrl;
+
+    @Analysed
+    private String failureUrl;
+
     @Analysed
     private int buildNo;
 

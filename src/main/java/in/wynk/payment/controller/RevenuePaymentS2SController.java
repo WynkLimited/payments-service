@@ -119,15 +119,6 @@ public class RevenuePaymentS2SController {
     }
 
 
-    @PostMapping("/v3/verify/receipt")
-    @AnalyseTransaction(name = "receiptVerification")
-    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
-    @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
-    public ResponseEntity<?> verifyIap3(@Valid @RequestBody IapVerificationRequest request) {
-        request.setOriginalSid();
-        AnalyticService.update(ORIGINAL_SID, request.getSid());
-        return getResponseEntity(dummySessionGenerator.initSession(request));
-    }
 
     @ManageSession(sessionId = "#request.sid")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequest request) {

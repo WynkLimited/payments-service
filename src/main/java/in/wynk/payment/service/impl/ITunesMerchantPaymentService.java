@@ -117,8 +117,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
 
                 if(latestReceiptResponse.getSuccessUrl() != null){
-                    String success_url = latestReceiptResponse.getSuccessUrl();
-                    builder.url(new StringBuilder(success_url).toString());
+                    builder.url(new StringBuilder(latestReceiptResponse.getSuccessUrl()).toString());
                 } else {
                     String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
 
@@ -140,8 +139,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             } else {
 
                 if(latestReceiptResponse.getFailureUrl() != null){
-                    String failure_url = latestReceiptResponse.getFailureUrl();
-                    builder.url(new StringBuilder(failure_url).toString());
+                    builder.url(new StringBuilder(latestReceiptResponse.getFailureUrl()).toString());
 
                 } else {
                     String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");

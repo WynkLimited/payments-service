@@ -116,37 +116,48 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
 
-                String success_url = latestReceiptResponse.getSuccessUrl() != null ? EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), latestReceiptResponse.getSuccessUrl()) :
-                        EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
+                if(latestReceiptResponse.getSuccessUrl() != null){
+                    String success_url = latestReceiptResponse.getSuccessUrl();
+                    builder.url(new StringBuilder(success_url).toString());
+                } else {
+                    String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
 
-                builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
-                        .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
-                        .append(QUESTION_MARK)
-                        .append(SERVICE)
-                        .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
-                        .append(AND)
-                        .append(BUILD_NO)
-                        .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
-                        .toString());
+                    builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
+                            .append(SLASH)
+                            .append(sessionDTO.<String>get(OS))
+                            .append(QUESTION_MARK)
+                            .append(SERVICE)
+                            .append(EQUAL)
+                            .append(sessionDTO.<String>get(SERVICE))
+                            .append(AND)
+                            .append(BUILD_NO)
+                            .append(EQUAL)
+                            .append(sessionDTO.<Integer>get(BUILD_NO))
+                            .toString());
+                }
+
+
             } else {
 
-                String failure_url = latestReceiptResponse.getFailureUrl() != null ? EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), latestReceiptResponse.getFailureUrl()) :
-                        EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
-                builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
-                        .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
-                        .append(QUESTION_MARK)
-                        .append(SERVICE)
-                        .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
-                        .append(AND)
-                        .append(BUILD_NO)
-                        .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
-                        .toString());
+                if(latestReceiptResponse.getFailureUrl() != null){
+                    String failure_url = latestReceiptResponse.getFailureUrl();
+                    builder.url(new StringBuilder(failure_url).toString());
+
+                } else {
+                    String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
+                    builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
+                            .append(SLASH)
+                            .append(sessionDTO.<String>get(OS))
+                            .append(QUESTION_MARK)
+                            .append(SERVICE)
+                            .append(EQUAL)
+                            .append(sessionDTO.<String>get(SERVICE))
+                            .append(AND)
+                            .append(BUILD_NO)
+                            .append(EQUAL)
+                            .append(sessionDTO.<Integer>get(BUILD_NO))
+                            .toString());
+                  }
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {

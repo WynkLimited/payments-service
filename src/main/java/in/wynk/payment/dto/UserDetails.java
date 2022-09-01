@@ -38,7 +38,6 @@ public class UserDetails implements IUserDetails, Serializable {
     @Analysed
     private String dslId;
 
-    @Analysed
     private String countryCode;
 
     @Analysed

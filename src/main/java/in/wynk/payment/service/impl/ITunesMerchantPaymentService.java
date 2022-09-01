@@ -111,36 +111,51 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         try {
             final Transaction transaction = TransactionContext.get();
             final ItunesLatestReceiptResponse response = (ItunesLatestReceiptResponse) latestReceiptResponse;
+
             fetchAndUpdateFromReceipt(transaction, response, null);
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
-                builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
-                        .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
-                        .append(QUESTION_MARK)
-                        .append(SERVICE)
-                        .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
-                        .append(AND)
-                        .append(BUILD_NO)
-                        .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
-                        .toString());
+
+                if(latestReceiptResponse.getSuccessUrl() != null){
+                    builder.url(new StringBuilder(latestReceiptResponse.getSuccessUrl()).toString());
+                } else {
+                    String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
+
+                    builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
+                            .append(SLASH)
+                            .append(sessionDTO.<String>get(OS))
+                            .append(QUESTION_MARK)
+                            .append(SERVICE)
+                            .append(EQUAL)
+                            .append(sessionDTO.<String>get(SERVICE))
+                            .append(AND)
+                            .append(BUILD_NO)
+                            .append(EQUAL)
+                            .append(sessionDTO.<Integer>get(BUILD_NO))
+                            .toString());
+                }
+
+
             } else {
-                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
-                builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
-                        .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
-                        .append(QUESTION_MARK)
-                        .append(SERVICE)
-                        .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
-                        .append(AND)
-                        .append(BUILD_NO)
-                        .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
-                        .toString());
+
+                if(latestReceiptResponse.getFailureUrl() != null){
+                    builder.url(new StringBuilder(latestReceiptResponse.getFailureUrl()).toString());
+
+                } else {
+                    String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
+                    builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
+                            .append(SLASH)
+                            .append(sessionDTO.<String>get(OS))
+                            .append(QUESTION_MARK)
+                            .append(SERVICE)
+                            .append(EQUAL)
+                            .append(sessionDTO.<String>get(SERVICE))
+                            .append(AND)
+                            .append(BUILD_NO)
+                            .append(EQUAL)
+                            .append(sessionDTO.<Integer>get(BUILD_NO))
+                            .toString());
+                  }
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
@@ -168,7 +183,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(request.getReceipt());
         final ItunesReceipt itunesReceipt = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn());
-        return getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
+        LatestReceiptResponse response =  getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
+        response.setSuccessUrl(request.getSuccessUrl());
+        response.setFailureUrl(request.getFailureUrl());
+        return response;
     }
 
     private ItunesLatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {

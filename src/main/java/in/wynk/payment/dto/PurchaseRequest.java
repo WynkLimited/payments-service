@@ -7,6 +7,7 @@ import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.common.dto.SessionRequest;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.subscription.common.dto.GeoLocation;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.api.validations.IWynkServiceValidatorRequest;
 import lombok.AllArgsConstructor;
@@ -39,6 +40,9 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
 
     @Analysed
     private PageUrlDetails pageUrlDetails;
+
+    @Analysed
+    private GeoLocation geoLocation;
 
     @Override
     public String getOs() {

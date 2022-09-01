@@ -74,6 +74,8 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .uid(MsisdnUtils.getUidFromMsisdn(getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(getAppDetails().getService()).getSalt()))
                 .failureUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getFailurePageUrl).orElse(null))
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
+                .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
+                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null))
                 .build();
     }
 

@@ -70,6 +70,17 @@ public class RevenuePaymentS2SController {
         return response;
     }
 
+    @GetMapping("/v3/payment/status/{tid}")
+    @AnalyseTransaction(name = "paymentStatusV3")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
+    public WynkResponse<TransactionDetailsDtoV3> statusV3(@PathVariable String tid) {
+        final TransactionSnapShot transactionSnapShot = paymentManager.statusV2(tid);
+        final WynkResponse<TransactionDetailsDtoV3> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponse<TransactionDetailsDtoV3>, TransactionSnapShot>>() {
+        }).transform(transactionSnapShot);
+        AnalyticService.update(response);
+        return response;
+    }
+
     @PostMapping("/v1/payment/refund")
     @AnalyseTransaction(name = "initRefund")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")

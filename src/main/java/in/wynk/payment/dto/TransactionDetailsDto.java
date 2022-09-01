@@ -1,12 +1,12 @@
 package in.wynk.payment.dto;
 
 import in.wynk.common.enums.TransactionStatus;
-import lombok.Builder;
+import lombok.experimental.SuperBuilder;
 import lombok.Getter;
 
 import java.util.Calendar;
 
-@Builder
+@SuperBuilder
 @Getter
 public class TransactionDetailsDto {
     private final String tid;

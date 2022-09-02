@@ -10,6 +10,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
+
+    Marker PAYU_TDR_ERROR= MarkerFactory.getMarker("PAYU_TDR_ERROR");
     Marker SUBSCRIPTION_ERROR = MarkerFactory.getMarker("SUBSCRIPTION_ERROR");
     Marker RENEWAL_ELIGIBILITY_API_ERROR = MarkerFactory.getMarker("RENEWAL_ELIGIBILITY_API_ERROR");
     Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");

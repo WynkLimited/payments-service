@@ -71,7 +71,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return idList.stream().map(this::get).collect(Collectors.toSet());
     }
 
-    public List<Transaction> saveAll(Set<Transaction> transactionsList) {
+    public List<Transaction> saveAll(List<Transaction> transactionsList) {
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).saveAll(transactionsList);
     }
 
@@ -119,9 +119,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
         try{
-            final Set<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
+            final List<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
             transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toSet()));
-            final Set<Transaction> transactionsList = transactionIds.stream().map(this::get).collect(Collectors.toSet());
+            final List<Transaction> transactionsList = transactionIds.stream().map(this::get).collect(Collectors.toList());
             transactionsList.forEach(txn -> {
                 txn.setUid(uid);
             /*if(txn.getPaymentChannel().name().equalsIgnoreCase(ITUNES)){

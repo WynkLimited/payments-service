@@ -12,6 +12,6 @@ public interface IPurchaseDetailsManger {
 
     void save(Transaction transaction, IPurchaseDetails details);
 
-    Set<String> getByUserId(String userId);
+    List<String> getByUserId(String userId);
 
 }

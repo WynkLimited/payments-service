@@ -216,10 +216,9 @@ public class PaymentEventListener {
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
-    @AnalyseTransaction(name = "paymentUserDeactivationEvent")
     public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
         try {
-            AnalyticService.update(event); //todo: can be removed as PaymentUserDeactivationMessage is already updated earlier
+            //AnalyticService.update(event); //todo: can be removed as PaymentUserDeactivationMessage is already updated earlier
             transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid());
         } catch (Exception e) {
             throw new WynkRuntimeException(UT999, e);

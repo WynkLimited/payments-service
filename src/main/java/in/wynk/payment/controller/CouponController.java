@@ -60,7 +60,7 @@ public class CouponController {
     @DeleteMapping("/remove/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "removeCoupon")
-    public WynkResponse<CouponResponse> removeCoupon(@PathVariable String sid, @RequestParam String couponCode) {
+    public WynkResponse<CouponResponse> removeCoupon(@PathVariable String sid, @RequestParam @MongoBaseEntityConstraint(beanName = COUPON) String couponCode) {
         LoadClientUtils.loadClient(false);
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         AnalyticService.update(COUPON_CODE, couponCode);

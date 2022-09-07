@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.List;
@@ -56,7 +57,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     //@Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public List<String> getByUserId(String userId) {
         final List<PurchaseDetails> purchaseDetailsList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findByUserId(userId);
-        if (CollectionUtils.isEmpty(purchaseDetailsList)) return null;
+        if (CollectionUtils.isEmpty(purchaseDetailsList)) return Collections.emptyList();
         return purchaseDetailsList.stream().map(MongoBaseEntity::getId).collect(Collectors.toList());
     }
 

@@ -6,6 +6,7 @@ import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
@@ -86,6 +87,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final UserBillingDetail userBillingDetail = (UserBillingDetail) TransactionContext.getPurchaseDetails().get().getUserDetails();
         final String modeId = userBillingDetail.getBillingSiDetail().getLob().equalsIgnoreCase(POSTPAID) ? MOBILITY : TELEMEDIA;
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+        final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(transaction.getPlanId().toString(), userBillingDetail.getSi());
         try {
             Map<String, Object> serviceOrderMeta = new HashMap<>();
@@ -98,7 +100,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .loggedInSi(userBillingDetail.getSi())
                     .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userAddToBillDetails.getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
-                    .orderMeta(null).build();
+                    .orderMeta(Collections.singletonMap(BaseConstants.IS_BUNDLE, offer.isThanksBundle())).build();
             final AddToBillCheckOutResponse response = catalogueVasClientService.checkout(checkOutRequest);
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
@@ -158,7 +160,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 log.error("plan serviceIds or offer serviceGroup is not present");
                 return null;
             } else {
-                final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).build();
+                final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).isBundle(offer.isThanksBundle()).build();
                 final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request,Boolean.TRUE);
                 return response;
             }

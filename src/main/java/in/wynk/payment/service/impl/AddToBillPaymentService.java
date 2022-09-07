@@ -92,6 +92,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         try {
             Map<String, Object> serviceOrderMeta = new HashMap<>();
             serviceOrderMeta.put(TXN_ID, transaction.getIdStr());
+            serviceOrderMeta.put(BaseConstants.IS_BUNDLE, offer.isThanksBundle());
             List<ServiceOrderItem> serviceOrderItems = new LinkedList<>();
             final ServiceOrderItem serviceOrderItem = ServiceOrderItem.builder().provisionSi(userBillingDetail.getSi()).serviceId(plan.getSku().get(ATB)).paymentDetails(PaymentDetails.builder().paymentAmount(userAddToBillDetails.getAmount()).build()).serviceOrderMeta(serviceOrderMeta).build();
             serviceOrderItems.add(serviceOrderItem);
@@ -100,7 +101,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .loggedInSi(userBillingDetail.getSi())
                     .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userAddToBillDetails.getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
-                    .orderMeta(Collections.singletonMap(BaseConstants.IS_BUNDLE, offer.isThanksBundle())).build();
+                    .orderMeta(null).build();
             final AddToBillCheckOutResponse response = catalogueVasClientService.checkout(checkOutRequest);
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());

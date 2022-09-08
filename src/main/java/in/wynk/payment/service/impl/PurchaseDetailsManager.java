@@ -57,7 +57,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     //@Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public List<String> getByUserId(String userId) {
         final List<PurchaseDetails> purchaseDetailsList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findByUserId(userId);
-        if (CollectionUtils.isEmpty(purchaseDetailsList)) return Collections.emptyList();
+        if (CollectionUtils.isEmpty(purchaseDetailsList)) return null;
         return purchaseDetailsList.stream().map(MongoBaseEntity::getId).collect(Collectors.toList());
     }
 

@@ -119,8 +119,12 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
         try{
-            final List<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
-            transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toSet()));
+            List<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
+            if(Objects.nonNull(transactionIds)){
+                transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toList()));
+            } else {
+                transactionIds = allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toList());
+            }
             final List<Transaction> transactionsList = transactionIds.stream().map(this::get).collect(Collectors.toList());
             transactionsList.forEach(txn -> {
                 txn.setUid(uid);

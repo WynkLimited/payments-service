@@ -27,6 +27,7 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.SettlementType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,12 +77,12 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     //Update new uid in all transactions & update uid in receipt_details
-    public void migrateOldTransactions(String userId, String uid, String oldUid){
+    public void migrateOldTransactions(String userId, String uid, String oldUid, String service){
         final List<ReceiptDetails> allReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
         //update new uid in all transactions
         updateTransactions(userId, uid, allReceiptDetails);
         //update new uid in all receipts
-        updateReceiptDetails(uid, allReceiptDetails);
+        updateReceiptDetails(uid, service, allReceiptDetails);
         //update new uid in availed coupons
         updateCouponData(uid, oldUid);
         applicationEventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(userId).uid(uid).oldUid(oldUid).build());
@@ -102,11 +103,14 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         }
     }
 
-    private void updateReceiptDetails(String uid, List<ReceiptDetails> allReceiptDetails) {
+    private void updateReceiptDetails(String uid, String service, List<ReceiptDetails> allReceiptDetails) {
         try{
             if(!CollectionUtils.isEmpty(allReceiptDetails)){
                 allReceiptDetails.forEach(receiptDetails -> {
-                    receiptDetails.setUid(uid);
+                    PlanDTO plan = cachingService.getPlan(receiptDetails.getPlanId());
+                    if(plan.getService().equalsIgnoreCase(service)){
+                        receiptDetails.setUid(uid);
+                    }
                 });
                 RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
                 log.info(PaymentLoggingMarker.USER_DEACTIVATION_RECEIPT_MIGRATION_INFO, "Receipt data updated to new uid : {} ", uid);

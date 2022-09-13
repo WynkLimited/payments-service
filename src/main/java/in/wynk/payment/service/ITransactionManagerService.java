@@ -20,6 +20,6 @@ public interface ITransactionManagerService {
 
     Set<Transaction> getAll(Set<String> idList);
 
-    void migrateOldTransactions(String userId, String uid, String oldUid);
+    void migrateOldTransactions(String userId, String uid, String oldUid, String service);
 
 }

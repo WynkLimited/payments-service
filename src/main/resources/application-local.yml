@@ -187,6 +187,19 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      userDeactivation:
+        enabled: true
+        name: wcf-staging-payment-user-deactivation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
 
   ###### webview status props #######
   status:

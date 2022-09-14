@@ -16,6 +16,7 @@ import java.io.Serializable;
 public abstract class ReceiptDetails extends MongoBaseEntity<String> implements Serializable {
 
     private String msisdn;
+    @Setter
     private String uid;
     @Field("plan_id")
     private int planId;

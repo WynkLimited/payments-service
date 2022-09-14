@@ -5,6 +5,8 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface ReceiptDetailsDao extends MongoRepository<ReceiptDetails, String> {
 
@@ -17,6 +19,7 @@ public interface ReceiptDetailsDao extends MongoRepository<ReceiptDetails, Strin
     @Query("{'paymentTransactionId': ?0}")
     <T extends ReceiptDetails> T findByPaymentTransactionId(String transactionId);
 
-//    <T extends ReceiptDetails> T findById(String itunesId);
+    @Query("{'uid': ?0}")
+    <T extends ReceiptDetails> List<T> findByUid(String uid);
 
 }

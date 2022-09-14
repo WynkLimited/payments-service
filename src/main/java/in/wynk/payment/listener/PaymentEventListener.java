@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
+import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
@@ -211,6 +212,23 @@ public class PaymentEventListener {
         final AbstractPaymentSettlementResponse response = paymentManager.settle(PaymentSettlementRequest.builder().tid(event.getTid()).build());
         AnalyticService.update(event);
         AnalyticService.update(response);
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
+        try {
+            //AnalyticService.update(event); //todo: can be removed as PaymentUserDeactivationMessage is already updated earlier
+            transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid(), event.getService());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(UT999, e);
+        }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "paymentUserDeactivationMigrationEvent")
+    public void onPaymentUserDeactivationMigrationEvent(PaymentUserDeactivationMigrationEvent event) {
+        AnalyticService.update(event);
     }
 
     @EventListener

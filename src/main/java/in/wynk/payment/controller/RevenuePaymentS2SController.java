@@ -3,6 +3,7 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.IPresentation;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -16,6 +17,7 @@ import in.wynk.payment.service.IQuickPayLinkGenerator;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
+import in.wynk.session.context.SessionContextHolder;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -125,9 +127,18 @@ public class RevenuePaymentS2SController {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
+        SessionDTO session = loadSession(request.getSid());
+        session.getSessionPayload().containsKey("successUrl") && session.getSessionPayload().get("successUrl") != null ? request.setSuccessUrl(session.getSessionPayload().get("successUrl").toString());
+        session.getSessionPayload().containsKey("failureUrl") && session.getSessionPayload().get("failureUrl") != null ? request.setFailureUrl(session.getSessionPayload().get("successUrl").toString());
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();
     }
+
+    @ManageSession(sessionId = "#sid")
+    private SessionDTO loadSession(String sid) {
+        return SessionContextHolder.getBody();
+    }
+
 
 }

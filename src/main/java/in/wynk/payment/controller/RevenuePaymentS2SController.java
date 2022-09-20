@@ -128,8 +128,10 @@ public class RevenuePaymentS2SController {
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
         SessionDTO session = loadSession(request.getSid());
-        session.getSessionPayload().containsKey("successUrl") && session.getSessionPayload().get("successUrl") != null ? request.setSuccessUrl(session.getSessionPayload().get("successUrl").toString());
-        session.getSessionPayload().containsKey("failureUrl") && session.getSessionPayload().get("failureUrl") != null ? request.setFailureUrl(session.getSessionPayload().get("successUrl").toString());
+        if(session.getSessionPayload().containsKey("successUrl") && session.getSessionPayload().get("successUrl") != null)
+            request.setSuccessUrl(session.getSessionPayload().get("successUrl").toString());
+        if(session.getSessionPayload().containsKey("failureUrl") && session.getSessionPayload().get("failureUrl") != null)
+            request.setFailureUrl(session.getSessionPayload().get("failureUrl").toString()) ;
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();

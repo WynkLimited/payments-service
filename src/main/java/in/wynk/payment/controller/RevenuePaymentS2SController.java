@@ -7,6 +7,7 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
@@ -127,11 +128,15 @@ public class RevenuePaymentS2SController {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
-        SessionDTO session = loadSession(request.getSid());
-        if(session.getSessionPayload().containsKey("successUrl") && session.getSessionPayload().get("successUrl") != null)
-            request.setSuccessUrl(session.getSessionPayload().get("successUrl").toString());
-        if(session.getSessionPayload().containsKey("failureUrl") && session.getSessionPayload().get("failureUrl") != null)
-            request.setFailureUrl(session.getSessionPayload().get("failureUrl").toString()) ;
+        try {
+            SessionDTO session = loadSession(request.getSid());
+            if(session.getSessionPayload().containsKey("successUrl") && session.getSessionPayload().get("successUrl") != null)
+                request.setSuccessUrl(session.getSessionPayload().get("successUrl").toString());
+            if(session.getSessionPayload().containsKey("failureUrl") && session.getSessionPayload().get("failureUrl") != null)
+                request.setFailureUrl(session.getSessionPayload().get("failureUrl").toString()) ;
+        } catch (Exception e) {
+           throw new WynkRuntimeException(e);
+        }
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();

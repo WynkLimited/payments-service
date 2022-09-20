@@ -184,7 +184,7 @@ payment:
             delayTimeUnit: SECONDS
       userDeactivation:
         enabled: true
-        name: wcf-staging-payment-user-deactivation
+        name: wcf-preprod-payment-user-deactivation
         sqs:
           messages:
             extractor:

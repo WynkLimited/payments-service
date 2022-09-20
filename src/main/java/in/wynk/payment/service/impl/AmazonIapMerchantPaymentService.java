@@ -271,7 +271,13 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
-        final String iapSecret = ClientContext.getClient().map((client) -> PropertyResolverUtils.resolve(client.getAlias(), BeanConstant.AMAZON_IAP_PAYMENT_SERVICE, PaymentConstants.MERCHANT_SECRET)).orElse(amazonIapSecret);
+        final String iapSecret = ClientContext.getClient().map((client) -> {
+            try {
+                return PropertyResolverUtils.resolve(client.getAlias(), BeanConstant.AMAZON_IAP_PAYMENT_SERVICE, PaymentConstants.MERCHANT_SECRET);
+            } catch (Exception e) {
+                return null;
+            }
+        }).orElse(amazonIapSecret);
         String requestUrl = amazonIapStatusUrl + iapSecret + "/user/" + userId + "/receiptId/" + receiptId;
         RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
         ResponseEntity<AmazonIapReceiptResponse> responseEntity = restTemplate.exchange(requestEntity, AmazonIapReceiptResponse.class);

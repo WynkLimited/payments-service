@@ -309,8 +309,15 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if (Objects.isNull(planDTO)) {
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
+        Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
+        final UserPlanMapping.UserPlanMappingBuilder<AmazonIapReceiptResponse> builder = UserPlanMapping.<AmazonIapReceiptResponse>builder().message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build()).planId(planDTO.getId());
+        if (optionalReceiptDetails.isPresent()) {
+            final ReceiptDetails details = optionalReceiptDetails.get();
+            builder.uid(details.getUid()).msisdn(details.getMsisdn());
+            return builder.build();
+        }
         WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).findByExternalUserId(message.getAppUserId());
-        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build()).planId(planDTO.getId()).build();
+        return builder.uid(mapping.getId()).msisdn(mapping.getMsisdn()).build();
     }
 
     @Override

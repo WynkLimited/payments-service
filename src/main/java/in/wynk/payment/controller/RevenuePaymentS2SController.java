@@ -118,16 +118,6 @@ public class RevenuePaymentS2SController {
     public ResponseEntity<?> verifyIap2(@Valid @RequestBody IapVerificationRequest request) {
         request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSid());
-
-        try {
-            SessionDTO session = loadSession(request.getSid());
-            if(session.getSessionPayload().containsKey("successWebUrl") && session.getSessionPayload().get("successWebUrl") != null)
-                request.setSuccessUrl(session.getSessionPayload().get("successWebUrl").toString());
-            if(session.getSessionPayload().containsKey("failureWebUrl") && session.getSessionPayload().get("failureWebUrl") != null)
-                request.setFailureUrl(session.getSessionPayload().get("failureWebUrl").toString()) ;
-        } catch (Exception e) {
-            throw new WynkRuntimeException(e);
-        }
         return getResponseEntity(dummySessionGenerator.initSession(request));
     }
 
@@ -141,11 +131,6 @@ public class RevenuePaymentS2SController {
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();
-    }
-
-    @ManageSession(sessionId = "#sid")
-    private SessionDTO loadSession(String sid) {
-        return SessionContextHolder.getBody();
     }
 
 

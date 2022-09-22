@@ -1,5 +1,6 @@
 package in.wynk.payment.filter;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
 import in.wynk.auth.constant.AuthLoggingMarker;
 import in.wynk.auth.exception.WynkAuthErrorType;
 import in.wynk.auth.mapper.AbstractPreAuthTokenMapper;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -53,7 +55,7 @@ public class CustomerWinBackAuthFilter extends BasicAuthenticationFilter {
                 return;
             }
         }
-        chain.doFilter(request, response);
+            chain.doFilter(request, response);
     }
 
     @Override

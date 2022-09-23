@@ -32,6 +32,7 @@ import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.DecodedNotificationWrapper;
+import in.wynk.payment.dto.IapVerificationRequestV2;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.itune.*;
@@ -187,6 +188,12 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         response.setSuccessUrl(request.getSuccessUrl());
         response.setFailureUrl(request.getFailureUrl());
         return response;
+    }
+
+    //Needs to be completed for v2 request
+    @Override
+    public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
+        return null;
     }
 
     private ItunesLatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {

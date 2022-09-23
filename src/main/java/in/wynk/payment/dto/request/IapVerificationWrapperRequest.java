@@ -6,6 +6,7 @@ import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.dto.AppDetails;
+import in.wynk.payment.dto.IapVerificationRequestV2;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
@@ -18,10 +19,12 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
 
     private final LatestReceiptResponse latestReceiptResponse;
     private final IapVerificationRequest iapVerificationRequest;
+    private final IapVerificationRequestV2 iapVerificationRequestV2;
 
-    public IapVerificationWrapperRequest(LatestReceiptResponse latestReceiptResponse, IapVerificationRequest iapVerificationRequest) {
+    public IapVerificationWrapperRequest(LatestReceiptResponse latestReceiptResponse, IapVerificationRequest iapVerificationRequest, IapVerificationRequestV2 iapVerificationRequestV2) {
         this.latestReceiptResponse = latestReceiptResponse;
         this.iapVerificationRequest = iapVerificationRequest;
+        this.iapVerificationRequestV2 = iapVerificationRequestV2;
     }
 
     @Override

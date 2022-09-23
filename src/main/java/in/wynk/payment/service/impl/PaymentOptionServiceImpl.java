@@ -1,8 +1,10 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
@@ -10,6 +12,7 @@ import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
 import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
@@ -66,18 +69,6 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @Override
-    @Deprecated
-    public WynkResponseEntity<PaymentOptionsDTO> getPaymentOptions(String planId, String itemId) {
-        if (!StringUtils.isEmpty(planId) && paymentCachingService.containsPlan(planId)) {
-            return getPaymentOptionsForPlan(planId);
-        }
-        if (!StringUtils.isEmpty(itemId) && paymentCachingService.containsItem(itemId)) {
-            return getPaymentOptionsForItem(planId);
-        }
-        throw new WynkRuntimeException("Unknown planId or ItemId is supplied");
-    }
-
-    @Override
     public WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         try {
             if (request.getPaymentOptionRequest().getProductDetails().getType().equalsIgnoreCase(PLAN)) {
@@ -92,6 +83,19 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
             log.info(PAYMENT_OPTIONS_FAILURE, "Can't fetch payment options for plan/item {} and msisdn {}", request.getPaymentOptionRequest().getProductDetails().getId(), request.getPaymentOptionRequest().getUserDetails().getMsisdn());
             throw new WynkRuntimeException(PAY022, ex);
         }
+    }
+
+    @Override
+    @Deprecated
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentOptions(String planId, String itemId) {
+        log.info("test");
+        if (!StringUtils.isEmpty(planId) && paymentCachingService.containsPlan(planId)) {
+            return getPaymentOptionsForPlan(planId);
+        }
+        if (!StringUtils.isEmpty(itemId) && paymentCachingService.containsItem(itemId)) {
+            return getPaymentOptionsForItem(planId);
+        }
+        throw new WynkRuntimeException("Unknown planId or ItemId is supplied");
     }
 
     @Deprecated
@@ -119,11 +123,20 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
+        String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
-            List<PaymentMethodDTO> methodDTOS = availableMethods.get(group.getId()).stream().filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
+            List<PaymentMethodDTO> methodDTOS =
+                    availableMethods.get(group.getId()).stream().filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
-                PaymentOptionsDTO.PaymentGroupsDTO groupsDTO = PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
-                paymentGroupsDTOS.add(groupsDTO);
+                PaymentOptionsDTO.PaymentGroupsDTO groupsDTO =
+                        PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
+                if (groupsDTO.getPaymentGroup().equalsIgnoreCase(AddToBillConstants.ADDTOBILL)) {
+                    if (os.equalsIgnoreCase(ANDROID)) {
+                        paymentGroupsDTOS.add(groupsDTO);
+                    }
+                } else {
+                    paymentGroupsDTOS.add(groupsDTO);
+                }
             }
         }
         return paymentGroupsDTOS;
@@ -170,7 +183,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .dailyAmount(plan.getPrice().getDailyAmount())
                 .currency(plan.getPrice().getCurrency())
                 .title(offer.getTitle())
-                .day(plan.getPeriod().getDay());
+                .day(plan.getPeriod().getDay())
+                .sku(plan.getSku().get(AddToBillConstants.ATB));
         if (trialEligible) {
             final PlanDTO trialPlan = paymentCachingService.getPlan(plan.getLinkedFreePlanId());
             planDetailsBuilder.trialDetails(PaymentOptionsDTO.TrialPlanDetails.builder().id(String.valueOf(trialPlan.getId())).day(trialPlan.getPeriod().getDay()).month(trialPlan.getPeriod().getMonth()).validityUnit(trialPlan.getPeriod().getValidityUnit()).validity(trialPlan.getPeriod().getValidity()).currency(trialPlan.getPrice().getCurrency()).timeUnit(trialPlan.getPeriod().getTimeUnit()).build());

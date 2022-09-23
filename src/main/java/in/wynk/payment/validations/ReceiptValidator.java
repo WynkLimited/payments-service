@@ -12,10 +12,18 @@ import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
+import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +35,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
     public ReceiptValidator() {
         delegate.put(PaymentConstants.ITUNES, new ItunesReceiptValidator());
         delegate.put(PaymentConstants.AMAZON_IAP, new AmazonReceiptValidator());
+        delegate.put(PaymentConstants.GPBS, new GooglePlayReceiptValidator());
     }
 
     @Override
@@ -65,4 +74,25 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         }
     }
 
+    // If notification is Purchase notification--> expiration should not be in past
+    // else if other notification--> process only if current expiration is in future else throw exception
+    private static class GooglePlayReceiptValidator extends BaseHandler<IReceiptValidatorRequest<GooglePlayLatestReceiptResponse>> {
+
+        @Override
+        public void handle (IReceiptValidatorRequest<GooglePlayLatestReceiptResponse> response) {
+            if (response.getLatestReceiptInfo().getGooglePlayResponse() != null) {
+                String expiration = response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis();
+                LocalDateTime localDateTime = LocalDateTime.parse(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date()),
+                        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+
+                long currentDate = localDateTime
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant().toEpochMilli();
+                if (expiration == null || (Long.parseLong(expiration, 10) - currentDate) < 0) {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY701);
+                }
+            }
+            throw new WynkRuntimeException(PaymentErrorType.PAY029);
+        }
+    }
 }

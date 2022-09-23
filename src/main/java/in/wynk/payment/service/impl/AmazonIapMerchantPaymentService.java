@@ -26,6 +26,7 @@ import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.DecodedNotificationWrapper;
+import in.wynk.payment.dto.IapVerificationRequestV2;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserPlanMapping;
 import in.wynk.payment.dto.amazonIap.*;
@@ -213,6 +214,12 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
                 .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
                 .build();
+    }
+
+    //Needs to be implemented for v2 request
+    @Override
+    public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
+        return null;
     }
 
     private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction, String extTxnId) {

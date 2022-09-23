@@ -3,6 +3,8 @@ package in.wynk.payment.core.constant;
 public interface BeanConstant {
 
     String ITUNES_PAYMENT_SERVICE = "iTunes";
+    String GOOGLE_PLAY_BILLING = "GooglePlay";
+    String GOOGLE_PLAY_BILLING_CACHE_SERVICE = "googlePlayBillingSystemCacheService";
     String PAYMENT_ERROR_DAO = "paymentErrorDao";
     String PAYU_MERCHANT_PAYMENT_SERVICE = "PayU";
     String TRANSACTION_DAO = "transactionDaoBean";

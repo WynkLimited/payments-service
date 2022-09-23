@@ -54,8 +54,10 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYTM_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYTM_CHARGING_STATUS_VERIFICATION");
 
     Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
+    Marker GOOGLE_PLAY_VERIFICATION_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_VERIFICATION_FAILURE");
     Marker ITUNES_ERROR = MarkerFactory.getMarker("ITUNES_ERROR");
     Marker ITUNES_RENEWAL_ERROR = MarkerFactory.getMarker("ITUNES_RENEWAL_ERROR");
+    Marker GOOGLE_PLAY_RENEWAL_ERROR = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_ERROR");
 
     Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
 

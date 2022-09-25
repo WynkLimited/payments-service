@@ -7,12 +7,15 @@ import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.GooglePlayReceiptDetails;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceipt;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
@@ -23,10 +26,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<LatestReceiptResponse>> {
 
@@ -74,25 +74,60 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         }
     }
 
-    // If notification is Purchase notification--> expiration should not be in past
-    // else if other notification--> process only if current expiration is in future else throw exception
+    /*
+     * if latest receipt is null means wrong request
+     * if latest response available from Google then check if data is present in db.
+     * if data not present in db means request is for Purchase flow---> allow request
+     * if data present in db for then request can be for renewal or other notifications
+     * fraud check--> if expiration db in and latest expiration from google api is same means request is already processed
+     * else if latest expiration is less than expiration in db, check for notification type,
+     * if expiration notification--> update db with new notification type and throw error as nothing else should be done
+     * if expiration is for future and notification is for Subscription cancelled, update db and do nothing
+     * else expiration is in the past,subscription should be cancelled immediately--> should be done in the flow
+     */
     private static class GooglePlayReceiptValidator extends BaseHandler<IReceiptValidatorRequest<GooglePlayLatestReceiptResponse>> {
 
         @Override
         public void handle (IReceiptValidatorRequest<GooglePlayLatestReceiptResponse> response) {
-            if (response.getLatestReceiptInfo().getGooglePlayResponse() != null) {
-                String expiration = response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis();
-                LocalDateTime localDateTime = LocalDateTime.parse(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date()),
-                        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+            if (response.getLatestReceiptInfo().getGooglePlayResponse() == null) {
+                throw new WynkRuntimeException(PaymentErrorType.PAY702);
+            } else {
+                ReceiptDetails receiptDetails =
+                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                                .findByPurchaseToken(response.getLatestReceiptInfo().getPurchaseToken());
+                Integer notificationType = response.getLatestReceiptInfo().getNotificationType();
+                if (receiptDetails != null) {
+                    if (Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) == receiptDetails.getExpiry()) {
+                        throw new WynkRuntimeException(PaymentErrorType.PAY701);
+                    } else if ((Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) < receiptDetails.getExpiry()) &&
+                            Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_EXPIRED.getNotificationTpe())) {
 
-                long currentDate = localDateTime
-                        .atZone(ZoneId.systemDefault())
-                        .toInstant().toEpochMilli();
-                if (expiration == null || (Long.parseLong(expiration, 10) - currentDate) < 0) {
-                    throw new WynkRuntimeException(PaymentErrorType.PAY701);
+                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                                .save(updateNotificationType(receiptDetails, notificationType));
+                        throw new WynkRuntimeException(PaymentErrorType.ATB04);
+                    }else if (Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) > receiptDetails.getExpiry() &&
+                            Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe())) {
+                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                                .save(updateNotificationType(receiptDetails, notificationType));
+                        throw new WynkRuntimeException(PaymentErrorType.ATB04);
+                    }
                 }
             }
-            throw new WynkRuntimeException(PaymentErrorType.PAY029);
+        }
+
+        //update notification type
+        private GooglePlayReceiptDetails updateNotificationType (ReceiptDetails receiptDetails, Integer notificationType) {
+            return GooglePlayReceiptDetails.builder()
+                    .paymentTransactionId(receiptDetails.getPaymentTransactionId())
+                    .msisdn(receiptDetails.getMsisdn())
+                    .uid(receiptDetails.getUid())
+                    .expiry(receiptDetails.getExpiry())
+                    .planId(receiptDetails.getPlanId())
+                    .purchaseToken(((GooglePlayReceiptDetails) receiptDetails).getPurchaseToken())
+                    .notificationType(notificationType)
+                    .subscriptionId(((GooglePlayReceiptDetails) receiptDetails).getSubscriptionId())
+                    .packageName(((GooglePlayReceiptDetails) receiptDetails).getPackageName())
+                    .service(((GooglePlayReceiptDetails) receiptDetails).getService()).build();
         }
     }
 }

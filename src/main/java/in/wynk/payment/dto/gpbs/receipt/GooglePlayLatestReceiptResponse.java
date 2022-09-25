@@ -18,5 +18,17 @@ public class GooglePlayLatestReceiptResponse extends LatestReceiptResponse {
     private final String purchaseToken;
 
     @Analysed
+    private Integer notificationType;
+
+    @Analysed
+    private String subscriptionId;
+
+    @Analysed
+    private final String packageName;
+
+    @Analysed
+    private final String service;
+
+    @Analysed
     private final GooglePlayReceiptResponse googlePlayResponse;
 }

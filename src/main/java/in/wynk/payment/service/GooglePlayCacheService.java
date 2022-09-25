@@ -69,9 +69,9 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     @PostConstruct
     @Scheduled(fixedDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON, initialDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON)
     private void init () {
-        generateJwtTokenAndGetAccessToken("rajtv", clientEmail, privateKeyId, privateKey);//for music
+        generateJwtTokenAndGetAccessToken("rajtv", clientEmail, privateKeyId, privateKey);//for rajtv
        // generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for airtelxstream
-        //generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for rajtv
+        //generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for music
         //generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for iqVideo
         //generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for enterr10
     }

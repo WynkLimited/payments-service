@@ -5,12 +5,14 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.payment.dto.AppDetails;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
 @Setter
+/*@SuperBuilder*/
 public class GooglePlayAppDetails extends AppDetails {
     @Analysed
     private String packageName;

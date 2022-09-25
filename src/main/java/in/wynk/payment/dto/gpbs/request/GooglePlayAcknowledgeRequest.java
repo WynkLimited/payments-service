@@ -1,7 +1,7 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.gpbs.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,9 +10,8 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class SessionDetails {
-
-    @JsonProperty("sid")
+@Builder
+public class GooglePlayAcknowledgeRequest {
     @Analysed
-    private String sessionId;
+    private String developerPayload;
 }

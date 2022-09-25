@@ -4,20 +4,20 @@ package in.wynk.payment.dto.gpbs;
  * @author Nishesh Pandey
  */
 public enum GooglePlayNotificationType {
-    ONE("SUBSCRIPTION_RECOVERED"), TWO("SUBSCRIPTION_RENEWED"), THREE("SUBSCRIPTION_CANCELED"),
-    FOUR("SUBSCRIPTION_PURCHASED"), FIVE("SUBSCRIPTION_ON_HOLD"), SIX("SUBSCRIPTION_IN_GRACE_PERIOD"),
-    SEVEN("SUBSCRIPTION_RESTARTED"), EIGHT("SUBSCRIPTION_PRICE_CHANGE_CONFIRMED"),
-    NINE("SUBSCRIPTION_DEFERRED"), TEN("SUBSCRIPTION_PAUSED"),
-    ELEVEN("SUBSCRIPTION_PAUSE_SCHEDULE_CHANGED"), TWELVE("SUBSCRIPTION_REVOKED"),
-    THIRTEEN("SUBSCRIPTION_EXPIRED");
+   SUBSCRIPTION_RECOVERED(1), SUBSCRIPTION_RENEWED(2), SUBSCRIPTION_CANCELED(3),
+    SUBSCRIPTION_PURCHASED(4), SUBSCRIPTION_ON_HOLD(5), SUBSCRIPTION_IN_GRACE_PERIOD(6),
+    SUBSCRIPTION_RESTARTED(7), SUBSCRIPTION_PRICE_CHANGE_CONFIRMED(8),
+    SUBSCRIPTION_DEFERRED(9), SUBSCRIPTION_PAUSED(10),
+    SUBSCRIPTION_PAUSE_SCHEDULE_CHANGED(11), SUBSCRIPTION_REVOKED(12),
+    SUBSCRIPTION_EXPIRED(13);
 
-    private String notificationTpe;
+    private final Integer notificationTpe;
 
-    GooglePlayNotificationType (String notificationTpe) {
+    GooglePlayNotificationType (Integer notificationTpe) {
         this.notificationTpe = notificationTpe;
     }
 
-    public String getNotificationTpe () {
+    public Integer getNotificationTpe () {
         return notificationTpe;
     }
 

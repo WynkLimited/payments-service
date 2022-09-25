@@ -10,6 +10,7 @@ import java.io.Serializable;
 
 @Getter
 @ToString
+@Setter
 @SuperBuilder
 @Document(collection = "receipt_details")
 @NoArgsConstructor(access = AccessLevel.PACKAGE)

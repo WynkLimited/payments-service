@@ -17,6 +17,9 @@ public interface ReceiptDetailsDao extends MongoRepository<ReceiptDetails, Strin
     @Query("{'paymentTransactionId': ?0}")
     <T extends ReceiptDetails> T findByPaymentTransactionId(String transactionId);
 
+    @Query("{'purchase_token': ?0}")
+    <T extends ReceiptDetails> T findByPurchaseToken(String purchaseToken);
+
 //    <T extends ReceiptDetails> T findById(String itunesId);
 
 }

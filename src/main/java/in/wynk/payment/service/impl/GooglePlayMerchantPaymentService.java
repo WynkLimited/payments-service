@@ -30,6 +30,7 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.GooglePlayCallbackRequest;
 
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptInfo;
+import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
 import in.wynk.payment.dto.gpbs.queue.GoogleAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayLatestReceiptResponse;
@@ -237,44 +238,44 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         GooglePlayStatusCodes code = null;
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
 
-        if (Objects.isNull(latestReceipt.getGooglePlayResponse())) {
+        GooglePlayReceiptResponse latestResponse = latestReceipt.getGooglePlayResponse();
+        Integer notificationType= latestReceipt.getNotificationType();
+        if (Objects.isNull(latestResponse)) {
             log.info("Latest receipt not found for uid: {}, planId: {}", transaction.getUid(), transaction.getPlanId());
             code = GooglePlayStatusCodes.GOOGLE_31018;
             transaction.setStatus(TransactionStatus.FAILURE.name());
-        } else if (latestReceipt.getGooglePlayResponse().getCancelReason() == 0) {
+        } else if (Objects.nonNull(latestResponse.getLinkedPurchaseToken()) && latestResponse.getCancelReason() == 0) {
             log.info("User has cancelled the plan from app store for uid: {}, purchaseToken :{} , planId: {}", transaction.getUid(), latestReceipt.getPurchaseToken(), transaction.getPlanId());
             code = GooglePlayStatusCodes.GOOGLE_31019;
             transaction.setStatus(TransactionStatus.FAILURE.name());
         } else {
-            AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestReceipt.getGooglePlayResponse()));
+            AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestResponse));
 
                 Lock lock = wynkRedisLockService.getWynkRedisLock(latestReceipt.getPurchaseToken());
                 try {
                     if (lock.tryLock(3, TimeUnit.SECONDS)) {
-                        if (receiptDetails == null || !PURCHASE_NOTIFICATION_TYPE.equals(latestReceipt.getNotificationType())) {
+                        if (receiptDetails == null || !PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) {
                             receiptDetails =
                                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                                             .findByPurchaseToken(latestReceipt.getPurchaseToken());
                         }
-                        if (((receiptDetails == null && (PURCHASE_NOTIFICATION_TYPE.equals(latestReceipt.getNotificationType()))) ||
-                                Objects.requireNonNull(receiptDetails).getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-
+                        if (((receiptDetails == null && (PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) ||
+                                Objects.requireNonNull(receiptDetails).getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus()))) {
                             saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), transaction.getIdStr(), latestReceipt);
-
-                            GooglePlayReceiptResponse googlePlayReceipt = latestReceipt.getGooglePlayResponse();
-                            if (googlePlayReceipt != null) {
-                                if (googlePlayReceipt.getCancelReason() == null) {
-                                    finalTransactionStatus = TransactionStatus.SUCCESS;
-                                } else {
-                                    transaction.setType(PaymentEvent.CANCELLED.getValue());
-                                }
-                            }
-                        }else if(receiptDetails != null) {
-                          //  Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) > receiptDetails.getExpiry() &&
+                            finalTransactionStatus = TransactionStatus.SUCCESS;
+                        } else if (Long.parseLong(latestResponse.getExpiryTimeMillis()) > receiptDetails.getExpiry() &&
+                                Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe())) {
+                            receiptDetails.setNotificationType(notificationType);
+                            receiptDetails.setRenew(false);
+                            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                                    .save(receiptDetails);
+                            finalTransactionStatus = TransactionStatus.SUCCESS;
+                        }else if (receiptDetails != null) {
+                            //  Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) > receiptDetails.getExpiry() &&
                             //        Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe())
                             //notification
 
-                        }  else if (((receiptDetails != null && receiptDetails.getState() == State.ACTIVE) &
+                        } else if (((receiptDetails != null && receiptDetails.getState() == State.ACTIVE) &
                                 EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus()))) { // added for recon
                             finalTransactionStatus = TransactionStatus.SUCCESS;
                         }
@@ -303,7 +304,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .notificationType(latestReceiptResponse.getNotificationType())
                 .subscriptionId(latestReceiptResponse.getSubscriptionId())
                 .packageName(latestReceiptResponse.getPackageName())
-                .service(latestReceiptResponse.getService()).build();
+                .service(latestReceiptResponse.getService())
+                .renew(true).build();
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(googlePlayReceiptDetails);
     }
 
@@ -329,9 +331,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             log.error("Exception occurred while verifying receipt.");
             GooglePlayReceiptResponse googlePlayReceiptResponse1 = new GooglePlayReceiptResponse();
             googlePlayReceiptResponse1.setAutoRenewing(true);
-            //googlePlayReceiptResponse1.setLinkedPurchaseToken("abc");
-            googlePlayReceiptResponse1.setAcknowledgementState(12);
-            googlePlayReceiptResponse1.setCancelReason(14);
             googlePlayReceiptResponse1.setExpiryTimeMillis(String.valueOf(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
             return GooglePlayLatestReceiptResponse.builder()
                     .freeTrial(false)
@@ -340,7 +339,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     .planId(Integer.parseInt(request.getProductDetails().getPlanId()))
                     .purchaseToken(request.getPaymentDetails().getPurchaseToken())
                     .extTxnId(request.getPaymentDetails().getPurchaseToken())
-                    .couponCode("Wynk20")
                     .notificationType(request.getPaymentDetails().getNotificationType())
                     .subscriptionId(request.getPaymentDetails().getOrderId())
                     .packageName(request.getAppDetails().getPackageName())
@@ -434,9 +432,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private void publishAsync (String url, GooglePlayAcknowledgeRequest body, HttpHeaders headers) {
         GoogleAcknowledgeMessageManager message = GoogleAcknowledgeMessageManager.builder().url(url).body(body).headers(headers).build();
         try {
-            sqsMessagePublisher.publishSQSMessage(message);
+            log.info("code for amazon sqs");
+           // sqsMessagePublisher.publishSQSMessage(message);
         } catch (Exception e) {
-            throw new WynkRuntimeException(QueueErrorType.SQS001, e);
+           // throw new WynkRuntimeException(QueueErrorType.SQS001, e);
         }
     }
 

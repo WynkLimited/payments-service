@@ -21,6 +21,7 @@ import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
+import lombok.extern.slf4j.Slf4j;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+@Slf4j
 public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<LatestReceiptResponse>> {
 
     private final Map<String, BaseHandler> delegate = new HashMap<>();
@@ -35,7 +37,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
     public ReceiptValidator() {
         delegate.put(PaymentConstants.ITUNES, new ItunesReceiptValidator());
         delegate.put(PaymentConstants.AMAZON_IAP, new AmazonReceiptValidator());
-        delegate.put(PaymentConstants.GPBS, new GooglePlayReceiptValidator());
+        delegate.put(PaymentConstants.GOOGLE_IAP, new GooglePlayReceiptValidator());
     }
 
     @Override
@@ -101,33 +103,13 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
                         throw new WynkRuntimeException(PaymentErrorType.PAY701);
                     } else if ((Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) < receiptDetails.getExpiry()) &&
                             Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_EXPIRED.getNotificationTpe())) {
-
+                        receiptDetails.setNotificationType(notificationType);
                         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                                .save(updateNotificationType(receiptDetails, notificationType));
-                        throw new WynkRuntimeException(PaymentErrorType.ATB04);
-                    }else if (Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) > receiptDetails.getExpiry() &&
-                            Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe())) {
-                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                                .save(updateNotificationType(receiptDetails, notificationType));
+                                .save(receiptDetails);
                         throw new WynkRuntimeException(PaymentErrorType.ATB04);
                     }
                 }
             }
-        }
-
-        //update notification type
-        private GooglePlayReceiptDetails updateNotificationType (ReceiptDetails receiptDetails, Integer notificationType) {
-            return GooglePlayReceiptDetails.builder()
-                    .paymentTransactionId(receiptDetails.getPaymentTransactionId())
-                    .msisdn(receiptDetails.getMsisdn())
-                    .uid(receiptDetails.getUid())
-                    .expiry(receiptDetails.getExpiry())
-                    .planId(receiptDetails.getPlanId())
-                    .purchaseToken(((GooglePlayReceiptDetails) receiptDetails).getPurchaseToken())
-                    .notificationType(notificationType)
-                    .subscriptionId(((GooglePlayReceiptDetails) receiptDetails).getSubscriptionId())
-                    .packageName(((GooglePlayReceiptDetails) receiptDetails).getPackageName())
-                    .service(((GooglePlayReceiptDetails) receiptDetails).getService()).build();
         }
     }
 }

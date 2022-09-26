@@ -17,16 +17,9 @@ public class GooglePlayReceiptDetails extends ReceiptDetails {
     @Field("purchase_token")
     @Indexed(unique = true)
     private String purchaseToken;
-    @Field("notification_type")
-    private Integer notificationType;
     @Field("subscription_id")
     private String subscriptionId;
     @Field("package_name")
     private String packageName;
     private String service;
-
-    /*public boolean isTransactionIdPresent() {
-        return Long.parseLong(getReceiptTransactionId()) > 0L;
-    }*/
-
 }

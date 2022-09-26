@@ -393,9 +393,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public BaseResponse<GooglePlayBillingResponse> verifyReceiptDetails (GooglePlayVerificationRequest googlePlayVerificationRequest) {
-
         final GooglePlayBillingResponse.GooglePlayBillingData.GooglePlayBillingDataBuilder builder = GooglePlayBillingResponse.GooglePlayBillingData.builder();
-
         String tokenId = googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken();
         try {
             ReceiptDetails response = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
@@ -403,12 +401,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             if (response == null) {
                 return null;
             }
-
             GooglePlayReceiptDetails receiptDetails = (GooglePlayReceiptDetails) response;
             GooglePlayPaymentDetails paymentDetails = GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationRequest.getPaymentDetails().getOrderId()).purchaseToken(receiptDetails.getPurchaseToken()).build();
-            PageResponseDetails pageDetails = PageResponseDetails.builder().pageUrl("successUrl").build();//Add success url
-
-            builder.paymentDetails(paymentDetails).pageDetails(pageDetails);
+            builder.paymentDetails(paymentDetails);
         } catch (Exception e) {
             log.error("Exception occurred while finding data from mongo db {} ", e.getMessage());
             e.printStackTrace();

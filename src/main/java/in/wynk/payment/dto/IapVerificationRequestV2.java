@@ -55,10 +55,13 @@ public abstract class IapVerificationRequestV2 {
 
     private boolean originalSid;
 
+    private String sid; //needed only for manage session due to change in request structure
+
     public PaymentCode getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
     public void setOriginalSid() {
         this.originalSid = StringUtils.isNotBlank(this.sessionDetails.getSessionId());
+        this.sid = this.sessionDetails.getSessionId();
     }
 }

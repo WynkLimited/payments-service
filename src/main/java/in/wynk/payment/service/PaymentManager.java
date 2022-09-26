@@ -314,6 +314,7 @@ public class PaymentManager
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode, IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
 
+        //handle case when linked Purchase token available. Stop subscription with old purchase token
         if (BeanConstant.GOOGLE_PLAY.equals(paymentCode)) {
             GooglePlayLatestReceiptResponse gPlayResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
             if (gPlayResponse.getGooglePlayResponse().getLinkedPurchaseToken() != null) {

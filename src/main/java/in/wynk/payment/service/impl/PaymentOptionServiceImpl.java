@@ -184,7 +184,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .currency(plan.getPrice().getCurrency())
                 .title(offer.getTitle())
                 .day(plan.getPeriod().getDay())
-                .sku(plan.getSku().get(AddToBillConstants.ATB));
+                .sku(plan.getSku());
         if (trialEligible) {
             final PlanDTO trialPlan = paymentCachingService.getPlan(plan.getLinkedFreePlanId());
             planDetailsBuilder.trialDetails(PaymentOptionsDTO.TrialPlanDetails.builder().id(String.valueOf(trialPlan.getId())).day(trialPlan.getPeriod().getDay()).month(trialPlan.getPeriod().getMonth()).validityUnit(trialPlan.getPeriod().getValidityUnit()).validity(trialPlan.getPeriod().getValidity()).currency(trialPlan.getPrice().getCurrency()).timeUnit(trialPlan.getPeriod().getTimeUnit()).build());

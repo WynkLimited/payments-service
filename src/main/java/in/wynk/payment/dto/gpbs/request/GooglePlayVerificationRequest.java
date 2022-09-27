@@ -1,16 +1,11 @@
 package in.wynk.payment.dto.gpbs.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
-import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.IapVerificationRequestV2;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
 
 import javax.validation.Valid;
 
@@ -31,7 +26,10 @@ public class GooglePlayVerificationRequest extends IapVerificationRequestV2 {
     private GooglePlayPaymentDetails paymentDetails;
 
     @Analysed
-    private GoogleUserDetails userDetails;
+    private GooglePlayUserDetails userDetails;
+
+    @Analysed
+    private GooglePlayProductDetails productDetails;
 
     @Override
     public PaymentCode getPaymentCode () {

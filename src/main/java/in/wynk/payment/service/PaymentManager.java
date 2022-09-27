@@ -21,7 +21,7 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.event.PaymentsBranchEvent;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;
@@ -64,6 +64,7 @@ public class PaymentManager
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final GooglePlayService googlePlayService;
 
+    private static final List<Integer> NOTIFICATION = Arrays.asList(4, 6, 11, 13);
     public static final Integer PURCHASE_NOTIFICATION_TYPE = 4;
 
     @TransactionAware(txnId = "#request.originalTransactionId")
@@ -304,8 +305,9 @@ public class PaymentManager
         String paymentCode = request.getPaymentCode().getCode();
         if (BeanConstant.GOOGLE_PLAY.equals(paymentCode)) {
             final GooglePlayVerificationRequest googlePlayVerificationRequest = (GooglePlayVerificationRequest) request;
-            if (Objects.equals(googlePlayVerificationRequest.getPaymentDetails().getNotificationType(), PURCHASE_NOTIFICATION_TYPE)) {
-                BaseResponse<GooglePlayBillingResponse> response = googlePlayService.verifyReceiptDetails(googlePlayVerificationRequest);
+            Integer notificationTpe=googlePlayVerificationRequest.getPaymentDetails().getNotificationType();
+            if (NOTIFICATION.contains(notificationTpe)) {
+                BaseResponse<GooglePlayBillingResponse> response = googlePlayService.verifyRequest(googlePlayVerificationRequest);
                 if (Objects.nonNull(response)) {
                     return response;
                 }
@@ -314,13 +316,13 @@ public class PaymentManager
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode, IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
 
-        //handle case when linked Purchase token available. Stop subscription with old purchase token
+        //handle case when linked Purchase token available. Stop subscription with old purchase token i.e with this linked purchase token
         if (BeanConstant.GOOGLE_PLAY.equals(paymentCode)) {
-            GooglePlayLatestReceiptResponse gPlayResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-            if (gPlayResponse.getGooglePlayResponse().getLinkedPurchaseToken() != null) {
-                GooglePlayReceiptResponse googlePlayReceiptResponse = gPlayResponse.getGooglePlayResponse();
-                googlePlayReceiptResponse.setExpiryTimeMillis(String.valueOf(System.currentTimeMillis()));
-                LatestReceiptResponse latestReceiptResponse1 = createResponse(googlePlayReceiptResponse, googlePlayReceiptResponse, gPlayResponse);
+            GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+            if (googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken() != null) {
+                GooglePlayReceiptResponse googlePlayReceiptResponse = googlePlayLatestReceiptResponse.getGooglePlayResponse();
+
+                LatestReceiptResponse latestReceiptResponse1 = createResponse(googlePlayReceiptResponse, googlePlayLatestReceiptResponse);
                 performFraudDetectionAndSubscription(clientId, paymentCode, request, latestReceiptResponse1, verificationService);
             }
         }
@@ -458,20 +460,20 @@ public class PaymentManager
         return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
     }
 
-    private LatestReceiptResponse createResponse (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayReceiptResponse playReceiptResponse,
-                                                  GooglePlayLatestReceiptResponse gPlayResponse) {
+    private LatestReceiptResponse createResponse (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse) {
+        googlePlayReceiptResponse.setExpiryTimeMillis(String.valueOf(System.currentTimeMillis()));
         return GooglePlayLatestReceiptResponse.builder()
                 .freeTrial(false)
-                .autoRenewal(gPlayResponse.isAutoRenewal())
+                .autoRenewal(googlePlayLatestReceiptResponse.isAutoRenewal())
                 .googlePlayResponse(googlePlayReceiptResponse)
-                .planId(gPlayResponse.getPlanId())
-                .purchaseToken(googlePlayReceiptResponse.getLinkedPurchaseToken())
+                .planId(googlePlayLatestReceiptResponse.getPlanId())
+                .purchaseToken(googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken())
                 .extTxnId(googlePlayReceiptResponse.getLinkedPurchaseToken())
-                .couponCode(gPlayResponse.getCouponCode())
-                .notificationType(gPlayResponse.getNotificationType())
-                .subscriptionId(gPlayResponse.getSubscriptionId())
-                .packageName(gPlayResponse.getPackageName())
-                .service(gPlayResponse.getService())
+                .couponCode(googlePlayLatestReceiptResponse.getCouponCode())
+                .notificationType(googlePlayLatestReceiptResponse.getNotificationType())
+                .subscriptionId(googlePlayLatestReceiptResponse.getSubscriptionId())
+                .packageName(googlePlayLatestReceiptResponse.getPackageName())
+                .service(googlePlayLatestReceiptResponse.getService())
                 .build();
     }
 }

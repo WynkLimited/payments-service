@@ -12,7 +12,6 @@ import lombok.experimental.SuperBuilder;
  */
 @Getter
 @Setter
-/*@SuperBuilder*/
 public class GooglePlayAppDetails extends AppDetails {
     @Analysed
     private String packageName;

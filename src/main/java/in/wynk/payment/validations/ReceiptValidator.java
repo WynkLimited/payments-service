@@ -7,26 +7,17 @@ import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.GooglePlayReceiptDetails;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceipt;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
+import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
-import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import lombok.extern.slf4j.Slf4j;
 
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Slf4j
@@ -97,18 +88,12 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
                 ReceiptDetails receiptDetails =
                         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                                 .findByPurchaseToken(response.getLatestReceiptInfo().getPurchaseToken());
-                Integer notificationType = response.getLatestReceiptInfo().getNotificationType();
                 if (receiptDetails != null) {
                     if (Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) == receiptDetails.getExpiry()) {
                         throw new WynkRuntimeException(PaymentErrorType.PAY701);
-                    } else if ((Long.parseLong(response.getLatestReceiptInfo().getGooglePlayResponse().getExpiryTimeMillis()) < receiptDetails.getExpiry()) &&
-                            Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_EXPIRED.getNotificationTpe())) {
-                        receiptDetails.setNotificationType(notificationType);
-                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                                .save(receiptDetails);
-                        throw new WynkRuntimeException(PaymentErrorType.ATB04);
                     }
                 }
+
             }
         }
     }

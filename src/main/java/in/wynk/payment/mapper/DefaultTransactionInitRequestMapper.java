@@ -13,11 +13,14 @@ import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.IPricingManager;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
@@ -69,37 +72,21 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final IapVerificationRequestV2 request = wrapper.getVerificationRequestV2();
         GooglePlayVerificationRequest gRequest = (GooglePlayVerificationRequest) request;
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
+        GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) receiptResponse;
         final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(receiptResponse.getPlanId());
+        if(!selectedPlan.getService().equalsIgnoreCase(gRequest.getAppDetails().getService())){
+            throw new WynkRuntimeException(GooglePlayStatusCodes.GOOGLE_31020.getErrorTitle());
+        }
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
         final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId())
                 .uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentCode(request.getPaymentCode())
-                .event(getGooglePlayEvent(gRequest))
+                .event(MerchantServiceUtil.getGooglePlayEvent(gRequest,googleResponse.getGooglePlayResponse().getExpiryTimeMillis()))
                 .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial())
                 .userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build()).appDetails(AppDetails.builder().os(gRequest.getAppDetails().getOs())
                         .deviceId(gRequest.getAppDetails().getDeviceId()).service(selectedPlan.getService()).buildNo(gRequest.getAppDetails().getBuildNo()).build())
                 .build();
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
-    }
-
-    private static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest) {
-        Integer notificationType=gRequest.getPaymentDetails().getNotificationType();
-        switch (notificationType){
-            case 1: return PaymentEvent.RECOVERED;
-            case 2: return PaymentEvent.GOOGLE_RENEW;
-            case 3: return PaymentEvent.CANCELED;
-            case 4: return PaymentEvent.PURCHASED;
-            case 5: return PaymentEvent.HOLD;
-            case 6: return PaymentEvent.GRACE_PERIOD;
-            case 7: return PaymentEvent.RESTARTED;
-            case 8: return PaymentEvent.PRICE_CHANGE;
-            case 9: return PaymentEvent.GOOGLE_DEFERRED;
-            case 10: return PaymentEvent.PAUSED;
-            case 11: return PaymentEvent.PAUSE_SCHEDULE_CHANGED;
-            case 12: return PaymentEvent.REVOKED;
-            case 13: return PaymentEvent.EXPIRED;
-        }
-       throw new WynkRuntimeException("This event is not supported");
     }
 
     public static AbstractTransactionInitRequest from(PlanRenewalRequest request) {

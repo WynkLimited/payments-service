@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.gpbs;
+package in.wynk.payment.dto.gpbs.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

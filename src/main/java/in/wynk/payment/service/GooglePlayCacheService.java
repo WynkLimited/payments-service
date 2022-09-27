@@ -5,7 +5,7 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.dto.gpbs.GoogleApiRequest;
+import in.wynk.payment.dto.gpbs.request.GoogleApiRequest;
 import in.wynk.payment.dto.gpbs.GoogleApiResponse;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

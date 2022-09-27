@@ -10,7 +10,7 @@ import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
  * @author Nishesh Pandey
  */
 public interface GooglePlayService {
-    BaseResponse<GooglePlayBillingResponse> verifyReceiptDetails (GooglePlayVerificationRequest googlePlayVerificationRequest);
+    BaseResponse<GooglePlayBillingResponse> verifyRequest (GooglePlayVerificationRequest googlePlayVerificationRequest);
 
     void acknowledgeSubscription (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse);
 }

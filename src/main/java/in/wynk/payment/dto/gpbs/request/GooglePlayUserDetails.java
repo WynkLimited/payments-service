@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
  */
 @Setter
 @Getter
-public class GoogleUserDetails extends UserDetails {
+public class GooglePlayUserDetails extends UserDetails {
     @Analysed
     private String uid;
 }

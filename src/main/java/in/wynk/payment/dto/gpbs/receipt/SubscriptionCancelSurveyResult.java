@@ -11,7 +11,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SubscriptionCancelSurveyResult {
-
     private String cancelSurveyReason;
     private String userInputCancelReason;
 }

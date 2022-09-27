@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.gpbs;
+package in.wynk.payment.dto.gpbs.request;
 
 import in.wynk.payment.dto.IAPNotification;
 

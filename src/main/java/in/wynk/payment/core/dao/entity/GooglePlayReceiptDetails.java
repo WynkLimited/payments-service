@@ -21,5 +21,7 @@ public class GooglePlayReceiptDetails extends ReceiptDetails {
     private String subscriptionId;
     @Field("package_name")
     private String packageName;
+    @Field("sku_id")
+    private String skuId;
     private String service;
 }

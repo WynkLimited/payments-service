@@ -12,6 +12,9 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.service.ICouponCodeLinkService;
+import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -38,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.quartz.SimpleScheduleBuilder;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -247,6 +251,14 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        if (Objects.nonNull(event.getTransaction().getCoupon())) {
+            String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(event.getTransaction().getCoupon()).getCouponId();
+            Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
+            }).get(couponId);
+            AnalyticService.update(COUPON_GROUP, coupon.getId());
+            AnalyticService.update(DISCOUNT_TYPE, PERCENTAGE);
+            AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscountPercent());
+        }
         AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
         AnalyticService.update(INIT_TIMESTAMP, event.getTransaction().getInitTime().getTime().getTime());
         if (Objects.nonNull(event.getTransaction().getExitTime()))

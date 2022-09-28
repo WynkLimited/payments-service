@@ -19,7 +19,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wynk/v2/payment")
-public class RevenuePaymentControllerV2 {
+public class  RevenuePaymentControllerV2 {
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")

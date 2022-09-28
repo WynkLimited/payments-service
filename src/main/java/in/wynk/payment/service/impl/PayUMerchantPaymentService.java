@@ -24,6 +24,7 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
@@ -63,13 +64,12 @@ import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_S
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.dto.payu.PayUCommand.PRE_DEBIT_SI;
-import static in.wynk.payment.dto.payu.PayUCommand.UPI_MANDATE_REVOKE;
+import static in.wynk.payment.dto.payu.PayUCommand.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Service(PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>, IPreDebitNotificationService, ICancellingRecurringService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>, IPreDebitNotificationService, ICancellingRecurringService, IMerchantTDRService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;
@@ -86,6 +86,12 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUPaymentApiUrl;
     @Value("${payment.encKey}")
     private String encryptionKey;
+
+    @Value("${payment.merchant.payu.key}")
+    private String payUMerchantKey;
+    @Value("${payment.merchant.payu.salt}")
+    private String payUSalt;
+
 
     public PayUMerchantPaymentService(Gson gson,
                                       ObjectMapper objectMapper,
@@ -748,6 +754,22 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY112);
         }
+    }
+
+    @Override
+    public BaseTDRResponse getTDR(String transactionId) {
+        try {
+            final Transaction transaction = TransactionContext.get();
+            final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
+            final String midPayId = merchantTransaction.getExternalTransactionId();
+            final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PAYU_GETTDR.getCode(), midPayId);
+            final PayUTdrResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUTdrResponse>() {
+            });
+            return BaseTDRResponse.from(response.getMessage().getTdr());
+        } catch (Exception e) {
+            log.error(PAYU_TDR_ERROR, e.getMessage());
+        }
+        return BaseTDRResponse.from(-2);
     }
 
     private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {

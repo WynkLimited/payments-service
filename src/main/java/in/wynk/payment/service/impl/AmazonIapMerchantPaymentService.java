@@ -34,6 +34,7 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -75,9 +76,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private static final List<String> AMAZON_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
-    @Value("${payment.merchant.amazonIap.secret}")
+    @Value("${payment.merchant.AmazonIap.secret}")
     private String amazonIapSecret;
-    @Value("${payment.merchant.amazonIap.status.baseUrl}")
+    @Value("${payment.merchant.AmazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
     private final RestTemplate restTemplate;
 
@@ -270,7 +271,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
-        String requestUrl = amazonIapStatusUrl + amazonIapSecret + "/user/" + userId + "/receiptId/" + receiptId;
+        final String iapSecret = ClientContext.getClient().map((client) -> {
+            try {
+                return PropertyResolverUtils.resolve(client.getAlias(), BeanConstant.AMAZON_IAP_PAYMENT_SERVICE, PaymentConstants.MERCHANT_SECRET);
+            } catch (Exception e) {
+                return null;
+            }
+        }).orElse(amazonIapSecret);
+        String requestUrl = amazonIapStatusUrl + iapSecret + "/user/" + userId + "/receiptId/" + receiptId;
         RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
         ResponseEntity<AmazonIapReceiptResponse> responseEntity = restTemplate.exchange(requestEntity, AmazonIapReceiptResponse.class);
         if (responseEntity.getBody() != null)
@@ -301,8 +309,15 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if (Objects.isNull(planDTO)) {
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
+        Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
+        final UserPlanMapping.UserPlanMappingBuilder<AmazonIapReceiptResponse> builder = UserPlanMapping.<AmazonIapReceiptResponse>builder().message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build()).planId(planDTO.getId());
+        if (optionalReceiptDetails.isPresent()) {
+            final ReceiptDetails details = optionalReceiptDetails.get();
+            builder.uid(details.getUid()).msisdn(details.getMsisdn());
+            return builder.build();
+        }
         WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).findByExternalUserId(message.getAppUserId());
-        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build()).planId(planDTO.getId()).build();
+        return builder.uid(mapping.getId()).msisdn(mapping.getMsisdn()).build();
     }
 
     @Override

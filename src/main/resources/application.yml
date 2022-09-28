@@ -76,11 +76,14 @@ service:
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
+
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
+        selectivePlanComputationV2: ${service.subscription.api.root}/wynk/s2s/v2/plans/selective/eligible
+
 
   ####### payment props #######
   payment:

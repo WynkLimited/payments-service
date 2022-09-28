@@ -4,6 +4,7 @@ public interface BeanConstant {
 
     String ITUNES_PAYMENT_SERVICE = "iTunes";
     String GOOGLE_PLAY = "GooglePlay";
+    String PAYMENT_MANAGER = "PaymentManager";
     String GOOGLE_PLAY_BILLING_CACHE_SERVICE = "googlePlayBillingSystemCacheService";
     String PAYMENT_ERROR_DAO = "paymentErrorDao";
     String PAYU_MERCHANT_PAYMENT_SERVICE = "PayU";

@@ -25,6 +25,7 @@ public class PaymentOptionsDTO {
     private final IProductDetails productDetails;
     private final PlanDetails planDetails;
     private final List<PaymentGroupsDTO> paymentGroups;
+    private final String subType;
 
     @SuperBuilder
     @Getter

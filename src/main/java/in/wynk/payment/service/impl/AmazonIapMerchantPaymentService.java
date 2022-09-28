@@ -25,11 +25,9 @@ import in.wynk.payment.core.dao.entity.WynkUserExtUserMapping;
 import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.DecodedNotificationWrapper;
-import in.wynk.payment.dto.IapVerificationRequestV2;
-import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.UserPlanMapping;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.amazonIap.*;
+import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
@@ -65,7 +63,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentPreVerificationService, IMerchantIapPaymentVerificationService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
 
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_PURCHASED");
     private static final List<String> RENEW_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID");
@@ -395,5 +393,10 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }  else {
             throw new WynkRuntimeException(WynkErrorType.UT001);
         }
+    }
+
+
+    @Override
+    public void verifyRequest (IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
     }
 }

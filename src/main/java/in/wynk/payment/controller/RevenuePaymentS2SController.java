@@ -139,7 +139,7 @@ public class RevenuePaymentS2SController {
     public ResponseEntity<?> verifyIapV3(@Valid @RequestBody IapVerificationRequestV2 request) {
         request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSessionDetails().getSessionId());
-        return getResponseEntity(request);
+        return getResponseEntity(request.getSessionDetails().getSessionId() != null ? request : dummySessionGenerator.initSession(request));
     }
 
     @ManageSession(sessionId = "#request.sid")
@@ -152,12 +152,13 @@ public class RevenuePaymentS2SController {
         return baseResponse.getResponse();
     }
 
-    @ManageSession(sessionId = "#request.sid")
+    @ManageSession(sessionId = "#request.sessionDetails.sid")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequestV2 request) {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.doVerifyIapV2(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
+        BaseResponse<?> baseResponse = paymentManager.doVerifyIapV2(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
+                IapVerificationRequestV2Wrapper.builder().iapVerificationV2(request).latestReceiptResponse(null).build());
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();
     }

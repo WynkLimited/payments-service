@@ -11,6 +11,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PageResponseDetails;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
@@ -50,7 +51,7 @@ public class MerchantServiceUtil {
 
     public static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest, GooglePlayLatestReceiptResponse gResponse) {
         //if call is for linkedPurchaseToken, payment event should be cancelled for this old purchaseToken
-        if(Objects.nonNull(gResponse.getGooglePlayResponse().getLinkedPurchaseToken()) && gResponse.getPurchaseToken().equalsIgnoreCase(gResponse.getGooglePlayResponse().getLinkedPurchaseToken())){
+       if(Objects.nonNull(gResponse.getGooglePlayResponse().getLinkedPurchaseToken()) && gResponse.getPurchaseToken().equalsIgnoreCase(gResponse.getGooglePlayResponse().getLinkedPurchaseToken())){
             return PaymentEvent.CANCELLED;
         }
         Integer notificationType = gRequest.getPaymentDetails().getNotificationType();
@@ -113,5 +114,28 @@ public class MerchantServiceUtil {
                 .append(EQUAL)
                 .append(sessionDTO.<Integer>get(BUILD_NO))
                 .toString()).build());
+    }
+
+    public static boolean getAutoRenewalOpted (GooglePlayVerificationRequest gRequest, LatestReceiptResponse receiptResponse) {
+        switch (gRequest.getPaymentDetails().getNotificationType()) {
+            case 1:
+            case 2:
+            case 4:
+            case 5:
+            case 9:
+            case 13:
+                return receiptResponse.isAutoRenewal();
+            case 6:
+            case 7:
+            case 8:
+            case 10:
+            case 11:
+                return true;
+            case 3:
+            case 12:
+                return false;
+        }
+        throw new WynkRuntimeException("This event is not supported");
+
     }
 }

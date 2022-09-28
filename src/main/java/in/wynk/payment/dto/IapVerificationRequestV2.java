@@ -11,6 +11,7 @@ import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
 
@@ -20,6 +21,7 @@ import javax.validation.Valid;
  * @author Nishesh Pandey
  */
 @Getter
+@Setter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
@@ -55,13 +57,10 @@ public abstract class IapVerificationRequestV2 {
 
     private boolean originalSid;
 
-    private String sid; //needed only for manage session due to change in request structure
-
     public PaymentCode getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
     public void setOriginalSid() {
         this.originalSid = StringUtils.isNotBlank(this.sessionDetails.getSessionId());
-        this.sid = this.sessionDetails.getSessionId();
     }
 }

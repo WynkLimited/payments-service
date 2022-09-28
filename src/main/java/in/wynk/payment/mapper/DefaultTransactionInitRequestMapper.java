@@ -80,7 +80,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
         final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId())
                 .uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentCode(request.getPaymentCode())
-                .event(MerchantServiceUtil.getGooglePlayEvent(gRequest,googleResponse.getGooglePlayResponse().getExpiryTimeMillis()))
+                .event(MerchantServiceUtil.getGooglePlayEvent(gRequest,googleResponse))
                 .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial())
                 .userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build()).appDetails(AppDetails.builder().os(gRequest.getAppDetails().getOs())
                         .deviceId(gRequest.getAppDetails().getDeviceId()).service(selectedPlan.getService()).buildNo(gRequest.getAppDetails().getBuildNo()).build())

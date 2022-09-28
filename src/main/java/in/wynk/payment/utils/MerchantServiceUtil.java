@@ -17,6 +17,8 @@ import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.session.context.SessionContextHolder;
 
+import java.util.Objects;
+
 import static in.wynk.common.constant.BaseConstants.*;
 
 /**
@@ -32,13 +34,13 @@ public class MerchantServiceUtil {
             GooglePlayPaymentDetails paymentDetails = GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationResponse.getSubscriptionId()).purchaseToken(googlePlayVerificationResponse.getPurchaseToken()).build();
             builder.paymentDetails(paymentDetails);
             if (latestReceiptResponse != null && latestReceiptResponse.getSuccessUrl() != null) {
-                builder.pageDetails(PageResponseDetails.builder().pageUrl(new StringBuilder(latestReceiptResponse.getSuccessUrl()).toString()).build());
+                builder.pageDetails(PageResponseDetails.builder().pageUrl(latestReceiptResponse.getSuccessUrl()).build());
             } else {
                 addSuccessUrl(builder);
             }
         } else {
             if (latestReceiptResponse.getFailureUrl() != null) {
-                builder.pageDetails(PageResponseDetails.builder().pageUrl(new StringBuilder(latestReceiptResponse.getFailureUrl()).toString()).build());
+                builder.pageDetails(PageResponseDetails.builder().pageUrl(latestReceiptResponse.getFailureUrl()).build());
             } else {
                 addFailureUrl(builder);
             }
@@ -46,7 +48,11 @@ public class MerchantServiceUtil {
         return builder.build();
     }
 
-    public static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest, String expiry) {
+    public static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest, GooglePlayLatestReceiptResponse gResponse) {
+        //if call is for linkedPurchaseToken, payment event should be cancelled for this old purchaseToken
+        if(Objects.nonNull(gResponse.getGooglePlayResponse().getLinkedPurchaseToken()) && gResponse.getPurchaseToken().equalsIgnoreCase(gResponse.getGooglePlayResponse().getLinkedPurchaseToken())){
+            return PaymentEvent.CANCELLED;
+        }
         Integer notificationType = gRequest.getPaymentDetails().getNotificationType();
         switch (notificationType) {
             case 1:
@@ -55,7 +61,7 @@ public class MerchantServiceUtil {
             case 8:
                 return PaymentEvent.RENEW;
             case 3:
-                if (Long.parseLong(expiry) < System.currentTimeMillis()) {
+                if (Long.parseLong(gResponse.getGooglePlayResponse().getExpiryTimeMillis()) < System.currentTimeMillis()) {
                     return PaymentEvent.CANCELLED;
                 } else {
                     return PaymentEvent.UNSUBSCRIBE;

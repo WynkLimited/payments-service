@@ -5,12 +5,15 @@ import in.wynk.payment.dto.ProductDetailsDto;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * @author Nishesh Pandey
  */
 @Getter
 @Setter
 public class GooglePlayProductDetails extends ProductDetailsDto {
+    @NotNull
     @Analysed
     private String skuId;
 }

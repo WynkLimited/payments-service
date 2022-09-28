@@ -22,6 +22,7 @@ import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.event.PaymentsBranchEvent;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;
@@ -321,9 +322,8 @@ public class PaymentManager
             GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
             if (googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken() != null) {
                 GooglePlayReceiptResponse googlePlayReceiptResponse = googlePlayLatestReceiptResponse.getGooglePlayResponse();
-
-                LatestReceiptResponse latestReceiptResponse1 = createResponse(googlePlayReceiptResponse, googlePlayLatestReceiptResponse);
-                performFraudDetectionAndSubscription(clientId, paymentCode, request, latestReceiptResponse1, verificationService);
+                LatestReceiptResponse newLatestReceiptResponse = createResponseForLatestToken(googlePlayReceiptResponse, googlePlayLatestReceiptResponse);
+                performFraudDetectionAndSubscription(clientId, paymentCode, request, newLatestReceiptResponse, verificationService);
             }
         }
         return performFraudDetectionAndSubscription(clientId, paymentCode, request, latestReceiptResponse, verificationService);
@@ -353,7 +353,8 @@ public class PaymentManager
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
             //Acknowledge Google Play Api
-            if (BeanConstant.GOOGLE_PLAY.equals(paymentCode) && transaction.getStatus() == TransactionStatus.SUCCESS) {
+            GooglePlayLatestReceiptResponse gResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+            if (BeanConstant.GOOGLE_PLAY.equals(paymentCode) && transaction.getStatus() == TransactionStatus.SUCCESS && gResponse.getNotificationType().equals(GooglePlayNotificationType.SUBSCRIPTION_PURCHASED.getNotificationTpe())) {
                 googlePlayService.acknowledgeSubscription(request, latestReceiptResponse);
             }
         }
@@ -460,20 +461,21 @@ public class PaymentManager
         return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
     }
 
-    private LatestReceiptResponse createResponse (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse) {
+    private LatestReceiptResponse createResponseForLatestToken (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse) {
         googlePlayReceiptResponse.setExpiryTimeMillis(String.valueOf(System.currentTimeMillis()));
         return GooglePlayLatestReceiptResponse.builder()
                 .freeTrial(false)
                 .autoRenewal(googlePlayLatestReceiptResponse.isAutoRenewal())
                 .googlePlayResponse(googlePlayReceiptResponse)
                 .planId(googlePlayLatestReceiptResponse.getPlanId())
-                .purchaseToken(googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken())
-                .extTxnId(googlePlayReceiptResponse.getLinkedPurchaseToken())
+                .purchaseToken(googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken()) //purchase token should be linked purchase token
+                .extTxnId(googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken())
                 .couponCode(googlePlayLatestReceiptResponse.getCouponCode())
-                .notificationType(googlePlayLatestReceiptResponse.getNotificationType())
+                .notificationType(GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe()) //add notification type to Cancelled
                 .subscriptionId(googlePlayLatestReceiptResponse.getSubscriptionId())
                 .packageName(googlePlayLatestReceiptResponse.getPackageName())
                 .service(googlePlayLatestReceiptResponse.getService())
+                .autoRenewal(false) //if cancelled means autorenewal should be false
                 .build();
     }
 }

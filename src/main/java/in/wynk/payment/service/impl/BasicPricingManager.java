@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponManager;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -56,9 +58,14 @@ public class BasicPricingManager implements IPricingManager {
             pointRequest.setAmount(Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY106)).getPrice());
         }
         if (StringUtils.isNotEmpty(request.getCouponId())) {
-            final CouponCodeLink codeLink = couponCodeLinkService.fetchCouponCodeLink(request.getCouponId());
+            final CouponCodeLink codeLink = couponCodeLinkService.fetchCouponCodeLink(request.getCouponId().toUpperCase(Locale.ROOT));
             if (Objects.nonNull(codeLink)) {
-                final Double discountPercent = couponCachingService.get(codeLink.getCouponId()).getDiscountPercent();
+                String couponCode = codeLink.getCouponId();
+                Coupon coupon = couponCachingService.get(codeLink.getCouponId());
+                if (!coupon.isCaseSensitive()) {
+                    couponCode = codeLink.getCouponId().toUpperCase(Locale.ROOT);
+                }
+                final Double discountPercent = couponCachingService.get(couponCode).getDiscountPercent();
                 request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(request.getAmount() * (1 - discountPercent / 100))));
                 request.setDiscount(discountPercent);
             }

@@ -252,6 +252,9 @@ payment:
       rajtv:
         id: fJOBvL
         secret: Z4YXGVoZ9EKk5H48RGL09AsdRTMIiHCZ
+      enterr10:
+        id: M6BDr5
+        secret: LG1VW0paJvLOrfWKVO5wnOSXSkizhLJW
       key: aU2Uoi
       salt: 6vbnfVtw
       api:

@@ -25,7 +25,6 @@ public class PaymentOptionsDTO {
     private final IProductDetails productDetails;
     private final PlanDetails planDetails;
     private final List<PaymentGroupsDTO> paymentGroups;
-    private final String subType;
 
     @SuperBuilder
     @Getter
@@ -49,6 +48,7 @@ public class PaymentOptionsDTO {
         private final String type = BaseConstants.PLAN;
         private final String currency;
         private Map<String, String> sku;
+        private final String subType;
     }
 
     @SuperBuilder

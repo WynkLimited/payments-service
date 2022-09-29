@@ -1,10 +1,8 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
@@ -69,6 +67,18 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @Override
+    @Deprecated
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentOptions(String planId, String itemId) {
+        if (!StringUtils.isEmpty(planId) && paymentCachingService.containsPlan(planId)) {
+            return getPaymentOptionsForPlan(planId);
+        }
+        if (!StringUtils.isEmpty(itemId) && paymentCachingService.containsItem(itemId)) {
+            return getPaymentOptionsForItem(planId);
+        }
+        throw new WynkRuntimeException("Unknown planId or ItemId is supplied");
+    }
+
+    @Override
     public WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         try {
             if (request.getPaymentOptionRequest().getProductDetails().getType().equalsIgnoreCase(PLAN)) {
@@ -85,31 +95,19 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         }
     }
 
-    @Override
-    @Deprecated
-    public WynkResponseEntity<PaymentOptionsDTO> getPaymentOptions(String planId, String itemId) {
-        if (!StringUtils.isEmpty(planId) && paymentCachingService.containsPlan(planId)) {
-            return getPaymentOptionsForPlan(planId);
-        }
-        if (!StringUtils.isEmpty(itemId) && paymentCachingService.containsItem(itemId)) {
-            return getPaymentOptionsForItem(planId);
-        }
-        throw new WynkRuntimeException("Unknown planId or ItemId is supplied");
-    }
-
     @Deprecated
     private WynkResponseEntity<PaymentOptionsDTO> getPaymentOptionsForPlan(String planId) {
         HttpStatus httpStatus = HttpStatus.OK;
         WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
-        final PlanDTO planDTO = paymentCachingService.getPlan(planId);
+        final PlanDTO paidPlan = paymentCachingService.getPlan(planId);
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final Set<Integer> eligiblePlanIds = sessionDTO.get(ELIGIBLE_PLANS);
-        final boolean trialEligible = Optional.ofNullable(planDTO.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).map(trialPlanId -> !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(trialPlanId)).orElse(false);
+        final boolean trialEligible = Optional.ofNullable(paidPlan.getLinkedFreePlanId()).filter(trialPlanId -> paymentCachingService.containsPlan(String.valueOf(trialPlanId))).filter(trialPlanId -> paymentCachingService.getPlan(trialPlanId).getPlanType() == PlanType.FREE_TRIAL).map(trialPlanId -> !CollectionUtils.isEmpty(eligiblePlanIds) && eligiblePlanIds.contains(trialPlanId)).orElse(false);
         if (trialEligible)
-            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported), () -> planDTO.supportAutoRenew()));
-        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true), () -> planDTO.supportAutoRenew()));
-        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(sessionDTO.get(MSISDN)).subType(planDTO.getPlanType().getValue()).productDetails(buildPlanDetails(planId, trialEligible)).build()).build();
+            builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported), () -> paidPlan.supportAutoRenew()));
+        else builder.paymentGroups(getPaymentGroups((paymentMethod -> true), () -> paidPlan.supportAutoRenew()));
+        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build()).build();
     }
 
     @Deprecated
@@ -183,7 +181,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .currency(plan.getPrice().getCurrency())
                 .title(offer.getTitle())
                 .day(plan.getPeriod().getDay())
-                .sku(plan.getSku());
+                .sku(plan.getSku())
+                .subType(plan.getPlanType().getValue());
         if (trialEligible) {
             final PlanDTO trialPlan = paymentCachingService.getPlan(plan.getLinkedFreePlanId());
             planDetailsBuilder.trialDetails(PaymentOptionsDTO.TrialPlanDetails.builder().id(String.valueOf(trialPlan.getId())).day(trialPlan.getPeriod().getDay()).month(trialPlan.getPeriod().getMonth()).validityUnit(trialPlan.getPeriod().getValidityUnit()).validity(trialPlan.getPeriod().getValidity()).currency(trialPlan.getPrice().getCurrency()).timeUnit(trialPlan.getPeriod().getTimeUnit()).build());

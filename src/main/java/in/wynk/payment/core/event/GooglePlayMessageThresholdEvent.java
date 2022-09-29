@@ -17,7 +17,7 @@ public class GooglePlayMessageThresholdEvent extends MessageThresholdExceedEvent
     @Analysed
     private String url;
     @Analysed
-    private HttpRequest headers;
+    private String service;
     @Analysed
     private String developerPayload;
 }

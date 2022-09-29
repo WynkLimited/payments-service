@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.Map;
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION;
@@ -138,8 +139,8 @@ public class RevenuePaymentS2SController {
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIapV3(@Valid @RequestBody IapVerificationRequestV2 request) {
         request.setOriginalSid();
-        AnalyticService.update(ORIGINAL_SID, request.getSessionDetails().getSessionId());
-        return getResponseEntity(request.getSessionDetails().getSessionId() != null ? request : dummySessionGenerator.initSession(request));
+        AnalyticService.update(ORIGINAL_SID, (Objects.nonNull(request.getSessionDetails()) && Objects.nonNull(request.getSessionDetails().getSessionId()))? request.getSessionDetails().getSessionId(): null);
+        return getResponseEntity((Objects.isNull(request.getSessionDetails()) || Objects.isNull(request.getSessionDetails().getSessionId())) ? dummySessionGenerator.initSession(request): request);
     }
 
     @ManageSession(sessionId = "#request.sid")

@@ -120,13 +120,13 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     private List<PaymentOptionsDTO.PaymentGroupsDTO> getPaymentGroups(Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
-        String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             List<PaymentMethodDTO> methodDTOS =
                     availableMethods.get(group.getId()).stream().filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO =
                         PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
+                String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
                 if (groupsDTO.getPaymentGroup().equalsIgnoreCase(AddToBillConstants.ADDTOBILL)) {
                     if (os.equalsIgnoreCase(ANDROID)) {
                         paymentGroupsDTOS.add(groupsDTO);

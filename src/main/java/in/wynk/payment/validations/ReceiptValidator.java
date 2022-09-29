@@ -69,22 +69,14 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         }
     }
 
-    /*
-     * if latest receipt is null means wrong request
-     * if latest response available from Google then check if data is present in db.
-     * if data not present in db means request is for Purchase flow---> allow request
-     * if data present in db for then request can be for renewal or other notifications
-     * fraud check--> if expiration db in and latest expiration from google api is same means request is already processed
-     * else if latest expiration is less than expiration in db, check for notification type,
-     * if expiration notification--> update db with new notification type and throw error as nothing else should be done
-     * if expiration is for future and notification is for Subscription cancelled, update db and do nothing
-     * else expiration is in the past,subscription should be cancelled immediately--> should be done in the flow
-     */
     private static class GooglePlayReceiptValidator extends BaseHandler<IReceiptValidatorRequest<GooglePlayLatestReceiptResponse>> {
         @Override
         public void handle (IReceiptValidatorRequest<GooglePlayLatestReceiptResponse> response) {
-               if(RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).
-                        orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(response.getLatestReceiptInfo().getPurchaseToken()))
+            Optional<ReceiptDetails> receiptDetailsOptional = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).
+                    orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(response.getLatestReceiptInfo().getPurchaseToken());
+               if(receiptDetailsOptional.isPresent() &&
+                       Objects.equals(receiptDetailsOptional.get().getNotificationType(), response.getLatestReceiptInfo().getNotificationType()) &&
+                       !Objects.equals(response.getLatestReceiptInfo().getGooglePlayResponse().getLinkedPurchaseToken(), response.getLatestReceiptInfo().getPurchaseToken()))
                     throw new WynkRuntimeException(PaymentErrorType.PAY701);
             }
     }

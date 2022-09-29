@@ -7,6 +7,7 @@ import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.coupon.core.service.impl.CouponCodeLinkServiceImpl;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
@@ -50,7 +51,7 @@ public class BasicPricingManager implements IPricingManager {
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
-            if (Arrays.asList("ITUNES", "AMAZON_IAP", "GOOGLE_IAP").contains(request.getPaymentCode().getId()))
+            if (Arrays.asList("ITUNES", "AMAZON_IAP", PaymentConstants.GOOGLE_IAP).contains(request.getPaymentCode().getId()))
                 couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {

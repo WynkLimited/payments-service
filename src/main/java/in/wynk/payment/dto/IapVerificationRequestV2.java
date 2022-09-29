@@ -25,8 +25,6 @@ import javax.validation.Valid;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
 @JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP"), @JsonSubTypes.Type(value = GooglePlayVerificationRequest.class, name = "GOOGLE_IAP")})
 public abstract class IapVerificationRequestV2 {

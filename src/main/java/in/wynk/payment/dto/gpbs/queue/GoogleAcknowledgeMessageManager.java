@@ -19,13 +19,13 @@ import java.util.concurrent.TimeUnit;
 @Builder
 @ToString
 @AnalysedEntity
-@WynkQueue(queueName = "${payment.googlePlay.queue.provisioning.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(0, 2, 4, 6, 8, 9 , 10, 11, 12, 13, 6).get(#n)",publishUntil  = 3, publishUntilUnit = TimeUnit.DAYS))
+@WynkQueue(queueName = "${payment.googlePlay.queue.provisioning.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 60, 60, 60, 60, 300, 300, 300, 890, 890, 2400, 3600, 79200, 172800, 179800).get(#n)",publishUntil  = 3, publishUntilUnit = TimeUnit.DAYS))
 public class GoogleAcknowledgeMessageManager implements MessageToEventMapper<GooglePlayMessageThresholdEvent> {
     @Analysed
     private String url;
 
     @Analysed
-    private HttpHeaders headers;
+    private String service;
 
     @Analysed
     private GooglePlayAcknowledgeRequest body;
@@ -33,7 +33,8 @@ public class GoogleAcknowledgeMessageManager implements MessageToEventMapper<Goo
     @Override
     public GooglePlayMessageThresholdEvent map () {
         return GooglePlayMessageThresholdEvent.builder()
-                .maxAttempt(10).type("ACKNOWLEDGE").build();
-               // headers(getHeaders()).url(this.url);
+                .maxAttempt(10).type("ACKNOWLEDGE")
+                .url(url)
+                .service(service).build();
     }
 }

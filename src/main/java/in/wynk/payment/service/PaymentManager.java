@@ -292,16 +292,6 @@ public class PaymentManager
         }
     }
 
-
-    //if notification type is PURCHASE-> check whether data present in db for purchase request. If yes, return response
-    //else get the latest receipt and verify if request is valid if data is received from Google Play API
-    // 1. if purchase notification, store data in db with expiration date---> provision subscription--->Acknowledge Google api --> return response
-    // 2. if renewal notification---> compare current expiration data in db and expiration in the latest receipt
-    // a. if expiration in latest is for future -->  update db for new expiration and provision subscription for renewal---->return response
-    // b. if expiration in latest is past---> end subscription and update db ---> do nothing as expiration has already stopped
-    //3. if other notification types
-    // a. query Google play api for latest state
-    // b. update db with new notification type and expiration date in db
     @ClientAware(clientId = "#clientId")
     public BaseResponse<?> doVerifyIapV2 (String clientId, IapVerificationRequestV2Wrapper requestWrapper) {
         IapVerificationRequestV2 request = requestWrapper.getIapVerificationV2();
@@ -316,7 +306,7 @@ public class PaymentManager
         }
         BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, null, request));
         final AbstractTransactionInitRequest transactionInitRequest =
-                DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build());
+                DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build(), cachingService);
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         sqsManagerService.publishSQSMessage(
                 PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())

@@ -242,6 +242,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
+    @ClientAware(clientAlias = "#event.transaction.clientAlias")
     public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
         Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
         AnalyticService.update(UID, event.getTransaction().getUid());

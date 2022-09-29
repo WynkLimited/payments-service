@@ -51,11 +51,25 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     private String tokenUrl;
 
     @Value("${payment.googlePlay.rajTv.privateKey}")
-    private String privateKey;
+    private String rajTvPrivateKey;
     @Value("${payment.googlePlay.rajTv.privateKeyId}")
-    private String privateKeyId;
+    private String rajTvPrivateKeyId;
     @Value("${payment.googlePlay.rajTv.clientEmail}")
-    private String clientEmail;
+    private String rajTvClientEmail;
+
+    @Value("${payment.googlePlay.music.privateKey}")
+    private String musicPrivateKey;
+    @Value("${payment.googlePlay.music.privateKeyId}")
+    private String musicPrivateKeyId;
+    @Value("${payment.googlePlay.music.clientEmail}")
+    private String musicClientEmail;
+
+    @Value("${payment.googlePlay.airteltv.privateKey}")
+    private String airtelTvPrivateKey;
+    @Value("${payment.googlePlay.airteltv.privateKeyId}")
+    private String airtelTvPrivateKeyId;
+    @Value("${payment.googlePlay.airteltv.clientEmail}")
+    private String airtelTvClientEmail;
 
 
     private final Map<String, String> tokens = new ConcurrentHashMap<>();
@@ -69,11 +83,9 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     @PostConstruct
     @Scheduled(fixedDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON, initialDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON)
     private void init () {
-        generateJwtTokenAndGetAccessToken("rajtv", clientEmail, privateKeyId, privateKey);//for rajtv
-       // generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for airtelxstream
-        //generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for music
-        //generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for iqVideo
-        //generateJwtTokenAndGetAccessToken("iss", "email", "private_key_id"); //for enterr10
+        generateJwtTokenAndGetAccessToken("rajtv", rajTvClientEmail, rajTvPrivateKeyId, rajTvPrivateKey);//for rajtv
+        generateJwtTokenAndGetAccessToken("music", musicClientEmail, musicPrivateKeyId, musicPrivateKey); //for music
+        generateJwtTokenAndGetAccessToken("airteltv", airtelTvClientEmail, airtelTvPrivateKeyId, airtelTvPrivateKey); //for xstream
     }
 
     public void generateJwtTokenAndGetAccessToken (String client, String clientEmail, String privateKeyId, String privateKey) {

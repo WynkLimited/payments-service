@@ -152,7 +152,7 @@ public class RevenuePaymentS2SController {
         return baseResponse.getResponse();
     }
 
-    @ManageSession(sessionId = "#request.sessionDetails.sid")
+    @ManageSession(sessionId = "#request.sessionDetails.sessionId")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequestV2 request) {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());

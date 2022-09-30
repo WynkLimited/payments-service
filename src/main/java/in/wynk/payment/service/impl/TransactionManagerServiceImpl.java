@@ -4,7 +4,6 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -155,7 +154,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
             }).get(couponId);
             AnalyticService.update(COUPON_GROUP, coupon.getId());
-            AnalyticService.update(BaseConstants.DISCOUNT_TYPE, coupon.getDiscountPercent());
+            AnalyticService.update(DISCOUNT_TYPE, PERCENTAGE);
+            AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscountPercent());
         }
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());

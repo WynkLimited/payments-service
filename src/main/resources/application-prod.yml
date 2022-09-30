@@ -700,6 +700,53 @@ wynk:
                   socketTimeout: 5000
                 readPreference: secondaryPreferred
                 replicaSet: wcf
+        enterr10:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_payments_enterr10
+                password: 3217D9F83BF777888154
+                database: payments_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_coupons_enterr10
+                password: E9504307BBE0251C1F4E87E
+                database: coupons_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 5
+                  maxConnectionsPerHost: 20
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 5000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
     sql:
       enabled: true
       clients:

@@ -906,6 +906,45 @@ wynk:
                   naming:
                     physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                     implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        enterr10:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-rajtv-prod
+                  minimum-idle: 10
+                  maximumPoolSize: 20
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
 
 cache:
   caffeine:

@@ -185,16 +185,6 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
-  googlePlay:
-    baseUrl: https://androidpublisher.googleapis.com/androidpublisher/v3/applications/
-    purchaseUrl: /purchases/subscriptionsv2/
-    key: AIzaSyBr3yWKW5kso1e8H1_JmDFff1CK0b787oc
-    authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
-    tokenUrl: https://oauth2.googleapis.com/token
-    rajTv:
-      privateKey: -----BEGIN PRIVATE KEY-----MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCXzhHvSY+RO33Ggdklxie/hw/hGpB5Z42mYjCsxzwdXTQd/aVUGA+JD/ldZHWdaRcEayKYn86bIlF/HHIaXsFhfXDXcsFLfgCGjZ8Yo54ssMjj/rYw/5SDs7P9XfMhJymIDNTuC/LLmzq0I6WwgFXatWxek+I5DSAaDbx2rpvTdie8dY3uM8zkNQBtqKhM6Y76EWgFtJPLNT18CMiXJGYUucZB59P5mJAjDem0AVk6RRb8myqWX9OCVr92Nxct2k8OaXRH2p7LTEpbx4K9wzAYAtewooxzQ+H9sx/ZXfaw3RQu26b8dflLreXnL4BpMpnIDy17v9lh54UM8A5E4RtRAgMBAAECggEAHn36BEKWX+m/PdxfLcM7wLD0c5bOZlRyk3UtqcbrQEq0aUHFr7qVhEZ9JFFFfrTZNr3+WQHgkjC2hf3EvZ9C4L49qEkYon1QxbY0utJCt19bOtCy7+ymfD3gbYgtif8/zGAndRlZT6SCiiSO54EfvaqrdePmkOceB52yuXQhQLwv1MA/XH9x5NmiN3SlKZoNOHLbhG1Jj2bA0HYuGlMnlc44QKin+RdQ4aG7OXhuC8+hddHT3qfvT3TtsD1hTk3MpoS8BlpZSP6thwfcc6AIaoGVrpQP8aR3GmKZFpP38RLPbhhUzCsw9zKtigtJMYvh+K0PKojc71NvXG+iaWr/8QKBgQDGN4nh18uf3E0XiGM/uCzy92SmJYS9ftpEG26S813ajh4NjoNE0f8O58lNbhiBC5QMRBwCYzqkmcSQe9XbozDSCJfH6XDCbBBcz0Prn0ZB9bAxDmKaJPyFHiuTwuptCoHgXncQtdUJpqeUJbbwuYzfMb2CGagper0FV+iC72hQcwKBgQDEDuoxKwtAKTVTrV0fLu17rgpCUUZbYUYzWDiJLJR9gVyEhuFlgRHN6XZM3f3bSgpRUutnqlHzaZ3UVRk/q6laZqNXDZ+eixtw+ir//Lf4bjR3LhQaVVl5DgN5PXr00kC+pdj6sLtIvjwiXm5O32NimSNjg9oW4/gyE8tvxsgIKwKBgFI8fJIca7i5N6rJxROMn+l1xmZALqBH3tpe3zNMkOW6DLHnLIMC9OUEOTpMsRHo8dVc9Jnw/UWJHkordoCXZgvd0Mr6CPRAzVEUFMPO4uE+w4i2xSXaroG0ELRPK99tepDR4GgoaGiGogQO2aVp9g4rnso5RtFewMlUvXyFQywNAoGAEp3T8Q1ESThgfuyUThS3qinRgZCUHLM05kU3QRdBllVFQrRIDMpftWy4tf3SUBNMvYIhJjvPAk0CFppqBli3gQUD940snfJZjbXDhYEquuVECBkRAZsfHtaMz+NdnIembDP1UYCcmACwVxceZFDj8AXYjWeEuu20sJSemaOHdPcCgYAa1OzUuNb8VVaHUJUp4/0o4wc0YBp7AoQ8z8TJhp8aniz8oBXw3GCJmGavtEUWwRPTG29iQ8DfwtD/+bHGOFHgfMsb0ItYOWMz4Y4V21o+uIe5rCtMfxQkUoCpXmppaMlyhwQearPvg+aNXyiInxf6hstiiiFC/RxJ9GU1ZARCsw==-----END PRIVATE KEY-----
-      privateKeyId: c2d5cb3fb12f09a082505b2a79f92db0061f866f
-      clientEmail: raj-tv-service@raj-tv-363111.iam.gserviceaccount.com
   merchant:
     ####### payu props #########
     aps:

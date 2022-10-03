@@ -5,6 +5,7 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.dto.gpbs.GooglePlayConstant;
 import in.wynk.payment.dto.gpbs.request.GoogleApiRequest;
 import in.wynk.payment.dto.gpbs.GoogleApiResponse;
 import io.jsonwebtoken.Jwts;
@@ -83,9 +84,9 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     @PostConstruct
     @Scheduled(fixedDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON, initialDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON)
     private void init () {
-        generateJwtTokenAndGetAccessToken("rajtv", rajTvClientEmail, rajTvPrivateKeyId, rajTvPrivateKey);//for rajtv
-        generateJwtTokenAndGetAccessToken("music", musicClientEmail, musicPrivateKeyId, musicPrivateKey); //for music
-        generateJwtTokenAndGetAccessToken("airteltv", airtelTvClientEmail, airtelTvPrivateKeyId, airtelTvPrivateKey); //for xstream
+        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_RAJ_TV, rajTvClientEmail, rajTvPrivateKeyId, rajTvPrivateKey);//for rajtv
+        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_MUSIC, musicClientEmail, musicPrivateKeyId, musicPrivateKey); //for music
+        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_AIRTEL_TV, airtelTvClientEmail, airtelTvPrivateKeyId, airtelTvPrivateKey); //for xstream
     }
 
     public void generateJwtTokenAndGetAccessToken (String client, String clientEmail, String privateKeyId, String privateKey) {

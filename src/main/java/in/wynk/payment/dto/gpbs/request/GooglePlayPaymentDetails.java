@@ -13,6 +13,7 @@ import javax.validation.constraints.NotNull;
  * @author Nishesh Pandey
  */
 @Getter
+@Setter
 @Builder
 @ToString
 @AnalysedEntity
@@ -28,8 +29,7 @@ public class GooglePlayPaymentDetails {
     private String orderId;
 
     @Analysed
-    @NotNull
-    private Integer notificationType;
+    private Integer notificationType = 4;
 
     @Analysed
     private boolean valid;

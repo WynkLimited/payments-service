@@ -5,12 +5,14 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
+@Setter
 @SuperBuilder
 @AnalysedEntity
 public class GooglePlayLatestReceiptResponse extends LatestReceiptResponse {

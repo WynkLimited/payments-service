@@ -184,6 +184,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                         code = GooglePlayStatusCodes.GOOGLE_31021;
                         transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
                     } else if (receiptDetails == null && !PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) {
+                        log.info("This type of notification is never processed and the notification is not of purchase type for UID {} and plan Id {}", transaction.getUid(), transaction.getPlanId());
                         code = GooglePlayStatusCodes.GOOGLE_31006;
                         transaction.setStatus(TransactionStatus.FAILURE.name());
                     }else if ((receiptDetails == null && PURCHASE_NOTIFICATION_TYPE.equals(notificationType) && EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus()))) {
@@ -237,21 +238,20 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     }
                     lock.unlock();
                 }
-                if (code != null) {
-                    try{
-                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(code.getErrorCode())).description(code.getErrorTitle()).build());
-                    }catch (Exception e){
-                        log.error("Unable to publish event due to {}", e.getMessage());
-                    }
-
-                }
-
             } catch (Exception e) {
                 transaction.setStatus(TransactionStatus.FAILURE.name());
                 log.error(BaseLoggingMarkers.PAYMENT_ERROR, "fetchAndUpdateFromSource :: raised exception for uid : {} purchaseToken : {} ", transaction.getUid(), latestReceipt.getPurchaseToken(), e);
             }
         }
 
+        if (code != null) {
+            try{
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(code.getErrorCode())).description(code.getErrorTitle()).build());
+            }catch (Exception e){
+                log.error("Unable to publish event due to {}", e.getMessage());
+            }
+
+        }
     }
 
     private void saveReceipt (String uid, String msisdn, Integer planId, String transactionId, GooglePlayLatestReceiptResponse latestReceiptResponse) {
@@ -327,14 +327,19 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(response.getGooglePlayResponse().getDeveloperPayload()).build();
         String url =
-                baseUrl.concat(googlePlayVerificationRequest.getAppDetails().getPackageName()).concat(purchaseUrl).concat(googlePlayVerificationRequest.getPaymentDetails().getOrderId()).concat(TOKEN)
+                baseUrl.concat(googlePlayVerificationRequest.getAppDetails().getPackageName()).concat(purchaseUrl).concat(googlePlayVerificationRequest.getProductDetails().getSkuId()).concat(TOKEN)
                         .concat(googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM).concat(getApiKey(googlePlayVerificationRequest.getAppDetails().getService()));
         try {
             ResponseEntity<GooglePlayReceiptResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
+            if(responseEntity.getStatusCode() == HttpStatus.OK) {
+                log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken());
+            }
             if (responseEntity.getStatusCode() != HttpStatus.OK) {
                 publishAsync(url, body, googlePlayVerificationRequest.getAppDetails().getService());
             }
         } catch (Exception e) {
+            log.error("Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ", googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken(),e.getMessage());
+            log.info("Trying to publish message on queue for google acknowledgement. ");
             publishAsync(url, body, googlePlayVerificationRequest.getAppDetails().getService());
         }
     }

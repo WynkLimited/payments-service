@@ -467,6 +467,8 @@ service:
 webview:
   rajtv:
     host: https://pay.rajdigitaltv.com
+  enterr10:
+    host: https://pay.dangalplay.com
   host: https://pay.wynk.in
 
 ########### MONGO CONFIG ###########

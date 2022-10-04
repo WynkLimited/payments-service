@@ -79,8 +79,6 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock writeLock = lock.writeLock();
 
-    Map<String, String> serviceMap = new HashMap<>();
-
     @PostConstruct
     @Scheduled(fixedDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON, initialDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON)
     private void init () {

@@ -37,6 +37,19 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
+    public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                               ObjectMapper objectMapper,
+                                                                                               GooglePlaySubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor) {
+        return new PaymentReconciliationConsumerPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                googlePlaySubscriptionAcknowledgementSQSMessageExtractor,
+                threadPoolExecutor(4),
+                scheduledThreadPoolExecutor());
+    }
+
+    @Bean
     public PaymentRenewalConsumerPollingQueue paymentRenewalConsumerPollingQueue(@Value("${payment.pooling.queue.renewal.name}") String queueName,
                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                  ObjectMapper objectMapper,

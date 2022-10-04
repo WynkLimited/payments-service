@@ -21,6 +21,7 @@ import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -139,8 +140,8 @@ public class RevenuePaymentS2SController {
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
     public ResponseEntity<?> verifyIapV3(@Valid @RequestBody IapVerificationRequestV2 request) {
         request.setOriginalSid();
-        AnalyticService.update(ORIGINAL_SID, (Objects.nonNull(request.getSessionDetails()) && Objects.nonNull(request.getSessionDetails().getSessionId()))? request.getSessionDetails().getSessionId(): null);
-        return getResponseEntity((Objects.isNull(request.getSessionDetails()) || Objects.isNull(request.getSessionDetails().getSessionId())) ? dummySessionGenerator.initSession(request): request);
+        AnalyticService.update(ORIGINAL_SID, request.getSessionDetails().getSessionId());
+        return getResponseEntity(StringUtils.isNotBlank(request.getSessionDetails().getSessionId()) ? request : dummySessionGenerator.initSession(request));
     }
 
     @ManageSession(sessionId = "#request.sid")

@@ -14,5 +14,5 @@ public class SessionDetails {
 
     @JsonProperty("sid")
     @Analysed
-    private String sessionId = null;
+    private String sessionId;
 }

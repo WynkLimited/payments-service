@@ -265,6 +265,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
         final GooglePlayVerificationRequest request = (GooglePlayVerificationRequest) iapVerificationRequest;
+        if(Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails())) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY501);
+        }
         GooglePlayReceiptResponse googlePlayReceiptResponse =
                 googlePlayResponse(request.getPaymentDetails().getPurchaseToken(), request.getProductDetails().getSkuId(), request.getAppDetails().getPackageName(),
                         request.getAppDetails().getService());

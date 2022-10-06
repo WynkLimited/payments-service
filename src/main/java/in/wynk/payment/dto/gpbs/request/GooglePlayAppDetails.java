@@ -1,11 +1,11 @@
 package in.wynk.payment.dto.gpbs.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.payment.dto.AppDetails;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * @author Nishesh Pandey
@@ -14,5 +14,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 public class GooglePlayAppDetails extends AppDetails {
     @Analysed
+    @NotNull
     private String packageName;
 }

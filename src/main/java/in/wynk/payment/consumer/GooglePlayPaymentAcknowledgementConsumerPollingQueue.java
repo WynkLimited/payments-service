@@ -3,9 +3,10 @@ package in.wynk.payment.consumer;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.payment.dto.gpbs.queue.GoogleAcknowledgeMessageManager;
-import in.wynk.payment.service.PaymentManager;
+import in.wynk.payment.dto.GoogleAcknowledgeMessageManager;
+import in.wynk.payment.service.GooglePlayService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
@@ -26,14 +27,14 @@ public class GooglePlayPaymentAcknowledgementConsumerPollingQueue extends Abstra
 
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
-    @Value("${payment.pooling.queue.reconciliation.enabled}")
-    private boolean reconciliationPollingEnabled;
-    @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delay}")
-    private long reconciliationPoolingDelay;
-    @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
-    private TimeUnit reconciliationPoolingDelayTimeUnit;
+    @Value("${payment.pooling.queue.acknowledgement.enabled}")
+    private boolean subscriptionAcknowledgementPollingEnabled;
+    @Value("${payment.pooling.queue.acknowledgement.sqs.consumer.delay}")
+    private long subscriptionAcknowledgementPoolingDelay;
+    @Value("${payment.pooling.queue.acknowledgement.sqs.consumer.delayTimeUnit}")
+    private TimeUnit subscriptionAcknowledgementPoolingDelayTimeUnit;
     @Autowired
-    private PaymentManager paymentManager;
+    private GooglePlayService googlePlayService;
 
     public GooglePlayPaymentAcknowledgementConsumerPollingQueue(String queueName,
                                                      AmazonSQS sqs,
@@ -50,21 +51,36 @@ public class GooglePlayPaymentAcknowledgementConsumerPollingQueue extends Abstra
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "subscriptionAcknowledgement")
     public void consume (GoogleAcknowledgeMessageManager message) {
-
+        AnalyticService.update(message);
+        googlePlayService.acknowledgeSubscription(message.getPackageName(), message.getService(), message.getPurchaseToken(), message.getDeveloperPayload(), message.getSkuId(), true);
     }
 
     @Override
     public Class<GoogleAcknowledgeMessageManager> messageType () {
-        return null;
+        return GoogleAcknowledgeMessageManager.class;
     }
 
     @Override
     public void start () {
+        if (subscriptionAcknowledgementPollingEnabled) {
+            log.info("Starting GooglePlayPaymentAcknowledgementConsumerPollingQueue...");
+            pollingThreadPool.scheduleWithFixedDelay(
+                    this::poll,
+                    0,
+                    subscriptionAcknowledgementPoolingDelay,
+                    subscriptionAcknowledgementPoolingDelayTimeUnit
+            );
+        }
 
     }
 
     @Override
     public void stop () {
+        if (subscriptionAcknowledgementPollingEnabled) {
+            log.info("Shutting down GooglePlayPaymentAcknowledgementConsumerPollingQueue ...");
+            pollingThreadPool.shutdownNow();
+            messageHandlerThreadPool.shutdown();
+        }
 
     }
 }

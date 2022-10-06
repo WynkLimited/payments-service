@@ -326,7 +326,9 @@ public class PaymentManager
             GooglePlayLatestReceiptResponse gResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
             if (BeanConstant.GOOGLE_PLAY.equals(paymentCode) && transaction.getStatus() == TransactionStatus.SUCCESS &&
                     gResponse.getNotificationType().equals(GooglePlayNotificationType.SUBSCRIPTION_PURCHASED.getNotificationTpe())) {
-                googlePlayService.acknowledgeSubscription(request, latestReceiptResponse);
+                GooglePlayVerificationRequest googlePlayVerificationRequest = (GooglePlayVerificationRequest) request;
+                GooglePlayLatestReceiptResponse response = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+                googlePlayService.acknowledgeSubscription(googlePlayVerificationRequest.getAppDetails().getPackageName(), googlePlayVerificationRequest.getAppDetails().getService(),googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken(), response.getGooglePlayResponse().getDeveloperPayload(), googlePlayVerificationRequest.getProductDetails().getSkuId(), false);
             }
         }
     }

@@ -28,7 +28,7 @@ import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptInfo;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
-import in.wynk.payment.dto.gpbs.queue.GoogleAcknowledgeMessageManager;
+import in.wynk.payment.dto.GoogleAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -40,7 +40,6 @@ import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
-import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -266,6 +265,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
         final GooglePlayVerificationRequest request = (GooglePlayVerificationRequest) iapVerificationRequest;
+        if(Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails())) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY501);
+        }
         GooglePlayReceiptResponse googlePlayReceiptResponse =
                 googlePlayResponse(request.getPaymentDetails().getPurchaseToken(), request.getProductDetails().getSkuId(), request.getAppDetails().getPackageName(),
                         request.getAppDetails().getService());
@@ -278,11 +280,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
            String key=getApiKey(service);
         try {
             String url = baseUrl.concat(packageName).concat(purchaseUrl).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
-            return getPlayStoreResponse(url, service, headers).getBody();
+            return getPlayStoreResponse(url, headers).getBody();
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE, "Exception while getting data from google Play API: {}", e.getMessage());
-           // String url = mockUrl;
-           // return getPlayStoreResponse(url, service, headers).getBody();
             throw new WynkRuntimeException(PaymentErrorType.PAY027);
         }
     }
@@ -298,7 +298,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         throw new WynkRuntimeException("This service is not configured for API Key");
     }
 
-    private ResponseEntity<GooglePlayReceiptResponse> getPlayStoreResponse (String url, String service, HttpHeaders headers) {
+    private ResponseEntity<GooglePlayReceiptResponse> getPlayStoreResponse (String url, HttpHeaders headers) {
         ResponseEntity<GooglePlayReceiptResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), GooglePlayReceiptResponse.class);
         return responseEntity;
     }
@@ -320,36 +320,35 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @Override
-    public void acknowledgeSubscription (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse) {
-        GooglePlayVerificationRequest googlePlayVerificationRequest = (GooglePlayVerificationRequest) request;
-        GooglePlayLatestReceiptResponse response = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-        HttpHeaders headers = getHeaders(googlePlayVerificationRequest.getAppDetails().getService());
+    public void acknowledgeSubscription (String packageName, String service, String purchaseToken, String developerPayload, String skuId, boolean isAsync) {
+        HttpHeaders headers = getHeaders(service);
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(response.getGooglePlayResponse().getDeveloperPayload()).build();
+        GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(developerPayload).build();
         String url =
-                baseUrl.concat(googlePlayVerificationRequest.getAppDetails().getPackageName()).concat(purchaseUrl).concat(googlePlayVerificationRequest.getProductDetails().getSkuId()).concat(TOKEN)
-                        .concat(googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM).concat(getApiKey(googlePlayVerificationRequest.getAppDetails().getService()));
+                baseUrl.concat(packageName).concat(purchaseUrl).concat(skuId).concat(TOKEN)
+                        .concat(purchaseToken).concat(ACKNOWLEDGE).concat(API_KEY_PARAM).concat(getApiKey(service));
         try {
             ResponseEntity<GooglePlayReceiptResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
             if(responseEntity.getStatusCode() == HttpStatus.OK) {
-                log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken());
+                log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", purchaseToken);
             }
-            if (responseEntity.getStatusCode() != HttpStatus.OK) {
-                publishAsync(url, body, googlePlayVerificationRequest.getAppDetails().getService());
+            if (responseEntity.getStatusCode() != HttpStatus.OK && !isAsync) {
+                publishAsync(packageName, service, purchaseToken, developerPayload, skuId);
             }
         } catch (Exception e) {
-            log.error("Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ", googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken(),e.getMessage());
+            log.error("Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ", purchaseToken,e.getMessage());
             log.info("Trying to publish message on queue for google acknowledgement. ");
-            publishAsync(url, body, googlePlayVerificationRequest.getAppDetails().getService());
+            if(!isAsync)
+            publishAsync(packageName, service, purchaseToken, developerPayload, skuId);
         }
     }
 
-    private void publishAsync (String url, GooglePlayAcknowledgeRequest body, String service) {
-        GoogleAcknowledgeMessageManager message = GoogleAcknowledgeMessageManager.builder().url(url).body(body).service(service).build();
+    private void publishAsync (String packageName, String service, String purchaseToken, String developerPayload, String skuId) {
+        GoogleAcknowledgeMessageManager message = GoogleAcknowledgeMessageManager.builder().packageName(packageName).service(service).purchaseToken(purchaseToken).skuId(skuId).developerPayload(developerPayload).build();
         try {
             sqsMessagePublisher.publishSQSMessage(message);
         } catch (Exception e) {
-            log.error("Unable to publish acknowledge message on queue {}",e.getMessage());
+            log.error("Unable to publish acknowledge message on queue {}", e.getMessage());
         }
     }
 
@@ -418,7 +417,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .extTxnId(googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken()).couponCode(googlePlayLatestReceiptResponse.getCouponCode())
                 .notificationType(GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe()) //add notification type to Cancelled
                 .subscriptionId(googlePlayLatestReceiptResponse.getSubscriptionId()).packageName(googlePlayLatestReceiptResponse.getPackageName()).service(googlePlayLatestReceiptResponse.getService())
-                .autoRenewal(false) //if cancelled means autorenewal should be false
+                .autoRenewal(false) //if cancelled means autoRenewal should be false
                 .build();
     }
 }

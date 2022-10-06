@@ -1,10 +1,11 @@
 package in.wynk.payment.dto.gpbs.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
-import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.UserDetails;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
+import lombok.Getter;
+import lombok.Setter;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * @author Nishesh Pandey
@@ -13,5 +14,6 @@ import lombok.experimental.SuperBuilder;
 @Getter
 public class GooglePlayUserDetails extends UserDetails {
     @Analysed
+    @NotNull
     private String uid;
 }

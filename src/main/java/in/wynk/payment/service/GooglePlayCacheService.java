@@ -84,7 +84,6 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     private void init () {
         generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_RAJ_TV, rajTvClientEmail, rajTvPrivateKeyId, rajTvPrivateKey);//for rajtv
         generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_MUSIC, musicClientEmail, musicPrivateKeyId, musicPrivateKey); //for music
-        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_AIRTEL_TV, airtelTvClientEmail, airtelTvPrivateKeyId, airtelTvPrivateKey); //for xstream
     }
 
     public void generateJwtTokenAndGetAccessToken (String client, String clientEmail, String privateKeyId, String privateKey) {
@@ -124,6 +123,9 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
             try {
                 GoogleApiResponse googleApiResponse = responseEntity.getBody();
                 tokens.put(client, googleApiResponse.getAccessToken());
+                if(GooglePlayConstant.SERVICE_MUSIC.equals(client)) { //credentials are same for music and xstream. So, access token will also be same.
+                   tokens.put(GooglePlayConstant.SERVICE_AIRTEL_TV,googleApiResponse.getAccessToken());
+                }
             } catch (Throwable th) {
                 log.error(BaseLoggingMarkers.APPLICATION_ERROR, "Exception occurred while refreshing google token cache. Exception: {}", th.getMessage(), th);
                 throw th;

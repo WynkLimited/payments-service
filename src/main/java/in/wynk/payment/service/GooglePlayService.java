@@ -10,5 +10,6 @@ import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
  * @author Nishesh Pandey
  */
 public interface GooglePlayService {
-    void acknowledgeSubscription (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse);
+
+    void acknowledgeSubscription (String packageName, String service, String purchaseToken, String developerPayload, String skuId, boolean isAsync);
 }

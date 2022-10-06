@@ -32,6 +32,7 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_TOKEN = "token";
     String SE_BILLING = "SE_BILLING";
     String AMAZON_IAP = "AMAZON_IAP";
+    String GOOGLE_IAP ="GOOGLE_IAP";
     String SUBTITLE_TEXT = "subtitle";
     String BUTTON_TEXT = "buttonText";
     String MERCHANT_SECRET = "secret";

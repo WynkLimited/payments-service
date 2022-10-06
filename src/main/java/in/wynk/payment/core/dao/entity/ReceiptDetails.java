@@ -10,6 +10,7 @@ import java.io.Serializable;
 
 @Getter
 @ToString
+@Setter
 @SuperBuilder
 @Document(collection = "receipt_details")
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
@@ -26,5 +27,8 @@ public abstract class ReceiptDetails extends MongoBaseEntity<String> implements 
     private String paymentTransactionId;
     @Field("receipt_transaction_id")
     private String receiptTransactionId;
+    @Field("notification_type")
+    private Integer notificationType;
+    private boolean renew;
 
 }

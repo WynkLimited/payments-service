@@ -7,19 +7,22 @@ import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.GooglePlayReceiptDetails;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
+@Slf4j
 public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<LatestReceiptResponse>> {
 
     private final Map<String, BaseHandler> delegate = new HashMap<>();
@@ -27,6 +30,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
     public ReceiptValidator() {
         delegate.put(PaymentConstants.ITUNES, new ItunesReceiptValidator());
         delegate.put(PaymentConstants.AMAZON_IAP, new AmazonReceiptValidator());
+        delegate.put(PaymentConstants.GOOGLE_IAP, new GooglePlayReceiptValidator());
     }
 
     @Override
@@ -65,4 +69,15 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         }
     }
 
+    private static class GooglePlayReceiptValidator extends BaseHandler<IReceiptValidatorRequest<GooglePlayLatestReceiptResponse>> {
+        @Override
+        public void handle (IReceiptValidatorRequest<GooglePlayLatestReceiptResponse> response) {
+            Optional<ReceiptDetails> receiptDetailsOptional = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).
+                    orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(response.getLatestReceiptInfo().getPurchaseToken());
+               if(receiptDetailsOptional.isPresent() &&
+                       Objects.equals(receiptDetailsOptional.get().getNotificationType(), response.getLatestReceiptInfo().getNotificationType()) &&
+                       !Objects.equals(response.getLatestReceiptInfo().getGooglePlayResponse().getLinkedPurchaseToken(), response.getLatestReceiptInfo().getPurchaseToken()))
+                    throw new WynkRuntimeException(PaymentErrorType.PAY701);
+            }
+    }
 }

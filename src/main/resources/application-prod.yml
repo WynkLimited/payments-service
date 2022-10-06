@@ -122,6 +122,19 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      acknowledgement:
+        enabled: true
+        name: wcf-payment-receipt-ack-prod-sqs
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       reconciliation:
         enabled: true
         name: wcf-production-revenue-payment-reconcilation
@@ -480,6 +493,8 @@ service:
 webview:
   rajtv:
     host: https://pay.rajdigitaltv.com
+  enterr10:
+    host: https://pay.dangalplay.com
   host: https://pay.wynk.in
 
 ########### MONGO CONFIG ###########
@@ -716,6 +731,53 @@ wynk:
                   socketTimeout: 5000
                 readPreference: secondaryPreferred
                 replicaSet: wcf
+        enterr10:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_payments_enterr10
+                password: 3217D9F83BF777888154
+                database: payments_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_coupons_enterr10
+                password: E9504307BBE0251C1F4E87E
+                database: coupons_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 5
+                  maxConnectionsPerHost: 20
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 5000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
     sql:
       enabled: true
       clients:
@@ -846,6 +908,45 @@ wynk:
               source:
                 hikari:
                   jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-rajtv-prod
+                  minimum-idle: 10
+                  maximumPoolSize: 20
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        enterr10:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
                   username: huygens
                   password: 2dtRAHGI5OhfBj1hNkpd
                   driver-class-name: com.mysql.cj.jdbc.Driver

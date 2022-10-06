@@ -15,9 +15,17 @@ import org.springframework.http.HttpRequest;
 @AnalysedEntity
 public class GooglePlayMessageThresholdEvent extends MessageThresholdExceedEvent {
     @Analysed
-    private String url;
+    private String packageName;
+
     @Analysed
     private String service;
+
+    @Analysed
+    private String purchaseToken;
+
     @Analysed
     private String developerPayload;
+
+    @Analysed
+    private String skuId;
 }

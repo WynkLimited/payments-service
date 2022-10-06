@@ -58,6 +58,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY400("Invalid Request", "Invalid request", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY401("Lock Can not be acquired over given id", "Lock Can not be acquired over given id", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
+    PAY501("Invalid Request", "Mandatory data in request is missing.", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY602("Validation Failure", "Given Plan Id Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 

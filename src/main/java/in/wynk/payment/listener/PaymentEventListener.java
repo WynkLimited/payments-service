@@ -268,6 +268,8 @@ public class PaymentEventListener {
             final BaseTDRResponse tdr = paymentManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
         }
+        if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
+            AnalyticService.update(event.getPurchaseDetails().getAppDetails());
         publishBranchEvent(event);
     }
 

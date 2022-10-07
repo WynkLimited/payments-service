@@ -133,7 +133,6 @@ public class RevenuePaymentS2SController {
     public ResponseEntity<?> verifyIap2(@Valid @RequestBody IapVerificationRequest request) {
         request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSid());
-
         try {
             SessionDTO session = loadSession(request.getSid());
             if(session.getSessionPayload().containsKey("successWebUrl") && session.getSessionPayload().get("successWebUrl") != null)

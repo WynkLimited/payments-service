@@ -65,14 +65,6 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     @Value("${payment.googlePlay.music.clientEmail}")
     private String musicClientEmail;
 
-    @Value("${payment.googlePlay.airteltv.privateKey}")
-    private String airtelTvPrivateKey;
-    @Value("${payment.googlePlay.airteltv.privateKeyId}")
-    private String airtelTvPrivateKeyId;
-    @Value("${payment.googlePlay.airteltv.clientEmail}")
-    private String airtelTvClientEmail;
-
-
     private final Map<String, String> tokens = new ConcurrentHashMap<>();
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
 

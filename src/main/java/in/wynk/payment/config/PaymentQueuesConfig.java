@@ -37,14 +37,14 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public GooglePlayPaymentAcknowledgementConsumerPollingQueue googlePlayPaymentAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
-                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                               ObjectMapper objectMapper,
-                                                                                               GooglePlaySubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor) {
-        return new GooglePlayPaymentAcknowledgementConsumerPollingQueue(queueName,
+    public SubscriptionAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                                ObjectMapper objectMapper,
+                                                                                                                SubscriptionAcknowledgementSQSMessageExtractor subscriptionAcknowledgementSQSMessageExtractor) {
+        return new SubscriptionAcknowledgementConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
-                googlePlaySubscriptionAcknowledgementSQSMessageExtractor,
+                subscriptionAcknowledgementSQSMessageExtractor,
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor());
     }
@@ -163,9 +163,9 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public GooglePlaySubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
-                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
-        return new GooglePlaySubscriptionAcknowledgementSQSMessageExtractor(queueName, sqsClients);
+    public SubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                                   @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new SubscriptionAcknowledgementSQSMessageExtractor(queueName, sqsClients);
     }
 
     private ExecutorService threadPoolExecutor(int threadCount) {

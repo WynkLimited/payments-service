@@ -35,7 +35,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY026("Payment Renewal Failure", "Unable tot renewal itunes subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ITUNES_RENEWAL_ERROR),
     PAY027("Verification Failure ", "Failure in validating transaction from google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE),
     PAY028("Payment Renewal Failure", "Unable tot renewal google Play subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GOOGLE_PLAY_RENEWAL_ERROR),
-    PAY029("Verification Failure ", "Failure in validating receipt from google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE),
+    PAY029("Acknowledgement Failure ", "Failure in acknowledging subscription purchase to google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE),
 
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),

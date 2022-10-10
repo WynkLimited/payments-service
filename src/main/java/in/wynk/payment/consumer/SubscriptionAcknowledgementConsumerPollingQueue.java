@@ -71,7 +71,6 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
                     .paymentCode(message.getPaymentCode())
                     .appDetails(appDetails)
                     .productDetails(productDetails)
-                    .isAsync(true)
                     .developerPayload(message.getDeveloperPayload())
                     .build();
 

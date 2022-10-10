@@ -320,7 +320,8 @@ public class PaymentManager
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
             if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                acknowledgeSubscription(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
+
+            publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
             }
         }
     }
@@ -335,7 +336,6 @@ public class PaymentManager
                     .appDetails(googleRequest.getAppDetails())
                     .paymentDetails(googleRequest.getPaymentDetails())
                     .paymentCode(request.getPaymentCode())
-                    .isAsync(false)
                     .build();
         }
         return null;
@@ -448,5 +448,12 @@ public class PaymentManager
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
                 BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
+    }
+
+    @Override
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+        acknowledgementService.publishAsync(abstractPaymentAcknowledgementRequest);
     }
 }

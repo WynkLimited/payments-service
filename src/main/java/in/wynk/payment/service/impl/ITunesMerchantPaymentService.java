@@ -563,4 +563,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
 
     }
+
+    @Override
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+
+    }
 }

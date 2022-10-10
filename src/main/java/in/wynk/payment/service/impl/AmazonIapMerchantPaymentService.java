@@ -404,4 +404,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
 
     }
+
+    @Override
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+
+    }
 }

@@ -15,7 +15,4 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractPaymentAcknowledgementRequest {
     @Analysed
     private final PaymentCode paymentCode;
-
-    @Analysed
-    private final boolean isAsync;
 }

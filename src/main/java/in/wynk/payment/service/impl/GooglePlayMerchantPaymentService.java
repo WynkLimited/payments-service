@@ -281,7 +281,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         String key = getApiKey(service);
         try {
             String url = baseUrl.concat(packageName).concat(purchaseUrl).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
-            return getPlayStoreResponse(url, headers).getBody();
+            return getPlayStoreResponse(mockUrl, headers).getBody();
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE, "Exception while getting data from google Play API: {}", e.getMessage());
             throw new WynkRuntimeException(PaymentErrorType.PAY027);
@@ -324,40 +324,36 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         GooglePlaySubscriptionAcknowledgementRequest request = (GooglePlaySubscriptionAcknowledgementRequest) abstractPaymentAcknowledgementRequest;
-        if (!abstractPaymentAcknowledgementRequest.isAsync()) {
-            publishAsync(request.getAppDetails().getPackageName(), request.getAppDetails().getService(),
-                    request.getPaymentDetails().getPurchaseToken(), request.getDeveloperPayload(),
-                    request.getProductDetails().getSkuId(), request.getPaymentCode());
-        } else {
-            HttpHeaders headers = getHeaders(request.getAppDetails().getService());
-            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-            GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
-            String url =
-                    baseUrl.concat(request.getAppDetails().getPackageName()).concat(purchaseUrl).concat(request.getProductDetails().getSkuId())
-                            .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
-                            .concat(getApiKey(request.getAppDetails().getService()));
-            try {
-                ResponseEntity<GooglePlayReceiptResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
-                if (responseEntity.getStatusCode() != HttpStatus.OK) {
-                    log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {}: ",
-                            request.getPaymentDetails().getPurchaseToken());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY029);
-                }
-                log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
-            } catch (Exception e) {
-                log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ",
-                        request.getPaymentDetails().getPurchaseToken(),
-                        e.getMessage());
+        HttpHeaders headers = getHeaders(request.getAppDetails().getService());
+        headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
+        String url =
+                baseUrl.concat(request.getAppDetails().getPackageName()).concat(purchaseUrl).concat(request.getProductDetails().getSkuId())
+                        .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
+                        .concat(getApiKey(request.getAppDetails().getService()));
+        try {
+            ResponseEntity<GooglePlayReceiptResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
+            if (responseEntity.getStatusCode() != HttpStatus.OK) {
+                log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {}: ",
+                        request.getPaymentDetails().getPurchaseToken());
                 throw new WynkRuntimeException(PaymentErrorType.PAY029);
             }
+            log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ",
+                    request.getPaymentDetails().getPurchaseToken(),
+                    e.getMessage());
+            throw new WynkRuntimeException(PaymentErrorType.PAY029);
         }
     }
 
-    private void publishAsync (String packageName, String service, String purchaseToken, String developerPayload, String skuId, PaymentCode paymentCode) {
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         log.info("Trying to publish message on queue for google acknowledgement. ");
+        GooglePlaySubscriptionAcknowledgementRequest request = (GooglePlaySubscriptionAcknowledgementRequest) abstractPaymentAcknowledgementRequest;
         SubscriptionAcknowledgeMessageManager
-                message = SubscriptionAcknowledgeMessageManager.builder().paymentCode(paymentCode).packageName(packageName).service(service).purchaseToken(purchaseToken).skuId(skuId)
-                .developerPayload(developerPayload).build();
+                message = SubscriptionAcknowledgeMessageManager.builder().paymentCode(request.getPaymentCode()).packageName(request.getAppDetails().getPackageName()).service(request.getAppDetails().getService()).purchaseToken(request.getPaymentDetails()
+                        .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
+                .developerPayload(request.getDeveloperPayload()).build();
         try {
             sqsMessagePublisher.publishSQSMessage(message);
         } catch (Exception e) {

@@ -9,8 +9,8 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.io.Serializable;
 
 @Getter
-@ToString
 @Setter
+@ToString
 @SuperBuilder
 @Document(collection = "receipt_details")
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
@@ -27,8 +27,7 @@ public abstract class ReceiptDetails extends MongoBaseEntity<String> implements 
     private String paymentTransactionId;
     @Field("receipt_transaction_id")
     private String receiptTransactionId;
-    @Field("notification_type")
-    private Integer notificationType;
-    private boolean renew;
 
+    public abstract Integer getNotificationType();
+    public abstract boolean isRenew ();
 }

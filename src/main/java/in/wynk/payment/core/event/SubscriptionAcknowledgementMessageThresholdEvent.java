@@ -2,10 +2,13 @@ package in.wynk.payment.core.event;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.http.HttpRequest;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * @author Nishesh Pandey
@@ -13,7 +16,7 @@ import org.springframework.http.HttpRequest;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class GooglePlayMessageThresholdEvent extends MessageThresholdExceedEvent {
+public class SubscriptionAcknowledgementMessageThresholdEvent extends MessageThresholdExceedEvent {
     @Analysed
     private String packageName;
 
@@ -28,4 +31,8 @@ public class GooglePlayMessageThresholdEvent extends MessageThresholdExceedEvent
 
     @Analysed
     private String skuId;
+
+    @NotNull
+    @Analysed
+    private PaymentCode paymentCode;
 }

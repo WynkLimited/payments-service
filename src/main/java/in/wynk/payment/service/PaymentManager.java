@@ -21,14 +21,10 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.event.PaymentsBranchEvent;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.IapVerificationRequestV2Wrapper;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
-import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
@@ -52,7 +48,8 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 @Service(BeanConstant.PAYMENT_MANAGER)
 @RequiredArgsConstructor
 public class PaymentManager
-        implements IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper<?>>,
+        implements IMerchantIapSubscriptionAcknowledgementService, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>,
+        IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper<?>>,
         IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>,
         IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>,
         IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantPaymentSettlement<AbstractPaymentSettlementResponse, PaymentSettlementRequest>, IMerchantTDRService {
@@ -64,7 +61,6 @@ public class PaymentManager
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
-    private final GooglePlayService googlePlayService;
 
     private static final List<Integer> NOTIFICATION = Arrays.asList(4, 6, 11, 13);
     public static final Integer PURCHASE_NOTIFICATION_TYPE = 4;
@@ -306,7 +302,8 @@ public class PaymentManager
         }
         BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, null, request));
         final AbstractTransactionInitRequest transactionInitRequest =
-                DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build(), cachingService);
+                DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build(),
+                        cachingService);
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         sqsManagerService.publishSQSMessage(
                 PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
@@ -322,15 +319,26 @@ public class PaymentManager
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
-            //Acknowledge Google Play Api
-            GooglePlayLatestReceiptResponse gResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-            if (BeanConstant.GOOGLE_PLAY.equals(paymentCode) && transaction.getStatus() == TransactionStatus.SUCCESS &&
-                    gResponse.getNotificationType().equals(GooglePlayNotificationType.SUBSCRIPTION_PURCHASED.getNotificationTpe())) {
-                GooglePlayVerificationRequest googlePlayVerificationRequest = (GooglePlayVerificationRequest) request;
-                GooglePlayLatestReceiptResponse response = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-                googlePlayService.acknowledgeSubscription(googlePlayVerificationRequest.getAppDetails().getPackageName(), googlePlayVerificationRequest.getAppDetails().getService(),googlePlayVerificationRequest.getPaymentDetails().getPurchaseToken(), response.getGooglePlayResponse().getDeveloperPayload(), googlePlayVerificationRequest.getProductDetails().getSkuId(), false);
+            if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+
+            publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
             }
         }
+    }
+
+    private AbstractPaymentAcknowledgementRequest getRequest (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse) {
+        if (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY)) {
+            GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+            GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
+            return GooglePlaySubscriptionAcknowledgementRequest.builder()
+                    .developerPayload(googleResponse.getGooglePlayResponse().getDeveloperPayload())
+                    .productDetails(googleRequest.getProductDetails())
+                    .appDetails(googleRequest.getAppDetails())
+                    .paymentDetails(googleRequest.getPaymentDetails())
+                    .paymentCode(request.getPaymentCode())
+                    .build();
+        }
+        return null;
     }
 
     @Override
@@ -435,4 +443,17 @@ public class PaymentManager
     }
 
 
+    @Override
+    public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+        acknowledgementService.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
+    }
+
+    @Override
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+        acknowledgementService.publishAsync(abstractPaymentAcknowledgementRequest);
+    }
 }

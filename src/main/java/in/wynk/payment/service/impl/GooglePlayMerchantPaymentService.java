@@ -281,7 +281,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         String key = getApiKey(service);
         try {
             String url = baseUrl.concat(packageName).concat(purchaseUrl).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
-            return getPlayStoreResponse(mockUrl, headers).getBody();
+            return getPlayStoreResponse(url, headers).getBody();
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE, "Exception while getting data from google Play API: {}", e.getMessage());
             throw new WynkRuntimeException(PaymentErrorType.PAY027);

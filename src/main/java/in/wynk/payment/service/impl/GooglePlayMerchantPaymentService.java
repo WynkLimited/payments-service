@@ -1,6 +1,5 @@
 package in.wynk.payment.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
@@ -29,9 +28,11 @@ import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptInfo;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
-import in.wynk.payment.dto.SubscriptionAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
-import in.wynk.payment.dto.gpbs.request.*;
+import in.wynk.payment.dto.gpbs.request.GooglePlayAcknowledgeRequest;
+import in.wynk.payment.dto.gpbs.request.GooglePlayCallbackRequest;
+import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
+import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
@@ -86,7 +87,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private String mockUrl;
 
     private final Gson gson;
-    private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
@@ -95,13 +95,12 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private ISqsManagerService sqsMessagePublisher;
 
 
-    public GooglePlayMerchantPaymentService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper,
+    public GooglePlayMerchantPaymentService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
                                              ISqsManagerService sqsMessagePublisher) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
-        this.mapper = mapper;
         this.restTemplate = restTemplate;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
@@ -325,7 +324,11 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         GooglePlaySubscriptionAcknowledgementRequest request = (GooglePlaySubscriptionAcknowledgementRequest) abstractPaymentAcknowledgementRequest;
-        if (abstractPaymentAcknowledgementRequest.isAsync() || (request.getPaymentDetails().getNotificationType().equals(GooglePlayNotificationType.SUBSCRIPTION_PURCHASED.getNotificationTpe()))) {
+        if (!abstractPaymentAcknowledgementRequest.isAsync()) {
+            publishAsync(request.getAppDetails().getPackageName(), request.getAppDetails().getService(),
+                    request.getPaymentDetails().getPurchaseToken(), request.getDeveloperPayload(),
+                    request.getProductDetails().getSkuId(), request.getPaymentCode());
+        } else {
             HttpHeaders headers = getHeaders(request.getAppDetails().getService());
             headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
@@ -335,21 +338,17 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                             .concat(getApiKey(request.getAppDetails().getService()));
             try {
                 ResponseEntity<GooglePlayReceiptResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
-                if (responseEntity.getStatusCode() == HttpStatus.OK) {
-                    log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
-                } else if (responseEntity.getStatusCode() != HttpStatus.OK && !abstractPaymentAcknowledgementRequest.isAsync()) {
-                    publishAsync(request.getAppDetails().getPackageName(), request.getAppDetails().getService(),
-                            request.getPaymentDetails().getPurchaseToken(), request.getDeveloperPayload(),
-                            request.getProductDetails().getSkuId(), request.getPaymentCode());
+                if (responseEntity.getStatusCode() != HttpStatus.OK) {
+                    log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {}: ",
+                            request.getPaymentDetails().getPurchaseToken());
+                    throw new WynkRuntimeException(PaymentErrorType.PAY029);
                 }
+                log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
             } catch (Exception e) {
-                log.error("Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ", request.getPaymentDetails().getPurchaseToken(),
+                log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ",
+                        request.getPaymentDetails().getPurchaseToken(),
                         e.getMessage());
-                if (!abstractPaymentAcknowledgementRequest.isAsync()) {
-                    publishAsync(request.getAppDetails().getPackageName(), request.getAppDetails().getService(),
-                            request.getPaymentDetails().getPurchaseToken(), request.getDeveloperPayload(),
-                            request.getProductDetails().getSkuId(), request.getPaymentCode());
-                }
+                throw new WynkRuntimeException(PaymentErrorType.PAY029);
             }
         }
     }

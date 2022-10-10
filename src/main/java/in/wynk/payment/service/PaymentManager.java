@@ -21,7 +21,6 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.event.PaymentsBranchEvent;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.IapVerificationRequestV2Wrapper;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;
@@ -49,7 +48,8 @@ import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
 @Service(BeanConstant.PAYMENT_MANAGER)
 @RequiredArgsConstructor
 public class PaymentManager
-        implements IMerchantIapSubscriptionAcknowledgementService, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper<?>>,
+        implements IMerchantIapSubscriptionAcknowledgementService, IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>,
+        IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequestWrapper<?>>,
         IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>,
         IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>,
         IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantPaymentSettlement<AbstractPaymentSettlementResponse, PaymentSettlementRequest>, IMerchantTDRService {
@@ -302,7 +302,8 @@ public class PaymentManager
         }
         BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, null, request));
         final AbstractTransactionInitRequest transactionInitRequest =
-                DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build(), cachingService);
+                DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build(),
+                        cachingService);
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         sqsManagerService.publishSQSMessage(
                 PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
@@ -325,7 +326,7 @@ public class PaymentManager
     }
 
     private AbstractPaymentAcknowledgementRequest getRequest (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse) {
-        if(request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY)) {
+        if (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY)) {
             GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
             GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
             return GooglePlaySubscriptionAcknowledgementRequest.builder()
@@ -444,7 +445,8 @@ public class PaymentManager
 
     @Override
     public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
-        final IMerchantIapSubscriptionAcknowledgementService acknowledgementService = BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+        final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 }

@@ -334,16 +334,16 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         try {
             ResponseEntity<GooglePlayReceiptResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
             if (responseEntity.getStatusCode() != HttpStatus.OK) {
-                log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {}: ",
-                        request.getPaymentDetails().getPurchaseToken());
+                log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {} and status code {}: ",
+                        request.getPaymentDetails().getPurchaseToken(), responseEntity.getStatusCode());
                 throw new WynkRuntimeException(PaymentErrorType.PAY029);
             }
             log.info("Google acknowledged Successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {} and due to {} ",
                     request.getPaymentDetails().getPurchaseToken(),
-                    e.getMessage());
-            throw new WynkRuntimeException(PaymentErrorType.PAY029);
+                    e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY029, e);
         }
     }
 

@@ -8,6 +8,7 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
+import in.wynk.payment.dto.gpbs.GooglePlayConstant;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
 import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
@@ -126,8 +127,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO =
                         PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
-                String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
-                if (groupsDTO.getPaymentGroup().equalsIgnoreCase(AddToBillConstants.ADDTOBILL)) {
+                if (GooglePlayConstant.BILLING.equalsIgnoreCase(groupsDTO.getPaymentGroup())) {
+                    String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
                     if (os.equalsIgnoreCase(ANDROID)&& !CollectionUtils.isEmpty(planDTO.getSku())) {
                         paymentGroupsDTOS.add(groupsDTO);
                     }
@@ -322,8 +323,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO =
                         PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
-                if (groupsDTO.getPaymentGroup().equalsIgnoreCase(AddToBillConstants.ADDTOBILL)&& !CollectionUtils.isEmpty(planDTO.getSku())) {
-                    if (ANDROID.equalsIgnoreCase(request.getOs())) {
+                if (GooglePlayConstant.BILLING.equalsIgnoreCase(groupsDTO.getPaymentGroup())) {
+                    if (ANDROID.equalsIgnoreCase(request.getOs()) && !CollectionUtils.isEmpty(planDTO.getSku())) {
                         paymentGroupsDTOS.add(groupsDTO);
                     }
                 } else {

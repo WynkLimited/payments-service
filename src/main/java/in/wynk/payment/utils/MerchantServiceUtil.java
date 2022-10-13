@@ -11,7 +11,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PageResponseDetails;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.response.LatestReceiptResponse;

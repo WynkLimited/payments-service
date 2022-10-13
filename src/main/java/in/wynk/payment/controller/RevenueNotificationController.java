@@ -36,7 +36,7 @@ public class RevenueNotificationController {
     private final Gson gson;
     private final PaymentManager paymentManager;
 
-    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList("ITUNES", "AMAZON_IAP");
+    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList("ITUNES", "AMAZON_IAP","GOOGLE_IAP");
 
     @Value("${spring.application.name}")
     private String applicationAlias;

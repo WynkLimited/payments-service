@@ -9,6 +9,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.common.utils.Utils;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.lock.WynkRedisLockService;
@@ -18,16 +19,18 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.GooglePlayReceiptDetails;
-import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.amazonIap.AmazonNotificationRequest;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptInfo;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
+import in.wynk.payment.dto.gpbs.notification.request.DeveloperNotification;
+import in.wynk.payment.dto.gpbs.notification.request.GooglePlayNotificationMessage;
 import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayAcknowledgeRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayCallbackRequest;
@@ -44,6 +47,7 @@ import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.queue.service.ISqsManagerService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -130,7 +134,18 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     //handle notification
     @Override
     public DecodedNotificationWrapper<GooglePlayCallbackRequest> isNotificationEligible (String requestPayload) {
+        //AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
+        GooglePlayNotificationMessage message= new GooglePlayNotificationMessage();
+        decodeData(message.getMessage().getData());
         return null;
+    }
+
+    private void decodeData (String data) {
+        byte[] valueDecoded = Base64.decodeBase64(data);
+        DeveloperNotification developerNotification= Utils.getData(new String(valueDecoded),DeveloperNotification.class );
+        if(Objects.nonNull(developerNotification)){
+            
+        }
     }
 
     //for notification

@@ -15,6 +15,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker SUBSCRIPTION_ERROR = MarkerFactory.getMarker("SUBSCRIPTION_ERROR");
     Marker RENEWAL_ELIGIBILITY_API_ERROR = MarkerFactory.getMarker("RENEWAL_ELIGIBILITY_API_ERROR");
     Marker PAYMENT_RECONCILIATION_QUEUE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_QUEUE");
+    Marker GOOGLE_PLAY_ACKNOWLEDGEMENT_QUEUE = MarkerFactory.getMarker("GOOGLE_PLAY_ACKNOWLEDGEMENT_QUEUE");
     Marker PAYMENT_RECONCILIATION_FAILURE = MarkerFactory.getMarker("PAYMENT_RECONCILIATION_FAILURE");
     Marker PRE_DEBIT_NOTIFICATION_QUEUE = MarkerFactory.getMarker("PRE_DEBIT_NOTIFICATION_QUEUE");
     Marker PAYMENT_RENEWAL_QUEUE = MarkerFactory.getMarker("PAYMENT_RENEWAL_QUEUE");
@@ -59,8 +60,11 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYTM_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYTM_CHARGING_STATUS_VERIFICATION");
 
     Marker ITUNES_VERIFICATION_FAILURE = MarkerFactory.getMarker("ITUNES_VERIFICATION_FAILURE");
+    Marker GOOGLE_PLAY_VERIFICATION_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_VERIFICATION_FAILURE");
+    Marker GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE");
     Marker ITUNES_ERROR = MarkerFactory.getMarker("ITUNES_ERROR");
     Marker ITUNES_RENEWAL_ERROR = MarkerFactory.getMarker("ITUNES_RENEWAL_ERROR");
+    Marker GOOGLE_PLAY_RENEWAL_ERROR = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_ERROR");
 
     Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
 

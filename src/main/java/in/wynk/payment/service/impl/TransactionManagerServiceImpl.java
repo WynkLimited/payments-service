@@ -232,14 +232,14 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(COUPON_CODE, transaction.getCoupon());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
-        if (Objects.nonNull(transaction.getCoupon())) {
+      /*  if (Objects.nonNull(transaction.getCoupon())) {
             String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(transaction.getCoupon()).getCouponId();
             Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
             }).get(couponId);
             AnalyticService.update(COUPON_GROUP, coupon.getId());
             AnalyticService.update(DISCOUNT_TYPE, PERCENTAGE);
             AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscountPercent());
-        }
+        }*/
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
         AnalyticService.update(INIT_TIMESTAMP, transaction.getInitTime().getTime().getTime());

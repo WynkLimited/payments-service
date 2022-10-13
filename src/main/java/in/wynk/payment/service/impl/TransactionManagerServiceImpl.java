@@ -11,6 +11,8 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
 import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
+import in.wynk.coupon.core.dao.entity.CouponCodeLink;
+import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
@@ -57,6 +59,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final ICouponCodeLinkService couponCodeLinkService;
+    private final CouponCachingService couponCachingService;
 
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
@@ -232,19 +236,28 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(COUPON_CODE, transaction.getCoupon());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
-      /*  if (Objects.nonNull(transaction.getCoupon())) {
-            String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(transaction.getCoupon()).getCouponId();
+        if (Objects.nonNull(transaction.getCoupon())) {
+            String couponCode = transaction.getCoupon();
+            CouponCodeLink couponLinkOption = couponCodeLinkService.fetchCouponCodeLink(transaction.getCoupon().toUpperCase(Locale.ROOT));
+            if (couponLinkOption != null) {
+                Coupon coupon = couponCachingService.get(couponLinkOption.getCouponId());
+                if (!coupon.isCaseSensitive()) {
+                    couponCode = couponCode.toUpperCase(Locale.ROOT);
+                }
+            }
+            String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode).getCouponId();
             Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
             }).get(couponId);
             AnalyticService.update(COUPON_GROUP, coupon.getId());
             AnalyticService.update(DISCOUNT_TYPE, PERCENTAGE);
             AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscountPercent());
-        }*/
+        }
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
         AnalyticService.update(INIT_TIMESTAMP, transaction.getInitTime().getTime().getTime());
-        if (Objects.nonNull(transaction.getExitTime()))
+        if (Objects.nonNull(transaction.getExitTime())) {
             AnalyticService.update(EXIT_TIMESTAMP, transaction.getExitTime().getTime().getTime());
+        }
         AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }

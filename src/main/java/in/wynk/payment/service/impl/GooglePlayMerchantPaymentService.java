@@ -144,7 +144,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         byte[] valueDecoded = Base64.decodeBase64(data);
         DeveloperNotification developerNotification= Utils.getData(new String(valueDecoded),DeveloperNotification.class );
         if(Objects.nonNull(developerNotification)){
-            
+
         }
     }
 

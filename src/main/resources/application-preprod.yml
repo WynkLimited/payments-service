@@ -117,6 +117,19 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      acknowledgement:
+        enabled: true
+        name: wcf-payment-receipt-ack-preprod-sqs
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       reconciliation:
         enabled: true
         name: wcf-preprod-payment-reconciliation

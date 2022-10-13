@@ -47,6 +47,8 @@ public class PaymentOptionsDTO {
         private final TrialPlanDetails trialDetails;
         private final String type = BaseConstants.PLAN;
         private final String currency;
+        private Map<String, String> sku;
+        private final String subType;
     }
 
     @SuperBuilder

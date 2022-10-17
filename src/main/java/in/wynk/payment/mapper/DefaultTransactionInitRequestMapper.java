@@ -73,8 +73,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         GooglePlayVerificationRequest gRequest = (GooglePlayVerificationRequest) request;
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
         GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) receiptResponse;
-        int planId = (cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId()) != null ? cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId()).getId() :
-                receiptResponse.getPlanId());
+        int planId = cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId()).getId();
         final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId);
         if(!selectedPlan.getService().equalsIgnoreCase(gRequest.getAppDetails().getService())){
             throw new WynkRuntimeException(GooglePlayStatusCodes.GOOGLE_31020.getErrorTitle());

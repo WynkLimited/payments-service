@@ -23,12 +23,15 @@ public class GooglePlayVerificationRequest extends IapVerificationRequestV2 {
     private GooglePlayAppDetails appDetails;
 
     @Analysed
+    @Valid
     private GooglePlayPaymentDetails paymentDetails;
 
     @Analysed
+    @Valid
     private GooglePlayUserDetails userDetails;
 
     @Analysed
+    @Valid
     private GooglePlayProductDetails productDetails;
 
     @Override

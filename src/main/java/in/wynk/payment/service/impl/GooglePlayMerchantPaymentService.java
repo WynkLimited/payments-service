@@ -375,8 +375,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     private LatestReceiptResponse mapGoogleResponseToReceiptResponse (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayVerificationRequest request) {
         return GooglePlayLatestReceiptResponse.builder().freeTrial(false).autoRenewal(googlePlayReceiptResponse.isAutoRenewing()).googlePlayResponse(googlePlayReceiptResponse)
-                .planId(cachingService.getPlanFromSku(request.getProductDetails().getSkuId()) != null ? cachingService.getPlanFromSku(request.getProductDetails().getSkuId()).getId() :
-                        Integer.parseInt(request.getProductDetails().getPlanId())).purchaseToken(request.getPaymentDetails().getPurchaseToken())
+                .planId(cachingService.getPlanFromSku(request.getProductDetails().getSkuId()).getId()).purchaseToken(request.getPaymentDetails().getPurchaseToken())
                 .extTxnId(request.getPaymentDetails().getPurchaseToken()).couponCode(googlePlayReceiptResponse.getPromotionCode()).notificationType(request.getPaymentDetails().getNotificationType())
                 .subscriptionId(request.getPaymentDetails().getOrderId()).packageName(request.getAppDetails().getPackageName()).service(request.getAppDetails().getService())
                 .skuId(request.getProductDetails().getSkuId()).build();

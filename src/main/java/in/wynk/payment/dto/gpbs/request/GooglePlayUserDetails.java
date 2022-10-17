@@ -5,7 +5,7 @@ import in.wynk.payment.dto.UserDetails;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.NotEmpty;
 
 /**
  * @author Nishesh Pandey
@@ -14,6 +14,6 @@ import javax.validation.constraints.NotNull;
 @Getter
 public class GooglePlayUserDetails extends UserDetails {
     @Analysed
-    @NotNull
+    @NotEmpty
     private String uid;
 }

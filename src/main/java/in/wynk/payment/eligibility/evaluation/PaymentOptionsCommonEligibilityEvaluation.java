@@ -173,7 +173,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             if (currentOsName == null) {
                 resultBuilder.reason(CommonEligibilityStatusReason.OS_REQUIRED);
             } else {
-                if (!os.equals(currentOsName)) {
+                if (!os.equalsIgnoreCase(currentOsName)) {
                     resultBuilder.reason(CommonEligibilityStatusReason.UNSUPPORTED_OS);
                 } else {
                     final Integer currentBuildNo = root.getBuildNo();

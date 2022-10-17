@@ -11,7 +11,10 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
-import in.wynk.payment.dto.response.*;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
+import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
+import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
+import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.service.ICustomerWinBackService;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.payment.service.IQuickPayLinkGenerator;
@@ -21,6 +24,7 @@ import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.Map;
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION;
@@ -141,7 +146,15 @@ public class RevenuePaymentS2SController {
         return getResponseEntity(dummySessionGenerator.initSession(request));
     }
 
-
+    @PostMapping("/v3/verify/receipt")
+    @AnalyseTransaction(name = "receiptVerification")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
+    @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
+    public ResponseEntity<?> verifyIapV3(@Valid @RequestBody IapVerificationRequestV2 request) {
+        request.setOriginalSid();
+        AnalyticService.update(ORIGINAL_SID, request.getSessionDetails().getSessionId());
+        return getResponseEntity(StringUtils.isNotBlank(request.getSessionDetails().getSessionId()) ? request : dummySessionGenerator.initSession(request));
+    }
 
     @ManageSession(sessionId = "#request.sid")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequest request) {
@@ -158,5 +171,15 @@ public class RevenuePaymentS2SController {
         return SessionContextHolder.getBody();
     }
 
+    @ManageSession(sessionId = "#request.sessionDetails.sessionId")
+    private ResponseEntity<?> getResponseEntity(IapVerificationRequestV2 request) {
+        LoadClientUtils.loadClient(true);
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
+        AnalyticService.update(request);
+        BaseResponse<?> baseResponse = paymentManager.doVerifyIapV2(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
+                IapVerificationRequestV2Wrapper.builder().iapVerificationV2(request).latestReceiptResponse(null).build());
+        AnalyticService.update(baseResponse);
+        return baseResponse.getResponse();
+    }
 
 }

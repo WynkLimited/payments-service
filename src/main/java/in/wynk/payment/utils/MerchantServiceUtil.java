@@ -20,6 +20,7 @@ import in.wynk.session.context.SessionContextHolder;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.dto.gpbs.GooglePlayConstant.*;
 
 /**
  * @author Nishesh Pandey
@@ -136,5 +137,16 @@ public class MerchantServiceUtil {
         }
         throw new WynkRuntimeException("This event is not supported");
 
+    }
+
+    public static String getService (String packageName) {
+        if (MUSIC_PACKAGE_NAME.equals(packageName)) {
+            return SERVICE_MUSIC;
+        } else if (AIRTEL_TV_PACKAGE_NAME.equals(packageName)) {
+            return SERVICE_AIRTEL_TV;
+        } else if (RAJ_TV_PACKAGE_NAME.equals(packageName)) {
+            return SERVICE_RAJ_TV;
+        }
+        return null;
     }
 }

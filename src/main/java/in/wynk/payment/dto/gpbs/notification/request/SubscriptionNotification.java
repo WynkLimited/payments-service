@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SubscriptionNotification {
-private String version;
+    private String version;
     private Integer notificationType;
     private String purchaseToken;
     private String subscriptionId;

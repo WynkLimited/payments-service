@@ -22,7 +22,6 @@ public class GooglePlayPaymentDetails {
     private String purchaseToken;
 
     @Analysed
-    @NotEmpty
     private String orderId;
 
     @Analysed

@@ -15,7 +15,7 @@ import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,7 +162,7 @@ public class SeRenewalService {
             AnalyticService.update(EXTERNAL_TRANSACTION_STATUS, transactionStatus);
             AnalyticService.update(EXTERNAL_PRODUCT_ID, extProductId);
             PlanDTO planDTO = cachingService.getPlanFromSku(extProductId);
-            String uid = MsisdnUtils.getUidFromMsisdn(msisdn, WynkServiceUtils.fromServiceId(planDTO.getService()).getSalt());
+            String uid = IdentityUtils.getUidFromUserName(msisdn, planDTO.getService());
             if (planDTO != null) {
                 TransactionStatus seTxnStatus = getSETransactionStatus(transactionType, transactionStatus);
                 AnalyticService.update(seTxnStatus);

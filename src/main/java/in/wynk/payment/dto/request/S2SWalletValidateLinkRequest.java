@@ -5,9 +5,8 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
-import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,7 +43,7 @@ public class S2SWalletValidateLinkRequest extends WalletValidateLinkRequest {
     @Override
     @JsonIgnore
     public String getUid() {
-        return MsisdnUtils.getUidFromMsisdn(this.msisdn, WynkServiceUtils.fromServiceId(this.service).getSalt());
+        return IdentityUtils.getUidFromUserName(this.msisdn, this.service);
     }
 
     @Override

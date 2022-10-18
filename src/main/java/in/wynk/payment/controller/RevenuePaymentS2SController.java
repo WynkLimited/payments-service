@@ -170,7 +170,6 @@ public class RevenuePaymentS2SController {
         return SessionContextHolder.getBody();
     }
 
-
     @ManageSession(sessionId = "#request.sessionDetails.sessionId")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequestV2 request) {
         LoadClientUtils.loadClient(true);

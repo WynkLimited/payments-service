@@ -942,7 +942,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-rajtv-prod
+                  poolName: payment-datasource-pool-enterr10-prod
                   minimum-idle: 10
                   maximumPoolSize: 20
                 jpa:

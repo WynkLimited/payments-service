@@ -435,7 +435,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             List<LatestReceiptInfo> temp = itunesReceiptType.getSubscriptionDetailJson(receiptObj);
             if (Objects.nonNull(temp)) {
-                receiptObj.setLatestReceiptInfoList(temp.stream().sorted(Comparator.comparingLong(itunesReceiptType::getExpireDate).reversed()).collect(Collectors.toList()));
+                receiptObj.setLatestReceiptInfoList(temp);
             }
             return receiptObj;
         } catch (Exception ex) {

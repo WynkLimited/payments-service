@@ -13,6 +13,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.gpbs.notification.request.GooglePlayNotificationMessage;
+import in.wynk.payment.dto.gpbs.notification.request.Message;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentManager;
@@ -56,10 +57,9 @@ public class RevenueNotificationController {
     }
     @GetMapping("/{partner}/{clientAlias}")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAliasGooglePlayBilling(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody
-            GooglePlayNotificationMessage message) {
-        log.info("Message Received from google callback---------->{}", message);
-        return null;
+    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAliasGooglePlayBilling(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody String payload) {
+        log.info("Message Received from google callback for Testing on stage---------->{}", payload);
+        return getVoidWynkResponseEntity(partner, clientAlias, payload);
     }
 
     private WynkResponseEntity<Void> getVoidWynkResponseEntity(String partner, String clientAlias, String payload) {
@@ -97,5 +97,4 @@ public class RevenueNotificationController {
         paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build());
         return WynkResponseEntity.<Void>builder().success(true).build();
     }
-
 }

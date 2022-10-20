@@ -177,7 +177,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     //handle notification
     @Override
     public DecodedNotificationWrapper<GooglePlayCallbackRequest> isNotificationEligible (String requestPayload) {
-        GooglePlayNotificationMessage message = getMessage();
+        GooglePlayNotificationMessage message =  Utils.getData(requestPayload, GooglePlayNotificationMessage.class);
         DeveloperNotification decodedData = decodeData(message.getMessage().getData());
         GooglePlayCallbackRequest googlePlayCallbackRequest =
                 GooglePlayCallbackRequest.builder().notificationType(decodedData.getSubscriptionNotification().getNotificationType()).packageName(decodedData.getPackageName())
@@ -192,18 +192,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(isEligible).build();
         }
         return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(false).build();
-    }
-
-    private GooglePlayNotificationMessage getMessage () {
-        GooglePlayNotificationMessage notification = new GooglePlayNotificationMessage();
-        Message message= new Message();
-        message.setData("eyAidmVyc2lvbiI6ICIwLjAuMSIsICJwYWNrYWdlTmFtZSI6ICJjb20ucmFqZGlnaXRhbC50diIsICJldmVudFRpbWVNaWxsaXMiOiAxNjU0NTY2NzgsICJvbmVUaW1lUHJvZHVjdE5vdGlmaWNhdGlvbiI6IG51bGwsICJzdWJzY3JpcHRpb25Ob3RpZmljYXRpb24iOiB7InZlcnNpb24iOiAiMC4wLjEiLCJub3RpZmljYXRpb25UeXBlIjogMywgInB1cmNoYXNlVG9rZW4iOiAiYWJjaGdkb2Qwb3Nvb29kYUFhYUFhYWFhYWJic3Nhc0FhYWFhYSIsInN1YnNjcmlwdGlvbklkIjogInRlc3RpcXZpZGVvXzAyIn0sICJ0ZXN0Tm90aWZpY2F0aW9uIjogbnVsbH0=");
-        Map<String, String> attributes= new HashMap<>();
-        attributes.put("test", "test1");
-        message.setAttributes(attributes);
-        notification.setMessage(message);
-        notification.setSubscription("projects/myproject/subscriptions/mysubscription");
-        return notification;
     }
 
     private DeveloperNotification decodeData (String data) {

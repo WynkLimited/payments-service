@@ -4,6 +4,8 @@ import in.wynk.common.constant.BaseConstants;
 
 public interface PaymentConstants extends BaseConstants {
 
+    String SKU_ID = "skuId";
+
     String SAVED = "SAVED";
     String UPI = "UPI";
     String CARD = "CARD";

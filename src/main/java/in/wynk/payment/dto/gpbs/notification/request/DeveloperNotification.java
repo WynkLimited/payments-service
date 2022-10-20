@@ -1,14 +1,16 @@
 package in.wynk.payment.dto.gpbs.notification.request;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.springframework.web.bind.annotation.RequestAttribute;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @SuperBuilder
 public class DeveloperNotification {
     private String version;

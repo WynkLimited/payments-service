@@ -5,12 +5,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.IAPNotification;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Nishesh Pandey
  */
 
 @Getter
+@Setter
 @AnalysedEntity
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GooglePlayNotificationMessage{

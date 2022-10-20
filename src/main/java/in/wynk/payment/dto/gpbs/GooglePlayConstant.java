@@ -28,8 +28,5 @@ public class GooglePlayConstant {
     //New payment group
     public static final String BILLING = "BILLING";
 
-    public static final List<String> NOTIFICATIONS_TYPE_ALLOWED =
-            Arrays.asList(" SUBSCRIPTION_RECOVERED", "SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CANCELED", "SUBSCRIPTION_ON_HOLD", "SUBSCRIPTION_IN_GRACE_PERIOD",
-                    "SUBSCRIPTION_RESTARTED", "SUBSCRIPTION_PRICE_CHANGE_CONFIRMED", "SUBSCRIPTION_DEFERRED", "SUBSCRIPTION_PAUSED", "SUBSCRIPTION_PAUSE_SCHEDULE_CHANGED", "SUBSCRIPTION_REVOKED",
-                    "SUBSCRIPTION_EXPIRED");
+    public static final List<String> NOTIFICATIONS_TYPE_ALLOWED = Arrays.asList("1", "2", "3", "5", "6", "7", "8", "9", "10", "11", "12", "13");
 }

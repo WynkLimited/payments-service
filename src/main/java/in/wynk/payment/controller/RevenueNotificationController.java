@@ -12,10 +12,12 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.dto.gpbs.notification.request.GooglePlayNotificationMessage;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -25,18 +27,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("wynk/v1/callback")
+@Slf4j
 public class RevenueNotificationController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
 
-    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList("ITUNES", "AMAZON_IAP","GOOGLE_IAP");
+    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList(ITUNES, AMAZON_IAP, GOOGLE_IAP);
 
     @Value("${spring.application.name}")
     private String applicationAlias;
@@ -51,6 +53,13 @@ public class RevenueNotificationController {
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody String payload) {
         return getVoidWynkResponseEntity(partner, clientAlias, payload);
+    }
+    @GetMapping("/{partner}/{clientAlias}")
+    @AnalyseTransaction(name = "paymentCallback")
+    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAliasGooglePlayBilling(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody
+            GooglePlayNotificationMessage message) {
+        log.info("Message Received from google callback---------->{}", message);
+        return null;
     }
 
     private WynkResponseEntity<Void> getVoidWynkResponseEntity(String partner, String clientAlias, String payload) {

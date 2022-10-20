@@ -196,7 +196,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     private ItunesLatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {
         if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
-            final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
+            ItunesReceiptType type = ItunesReceiptType.getReceiptType(decodedReceipt);
+            final String suppliedSkuId = type.getOrDefault(decodedReceipt, PaymentConstants.SKU_ID, StringUtils.EMPTY);
+            final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().stream().filter(receipt -> receipt.getProductId().equalsIgnoreCase(suppliedSkuId)).findAny().orElse(itunesReceipt.getLatestReceiptInfoList().get(0));
             boolean autoRenewal = false;
             if (CollectionUtils.isNotEmpty(itunesReceipt.getPendingRenewalInfo())) {
                 autoRenewal = itunesReceipt.getPendingRenewalInfo().stream().filter(pendingRenewal -> !StringUtils.isEmpty(latestReceiptInfo.getProductId()) && latestReceiptInfo.getProductId().equalsIgnoreCase(pendingRenewal.getAutoRenewProductId()) && pendingRenewal.getAutoRenewStatus().equals("1") && pendingRenewal.getOriginalTransactionId().equals(latestReceiptInfo.getOriginalTransactionId())).findAny().isPresent();

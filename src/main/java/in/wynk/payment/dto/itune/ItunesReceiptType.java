@@ -64,6 +64,11 @@ public enum ItunesReceiptType {
             }
             return Long.parseLong(latestReceiptInfo.getCancellationDateMs());
         }
+
+        @Override
+        public <T> T getOrDefault(String receipt, String key, T defaultValue) {
+            return defaultValue;
+        }
     },
     SEVEN {
         @Override
@@ -105,6 +110,16 @@ public enum ItunesReceiptType {
             }
             return Long.parseLong(latestReceiptInfo.getCancellationDateMs());
         }
+
+        @Override
+        public <T> T getOrDefault(String receipt, String key, T defaultValue) {
+            try {
+                JSONObject obj = (JSONObject) JSONValue.parseWithException(receipt);
+                return (T) obj.getOrDefault(key, defaultValue);
+            } catch (ParseException e) {
+                throw new WynkRuntimeException("Error while parsing itunes subscription data " + receipt);
+            }
+        }
     };
 
     public static ItunesReceiptType getReceiptType(String payload) {
@@ -139,6 +154,7 @@ public enum ItunesReceiptType {
         char doubleQuotes = '"';
         return doubleQuotes + data + doubleQuotes;
     }
+    public abstract <T> T getOrDefault(String receipt, String key, T defaultValue);
 }
 
 

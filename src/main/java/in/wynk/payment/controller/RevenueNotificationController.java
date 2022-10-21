@@ -12,8 +12,6 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
-import in.wynk.payment.dto.gpbs.notification.request.GooglePlayNotificationMessage;
-import in.wynk.payment.dto.gpbs.notification.request.Message;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentManager;

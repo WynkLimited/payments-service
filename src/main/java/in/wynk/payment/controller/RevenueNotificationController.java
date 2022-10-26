@@ -16,7 +16,6 @@ import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentManager;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +30,6 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("wynk/v1/callback")
-@Slf4j
 public class RevenueNotificationController {
 
     private final Gson gson;
@@ -51,12 +49,6 @@ public class RevenueNotificationController {
     @PostMapping("/{partner}/{clientAlias}")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody String payload) {
-        return getVoidWynkResponseEntity(partner, clientAlias, payload);
-    }
-    @GetMapping("/{partner}/{clientAlias}")
-    @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAliasGooglePlayBilling(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody String payload) {
-        log.info("Message Received from google callback for Testing on stage---------->{}", payload);
         return getVoidWynkResponseEntity(partner, clientAlias, payload);
     }
 
@@ -95,4 +87,5 @@ public class RevenueNotificationController {
         paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build());
         return WynkResponseEntity.<Void>builder().success(true).build();
     }
+
 }

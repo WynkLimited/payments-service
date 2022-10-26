@@ -38,9 +38,11 @@ public abstract class IapVerificationRequest {
 
 
     @Analysed
+    @Setter
     private String successUrl;
 
     @Analysed
+    @Setter
     private String failureUrl;
 
     @Analysed

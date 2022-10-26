@@ -200,6 +200,19 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      userDeactivation:
+        enabled: true
+        name: wcf-prod-payment-user-deactivation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
   ###### webview status props #######
   status:
     web:
@@ -942,7 +955,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-rajtv-prod
+                  poolName: payment-datasource-pool-enterr10-prod
                   minimum-idle: 10
                   maximumPoolSize: 20
                 jpa:

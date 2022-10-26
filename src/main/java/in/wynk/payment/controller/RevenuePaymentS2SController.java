@@ -3,9 +3,11 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.IPresentation;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
@@ -19,6 +21,7 @@ import in.wynk.payment.service.IQuickPayLinkGenerator;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
+import in.wynk.session.context.SessionContextHolder;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -131,6 +134,15 @@ public class RevenuePaymentS2SController {
     public ResponseEntity<?> verifyIap2(@Valid @RequestBody IapVerificationRequest request) {
         request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSid());
+        try {
+            SessionDTO session = loadSession(request.getSid());
+            if(session.getSessionPayload().containsKey("successWebUrl") && session.getSessionPayload().get("successWebUrl") != null)
+                request.setSuccessUrl(session.getSessionPayload().get("successWebUrl").toString());
+            if(session.getSessionPayload().containsKey("failureWebUrl") && session.getSessionPayload().get("failureWebUrl") != null)
+                request.setFailureUrl(session.getSessionPayload().get("failureWebUrl").toString()) ;
+        } catch (Exception e) {
+            throw new WynkRuntimeException(e);
+        }
         return getResponseEntity(dummySessionGenerator.initSession(request));
     }
 
@@ -152,6 +164,11 @@ public class RevenuePaymentS2SController {
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();
+    }
+
+    @ManageSession(sessionId = "#sid")
+    private SessionDTO loadSession(String sid) {
+        return SessionContextHolder.getBody();
     }
 
     @ManageSession(sessionId = "#request.sessionDetails.sessionId")

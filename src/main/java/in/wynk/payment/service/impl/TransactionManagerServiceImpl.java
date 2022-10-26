@@ -7,13 +7,25 @@ import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.dao.entity.CouponCodeLink;
+import in.wynk.coupon.core.service.CouponCachingService;
+import in.wynk.coupon.core.service.ICouponCodeLinkService;
+import in.wynk.data.dto.IEntityCacheService;
+import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
+import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
+import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentSettlementEvent;
+import in.wynk.payment.core.event.PaymentUserDeactivationMigrationEvent;
 import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
@@ -21,17 +33,18 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.session.dto.Session;
+import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.SettlementType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Calendar;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
@@ -46,6 +59,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final ICouponCodeLinkService couponCodeLinkService;
+    private final CouponCachingService couponCachingService;
 
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
@@ -59,6 +74,83 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction get(String id) {
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
+    }
+
+    @Override
+    public Set<Transaction> getAll(Set<String> idList) {
+        return idList.stream().map(this::get).collect(Collectors.toSet());
+    }
+
+    public List<Transaction> saveAll(List<Transaction> transactionsList) {
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).saveAll(transactionsList);
+    }
+
+    //Update new uid in all transactions & update uid in receipt_details
+    public void migrateOldTransactions(String userId, String uid, String oldUid, String service){
+        final List<ReceiptDetails> allReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
+        //update new uid in all transactions
+        updateTransactions(userId, uid, allReceiptDetails);
+        //update new uid in all receipts
+        updateReceiptDetails(uid, service, allReceiptDetails);
+        //update new uid in availed coupons
+        updateCouponData(uid, oldUid);
+        applicationEventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(userId).uid(uid).oldUid(oldUid).build());
+    }
+
+    private void updateCouponData(String uid, String oldUid) {
+        try{
+            AvailedCouponsDao availedCouponsRepository = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), AvailedCouponsDao.class);
+            availedCouponsRepository.findById(oldUid).ifPresent(userCouponAvailedRecord -> availedCouponsRepository
+                    .save(UserCouponAvailedRecord.builder()
+                            .id(uid)
+                            .couponPairs(userCouponAvailedRecord.getCouponPairs())
+                            .build()));
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_COUPON_MIGRATION_INFO, "Coupon data migrated from old uid : {} to new uid : {}", oldUid, uid);
+        } catch(Exception e){
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to migrate Coupon data from old uid : {} to new uid : {} due to {}", oldUid, uid, e.getMessage());
+            throw e;
+        }
+    }
+
+    private void updateReceiptDetails(String uid, String service, List<ReceiptDetails> allReceiptDetails) {
+        try{
+            if(!CollectionUtils.isEmpty(allReceiptDetails)){
+                allReceiptDetails.forEach(receiptDetails -> {
+                    PlanDTO plan = cachingService.getPlan(receiptDetails.getPlanId());
+                    if(plan.getService().equalsIgnoreCase(service)){
+                        receiptDetails.setUid(uid);
+                    }
+                });
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
+                log.info(PaymentLoggingMarker.USER_DEACTIVATION_RECEIPT_MIGRATION_INFO, "Receipt data updated to new uid : {} ", uid);
+            }
+        } catch(Exception e){
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to update Receipt data to new uid : {} due to {}", uid, e.getMessage());
+            throw e;
+        }
+    }
+
+    private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
+        try{
+            List<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
+            if(Objects.nonNull(transactionIds)){
+                transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toList()));
+            } else {
+                transactionIds = allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toList());
+            }
+            final List<Transaction> transactionsList = transactionIds.stream().map(this::get).collect(Collectors.toList());
+            transactionsList.forEach(txn -> {
+                txn.setUid(uid);
+            /*if(txn.getPaymentChannel().name().equalsIgnoreCase(ITUNES)){
+                applicationEventPublisher.publishEvent(MigrateITunesReceiptEvent.builder().tid(txn.getIdStr()).build());
+            }*/
+            });
+            saveAll(transactionsList);
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_TRANSACTION_MIGRATION_INFO, "Transaction data updated to new uid : {} for user : {}", uid, userId);
+        } catch(Exception e){
+            log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to update transactions data to new uid : {} for user : {} due to {}", uid, userId, e.getMessage());
+            throw e;
+        }
     }
 
     private Transaction initTransaction(Transaction txn) {
@@ -144,10 +236,28 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(CLIENT, transaction.getClientAlias());
         AnalyticService.update(COUPON_CODE, transaction.getCoupon());
         AnalyticService.update(TRANSACTION_ID, transaction.getIdStr());
+        if (Objects.nonNull(transaction.getCoupon())) {
+            String couponCode = transaction.getCoupon();
+            CouponCodeLink couponLinkOption = couponCodeLinkService.fetchCouponCodeLink(transaction.getCoupon().toUpperCase(Locale.ROOT));
+            if (couponLinkOption != null) {
+                Coupon coupon = couponCachingService.get(couponLinkOption.getCouponId());
+                if (!coupon.isCaseSensitive()) {
+                    couponCode = couponCode.toUpperCase(Locale.ROOT);
+                }
+            }
+            String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode).getCouponId();
+            Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
+            }).get(couponId);
+            AnalyticService.update(COUPON_GROUP, coupon.getId());
+            AnalyticService.update(DISCOUNT_TYPE, PERCENTAGE);
+            AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscountPercent());
+        }
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());
         AnalyticService.update(INIT_TIMESTAMP, transaction.getInitTime().getTime().getTime());
-        if (Objects.nonNull(transaction.getExitTime())) AnalyticService.update(EXIT_TIMESTAMP, transaction.getExitTime().getTime().getTime());
+        if (Objects.nonNull(transaction.getExitTime())) {
+            AnalyticService.update(EXIT_TIMESTAMP, transaction.getExitTime().getTime().getTime());
+        }
         AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }

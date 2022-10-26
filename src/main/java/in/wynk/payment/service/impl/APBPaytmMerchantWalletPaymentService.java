@@ -9,7 +9,6 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
-import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -31,7 +30,7 @@ import in.wynk.payment.dto.response.phonepe.auto.AutoDebitWalletCallbackResponse
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.DiscountUtils;
 import in.wynk.payment.utils.PropertyResolverUtils;
-import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -228,7 +227,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         final Transaction transaction = TransactionContext.get();
         final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
         final WynkResponseEntity.WynkResponseEntityBuilder<WalletTopUpResponse> builder = WynkResponseEntity.builder();
-        final APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), transaction.getAmount(), getWallet(getKey(MsisdnUtils.getUidFromMsisdn(purchaseDetails.getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(purchaseDetails.getAppDetails().getService()).getSalt()), purchaseDetails.getAppDetails().getDeviceId())));
+        final APBPaytmResponse topUpResponse = this.addMoney(((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl(), transaction.getAmount(), getWallet(getKey(IdentityUtils.getUidFromUserName(purchaseDetails.getUserDetails().getMsisdn(), purchaseDetails.getAppDetails().getService()), purchaseDetails.getAppDetails().getDeviceId())));
         if (topUpResponse.isResult() && topUpResponse.getData().getHtml() != null) {
             try {
                 builder.data(WalletTopUpResponse.builder().info(EncryptionUtils.encrypt(topUpResponse.getData().getHtml(), paymentEncryptionKey)).build());
@@ -428,7 +427,7 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         AutoDebitWalletChargingResponse.AutoDebitWalletChargingResponseBuilder<?, ?> walletResponse = AutoDebitWalletChargingResponse.builder();
         WynkResponseEntity.WynkResponseEntityBuilder<AutoDebitWalletChargingResponse> builder = WynkResponseEntity.builder();
         try {
-            Wallet wallet = getWallet(getKey(MsisdnUtils.getUidFromMsisdn(request.getPurchaseDetails().getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(request.getService()).getSalt()), request.getPurchaseDetails().getAppDetails().getDeviceId()));
+            Wallet wallet = getWallet(getKey(IdentityUtils.getUidFromUserName(request.getPurchaseDetails().getUserDetails().getMsisdn(), request.getService()), request.getPurchaseDetails().getAppDetails().getDeviceId()));
             HttpHeaders headers = generateHeaders(transaction.getClientAlias());
             final double amountToCharge = transaction.getAmount();
             APBPaytmResponse balanceResponse = this.getBalance(transaction.getClientAlias(), wallet);

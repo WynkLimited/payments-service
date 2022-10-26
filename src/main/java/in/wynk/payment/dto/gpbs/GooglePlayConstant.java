@@ -16,6 +16,7 @@ public class GooglePlayConstant {
     public static final String SERVICE_MUSIC = "music";
     public static final String SERVICE_RAJ_TV = "rajtv";
     public static final String SERVICE_AIRTEL_TV = "airteltv";
+    public static final String SERVICE_ENTERR10 = "enterr10";
 
     //New payment group
     public static final String BILLING = "BILLING";

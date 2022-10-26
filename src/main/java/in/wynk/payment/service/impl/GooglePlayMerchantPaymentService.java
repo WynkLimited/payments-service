@@ -82,6 +82,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private String musicKey;
     @Value("${payment.googlePlay.airteltv.key}")
     private String airtelTvKey;
+    @Value("${payment.googlePlay.enterr10.key}")
+    private String enterr10Key;
 
     @Value("${payment.googlePlay.mockUrl}")
     private String mockUrl;
@@ -293,9 +295,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             return musicKey;
         } else if (SERVICE_RAJ_TV.equals(service)) {
             return rajTvKey;
-        }
-        if (SERVICE_AIRTEL_TV.equals(service)) {
+        } else if (SERVICE_AIRTEL_TV.equals(service)) {
             return airtelTvKey;
+        }else if(SERVICE_ENTERR10.equals(service)){
+            return enterr10Key;
         }
         throw new WynkRuntimeException("This service is not configured for API Key");
     }

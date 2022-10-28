@@ -134,6 +134,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public UserPlanMapping<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>> getUserPlanMapping (DecodedNotificationWrapper<GooglePlayCallbackRequest> wrapper) {
+        log.info("Finding user planning for the the Google Play notification...");
         GooglePlayCallbackRequest callbackRequest = wrapper.getDecodedNotification();
         if (NOTIFICATIONS_TYPE_ALLOWED.contains(callbackRequest.getNotificationType()) && callbackRequest.getPurchaseToken() != null) {
             //verify the receipt from server and then add txnType to mapping
@@ -175,8 +176,16 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     //handle notification
     @Override
     public DecodedNotificationWrapper<GooglePlayCallbackRequest> isNotificationEligible (String requestPayload) {
-        GooglePlayNotificationMessage message =  Utils.getData(requestPayload, GooglePlayNotificationMessage.class);
-        DeveloperNotification decodedData = decodeData(message.getMessage().getData());
+        DeveloperNotification decodedData = mapAndDecodeData(requestPayload);
+        if (Objects.isNull(decodedData.getSubscriptionNotification())) {
+            if (Objects.nonNull(decodedData.getTestNotification())) {
+                log.info("The notification is of test notification type with test data {}: ", decodedData.getTestNotification());
+            } else if (Objects.nonNull(decodedData.getOneTimeProductNotification())) {
+                log.info("The notification is for one time product purchase type with data {}: ", decodedData.getOneTimeProductNotification());
+            }
+            log.error("Ineligible realtime developer notification");
+            return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(GooglePlayCallbackRequest.builder().build()).eligible(false).build();
+        }
         GooglePlayCallbackRequest googlePlayCallbackRequest =
                 GooglePlayCallbackRequest.builder().notificationType(decodedData.getSubscriptionNotification().getNotificationType()).packageName(decodedData.getPackageName())
                         .purchaseToken(decodedData.getSubscriptionNotification().getPurchaseToken()).subscriptionId(decodedData.getSubscriptionNotification().getSubscriptionId()).build();
@@ -192,9 +201,15 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(false).build();
     }
 
-    private DeveloperNotification decodeData (String data) {
-        byte[] valueDecoded = Base64.decodeBase64(data);
-        return Utils.getData(new String(valueDecoded), DeveloperNotification.class);
+    private DeveloperNotification mapAndDecodeData (String requestPayload) {
+        try {
+            GooglePlayNotificationMessage message = Utils.getData(requestPayload, GooglePlayNotificationMessage.class);
+            byte[] valueDecoded = Base64.decodeBase64(message.getMessage().getData());
+            return Utils.getData(new String(valueDecoded), DeveloperNotification.class);
+        } catch (Exception e) {
+            log.error("Exception occurred while decoding the data for the notification from Google Play: ", e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY030);
+        }
     }
 
     @Override

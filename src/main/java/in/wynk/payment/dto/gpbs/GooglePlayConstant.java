@@ -21,10 +21,12 @@ public class GooglePlayConstant {
     public static final String SERVICE_MUSIC = "music";
     public static final String SERVICE_RAJ_TV = "rajtv";
     public static final String SERVICE_AIRTEL_TV = "airteltv";
+    public static final String SERVICE_ENTERR10 = "enterr10";
 
     public static String MUSIC_PACKAGE_NAME = "com.bsbportal.music";
     public static String AIRTEL_TV_PACKAGE_NAME = "tv.accedo.airtel.wynk";
     public static String RAJ_TV_PACKAGE_NAME = "com.rajdigital.tv";
+    public static String ENTERR10_PACKAGE_NAME = "com.dangalplay.tv";
     //New payment group
     public static final String BILLING = "BILLING";
 

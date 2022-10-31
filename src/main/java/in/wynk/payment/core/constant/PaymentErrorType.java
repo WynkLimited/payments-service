@@ -37,6 +37,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY028("Payment Renewal Failure", "Unable tot renewal google Play subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GOOGLE_PLAY_RENEWAL_ERROR),
     PAY029("Acknowledgement Failure ", "Failure in acknowledging subscription purchase to google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE),
     PAY030("Google Play Notification Failure", "Something happened while decoding real time developer notification from Google Play", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GOOGLE_PLAY_NOTIFICATION_DECODE_ERROR),
+    PAY031("Google Play Notification Validation Failure", "No receipt mapping found for the Google Play notification", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_NOTIFICATION_VALIDATION_ERROR),
 
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),

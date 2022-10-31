@@ -64,11 +64,7 @@ public abstract class IapVerificationRequestV2 {
     public void setOriginalSid() {
         this.originalSid = StringUtils.isNotBlank(this.sessionDetails.getSessionId());
     }
-
-    //public abstract void setPaymentDetails (GooglePlayPaymentDetails googlePlayPaymentDetails);
-
     public abstract void setGooglePlayPaymentDetails (GooglePlayPaymentDetails googlePlayPaymentDetails);
-
     public abstract void setGooglePlayAppDetails (GooglePlayAppDetails googlePlayAppDetails);
     public abstract void setGooglePlayProductDetails (GooglePlayProductDetails googlePlayProductDetails);
 }

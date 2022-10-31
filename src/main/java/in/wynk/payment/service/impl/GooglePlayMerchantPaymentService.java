@@ -196,11 +196,15 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         if (Objects.nonNull(googlePlayCallbackRequest) && NOTIFICATIONS_TYPE_ALLOWED.contains(googlePlayCallbackRequest.getNotificationType())) {
             final SubscriptionNotification subscriptionNotification = decodedData.getSubscriptionNotification();
             final String purchaseToken = subscriptionNotification.getPurchaseToken();
-            Optional<ReceiptDetails> lastProcessedReceiptDetails =
+            Optional<ReceiptDetails> receiptDetailsOptional =
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                             .findById(purchaseToken);
-            boolean isEligible = lastProcessedReceiptDetails.isPresent();
-            return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(isEligible).build();
+           //Exception is required as there is no separate environment on Google console and if 200 response code is sent,
+            //Google will not send the notification on other topic and mark notification as success
+            if(!receiptDetailsOptional.isPresent()) {
+               throw new WynkRuntimeException(PaymentErrorType.PAY031);
+           }
+            return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(true).build();
         }
         return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(false).build();
     }
@@ -352,7 +356,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         String key = getApiKey(service);
         try {
             String url = baseUrl.concat(packageName).concat(purchaseUrl).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
-            return getPlayStoreResponse(mockUrl, headers).getBody();
+            return getPlayStoreResponse(url, headers).getBody();
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE, "Exception while getting data from google Play API: {}", e.getMessage());
             throw new WynkRuntimeException(PaymentErrorType.PAY027);

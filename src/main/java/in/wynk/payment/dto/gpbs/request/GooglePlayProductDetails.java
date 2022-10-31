@@ -14,6 +14,6 @@ import javax.validation.constraints.NotEmpty;
 @Setter
 public class GooglePlayProductDetails extends ProductDetailsDto {
     @NotEmpty
-    @Analysed
+//    @Analysed
     private String skuId;
 }

@@ -149,6 +149,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestReceipt));
                 if (optionalReceiptDetails.isPresent()) {
                     ReceiptDetails details = optionalReceiptDetails.get();
+                    if (Objects.equals(String.valueOf(details.getExpiry()), latestReceipt.getGooglePlayResponse().getExpiryTimeMillis()) &&
+                            Objects.equals(details.getNotificationType(), latestReceipt.getNotificationType())) {
+                        throw new WynkRuntimeException(PaymentErrorType.PAY400, "Notification is already processed");
+                    }
                     PlanDTO planDTO = cachingService.getPlanFromSku(callbackRequest.getSubscriptionId());
                     return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid())
                             .message(Pair.of(latestReceipt, details)).build();
@@ -348,7 +352,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         String key = getApiKey(service);
         try {
             String url = baseUrl.concat(packageName).concat(purchaseUrl).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
-            return getPlayStoreResponse(url, headers).getBody();
+            return getPlayStoreResponse(mockUrl, headers).getBody();
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE, "Exception while getting data from google Play API: {}", e.getMessage());
             throw new WynkRuntimeException(PaymentErrorType.PAY027);

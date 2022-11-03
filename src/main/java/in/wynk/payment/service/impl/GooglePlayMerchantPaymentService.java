@@ -199,12 +199,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             Optional<ReceiptDetails> receiptDetailsOptional =
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                             .findById(purchaseToken);
-           //Exception is required as there is no separate environment on Google console and if 200 response code is sent,
-            //Google will not send the notification on other topic and mark notification as success
-            if(!receiptDetailsOptional.isPresent()) {
-               throw new WynkRuntimeException(PaymentErrorType.PAY031);
-           }
-            return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(true).build();
+            boolean isEligible = receiptDetailsOptional.isPresent();
+            return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(isEligible).build();
         }
         return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(false).build();
     }

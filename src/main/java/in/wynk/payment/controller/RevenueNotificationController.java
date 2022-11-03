@@ -25,8 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,7 +35,7 @@ public class RevenueNotificationController {
     private final Gson gson;
     private final PaymentManager paymentManager;
 
-    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList("ITUNES", "AMAZON_IAP");
+    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList(ITUNES, AMAZON_IAP, GOOGLE_IAP);
 
     @Value("${spring.application.name}")
     private String applicationAlias;

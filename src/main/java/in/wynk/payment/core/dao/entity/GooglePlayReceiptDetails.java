@@ -25,6 +25,7 @@ public class GooglePlayReceiptDetails extends ReceiptDetails {
     private Integer notificationType;
     private boolean renew;
 
+    @Override
     public Integer getNotificationType(){
         return notificationType;
     }

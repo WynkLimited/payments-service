@@ -141,7 +141,8 @@ public class RevenuePaymentS2SController {
             if(session.getSessionPayload().containsKey("failureWebUrl") && session.getSessionPayload().get("failureWebUrl") != null)
                 request.setFailureUrl(session.getSessionPayload().get("failureWebUrl").toString()) ;
         } catch (Exception e) {
-            throw new WynkRuntimeException(e);
+            //eat the exception if session id is not present in session, dummy sid will be generated in that case.
+            //throw new WynkRuntimeException(e);
         }
         return getResponseEntity(dummySessionGenerator.initSession(request));
     }

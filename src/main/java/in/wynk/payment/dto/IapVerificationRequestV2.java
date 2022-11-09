@@ -7,9 +7,6 @@ import in.wynk.common.dto.GeoLocation;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
-import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
-import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
-import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
 import lombok.Getter;
@@ -64,7 +61,4 @@ public abstract class IapVerificationRequestV2 {
     public void setOriginalSid() {
         this.originalSid = StringUtils.isNotBlank(this.sessionDetails.getSessionId());
     }
-    public abstract void setGooglePlayPaymentDetails (GooglePlayPaymentDetails googlePlayPaymentDetails);
-    public abstract void setGooglePlayAppDetails (GooglePlayAppDetails googlePlayAppDetails);
-    public abstract void setGooglePlayProductDetails (GooglePlayProductDetails googlePlayProductDetails);
 }

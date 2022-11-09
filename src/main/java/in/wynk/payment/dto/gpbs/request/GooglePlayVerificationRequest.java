@@ -38,19 +38,4 @@ public class GooglePlayVerificationRequest extends IapVerificationRequestV2 {
     public PaymentCode getPaymentCode () {
         return PaymentCodeCachingService.getFromPaymentCode(GOOGLE_IAP);
     }
-
-    @Override
-    public void setGooglePlayPaymentDetails (GooglePlayPaymentDetails googlePlayPaymentDetails) {
-        this.paymentDetails = googlePlayPaymentDetails;
-    }
-
-    @Override
-    public void setGooglePlayAppDetails (GooglePlayAppDetails googlePlayAppDetails) {
-        this.appDetails = googlePlayAppDetails;
-    }
-
-    @Override
-    public void setGooglePlayProductDetails (GooglePlayProductDetails googlePlayProductDetails) {
-        this.productDetails = googlePlayProductDetails;
-    }
 }

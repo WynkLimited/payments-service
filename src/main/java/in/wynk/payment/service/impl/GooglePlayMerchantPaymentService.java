@@ -140,7 +140,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         GooglePlayCallbackRequest callbackRequest = wrapper.getDecodedNotification();
         if (NOTIFICATIONS_TYPE_ALLOWED.contains(callbackRequest.getNotificationType()) && callbackRequest.getPurchaseToken() != null) {
             //verify the receipt from server and then add txnType to mapping
-            LatestReceiptResponse latestReceiptResponse = getLatestReceiptResponse(createRequest(callbackRequest));
+            GooglePlayReceiptResponse googlePlayReceiptResponse =
+                    googlePlayResponse(callbackRequest.getPurchaseToken(),callbackRequest.getSubscriptionId(), callbackRequest.getPackageName(),
+                            MerchantServiceUtil.getService(callbackRequest.getPackageName()));
+            LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(googlePlayReceiptResponse, createRequest(callbackRequest));
             if (Objects.nonNull(latestReceiptResponse)) {
                 final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
                //set the latest response to be used while deciding payment event
@@ -164,18 +167,17 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid Request");
     }
 
-    private IapVerificationRequestV2 createRequest (GooglePlayCallbackRequest callbackRequest) {
-        IapVerificationRequestV2 request = new GooglePlayVerificationRequest();
+    private GooglePlayVerificationRequest createRequest (GooglePlayCallbackRequest callbackRequest) {
+        GooglePlayVerificationRequest request= new GooglePlayVerificationRequest();
         GooglePlayAppDetails appDetails= new GooglePlayAppDetails();
         appDetails.setService(MerchantServiceUtil.getService(callbackRequest.getPackageName()));
         appDetails.setOs(BaseConstants.ANDROID);
         appDetails.setPackageName(callbackRequest.getPackageName());
-        request.setGooglePlayPaymentDetails(
-                GooglePlayPaymentDetails.builder().purchaseToken(callbackRequest.getPurchaseToken()).notificationType(Integer.valueOf(callbackRequest.getNotificationType())).build());
-        request.setGooglePlayAppDetails(appDetails);
         GooglePlayProductDetails productDetails= new GooglePlayProductDetails();
         productDetails.setSkuId(callbackRequest.getSubscriptionId());
-        request.setGooglePlayProductDetails(productDetails);
+        request.setPaymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(callbackRequest.getPurchaseToken()).notificationType(Integer.valueOf(callbackRequest.getNotificationType())).build());
+        request.setAppDetails(appDetails);
+        request.setProductDetails(productDetails);
         return request;
     }
 

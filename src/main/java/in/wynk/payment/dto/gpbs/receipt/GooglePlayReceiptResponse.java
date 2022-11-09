@@ -24,7 +24,7 @@ public class GooglePlayReceiptResponse {
     private IntroductoryPriceInfo introductoryPriceInfo;
     private String countryCode;
     private String developerPayload;
-    private Integer paymentState;
+    private Integer paymentState;//2
     private Integer cancelReason;
     private String userCancellationTimeMillis;
     private SubscriptionCancelSurveyResult cancelSurveyResult;

@@ -289,7 +289,7 @@ public class PaymentManager
     }
 
     @ClientAware(clientId = "#clientId")
-    public BaseResponse<?> doVerifyIapV2 (String clientId, IapVerificationRequestV2Wrapper requestWrapper) {
+    public BaseResponse<?> doVerifyIap (String clientId, IapVerificationRequestV2Wrapper requestWrapper) {
         IapVerificationRequestV2 request = requestWrapper.getIapVerificationV2();
         String paymentCode = request.getPaymentCode().getCode();
         LatestReceiptResponse latestReceiptResponse = requestWrapper.getLatestReceiptResponse();
@@ -320,8 +320,7 @@ public class PaymentManager
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
             if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-
-            publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
+                publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
             }
         }
     }

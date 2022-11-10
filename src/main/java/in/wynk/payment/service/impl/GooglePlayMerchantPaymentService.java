@@ -479,7 +479,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 GooglePlayReceiptResponse googlePlayReceiptResponse = googlePlayLatestReceipt.getGooglePlayResponse();
                 LatestReceiptResponse newLatestReceiptResponse = createResponseForLatestToken(googlePlayReceiptResponse, googlePlayLatestReceipt);
                 PaymentManager paymentManager = BeanLocatorFactory.getBean(PaymentManager.class);
-                paymentManager.doVerifyIapV2(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
+                paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
                         IapVerificationRequestV2Wrapper.builder().iapVerificationV2(iapVerificationRequestV2Wrapper.getIapVerificationV2()).latestReceiptResponse(newLatestReceiptResponse).build());
             } else if (Objects.nonNull(receipt) && googlePlayLatestReceipt.getGooglePlayResponse().getCancelReason() != null) {
                 log.error("The receipt is for cancelled Subscription.");

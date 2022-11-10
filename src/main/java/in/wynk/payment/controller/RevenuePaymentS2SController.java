@@ -151,7 +151,7 @@ public class RevenuePaymentS2SController {
     @AnalyseTransaction(name = "receiptVerification")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Accepts the receipt of various IAP partners." + "\nAn alternate API for old itunes/receipt and /amazon-iap/verification API")
-    public ResponseEntity<?> verifyIapV3(@Valid @RequestBody IapVerificationRequestV2 request) {
+    public ResponseEntity<?> verifyIap(@Valid @RequestBody IapVerificationRequestV2 request) {
         request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSessionDetails().getSessionId());
         return getResponseEntity(StringUtils.isNotBlank(request.getSessionDetails().getSessionId()) ? request : dummySessionGenerator.initSession(request));
@@ -177,7 +177,7 @@ public class RevenuePaymentS2SController {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
         AnalyticService.update(request);
-        BaseResponse<?> baseResponse = paymentManager.doVerifyIapV2(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
+        BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
                 IapVerificationRequestV2Wrapper.builder().iapVerificationV2(request).latestReceiptResponse(null).build());
         AnalyticService.update(baseResponse);
         return baseResponse.getResponse();

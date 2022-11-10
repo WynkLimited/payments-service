@@ -14,7 +14,7 @@ public enum GooglePlayStatusCodes {
     GOOGLE_31006("No receipt found for the notification.", 31006),
     GOOGLE_31018("No google play receipt found for selected plan", 31018),
     GOOGLE_31019("User has cancelled the subscription from app store", 31019),
-    GOOGLE_31020("Given plan id is invalid for the service", 31020),
+    GOOGLE_31020("Given sku id is invalid for the service", 31020),
     GOOGLE_31021("Receipt is already processed", 31021),
     GOOGLE_31022("Subscription is auto renewed", 31022),
     GOOGLE_31023("Subscription is not renewed from google", 31023);

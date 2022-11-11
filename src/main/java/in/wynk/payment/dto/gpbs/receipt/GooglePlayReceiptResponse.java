@@ -24,7 +24,7 @@ public class GooglePlayReceiptResponse {
     private IntroductoryPriceInfo introductoryPriceInfo;
     private String countryCode;
     private String developerPayload;
-    private Integer paymentState;
+    private Integer paymentState; //payment state 2 means free trial
     private Integer cancelReason;
     private String userCancellationTimeMillis;
     private SubscriptionCancelSurveyResult cancelSurveyResult;

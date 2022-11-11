@@ -27,7 +27,6 @@ import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.amazonIap.*;
-import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
@@ -205,7 +204,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             skuId = amazonIapVerificationRequest.getReceipt().getSku();
         }
         return AmazonLatestReceiptResponse.builder()
-                .freeTrial(false)
+                .freeTrial(Objects.nonNull(amazonIapReceiptResponse.getFreeTrialEndDate()))
                 .autoRenewal(autoRenewal)
                 .amazonIapReceiptResponse(amazonIapReceiptResponse)
                 .planId(cachingService.getPlanFromSku(skuId).getId())

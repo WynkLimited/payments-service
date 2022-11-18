@@ -65,12 +65,12 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     @Value("${payment.googlePlay.music.clientEmail}")
     private String musicClientEmail;
 
-    @Value("${payment.googlePlay.enterr10.privateKey}")
+   /* @Value("${payment.googlePlay.enterr10.privateKey}")
     private String enterr10PrivateKey;
     @Value("${payment.googlePlay.enterr10.privateKeyId}")
     private String enterr10PrivateKeyId;
     @Value("${payment.googlePlay.enterr10.clientEmail}")
-    private String enterr10ClientEmail;
+    private String enterr10ClientEmail;*/
 
     private final Map<String, String> tokens = new ConcurrentHashMap<>();
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
@@ -83,7 +83,7 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     private void init () {
         generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_RAJ_TV, rajTvClientEmail, rajTvPrivateKeyId, rajTvPrivateKey);//for rajtv
         generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_MUSIC, musicClientEmail, musicPrivateKeyId, musicPrivateKey); //for music
-        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_ENTERR10, enterr10ClientEmail, enterr10PrivateKeyId, enterr10PrivateKey); //for enterr10
+        //generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_ENTERR10, enterr10ClientEmail, enterr10PrivateKeyId, enterr10PrivateKey); //for enterr10
     }
 
     public void generateJwtTokenAndGetAccessToken (String client, String clientEmail, String privateKeyId, String privateKey) {

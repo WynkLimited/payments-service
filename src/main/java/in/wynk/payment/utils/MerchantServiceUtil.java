@@ -146,9 +146,9 @@ public class MerchantServiceUtil {
             return SERVICE_AIRTEL_TV;
         } else if (RAJ_TV_PACKAGE_NAME.equals(packageName)) {
             return SERVICE_RAJ_TV;
-        } else if (ENTERR10_PACKAGE_NAME.equals(packageName)) {
+        } /*else if (ENTERR10_PACKAGE_NAME.equals(packageName)) {
             return SERVICE_ENTERR10;
-        }
+        }*/
         return null;
     }
 }

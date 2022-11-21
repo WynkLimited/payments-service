@@ -137,35 +137,31 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public UserPlanMapping<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>> getUserPlanMapping (DecodedNotificationWrapper<GooglePlayCallbackRequest> wrapper) {
-        log.info("Finding user planning for the the Google Play notification...");
         GooglePlayCallbackRequest callbackRequest = wrapper.getDecodedNotification();
-        if (NOTIFICATIONS_TYPE_ALLOWED.contains(callbackRequest.getNotificationType()) && callbackRequest.getPurchaseToken() != null) {
-            //verify the receipt from server and then add txnType to mapping
-            GooglePlayReceiptResponse googlePlayReceiptResponse =
-                    googlePlayResponse(callbackRequest.getPurchaseToken(),callbackRequest.getSubscriptionId(), callbackRequest.getPackageName(),
-                            MerchantServiceUtil.getService(callbackRequest.getPackageName()));
-            LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(googlePlayReceiptResponse, createRequest(callbackRequest));
-            if (Objects.nonNull(latestReceiptResponse)) {
-                final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-               //set the latest response to be used while deciding payment event
-                wrapper.getDecodedNotification().setGooglePlayLatestReceiptResponse(latestReceipt);
-                Optional<ReceiptDetails> optionalReceiptDetails =
-                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                                .findById(latestReceipt.getPurchaseToken());
-                AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestReceipt));
-                if (optionalReceiptDetails.isPresent()) {
-                    ReceiptDetails details = optionalReceiptDetails.get();
-                    if (Objects.equals(String.valueOf(details.getExpiry()), latestReceipt.getGooglePlayResponse().getExpiryTimeMillis()) &&
-                            Objects.equals(details.getNotificationType(), latestReceipt.getNotificationType())) {
-                        throw new WynkRuntimeException(PaymentErrorType.PAY400, "Notification is already processed");
-                    }
-                    PlanDTO planDTO = cachingService.getPlanFromSku(callbackRequest.getSubscriptionId());
-                    return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid())
-                            .message(Pair.of(latestReceipt, details)).build();
-                }
+        //verify the receipt from server and then add txnType to mapping
+        GooglePlayReceiptResponse googlePlayReceiptResponse =
+                googlePlayResponse(callbackRequest.getPurchaseToken(), callbackRequest.getSubscriptionId(), callbackRequest.getPackageName(),
+                        MerchantServiceUtil.getService(callbackRequest.getPackageName()));
+        LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(googlePlayReceiptResponse, createRequest(callbackRequest));
+        final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+        //set the latest response to be used while deciding payment event
+        wrapper.getDecodedNotification().setGooglePlayLatestReceiptResponse(latestReceipt);
+        Optional<ReceiptDetails> optionalReceiptDetails =
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                        .findById(latestReceipt.getPurchaseToken());
+        AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestReceipt));
+        if (optionalReceiptDetails.isPresent()) {
+            ReceiptDetails details = optionalReceiptDetails.get();
+            if (Objects.equals(String.valueOf(details.getExpiry()), latestReceipt.getGooglePlayResponse().getExpiryTimeMillis()) &&
+                    Objects.equals(details.getNotificationType(), latestReceipt.getNotificationType())) {
+                log.info("Notification is already processed for the purchase token {}", latestReceipt.getPurchaseToken());
+                return null;
             }
+            PlanDTO planDTO = cachingService.getPlanFromSku(callbackRequest.getSubscriptionId());
+            return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid())
+                    .message(Pair.of(latestReceipt, details)).build();
         }
-        throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid Request");
+        return null;
     }
 
     private GooglePlayVerificationRequest createRequest (GooglePlayCallbackRequest callbackRequest) {

@@ -30,7 +30,7 @@ public class GooglePlayConstant {
     //New payment group
     public static final String BILLING = "BILLING";
 
-    public static final List<String> NOTIFICATIONS_TYPE_ALLOWED = Arrays.asList("1", "2", "3", "5", "6", "7", "8", "9", "10", "11", "12");
+    public static final List<String> NOTIFICATIONS_TYPE_ALLOWED = Arrays.asList("1" , "2", "3");
     public static final Integer FREE_TRIAL_PAYMENT_STATE = 2;
     public static final String FREE_TRIAL_AMOUNT = "0";
 }

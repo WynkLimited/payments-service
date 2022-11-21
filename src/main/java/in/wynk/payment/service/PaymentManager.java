@@ -169,6 +169,9 @@ public class PaymentManager
         AnalyticService.update(wrapper.getDecodedNotification());
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
+            if(mapping == null) {
+                return WynkResponseEntity.<Void>builder().success(false).build();
+            }
             final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
             final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                     PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentCode(request.getPaymentCode())

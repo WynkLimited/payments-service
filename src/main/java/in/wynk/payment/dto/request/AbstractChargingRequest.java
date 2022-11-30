@@ -11,6 +11,7 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
@@ -18,6 +19,7 @@ import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,6 +44,7 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
         @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PHONEPE_AUTO_DEBIT")
 })
 public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
+
 
     @Valid
     @Analysed

@@ -11,9 +11,15 @@ import lombok.Getter;
 public class AmazonIapReceiptResponse {
 
     @Analysed
+    private boolean autoRenewing;
+    @Analysed
     private boolean betaProduct;
     @Analysed
     private Long cancelDate;
+    @Analysed
+    private Integer cancelReason;
+    @Analysed
+    private Long freeTrialEndDate; //null if subscription is not in free trial
     @Analysed
     private String productId;
     @Analysed

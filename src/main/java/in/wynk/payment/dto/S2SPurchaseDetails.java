@@ -3,12 +3,14 @@ package in.wynk.payment.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.payment.service.impl.PaymentMethodCachingService;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,11 +38,15 @@ public class S2SPurchaseDetails implements IChargingDetails {
 
     @Valid
     @Analysed
+    private GeoLocation geoLocation;
+
+    @Valid
+    @Analysed
     private UserBillingDetail.BillingSiDetail billingSiDetail;
 
     @Valid
     @Analysed
-    private PaymentDetails paymentDetails;
+    private AbstractPaymentDetails paymentDetails;
 
     @Valid
     @Analysed
@@ -54,6 +60,9 @@ public class S2SPurchaseDetails implements IChargingDetails {
         }
             return userDetails;
         }
+
+
+
     public IPageUrlDetails getPageUrlDetails() {
         if (Objects.nonNull(pageUrlDetails)) return pageUrlDetails;
         final String successPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.success.page}"), appDetails);

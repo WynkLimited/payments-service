@@ -11,6 +11,7 @@ import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
+import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -32,6 +33,17 @@ import static in.wynk.common.constant.CacheBeanNameConstants.*;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
 @JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")})
 public abstract class IapVerificationRequest {
+
+
+
+
+    @Analysed
+    @Setter
+    private String successUrl;
+
+    @Analysed
+    @Setter
+    private String failureUrl;
 
     @Analysed
     private int buildNo;
@@ -72,6 +84,9 @@ public abstract class IapVerificationRequest {
     private String countryCode;
 
     private String paymentCode;
+
+    @Analysed
+    private GeoLocation geoLocation;
 
     public PaymentCode getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);

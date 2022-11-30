@@ -2,17 +2,14 @@ package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.data.enums.State;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.SkuMapping;
-import in.wynk.payment.core.dao.repository.IPaymentGroupDao;
-import in.wynk.payment.core.dao.repository.IPaymentMethodDao;
-import in.wynk.payment.core.dao.repository.SkuDao;
-import in.wynk.subscription.common.dto.ItemDTO;
-import in.wynk.subscription.common.dto.OfferDTO;
-import in.wynk.subscription.common.dto.PartnerDTO;
-import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
+import in.wynk.payment.core.service.PaymentGroupCachingService;
+import in.wynk.payment.core.service.SkuToSkuCachingService;
+import in.wynk.subscription.common.dto.*;
+import in.wynk.subscription.common.enums.Category;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,17 +41,13 @@ public class PaymentCachingService {
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
 
-    private final Map<String, String> skuToSku = new ConcurrentHashMap<>();
     private final Map<Integer, OfferDTO> offers = new ConcurrentHashMap<>();
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
-    private final Map<String, PaymentGroup> paymentGroups = new ConcurrentHashMap<>();
-    private final Map<String, PaymentMethod> paymentMethodsMap = new ConcurrentHashMap<>();
+    private final Map<String, ProductDTO> products = new ConcurrentHashMap<>();
+
     private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
 
-    private final SkuDao skuDao;
-    private final IPaymentGroupDao paymentGroupDao;
-    private final IPaymentMethodDao IPaymentMethodDao;
     private final PlanDtoCachingService planDtoCachingService;
     private final ItemDtoCachingService itemDtoCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
@@ -65,47 +58,31 @@ public class PaymentCachingService {
     public void init() {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("cacheLoadInit", true);
-        loadPayments();
+        loadProducts();
         loadPlans();
-        loadSku();
         loadOffers();
         loadPartners();
         AnalyticService.update("cacheLoadCompleted", true);
     }
 
-    private void loadPayments() {
-        final Map<String, PaymentGroup> groupsMap = paymentGroupDao.findAllByState(State.ACTIVE).stream().collect(Collectors.toConcurrentMap(PaymentGroup::getId, Function.identity()));
-        Map<String, PaymentMethod> localPaymentMethodMap = new ConcurrentHashMap<>();
-        if (MapUtils.isNotEmpty(groupsMap) && writeLock.tryLock()) {
-            Map<String, List<PaymentMethod>> newPaymentMethods = new ConcurrentHashMap<>();
+    private void loadProducts() {
+        List<ProductDTO> productList = subscriptionServiceManager.getProducts();
+        if (CollectionUtils.isNotEmpty(productList) && writeLock.tryLock()) {
             try {
-                List<PaymentMethod> paymentMethods = IPaymentMethodDao.findByGroupInAndState(groupsMap.keySet(), State.ACTIVE);
-                for (PaymentMethod method : paymentMethods) {
-                    if (groupsMap.containsKey(method.getGroup())) {
-                        List<PaymentMethod> paymentMethodsInternal = newPaymentMethods.getOrDefault(method.getGroup(), new ArrayList<>());
-                        paymentMethodsInternal.add(method);
-                        localPaymentMethodMap.put(method.getId(), method);
-                        newPaymentMethods.put(method.getGroup(), paymentMethodsInternal);
-                    }
-                }
-                for (String group : groupsMap.keySet()) {
-                    if (!newPaymentMethods.containsKey(group))
-                        groupsMap.remove(group);
-                }
-                paymentGroups.clear();
-                paymentGroups.putAll(groupsMap);
-                paymentMethodsMap.clear();
-                paymentMethodsMap.putAll(localPaymentMethodMap);
-                groupedPaymentMethods.clear();
-                groupedPaymentMethods.putAll(newPaymentMethods);
+                Map<String, ProductDTO> productMap = productList.stream().collect(Collectors.toMap(ProductDTO::getId, Function.identity()));
+                products.clear();
+                products.putAll(productMap);
             } catch (Throwable th) {
-                log.error(APPLICATION_ERROR, "Exception occurred while refreshing payment group or method config cache. Exception: {}", th.getMessage(), th);
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing offer config cache. Exception: {}", th.getMessage(), th);
                 throw th;
             } finally {
                 writeLock.unlock();
             }
         }
+
     }
+
+
 
     private void loadPlans() {
         Collection<PlanDTO> planList = planDtoCachingService.getAll();
@@ -162,28 +139,6 @@ public class PaymentCachingService {
         }
     }
 
-    private void loadSku() {
-        List<SkuMapping> skuMappings = skuDao.findAll();
-        if (CollectionUtils.isNotEmpty(skuMappings) && writeLock.tryLock()) {
-            try {
-                Map<String, String> skuToSkuMap = skuMappings.stream().collect(Collectors.toMap(SkuMapping::getOldSku, SkuMapping::getNewSku));
-                skuToSku.clear();
-                skuToSku.putAll(skuToSkuMap);
-            } catch (Throwable th) {
-                log.error(APPLICATION_ERROR, "Exception occurred while refreshing old sku to new sku cache. Exception: {}", th.getMessage(), th);
-                throw th;
-            } finally {
-                writeLock.unlock();
-            }
-        }
-    }
-
-
-    private List<PaymentMethod> getActivePaymentMethods() {
-        return IPaymentMethodDao.findAllByState(State.ACTIVE);
-    }
-
-
     public ItemDTO getItem(String itemId) {
         return itemDtoCachingService.get(itemId);
     }
@@ -208,20 +163,17 @@ public class PaymentCachingService {
         return offers.get(offerId);
     }
 
-    public PaymentMethod getPaymentMethod(String id) {
-        return paymentMethodsMap.get(id);
-    }
-
     public PartnerDTO getPartner(String packGroup) {
         return partners.get(packGroup);
     }
 
     public String getNewSku(String oldSku) {
-        return skuToSku.get(oldSku);
+        if (containsSku(oldSku)) return BeanLocatorFactory.getBean(SkuToSkuCachingService.class).get(oldSku).getNewSku();
+        return null;
     }
 
     public boolean containsSku(String oldSku) {
-        return skuToSku.containsKey(oldSku);
+        return BeanLocatorFactory.getBean(SkuToSkuCachingService.class).containsKey(oldSku);
     }
 
     public PlanDTO getPlanFromSku(String sku) {
@@ -233,6 +185,20 @@ public class PaymentCachingService {
         int validity = planDTO.getPeriod().getValidity();
         TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
         return System.currentTimeMillis() + timeUnit.toMillis(validity);
+    }
+
+    public Map<String, PaymentGroup> getPaymentGroups() {
+        return BeanLocatorFactory.getBean(PaymentGroupCachingService.class).getAll().stream().collect(Collectors.toMap(PaymentGroup::getId, Function.identity()));
+    }
+
+    public Map<String, List<PaymentMethod>> getGroupedPaymentMethods() {
+        return BeanLocatorFactory.getBean(GroupedPaymentMethodCachingService.class).getGroupPaymentMethods();
+    }
+
+
+    public boolean isV2SubscriptionJourney(int planId) {
+        final OfferDTO offer = offers.get(getPlan(planId).getLinkedOfferId());
+        return Objects.nonNull(offer)?EnumSet.of(Category.BUNDLE,Category.SVOD,Category.AVOD,Category.TVOD).contains(offer.getCategory()):Boolean.FALSE;
     }
 
 }

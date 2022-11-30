@@ -6,31 +6,41 @@ import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.core.dao.entity.PaymentCode;
 import in.wynk.payment.dto.AppDetails;
+import in.wynk.payment.dto.IapVerificationRequestV2;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
+import in.wynk.payment.validations.IReceiptValidatorRequest;
 import org.apache.commons.lang.StringUtils;
 
-public class IapVerificationWrapperRequest implements IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
+public class IapVerificationWrapperRequest implements IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest, IReceiptValidatorRequest<LatestReceiptResponse> {
 
     private final LatestReceiptResponse latestReceiptResponse;
     private final IapVerificationRequest iapVerificationRequest;
+    private final IapVerificationRequestV2 iapVerificationRequestV2;
 
-    public IapVerificationWrapperRequest(LatestReceiptResponse latestReceiptResponse, IapVerificationRequest iapVerificationRequest) {
+    public IapVerificationWrapperRequest(LatestReceiptResponse latestReceiptResponse, IapVerificationRequest iapVerificationRequest, IapVerificationRequestV2 iapVerificationRequestV2) {
         this.latestReceiptResponse = latestReceiptResponse;
         this.iapVerificationRequest = iapVerificationRequest;
+        this.iapVerificationRequestV2 = iapVerificationRequestV2;
     }
 
     @Override
     public String getMsisdn() {
-        return this.iapVerificationRequest.getMsisdn();
+        if(iapVerificationRequest != null){
+            return this.iapVerificationRequest.getMsisdn();
+        }
+        return this.iapVerificationRequestV2.getUserDetails().getMsisdn();
     }
 
     @Override
     public String getService() {
-        return this.iapVerificationRequest.getService();
+        if(iapVerificationRequest != null) {
+            return this.iapVerificationRequest.getService();
+        }
+        return this.iapVerificationRequestV2.getAppDetails().getService();
     }
 
     @Override
@@ -40,7 +50,10 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
 
     @Override
     public PaymentCode getPaymentCode() {
-        return this.iapVerificationRequest.getPaymentCode();
+        if(iapVerificationRequest != null) {
+            return this.iapVerificationRequest.getPaymentCode();
+        }
+        return this.iapVerificationRequestV2.getPaymentCode();
     }
 
     @Override
@@ -69,4 +82,9 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
         return PlanDetails.builder().planId(this.latestReceiptResponse.getPlanId()).build();
     }
 
+
+    @Override
+    public LatestReceiptResponse getLatestReceiptInfo() {
+        return latestReceiptResponse;
+    }
 }

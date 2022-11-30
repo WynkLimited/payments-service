@@ -1,6 +1,8 @@
 package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
+import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
@@ -29,6 +31,12 @@ public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetai
     @JsonProperty("transactionid")
     private String transactionId;
 
+    @SerializedName("field7")
+    private String mostSpecificFailureReason;
+
+    @SerializedName("field8")
+    private String specificFailureReason;
+
     @JsonProperty("field9")
     private String payUResponseFailureMessage;
 
@@ -38,6 +46,9 @@ public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetai
     @JsonProperty("card_type")
     private String cardType;
 
+    @JsonProperty("unmappedstatus")
+    private String unMappedStatus;
+
     public String getBankCode() {
         if (StringUtils.isNotEmpty(bankCode)) return bankCode.replace(PayUConstants.PAYU_SI, StringUtils.EMPTY);
         return bankCode;
@@ -45,5 +56,18 @@ public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetai
 
     @Setter
     private String migratedTransactionId;
+
+    public String getTransactionFailureReason() {
+        final StringBuilder reason = new StringBuilder();
+        if (StringUtils.isNotEmpty(mostSpecificFailureReason))
+            reason.append(mostSpecificFailureReason).append(PaymentConstants.PIPE_SEPARATOR);
+        if (StringUtils.isNotEmpty(specificFailureReason))
+            reason.append(specificFailureReason).append(PaymentConstants.PIPE_SEPARATOR);
+        if (StringUtils.isNotEmpty(payUResponseFailureMessage))
+            reason.append(payUResponseFailureMessage).append(PaymentConstants.PIPE_SEPARATOR);
+        if (StringUtils.isNotEmpty(errorMessage))
+            reason.append(errorMessage);
+        return reason.toString();
+    }
 
 }

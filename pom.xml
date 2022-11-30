@@ -91,6 +91,11 @@
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
+            <artifactId>identity-management-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>in.wynk</groupId>
             <artifactId>payment-common</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -303,6 +308,15 @@
                 <configuration>
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>key</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
                 </configuration>
             </plugin>
             <plugin>

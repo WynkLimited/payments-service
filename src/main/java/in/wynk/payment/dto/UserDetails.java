@@ -17,6 +17,7 @@ import static in.wynk.common.constant.BaseConstants.DEFAULT_COUNTRY_CODE;
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
 @Getter
+@Setter
 @ToString
 @SuperBuilder
 @AnalysedEntity
@@ -38,7 +39,6 @@ public class UserDetails implements IUserDetails, Serializable {
     @Analysed
     private String dslId;
 
-    @Analysed
     private String countryCode;
 
     @Analysed

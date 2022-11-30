@@ -2,6 +2,7 @@ package in.wynk.payment.dto.payu;
 
 public interface PayUConstants {
 
+    String GENERIC_CALLBACK = "genericCallback";
     String PAYU_PG = "pg";
     String PAYU_SI = "SI";
     String PAYU_UPI = "UPI";
@@ -41,6 +42,9 @@ public interface PayUConstants {
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";
     String PAYU_REQUEST_TRANSACTION_ID = "txnid";
     String PAYU_RESPONSE_AUTH_PAYUID = "authPayuId";
+
+    String PAYU_ID ="mihpayid";
+    String PAYU_TDRCOMMAND ="tdrCommand";
     String PAYU_ENFORCE_PAYMENT = "enforce_payment";
     String PAYU_USER_CREDENTIALS = "user_credentials";
     String PAYU_REFUND_TRANSACTION_TYPE = "REFUND_TYPE";

@@ -122,6 +122,19 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      acknowledgement:
+        enabled: true
+        name: wcf-payment-receipt-ack-prod-sqs
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
       reconciliation:
         enabled: true
         name: wcf-production-revenue-payment-reconcilation
@@ -141,12 +154,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
-              waitTimeInSeconds: 10
+              batchSize: 10
+              waitTimeInSeconds: 1
           producer:
             delayInSecond: 180
           consumer:
-            delay: 20
+            delay: 1
             delayTimeUnit: SECONDS
       charging:
         enabled: true
@@ -154,12 +167,12 @@ payment:
         sqs:
           messages:
             extractor:
-              batchSize: 5
+              batchSize: 10
               waitTimeInSeconds: 10
           producer:
             delayInSecond: 0
           consumer:
-            delay: 180
+            delay: 10
             delayTimeUnit: SECONDS
       schedule:
         enabled: true
@@ -187,12 +200,55 @@ payment:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      userDeactivation:
+        enabled: true
+        name: wcf-prod-payment-user-deactivation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
   ###### webview status props #######
   status:
     web:
       url: http://localhost:4200/status
   merchant:
     ####### payu props #########
+    aps:
+      api:
+        base: https://paydigi.airtel.in
+      encryption:
+        key: classpath:/cryptography/aps/public.key
+      airtelxstream:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      music:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      webviewclient:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      subscriptionApi:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
+      rajtv:
+        id: payment
+        secret: pay@qckslvr
+        encryption:
+          key: classpath:/cryptography/aps/public.key
     payu:
       airtelxstream:
         id: aU2Uoi
@@ -209,6 +265,9 @@ payment:
       rajtv:
         id: fJOBvL
         secret: Z4YXGVoZ9EKk5H48RGL09AsdRTMIiHCZ
+      enterr10:
+        id: M6BDr5
+        secret: LG1VW0paJvLOrfWKVO5wnOSXSkizhLJW
       key: aU2Uoi
       salt: 6vbnfVtw
       api:
@@ -221,8 +280,12 @@ payment:
         alt:
           url: https://sandbox.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
-    amazonIap:
-      secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
+    AmazonIap:
+      airtelxstream:
+        secret: 2:IJfTI-o1TsAxo1MRxwTUlOprySfH_G5qDlZXvlenFE_MSxEkckfQ70hwHwKC7cbB:3ot0eUrg4XOyFFQdKv5L4Q==
+      enterr10:
+        secret: 2:ZkyH7bPlE7oS-7Ak2YQd98DpZOMJIi4AtXYoC4NctXAqcNFTBH86SNO0kCD2722nnQ_WXT10zaWm3UQ1W1FG7Q==:fnW_5qS9s0YMsK-bVEcL7g==
+      secret: 2:IJfTI-o1TsAxo1MRxwTUlOprySfH_G5qDlZXvlenFE_MSxEkckfQ70hwHwKC7cbB:3ot0eUrg4XOyFFQdKv5L4Q==
       status:
         baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
@@ -328,6 +391,21 @@ sms:
 http:
   enableTemplateRegistration: true
   templates:
+    apsHttpTemplate:
+      pool:
+        connection:
+          max: 200
+          maxPerHost: 200
+          timeout: 1000
+          defaultKeepAliveTime: 500
+          closeIdleWaitTime: 500
+          validateAfterInActivity: 100
+          socket:
+            timeout: 2500
+            factory:
+              type: both
+          request:
+            timeout: 2000
     subscriptionHttpTemplate:
       pool:
         connection:
@@ -413,6 +491,10 @@ service:
       root: https://payments.wynk.in
 
 webview:
+  rajtv:
+    host: https://pay.rajdigitaltv.com
+  enterr10:
+    host: https://pay.dangalplay.com
   host: https://pay.wynk.in
 
 ########### MONGO CONFIG ###########
@@ -440,7 +522,7 @@ wynk:
         replicaSet: wcf
       coupons:
         appName: coupon
-        nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+        nodes: 10.40.12.101,10.40.12.75,10.40.12.45
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons
@@ -458,6 +540,244 @@ wynk:
         replicaSet: wcf
   ##### SQS SaaS Props #####
   saas:
+    mongodb:
+      enabled: true
+      clients:
+        paymentApi:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_payments
+                password: tHdPNyp6Du
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_coupons
+                password: 6sSUZcp2gy
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 5
+                  maxConnectionsPerHost: 20
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 5000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        airtelxstream:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_payments
+                password: tHdPNyp6Du
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_coupons
+                password: 6sSUZcp2gy
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 5
+                  maxConnectionsPerHost: 20
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 5000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        music:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_payments
+                password: tHdPNyp6Du
+                database: payments
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_coupons
+                password: 6sSUZcp2gy
+                database: coupons
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 5
+                  maxConnectionsPerHost: 20
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 5000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        rajtv:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_payments_rajtv
+                password: 91F306FC2BEBF8D2E75E699D74014
+                database: payments_rajtv
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_coupons_rajtv
+                password: BE750841543CCFC2F932478ED
+                database: coupons_rajtv
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 5
+                  maxConnectionsPerHost: 20
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 5000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+        enterr10:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_payments_enterr10
+                password: 3217D9F83BF777888154
+                database: payments_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                username: user_coupons_enterr10
+                password: E9504307BBE0251C1F4E87E
+                database: coupons_enterr10
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 5
+                  maxConnectionsPerHost: 20
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 5000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
     sql:
       enabled: true
       clients:
@@ -597,6 +917,45 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-rajtv-prod
+                  minimum-idle: 10
+                  maximumPoolSize: 20
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        enterr10:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-enterr10-prod
                   minimum-idle: 10
                   maximumPoolSize: 20
                 jpa:

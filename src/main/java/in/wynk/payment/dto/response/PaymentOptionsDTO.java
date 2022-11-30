@@ -14,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 @Builder
 @Getter
@@ -33,6 +34,7 @@ public class PaymentOptionsDTO {
         private final String id;
         private final String partnerName;
         private final String partnerLogo;
+        private final String title;
         private final String discount;
         private final String validityUnit;
         private final Integer month;
@@ -45,6 +47,8 @@ public class PaymentOptionsDTO {
         private final TrialPlanDetails trialDetails;
         private final String type = BaseConstants.PLAN;
         private final String currency;
+        private Map<String, String> sku;
+        private final String subType;
     }
 
     @SuperBuilder
@@ -107,7 +111,7 @@ public class PaymentOptionsDTO {
         private final boolean autoRenewSupported;
         private final List<String> suffixes;
 
-        public PaymentMethodDTO(PaymentMethod method) {
+        public PaymentMethodDTO(PaymentMethod method, Supplier<Boolean> autoRenewSupplier) {
             this.paymentId = method.getId();
             this.group = method.getGroup();
             this.meta = method.getMeta();
@@ -116,7 +120,7 @@ public class PaymentOptionsDTO {
             this.paymentCode = method.getPaymentCode().name();
             this.subtitle = method.getSubtitle();
             this.iconUrl = method.getIconUrl();
-            this.autoRenewSupported = method.isAutoRenewSupported();
+            this.autoRenewSupported = autoRenewSupplier.get() && method.isAutoRenewSupported();
             this.suffixes = method.getSuffixes();
         }
     }

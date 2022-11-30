@@ -4,6 +4,8 @@ import in.wynk.common.constant.BaseConstants;
 
 public interface PaymentConstants extends BaseConstants {
 
+    String SAVED = "SAVED";
+    String UPI = "UPI";
     String CARD = "CARD";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
@@ -19,6 +21,7 @@ public interface PaymentConstants extends BaseConstants {
     String ITUNES = "ITUNES";
     String MERCHANT_ID = "id";
     String FAILURE = "failure";
+    String AUTO_REFUND = "autoRefund";
     String RENEWAL = "renewal";
     String REQUEST = "request";
     String PENDING = "pending";
@@ -33,13 +36,20 @@ public interface PaymentConstants extends BaseConstants {
     String SE_BILLING = "SE_BILLING";
     String UPI_PREFIX = "upi_prefix";
     String AMAZON_IAP = "AMAZON_IAP";
+    String GOOGLE_IAP ="GOOGLE_IAP";
     String SUBTITLE_TEXT = "subtitle";
     String BUTTON_TEXT = "buttonText";
     String MERCHANT_SECRET = "secret";
     String APB_GATEWAY = "APB_GATEWAY";
     String ADD_TO_BILL = "ADD_TO_BILL";
+    String SEAMLESS = "SEAMLESS";
+    String NON_SEAMLESS = "NON_SEAMLESS";
     String DEFAULT_COUNTRY_CODE = "IN";
+    String DEBIT_CARD = "DEBIT_CARD";
+    String APP_NAME = "APP_NAME";
     String BASE_USER_EMAIL = "@wynk.in";
+    String CREDIT_CARD = "CREDIT_CARD";
+    String NET_BANKING = "NET_BANKING";
     String DEFAULT_PN = "Wynk Limited";
     String APP_PACKAGE = "package_name";
     String PAYMENT_CODE = "paymentCode";
@@ -50,11 +60,15 @@ public interface PaymentConstants extends BaseConstants {
     String WALLET_USER_ID = "walletUserId";
     String MERCHANT_CLIENT_ID = "clientId";
     String GOOGLE_WALLET = "GOOGLE_WALLET";
+    String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
+    String TDR ="tdr";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
+    String AIRTEL_PAY_STACK = "aps";
+    String APS = "APS";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";
@@ -64,6 +78,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
     String PAYMENT_DETAILS_KEY = "PAYMENT_DETAILS_KEY:";
     String MERCHANT_TRANSACTION = "merchantTransaction";
+    String PAYMENT_PAGE_PLACE_HOLDER = "${payment.%c.%p.page}";
     String ORIGINAL_TRANSACTION_ID = "ORIGINAL_TRANSACTION_ID";
     String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";

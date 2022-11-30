@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @Getter
 @ToString
@@ -12,7 +13,16 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AmazonReceiptDetails extends ReceiptDetails {
 
-    private String receiptId;
+    @Field("amazon_user_id")
     private String amazonUserId;
 
+    @Override
+    public Integer getNotificationType () {
+        return null;
+    }
+
+    @Override
+    public boolean isRenew () {
+        return false;
+    }
 }

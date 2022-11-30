@@ -30,6 +30,14 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY021("PhonePe Charging Failure", "PhonePe Charging Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE),
     PAY022("Payment Options Failure", "Payment Options Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE),
     PAY023("Payment Options Failure", "Mandatory fields not passed", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE),
+    PAY024("APS API Failure", "Could Not process transaction on airtel pay stack", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_API_FAILURE),
+    PAY025("Aps Recon Transaction Status Failure", "No matching status found for payU side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
+    PAY026("Payment Renewal Failure", "Unable tot renewal itunes subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ITUNES_RENEWAL_ERROR),
+    PAY027("Verification Failure ", "Failure in validating transaction from google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE),
+    PAY028("Payment Renewal Failure", "Unable tot renewal google Play subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GOOGLE_PLAY_RENEWAL_ERROR),
+    PAY029("Acknowledgement Failure ", "Failure in acknowledging subscription purchase to google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE),
+    PAY030("Google Play Notification Failure", "Something happened while decoding real time developer notification from Google Play", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GOOGLE_PLAY_NOTIFICATION_DECODE_ERROR),
+    PAY031("Google Play Notification Validation Failure", "No receipt mapping found for the Google Play notification", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_NOTIFICATION_VALIDATION_ERROR),
 
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
@@ -39,7 +47,6 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     PAY111("PayU Pre Debit Notification Failure", "Pre Debit Notification Failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR),
     PAY112("PayU UPI Mandate Revoke Failure", "Cancelling Recurring failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_UPI_MANDATE_REVOKE_ERROR),
-
     PAY201("Saved Payment Option Failure", "Either this payment option is not currently supported to fetch user saved payments or we are getting timeout from external server", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.SAVED_OPTIONS_TIMED_OUT),
     PAY202("Link Wallet Error", "Unable to find any linked wallet for corresponding uid-paymentCode combination. Try linking a fresh wallet", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.LINK_WALLET_ERROR),
     PAY203("Saved Cards Error", "Unable to find any saved cards for corresponding uid-paymentCode combination. Try saving a fresh card", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.SAVED_CARDS_ERROR),
@@ -53,8 +60,13 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY400("Invalid Request", "Invalid request", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY401("Lock Can not be acquired over given id", "Lock Can not be acquired over given id", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
+    PAY501("Invalid Request", "Mandatory data in request is missing.", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY602("Validation Failure", "Given Plan Id Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+
+    PAY701("Validation Failure", "Receipt is already processed", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY702("Validation Failure", "Invalid request with wrong receipt details", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
     PAY888("Not Supported", "This service is currently not supported", HttpStatus.NOT_FOUND, PaymentLoggingMarker.NOT_SUPPORTED_SERVICE),
     PAY889("Refund Failure", "Refund process is not supported by the payment partner", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_REFUND_ERROR),
@@ -64,7 +76,7 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     ATB01("ATB Charging API Failure", "Could Not process transaction on addToBill", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_API_FAILURE),
     ATB02("ATB Status API Failure", "Transaction is still pending from addToBill side", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),
-    ATB03("ATB Status API Failure", "No matching status found at addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),;
+    ATB03("ATB Status API Failure", "No matching status found at addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION);
 
     /**
      * The error title.

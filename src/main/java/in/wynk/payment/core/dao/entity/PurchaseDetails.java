@@ -5,26 +5,25 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.data.entity.MongoBaseEntity;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.io.Serializable;
-
 @Getter
-@Deprecated
 @SuperBuilder
 @AnalysedEntity
-@Document("recurring_payment_details")
+@Document("purchase_details")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseKey> implements IChargingDetails {
+public class PurchaseDetails extends MongoBaseEntity<String> implements IChargingDetails {
+
+    @Analysed
+    private GeoLocation geoLocation;
 
     @Field("callback_url")
     private String callbackUrl;
-
-    @Field("source_transaction_id")
-    private String sourceTransactionId;
 
     @Analysed
     @Field("app_details")
@@ -45,24 +44,10 @@ public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseK
     @Field("page_url_details")
     private IPageUrlDetails pageUrlDetails;
 
-    @Analysed
-    private GeoLocation geoLocation;
-
     @Override
     @JsonIgnore
     public ICallbackDetails getCallbackDetails() {
         return () -> callbackUrl;
-    }
-
-    @Getter
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class PurchaseKey implements Serializable {
-        @Field("uid")
-        private String uid;
-        @Field("product_key")
-        private String productKey;
     }
 
 }

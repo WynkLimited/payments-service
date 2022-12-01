@@ -31,9 +31,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.DecodedNotificationWrapper;
-import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.UserPlanMapping;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.itune.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
@@ -76,7 +74,7 @@ import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
 @Service(BeanConstant.ITUNES_PAYMENT_SERVICE)
-public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentVerificationService, IPaymentNotificationService<Pair<LatestReceiptInfo, ReceiptDetails>>, IReceiptDetailService<Pair<LatestReceiptInfo, ReceiptDetails>, ItunesCallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentPreVerificationService, IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentVerificationService, IPaymentNotificationService<Pair<LatestReceiptInfo, ReceiptDetails>>, IReceiptDetailService<Pair<LatestReceiptInfo, ReceiptDetails>, ItunesCallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
     private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
@@ -111,36 +109,51 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         try {
             final Transaction transaction = TransactionContext.get();
             final ItunesLatestReceiptResponse response = (ItunesLatestReceiptResponse) latestReceiptResponse;
+
             fetchAndUpdateFromReceipt(transaction, response, null);
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
-                builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
-                        .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
-                        .append(QUESTION_MARK)
-                        .append(SERVICE)
-                        .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
-                        .append(AND)
-                        .append(BUILD_NO)
-                        .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
-                        .toString());
+
+                if(latestReceiptResponse.getSuccessUrl() != null){
+                    builder.url(new StringBuilder(latestReceiptResponse.getSuccessUrl()).toString());
+                } else {
+                    String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
+
+                    builder.url(new StringBuilder(success_url).append(SessionContextHolder.getId())
+                            .append(SLASH)
+                            .append(sessionDTO.<String>get(OS))
+                            .append(QUESTION_MARK)
+                            .append(SERVICE)
+                            .append(EQUAL)
+                            .append(sessionDTO.<String>get(SERVICE))
+                            .append(AND)
+                            .append(BUILD_NO)
+                            .append(EQUAL)
+                            .append(sessionDTO.<Integer>get(BUILD_NO))
+                            .toString());
+                }
+
+
             } else {
-                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
-                builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
-                        .append(SLASH)
-                        .append(sessionDTO.<String>get(OS))
-                        .append(QUESTION_MARK)
-                        .append(SERVICE)
-                        .append(EQUAL)
-                        .append(sessionDTO.<String>get(SERVICE))
-                        .append(AND)
-                        .append(BUILD_NO)
-                        .append(EQUAL)
-                        .append(sessionDTO.<Integer>get(BUILD_NO))
-                        .toString());
+
+                if(latestReceiptResponse.getFailureUrl() != null){
+                    builder.url(new StringBuilder(latestReceiptResponse.getFailureUrl()).toString());
+
+                } else {
+                    String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}");
+                    builder.url(new StringBuilder(failure_url).append(SessionContextHolder.getId())
+                            .append(SLASH)
+                            .append(sessionDTO.<String>get(OS))
+                            .append(QUESTION_MARK)
+                            .append(SERVICE)
+                            .append(EQUAL)
+                            .append(sessionDTO.<String>get(SERVICE))
+                            .append(AND)
+                            .append(BUILD_NO)
+                            .append(EQUAL)
+                            .append(sessionDTO.<Integer>get(BUILD_NO))
+                            .toString());
+                  }
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
@@ -168,7 +181,16 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(request.getReceipt());
         final ItunesReceipt itunesReceipt = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn());
-        return getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
+        LatestReceiptResponse response =  getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
+        response.setSuccessUrl(request.getSuccessUrl());
+        response.setFailureUrl(request.getFailureUrl());
+        return response;
+    }
+
+    //Needs to be completed for v2 request
+    @Override
+    public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
+        return null;
     }
 
     private ItunesLatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {
@@ -417,7 +439,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             List<LatestReceiptInfo> temp = itunesReceiptType.getSubscriptionDetailJson(receiptObj);
             if (Objects.nonNull(temp)) {
-                receiptObj.setLatestReceiptInfoList(temp.stream().sorted(Comparator.comparingLong(itunesReceiptType::getExpireDate).reversed()).collect(Collectors.toList()));
+                receiptObj.setLatestReceiptInfoList(temp);
             }
             return receiptObj;
         } catch (Exception ex) {
@@ -532,4 +554,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         return false;
     }
 
+    @Override
+    public void verifyRequest (IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+    }
+
+    @Override
+    public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+
+    }
+
+    @Override
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+
+    }
 }

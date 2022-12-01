@@ -6,7 +6,6 @@ import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
-import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -31,11 +30,12 @@ import in.wynk.subscription.common.response.AllItemsResponse;
 import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
-import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -100,6 +100,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Autowired
     private IRecurringPaymentManagerService recurringPaymentManagerService;
+
+    @Lazy
+    @Autowired
+    private PaymentCachingService cachingService;
 
     @Override
     public List<PlanDTO> getPlans() {
@@ -183,7 +187,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         try {
             final IAppDetails appDetails = request.getAppDetails();
             final IUserDetails userDetails = request.getUserDetails();
-            final SelectivePlansComputationRequest selectivePlansComputationRequest = SelectivePlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(MsisdnUtils.getUidFromMsisdn(userDetails.getMsisdn(), WynkServiceUtils.fromServiceId(request.getService()).getSalt())).service(request.getService()).appId(appDetails.getAppId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).countryCode(userDetails.getCountryCode()).build();
+            final SelectivePlansComputationRequest selectivePlansComputationRequest = SelectivePlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(userDetails.getMsisdn(), request.getService())).service(request.getService()).appId(appDetails.getAppId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).countryCode(userDetails.getCountryCode()).build();
             final RequestEntity<SelectivePlansComputationRequest> requestEntity = BeanLocatorFactory.getBean(PaymentCachingService.class).isV2SubscriptionJourney(request.getPlanId())?ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPointV2, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST):ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST);
             final ResponseEntity<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>>() {
             });

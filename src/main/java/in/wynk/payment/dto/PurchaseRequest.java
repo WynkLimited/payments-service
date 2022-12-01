@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.validations.IClientValidatorRequest;
-import in.wynk.common.dto.SessionRequest;
-import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
+import in.wynk.subscription.common.dto.GeoLocation;
 import in.wynk.wynkservice.api.validations.IWynkServiceValidatorRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,6 +40,9 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
     @Analysed
     private PageUrlDetails pageUrlDetails;
 
+    @Analysed
+    private GeoLocation geoLocation;
+
     @Override
     public String getOs() {
         return appDetails.getOs();
@@ -67,9 +70,11 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .service(getAppDetails().getService())
                 .countryCode(getUserDetails().getCountryCode())
                 .msisdn(getUserDetails().getMsisdn())
-                .uid(MsisdnUtils.getUidFromMsisdn(getUserDetails().getMsisdn(), WynkServiceUtils.fromServiceId(getAppDetails().getService()).getSalt()))
+                .uid(IdentityUtils.getUidFromUserName(getUserDetails().getMsisdn(), getAppDetails().getService()))
                 .failureUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getFailurePageUrl).orElse(null))
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
+                .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
+                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null))
                 .build();
     }
 

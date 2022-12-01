@@ -1,5 +1,6 @@
 package in.wynk.payment.dto;
 
+import in.wynk.payment.dto.response.LatestReceiptResponse;
 import lombok.Builder;
 import lombok.Getter;
 

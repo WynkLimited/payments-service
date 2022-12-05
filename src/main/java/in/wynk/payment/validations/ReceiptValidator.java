@@ -7,14 +7,12 @@ import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.GooglePlayReceiptDetails;
 import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
@@ -35,7 +33,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
 
     @Override
     public void handle(IReceiptValidatorRequest<LatestReceiptResponse> request) {
-        final PaymentCode code = request.getPaymentCode();
+        final PaymentGateway code = request.getPaymentCode();
         delegate.get(code.getId()).handle(request);
     }
 

@@ -6,7 +6,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.http.config.HttpClientConfig;
 import in.wynk.payment.PaymentApplication;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.S2SPurchaseDetails;
@@ -58,24 +58,24 @@ public class PaymentsTest {
 
     @Test
     public void phonePeChargingTest() {
-        PaymentCode code = PaymentCodeCachingService.getFromPaymentCode(PHONEPE_WALLET);
+        PaymentGateway code = PaymentCodeCachingService.getFromPaymentCode(PHONEPE_WALLET);
         WynkResponseEntity<?> response = doChargingTest(code);
         assert response.getStatus().is3xxRedirection();
     }
 
-    protected WynkResponseEntity<?> doChargingTest(PaymentCode paymentCode) {
-        IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentChargingService.class);
+    protected WynkResponseEntity<?> doChargingTest(PaymentGateway paymentGateway) {
+        IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantPaymentChargingService.class);
         AbstractChargingRequest<?> request = DefaultChargingRequest.builder().purchaseDetails(S2SPurchaseDetails.builder().productDetails(PlanDetails.builder().planId(PLAN_ID).build()).build()).build();
         return chargingService.charge(request);
     }
 
-    protected WynkResponseEntity<?> callbackTest(PaymentCode paymentCode, CallbackRequest request) {
-        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentCallbackService.class);
+    protected WynkResponseEntity<?> callbackTest(PaymentGateway paymentGateway, CallbackRequest request) {
+        IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantPaymentCallbackService.class);
         return callbackService.handleCallback(request);
     }
 
-    protected WynkResponseEntity<?> statusTest(PaymentCode paymentCode, AbstractTransactionStatusRequest statusRequest) {
-        IMerchantPaymentStatusService callbackService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantPaymentStatusService.class);
+    protected WynkResponseEntity<?> statusTest(PaymentGateway paymentGateway, AbstractTransactionStatusRequest statusRequest) {
+        IMerchantPaymentStatusService callbackService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantPaymentStatusService.class);
         return callbackService.status(statusRequest);
     }
 

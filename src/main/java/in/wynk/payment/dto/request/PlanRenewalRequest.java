@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.request;
 
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,6 +12,6 @@ public class PlanRenewalRequest {
     private String uid;
     private String msisdn;
     private String clientAlias;
-    private PaymentCode paymentCode;
+    private PaymentGateway paymentGateway;
 
 }

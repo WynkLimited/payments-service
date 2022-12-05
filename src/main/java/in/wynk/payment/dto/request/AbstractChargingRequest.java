@@ -11,7 +11,6 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
-import in.wynk.payment.dto.ApsChargingRequest;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
@@ -19,7 +18,6 @@ import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
 import in.wynk.session.context.SessionContextHolder;
-import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -54,7 +52,7 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     @Analysed
     private String paymentCode;
 
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 

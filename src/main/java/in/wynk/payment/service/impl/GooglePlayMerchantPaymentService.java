@@ -418,7 +418,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         log.info("Trying to publish message on queue for google acknowledgement. ");
         GooglePlaySubscriptionAcknowledgementRequest request = (GooglePlaySubscriptionAcknowledgementRequest) abstractPaymentAcknowledgementRequest;
         SubscriptionAcknowledgeMessageManager
-                message = SubscriptionAcknowledgeMessageManager.builder().paymentCode(request.getPaymentCode()).packageName(request.getAppDetails().getPackageName())
+                message = SubscriptionAcknowledgeMessageManager.builder().paymentGateway(request.getPaymentGateway()).packageName(request.getAppDetails().getPackageName())
                 .service(request.getAppDetails().getService()).purchaseToken(request.getPaymentDetails()
                         .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
                 .developerPayload(request.getDeveloperPayload()).build();

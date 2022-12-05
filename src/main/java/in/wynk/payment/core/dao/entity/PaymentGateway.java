@@ -17,7 +17,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 @AnalysedEntity
 @Document("payment_codes")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class PaymentCode extends MongoBaseEntity<String> {
+public class PaymentGateway extends MongoBaseEntity<String> {
 
     @Field("bean_name")
     @Analysed(name = PAYMENT_GATEWAY)

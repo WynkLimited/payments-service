@@ -169,14 +169,16 @@ public class PaymentManager
         AnalyticService.update(wrapper.getDecodedNotification());
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
-            final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
-            final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                    PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentCode(request.getPaymentCode())
-                            .clientAlias(request.getClientAlias()).build());
-            transactionInitRequest.setEvent(event);
-            final Transaction transaction = transactionManager.init(transactionInitRequest);
-            handleNotification(transaction, mapping);
-            return WynkResponseEntity.<Void>builder().success(true).build();
+            if(mapping != null) {
+                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+                final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
+                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentCode(request.getPaymentCode())
+                                .clientAlias(request.getClientAlias()).build());
+                transactionInitRequest.setEvent(event);
+                final Transaction transaction = transactionManager.init(transactionInitRequest);
+                handleNotification(transaction, mapping);
+                return WynkResponseEntity.<Void>builder().success(true).build();
+            }
         }
         return WynkResponseEntity.<Void>builder().success(false).build();
     }

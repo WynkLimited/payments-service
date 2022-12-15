@@ -344,8 +344,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         String userCredentials = payUMerchantKey + COLON + uid;
         Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-            payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
-//            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+            //payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
+            payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
         } else {
             payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
         }
@@ -378,8 +378,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return payload;
     }
 
-    /* Not used therefore commenting as of now
-    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
+     //Not used therefore commenting as of now
+    private Map<String, String> getPayload(String client, UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
         Map<String, String> payload = new HashMap<>();
         String reqType = PaymentRequestType.SUBSCRIBE.name();
         String udf1 = PAYU_SI_KEY.toUpperCase();
@@ -392,7 +392,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         BillingUtils billingUtils = getBillingUtils(selectedPlan, isFreeTrial);
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getFinalPrice(), today, next5Year));
-            String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
+            String checksumHash = getChecksumHashForPayment(client, transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
             payload.put(PAYU_SI_KEY, "1");
             payload.put(PAYU_API_VERSION, "7");
             payload.put(PAYU_HASH, checksumHash);
@@ -406,7 +406,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         return payload;
     }
-     */
 
     private BillingUtils getBillingUtils(PlanDTO selectedPlan, boolean isFreeTrial) {
         int validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
@@ -577,15 +576,13 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return EncryptionUtils.generateSHA512Hash(builder);
     }
 
-    /*
-    Below function not used anywhere
-     */
-    /*
-    private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount, String siDetails) {
+    private String getChecksumHashForPayment(String client, UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount, String siDetails) {
+        final String payUMerchantKey = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
+        final String payUMerchantSecret = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
         String rawChecksum = payUMerchantKey + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle +
-                PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + siDetails + PIPE_SEPARATOR + payUSalt;
+                PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + siDetails + PIPE_SEPARATOR + payUMerchantSecret;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
-    }*/
+    }
 
     private String getChecksumHashForPayment(String client, UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {
         final String payUMerchantKey = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);

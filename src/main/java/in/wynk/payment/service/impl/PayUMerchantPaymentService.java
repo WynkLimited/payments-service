@@ -528,8 +528,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
             headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-            final RequestEntity entity = RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).body(requestMap);
-            entity.getHeaders().addAll(headers);
+            final RequestEntity entity = RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).headers(headers).body(requestMap);
             return restTemplate.exchange(entity, PayUUpiIntentInitResponse.class).getBody().getDeepLink();
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);

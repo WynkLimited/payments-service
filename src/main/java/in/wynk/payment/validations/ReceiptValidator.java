@@ -90,6 +90,6 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
     public static boolean verifyIfPreviousTransactionSuccess (ReceiptDetails receiptDetails) {
         String txnId = receiptDetails.getPaymentTransactionId();
         final Transaction transaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(txnId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, txnId));
-        return TransactionStatus.SUCCESS == (transaction.getStatus());
+        return TransactionStatus.SUCCESS == transaction.getStatus();
     }
 }

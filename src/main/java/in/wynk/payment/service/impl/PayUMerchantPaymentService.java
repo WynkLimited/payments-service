@@ -43,9 +43,7 @@ import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -527,7 +525,12 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             requestMap.add(PAYU_PG, "UPI");
             requestMap.add(PAYU_TXN_S2S_FLOW, "4");
             requestMap.add(PAYU_BANKCODE, "INTENT");
-            return restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).body(requestMap), PayUUpiIntentInitResponse.class).getBody().getDeepLink();
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
+            headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+            final RequestEntity entity = RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).body(requestMap);
+            entity.getHeaders().addAll(headers);
+            return restTemplate.exchange(entity, PayUUpiIntentInitResponse.class).getBody().getDeepLink();
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);

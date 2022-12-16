@@ -387,7 +387,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
         boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
-        BillingUtils billingUtils = getBillingUtils(selectedPlan, isFreeTrial);
+        BillingUtils billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
         try {
             String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getFinalPrice(), today, next5Year));
             String checksumHash = getChecksumHashForPayment(client, transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
@@ -397,18 +397,11 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
-            payload.put(PAYU_FREE_TRIAL, "0");
             payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");
         }
         return payload;
-    }
-
-    private BillingUtils getBillingUtils(PlanDTO selectedPlan, boolean isFreeTrial) {
-        int validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        int freeTrialValidity = isFreeTrial ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity() : validTillDays;
-        return freeTrialValidity == validTillDays ? new BillingUtils(validTillDays) : new BillingUtils(1, BillingCycle.ADHOC);
     }
 
     //TODO: ( on AMAN) need to use to fetch user's saved cards.

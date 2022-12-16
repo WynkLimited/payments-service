@@ -26,7 +26,7 @@ public class SiDetails {
         this();
         this.billingCycle = billingCycle;
         this.billingInterval = 1;
-        this.billingAmount = String.format("%.2f", billingAmount);
+        this.billingAmount = String.format("%.2f", 2 * billingAmount);
         this.billingCurrency = "INR";
         this.paymentStartDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentStartDate);
         this.paymentEndDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentEndDate);

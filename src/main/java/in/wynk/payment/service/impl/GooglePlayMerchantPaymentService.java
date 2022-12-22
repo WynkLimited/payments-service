@@ -158,6 +158,17 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 return null;
             }
             PlanDTO planDTO = cachingService.getPlanFromSku(callbackRequest.getSubscriptionId());
+            boolean isFreeTrial = Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
+            //if free trial plan applied, perform events on that plan
+            if (isFreeTrial) {
+                if (planDTO.getLinkedFreePlanId() != -1) {
+                    return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(details.getMsisdn()).uid(details.getUid())
+                            .message(Pair.of(latestReceipt, details)).build();
+                } else {
+                    log.error("No Free Trial mapping present for planId {}", planDTO.getId());
+                    throw new WynkRuntimeException(PaymentErrorType.PAY033);
+                }
+            }
             return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid())
                     .message(Pair.of(latestReceipt, details)).build();
         }

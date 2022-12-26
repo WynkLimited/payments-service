@@ -7,16 +7,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+/**
+ * @author Nishesh Pandey
+ */
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
-public abstract class AbstractChargingStatusResponse{
-
+public abstract class AbstractChargingStatusResponseV2 {
     private int planId;
     private String tid;
     private String redirectUrl;
     private AbstractPack packDetails;
     private TransactionStatus transactionStatus;
-
 }

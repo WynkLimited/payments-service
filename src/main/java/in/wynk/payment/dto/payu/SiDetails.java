@@ -27,7 +27,7 @@ public class SiDetails {
         this.billingCycle = billingCycle;
         this.billingInterval = 1;
         // catpure mandate for 2x amount up-to 5k
-        this.billingAmount = String.format("%.2f", (2 * billingAmount) <= 5000 ? (2 * billingAmount): billingAmount);
+        this.billingAmount = String.format("%.2f", billingAmount);
         this.billingCurrency = "INR";
         this.paymentStartDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentStartDate);
         this.paymentEndDate = new SimpleDateFormat("yyyy-MM-dd").format(paymentEndDate);

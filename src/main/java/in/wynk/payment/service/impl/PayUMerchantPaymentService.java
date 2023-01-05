@@ -124,8 +124,14 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) chargingRequest.getPurchaseDetails().getPaymentDetails());
                 final String bankCode = upiDetails.isIntent() || chargingRequest.isIntent() ? INTENT : UPI;
                 try {
-                    if (bankCode.equalsIgnoreCase(UPI)) payUPayload.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
-                    encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode), encryptionKey);
+                    if (bankCode.equalsIgnoreCase(UPI)) {
+                        payUPayload.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
+                        encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode, new TypeReference<PayUUpiCollectResponse>() {
+                        }).getResult().getOtpPostUrl(), encryptionKey);
+                    } else {
+                        encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode, new TypeReference<PayUUpiIntentInitResponse>() {
+                        }).getDeepLink(), encryptionKey);
+                    }
                 } catch (HttpStatusCodeException e) {
                     log.error(PAYU_API_FAILURE, e.getMessage(), e);
                     encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
@@ -504,7 +510,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
     }
 
-    private String initUpiPayU(Map<String, String> payUPayload, String bankCode) {
+    private <T> T initUpiPayU(Map<String, String> payUPayload, String bankCode, TypeReference<T> target) {
         try {
             MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
             for (String key : payUPayload.keySet()) {
@@ -518,7 +524,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
             headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
             final RequestEntity entity = RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).headers(headers).body(requestMap);
-            return restTemplate.exchange(entity, PayUUpiIntentInitResponse.class).getBody().getDeepLink();
+            final String response = restTemplate.exchange(entity, String.class).getBody();
+            return objectMapper.readValue(response, target);
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);

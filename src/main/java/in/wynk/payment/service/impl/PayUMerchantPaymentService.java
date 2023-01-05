@@ -124,6 +124,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) chargingRequest.getPurchaseDetails().getPaymentDetails());
                 final String bankCode = upiDetails.isIntent() || chargingRequest.isIntent() ? INTENT : UPI;
                 try {
+                    if (bankCode.equalsIgnoreCase(UPI)) payUPayload.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
                     encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode), encryptionKey);
                 } catch (HttpStatusCodeException e) {
                     log.error(PAYU_API_FAILURE, e.getMessage(), e);

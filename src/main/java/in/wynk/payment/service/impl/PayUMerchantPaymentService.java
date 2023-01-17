@@ -318,6 +318,17 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
+                /**
+                * PayU check to verify whether mandate transaction is successfully registered with standing instruction sist,
+                 * otherwise consider it as normal transaction without mandate
+                * */
+                if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType()) && PayUChargingTransactionDetails.class.isAssignableFrom(transactionDetails.getClass())) {
+                    final PayUChargingTransactionDetails chargingDetails = (PayUChargingTransactionDetails) transactionDetails;
+                    if (!PAYU_PAYMENT_SOURCE_SIST.equalsIgnoreCase(chargingDetails.getPaymentSource())) {
+                        transaction.setType(PaymentEvent.PURCHASE.getValue());
+                        log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "transaction was initiated with auto-pay but si is not captured.");
+                    }
+                }
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
@@ -595,7 +606,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest verificationRequest) {
         switch (verificationRequest.getVerificationType()) {
             case VPA:
-                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
+                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue(), "validateAutoPayVPA");
                 PayUVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
                 });
                 if (verificationResponse.getIsVPAValid() == 1) verificationResponse.setValid(true);

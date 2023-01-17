@@ -87,15 +87,15 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     }
 
     public String getUdf() {
-        return  getUDFOrDefault(udf5, PaymentConstants.PIPE_SEPARATOR) +
-                getUDFOrDefault(udf4, PaymentConstants.PIPE_SEPARATOR) +
-                getUDFOrDefault(udf3, PaymentConstants.PIPE_SEPARATOR) +
-                getUDFOrDefault(udf2, PaymentConstants.PIPE_SEPARATOR) +
+        return  getUDFOrDefault(udf5) +
+                getUDFOrDefault(udf4) +
+                getUDFOrDefault(udf3) +
+                getUDFOrDefault(udf2) +
                 udf1;
     }
 
-    private String getUDFOrDefault(String value, String defaultValue) {
-        return StringUtils.isEmpty(value) ? defaultValue: value;
+    private String getUDFOrDefault(String value) {
+        return StringUtils.isEmpty(value) ? PaymentConstants.PIPE_SEPARATOR : value.concat(PaymentConstants.PIPE_SEPARATOR);
     }
 
 }

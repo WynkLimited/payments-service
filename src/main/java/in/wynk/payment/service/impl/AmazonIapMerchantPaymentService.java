@@ -314,13 +314,25 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
-        final UserPlanMapping.UserPlanMappingBuilder<AmazonIapReceiptResponse> builder = UserPlanMapping.<AmazonIapReceiptResponse>builder().message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build()).planId(planDTO.getId());
+        final UserPlanMapping.UserPlanMappingBuilder<AmazonIapReceiptResponse> builder = UserPlanMapping.<AmazonIapReceiptResponse>builder()
+                .message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build());
+        if (receiptResponse.getFreeTrialEndDate() != null) {
+            if (planDTO.getLinkedFreePlanId() != -1) {
+                builder.planId(planDTO.getLinkedFreePlanId());
+            } else {
+                log.error("No Free Trial mapping present for planId {}", planDTO.getId());
+                throw new WynkRuntimeException(PaymentErrorType.PAY035);
+            }
+        } else {
+            builder.planId(planDTO.getId());
+        }
         if (optionalReceiptDetails.isPresent()) {
             final ReceiptDetails details = optionalReceiptDetails.get();
             builder.uid(details.getUid()).msisdn(details.getMsisdn());
             return builder.build();
         }
-        WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).findByExternalUserId(message.getAppUserId());
+        WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class)
+                .findByExternalUserId(message.getAppUserId());
         return builder.uid(mapping.getId()).msisdn(mapping.getMsisdn()).build();
     }
 

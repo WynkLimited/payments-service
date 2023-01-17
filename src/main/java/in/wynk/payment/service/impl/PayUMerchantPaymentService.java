@@ -37,6 +37,7 @@ import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -602,11 +603,14 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return generatedHash.equals(payUResponseHash);
     }
 
+    @SneakyThrows
     @Override
     public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest verificationRequest) {
         switch (verificationRequest.getVerificationType()) {
             case VPA:
-                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue(), "validateAutoPayVPA");
+                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{
+                    put("validateAutoPayVPA", "1");
+                }}));
                 PayUVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
                 });
                 if (verificationResponse.getIsVPAValid() == 1) verificationResponse.setValid(true);

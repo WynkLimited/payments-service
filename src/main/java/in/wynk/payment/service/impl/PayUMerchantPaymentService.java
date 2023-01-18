@@ -131,7 +131,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                         }).getResult().getOtpPostUrl(), encryptionKey);
                     } else {
                         encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode, new TypeReference<PayUUpiIntentInitResponse>() {
-                        }).getDeepLink(), encryptionKey);
+                        }).getDeepLink(chargingRequest.getPurchaseDetails().getPaymentDetails().isAutoRenew()), encryptionKey);
                     }
                 } catch (HttpStatusCodeException e) {
                     log.error(PAYU_API_FAILURE, e.getMessage(), e);

@@ -403,7 +403,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
         BillingUtils billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
         try {
-            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getFinalPrice(), today, next5Year));
+            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getMandateAmount(), today, next5Year));
             String checksumHash = getChecksumHashForPayment(client, transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
             payload.put(PAYU_SI_KEY, "1");
             payload.put(PAYU_API_VERSION, "7");

@@ -320,13 +320,15 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
                 /**
-                * PayU check to verify whether mandate transaction is successfully registered with standing instruction sist,
+                 * PayU check to verify whether mandate transaction is successfully registered with standing instruction sist,
                  * otherwise consider it as normal transaction without mandate
-                * */
+                 * */
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType()) && PayUChargingTransactionDetails.class.isAssignableFrom(transactionDetails.getClass())) {
                     final PayUChargingTransactionDetails chargingDetails = (PayUChargingTransactionDetails) transactionDetails;
                     if (!PAYU_PAYMENT_SOURCE_SIST.equalsIgnoreCase(chargingDetails.getPaymentSource())) {
                         transaction.setType(PaymentEvent.PURCHASE.getValue());
+                        transaction.setMandateAmount(-1);
+                        AnalyticService.update(PAYU_PAYMENT_SOURCE_SIST, chargingDetails.getPaymentSource());
                         log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "transaction was initiated with auto-pay but si is not captured.");
                     }
                 }

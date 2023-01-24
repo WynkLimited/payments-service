@@ -1,6 +1,10 @@
 package in.wynk.payment.core.constant;
 
 import in.wynk.common.constant.BaseConstants;
+import io.vavr.collection.Array;
+
+import java.util.Arrays;
+import java.util.List;
 
 public interface PaymentConstants extends BaseConstants {
 
@@ -84,5 +88,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
+
+    List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
 }

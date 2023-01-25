@@ -3,10 +3,9 @@ package in.wynk.payment.test.payu.data;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.WebPurchaseDetails;
@@ -317,13 +316,13 @@ public class PayUTestData {
         return PayUDataConstant.UNKNOWN_PAYU_TRANSACTION_STATUS;
     }
 
-    public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentCode code) {
+    public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentGateway code) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                 .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
                 .build();
     }
 
-    public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentCode code) {
+    public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentGateway code) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
                 .build();

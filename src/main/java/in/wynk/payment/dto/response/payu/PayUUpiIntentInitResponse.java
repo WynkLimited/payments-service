@@ -14,7 +14,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY104;
-import static in.wynk.payment.dto.payu.PayUConstants.PAYU_MERCHANT_CODE;
+import static in.wynk.payment.dto.payu.PayUConstants.WYNK_UPI_MERCHANT_CODE;
+import static in.wynk.payment.dto.payu.PayUConstants.WYNK_UPI_MERCHANT_CODE;
 
 @Getter
 @NoArgsConstructor
@@ -48,7 +49,7 @@ public class PayUUpiIntentInitResponse {
             stringBuilder.append("&am=").append(map.getOrDefault("am", this.result.amount));
             stringBuilder.append("&cu=").append(map.getOrDefault("cu", "INR"));
             stringBuilder.append("&tn=").append(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get("tn"));
-            stringBuilder.append("&mc=").append(PAYU_MERCHANT_CODE);
+            stringBuilder.append("&mc=").append(WYNK_UPI_MERCHANT_CODE);
             stringBuilder.append("&tid=").append(TransactionContext.get().getIdStr().replaceAll("-", ""));
             return stringBuilder.toString();
         }

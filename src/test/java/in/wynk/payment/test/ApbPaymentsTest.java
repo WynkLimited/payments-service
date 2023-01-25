@@ -3,7 +3,7 @@ package in.wynk.payment.test;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
@@ -26,7 +26,7 @@ public class ApbPaymentsTest extends PaymentsTest {
 
     private static final String TXN_ID = "c912c207-ca52-11ea-a7b4-1bdc0febe120";
     private static final String FAILURE_TXN_ID = "c912c207-ca52-11ea-a7b4-1bdc0febe120";
-    private static final PaymentCode CODE = PaymentCodeCachingService.getFromPaymentCode(APB_GATEWAY);
+    private static final PaymentGateway CODE = PaymentCodeCachingService.getFromPaymentCode(APB_GATEWAY);
 
     private static SessionDTO dummyAPBSession() {
         Map<String, Object> map = new HashMap<>();
@@ -62,7 +62,7 @@ public class ApbPaymentsTest extends PaymentsTest {
         return CallbackRequestWrapper.builder().payload(map.toSingleValueMap()).build();
     }
 
-    private static AbstractTransactionStatusRequest dummyLocalChargingStatusRequest(PaymentCode code) {
+    private static AbstractTransactionStatusRequest dummyLocalChargingStatusRequest(PaymentGateway code) {
         return ChargingTransactionStatusRequest.builder().transactionId(TXN_ID).build();
     }
 
@@ -97,7 +97,7 @@ public class ApbPaymentsTest extends PaymentsTest {
     }
 
     @Test
-    public void apbLocalSuccessStatusTest(PaymentCode code) {
+    public void apbLocalSuccessStatusTest(PaymentGateway code) {
         WynkResponseEntity<?> response = statusTest(CODE, dummyLocalChargingStatusRequest(code));
         System.out.println(response);
         ChargingStatusResponse statusResponse = (ChargingStatusResponse) response.getBody().getData();
@@ -120,7 +120,7 @@ public class ApbPaymentsTest extends PaymentsTest {
         assert statusResponse.getTransactionStatus().equals(TransactionStatus.FAILURE);
     }
 
-    private AbstractTransactionStatusRequest dummyChargingStatusSourceRequest(PaymentCode code) {
+    private AbstractTransactionStatusRequest dummyChargingStatusSourceRequest(PaymentGateway code) {
         return ChargingTransactionReconciliationStatusRequest.builder().transactionId(TXN_ID).build();
     }
 

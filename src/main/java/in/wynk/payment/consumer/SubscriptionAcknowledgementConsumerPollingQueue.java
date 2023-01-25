@@ -60,7 +60,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
     public void consume (SubscriptionAcknowledgeMessageManager message) {
         AnalyticService.update(message);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest = null;
-        if (BeanConstant.GOOGLE_PLAY.equals(message.getPaymentCode().getCode())) {
+        if (BeanConstant.GOOGLE_PLAY.equals(message.getPaymentGateway().getCode())) {
             GooglePlayAppDetails appDetails = new GooglePlayAppDetails();
             appDetails.setPackageName(message.getPackageName());
             appDetails.setService(message.getService());
@@ -68,7 +68,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
             productDetails.setSkuId(message.getSkuId());
             abstractPaymentAcknowledgementRequest = GooglePlaySubscriptionAcknowledgementRequest.builder()
                     .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
-                    .paymentCode(message.getPaymentCode())
+                    .paymentGateway(message.getPaymentGateway())
                     .appDetails(appDetails)
                     .productDetails(productDetails)
                     .developerPayload(message.getDeveloperPayload())

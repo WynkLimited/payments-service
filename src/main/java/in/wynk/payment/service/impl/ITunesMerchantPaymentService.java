@@ -195,7 +195,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     private ItunesLatestReceiptResponse getLatestReceiptResponseInternal(String decodedReceipt, ItunesReceipt itunesReceipt, ItunesReceiptType receiptType) {
         if (CollectionUtils.isNotEmpty(itunesReceipt.getLatestReceiptInfoList())) {
-            final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().get(0);
+            ItunesReceiptType type = ItunesReceiptType.getReceiptType(decodedReceipt);
+            final String suppliedSkuId = type.getOrDefault(decodedReceipt, PaymentConstants.SKU_ID, StringUtils.EMPTY);
+            final LatestReceiptInfo latestReceiptInfo = itunesReceipt.getLatestReceiptInfoList().stream().filter(receipt -> receipt.getProductId().equalsIgnoreCase(suppliedSkuId)).findAny().orElse(itunesReceipt.getLatestReceiptInfoList().get(0));
             boolean autoRenewal = false;
             if (CollectionUtils.isNotEmpty(itunesReceipt.getPendingRenewalInfo())) {
                 autoRenewal = itunesReceipt.getPendingRenewalInfo().stream().filter(pendingRenewal -> !StringUtils.isEmpty(latestReceiptInfo.getProductId()) && latestReceiptInfo.getProductId().equalsIgnoreCase(pendingRenewal.getAutoRenewProductId()) && pendingRenewal.getAutoRenewStatus().equals("1") && pendingRenewal.getOriginalTransactionId().equals(latestReceiptInfo.getOriginalTransactionId())).findAny().isPresent();
@@ -474,15 +476,26 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                     } catch (Exception e) {
                         log.error(PAYMENT_ERROR, "unable to stringify receipt");
                     }
-                    String skuId = latestReceiptInfo.getProductId();
-                    if (StringUtils.isNotBlank(skuId)) {
-                        if (cachingService.containsSku(skuId)) {
-                            skuId = cachingService.getNewSku(skuId);
-                        }
-                        PlanDTO planToBeSubscribed = cachingService.getPlanFromSku(skuId);
-                        if (optionalReceiptDetails.isPresent()) {
-                            ReceiptDetails details = optionalReceiptDetails.get();
-                            return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planToBeSubscribed.getId()).msisdn(details.getMsisdn()).uid(details.getUid()).message(Pair.of(latestReceiptInfo, details)).build();
+                    if (optionalReceiptDetails.isPresent()) {
+                        ReceiptDetails details = optionalReceiptDetails.get();
+                        String skuId = latestReceiptInfo.getProductId();
+                        if (StringUtils.isNotBlank(skuId)) {
+                            if (cachingService.containsSku(skuId)) {
+                                skuId = cachingService.getNewSku(skuId);
+                            }
+                            PlanDTO planDTO = cachingService.getPlanFromSku(skuId);
+                            boolean isFreeTrial = Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod());
+                            if (isFreeTrial) {
+                                if (planDTO.getLinkedFreePlanId() != -1) {
+                                    return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(details.getMsisdn()).uid(details.getUid())
+                                            .message(Pair.of(latestReceiptInfo, details)).build();
+                                } else {
+                                    log.error("No Free Trial mapping present for planId {}", planDTO.getId());
+                                    throw new WynkRuntimeException(PaymentErrorType.PAY034);
+                                }
+                            }
+                            return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid())
+                                    .message(Pair.of(latestReceiptInfo, details)).build();
                         }
                     }
                 }
@@ -545,8 +558,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 final WynkRuntimeException exception = (WynkRuntimeException) e;
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
             }
+            log.error("Unable to do renewal for the transaction {}, error message {}",transaction.getId(), e.getMessage(), e);
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException(e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY026, e);
         }
     }
 

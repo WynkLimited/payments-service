@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dao.entity.CouponCodeLink;
+import in.wynk.coupon.core.enums.DiscountType;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.coupon.core.service.impl.CouponCodeLinkServiceImpl;
@@ -66,9 +67,9 @@ public class BasicPricingManager implements IPricingManager {
                 if (!coupon.isCaseSensitive()) {
                     couponCode = codeLink.getCouponId().toUpperCase(Locale.ROOT);
                 }
-                final Double discountPercent = couponCachingService.get(couponCode).getDiscountPercent();
-                request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(request.getAmount() * (1 - discountPercent / 100))));
-                request.setDiscount(discountPercent);
+                final Double discount = couponCachingService.get(couponCode).getDiscount();
+                request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(coupon.getDiscountType()== DiscountType.FLAT ? request.getAmount()-discount : request.getAmount() *(1 - discount/100))));
+                request.setDiscount(discount);
             }
         }
     }

@@ -1,6 +1,7 @@
 package in.wynk.payment.utils;
 
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.coupon.core.enums.DiscountType;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.service.PaymentCachingService;
@@ -15,6 +16,6 @@ public class DiscountUtils {
         final CouponCachingService couponCachingService = BeanLocatorFactory.getBean(CouponCachingService.class);
         final PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
         final double productPrice = productDetails.getType() == PLAN ? paymentCachingService.getPlan(productDetails.getId()).getFinalPrice() : paymentCachingService.getItem(productDetails.getId()).getPrice();
-        return Optional.ofNullable(couponId).filter(Objects::nonNull).map(couponCachingService::get).filter(Objects::nonNull).map(coupon -> (productPrice - (productPrice * coupon.getDiscountPercent() / 100))).orElse(productPrice);
+        return Optional.ofNullable(couponId).filter(Objects::nonNull).map(couponCachingService::get).filter(Objects::nonNull).map(coupon -> (coupon.getDiscountType()== DiscountType.FLAT) ? (productPrice - coupon.getDiscount()) : (productPrice- (productPrice * coupon.getDiscount()/ 100))).orElse(productPrice);
     }
 }

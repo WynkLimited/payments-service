@@ -20,7 +20,7 @@ public class PaymentChargingReconciledEvent extends PaymentReconciledEvent {
 
     public static PaymentChargingReconciledEvent from(Transaction transaction) {
         return PaymentChargingReconciledEvent.builder()
-                .paymentCode(transaction.getPaymentChannel())
+                .paymentGateway(transaction.getPaymentChannel())
                 .transactionStatus(transaction.getStatus())
                 .clientAlias(transaction.getClientAlias())
                 .transactionId(transaction.getIdStr())

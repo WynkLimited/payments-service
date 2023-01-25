@@ -33,7 +33,7 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private List<String> suffixes;
     private Map<String, Object> meta;
 
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 

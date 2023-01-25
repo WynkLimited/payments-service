@@ -83,5 +83,10 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
-
+    String VERSION_2 = "V2";
+    int MERCHANT_CODE = 5815;
+    String PN = "UPI_PAYEE_NAME";
+    String UPI_PREFIX = "upi_prefix";
+    String DEFAULT_PN = "Wynk Limited";
+    String APP_PACKAGE = "package_name";
 }

@@ -48,6 +48,7 @@ public interface PaymentConstants extends BaseConstants {
     String BASE_USER_EMAIL = "@wynk.in";
     String CREDIT_CARD = "CREDIT_CARD";
     String NET_BANKING = "NET_BANKING";
+    String BILLING = "BILLING";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";

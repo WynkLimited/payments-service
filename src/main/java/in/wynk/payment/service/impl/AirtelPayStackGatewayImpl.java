@@ -188,17 +188,17 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     @Override
     public PaymentStatusWrapper status (Transaction transaction) {
 
-        if (request instanceof ChargingTransactionReconciliationStatusRequest) {
+       /* if (request instanceof ChargingTransactionReconciliationStatusRequest) {
             syncChargingTransactionFromSource(transaction);
         } else if (request instanceof RefundTransactionReconciliationStatusRequest) {
             syncRefundTransactionFromSource(transaction, request.getExtTxnId());
-        } else {
+        } else {*/
             throw new WynkRuntimeException(PaymentErrorType.PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
-        }
+        //}
 
 
-        PaymentStatusWrapper.PaymentStatusWrapperBuilder<?, ?> builder = PaymentStatusWrapper.builder().transaction(transaction).planId(transaction.getPlanId());
-        return null;
+       // PaymentStatusWrapper.PaymentStatusWrapperBuilder<?, ?> builder = PaymentStatusWrapper.builder().transaction(transaction).planId(transaction.getPlanId());
+        //return null;
     }
 
     private void syncRefundTransactionFromSource(Transaction transaction, String refundId) {
@@ -382,7 +382,6 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 return builder.build();
             }
         }
-
     }
 
 

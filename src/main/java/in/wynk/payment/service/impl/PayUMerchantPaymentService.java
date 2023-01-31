@@ -28,6 +28,7 @@ import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
 import in.wynk.payment.dto.response.payu.*;
@@ -36,6 +37,7 @@ import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,9 +45,7 @@ import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -93,13 +93,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUSalt;
 
 
-    public PayUMerchantPaymentService(Gson gson,
-                                      ObjectMapper objectMapper,
-                                      ApplicationEventPublisher eventPublisher,
-                                      PaymentCachingService cachingService,
-                                      IMerchantTransactionService merchantTransactionService,
-                                      IErrorCodesCacheService errorCodesCacheServiceImpl,
-                                      @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+    public PayUMerchantPaymentService(Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
@@ -126,9 +120,23 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         try {
             final Transaction transaction = TransactionContext.get();
             final Map<String, String> payUPayload = getPayload(chargingRequest);
-            final String encryptedParams;
-            if (chargingRequest.isIntent()) {
-                encryptedParams = EncryptionUtils.encrypt(this.initIntentUpiPayU(payUPayload), encryptionKey);
+            String encryptedParams;
+            if (UpiPaymentDetails.class.isAssignableFrom(chargingRequest.getPurchaseDetails().getPaymentDetails().getClass())) {
+                final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) chargingRequest.getPurchaseDetails().getPaymentDetails());
+                final String bankCode = upiDetails.isIntent() || chargingRequest.isIntent() ? INTENT : UPI;
+                try {
+                    if (bankCode.equalsIgnoreCase(UPI)) {
+                        payUPayload.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
+                        encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode, new TypeReference<PayUUpiCollectResponse>() {
+                        }).getResult().getOtpPostUrl(), encryptionKey);
+                    } else {
+                        encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode, new TypeReference<PayUUpiIntentInitResponse>() {
+                        }).getDeepLink(), encryptionKey);
+                    }
+                } catch (HttpStatusCodeException e) {
+                    log.error(PAYU_API_FAILURE, e.getMessage(), e);
+                    encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
+                }
             } else {
                 encryptedParams = EncryptionUtils.encrypt(gson.toJson(payUPayload), encryptionKey);
             }
@@ -174,11 +182,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                         if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
                             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage()).build());
                         }
-                    } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
-                            StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
+                    } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval && StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-                    } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
-                            StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
+                    } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval && StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
                     }
                 } else {
@@ -202,8 +208,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
-    private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest
-                                                                               transactionStatusRequest, String extTxnId) {
+    private ChargingStatusResponse fetchAndUpdateTransactionFromSource(AbstractTransactionStatusRequest transactionStatusRequest, String extTxnId) {
         Transaction transaction = TransactionContext.get();
         if (transactionStatusRequest instanceof ChargingTransactionReconciliationStatusRequest) {
             return fetchChargingStatusFromPayUSource(transaction);
@@ -223,8 +228,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             log.error(PAYU_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
-        ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
@@ -265,8 +269,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
-        ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus())
-                .tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
@@ -319,11 +322,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
-                    (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
-                    StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             }
         } else {
@@ -344,8 +345,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         String userCredentials = payUMerchantKey + COLON + uid;
         Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
-            payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
-//            payloadTemp = getPayload(transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+            //payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
+            payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
         } else {
             payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
         }
@@ -378,8 +379,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return payload;
     }
 
-    /* Not used therefore commenting as of now
-    private Map<String, String> getPayload(UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
+    //Not used therefore commenting as of now
+    private Map<String, String> getPayload(String client, UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
         Map<String, String> payload = new HashMap<>();
         String reqType = PaymentRequestType.SUBSCRIBE.name();
         String udf1 = PAYU_SI_KEY.toUpperCase();
@@ -389,29 +390,21 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
         boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
-        BillingUtils billingUtils = getBillingUtils(selectedPlan, isFreeTrial);
+        BillingUtils billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
         try {
-            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), selectedPlan.getFinalPrice(), today, next5Year));
-            String checksumHash = getChecksumHashForPayment(transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
+            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), finalPlanAmount, today, next5Year));
+            String checksumHash = getChecksumHashForPayment(client, transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
             payload.put(PAYU_SI_KEY, "1");
             payload.put(PAYU_API_VERSION, "7");
             payload.put(PAYU_HASH, checksumHash);
             payload.put(PAYU_UDF1_PARAMETER, udf1);
             payload.put(PAYU_SI_DETAILS, siDetails);
             payload.put(PAYU_REQUEST_TYPE, reqType);
-            payload.put(PAYU_FREE_TRIAL, "0");
             payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
         } catch (Exception e) {
             log.error("Error Creating SiDetails Object");
         }
         return payload;
-    }
-     */
-
-    private BillingUtils getBillingUtils(PlanDTO selectedPlan, boolean isFreeTrial) {
-        int validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        int freeTrialValidity = isFreeTrial ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity() : validTillDays;
-        return freeTrialValidity == validTillDays ? new BillingUtils(validTillDays) : new BillingUtils(1, BillingCycle.ADHOC);
     }
 
     //TODO: ( on AMAN) need to use to fetch user's saved cards.
@@ -518,17 +511,22 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
     }
 
-    private String initIntentUpiPayU(Map<String, String> payUPayload) {
+    private <T> T initUpiPayU(Map<String, String> payUPayload, String bankCode, TypeReference<T> target) {
         try {
             MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
             for (String key : payUPayload.keySet()) {
                 requestMap.add(key, payUPayload.get(key));
             }
             payUPayload.clear();
-            requestMap.add(PAYU_PG, "UPI");
+            requestMap.add(PAYU_PG, UPI);
             requestMap.add(PAYU_TXN_S2S_FLOW, "4");
-            requestMap.add(PAYU_BANKCODE, "INTENT");
-            return restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).body(requestMap), PayUUpiIntentInitResponse.class).getBody().getDeepLink();
+            requestMap.add(PAYU_BANKCODE, bankCode);
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
+            headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+            final RequestEntity entity = RequestEntity.method(HttpMethod.POST, URI.create(payUPaymentApiUrl)).headers(headers).body(requestMap);
+            final String response = restTemplate.exchange(entity, String.class).getBody();
+            return objectMapper.readValue(response, target);
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
@@ -568,54 +566,43 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     private String generateHashForPayUApi(String payUMerchantKey, String payUSalt, String command, String var1) {
-        String builder = payUMerchantKey + PIPE_SEPARATOR +
-                command +
-                PIPE_SEPARATOR +
-                var1 +
-                PIPE_SEPARATOR +
-                payUSalt;
+        String builder = payUMerchantKey + PIPE_SEPARATOR + command + PIPE_SEPARATOR + var1 + PIPE_SEPARATOR + payUSalt;
         return EncryptionUtils.generateSHA512Hash(builder);
     }
 
-    /*
-    Below function not used anywhere
-     */
-    /*
-    private String getChecksumHashForPayment(UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount, String siDetails) {
-        String rawChecksum = payUMerchantKey + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle +
-                PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + siDetails + PIPE_SEPARATOR + payUSalt;
+    private String getChecksumHashForPayment(String client, UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount, String siDetails) {
+        final String payUMerchantKey = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
+        final String payUMerchantSecret = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
+        String rawChecksum = payUMerchantKey + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + siDetails + PIPE_SEPARATOR + payUMerchantSecret;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
-    }*/
+    }
 
     private String getChecksumHashForPayment(String client, UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {
         final String payUMerchantKey = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
         final String payUMerchantSecret = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
-        String rawChecksum = payUMerchantKey
-                + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
-                + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUMerchantSecret;
+        String rawChecksum = payUMerchantKey + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUMerchantSecret;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
     }
 
-    private boolean validateCallbackChecksum(String payUMerchantKey, String payUSalt, String transactionId, String transactionStatus, String udf1, String email, String firstName, String planTitle, double amount, String payUResponseHash) {
+    private boolean validateCallbackChecksum(String payUMerchantKey, String payUSalt, String transactionId, String transactionStatus, String udf, String email, String firstName, String planTitle, double amount, String payUResponseHash) {
         DecimalFormat df = new DecimalFormat("#.00");
-        String generatedString =
-                payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||||||" + udf1 + PIPE_SEPARATOR + email + PIPE_SEPARATOR
-                        + firstName + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId
-                        + PIPE_SEPARATOR + payUMerchantKey;
+        String generatedString = payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||" + udf + PIPE_SEPARATOR + email + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId + PIPE_SEPARATOR + payUMerchantKey;
         final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
         assert generatedHash != null;
         return generatedHash.equals(payUResponseHash);
     }
 
+    @SneakyThrows
     @Override
     public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest verificationRequest) {
         switch (verificationRequest.getVerificationType()) {
             case VPA:
-                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue());
+                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{
+                    put("validateAutoPayVPA", "1");
+                }}));
                 PayUVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
                 });
-                if (verificationResponse.getIsVPAValid() == 1)
-                    verificationResponse.setValid(true);
+                if (verificationResponse.getIsVPAValid() == 1) verificationResponse.setValid(true);
                 return WynkResponseEntity.<IVerificationResponse>builder().data(verificationResponse).status(HttpStatus.OK).build();
             case BIN:
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{verificationRequest.getVerifyValue(), null, null, "1"});
@@ -844,14 +831,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 final String transactionId = transaction.getIdStr();
                 final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
                 final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
-                return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId,
-                        callbackRequest.getStatus(),
-                        callbackRequest.getUdf1(),
-                        callbackRequest.getEmail(),
-                        callbackRequest.getFirstName(),
-                        String.valueOf(transaction.getPlanId()),
-                        transaction.getAmount(),
-                        callbackRequest.getResponseHash());
+                return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), String.valueOf(transaction.getPlanId()), transaction.getAmount(), callbackRequest.getResponseHash());
             }
 
         }

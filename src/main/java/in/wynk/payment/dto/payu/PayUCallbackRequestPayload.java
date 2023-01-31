@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.request.CallbackRequest;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -22,6 +23,14 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
 
     private String mode;
     private String udf1;
+    @Builder.Default
+    private String udf2 = StringUtils.EMPTY;
+    @Builder.Default
+    private String udf3 = StringUtils.EMPTY;
+    @Builder.Default
+    private String udf4 = StringUtils.EMPTY;
+    @Builder.Default
+    private String udf5 = StringUtils.EMPTY;
     private String email;
     private String status;
     private String cardToken;
@@ -77,4 +86,15 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
         return PayUConstants.GENERIC_CALLBACK;
     }
 
+    public String getUdf() {
+        return  getUDFOrDefault(udf5) +
+                getUDFOrDefault(udf4) +
+                getUDFOrDefault(udf3) +
+                getUDFOrDefault(udf2) +
+                udf1;
+    }
+
+    private String getUDFOrDefault(String value) {
+        return StringUtils.isEmpty(value) ? PaymentConstants.PIPE_SEPARATOR : value.concat(PaymentConstants.PIPE_SEPARATOR);
+    }
 }

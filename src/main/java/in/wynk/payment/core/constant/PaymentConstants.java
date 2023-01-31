@@ -7,6 +7,9 @@ public interface PaymentConstants extends BaseConstants {
     String SKU_ID = "skuId";
 
     String SAVED = "SAVED";
+
+    String INTENT = "INTENT";
+
     String UPI = "UPI";
     String CARD = "CARD";
     String PAYU = "PAYU";

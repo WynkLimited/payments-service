@@ -16,7 +16,6 @@ public class DiscountUtils {
         final CouponCachingService couponCachingService = BeanLocatorFactory.getBean(CouponCachingService.class);
         final PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
         final double productPrice = productDetails.getType() == PLAN ? paymentCachingService.getPlan(productDetails.getId()).getFinalPrice() : paymentCachingService.getItem(productDetails.getId()).getPrice();
-       // return Optional.ofNullable(couponId).filter(Objects::nonNull).map(couponCachingService::get).filter(Objects::nonNull).map(coupon -> (coupon.getDiscountType()== DiscountType.FLAT) ? (productPrice - coupon.getDiscount()) : (productPrice- (productPrice * coupon.getDiscount()/ 100))).orElse(productPrice);
         return Optional.ofNullable(couponId).map(couponCachingService::get).map(coupon -> (coupon.getDiscountType()== DiscountType.FLAT) ? (productPrice - coupon.getDiscount()) : (productPrice- (productPrice * coupon.getDiscount()/ 100))).orElse(productPrice);
     }
 }

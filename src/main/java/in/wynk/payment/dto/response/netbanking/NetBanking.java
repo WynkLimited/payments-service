@@ -7,6 +7,8 @@ import in.wynk.payment.dto.response.SupportingDetails;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 /**
  * @author Nishesh Pandey
  */
@@ -15,7 +17,7 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 public class NetBanking extends PaymentMethodDetails {
     @JsonProperty("alert_details")
-    private final Object alertDetails; // "low success rate","kyc required"
+    private List<Object> alertDetails;
     @JsonProperty("supporting_details")
     private SupportingDetails supportingDetails;
 }

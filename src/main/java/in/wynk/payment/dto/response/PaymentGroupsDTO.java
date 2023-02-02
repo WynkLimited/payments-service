@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public class PaymentGroupsDTO {
-    private String id;
-    private String title;
+    private String id; //group
+    private String title; //display Name
     private String description;
 }

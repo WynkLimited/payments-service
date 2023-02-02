@@ -3,9 +3,8 @@ package in.wynk.payment.dto.response.wallet;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.response.PaymentMethodDetails;
+import in.wynk.payment.dto.response.SavedDetails;
 import in.wynk.payment.dto.response.UpiWalletSupportingDetails;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -21,15 +20,15 @@ public class Wallet extends PaymentMethodDetails {
     @JsonProperty("saved_details")
     private List<WalletSavedDetails> savedDetails;
     @JsonProperty("alert_details")
-    private final Object alertDetails; // "low success rate","kyc required"
+    private List<Object> alertDetails;
     @JsonProperty("supporting_details")
     private UpiWalletSupportingDetails supportingDetails;
 
     @Getter
-    @AllArgsConstructor
-    @Builder
+    //@AllArgsConstructor
+    @SuperBuilder
     @AnalysedEntity
-    public static class WalletSavedDetails {
+    public static class WalletSavedDetails extends SavedDetails {
         @JsonProperty("linked_mobile")
         private String linkedMobile;
         private Double balance;

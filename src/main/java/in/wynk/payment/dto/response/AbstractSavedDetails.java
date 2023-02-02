@@ -7,13 +7,10 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.PaymentDetails;
 import in.wynk.payment.dto.response.billing.SavedBillingPayment;
 import in.wynk.payment.dto.response.card.CardDetails;
-import in.wynk.payment.dto.response.upi.UpiSavedDetails;
 import in.wynk.payment.dto.response.wallet.SavedWalletPayment;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
-import net.bytebuddy.implementation.bind.annotation.Super;
 import org.springframework.data.annotation.PersistenceConstructor;
 
 
@@ -26,7 +23,6 @@ import org.springframework.data.annotation.PersistenceConstructor;
 @AnalysedEntity
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = UpiSavedDetails.class, name =  PaymentConstants.UPI),
         @JsonSubTypes.Type(value = CardDetails.class, name = PaymentConstants.CARD),
         @JsonSubTypes.Type(value = SavedWalletPayment.class, name = PaymentConstants.WALLET),
         @JsonSubTypes.Type(value = SavedBillingPayment.class, name =  PaymentConstants.BILLING)

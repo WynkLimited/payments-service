@@ -62,7 +62,7 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
             return self();
         }
 
-        public B paymentCode(PaymentGateway paymentGateway) {
+        public B paymentGateway(PaymentGateway paymentGateway) {
             this.paymentGateway = paymentGateway;
             return self();
         }

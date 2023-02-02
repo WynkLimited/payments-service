@@ -26,6 +26,9 @@ public class VerificationRequest {
     @Analysed
     private String verifyValue;
 
+
+    //lob hardcoding for APS card
+
     @NotNull
     private String paymentCode;
 

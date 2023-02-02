@@ -18,7 +18,7 @@ import java.util.List;
 @SuperBuilder
 @AnalysedEntity
 public class Billing extends PaymentMethodDetails {
-    private List<BillingFeatures> features;
+    private BillingFeatures features;
     @JsonProperty("saved_details")
     private List<BillingSavedDetails> savedDetails;
 

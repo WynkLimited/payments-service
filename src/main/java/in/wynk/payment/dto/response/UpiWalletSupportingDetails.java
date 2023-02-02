@@ -13,6 +13,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public class UpiWalletSupportingDetails extends SupportingDetails {
+    @JsonProperty("intent_details")
     private IntentDetails intentDetails;
 
     @Getter

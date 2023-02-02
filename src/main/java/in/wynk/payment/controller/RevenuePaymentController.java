@@ -103,7 +103,7 @@ public class RevenuePaymentController {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentGateway).payload(payload).build();
+        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);
@@ -124,7 +124,7 @@ public class RevenuePaymentController {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentGateway).payload(terraformed).build();
+        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(terraformed).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);
@@ -144,7 +144,7 @@ public class RevenuePaymentController {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentCode(paymentGateway).payload(payload).build();
+        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         return paymentManager.handleCallback(request);

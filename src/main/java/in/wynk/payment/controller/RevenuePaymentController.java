@@ -12,6 +12,7 @@ import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
+import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.*;
@@ -53,6 +54,17 @@ public class RevenuePaymentController {
     public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequest<WebPurchaseDetails> request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());
+        AnalyticService.update(request);
+        return paymentManager.charge(request);
+    }
+
+    //This version is for payment refactoring task
+    @PostMapping("/v2/charge/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentCharging")
+    public WynkResponseEntity<AbstractChargingResponse> doCharging(@PathVariable String sid, @RequestBody AbstractChargingRequestV2 request) {
+        LoadClientUtils.loadClient(false);
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentDetails().getPaymentCode().name());
         AnalyticService.update(request);
         return paymentManager.charge(request);
     }

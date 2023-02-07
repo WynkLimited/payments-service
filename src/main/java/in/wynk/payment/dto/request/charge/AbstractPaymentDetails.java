@@ -10,7 +10,9 @@ import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentDetails;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.request.charge.netbanking.NetBankingPaymentDetails;
@@ -50,11 +52,18 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     @Analysed(name = "bankName")
     private String merchantName;
 
+    @NotNull
+    @Analysed
+    private String paymentCode;
+
     @Analysed
     private boolean autoRenew;
 
     @Analysed
     private boolean trialOpted;
+
+    @Analysed
+    private boolean intent;
 
     public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted) {
         this.couponId = couponId;
@@ -72,6 +81,10 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     public boolean isTrialOpted() {
         return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         }).get(paymentId).isTrialSupported() && trialOpted;
+    }
+
+    public PaymentGateway getPaymentCode() {
+        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 
 }

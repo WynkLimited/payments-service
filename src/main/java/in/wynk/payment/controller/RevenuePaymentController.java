@@ -66,7 +66,8 @@ public class RevenuePaymentController {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentDetails().getPaymentCode().name());
         AnalyticService.update(request);
-        return paymentManager.charge(request);
+        //return paymentManager.charge(request);
+        return null;
     }
 
     @GetMapping("/status/{sid}")

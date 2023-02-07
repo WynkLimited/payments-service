@@ -1,5 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.payment.dto.request.common.*;
+
 import java.io.Serializable;
 
 public interface IPaymentDetails extends Serializable {
@@ -15,5 +17,7 @@ public interface IPaymentDetails extends Serializable {
     String getPaymentMode();
 
     String getMerchantName();
+
+    boolean isIntent();
 
 }

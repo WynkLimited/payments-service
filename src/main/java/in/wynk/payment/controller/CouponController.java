@@ -2,6 +2,7 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
@@ -43,11 +44,11 @@ public class CouponController {
         String uid = SessionContextHolder.<SessionDTO>getBody().get(UID);
         String msisdn = SessionContextHolder.<SessionDTO>getBody().get(MSISDN);
         String service = SessionContextHolder.<SessionDTO>getBody().get(SERVICE);
+        GeoLocation geoLocation= SessionContextHolder.<SessionDTO>getBody().get(GEO_LOCATION);
         AnalyticService.update(PLAN_ID, planId);
         AnalyticService.update(COUPON_CODE, couponCode);
         AnalyticService.update(SERVICE, service);
-        AnalyticService.update(STATE_CODE, stateCode);
-        CouponProvisionRequest.CouponProvisionRequestBuilder builder = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).itemId(itemId).couponCode(couponCode).service(service).stateCode(stateCode).source(ProvisionSource.UNMANAGED);
+        CouponProvisionRequest.CouponProvisionRequestBuilder builder = CouponProvisionRequest.builder().uid(uid).msisdn(msisdn).itemId(itemId).couponCode(couponCode).geoLocation(geoLocation).service(service).source(ProvisionSource.UNMANAGED);
         if (StringUtils.isNotEmpty(itemId)) {
             builder.itemId(itemId);
         } else {

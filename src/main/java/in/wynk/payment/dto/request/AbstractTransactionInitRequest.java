@@ -2,7 +2,7 @@ package in.wynk.payment.dto.request;
 
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +26,6 @@ public abstract class AbstractTransactionInitRequest {
 
     @Setter
     private PaymentEvent event;
-    private PaymentCode paymentCode;
+    private PaymentGateway paymentGateway;
 
 }

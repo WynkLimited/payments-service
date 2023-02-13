@@ -3,7 +3,7 @@ package in.wynk.payment.dto.request;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.session.context.SessionContextHolder;
@@ -26,6 +26,9 @@ public class VerificationRequest {
     @Analysed
     private String verifyValue;
 
+
+    //lob hardcoding for APS card
+
     @NotNull
     private String paymentCode;
 
@@ -33,7 +36,7 @@ public class VerificationRequest {
     @Analysed
     private VerificationType verificationType;
 
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 

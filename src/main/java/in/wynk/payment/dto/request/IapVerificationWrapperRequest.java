@@ -4,7 +4,7 @@ import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.IapVerificationRequestV2;
 import in.wynk.payment.dto.PlanDetails;
@@ -49,7 +49,7 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     }
 
     @Override
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         if(iapVerificationRequest != null) {
             return this.iapVerificationRequest.getPaymentCode();
         }

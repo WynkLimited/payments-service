@@ -1,7 +1,7 @@
 package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,5 +15,5 @@ import lombok.experimental.SuperBuilder;
 public class NotificationRequest {
     private String payload;
     private String clientAlias;
-    private PaymentCode paymentCode;
+    private PaymentGateway paymentGateway;
 }

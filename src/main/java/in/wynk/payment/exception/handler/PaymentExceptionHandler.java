@@ -29,7 +29,7 @@ public class PaymentExceptionHandler extends WynkGlobalExceptionHandler {
     private final ConfigurableBeanFactory beanFactory;
 
     public PaymentExceptionHandler(ConfigurableBeanFactory beanFactory) {
-        super(null);
+        //super(null);
         this.beanFactory = beanFactory;
     }
 

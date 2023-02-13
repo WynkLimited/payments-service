@@ -2,7 +2,7 @@ package in.wynk.payment.dto.request;
 
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.response.AbstractCallbackResponse;
 import in.wynk.payment.service.IMerchantPaymentCallbackService;
 import lombok.Getter;
@@ -17,13 +17,13 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
 
     private final T body;
     private final String transactionId;
-    private final PaymentCode paymentCode;
+    private final PaymentGateway paymentGateway;
 
     protected CallbackRequestWrapper(CallbackRequestWrapperBuilder<T, ?, ?> b) {
         super(b);
         this.body = b.body;
         this.transactionId = b.transactionId;
-        this.paymentCode = b.paymentCode;
+        this.paymentGateway = b.paymentGateway;
     }
 
     public static <T extends CallbackRequest> CallbackRequestWrapperBuilder<T, ?, ?> builder() {
@@ -41,15 +41,15 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
     public static abstract class CallbackRequestWrapperBuilder<T extends CallbackRequest, C extends CallbackRequestWrapper<T>, B extends CallbackRequestWrapperBuilder<T, C, B>> extends CallbackRequestBuilder<C, B> {
         private T body;
         private String transactionId;
-        private PaymentCode paymentCode;
+        private PaymentGateway paymentGateway;
 
         /**
          * Always supply payment code first before payload
          **/
         public B payload(Map<String, Object> payload) {
-            if (Objects.isNull(paymentCode))
+            if (Objects.isNull(paymentGateway))
                 throw new WynkRuntimeException("You must supply payment code first, before supplying payload");
-            this.body = BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentCallbackService<AbstractCallbackResponse, T>>() {
+            this.body = BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IMerchantPaymentCallbackService<AbstractCallbackResponse, T>>() {
             }).parseCallback(payload);
             return self();
         }
@@ -62,8 +62,8 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
             return self();
         }
 
-        public B paymentCode(PaymentCode paymentCode) {
-            this.paymentCode = paymentCode;
+        public B paymentGateway(PaymentGateway paymentGateway) {
+            this.paymentGateway = paymentGateway;
             return self();
         }
 
@@ -72,7 +72,7 @@ public class CallbackRequestWrapper<T extends CallbackRequest> extends CallbackR
         public abstract C build();
 
         public String toString() {
-            return "CallbackRequestWrapper.CallbackRequestWrapperBuilder(super=" + super.toString() + ", body=" + this.body + ", transactionId=" + this.transactionId + ", paymentCode=" + this.paymentCode + ")";
+            return "CallbackRequestWrapper.CallbackRequestWrapperBuilder(super=" + super.toString() + ", body=" + this.body + ", transactionId=" + this.transactionId + ", paymentCode=" + this.paymentGateway + ")";
         }
     }
 

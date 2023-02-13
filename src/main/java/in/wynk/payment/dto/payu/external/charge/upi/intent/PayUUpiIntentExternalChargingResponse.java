@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY104;
 
+/**
+ * @author Nishesh Pandey
+ */
 @Getter
 @ToString
 @NoArgsConstructor

@@ -1,7 +1,7 @@
 package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,5 +33,5 @@ public abstract class AbstractAcknowledgementMessage {
     private String skuId;
 
     @Analysed
-    private PaymentCode paymentCode;
+    private PaymentGateway paymentGateway;
 }

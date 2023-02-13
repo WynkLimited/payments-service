@@ -1,7 +1,7 @@
 package in.wynk.payment.dto.gpbs.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.IapVerificationRequestV2;
 import lombok.Getter;
@@ -35,7 +35,7 @@ public class GooglePlayVerificationRequest extends IapVerificationRequestV2 {
     private GooglePlayProductDetails productDetails;
 
     @Override
-    public PaymentCode getPaymentCode () {
+    public PaymentGateway getPaymentCode () {
         return PaymentCodeCachingService.getFromPaymentCode(GOOGLE_IAP);
     }
 }

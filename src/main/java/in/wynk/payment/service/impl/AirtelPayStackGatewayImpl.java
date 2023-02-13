@@ -38,6 +38,7 @@ import in.wynk.payment.dto.aps.response.bin.ApsVpaVerificationResponse;
 import in.wynk.payment.dto.aps.response.charge.*;
 import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.dto.common.response.PaymentStatusWrapper;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.*;
@@ -84,7 +85,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
-public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>, IMerchantVerificationService, IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
+public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>, IMerchantVerificationService, IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest>, IPaymentStatus<PaymentStatusWrapper> {
 
     @Value("${payment.encKey}")
     private String encryptionKey;
@@ -182,6 +183,22 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.failure(transaction.getIdStr(), transaction.getPlanId())).build();
         }
         throw new WynkRuntimeException(PaymentErrorType.PAY025);
+    }
+
+    @Override
+    public PaymentStatusWrapper status (Transaction transaction) {
+
+       /* if (request instanceof ChargingTransactionReconciliationStatusRequest) {
+            syncChargingTransactionFromSource(transaction);
+        } else if (request instanceof RefundTransactionReconciliationStatusRequest) {
+            syncRefundTransactionFromSource(transaction, request.getExtTxnId());
+        } else {*/
+            throw new WynkRuntimeException(PaymentErrorType.PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
+        //}
+
+
+       // PaymentStatusWrapper.PaymentStatusWrapperBuilder<?, ?> builder = PaymentStatusWrapper.builder().transaction(transaction).planId(transaction.getPlanId());
+        //return null;
     }
 
     private void syncRefundTransactionFromSource(Transaction transaction, String refundId) {
@@ -308,6 +325,8 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         return responseBuilder.data(refundResponseBuilder.build()).build();
     }
 
+
+
     private class VerificationWrapper implements IMerchantVerificationService {
 
         private final Map<VerificationType, IMerchantVerificationService> verificationHolder = new HashMap<>();
@@ -363,7 +382,6 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                 return builder.build();
             }
         }
-
     }
 
 

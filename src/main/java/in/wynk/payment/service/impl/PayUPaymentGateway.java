@@ -1,12 +1,16 @@
 package in.wynk.payment.service.impl;
 
+
 import in.wynk.common.dto.ICacheService;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.common.response.PaymentStatusWrapper;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.payu.PaymentRequestType;
 import in.wynk.payment.dto.payu.external.charge.upi.intent.PayUUpiIntentExternalChargingResponse;
@@ -24,6 +28,7 @@ import in.wynk.payment.dto.payu.internal.charge.wallet.AbstractPayUWalletGateway
 import in.wynk.payment.dto.payu.internal.charge.wallet.PayUWalletGatewayNonSeamlessChargingResponse;
 import in.wynk.payment.dto.payu.internal.charge.wallet.PayUWalletGatewaySeamlessChargingResponse;
 import in.wynk.payment.service.IPaymentChargingService;
+import in.wynk.payment.service.IPaymentStatus;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +42,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -46,12 +52,18 @@ import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWA
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
+import static in.wynk.error.codes.core.constant.ErrorCodeConstants.FAIL001;
+import static in.wynk.error.codes.core.constant.ErrorCodeConstants.FAIL002;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
+/**
+ * @author Nishesh Pandey
+ */
 @Slf4j
 @Service(PAYU_MERCHANT_PAYMENT_SERVICE + VERSION_2)
-public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayChargingResponse, PayUChargingRequest<?>> {
+public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayChargingResponse, PayUChargingRequest<?>>, IPaymentStatus<PaymentStatusWrapper> {
 
+    private final IErrorCodesCacheService errorCodesCacheServiceImpl;
     private final RestTemplate restTemplate;
     private final ICacheService<PaymentMethod, String> paymentMethodCachingService;
     private final Map<String, IPaymentChargingService<? extends PayUGatewayChargingResponse, PayUChargingRequest<?>>> chargeDelegate = new HashMap<>();
@@ -63,13 +75,14 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
     @Value("${payment.encKey}")
     private String encryptionKey;
 
-    public PayUPaymentGateway(@Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ICacheService<PaymentMethod, String> paymentMethodCachingService) {
+    public PayUPaymentGateway(@Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ICacheService<PaymentMethod, String> paymentMethodCachingService,IErrorCodesCacheService errorCodesCacheServiceImpl) {
         this.restTemplate = restTemplate;
         this.chargeDelegate.put("UPI", new Upi());
         this.chargeDelegate.put("CARD", new Card());
         this.chargeDelegate.put("WALLET", new Wallet());
         this.chargeDelegate.put("NET_BANKING", new NetBanking());
         this.paymentMethodCachingService = paymentMethodCachingService;
+        this.errorCodesCacheServiceImpl = errorCodesCacheServiceImpl;
     }
 
     @Override
@@ -126,6 +139,18 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
                 + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
                 + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUMerchantSecret;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
+    }
+
+    @Override
+    public PaymentStatusWrapper status (Transaction transaction) {
+        TransactionStatus txnStatus = transaction.getStatus();
+        PaymentStatusWrapper.PaymentStatusWrapperBuilder<?, ?> builder = PaymentStatusWrapper.builder().transaction(transaction).planId(transaction.getPlanId());
+        if (EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.FAILUREALREADYSUBSCRIBED).contains(txnStatus)) {
+            builder.errorCode(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL001));
+        } else if (txnStatus == TransactionStatus.INPROGRESS) {
+            builder.errorCode(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL002));
+        }
+        return builder.build();
     }
 
     private class Upi implements IPaymentChargingService<AbstractPayUUpiGatewayChargingResponse, PayUChargingRequest<?>> {

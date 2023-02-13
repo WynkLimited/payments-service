@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.phonepe.autodebit.PhonePeAutoDebitChargeRequest;
 import lombok.Getter;
@@ -44,6 +44,6 @@ public class ChargingRequest {
     private String merchantName;
 
     @Analysed
-    private PaymentCode paymentCode;
+    private PaymentGateway paymentGateway;
 
 }

@@ -3,7 +3,7 @@ package in.wynk.payment.dto.itune;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import lombok.Getter;
@@ -26,7 +26,7 @@ public class ItunesVerificationRequest extends IapVerificationRequest {
     private String receipt;
 
     @Override
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(ITUNES);
     }
 

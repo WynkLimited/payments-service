@@ -7,9 +7,13 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.Map;
 
+/**
+ * @author Nishesh Pandey
+ */
 @Getter
 @ToString
 @SuperBuilder
 public class PayUNetBankingGatewayNonSeamlessChargingResponse extends AbstractPayUNetBankingGatewayChargingResponse implements IPostFormSpec<String, String> {
     private Map<String, String> form;
 }
+

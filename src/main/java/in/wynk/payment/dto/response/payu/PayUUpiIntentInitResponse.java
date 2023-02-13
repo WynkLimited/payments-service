@@ -24,7 +24,7 @@ public class PayUUpiIntentInitResponse {
 
     @Getter
     @NoArgsConstructor
-    private class Result {
+    public class Result {
 
         private String amount;
         private String paymentId;

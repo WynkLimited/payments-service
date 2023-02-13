@@ -7,5 +7,6 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-public class SeamlessWalletChargingResponse extends AbstractWalletChargingResponse {
+public class RedirectWalletChargingResponse extends AbstractWalletChargingResponse {
+    private String redirectUrl;
 }

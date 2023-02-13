@@ -14,13 +14,12 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.dao.repository.receipts.IPurchasingDetailsDao;
+import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.service.IPurchaseDetailsManger;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +33,20 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     @Override
     @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save(Transaction transaction, IPurchaseDetails details) {
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
+                .id(transaction.getIdStr())
+                .appDetails(details.getAppDetails())
+                .userDetails(details.getUserDetails())
+                .productDetails(details.getProductDetails())
+                .paymentDetails(details.getPaymentDetails())
+                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
+                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
+                .build());
+    }
+
+    @Override
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    public void save (Transaction transaction, AbstractChargingRequestV2 details) {
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
                 .id(transaction.getIdStr())
                 .appDetails(details.getAppDetails())

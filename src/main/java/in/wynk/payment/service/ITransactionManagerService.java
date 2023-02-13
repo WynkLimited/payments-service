@@ -2,10 +2,10 @@ package in.wynk.payment.service;
 
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 
-import java.util.List;
 import java.util.Set;
 
 public interface ITransactionManagerService {
@@ -15,6 +15,8 @@ public interface ITransactionManagerService {
    Transaction init(AbstractTransactionInitRequest transactionInitRequest);
 
    Transaction init(AbstractTransactionInitRequest transactionInitRequest, IPurchaseDetails purchaseDetails);
+
+    Transaction init(AbstractTransactionInitRequest transactionInitRequest, AbstractChargingRequestV2 request);
 
     void revision(AbstractTransactionRevisionRequest request);
 

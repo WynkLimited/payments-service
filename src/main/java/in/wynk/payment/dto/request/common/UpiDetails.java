@@ -11,4 +11,7 @@ public class UpiDetails {
     private String vpa;
     @Analysed
     private boolean intent;
+
+    @Analysed
+    private boolean isSeamless;
 }

@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Objects;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -18,6 +20,10 @@ import lombok.experimental.SuperBuilder;
 public class UpiPaymentDetails extends AbstractPaymentDetails {
 
     private UpiDetails upiDetails;
+
+    public boolean isIntent() {
+        return Objects.nonNull(upiDetails) && upiDetails.isIntent();
+    }
 
     @Override
     public String getPaymentMode() {

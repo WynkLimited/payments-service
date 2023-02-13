@@ -41,6 +41,8 @@ public interface PaymentConstants extends BaseConstants {
     String APB_GATEWAY = "APB_GATEWAY";
     String ADD_TO_BILL = "ADD_TO_BILL";
     String SEAMLESS = "SEAMLESS";
+    String INTENT = "INTENT";
+    String COLLECT_IN_APP = "COLLECTINAPP";
     String NON_SEAMLESS = "NON_SEAMLESS";
     String DEFAULT_COUNTRY_CODE = "IN";
     String DEBIT_CARD = "DEBIT_CARD";

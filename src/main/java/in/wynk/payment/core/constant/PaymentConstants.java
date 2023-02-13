@@ -50,6 +50,7 @@ public interface PaymentConstants extends BaseConstants {
     String DEFAULT_PN = "Wynk Limited";
     String ADD_TO_BILL = "ADD_TO_BILL";
     String SEAMLESS = "SEAMLESS";
+    String COLLECT_IN_APP = "COLLECTINAPP";
     String NON_SEAMLESS = "NON_SEAMLESS";
     String DEFAULT_COUNTRY_CODE = "IN";
     String DEBIT_CARD = "DEBIT_CARD";

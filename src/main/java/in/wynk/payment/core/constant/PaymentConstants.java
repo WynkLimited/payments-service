@@ -42,7 +42,6 @@ public interface PaymentConstants extends BaseConstants {
     String UPI_PREFIX = "upi_prefix";
     String AMAZON_IAP = "AMAZON_IAP";
     String GOOGLE_IAP ="GOOGLE_IAP";
-    String UPI_PREFIX = "upi_prefix";
     String UPI_MERCHANT_CODE = "5815";
     String SUBTITLE_TEXT = "subtitle";
     String BUTTON_TEXT = "buttonText";
@@ -58,11 +57,10 @@ public interface PaymentConstants extends BaseConstants {
     String BASE_USER_EMAIL = "@wynk.in";
     String CREDIT_CARD = "CREDIT_CARD";
     String NET_BANKING = "NET_BANKING";
-    String DEFAULT_PN = "Wynk Limited";
+    String BILLING = "BILLING";
     String APP_PACKAGE = "package_name";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
-    String APP_PACKAGE = "package_name";
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
     String PAYTM_WALLET = "PAYTM_WALLET";
@@ -99,5 +97,4 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
-
 }

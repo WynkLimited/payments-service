@@ -2,6 +2,7 @@ package in.wynk.payment.core.dao.entity;
 
 import in.wynk.data.entity.MongoBaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -14,6 +15,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class PaymentGroup extends MongoBaseEntity<String> {
     private String displayName;
     private int hierarchy;
+    @Builder.Default
+    private String description= "Testing description";;
 
     @Override
     public int hashCode() {

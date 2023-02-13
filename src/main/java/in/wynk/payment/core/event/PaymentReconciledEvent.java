@@ -5,7 +5,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -35,7 +35,7 @@ public abstract class PaymentReconciledEvent {
     private final String transactionId;
 
     @Analysed(name = BaseConstants.PAYMENT_CODE)
-    private final PaymentCode paymentCode;
+    private final PaymentGateway paymentGateway;
 
     @Analysed(name = BaseConstants.TRANSACTION_STATUS)
     private final TransactionStatus transactionStatus;

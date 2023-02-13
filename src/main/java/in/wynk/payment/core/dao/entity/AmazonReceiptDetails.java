@@ -16,4 +16,13 @@ public class AmazonReceiptDetails extends ReceiptDetails {
     @Field("amazon_user_id")
     private String amazonUserId;
 
+    @Override
+    public Integer getNotificationType () {
+        return null;
+    }
+
+    @Override
+    public boolean isRenew () {
+        return false;
+    }
 }

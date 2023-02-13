@@ -19,4 +19,13 @@ public class ItunesReceiptDetails extends ReceiptDetails {
         return Long.parseLong(getReceiptTransactionId()) > 0L;
     }
 
+    @Override
+    public Integer getNotificationType () {
+        return null;
+    }
+
+    @Override
+    public boolean isRenew () {
+        return false;
+    }
 }

@@ -4,7 +4,12 @@ import in.wynk.common.constant.BaseConstants;
 
 public interface PaymentConstants extends BaseConstants {
 
+    String SKU_ID = "skuId";
+
     String SAVED = "SAVED";
+
+    String INTENT = "INTENT";
+
     String UPI = "UPI";
     String CARD = "CARD";
     String PAYU = "PAYU";
@@ -34,6 +39,7 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_TOKEN = "token";
     String SE_BILLING = "SE_BILLING";
     String AMAZON_IAP = "AMAZON_IAP";
+    String GOOGLE_IAP ="GOOGLE_IAP";
     String UPI_PREFIX = "upi_prefix";
     String UPI_MERCHANT_CODE = "5815";
     String SUBTITLE_TEXT = "subtitle";
@@ -64,6 +70,7 @@ public interface PaymentConstants extends BaseConstants {
     String NON_SEAMLESS_REDIRECT_FLOW = "NON_SEAMLESS_REDIRECT_FLOW";
     String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
+    String TDR ="tdr";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PHONEPE_WALLET = "PHONEPE_WALLET";

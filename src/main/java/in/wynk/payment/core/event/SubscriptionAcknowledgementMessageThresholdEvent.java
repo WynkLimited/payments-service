@@ -1,0 +1,38 @@
+package in.wynk.payment.core.event;
+
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.queue.dto.MessageThresholdExceedEvent;
+import lombok.Getter;
+import lombok.experimental.SuperBuilder;
+import org.springframework.http.HttpRequest;
+
+import javax.validation.constraints.NotNull;
+
+/**
+ * @author Nishesh Pandey
+ */
+@Getter
+@SuperBuilder
+@AnalysedEntity
+public class SubscriptionAcknowledgementMessageThresholdEvent extends MessageThresholdExceedEvent {
+    @Analysed
+    private String packageName;
+
+    @Analysed
+    private String service;
+
+    @Analysed
+    private String purchaseToken;
+
+    @Analysed
+    private String developerPayload;
+
+    @Analysed
+    private String skuId;
+
+    @NotNull
+    @Analysed
+    private PaymentCode paymentCode;
+}

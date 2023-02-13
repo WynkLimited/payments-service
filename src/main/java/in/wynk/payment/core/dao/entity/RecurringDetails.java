@@ -3,6 +3,7 @@ package in.wynk.payment.core.dao.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.data.entity.MongoBaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -43,6 +44,9 @@ public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseK
 
     @Field("page_url_details")
     private IPageUrlDetails pageUrlDetails;
+
+    @Analysed
+    private GeoLocation geoLocation;
 
     @Override
     @JsonIgnore

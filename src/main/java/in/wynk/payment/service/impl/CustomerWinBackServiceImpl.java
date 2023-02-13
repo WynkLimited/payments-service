@@ -2,7 +2,7 @@ package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.dto.SessionRequest;
+import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.WynkResponseUtils;

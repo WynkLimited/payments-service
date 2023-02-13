@@ -3,7 +3,7 @@ spring:
     name: paymentApi
   profiles:
     active: ${env}
-    include: base-common, coupon-core-${env}, client-core-${env},vas-client-${env}, wynk-service-core-${env}, error-codes-core-${env}, scheduler-core-${env}, country-currency-core-${env}, tinylytics-${env}
+    include: base-common, coupon-core-${env}, client-core-${env},vas-client-${env}, wynk-service-core-${env}, error-codes-core-${env}, scheduler-core-${env}, country-currency-core-${env}, tinylytics-${env}, identity-management-client-${env}
   main:
     banner-mode: off
   devtools:
@@ -76,6 +76,7 @@ service:
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
+
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
         activePlansEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/active/plans
@@ -148,7 +149,32 @@ payment:
     page: ${webview.host}/#/txn-state/session-out/
   polling:
     page: ${webview.host}/#/txn-state/payment-poll/
-
+  googlePlay:
+      baseUrl: https://androidpublisher.googleapis.com/androidpublisher/v3/applications/
+      purchaseUrl: /purchases/subscriptions/
+      authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+      tokenUrl: https://oauth2.googleapis.com/token
+      mockUrl: http://demo6110921.mockable.io/google/api/response
+      rajTv:
+        privateKey: -----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDBYML0UVbcoVqoLGjz0MeOa4Yski2Ux77pcLWjc7f0Szi4JUrLXtFhWs/5aKgebJya2gw4UJ2WAkpYk82qvWFXmOn08HNo9PSY0mDnAg0r2KgH0qZIlZkOaIG4pjbfTNoE5dFSYntMf/aRV5R6Q9tQg+9PV2ynW2R8dJX5GnJqimnaJsp2U0r+y0y2SuTwMp3n1dICVbWFUmE+7lF4buj4QqfflnluuiUqm6bCgTqMvcvm1xBEgNx4VYG5pOFw5hdYUC/VoIB151d2wOXDMDV1GpNSUy22EMBbtcHD6AwbL0md16/Nyg9fdMHZUBCF5orkxK6RFwqv3gl5oZayJ/MDAgMBAAECggEAWXJSewQss30HHAb+vNhzldLyiydKYilKi1wRCHv8OMmagMLvJ8bB/tAspubb7Ma8YXw+bsYLPlns3a/wT+utXQFkJmIaYA/+G7okDHaMdR2QC55KQATCeUGpzylC9GLt7ZoICp12/tmpyWzDRxKgHUwJo5+CqJ7DijW7MTAkgFab5pWswsnYCm0CyFzkExNJi6u2ZEfeyVjDpmlv6R1VtdJ/czpkM8pYEyD/Bep0ru8fED7Pvx4RNXt00kccl+mIwPRGnGZ8uTzWVVXftB/tLxbYGD1hNOtWaWgZQmxm7QqiBmIUKj6PwMtjf8pVP2WjftwxF1jlz7yPWaBauK154QKBgQDiVs+l8d7n52y44L6Mx0zeveyjaqteurT6VJ2Ic+AjUVouppLxfPpWPj+NXuTb+/aYX2S4biap6P5amqSrl5fxkj47kucPMiKXKWCLGeb0ZMpCcr4c7mlvjbpWolTmlHuEcBPo0w99FzAD3Id9L0OFQnC/tTlbUqqOKBpdOg6a+QKBgQDauCzwuqYwN3feSkKVIe1kgfJ84IsEI5PidHLiGDlRtcT6JUED2NUBmO57h021SIqvUgZmYU6XZXb82RPHQxo48IocymiQbctXhBS6ts0aOa1EkYE5f7cHZRdzN40n+tuSGF1I6RtEGr2aiuEokBa1zut4McScUuUndWejMOxg2wKBgEc03HrujxwSOKgpPIl5oftpcOswgd15i7o9qJnnKpqx21dV3GDQ2skLKF9HfWSf7kKdsEg9jzhhLrQ+dpPtS0Yapi2D1+F1+l/oCpF4gqpcky04gAsGDnGj+v2KcH9iM0HFKN5UmEjYZKiyVoXRusJP1rzZPMQ4S6QRhcnSnAmxAoGAB4F0gVpWY6czpNw1hrqgU+els6Vc/+pco9PNMXcVWHl9ZfwrS/9/58sgu/p7rzHrGHMfJxpFwSpJOAoXBKqH1tZiVvSXPAWYictNjs7BIRpDmOvJXHjGhilw8ZJBdNLGADB32w2s0tx8Dzae3W58aQbNy9UhYx/xHzaHNPFz2ysCgYEAl8QjpSTqNhXDFD4/qwVHqCHeXpJxndpj/zgOTFBNR2e0HoJcRgqn3oH3wp5Uh1tHWjZP+k72QEOdN8+yjuu5so2DfWdlvAlYFbPjascJRrDfDTWEVxaw+x1itkRqb3ebU6q0O4dej6w6S2U8orUNs6o+yogyuvYtaGd6jkwnKJ0=-----END PRIVATE KEY-----
+        privateKeyId: 74448fb18da344fa1532a035a6e4d4d3fb955102
+        clientEmail: raj-tv-google-dev-api@raj-tv-363111.iam.gserviceaccount.com
+        key: AIzaSyAx1_ROWC5XtS2WhfZMjHrPDOWijLVHDoo
+      music:
+        privateKey: -----BEGIN PRIVATE KEY-----MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7newGJD6YGZJg6d3KsiRAqNy4bLSxQRYAe+zPULpyWnB8mw6MsqPmCLVGtQk57ZdUUpkZ/52GG3csvRmGnHKpFdyTKpkN2CdGPeDilCp8X7b1g8kpIjbunXfXA48Dp1WZK2rmW7sgQJsYxhOSE6kgWpsMYiWncl4kEYgQZyGjc50JmXx2IspCdSUZK6oFPsGVbF7WF28E6hdYHPFt8mFrVuFuxah9Z02YeMmKrR/GD7GfXojXGXUtth/e8GqD23grMdUhXARJIf82fSfUWfjUU3Ym3fiaQ1KTASSVc5whs4E7wI4h3qJlsQoDVtK88sfH6EdT9HaCP0wPs2bYFmOVAgMBAAECggEAEGpCyk7Fgz1Jh10u4JsxfM7JcQFh1dhh+mzdTU484eBz0xMl9L10hZ3hbmxMgFr/UIthhdrNh3xDsxBgeVya05xsDhw+A+4TkZu8X1ajWPpu4ZBEO2sY70urvo47JxCu9pXL5pfECZBdgY9jCvbZZ1FGG5FCxiHFhtZZ10WOteQzEt/1ZpOHs+7ov0Ub/loaeWAZej8d6UIl3hD4PKe9bfHJx9cyF0rBMEIG18tjtGIsc2tx9i1MiC978aokFn/qDl7sDZ2USmQ53gvjDJgXHWmu/d3WbDg4EOAB78HFw8VaFEcwRYvPSinYcnOQsoR2YZ8jh/AQ9JSQdDyfE4BCwQKBgQD1YMKX2EI93AN50RWGDOVPb1dNz+ACgU3USieXOyg5OHAWFGJYm+/CREHU1JpqiEDi3eA03LrPrU9BdbROaVOXdM1SKMJxgECUJfuZ/Bm0D0Mm/DXUswEWuEQc02F0bw33OfIHhnATTUCRXlHIbkemEI899bY89UAT2GWugX4nOQKBgQDDvRAHDzyBtYeD5VYEYoNgUEqxYI2sQHXQ7gs3H5fK5yCq9Oigwei+t0ZD1PUsuWSxCi6HVnZ0rpCm0fhwAmv+bxgPC9BnH0rFam8cbCgsPJcIYNHqfG/ZZ+farRmtTIk9gBkmOnUKOvHT+h1GwRbHFMTCsK1xVFFpSnQOlrxjPQKBgQClzPLP3V2tJMvodQIBKReNHCO2vT6VEr//MPgddOiR+XOrR6zISN2xu6Nr5xhL4bNOWDPWJEvKZkXGan0h+oN0NIVD/aydOtboA95FRxYrF6D9Z7AL/8Q9kNbdT2trXFrocWv777gtIqb9UukZ8IJTUJ8pc6zm9aSNhEv4pSET6QKBgQCk8VriOAqq2wfZM5aql0FSFhb7Jfv8nU0qxI2a4/qLtvymUz78yKqSm+qQGpKIH6okLgpLbabgaIHosaOC7+eFPqSteS0i2RGvDiOXdeTcciprmvsJd9bhA1gzxA6RJJ+5vYpz1mruNgG2uVuWVfwVwwCTd0KQ75ay/VSTPp59mQKBgFf0s3nh42DdbMp3q1PUHFO5hfUVoC22iccqahyy7Aul5sFOTKnaeNmsFW4E4UEUJ4R8J+VHSqNZIdyBgJ1aUTeGlbId0NM2NiI9+6durYwpFkpR0zFNZasAQnu5pf38VIuN3pv1BpwyAqfnUpmOrO5Lfm2Fmm0xvGqmEnepAJ+z-----END PRIVATE KEY-----
+        privateKeyId: f27a7e9da5a0d4252bfdd7e92b32a887990da1fb
+        clientEmail: musicbilling@api-project-231647626882.iam.gserviceaccount.com
+        key: AIzaSyAdwNLIUNE7na2IRBe-jpwNRpNIaU0RqPA
+      airteltv:
+        privateKey: -----BEGIN PRIVATE KEY-----MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7newGJD6YGZJg6d3KsiRAqNy4bLSxQRYAe+zPULpyWnB8mw6MsqPmCLVGtQk57ZdUUpkZ/52GG3csvRmGnHKpFdyTKpkN2CdGPeDilCp8X7b1g8kpIjbunXfXA48Dp1WZK2rmW7sgQJsYxhOSE6kgWpsMYiWncl4kEYgQZyGjc50JmXx2IspCdSUZK6oFPsGVbF7WF28E6hdYHPFt8mFrVuFuxah9Z02YeMmKrR/GD7GfXojXGXUtth/e8GqD23grMdUhXARJIf82fSfUWfjUU3Ym3fiaQ1KTASSVc5whs4E7wI4h3qJlsQoDVtK88sfH6EdT9HaCP0wPs2bYFmOVAgMBAAECggEAEGpCyk7Fgz1Jh10u4JsxfM7JcQFh1dhh+mzdTU484eBz0xMl9L10hZ3hbmxMgFr/UIthhdrNh3xDsxBgeVya05xsDhw+A+4TkZu8X1ajWPpu4ZBEO2sY70urvo47JxCu9pXL5pfECZBdgY9jCvbZZ1FGG5FCxiHFhtZZ10WOteQzEt/1ZpOHs+7ov0Ub/loaeWAZej8d6UIl3hD4PKe9bfHJx9cyF0rBMEIG18tjtGIsc2tx9i1MiC978aokFn/qDl7sDZ2USmQ53gvjDJgXHWmu/d3WbDg4EOAB78HFw8VaFEcwRYvPSinYcnOQsoR2YZ8jh/AQ9JSQdDyfE4BCwQKBgQD1YMKX2EI93AN50RWGDOVPb1dNz+ACgU3USieXOyg5OHAWFGJYm+/CREHU1JpqiEDi3eA03LrPrU9BdbROaVOXdM1SKMJxgECUJfuZ/Bm0D0Mm/DXUswEWuEQc02F0bw33OfIHhnATTUCRXlHIbkemEI899bY89UAT2GWugX4nOQKBgQDDvRAHDzyBtYeD5VYEYoNgUEqxYI2sQHXQ7gs3H5fK5yCq9Oigwei+t0ZD1PUsuWSxCi6HVnZ0rpCm0fhwAmv+bxgPC9BnH0rFam8cbCgsPJcIYNHqfG/ZZ+farRmtTIk9gBkmOnUKOvHT+h1GwRbHFMTCsK1xVFFpSnQOlrxjPQKBgQClzPLP3V2tJMvodQIBKReNHCO2vT6VEr//MPgddOiR+XOrR6zISN2xu6Nr5xhL4bNOWDPWJEvKZkXGan0h+oN0NIVD/aydOtboA95FRxYrF6D9Z7AL/8Q9kNbdT2trXFrocWv777gtIqb9UukZ8IJTUJ8pc6zm9aSNhEv4pSET6QKBgQCk8VriOAqq2wfZM5aql0FSFhb7Jfv8nU0qxI2a4/qLtvymUz78yKqSm+qQGpKIH6okLgpLbabgaIHosaOC7+eFPqSteS0i2RGvDiOXdeTcciprmvsJd9bhA1gzxA6RJJ+5vYpz1mruNgG2uVuWVfwVwwCTd0KQ75ay/VSTPp59mQKBgFf0s3nh42DdbMp3q1PUHFO5hfUVoC22iccqahyy7Aul5sFOTKnaeNmsFW4E4UEUJ4R8J+VHSqNZIdyBgJ1aUTeGlbId0NM2NiI9+6durYwpFkpR0zFNZasAQnu5pf38VIuN3pv1BpwyAqfnUpmOrO5Lfm2Fmm0xvGqmEnepAJ+z-----END PRIVATE KEY-----
+        privateKeyId: f27a7e9da5a0d4252bfdd7e92b32a887990da1fb
+        clientEmail: musicbilling@api-project-231647626882.iam.gserviceaccount.com
+        key: AIzaSyBSYh3o4T1HJGmUdRaO0EOn1aK1iJfy71E
+      #enterr10:
+       # privateKey: -----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDB+xs4IRGrMDWXFO8KX0hP40STZQ/Q6yPmPY+5IEhPsSqnZLK36CcHmERkQjoqPqcEmwr/sb1v2DuPs0tHDc3NxNQyecKk2qHxPfRIFaccWeRMWQhvFfisBgDBA4o49KZDKLh8wGrKg928ksIw4f98ySoKCpQE//XleU2x7UlweayzdypN9LPxY9N4ev4tEOO2kDmUKd37QY9c3cksUEslkHzjzXt7Hl59yd4lgcCuE3g9+wZ8wFrEy4cEcxk8xLxocG2H1rhNkzAUq4FpDYS1e1TwoEZTScKknanDNUqGSYMN4ZcpMyHtQiM4FrcGs5Xv/rMPS0EcW7IvWTeeNIy3AgMBAAECggEAQ8QkkyxCTuqtnhUrGRWGXppHx7JDnzm2NeYFwqe7e1OqUgZExSiuEeIo6lmUllOC54H+iqseQedpj18UikMRRbRgaS3OSOc0MeHx6Ajgc3AX6HAmGSC02evS8Zr5+8HEH6wnHzXdWNhOa2Vdv9QD/CUOsalWYpTE46DH+sOpp0fNq0NAk9f4w5M1i6XRk0xvTrtGE4m+JPqCre7nR5Vq28WTtRcfZt1/HTOyoXFXMW9egVWN4X5AqEg0rS6Aq9dVPoS3Q8ubO1csXbtwm5FdrPXCLqwCM7gXgD7TDGwQQl7CPXni0bSUkmzJOO8uL/nA1PiA67z3bgmE1tmqBOJ7WQKBgQD7mIOeP34KPzxCdMc3XGRc84iKEQb4tobj/JPOVq+KR+/EQ9RlU/djJCvIOGzlMriExCl85h+lFICjt+1wm1E8CDG4bpOeFjvIW/h1z+TQiKP57klJG+u+RkPb7tGE1pRpPsUwms4dMYT0vVKiAAw2IOumfq0vGV5gaBr2ESkmBQKBgQDFYGaBdJPt391gQO2PXWdoKt2tzbgD7mO/mTUXJtepIvK4hynGwN1/VBW0/gWQriV+OuwJADaHWLtc5KfDjUTAMLle5RoZgEvKd1iHBPW/QJrwvEv/x6ZY/HnEwjrRaS+FIFIUYH16//QE/PsgkEPT4w1NkkMsmegTdbPDgdXIiwKBgDQz2utUxTQfFsO7MzKbav+WUDhFfCrSxH49g/WGKvoIHwmcAU/c8jGR6buraXzM31g801bk8J/x9xcBLLT2pQ5NrPNVji948YKLAqx/LDzQfSV4eaA/uNRMA/x4OuTTGQwVSBjjpeyMv8eAGMsgM2hvwDVVh12EZ/6c2ys/OEh5AoGBALupL2zwUWH+0jWdJgGEVjglYYXJracXNoHKAj9T8AJhNxOZd3AAmdhhMw5V4yavXPiKvzbDnBTNmb71rEhyfaaZ7PW7sDgE0orbNDGT1q+Tln1DGqNDyPacfo5D+bZ3YvYZR9EV+NhEmVdQzNgmMkc4fsJ9SR8T6iLuaw98162HAoGAVaz5T+RqK00jAvEtqtu03XP7Lr90dxZBowDNFpYkC+k3KxdAWv735t4zZ8r5k3VdOwAyQer6Yg1C9SOVmCsxzKeqbKKs+PpcPd7Rb9E52tBlhsn+tiVQ9wC9pL9o1cm6M/i+o/Sz4iNOMWbyq+SYa7GxEsidijrrxFIn5Bt0+is=-----END PRIVATE KEY-----
+      #  privateKeyId: fc40a9ca21615f2ba753a1afcac80d98a818d033
+      #  clientEmail: dangal-play-serviceaccount@dangal-play.iam.gserviceaccount.com
+      #  key: AIzaSyAmcEfR4deGkGgfmwoehfB_UnWfF7nkjRU
 cors:
   maxAge: 3600
   allowed:

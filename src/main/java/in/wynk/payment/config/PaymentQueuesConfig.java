@@ -37,6 +37,19 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
+    public SubscriptionAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                                ObjectMapper objectMapper,
+                                                                                                                SubscriptionAcknowledgementSQSMessageExtractor subscriptionAcknowledgementSQSMessageExtractor) {
+        return new SubscriptionAcknowledgementConsumerPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                subscriptionAcknowledgementSQSMessageExtractor,
+                threadPoolExecutor(2),
+                scheduledThreadPoolExecutor());
+    }
+
+    @Bean
     public PaymentRenewalConsumerPollingQueue paymentRenewalConsumerPollingQueue(@Value("${payment.pooling.queue.renewal.name}") String queueName,
                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                  ObjectMapper objectMapper,
@@ -114,6 +127,20 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
+    public PaymentUserDeactivationPollingQueue paymentUserDeactivationPollingQueue(@Value("${payment.pooling.queue.userDeactivation.name}") String queueName,
+                                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                             ObjectMapper objectMapper,
+                                                                                             PaymentUserDeactivationSQSMessageExtractor paymentUserDeactivationSQSMessageExtractor,
+                                                                                             ApplicationEventPublisher eventPublisher) {
+        return new PaymentUserDeactivationPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                paymentUserDeactivationSQSMessageExtractor,
+                threadPoolExecutor(2),
+                scheduledThreadPoolExecutor(), eventPublisher);
+    }
+
+    @Bean
     public PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentReconciliationSQSMessageExtractor(queueName, sqsClient);
@@ -147,6 +174,18 @@ public class PaymentQueuesConfig {
     public PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor(@Value("${payment.pooling.queue.unschedule.name}") String queueName,
                                                                                                            @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new PaymentRecurringUnSchedulingSQSMessageExtractor(queueName, sqsClients);
+    }
+
+    @Bean
+    public PaymentUserDeactivationSQSMessageExtractor paymentUserDeactivationSQSMessageExtractor(@Value("${payment.pooling.queue.userDeactivation.name}") String queueName,
+                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new PaymentUserDeactivationSQSMessageExtractor(queueName, sqsClients);
+    }
+
+    @Bean
+    public SubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                                   @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new SubscriptionAcknowledgementSQSMessageExtractor(queueName, sqsClients);
     }
 
     private ExecutorService threadPoolExecutor(int threadCount) {

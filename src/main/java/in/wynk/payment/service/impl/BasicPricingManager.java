@@ -1,11 +1,13 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.coupon.core.service.impl.CouponCodeLinkServiceImpl;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -48,7 +51,7 @@ public class BasicPricingManager implements IPricingManager {
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
-            if (Arrays.asList("ITUNES", "AMAZON_IAP").contains(request.getPaymentCode().getId()))
+            if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentCode().getId()))
                 couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {
@@ -56,9 +59,14 @@ public class BasicPricingManager implements IPricingManager {
             pointRequest.setAmount(Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY106)).getPrice());
         }
         if (StringUtils.isNotEmpty(request.getCouponId())) {
-            final CouponCodeLink codeLink = couponCodeLinkService.fetchCouponCodeLink(request.getCouponId());
+            final CouponCodeLink codeLink = couponCodeLinkService.fetchCouponCodeLink(request.getCouponId().toUpperCase(Locale.ROOT));
             if (Objects.nonNull(codeLink)) {
-                final Double discountPercent = couponCachingService.get(codeLink.getCouponId()).getDiscountPercent();
+                String couponCode = codeLink.getCouponId();
+                Coupon coupon = couponCachingService.get(codeLink.getCouponId());
+                if (!coupon.isCaseSensitive()) {
+                    couponCode = codeLink.getCouponId().toUpperCase(Locale.ROOT);
+                }
+                final Double discountPercent = couponCachingService.get(couponCode).getDiscountPercent();
                 request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(request.getAmount() * (1 - discountPercent / 100))));
                 request.setDiscount(discountPercent);
             }

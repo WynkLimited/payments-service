@@ -35,6 +35,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.REQUEST_PAYLOAD;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wynk/v2/payment")
+public class  RevenuePaymentControllerV2 {
 public class RevenuePaymentControllerV2 {
 
     private final Gson gson;

@@ -10,6 +10,7 @@ import in.wynk.wynkservice.core.dao.entity.App;
 import in.wynk.wynkservice.core.dao.entity.Os;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -18,7 +19,8 @@ import java.io.Serializable;
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
 @Getter
-@Builder
+@Setter
+@SuperBuilder
 @ToString
 @AnalysedEntity
 @AllArgsConstructor

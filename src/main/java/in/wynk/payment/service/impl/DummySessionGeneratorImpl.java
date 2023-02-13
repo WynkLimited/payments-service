@@ -7,21 +7,20 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
-import in.wynk.common.adapter.SessionDTOAdapter;
+import in.wynk.subscription.common.adapter.SessionDTOAdapter;
 import in.wynk.common.dto.SessionDTO;
-import in.wynk.common.dto.SessionRequest;
+import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.dto.IapVerificationRequestV2;
+import in.wynk.payment.dto.SessionDetails;
+import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.service.IDummySessionGenerator;
 import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.dto.Session;
 import in.wynk.session.service.ISessionManager;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
-import in.wynk.wynkservice.core.dao.entity.App;
-import in.wynk.wynkservice.core.dao.entity.Os;
-import in.wynk.wynkservice.core.dao.entity.WynkService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -87,6 +86,36 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
         } catch (Exception e) {
             throw new WynkRuntimeException("Unable to generate session", e);
         }
+    }
+
+    @Override
+    public IapVerificationRequestV2 initSession (IapVerificationRequestV2 request) {
+        Map<String, Object> map = new HashMap<>();
+        GooglePlayVerificationRequest gRequest = (GooglePlayVerificationRequest) request;
+        if (StringUtils.isAnyBlank(gRequest.getUserDetails().getUid(), gRequest.getUserDetails().getMsisdn())) {
+            throw new WynkRuntimeException(WynkErrorType.UT001, "Invalid UID or MSISDN");
+        }
+        map.put(UID, gRequest.getUserDetails().getUid());
+        map.put(MSISDN, gRequest.getUserDetails().getMsisdn());
+        map.put(OS, WynkServiceUtils.fromOsId(gRequest.getAppDetails().getOs()).getId().toLowerCase());
+        map.put(CLIENT, getClientAlias(SecurityContextHolder.getContext().getAuthentication().getName()));
+        if (Objects.nonNull(gRequest.getAppDetails().getBuildNo())) {
+            map.put(BUILD_NO, gRequest.getAppDetails().getBuildNo());
+        }
+        if (StringUtils.isNotBlank(gRequest.getAppDetails().getDeviceId())) {
+            map.put(DEVICE_ID, gRequest.getAppDetails().getDeviceId());
+        }
+        if (StringUtils.isNotBlank(gRequest.getAppDetails().getService())) {
+            map.put(SERVICE, gRequest.getAppDetails().getService());
+        }
+        SessionDTO sessionDTO = SessionDTO.builder().sessionPayload(map).build();
+        final String id = UUIDs.timeBased().toString();
+        sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, 5, TimeUnit.MINUTES);
+        AnalyticService.update(SESSION_ID, id);
+        SessionDetails sessionDetails= new SessionDetails();
+        sessionDetails.setSessionId(id);
+        request.setSessionDetails(sessionDetails);
+        return request;
     }
 
     @ClientAware(clientId = "#clientId")

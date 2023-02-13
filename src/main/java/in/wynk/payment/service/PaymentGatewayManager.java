@@ -24,7 +24,9 @@ import in.wynk.payment.dto.common.request.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.common.response.ChargingResponseWrapper;
 import in.wynk.payment.dto.common.response.PaymentStatusWrapper;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
+import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +47,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.VERSION_2;
 @RequiredArgsConstructor
 public class PaymentGatewayManager
         implements IPaymentChargingService<ChargingResponseWrapper<?>, AbstractChargingRequest<?>>, IPaymentStatus<PaymentStatusWrapper>,
-        IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest> {
+        IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -54,6 +56,21 @@ public class PaymentGatewayManager
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
+
+
+    @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
+    public AbstractCoreChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+        final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
+        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
+        final IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
+                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(VERSION_2),
+                        new ParameterizedTypeReference<IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
+                        });
+
+      // final AbstractCoreChargingResponse response = chargingService.chargev2(request);
+
+        return null;
+    }
 
     @Override
     @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
@@ -92,7 +109,7 @@ public class PaymentGatewayManager
         PaymentGateway paymentGateway = transaction.getPaymentChannel();
         IPaymentStatus<PaymentStatusWrapper> paymentStatus = BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IPaymentStatus<PaymentStatusWrapper>>() {
         });
-       return paymentStatus.status(transaction);
+        return paymentStatus.status(transaction);
     }
 
     private void exhaustCouponIfApplicable (TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
@@ -167,5 +184,4 @@ public class PaymentGatewayManager
         transactionManager.revision(abstractTransactionRevisionRequest);
         exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
     }
-
 }

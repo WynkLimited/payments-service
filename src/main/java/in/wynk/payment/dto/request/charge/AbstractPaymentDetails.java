@@ -52,18 +52,11 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     @Analysed(name = "bankName")
     private String merchantName;
 
-    @NotNull
-    @Analysed
-    private String paymentCode;
-
     @Analysed
     private boolean autoRenew;
 
     @Analysed
     private boolean trialOpted;
-
-    @Analysed
-    private boolean intent;
 
     public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted) {
         this.couponId = couponId;
@@ -82,9 +75,4 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
         return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         }).get(paymentId).isTrialSupported() && trialOpted;
     }
-
-    public PaymentGateway getPaymentCode() {
-        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
-    }
-
 }

@@ -9,6 +9,7 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
@@ -40,15 +41,19 @@ import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusRes
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.common.response.PaymentStatusWrapper;
 import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.PayUConstants;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.common.FreshCardDetails;
-import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
-import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
-import in.wynk.payment.dto.response.IVerificationResponse;
+import in.wynk.payment.dto.response.*;
+import in.wynk.payment.dto.response.gateway.card.AbstractCoreCardChargingResponse;
+import in.wynk.payment.dto.response.gateway.card.AbstractNonSeamlessCardChargingResponse;
+import in.wynk.payment.dto.response.gateway.card.AbstractSeamlessCardChargingResponse;
+import in.wynk.payment.dto.response.gateway.upi.AbstractCoreUpiChargingResponse;
+import in.wynk.payment.dto.response.gateway.upi.AbstractSeamlessUpiChargingResponse;
+import in.wynk.payment.dto.response.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
@@ -61,7 +66,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -85,7 +89,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
-public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>, IMerchantVerificationService, IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest>, IPaymentStatus<PaymentStatusWrapper> {
+public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>>,IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>, IMerchantVerificationService, IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest>, IPaymentStatus<PaymentStatusWrapper>/*, IPaymentChargingServiceV2<R extends AbstractCoreChargingResponse, T extends AbstractChargingRequestV2>*/{
 
     @Value("${payment.encKey}")
     private String encryptionKey;
@@ -124,6 +128,9 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private final VerificationWrapper verificationWrapper = new VerificationWrapper();
     private final Map<String, IMerchantPaymentChargingService<ApsChargingResponse, DefaultChargingRequest<?>>> chargingDelegate = new HashMap<>();
 
+    private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> chargingDelegateV2 = new HashMap<>();
+    private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> chargingDelegateV3 = new HashMap<>();
+
     public AirtelPayStackGatewayImpl(Gson gson, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, PaymentCachingService cache, IErrorCodesCacheService errorCache, ApplicationEventPublisher eventPublisher, ResourceLoader resourceLoader, PaymentMethodCachingService paymentMethodCachingService) {
         super(cache, errorCache);
         this.gson = gson;
@@ -135,6 +142,11 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         chargingDelegate.put(PaymentConstants.UPI, new UpiCharging());
         chargingDelegate.put(PaymentConstants.CARD, new CardCharging());
         chargingDelegate.put(PaymentConstants.NET_BANKING, new NetBankingCharging());
+        chargingDelegateV2.put(PaymentConstants.UPI, new UpiChargingV2());
+        chargingDelegateV2.put(PaymentConstants.UPI, new CardChargingV2());
+      //  chargingDelegateV3.put(PaymentConstants.UPI, new UpiChargingV2.UpiSeamlessChargingV2.UpiIntentCharging());
+       // chargingDelegateV2.put(PaymentConstants.CARD, new CardChargingV2());
+       // chargingDelegateV2.put(PaymentConstants.NET_BANKING, new NetBankingCharging());
     }
 
     @SneakyThrows
@@ -325,6 +337,12 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         return responseBuilder.data(refundResponseBuilder.build()).build();
     }
 
+    @Override
+    public AbstractCoreChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+        final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
+        chargingDelegateV2.get(method.getGroup().toUpperCase()).chargeV2(request);
+        return null;
+    }
 
 
     private class VerificationWrapper implements IMerchantVerificationService {
@@ -508,6 +526,198 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                     return builder.build();
                 }
                 throw new WynkRuntimeException(PaymentErrorType.PAY024);
+            }
+        }
+    }
+
+
+    private class UpiChargingV2 implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+
+        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+
+        public UpiChargingV2() {
+            upiDelegate.put(PaymentConstants.SEAMLESS, new UpiSeamlessChargingV2());
+            upiDelegate.put(PaymentConstants.NON_SEAMLESS, new UpiNonSeamlessChargingV2());
+        }
+
+        @Override
+        public AbstractCoreChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+            Optional<String> flowType;
+            final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+            if (paymentDetails.getUpiDetails().isSeamless()) {
+                flowType = Optional.of(PaymentConstants.SEAMLESS);
+            } else {
+                flowType = paymentDetails.getUpiDetails().isIntent() ? Optional.of(PaymentConstants.SEAMLESS) : Optional.of(PaymentConstants.NON_SEAMLESS);
+
+            }
+            return null;
+            //return upiDelegate.get(flowType.orElse(PaymentConstants.NON_SEAMLESS)).charge(request);
+        }
+
+
+        private class UpiNonSeamlessChargingV2 implements IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
+            @Override
+            public AbstractCoreUpiChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                /*final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
+                final Transaction transaction = TransactionContext.get();
+                final String redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl();
+                final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+                final CollectUpiPaymentInfo upiCollectInfo = CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount()).build();
+                final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiCollectInfo).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+                final HttpHeaders headers = new HttpHeaders();
+                final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
+                final ResponseEntity<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>> response = exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
+                });
+                if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
+                    builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(CLIENT_POLLING_SCREEN_URL).build());
+                    return builder.build();
+                }
+                throw new WynkRuntimeException(PaymentErrorType.PAY024);*/
+                return null;
+            }
+
+            /*@Override
+            public WynkResponseEntity<ApsChargingResponse> charge(DefaultChargingRequest<?> request) {
+                final WynkResponseEntity.WynkResponseEntityBuilder<ApsChargingResponse> builder = WynkResponseEntity.builder();
+                final Transaction transaction = TransactionContext.get();
+                final String redirectUrl = ((IChargingDetails) request.getPurchaseDetails()).getCallbackDetails().getCallbackUrl();
+                final UserInfo userInfo = UserInfo.builder().loginId(request.getMsisdn()).build();
+                final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPurchaseDetails().getPaymentDetails();
+                final CollectUpiPaymentInfo upiCollectInfo = CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount()).build();
+                final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiCollectInfo).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+                final HttpHeaders headers = new HttpHeaders();
+                final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
+                final ResponseEntity<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>> response = exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
+                });
+                if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
+                    builder.data(ApsChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(CLIENT_POLLING_SCREEN_URL).build());
+                    return builder.build();
+                }
+                throw new WynkRuntimeException(PaymentErrorType.PAY024);
+            }*/
+        }
+
+        private class UpiSeamlessChargingV2 implements
+                IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
+
+            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+
+            public UpiSeamlessChargingV2() {
+                  upiDelegate.put(PaymentConstants.INTENT, new UpiIntentCharging());
+                  upiDelegate.put(PaymentConstants.COLLECT_IN_APP, new UpiCollectInAppCharging());
+            }
+            @Override
+            public AbstractSeamlessUpiChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                return null;
+            }
+
+            private class UpiCollectInAppCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
+                @Override
+                public UpiIntentChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                    return null;
+                }
+            }
+
+            private class UpiIntentCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
+
+                @Override
+                @SneakyThrows
+                public UpiIntentChargingResponse chargeV2(AbstractChargingRequestV2 request) {
+                    final Transaction transaction = TransactionContext.get();
+                    final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
+                    final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
+                    final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
+                    final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                    final IntentUpiPaymentInfo upiIntentDetails = IntentUpiPaymentInfo.builder().upiDetails(IntentUpiPaymentInfo.UpiDetails.builder().appName(payAppName).build()).paymentAmount(transaction.getAmount()).build();
+                    final ApsExternalChargingRequest<IntentUpiPaymentInfo> payRequest = ApsExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+                    final HttpHeaders headers = new HttpHeaders();
+                    final RequestEntity<ApsExternalChargingRequest<IntentUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
+
+                    final ResponseEntity<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>> response = exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
+                    });
+                    if (Objects.nonNull(response.getBody()) && response.getBody().isResult()) {
+
+                        Map<String, String> map = Arrays.stream(response.getBody().getData().getUpiLink().split("&")).map(s -> s.split("=", 2)).filter(p-> StringUtils.isNotBlank(p[1])).collect(Collectors.toMap(x-> x[0], x -> x[1]));
+                        PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
+                        String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
+
+                        //if mandate created, means transaction type is SUBSCRIBE else PURCHASE
+                        return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
+                                .pa(map.get("pa")).pn(map.getOrDefault("pn", "Wynk Limited")).tr(map.get("tr")).am(map.get("am"))
+                                .cu(map.getOrDefault("cu", "INR")).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get("tn")).mc(PayUConstants.WYNK_UPI_MERCHANT_CODE)
+                                .build();
+
+                    }
+                    throw new WynkRuntimeException(PaymentErrorType.PAY024);
+                }
+            }
+        }
+
+    }
+
+    private class CardChargingV2 implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+
+        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+
+        public CardChargingV2 () {
+            upiDelegate.put(PaymentConstants.INTENT, new CardSeamlessCharging());
+            upiDelegate.put(PaymentConstants.COLLECT_IN_APP, new CardNonSeamlessCharging());
+        }
+
+        @Override
+        public AbstractCoreChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+            return null;
+        }
+
+        private class CardSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
+            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+
+            public CardSeamlessCharging () {
+                upiDelegate.put(PaymentConstants.INTENT, new CardOtpLessCharging());
+                upiDelegate.put(PaymentConstants.COLLECT_IN_APP, new CardInAppCharging());
+            }
+
+            @Override
+            public AbstractSeamlessCardChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                return null;
+            }
+
+            private class CardOtpLessCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2> {
+
+                @Override
+                public AbstractSeamlessCardChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                    return null;
+                }
+            }
+
+            private class CardInAppCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2> {
+
+                @Override
+                public AbstractSeamlessCardChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                    return null;
+                }
+            }
+        }
+
+        private class CardNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
+            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+
+            public CardNonSeamlessCharging () {
+                upiDelegate.put(PaymentConstants.INTENT, new CardHtmlTypeCharging());//APS supports html type
+            }
+
+            @Override
+            public AbstractNonSeamlessCardChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                return null;
+            }
+
+            private class CardHtmlTypeCharging implements IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2> {
+
+                @Override
+                public AbstractNonSeamlessCardChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+                    return null;
+                }
             }
         }
     }

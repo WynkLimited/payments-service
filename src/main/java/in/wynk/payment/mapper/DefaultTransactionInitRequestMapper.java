@@ -29,6 +29,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 
 public class DefaultTransactionInitRequestMapper implements IObjectMapper {
+    private static IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
+    });
 
     public static AbstractTransactionInitRequest from(IPurchaseDetails purchaseDetails) {
         final IEntityCacheService<PaymentMethod, String> paymentMethodCaching = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
@@ -108,4 +110,20 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         return PointTransactionInitRequest.builder().paymentGateway(paymentGateway).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
     }
 
+    public static AbstractTransactionInitRequest from (AbstractChargingRequestV2 request) {
+
+        final PaymentGateway paymentGateway = paymentMethodCaching.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
+        final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
+        final Client client = clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT));
+        final AbstractTransactionInitRequest transactionInitRequest;
+        if (PlanDetails.class.isAssignableFrom(request.getProductDetails().getClass())) {
+            transactionInitRequest = planInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PlanDetails) request.getProductDetails());
+        } else if (PointDetails.class.isAssignableFrom(request.getProductDetails().getClass())) {
+            transactionInitRequest = pointInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PointDetails) request.getProductDetails());
+        } else {
+            throw new WynkRuntimeException("Method is not implemented!");
+        }
+        BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(transactionInitRequest);
+        return transactionInitRequest;
+    }
 }

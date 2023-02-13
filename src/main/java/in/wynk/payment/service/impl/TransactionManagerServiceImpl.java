@@ -187,6 +187,17 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return init(transactionInitRequest);
     }
 
+    @Override
+    public Transaction init (AbstractTransactionInitRequest transactionInitRequest, AbstractChargingRequestV2 request) {
+        if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
+            final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
+            purchaseDetailsManger.save(transaction, request);
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
+            return transaction;
+        }
+        return init(transactionInitRequest);
+    }
+
     private Transaction initPlanTransaction(PlanTransactionInitRequest transactionInitRequest) {
         Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
         return initTransaction(txn);

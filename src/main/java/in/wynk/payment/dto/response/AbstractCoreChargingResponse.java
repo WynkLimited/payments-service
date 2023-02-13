@@ -13,11 +13,13 @@ import java.util.concurrent.TimeUnit;
 @Getter
 @SuperBuilder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public abstract class AbstractChargingResponseV2 {
+public abstract class AbstractCoreChargingResponse {
+
     private String tid;
     private TransactionStatus transactionStatus;
+    private String transactionType;
 
-    public Long getExpiry() {
+    public Long getExpiry () {
         return System.currentTimeMillis() + TimeUnit.DAYS.toMillis(3);
     }
 }

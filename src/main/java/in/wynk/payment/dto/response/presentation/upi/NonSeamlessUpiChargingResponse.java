@@ -9,6 +9,8 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 public class NonSeamlessUpiChargingResponse extends AbstractUpiChargingResponse {
+    @JsonProperty("package")
+    private String appPackage;
     @JsonProperty("info")
     private String form;
 }

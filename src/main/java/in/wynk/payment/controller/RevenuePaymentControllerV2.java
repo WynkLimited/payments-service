@@ -3,27 +3,31 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.common.dto.IWynkPresentation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.dto.ApsChargingResponse;
+import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
+import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.presentation.PaymentCallbackPresentation;
+import in.wynk.payment.presentation.dto.PaymentStatusResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -44,6 +48,7 @@ public class  RevenuePaymentControllerV2 {
 
     private final Gson gson;
     private PaymentGatewayManager paymentManager;
+    private final PaymentGatewayManager paymentGatewayManager;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
 
     @PostMapping("/verify/{sid}")
@@ -131,5 +136,18 @@ public class  RevenuePaymentControllerV2 {
         paymentManager.chargeV2(request);
         //return  builder.data(manager.chargeV2(request)).build();
         return null;
+    }
+
+    //This version is for payment refactoring task
+    @GetMapping("/status/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "paymentStatus")
+    public WynkResponseEntity<PaymentStatusResponse> status(@PathVariable String sid) {
+        LoadClientUtils.loadClient(false);
+        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+        final WynkResponseEntity<PaymentStatusResponse> responseEntity = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse>>() {
+        }).transform(() -> paymentGatewayManager.status(ChargingTransactionStatusRequest.builder().transactionId(sessionDTO.<String>get(TRANSACTION_ID)).build()));
+        AnalyticService.update(responseEntity);
+        return responseEntity;
     }
 }

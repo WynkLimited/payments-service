@@ -20,16 +20,14 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.common.request.AbstractPaymentChargingResponse;
-import in.wynk.payment.dto.common.response.ChargingResponseWrapper;
+import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
+import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.PaymentStatusWrapper;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.charge.AbstractChargingGatewayResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.manager.ChargingGatewayResponseWrapper;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.response.AbstractChargingResponse;
-import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.gateway.IPaymentCharging;
@@ -44,7 +42,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
@@ -57,7 +59,7 @@ public class PaymentGatewayManager implements
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
         IPaymentCharging<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>>,
-        IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionReconciliationStatusRequest>, IPaymentStatus<PaymentStatusWrapper>, IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>  {
+        IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -66,7 +68,13 @@ public class PaymentGatewayManager implements
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
+    private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
 
+    @PostConstruct
+    public void init(){
+        this.statusDelegator.put(ChargingTransactionStatusRequest.class, new ChargingTransactionStatusService());
+        this.statusDelegator.put(AbstractTransactionReconciliationStatusRequest.class, new ReconciliationTransactionStatusService());
+    }
 
     @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
     public AbstractCoreChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
@@ -108,15 +116,6 @@ public class PaymentGatewayManager implements
         }
     }
 
-    @TransactionAware(txnId = "#transactionId", lock = false)
-    @Override
-    public PaymentStatusWrapper status (Transaction transaction) {
-        PaymentGateway paymentGateway = transaction.getPaymentChannel();
-        IPaymentStatus<PaymentStatusWrapper> paymentStatus = BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IPaymentStatus<PaymentStatusWrapper>>() {
-        });
-        return paymentStatus.status(transaction);
-    }
-
     private void exhaustCouponIfApplicable (TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             if (StringUtils.isNotEmpty(transaction.getCoupon())) {
@@ -143,29 +142,6 @@ public class PaymentGatewayManager implements
         eventPublisher.publishEvent(eventBuilder.build());
     }
 
-    @Override
-    public WynkResponseEntity<AbstractChargingStatusResponse> status (AbstractTransactionReconciliationStatusRequest request) {
-        final Transaction transaction = TransactionContext.get();
-        final TransactionStatus existingStatus = transaction.getStatus();
-        try {
-            return internalStatus(request);
-        } finally {
-            final TransactionStatus finalStatus = transaction.getStatus();
-            AnalyticService.update(PAYMENT_METHOD, transaction.getPaymentChannel().name());
-            AsyncTransactionRevisionRequest.AsyncTransactionRevisionRequestBuilder builder =
-                    AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus);
-            if (transaction.getType() == PaymentEvent.RENEW) {
-                RenewalChargingTransactionReconciliationStatusRequest renewalChargingTransactionReconciliationStatusRequest = (RenewalChargingTransactionReconciliationStatusRequest) request;
-                builder.attemptSequence(renewalChargingTransactionReconciliationStatusRequest.getOriginalAttemptSequence())
-                        .transactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
-            }
-            reviseTransactionAndExhaustCoupon(transaction, existingStatus, builder.build());
-            publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
-            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_RECONCILE_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
-            // .extTxnId(request.getExtTxnId()).build()).build());
-        }
-    }
-
     private void publishEventsOnReconcileCompletion (TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
         if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
@@ -173,21 +149,20 @@ public class PaymentGatewayManager implements
         }
     }
 
-    private WynkResponseEntity<AbstractChargingStatusResponse> internalStatus (AbstractTransactionStatusRequest request) {
-        final Transaction transaction = TransactionContext.get();
-        final PaymentGateway paymentGateway = transaction.getPaymentChannel();
-        final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService =
-                BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
-                });
-        request.setPlanId(
-                transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
-        return statusService.status(request);
-    }
-
     private void reviseTransactionAndExhaustCoupon (Transaction transaction, TransactionStatus existingStatus,
                                                     AbstractTransactionRevisionRequest abstractTransactionRevisionRequest) {
         transactionManager.revision(abstractTransactionRevisionRequest);
         exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
+    }
+
+    @Override
+    public AbstractPaymentStatusResponse status(AbstractTransactionStatusRequest request) {
+        final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> delegatorStatusService =
+                statusDelegator.get(request.getClass());
+        if (Objects.isNull(delegatorStatusService)){
+            throw new WynkRuntimeException(PaymentErrorType.PAY008);
+        }
+        return delegatorStatusService.status(request);
     }
 
     @Override
@@ -234,5 +209,45 @@ public class PaymentGatewayManager implements
     @Override
     public boolean supportsRenewalReconciliation () {
         return IPaymentRenewal.super.supportsRenewalReconciliation();
+    }
+
+    private class ChargingTransactionStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+
+        @Override
+        @TransactionAware(txnId = "#request.transactionId", lock = false)
+        public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
+            final Transaction transaction = TransactionContext.get();
+            final TransactionStatus txnStatus = transaction.getStatus();
+            return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(txnStatus).transactionType(transaction.getType()).build();
+        }
+    }
+
+    private class ReconciliationTransactionStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+
+        @Override
+        @TransactionAware(txnId = "#request.transactionId")
+        public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
+            final Transaction transaction = TransactionContext.get();
+            final TransactionStatus existingStatus = transaction.getStatus();
+            try {
+                final PaymentGateway paymentGateway = transaction.getPaymentChannel();
+                final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusService =
+                        BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
+                        });
+                return statusService.status(request);
+            } finally {
+                final TransactionStatus finalStatus = transaction.getStatus();
+                AnalyticService.update(PAYMENT_METHOD, transaction.getPaymentChannel().name());
+                AsyncTransactionRevisionRequest.AsyncTransactionRevisionRequestBuilder builder =
+                        AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus);
+                if (transaction.getType() == PaymentEvent.RENEW) {
+                    RenewalChargingTransactionReconciliationStatusRequest renewalChargingTransactionReconciliationStatusRequest = (RenewalChargingTransactionReconciliationStatusRequest) request;
+                    builder.attemptSequence(renewalChargingTransactionReconciliationStatusRequest.getOriginalAttemptSequence())
+                            .transactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
+                }
+                reviseTransactionAndExhaustCoupon(transaction, existingStatus, builder.build());
+                publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
+            }
+        }
     }
 }

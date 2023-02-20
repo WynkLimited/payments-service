@@ -7,5 +7,5 @@ import in.wynk.payment.dto.request.VerificationRequest;
  * @author Nishesh Pandey
  */
 public interface IMerchantVerificationServiceV2<R extends AbstractPaymentInstrumentVerificationResponse, T extends VerificationRequest> {
-     R doVerify(T verificationRequest);
+    R verify (T verificationRequest);
 }

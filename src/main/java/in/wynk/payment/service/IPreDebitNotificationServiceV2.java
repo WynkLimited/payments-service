@@ -6,5 +6,5 @@ import in.wynk.payment.dto.PreDebitNotificationMessage;
  * @author Nishesh Pandey
  */
 public interface IPreDebitNotificationServiceV2 {
-    void sendPreDebitNotification(PreDebitNotificationMessage request);
+    void notify (PreDebitNotificationMessage request);
 }

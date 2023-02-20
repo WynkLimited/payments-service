@@ -44,7 +44,7 @@ public class RevenuePaymentController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
-    private final PaymentGatewayManager paymentGatewayManager;
+    private final PaymentGatewayManager manager;
     private final PaymentStatusPresentation paymentStatusPresentation;
 
     @PostMapping("/charge/{sid}")
@@ -73,7 +73,7 @@ public class RevenuePaymentController {
     public WynkResponseEntity<AbstractChargingStatusResponseV2> statusV2(@PathVariable String sid) {
         LoadClientUtils.loadClient(false);
         Transaction transaction = TransactionContext.get();
-        return paymentStatusPresentation.transform(paymentGatewayManager.status(transaction));
+        return paymentStatusPresentation.transform(manager.status(transaction));
     }
 
     @Deprecated

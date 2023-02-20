@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.aps.request.predebit;
 
 import in.wynk.payment.dto.apb.ApbConstants;
-import in.wynk.payment.dto.apb.paytm.APBPaytmConstants;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import lombok.Builder;
 import lombok.Getter;

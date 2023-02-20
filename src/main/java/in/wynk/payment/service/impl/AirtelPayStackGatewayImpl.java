@@ -90,6 +90,7 @@ import java.util.stream.Collectors;
 import static in.wynk.payment.core.constant.PaymentConstants.WYNK;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 @Slf4j
@@ -162,7 +163,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         this.cachingService = cachingService;
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManager = transactionManager;
-        chargingDelegate.put(PaymentConstants.UPI, new UpiCharging());
+        chargingDelegate.put(UPI, new UpiCharging());
         chargingDelegate.put(PaymentConstants.CARD, new CardCharging());
         chargingDelegate.put(PaymentConstants.NET_BANKING, new NetBankingCharging());
     }
@@ -185,8 +186,8 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     }
 
     @Override
-    public AbstractPaymentInstrumentVerificationResponse doVerify (VerificationRequest request) {
-        return verification.doVerify(request);
+    public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest request) {
+        return verification.verify(request);
     }
 
     @Override
@@ -204,13 +205,13 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         }
 
         @Override
-        public AbstractPaymentInstrumentVerificationResponse doVerify (VerificationRequest request) {
-            return verificationDelegate.get(request.getVerificationType()).doVerify(request);
+        public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest request) {
+            return verificationDelegate.get(request.getVerificationType()).verify(request);
         }
 
         private class BinVerification implements IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> {
             @Override
-            public BinVerificationResponse doVerify (VerificationRequest request) {
+            public BinVerificationResponse verify (VerificationRequest request) {
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
@@ -233,7 +234,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
 
         private class VpaVerification implements IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> {
             @Override
-            public AbstractPaymentInstrumentVerificationResponse doVerify (VerificationRequest request) {
+            public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest request) {
                 String userVpa = request.getVerifyValue();
                 String lob = WYNK;
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
@@ -279,12 +280,12 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public UpiNonSeamlessCharging () {
-                upiDelegate.put(PaymentConstants.COLLECT, new UpiCollectCharging());
+                upiDelegate.put(COLLECT, new UpiCollectCharging());
             }
 
             @Override
             public AbstractCoreUpiChargingResponse charge (AbstractChargingRequestV2 request) {
-                return upiDelegate.get(PaymentConstants.COLLECT).charge(request);
+                return upiDelegate.get(COLLECT).charge(request);
             }
 
             /**
@@ -317,16 +318,19 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
                         paymentInfoBuilder.mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
-                        apsChargingRequestBuilder.signature(generateSignature()).isPennyDropTxn(false);
+                        apsChargingRequestBuilder.signature(generateSignature()).pennyDropTxn(false);
                     }
 
                     final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
                     try {
-                        final ResponseEntity<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>> response = exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {});
+                        final ResponseEntity<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>> response =
+                                exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
+                                });
                         if (Objects.nonNull(response.getBody())) {
                             if (response.getBody().isResult()) {
-                                return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).url(CLIENT_POLLING_SCREEN_URL).build();
+                                return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
+                                        .url(CLIENT_POLLING_SCREEN_URL).build();
                             } else {
                                 throw new WynkRuntimeException(PaymentErrorType.PAY038, response.getBody().getErrorMessage());
                             }
@@ -345,16 +349,16 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public UpiSeamlessCharging () {
-                upiDelegate.put(PaymentConstants.INTENT, new UpiIntentCharging());
-                upiDelegate.put(PaymentConstants.COLLECT_IN_APP, new UpiCollectInAppCharging());
+                upiDelegate.put(INTENT, new UpiIntentCharging());
+                upiDelegate.put(COLLECT_IN_APP, new UpiCollectInAppCharging());
             }
 
             @Override
             public AbstractSeamlessUpiChargingResponse charge (AbstractChargingRequestV2 request) {
                 UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                String flow = PaymentConstants.INTENT;
+                String flow = INTENT;
                 if (!upiPaymentDetails.getUpiDetails().isIntent()) {
-                    flow = PaymentConstants.COLLECT_IN_APP;
+                    flow = COLLECT_IN_APP;
                 }
                 return upiDelegate.get(flow).charge(request);
             }
@@ -398,7 +402,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
 
                         //if mandate created, means transaction type is SUBSCRIBE else PURCHASE
                         return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
-                                .pa(map.get(PA)).pn(map.getOrDefault(PN, WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
+                                .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
                                 .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.WYNK_UPI_MERCHANT_CODE)
                                 .build();
 
@@ -419,8 +423,8 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
         public CardCharging () {
-            upiDelegate.put(PaymentConstants.INTENT, new CardSeamlessCharging());
-            upiDelegate.put(PaymentConstants.COLLECT_IN_APP, new CardNonSeamlessCharging());
+            upiDelegate.put(INTENT, new CardSeamlessCharging());
+            upiDelegate.put(COLLECT_IN_APP, new CardNonSeamlessCharging());
         }
 
         @Override
@@ -432,8 +436,8 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public CardSeamlessCharging () {
-                upiDelegate.put(PaymentConstants.INTENT, new CardOtpLessCharging());
-                upiDelegate.put(PaymentConstants.COLLECT_IN_APP, new CardInAppCharging());
+                upiDelegate.put(INTENT, new CardOtpLessCharging());
+                upiDelegate.put(COLLECT_IN_APP, new CardInAppCharging());
             }
 
             @Override
@@ -462,7 +466,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public CardNonSeamlessCharging () {
-                upiDelegate.put(PaymentConstants.INTENT, new CardHtmlTypeCharging());//APS supports html type
+                upiDelegate.put(INTENT, new CardHtmlTypeCharging());//APS supports html type
             }
 
             @Override

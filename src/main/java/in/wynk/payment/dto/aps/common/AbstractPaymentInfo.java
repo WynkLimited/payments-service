@@ -41,11 +41,11 @@ public abstract class AbstractPaymentInfo {
      */
     private double mandateAmount;
     /**
-     * Mandate start date
+     * Mandate start date in epoch time format
      */
     private String paymentStartDate;
     /**
-     * Mandate end date
+     * Mandate end date in epoch time format
      */
     private String paymentEndDate;
 }

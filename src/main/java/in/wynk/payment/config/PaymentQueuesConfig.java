@@ -69,14 +69,14 @@ public class PaymentQueuesConfig {
     public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue(@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                              ObjectMapper objectMapper,
-                                                                                             PaymentGatewayManager paymentGatewayManager,
+                                                                                             PaymentGatewayManager manager,
                                                                                              PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
         return new PreDebitNotificationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 preDebitNotificationSQSMessageExtractor,
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), paymentGatewayManager);
+                scheduledThreadPoolExecutor(), manager);
     }
 
     @Bean

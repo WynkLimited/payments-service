@@ -13,9 +13,6 @@ public class ApsApiResponseWrapper<T> {
     private T data;
     private String requestId;
     private boolean result;
-   // private String status;
-     private String errorCode;
-     private String errorMessage;
-    //private String responseCode;
-
+    private String errorCode;
+    private String errorMessage;
 }

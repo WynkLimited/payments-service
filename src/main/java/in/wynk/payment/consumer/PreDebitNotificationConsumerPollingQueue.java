@@ -27,7 +27,6 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
 
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
-    //private final ITransactionManagerService transactionManagerService;
     private final PaymentGatewayManager paymentGatewayManager;
     @Value("${payment.pooling.queue.preDebitNotification.enabled}")
     private boolean pollingEnabled;
@@ -36,17 +35,11 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     @Value("${payment.pooling.queue.preDebitNotification.sqs.consumer.delayTimeUnit}")
     private TimeUnit poolingDelayTimeUnit;
 
-    public PreDebitNotificationConsumerPollingQueue(String queueName,
-                                                    AmazonSQS sqs,
-                                                    ObjectMapper objectMapper,
-                                                    ISQSMessageExtractor messagesExtractor,
-                                                    ExecutorService messageHandlerThreadPool,
-                                                    ScheduledExecutorService pollingThreadPool,
-                                                   /* ITransactionManagerService transactionManagerService,*/PaymentGatewayManager paymentGatewayManager) {
+    public PreDebitNotificationConsumerPollingQueue (String queueName, AmazonSQS sqs, ObjectMapper objectMapper, ISQSMessageExtractor messagesExtractor, ExecutorService messageHandlerThreadPool,
+                                                     ScheduledExecutorService pollingThreadPool, PaymentGatewayManager paymentGatewayManager) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
-       // this.transactionManagerService = transactionManagerService;
         this.paymentGatewayManager = paymentGatewayManager;
     }
 
@@ -78,15 +71,6 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     public void consume(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
         paymentGatewayManager.sendPreDebitNotification(message);
-       /*
-        log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
-        Transaction transaction = transactionManagerService.get(message.getTransactionId());
-        BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class)
-                .sendPreDebitNotification(PreDebitNotificationRequest.builder()
-                        .transactionId(message.getTransactionId())
-                        .planId(transaction.getPlanId())
-                        .date(message.getDate())
-                        .build());*/
     }
 
     @Override

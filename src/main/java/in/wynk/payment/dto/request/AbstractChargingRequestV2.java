@@ -21,7 +21,7 @@ import javax.validation.Valid;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class AbstractChargingRequestV2/*<T extends IPurchaseDetails> extends AbstractChargingRequest<T>*/ {
+public abstract class AbstractChargingRequestV2 {
 
     @Valid
     @Analysed

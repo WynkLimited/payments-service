@@ -24,15 +24,6 @@ public class RecurringTransactionUtils {
         this.cachingService=cachingService;
     }
 
-
-   /* public static void getRecurringDuration(){
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, 24);
-        Date today = cal.getTime();
-        cal.add(Calendar.YEAR, 5); // 5 yrs from now
-        Date next5Year = cal.getTime();
-    }*/
-
     public static BillingUtils getBillingUtils(PlanDTO selectedPlan, boolean isFreeTrial) {
         int validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
         int freeTrialValidity = isFreeTrial ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity() : validTillDays;

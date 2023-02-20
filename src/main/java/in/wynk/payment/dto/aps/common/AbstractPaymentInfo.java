@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public abstract class AbstractPaymentInfo {
     /**
-    * Static Value - UPI
+    * Static Value - UPI, DEBIT_CARD etc
     */
     private String paymentMode;
     /**
@@ -28,4 +28,24 @@ public abstract class AbstractPaymentInfo {
      * Amount in Double Format
      */
     private double paymentAmount;
+
+    /**
+     * Product Category for AutoPay
+     */
+
+    private String productCategory;
+
+    /**
+     * Amount in Double Format
+     * Maximum mandate amount for which txn is eligible for autopay.
+     */
+    private double mandateAmount;
+    /**
+     * Mandate start date
+     */
+    private String paymentStartDate;
+    /**
+     * Mandate end date
+     */
+    private String paymentEndDate;
 }

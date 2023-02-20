@@ -8,7 +8,6 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.dto.ApsChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
@@ -16,6 +15,7 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.AbstractChargingResponse;
+import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.presentation.PaymentCallbackPresentation;
 import in.wynk.payment.service.IMerchantVerificationService;
@@ -128,8 +128,8 @@ public class  RevenuePaymentControllerV2 {
         AnalyticService.update(PAYMENT_METHOD, paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);
         final WynkResponseEntity.WynkResponseEntityBuilder<AbstractChargingResponse> builder = WynkResponseEntity.builder();
-        paymentManager.chargeV2(request);
-        //return  builder.data(manager.chargeV2(request)).build();
+        AbstractCoreChargingResponse response = paymentManager.charge(request);
+        //TODO: Presentation Layer
         return null;
     }
 }

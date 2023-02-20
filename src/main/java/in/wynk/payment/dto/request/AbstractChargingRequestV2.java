@@ -3,10 +3,7 @@ package in.wynk.payment.dto.request;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
-import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IPaymentDetails;
-import in.wynk.payment.core.dao.entity.IProductDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.core.dao.entity.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,7 +21,7 @@ import javax.validation.Valid;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class AbstractChargingRequestV2 {
+public abstract class AbstractChargingRequestV2/*<T extends IPurchaseDetails> extends AbstractChargingRequest<T>*/ {
 
     @Valid
     @Analysed

@@ -32,4 +32,13 @@ public class ApsExternalChargingRequest<T extends AbstractPaymentInfo> {
      * Redirection info
      */
     private ChannelInfo channelInfo;
+    /**
+     * Signature is Order checksum for validation
+     */
+    private String signature;
+    /**
+     * Send this flag as false in case of bill payment otherwise false for other/dummy transactions.
+     */
+    @Builder.Default
+    private boolean isPennyDropTxn= false;
 }

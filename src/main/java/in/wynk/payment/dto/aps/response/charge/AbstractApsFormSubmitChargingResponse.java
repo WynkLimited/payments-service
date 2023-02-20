@@ -9,6 +9,6 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 public class AbstractApsFormSubmitChargingResponse extends AbstractApsExternalChargingResponse {
-    @JsonProperty("html")
-    private String form;
+    @JsonProperty("info")
+    private String html;
 }

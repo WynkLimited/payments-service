@@ -110,7 +110,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
                         "//" +
                         "pay" +
                         "?pa=" + intentSpec.getPayeeVpa() +
-                        "&pn=" + Optional.of(intentSpec.getPayeeDisplayName()).orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(PN).orElse(DEFAULT_PN)) +
+                        "&pn=" + Optional.of(intentSpec.getPayeeDisplayName()).orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(UPI_PAYEE_NAME).orElse(DEFAULT_PN)) +
                         "&tr=" + intentSpec.getMerchantOrderID() +
                         "&am=" + intentSpec.getAmountToBePaid() +
                         "&cu=" + intentSpec.getCurrencyCode().orElse("INR") +

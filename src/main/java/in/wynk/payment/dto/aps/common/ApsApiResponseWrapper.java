@@ -10,13 +10,12 @@ import lombok.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ApsApiResponseWrapper<T> {
-
     private T data;
     private String requestId;
     private boolean result;
-    private String status;
-    private String errorCode;
-    private String errorMessage;
-    private String responseCode;
+   // private String status;
+     private String errorCode;
+     private String errorMessage;
+    //private String responseCode;
 
 }

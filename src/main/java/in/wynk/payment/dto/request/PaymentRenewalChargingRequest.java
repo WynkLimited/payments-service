@@ -11,16 +11,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PaymentRenewalChargingRequest {
-
-    private int attemptSequence;
-
-    private Integer planId;
-
     private String id;
     private String uid;
     private String msisdn;
+    private int attemptSequence;
+    private Integer planId;
     private String clientAlias;
-
     private PaymentGateway paymentGateway;
-
 }

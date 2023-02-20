@@ -8,5 +8,6 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 public class ApsUpiCollectChargingResponse extends AbstractApsUpiChargingResponse {
+   private boolean inAppUPIFlow;
 
 }

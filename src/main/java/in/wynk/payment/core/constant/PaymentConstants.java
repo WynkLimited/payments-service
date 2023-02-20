@@ -34,7 +34,7 @@ public interface PaymentConstants extends BaseConstants {
     String MESSAGE = "message";
     String PIPE_SEPARATOR = "|";
     String SOURCE_MODE = "mode";
-    String PN = "UPI_PAYEE_NAME";
+    String UPI_PAYEE_NAME = "UPI_PAYEE_NAME";
     String BANK_CODE = "bankCode";
     String SANDBOX_ENV = "Sandbox";
     String MERCHANT_TOKEN = "token";
@@ -51,6 +51,7 @@ public interface PaymentConstants extends BaseConstants {
     String ADD_TO_BILL = "ADD_TO_BILL";
     String SEAMLESS = "SEAMLESS";
     String COLLECT_IN_APP = "COLLECTINAPP";
+    String COLLECT = "COLLECT";
     String NON_SEAMLESS = "NON_SEAMLESS";
     String DEFAULT_COUNTRY_CODE = "IN";
     String DEBIT_CARD = "DEBIT_CARD";

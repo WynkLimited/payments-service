@@ -66,16 +66,6 @@ public class RevenuePaymentController {
         return paymentManager.status(sessionDTO.<String>get(TRANSACTION_ID));
     }
 
-    //This version is for payment refactoring task
-    @GetMapping("/v2/status/{sid}")
-    @ManageSession(sessionId = "#sid")
-    @AnalyseTransaction(name = "paymentStatus")
-    public WynkResponseEntity<AbstractChargingStatusResponseV2> statusV2(@PathVariable String sid) {
-        LoadClientUtils.loadClient(false);
-        Transaction transaction = TransactionContext.get();
-        return paymentStatusPresentation.transform(manager.status(transaction));
-    }
-
     @Deprecated
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")

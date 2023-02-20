@@ -12,6 +12,7 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RenewalChargingTransactionReconciliationStatusRequest;
+import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -36,6 +37,8 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     private TimeUnit reconciliationPoolingDelayTimeUnit;
     @Autowired
     private PaymentManager paymentManager;
+    @Autowired
+    private PaymentGatewayManager paymentGatewayManager;
 
     public PaymentReconciliationConsumerPollingQueue(String queueName,
                                                      AmazonSQS sqs,
@@ -73,7 +76,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                     .transactionId(message.getTransactionId())
                     .build();
         }
-        paymentManager.status(transactionStatusRequest);
+        paymentGatewayManager.status(transactionStatusRequest);
     }
 
     @Override

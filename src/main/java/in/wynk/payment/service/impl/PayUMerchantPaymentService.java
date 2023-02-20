@@ -66,6 +66,7 @@ import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUCommand.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.*;
 
 @Slf4j
 @Service(PAYU_MERCHANT_PAYMENT_SERVICE)

@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.UPI_MERCHANT_CODE;
 
 /**
  * @author Nishesh Pandey
@@ -59,7 +60,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
     private final Map<String, IPaymentPresentation<? extends AbstractChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
     @PostConstruct
-    public void init() {
+    public void init () {
         delegate.put("UPI", new UpiChargingPresentation());
         delegate.put("CARD", new CardChargingPresentation());
         delegate.put("WALLET", new WalletChargingPresentation());
@@ -67,14 +68,14 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
     }
 
     @Override
-    public WynkResponseEntity<AbstractChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+    public WynkResponseEntity<AbstractChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
         return (WynkResponseEntity<AbstractChargingResponse>) delegate.get(method.getGroup()).transform(payload);
     }
 
     @SneakyThrows
-    private String handleFormSpec(ChargingGatewayResponseWrapper<?> payload) {
-        final IPostFormSpec<?, ?> formSpec = (IPostFormSpec<?,?>) payload.getPgResponse();
+    private String handleFormSpec (ChargingGatewayResponseWrapper<?> payload) {
+        final IPostFormSpec<?, ?> formSpec = (IPostFormSpec<?, ?>) payload.getPgResponse();
         return EncryptionUtils.encrypt(encryptionKey, gson.toJson(formSpec.getForm()));
     }
 
@@ -83,14 +84,14 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         private final Map<String, IPaymentPresentation<? extends AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
-        public UpiChargingPresentation() {
+        public UpiChargingPresentation () {
             delegate.put(SEAMLESS_FLOW, new Seamless());
             delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
         @Override
-        public WynkResponseEntity<AbstractUpiChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+        public WynkResponseEntity<AbstractUpiChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractUpiChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
@@ -99,7 +100,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
             @SneakyThrows
             @Override
-            public WynkResponseEntity<SeamlessUpiChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<SeamlessUpiChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
                 final PlanDTO planToBePurchased = paymentCache.getPlan(payload.getTransaction().getPlanId());
                 final OfferDTO offerToBePurchased = paymentCache.getOffer(planToBePurchased.getLinkedOfferId());
@@ -118,14 +119,15 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
                         "&mc=" + UPI_MERCHANT_CODE +
                         "&tid=" + payload.getTransaction().getIdStr();
                 final String form = EncryptionUtils.encrypt(encryptionKey, gson.toJson(stringBuilder));
-                return WynkResponseEntity.<SeamlessUpiChargingResponse>builder().data(SeamlessUpiChargingResponse.builder().appPackage((String) method.getMeta().get(APP_PACKAGE)).deeplink(form).build()).build();
+                return WynkResponseEntity.<SeamlessUpiChargingResponse>builder()
+                        .data(SeamlessUpiChargingResponse.builder().appPackage((String) method.getMeta().get(APP_PACKAGE)).deeplink(form).build()).build();
             }
         }
 
         private class NonSeamless implements IPaymentPresentation<NonSeamlessUpiChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<NonSeamlessUpiChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<NonSeamlessUpiChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final String encForm = PaymentChargingPresentation.this.handleFormSpec(payload);
                 return WynkResponseEntity.<NonSeamlessUpiChargingResponse>builder().data(NonSeamlessUpiChargingResponse.builder().form(encForm).build()).build();
             }
@@ -135,7 +137,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private class Redirect implements IPaymentPresentation<RedirectUpiChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<RedirectUpiChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<RedirectUpiChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final IRedirectSpec<String> redirectSpec = (IRedirectSpec<String>) payload.getPgResponse();
                 return WynkResponseEntity.<RedirectUpiChargingResponse>builder().data(RedirectUpiChargingResponse.builder().redirectUrl(redirectSpec.getRedirectUrl()).build()).build();
             }
@@ -147,13 +149,13 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         private final Map<String, IPaymentPresentation<? extends AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
-        public NetBankingChargingPresentation() {
+        public NetBankingChargingPresentation () {
             delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
         @Override
-        public WynkResponseEntity<AbstractNetBankingChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+        public WynkResponseEntity<AbstractNetBankingChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractNetBankingChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
@@ -161,7 +163,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         public class NonSeamless implements IPaymentPresentation<NonSeamlessNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<NonSeamlessNetBankingChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<NonSeamlessNetBankingChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final String encForm = PaymentChargingPresentation.this.handleFormSpec(payload);
                 return WynkResponseEntity.<NonSeamlessNetBankingChargingResponse>builder().data(NonSeamlessNetBankingChargingResponse.builder().form(encForm).build()).build();
             }
@@ -170,7 +172,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private class Redirect implements IPaymentPresentation<RedirectNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<RedirectNetBankingChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<RedirectNetBankingChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final IRedirectSpec<String> redirectSpec = (IRedirectSpec<String>) payload.getPgResponse();
                 return WynkResponseEntity.<RedirectNetBankingChargingResponse>builder().data(RedirectNetBankingChargingResponse.builder().redirectUrl(redirectSpec.getRedirectUrl()).build()).build();
             }
@@ -182,14 +184,14 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         private final Map<String, IPaymentPresentation<? extends AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
-        public CardChargingPresentation() {
+        public CardChargingPresentation () {
             delegate.put(SEAMLESS_FLOW, new Seamless());
             delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
         @Override
-        public WynkResponseEntity<AbstractCardChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+        public WynkResponseEntity<AbstractCardChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractCardChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
@@ -197,7 +199,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         public class Seamless implements IPaymentPresentation<SeamlessCardChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<SeamlessCardChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<SeamlessCardChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 throw new WynkRuntimeException("Method is not implemented");
             }
         }
@@ -205,7 +207,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         public class NonSeamless implements IPaymentPresentation<NonSeamlessCardChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<NonSeamlessCardChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<NonSeamlessCardChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final String encForm = PaymentChargingPresentation.this.handleFormSpec(payload);
                 return WynkResponseEntity.<NonSeamlessCardChargingResponse>builder().data(NonSeamlessCardChargingResponse.builder().form(encForm).build()).build();
             }
@@ -214,7 +216,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private class Redirect implements IPaymentPresentation<RedirectCardChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<RedirectCardChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<RedirectCardChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final IRedirectSpec<String> redirectSpec = (IRedirectSpec<String>) payload.getPgResponse();
                 return WynkResponseEntity.<RedirectCardChargingResponse>builder().data(RedirectCardChargingResponse.builder().redirectUrl(redirectSpec.getRedirectUrl()).build()).build();
             }
@@ -226,14 +228,14 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
         private final Map<String, IPaymentPresentation<? extends AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
-        public WalletChargingPresentation() {
+        public WalletChargingPresentation () {
             delegate.put(SEAMLESS_FLOW, new Seamless());
             delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
         @Override
-        public WynkResponseEntity<AbstractWalletChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+        public WynkResponseEntity<AbstractWalletChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
             return (WynkResponseEntity<AbstractWalletChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
         }
@@ -241,7 +243,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         public class Seamless implements IPaymentPresentation<SeamlessWalletChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<SeamlessWalletChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<SeamlessWalletChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 throw new WynkRuntimeException("Method is not implemented");
             }
         }
@@ -249,7 +251,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         public class NonSeamless implements IPaymentPresentation<NonSeamlessWalletChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<NonSeamlessWalletChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<NonSeamlessWalletChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final String encForm = PaymentChargingPresentation.this.handleFormSpec(payload);
                 return WynkResponseEntity.<NonSeamlessWalletChargingResponse>builder().data(NonSeamlessWalletChargingResponse.builder().form(encForm).build()).build();
             }
@@ -258,7 +260,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private class Redirect implements IPaymentPresentation<RedirectWalletChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
             @Override
-            public WynkResponseEntity<RedirectWalletChargingResponse> transform(ChargingGatewayResponseWrapper<?> payload) {
+            public WynkResponseEntity<RedirectWalletChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
                 final IRedirectSpec<String> redirectSpec = (IRedirectSpec<String>) payload.getPgResponse();
                 return WynkResponseEntity.<RedirectWalletChargingResponse>builder().data(RedirectWalletChargingResponse.builder().redirectUrl(redirectSpec.getRedirectUrl()).build()).build();
             }

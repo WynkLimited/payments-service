@@ -5,12 +5,7 @@ import in.wynk.common.constant.BaseConstants;
 public interface PaymentConstants extends BaseConstants {
 
     String SKU_ID = "skuId";
-
     String SAVED = "SAVED";
-
-    String INTENT = "INTENT";
-
-    String UPI = "UPI";
     String CARD = "CARD";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
@@ -34,7 +29,7 @@ public interface PaymentConstants extends BaseConstants {
     String MESSAGE = "message";
     String PIPE_SEPARATOR = "|";
     String SOURCE_MODE = "mode";
-    String PN = "UPI_PAYEE_NAME";
+    String UPI_PAYEE_NAME = "UPI_PAYEE_NAME";
     String BANK_CODE = "bankCode";
     String SANDBOX_ENV = "Sandbox";
     String MERCHANT_TOKEN = "token";
@@ -42,7 +37,6 @@ public interface PaymentConstants extends BaseConstants {
     String UPI_PREFIX = "upi_prefix";
     String AMAZON_IAP = "AMAZON_IAP";
     String GOOGLE_IAP ="GOOGLE_IAP";
-    String UPI_MERCHANT_CODE = "5815";
     String SUBTITLE_TEXT = "subtitle";
     String BUTTON_TEXT = "buttonText";
     String MERCHANT_SECRET = "secret";
@@ -50,7 +44,6 @@ public interface PaymentConstants extends BaseConstants {
     String DEFAULT_PN = "Wynk Limited";
     String ADD_TO_BILL = "ADD_TO_BILL";
     String SEAMLESS = "SEAMLESS";
-    String COLLECT_IN_APP = "COLLECTINAPP";
     String NON_SEAMLESS = "NON_SEAMLESS";
     String DEFAULT_COUNTRY_CODE = "IN";
     String DEBIT_CARD = "DEBIT_CARD";
@@ -98,4 +91,5 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
+    String WYNK_LIMITED= "Wynk Limited";
 }

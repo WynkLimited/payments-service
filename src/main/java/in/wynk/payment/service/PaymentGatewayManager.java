@@ -25,6 +25,7 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
+import in.wynk.payment.dto.gateway.verify.AbstractPaymentInstrumentVerificationResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
@@ -45,8 +46,7 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentConstants.VERSION_2;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Slf4j
 @Service
@@ -54,7 +54,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.VERSION_2;
 public class PaymentGatewayManager implements
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
-        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPreDebitNotificationServiceV2,
+        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPreDebitNotificationServiceV2, IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest>,
         IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
     private final ICouponManager couponManager;
@@ -78,7 +78,7 @@ public class PaymentGatewayManager implements
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
-                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(VERSION_2),
+                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
                         new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
                         });
         try {
@@ -101,6 +101,21 @@ public class PaymentGatewayManager implements
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
+
+    @Override
+    public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest verificationRequest) {
+        log.info("executing verify method for verifyValue {} ", verificationRequest.getVerifyValue());
+        IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> verificationService = BeanLocatorFactory.getBean(verificationRequest.getPaymentCode().getCode().concat(VERIFY),
+                new ParameterizedTypeReference<IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest>>() {
+                });
+        try {
+           return verificationService.verify(verificationRequest);
+        }catch (Exception e) {
+            log.error(PaymentLoggingMarker.VERIFICATION_FAILURE, e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY040);
+        }
+    }
+
 
     private void exhaustCouponIfApplicable (TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {

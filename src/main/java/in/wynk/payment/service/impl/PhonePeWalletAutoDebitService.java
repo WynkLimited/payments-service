@@ -14,6 +14,7 @@ import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.SavedDetailsKey;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -479,7 +480,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             String xVerifyHeader = DigestUtils.sha256Hex(apiPath + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
-            headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+            headers.add(PaymentConstants.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
             merchantTransactionEventBuilder.request(entity);
             ResponseEntity<PhonePeResponse<PhonePeTransactionResponseWrapper>> responseEntity = restTemplate.exchange(phonePeBaseUrl + apiPath, HttpMethod.GET, entity, new ParameterizedTypeReference<PhonePeResponse<PhonePeTransactionResponseWrapper>>() {
@@ -589,7 +590,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         HttpHeaders headers = new HttpHeaders();
         headers.add(X_DEVICE_ID, deviceId);
         headers.add(X_VERIFY, xVerifyHeader);
-        headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.add(PaymentConstants.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         return new HttpEntity<>(requestMap, headers);
     }
 

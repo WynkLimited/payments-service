@@ -22,23 +22,23 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.ClientCallbackEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.PurchaseInitEvent;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
-import in.wynk.payment.dto.gateway.charge.AbstractChargingGatewayResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
-import in.wynk.payment.dto.manager.ChargingGatewayResponseWrapper;
 import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.IPaymentCharging;
 import in.wynk.payment.gateway.IPaymentRenewal;
-import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -59,7 +59,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 public class PaymentGatewayManager implements
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
-        IPaymentCharging<ChargingGatewayResponseWrapper<? extends AbstractChargingGatewayResponse>, AbstractChargingRequest<?>>,
+        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPreDebitNotificationServiceV2,
         IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
 
@@ -73,48 +73,38 @@ public class PaymentGatewayManager implements
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
 
     @PostConstruct
-    public void init(){
+    public void init () {
         this.statusDelegator.put(ChargingTransactionStatusRequest.class, new ChargingTransactionStatusService());
         this.statusDelegator.put(AbstractTransactionReconciliationStatusRequest.class, new ReconciliationTransactionStatusService());
     }
 
     @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
-    public AbstractCoreChargingResponse chargeV2 (AbstractChargingRequestV2 request) {
+    public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
         final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
-        final IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
-                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(VERSION_2),
-                        new ParameterizedTypeReference<IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
-                        });
-
-      // final AbstractCoreChargingResponse response = chargingService.chargev2(request);
-
-        return null;
-    }
-
-    @Override
-    @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
-    public ChargingGatewayResponseWrapper<AbstractChargingGatewayResponse> charge(AbstractChargingRequest<?> request) {
-        final PaymentGateway pg = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
-        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()), request.getPurchaseDetails());
         final TransactionStatus existingStatus = transaction.getStatus();
-        final IPaymentCharging<AbstractChargingGatewayResponse, AbstractChargingRequest<?>> chargingService = BeanLocatorFactory.getBean(pg.getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentCharging<AbstractChargingGatewayResponse, AbstractChargingRequest<?>>>() {
-        });
+        final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
+                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(VERSION_2),
+                        new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
+                        });
         try {
-            final AbstractChargingGatewayResponse response = chargingService.charge(request);
-            if (pg.isPreDebit()) {
+            AbstractCoreChargingResponse response = chargingService.charge(request);
+            if (paymentGateway.isPreDebit()) {
                 final TransactionStatus finalStatus = TransactionContext.get().getStatus();
                 transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
                 exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             }
-            return ChargingGatewayResponseWrapper.builder().pgResponse(response).transaction(transaction).purchaseDetails(request.getPurchaseDetails()).build();
+            return response;
         } catch (Exception ex) {
             this.handleGatewayFailure(ex);
             throw ex;
         } finally {
-            /** TODO:: Uncomment to make it part of of subsequent release for dropout notification
-             eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction.getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder.getId())).build());**/
-            sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
+            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+            .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(
+                            Optional.ofNullable(SessionContextHolder.getId())).build());
+            sqsManagerService.publishSQSMessage(
+                    PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                            .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
 
@@ -158,10 +148,10 @@ public class PaymentGatewayManager implements
     }
 
     @Override
-    public AbstractPaymentStatusResponse status(AbstractTransactionStatusRequest request) {
+    public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
         final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> delegatorStatusService =
                 statusDelegator.get(request.getClass());
-        if (Objects.isNull(delegatorStatusService)){
+        if (Objects.isNull(delegatorStatusService)) {
             throw new WynkRuntimeException(PaymentErrorType.PAY008);
         }
         return delegatorStatusService.status(request);
@@ -188,12 +178,13 @@ public class PaymentGatewayManager implements
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback(CallbackRequestWrapper<?> request) {
+    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
         final PaymentGateway pg = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
-        final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService = BeanLocatorFactory.getBean(pg.getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
-        });
+        final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
+                BeanLocatorFactory.getBean(pg.getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
+                });
         try {
             final AbstractPaymentCallbackResponse response = callbackService.handleCallback(request.getBody());
             return CallbackResponseWrapper.builder().callbackResponse(response).transaction(transaction).build();
@@ -204,25 +195,33 @@ public class PaymentGatewayManager implements
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails()).callbackRequest(request.getBody()).build()).build());
+            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
+            // .callbackRequest(request.getBody()).build()).build());
         }
     }
 
     @Override
     public void doRenewal (PaymentRenewalChargingRequest request) {
-        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias()).build());
+        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
+                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                        .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
-        final IPaymentRenewal<PaymentRenewalChargingRequest> renewalService = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentRenewal<PaymentRenewalChargingRequest>>() {
-        });
+        final IPaymentRenewal<PaymentRenewalChargingRequest> renewalService =
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentRenewal<PaymentRenewalChargingRequest>>() {
+                });
         try {
             renewalService.doRenewal(request);
         } finally {
             if (renewalService.supportsRenewalReconciliation()) {
-                sqsManagerService.publishSQSMessage(PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
+                sqsManagerService.publishSQSMessage(
+                        PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                                .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
+                                .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
             final TransactionStatus finalStatus = transaction.getStatus();
-            transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
+            transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
+                    .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
         }
 
     }
@@ -230,6 +229,14 @@ public class PaymentGatewayManager implements
     @Override
     public boolean supportsRenewalReconciliation () {
         return IPaymentRenewal.super.supportsRenewalReconciliation();
+    }
+
+    @Override
+    public void notify (PreDebitNotificationMessage message) {
+        log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
+        Transaction transaction = transactionManager.get(message.getTransactionId());
+        BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationServiceV2.class)
+                .notify(message);
     }
 
     private class ChargingTransactionStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {

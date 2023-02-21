@@ -9,4 +9,6 @@ import lombok.ToString;
 @NoArgsConstructor
 public class ApsCardChargingResponse extends AbstractApsFormSubmitChargingResponse {
     private boolean directOtpApplicable;
+    private String successUrl;
+    private String errorUrl;
 }

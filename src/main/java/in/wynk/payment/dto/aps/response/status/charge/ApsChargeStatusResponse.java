@@ -3,10 +3,12 @@ package in.wynk.payment.dto.aps.response.status.charge;
 import in.wynk.payment.dto.aps.common.RefundInfo;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
 @Getter
+@SuperBuilder
 @ToString
 public class ApsChargeStatusResponse {
     private String pgId;

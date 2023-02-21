@@ -15,4 +15,6 @@ public class CardInfo {
     private String issuedBy;
     @Analysed
     private String bankCode;
+    @Analysed
+    private String cvv;
 }

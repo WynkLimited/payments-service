@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.gateway.charge.upi;
 
-import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.dto.gateway.IUpiIntentSpec;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +21,7 @@ public class SeamlessUpiChargingGatewayResponse extends AbstractUpiChargingGatew
     private String payeeDisplayName;
     private String transactionNote;
     @Builder.Default
-    private String merchantCategoryCode = PaymentConstants.UPI_MERCHANT_CODE;
+    private String merchantCategoryCode = UpiConstants.UPI_MERCHANT_CODE;
 
     public Optional<String> getCurrencyCode() {
         return Optional.ofNullable(currencyCode);

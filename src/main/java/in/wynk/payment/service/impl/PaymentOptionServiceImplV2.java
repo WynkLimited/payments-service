@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
@@ -155,7 +156,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         List<Object> alertDetails = new ArrayList<>();
         alertDetails.add(Objects.nonNull(paymentMethod.getMeta().get("alert")) ? (String) paymentMethod.getMeta().get("alert") : null);
         switch (group) {
-            case PaymentConstants.UPI:
+            case UpiConstants.UPI:
                 if (Objects.isNull(paymentMethodDTO.getUpi())) {
                     paymentMethodDTO.setUpi(new ArrayList<>());
                 }

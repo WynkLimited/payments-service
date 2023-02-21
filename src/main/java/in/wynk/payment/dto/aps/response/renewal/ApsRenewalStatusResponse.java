@@ -1,0 +1,17 @@
+package in.wynk.payment.dto.aps.response.renewal;
+
+import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+
+/**
+ * @author Nishesh Pandey
+ */
+@Getter
+@SuperBuilder
+@ToString
+public class ApsRenewalStatusResponse  extends ApsChargeStatusResponse {
+    private String pgSystemId;
+}

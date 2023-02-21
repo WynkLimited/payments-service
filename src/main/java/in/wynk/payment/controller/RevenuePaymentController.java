@@ -44,7 +44,7 @@ public class RevenuePaymentController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
-    private final PaymentGatewayManager paymentGatewayManager;
+    private final PaymentGatewayManager manager;
     private final PaymentStatusPresentation paymentStatusPresentation;
 
     @PostMapping("/charge/{sid}")

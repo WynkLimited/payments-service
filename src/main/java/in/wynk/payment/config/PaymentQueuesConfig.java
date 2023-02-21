@@ -4,10 +4,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentManager;
+import in.wynk.payment.service.*;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -72,14 +69,14 @@ public class PaymentQueuesConfig {
     public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue(@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                              ObjectMapper objectMapper,
-                                                                                             ITransactionManagerService transactionManagerService,
+                                                                                             PaymentGatewayManager manager,
                                                                                              PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
         return new PreDebitNotificationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 preDebitNotificationSQSMessageExtractor,
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), transactionManagerService);
+                scheduledThreadPoolExecutor(), manager);
     }
 
     @Bean

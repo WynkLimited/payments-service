@@ -11,4 +11,5 @@ public class CardDetails {
     private String expiryMonth;
     private String expiryYear;
     private String nameOnCard;
+    private String cardToken;
 }

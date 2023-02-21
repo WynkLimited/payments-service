@@ -10,9 +10,7 @@ import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentDetails;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.request.charge.netbanking.NetBankingPaymentDetails;
@@ -23,6 +21,8 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
+import static in.wynk.payment.core.constant.UpiConstants.UPI;
+
 import javax.validation.constraints.NotNull;
 
 @Getter
@@ -30,7 +30,7 @@ import javax.validation.constraints.NotNull;
 @AnalysedEntity
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = UpiPaymentDetails.class, name =  PaymentConstants.UPI),
+        @JsonSubTypes.Type(value = UpiPaymentDetails.class, name =  UPI),
         @JsonSubTypes.Type(value = CardPaymentDetails.class, name = PaymentConstants.CARD),
         @JsonSubTypes.Type(value = WalletPaymentDetails.class, name = PaymentConstants.WALLET),
         @JsonSubTypes.Type(value = NetBankingPaymentDetails.class, name =  PaymentConstants.NET_BANKING)

@@ -72,6 +72,8 @@ public interface PaymentConstants extends BaseConstants {
     String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
     String AIRTEL_PAY_STACK = "aps";
+    String AIRTEL_PAY_STACK_CHARGE = "aps_charge";
+    String AIRTEL_PAY_STACK_VERIFY = "aps_verify";
     String APS = "APS";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
@@ -92,4 +94,10 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
     String WYNK_LIMITED= "Wynk Limited";
+    String CHARGE="_charge";
+    String VERIFY="_verify";
+    String CHANNEL_ID="channel-id";
+    String AUTH_TYPE_WEB_UNAUTH="WEB_UNAUTH";
+    String CONTENT_TYPE ="Content-Type";
+    String APPLICATION_JSON= "application/json";
 }

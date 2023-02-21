@@ -1,6 +1,10 @@
 package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.core.constant.ClientErrorType;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -10,6 +14,7 @@ import in.wynk.exception.IWynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
@@ -23,9 +28,9 @@ import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
+import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
-import in.wynk.payment.dto.gateway.verify.AbstractPaymentInstrumentVerificationResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
@@ -54,8 +59,8 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 public class PaymentGatewayManager implements
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
-        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPreDebitNotificationServiceV2, IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest>,
-        IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPreDebitNotificationServiceV2,
+        IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
 
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
@@ -102,7 +107,7 @@ public class PaymentGatewayManager implements
         }
     }
 
-    @Override
+    /*@Override
     public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest verificationRequest) {
         log.info("executing verify method for verifyValue {} ", verificationRequest.getVerifyValue());
         IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> verificationService = BeanLocatorFactory.getBean(verificationRequest.getPaymentCode().getCode().concat(VERIFY),
@@ -114,6 +119,25 @@ public class PaymentGatewayManager implements
             log.error(PaymentLoggingMarker.VERIFICATION_FAILURE, e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY040);
         }
+    }*/
+
+    @Override
+    public AbstractVerificationResponse verify(VerificationRequestV2 request) {
+        String paymentCode;
+        Client client = ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT002));
+        Optional<Boolean> verifyPGOptional = client.getMeta(BaseConstants.DEFAULT_VERIFY_PAYMENT_GATEWAY);
+        if (verifyPGOptional.isPresent() && verifyPGOptional.get()) {
+            Optional<String> verifyPaymentCode = client.getMeta(BaseConstants.DEFAULT_VERIFY_PAYMENT_GATEWAY);
+            paymentCode = verifyPaymentCode.get();
+        } else {
+            log.warn(PaymentLoggingMarker.PAYMENT_VERIFY_USER_PAYMENT_FAILURE, "default verify gateway is not registered in client : {}", client.getAlias());
+            paymentCode = BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE + VERSION_2;
+        }
+        AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
+        final IVerificationService<AbstractVerificationResponse, VerificationRequestV2> verifyService =
+                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequestV2>>() {
+                });
+        return verifyService.verify(request);
     }
 
 
@@ -250,7 +274,7 @@ public class PaymentGatewayManager implements
             try {
                 final PaymentGateway paymentGateway = transaction.getPaymentChannel();
                 final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusService =
-                        BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
+                        BeanLocatorFactory.getBean(paymentGateway.getCode() + VERSION_2, new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
                         });
                 return statusService.status(request);
             } finally {

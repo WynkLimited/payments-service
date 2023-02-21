@@ -2,29 +2,30 @@ package in.wynk.payment.gateway.payu.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.dto.gateway.verify.AbstractPaymentInstrumentVerificationResponse;
+import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.PayUBinWrapper;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUCommand;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.VerificationRequestV2;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.gateway.IPaymentInstrumentValidator;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
+import in.wynk.payment.service.IVerificationService;
 import org.springframework.util.MultiValueMap;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 
 
 
-public class PayUVerificationGateway implements IPaymentInstrumentValidator<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> {
+public class PayUVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
 
     private final PayUCommonGateway common;
-    private final Map<String, IPaymentInstrumentValidator<? extends AbstractPaymentInstrumentVerificationResponse, VerificationRequest>> delegate = new HashMap<>();
+    private final Map<String, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequestV2>> delegate = new HashMap<>();
 
     public PayUVerificationGateway(PayUCommonGateway common) {
         this.common = common;
@@ -33,14 +34,14 @@ public class PayUVerificationGateway implements IPaymentInstrumentValidator<Abst
     }
 
     @Override
-    public AbstractPaymentInstrumentVerificationResponse verify(VerificationRequest request) {
+    public AbstractVerificationResponse verify(VerificationRequestV2 request) {
         return delegate.get(request.getVerificationType().getType().toLowerCase()).verify(request);
     }
 
-    private class CARD implements IPaymentInstrumentValidator<BinVerificationResponse, VerificationRequest> {
+    private class CARD implements IPaymentInstrumentValidator<BinVerificationResponse, VerificationRequestV2> {
 
         @Override
-        public BinVerificationResponse verify(VerificationRequest request) {
+        public BinVerificationResponse verify(VerificationRequestV2 request) {
             MultiValueMap<String, String> verifyBinRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{request.getVerifyValue(), null, null, "1"});
             PayUCardInfo cardInfo;
             try {
@@ -54,18 +55,18 @@ public class PayUVerificationGateway implements IPaymentInstrumentValidator<Abst
                 cardInfo.setCardType(UNKNOWN.toUpperCase());
                 cardInfo.setCardCategory(UNKNOWN.toUpperCase());
             }
-            return BinVerificationResponse.builder().isValid(cardInfo.isValid()).isDomestic(cardInfo.getIsDomestic().equalsIgnoreCase("Y")).isAutoRenewSupported(cardInfo.isAutoRenewSupported()).issuingBank(cardInfo.getIssuingBank()).cardType(cardInfo.getCardType()).cardCategory(cardInfo.getCardCategory()).build();
+            return BinVerificationResponse.builder().valid(cardInfo.isValid()).isDomestic(cardInfo.getIsDomestic().equalsIgnoreCase("Y")).autoRenewSupported(cardInfo.isAutoRenewSupported()).issuingBank(cardInfo.getIssuingBank()).cardType(cardInfo.getCardType()).cardCategory(cardInfo.getCardCategory()).build();
         }
     }
 
-    private class VPA implements IPaymentInstrumentValidator<VpaVerificationResponse, VerificationRequest> {
+    private class VPA implements IPaymentInstrumentValidator<VpaVerificationResponse, VerificationRequestV2> {
 
         @Override
-        public VpaVerificationResponse verify(VerificationRequest request) {
+        public VpaVerificationResponse verify (VerificationRequestV2 request) {
             final MultiValueMap<String, String> verifyVpaRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue());
             final PayUVpaVerificationResponse response = common.exchange(common.INFO_API, verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
             });
-            return VpaVerificationResponse.builder().vpa(response.getVpa()).payeeAccountName(response.getPayerAccountName()).isValid(response.getIsVPAValid() == 1).build();
+            return VpaVerificationResponse.builder().vpa(response.getVpa()).payerAccountName(response.getPayerAccountName()).valid(response.getIsVPAValid() == 1).build();
         }
     }
 

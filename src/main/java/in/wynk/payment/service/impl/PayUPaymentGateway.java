@@ -16,8 +16,9 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
-import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
+import in.wynk.payment.dto.common.response.*;
+import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
+import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.payu.external.charge.upi.intent.PayUUpiIntentExternalChargingResponse;
 import in.wynk.payment.dto.payu.internal.charge.PayUGatewayChargingResponse;
@@ -35,10 +36,10 @@ import in.wynk.payment.dto.payu.internal.charge.wallet.PayUWalletGatewayNonSeaml
 import in.wynk.payment.dto.payu.internal.charge.wallet.PayUWalletGatewaySeamlessChargingResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
-import in.wynk.payment.service.IPaymentChargingService;
-import in.wynk.payment.service.IPaymentStatusService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
+import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -80,6 +81,7 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
     private final ICacheService<PaymentMethod, String> paymentMethodCachingService;
     private final Map<String, IPaymentChargingService<? extends PayUGatewayChargingResponse, PayUChargingRequest<?>>> chargeDelegate = new HashMap<>();
     private final Map<Class<? extends AbstractTransactionReconciliationStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegate = new HashMap<>();
+    private final Map<VerificationType, IMerchantVerificationService> verificationDelegate = new HashMap<>();
 
     @Value("${payment.merchant.payu.api.info}")
     private String payUInfoApiUrl;
@@ -328,7 +330,56 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
                 throw new WynkRuntimeException(PaymentErrorType.PAY003);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
+        }
+    }
 
+    private class VerificationWrapper implements IVerificationService {
+
+        private final Map<VerificationType, IVerificationService> verificationHolder = new HashMap<>();
+
+        public VerificationWrapper() {
+            verificationHolder.put(VerificationType.VPA, new PayUVpaVerification());
+            verificationHolder.put(VerificationType.BIN, new PayUBinVerification());
+        }
+
+        @Override
+        public AbstractVerificationResponse verify(VerificationRequestV2 request) {
+            return verificationHolder.get(request.getVerificationType()).verify(request);
+        }
+
+        private class PayUBinVerification implements IVerificationService {
+            @Override
+            public BinVerificationResponse verify(VerificationRequestV2 request) {
+                MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(request.getClient(), PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{request.getVerifyValue(), null, null, "1"});
+                PayUCardInfo cardInfo;
+                try {
+                    PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(verifyBinRequest, new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
+                    });
+                    cardInfo = payUBinWrapper.getBin();
+                } catch (WynkRuntimeException e) {
+                    cardInfo = new PayUCardInfo();
+                    cardInfo.setValid(Boolean.FALSE);
+                    cardInfo.setIssuingBank(UNKNOWN.toUpperCase());
+                    cardInfo.setCardType(UNKNOWN.toUpperCase());
+                    cardInfo.setCardCategory(UNKNOWN.toUpperCase());
+                }
+                return BinVerificationResponse.from(cardInfo);
+            }
+        }
+
+        private class PayUVpaVerification implements IVerificationService {
+            @SneakyThrows
+            @Override
+            public VpaVerificationResponse verify(VerificationRequestV2 request) {
+
+                MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{
+                    put("validateAutoPayVPA", "1");
+                }}));
+                PayUVpaVerificationResponse verificationResponse = getInfoFromPayU(verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
+                });
+                if (verificationResponse.getIsVPAValid() == 1) verificationResponse.setValid(true);
+                return VpaVerificationResponse.from(verificationResponse);
+            }
         }
     }
 

@@ -1,21 +1,35 @@
 package in.wynk.payment.dto.gateway.verify;
 
-import in.wynk.payment.dto.gateway.ICardValidationSpec;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
+import in.wynk.payment.dto.payu.PayUCardInfo;
+import in.wynk.payment.dto.payu.VerificationType;
 import lombok.Getter;
-import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Optional;
-
-@Getter
-@ToString
 @SuperBuilder
-public class BinVerificationResponse extends AbstractPaymentInstrumentVerificationResponse implements ICardValidationSpec {
-
+@Getter
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class BinVerificationResponse extends AbstractVerificationResponse {
     private String cardType;
-    private String cardNetwork; //Visa, master etc
     private boolean isDomestic;
     private String issuingBank;
-    private String cardCategory; //Credit or Debit
-    private boolean zeroRedirect;
+    private String cardCategory;
+    private String siSupport;
+    private String zeroRedirectSupport;
+    private boolean isATMPINCard;
+    private boolean authorizedByBank;
+
+    public static BinVerificationResponse from(PayUCardInfo binVerificationResponse){
+        return BinVerificationResponse.builder()
+                .valid(binVerificationResponse.isValid())
+                .verificationType(VerificationType.BIN)
+                .cardType(binVerificationResponse.getCardType())
+                .isDomestic(binVerificationResponse.getIsDomestic().equals("1"))
+                .issuingBank(binVerificationResponse.getIssuingBank())
+                .cardCategory(binVerificationResponse.getCardCategory())
+                .siSupport(binVerificationResponse.getSiSupport())
+                .autoRenewSupported(binVerificationResponse.isAutoRenewSupported())
+                .build();
+    }
 }

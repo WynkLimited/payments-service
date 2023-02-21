@@ -2,23 +2,21 @@ package in.wynk.payment.gateway.aps.verify;
 
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
-import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.aps.request.verify.aps.ApsBinVerificationRequest;
 import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
 import in.wynk.payment.dto.aps.response.verify.ApsVpaVerificationData;
 import in.wynk.payment.dto.aps.verify.ApsCardVerificationResponseWrapper;
 import in.wynk.payment.dto.aps.verify.ApsVpaVerificationResponseWrapper;
-import in.wynk.payment.dto.gateway.verify.AbstractPaymentInstrumentVerificationResponse;
+import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
-import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.service.IMerchantVerificationServiceV2;
+import in.wynk.payment.dto.request.VerificationRequestV2;
+import in.wynk.payment.service.IVerificationService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +48,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFIC
  */
 @Slf4j
 @Service(PaymentConstants.AIRTEL_PAY_STACK_VERIFY)
-public class ApsVerificationGateway implements IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> {
+public class ApsVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
 
     @Value("${aps.payment.verify.vpa.api}")
     private String VPA_VERIFY_ENDPOINT;
@@ -81,12 +79,12 @@ public class ApsVerificationGateway implements IMerchantVerificationServiceV2<Ab
 
 
     @Override
-    public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest request) {
+    public AbstractVerificationResponse verify (VerificationRequestV2 request) {
         return verification.verify(request);
     }
 
-    private class PaymentMethodEligibilityVerification implements IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> {
-        private final Map<VerificationType, IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest>> verificationDelegate = new HashMap<>();
+    private class PaymentMethodEligibilityVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
+        private final Map<VerificationType, IVerificationService<AbstractVerificationResponse, VerificationRequestV2>> verificationDelegate = new HashMap<>();
 
         public PaymentMethodEligibilityVerification () {
             verificationDelegate.put(VerificationType.VPA, new VpaVerification());
@@ -94,13 +92,13 @@ public class ApsVerificationGateway implements IMerchantVerificationServiceV2<Ab
         }
 
         @Override
-        public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest request) {
+        public AbstractVerificationResponse verify (VerificationRequestV2 request) {
             return verificationDelegate.get(request.getVerificationType()).verify(request);
         }
 
-        private class BinVerification implements IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> {
+        private class BinVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
             @Override
-            public BinVerificationResponse verify (VerificationRequest request) {
+            public BinVerificationResponse verify (VerificationRequestV2 request) {
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
@@ -111,7 +109,7 @@ public class ApsVerificationGateway implements IMerchantVerificationServiceV2<Ab
                     if (Objects.nonNull(wrapper) && wrapper.isResult()) {
                         final ApsBinVerificationResponseData body = wrapper.getData();
                         return BinVerificationResponse.builder().cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode())
-                                .isAutoRenewSupported(body.isAutoPayEnable()).isDomestic(body.isDomestic()).build();
+                                .autoRenewSupported(body.isAutoPayEnable()).build();
                     }
                 } catch (Exception e) {
                     log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to ", e);
@@ -121,9 +119,9 @@ public class ApsVerificationGateway implements IMerchantVerificationServiceV2<Ab
             }
         }
 
-        private class VpaVerification implements IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> {
+        private class VpaVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
             @Override
-            public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest request) {
+            public AbstractVerificationResponse verify (VerificationRequestV2 request) {
                 String userVpa = request.getVerifyValue();
                 String lob = WYNK;
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
@@ -135,11 +133,9 @@ public class ApsVerificationGateway implements IMerchantVerificationServiceV2<Ab
 
                     if (Objects.nonNull(response) && response.isResult()) {
                         ApsVpaVerificationData body = response.getData();
-                        return VpaVerificationResponse.builder().verifyValue(request.getVerifyValue()).verificationType(VerificationType.VPA).isAutoRenewSupported(response.isAutoPayHandleValid())
-                                .vpa(response.getVpa()).payeeAccountName(response.getPayeeAccountName())
-                                .isValid(response.isVpaValid())
-                                .transactionStatus(ApbConstants.APS_VERIFY_TRANSACTION_SUCCESS.equals(body.getStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE)
-                                .errorMessage(response.getErrorMessage())
+                        return VpaVerificationResponse.builder().verifyValue(request.getVerifyValue()).verificationType(VerificationType.VPA).autoRenewSupported(response.isAutoPayHandleValid())
+                                .vpa(response.getVpa()).payerAccountName(response.getPayeeAccountName())
+                                .valid(response.isVpaValid())
                                 .build();
                     }
                 } catch (Exception e) {
@@ -150,6 +146,4 @@ public class ApsVerificationGateway implements IMerchantVerificationServiceV2<Ab
             }
         }
     }
-
-
 }

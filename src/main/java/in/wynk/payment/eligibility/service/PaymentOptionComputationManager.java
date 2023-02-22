@@ -43,7 +43,7 @@ public class PaymentOptionComputationManager<R extends PaymentOptionsComputation
 
     @Override
     protected void onEligibilityResult(final EligibilityResult<PaymentMethod> result) {
-        log.info(PaymentLoggingMarker.PAYMENT_ELIGIBILITY_INFO, "payment method id: {} with eligibility rule: {} has been processed with eligibility status: {} and reason: {}", result.getEntity().getId(), result.getEntity().getRuleExpression(), result.getStatus(), result.getReason());
+        log.debug(PaymentLoggingMarker.PAYMENT_ELIGIBILITY_INFO, "payment method id: {} with eligibility rule: {} has been processed with eligibility status: {} and reason: {}", result.getEntity().getId(), result.getEntity().getRuleExpression(), result.getStatus(), result.getReason());
     }
 
 }

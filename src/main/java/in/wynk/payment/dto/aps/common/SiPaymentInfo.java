@@ -19,5 +19,5 @@ public class SiPaymentInfo extends AbstractPaymentInfo {
     @Builder.Default
     private String lob = BaseConstants.WYNK;
     @Builder.Default
-    private String paymentGateway = PaymentConstants.PAYU;
+    private String paymentGateway = PaymentConstants.PAYU;//APS has contract with PayU only for AutoPay
 }

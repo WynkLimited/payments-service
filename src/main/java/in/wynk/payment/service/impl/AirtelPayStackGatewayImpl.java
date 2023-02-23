@@ -24,7 +24,6 @@ import in.wynk.payment.dto.aps.common.ApsApiResponseWrapper;
 import in.wynk.payment.dto.aps.request.refund.ApsExternalPaymentRefundRequest;
 import in.wynk.payment.dto.aps.request.sattlement.ApsSettlementRequest;
 import in.wynk.payment.dto.aps.request.status.refund.ApsRefundStatusRequest;
-import in.wynk.payment.dto.aps.response.charge.AbstractApsExternalChargingResponse;
 import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -70,8 +69,8 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STAT
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
 public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements
         IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>,
-        IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> /*,
-       IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IPreDebitNotificationServiceV2*/ {
+        IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest>
+          {
 
     @Value("${aps.payment.init.refund.api}")
     private String REFUND_ENDPOINT;
@@ -88,10 +87,6 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private String CHARGING_STATUS_ENDPOINT;
     @Value("${payment.polling.page}")
     private String CLIENT_POLLING_SCREEN_URL;
-    @Value("${aps.payment.predebit.api}")
-    private String PRE_DEBIT_API;
-    @Value("${aps.payment.renewal.api}")
-    private String SI_PAYMENT_API;
 
     private final RestTemplate httpTemplate;
     private final ResourceLoader resourceLoader;
@@ -137,8 +132,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         });
     }
 
-    private <R extends AbstractApsExternalChargingResponse, T> ResponseEntity<ApsApiResponseWrapper<R>> exchange (RequestEntity<T> entity,
-                                                                                                                  ParameterizedTypeReference<ApsApiResponseWrapper<R>> target) {
+    private <R , T> ResponseEntity<ApsApiResponseWrapper<R>> exchange (RequestEntity<T> entity, ParameterizedTypeReference<ApsApiResponseWrapper<R>> target) {
         try {
             return httpTemplate.exchange(entity, target);
         } catch (Exception e) {
@@ -300,5 +294,4 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         }
         return responseBuilder.data(refundResponseBuilder.build()).build();
     }
-
 }

@@ -32,4 +32,5 @@ public interface ApbConstants {
     String FRESH_CARD_TYPE = "FRESH";
     String SAVED_CARD_TYPE = "SAVED";
     String IV_USER= "iv-user";
+    String PRE_DEBIT_SI= "pre_debit_SI";
 }

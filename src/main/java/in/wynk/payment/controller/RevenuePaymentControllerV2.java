@@ -11,6 +11,7 @@ import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
@@ -50,7 +51,7 @@ public class RevenuePaymentControllerV2 {
 
     private final Gson gson;
     private final PaymentGatewayManager manager;
-    private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
+    private final PaymentMethodCachingService paymentMethodCachingService;
 
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
@@ -132,7 +133,7 @@ public class RevenuePaymentControllerV2 {
     @AnalyseTransaction(name = "paymentCharging")
     public WynkResponseEntity<PaymentChargingResponse> doCharging (@PathVariable String sid, @RequestBody AbstractChargingRequestV2 request) {
         LoadClientUtils.loadClient(false);
-        AnalyticService.update(PAYMENT_METHOD, paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
+        AnalyticService.update(PAYMENT_METHOD, paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);
         final WynkResponseEntity<PaymentChargingResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>>() {

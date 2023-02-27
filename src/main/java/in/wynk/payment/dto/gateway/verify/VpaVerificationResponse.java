@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.gateway.verify;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
@@ -15,6 +16,8 @@ public class VpaVerificationResponse extends AbstractVerificationResponse {
     private String vpa;
     private String status;
     private String payerAccountName;
+    @JsonProperty("isAutoPayHandleValid")
+    private boolean autoPayHandleValid;
     private boolean autoPayVPAValid;
     private boolean autoPayBankValid;
 

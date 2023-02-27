@@ -4,39 +4,39 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.dto.AbstractProductDetails;
+import in.wynk.payment.dto.AppDetails;
+import in.wynk.payment.dto.UserDetails;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-
-import javax.validation.Valid;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@ToString
-@SuperBuilder
+@Builder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = DefaultChargingRequestV2.class)
-})
-public abstract class AbstractChargingRequestV2 {
+public class AbstractChargingRequestV2 {
 
-    @Valid
+    //@Valid
     @Analysed
-    private IAppDetails appDetails;
-    @Valid
+    private AppDetails appDetails;
+
+  //  @Valid
     @Analysed
-    private IUserDetails userDetails;
+    private UserDetails userDetails;
+
     @Analysed
-    private IPaymentDetails paymentDetails;
-    @Analysed
-    private IProductDetails productDetails;
+    private AbstractProductDetails productDetails;
+
     @Analysed
     private GeoLocation geoLocation;
+
+    private AbstractPaymentDetails paymentDetails;
+
 }

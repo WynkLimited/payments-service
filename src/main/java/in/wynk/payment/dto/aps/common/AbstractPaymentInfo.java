@@ -15,7 +15,8 @@ public abstract class AbstractPaymentInfo {
     */
     private String paymentMode;
     /**
-     * Static Value - TBD
+     * For APS this lob will be WYK for one time payment,
+     * LOB_AUTO_PAY_REGISTER for mandate creation and SI_WYNK for renewal
      */
     @Builder.Default
     private String lob = BaseConstants.WYNK;

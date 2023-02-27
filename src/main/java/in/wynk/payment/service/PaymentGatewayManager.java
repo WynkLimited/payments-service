@@ -1,6 +1,7 @@
 package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
@@ -20,13 +21,15 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.ClientCallbackEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.core.event.PurchaseInitEvent;
+import in.wynk.payment.core.event.*;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
+import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.apb.ApbConstants;
+import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
@@ -36,40 +39,45 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.IPaymentRenewal;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import javax.annotation.PostConstruct;
+import java.net.SocketTimeoutException;
 import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
-@Service
+@Service(BeanConstant.PAYMENT_MANAGER_V2)
 @RequiredArgsConstructor
-public class PaymentGatewayManager implements
-        IPaymentRenewal<PaymentRenewalChargingRequest>,
-        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
-        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPreDebitNotificationServiceV2,
-        IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
+public class PaymentGatewayManager
+        implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
+        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
+        IVerificationService<AbstractVerificationResponse, VerificationRequestV2>, IPreDebitNotificationService {
 
     private final ICouponManager couponManager;
-    private final PaymentCachingService cachingService;
+    //ßprivate final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
+    private final PaymentMethodCachingService paymentMethodCachingService;
     private final IMerchantTransactionService merchantTransactionService;
-    private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
+    //private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
+    private final Gson gson;
 
     @PostConstruct
     public void init () {
@@ -79,14 +87,15 @@ public class PaymentGatewayManager implements
 
     @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
     public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
-        final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
-        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
-        final TransactionStatus existingStatus = transaction.getStatus();
-        final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
-                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
-                        new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
-                        });
         try {
+            PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
+            final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
+            final TransactionStatus existingStatus = transaction.getStatus();
+            final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
+                    BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
+                            new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
+                            });
+
             AbstractCoreChargingResponse response = chargingService.charge(request);
             if (paymentGateway.isPreDebit()) {
                 final TransactionStatus finalStatus = TransactionContext.get().getStatus();
@@ -98,31 +107,17 @@ public class PaymentGatewayManager implements
             this.handleGatewayFailure(ex);
             throw ex;
         } finally {
-            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
-            .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(
-                            Optional.ofNullable(SessionContextHolder.getId())).build());
+           /* eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+                    .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(
+                    Optional.ofNullable(SessionContextHolder.getId())).build());
             sqsManagerService.publishSQSMessage(
                     PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
-                            .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
+                            .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());*/
         }
     }
 
-    /*@Override
-    public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest verificationRequest) {
-        log.info("executing verify method for verifyValue {} ", verificationRequest.getVerifyValue());
-        IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> verificationService = BeanLocatorFactory.getBean(verificationRequest.getPaymentCode().getCode().concat(VERIFY),
-                new ParameterizedTypeReference<IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest>>() {
-                });
-        try {
-           return verificationService.verify(verificationRequest);
-        }catch (Exception e) {
-            log.error(PaymentLoggingMarker.VERIFICATION_FAILURE, e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY040);
-        }
-    }*/
-
     @Override
-    public AbstractVerificationResponse verify(VerificationRequestV2 request) {
+    public AbstractVerificationResponse verify (VerificationRequestV2 request) {
         String paymentCode;
         Client client = ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT002));
         Optional<Boolean> verifyPGOptional = client.getMeta(BaseConstants.DEFAULT_VERIFY_PAYMENT_GATEWAY);
@@ -215,18 +210,37 @@ public class PaymentGatewayManager implements
     }
 
     @Override
-    public void doRenewal (PaymentRenewalChargingRequest request) {
+    public void renew (PaymentRenewalChargingMessage request) {
+        PaymentGateway paymentGateway = PaymentCodeCachingService.getFromPaymentCode(request.getPaymentCode());
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
-        final IPaymentRenewal<PaymentRenewalChargingRequest> renewalService =
-                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentRenewal<PaymentRenewalChargingRequest>>() {
-                });
+        final IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> renewalService =
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(VERSION_2),
+                        new ParameterizedTypeReference<IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>>() {
+                        });
+        final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            renewalService.doRenewal(request);
-        } finally {
+            renewalService.renew(request);
+        } catch(RestClientException e) {
+            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
+            if (e.getRootCause() != null) {
+                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
+                    log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
+                    errorEventBuilder.code(PAY036.getErrorCode());
+                    errorEventBuilder.description(PAY036.getErrorMessage() + "for "+ paymentGateway);
+                    eventPublisher.publishEvent(errorEventBuilder.build());
+                    throw new WynkRuntimeException(PAY036);
+                } else {
+                    handleException(errorEventBuilder, paymentGateway, e);
+                }
+            } else {
+                handleException(errorEventBuilder,paymentGateway, e);
+            }
+        } finally{
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
                         PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
@@ -237,20 +251,27 @@ public class PaymentGatewayManager implements
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
                     .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
         }
+    }
 
+    private void handleException (PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
+        errorEventBuilder.code(PAY024.getErrorCode());
+        errorEventBuilder.description(PAY024.getErrorMessage()+"for "+paymentGateway);
+        eventPublisher.publishEvent(errorEventBuilder.build());
+        throw new WynkRuntimeException(PAY024, e);
     }
 
     @Override
     public boolean supportsRenewalReconciliation () {
-        return IPaymentRenewal.super.supportsRenewalReconciliation();
+        return IMerchantPaymentRenewalServiceV2.super.supportsRenewalReconciliation();
     }
 
     @Override
-    public void notify (PreDebitNotificationMessage message) {
+    public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
         log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationServiceV2.class)
-                .notify(message);
+        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
+        AnalyticService.update(ApbConstants.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
+        return preDebitResponse;
     }
 
     private class ChargingTransactionStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
@@ -274,8 +295,9 @@ public class PaymentGatewayManager implements
             try {
                 final PaymentGateway paymentGateway = transaction.getPaymentChannel();
                 final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusService =
-                        BeanLocatorFactory.getBean(paymentGateway.getCode() + VERSION_2, new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
-                        });
+                        BeanLocatorFactory.getBean(paymentGateway.getCode() + VERSION_2,
+                                new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
+                                });
                 return statusService.status(request);
             } finally {
                 final TransactionStatus finalStatus = transaction.getStatus();

@@ -20,7 +20,6 @@ public interface ApbConstants {
     String MERCHANT_NAME = "MNAME";
     String ECOMM_INQ = "ECOMM_INQ";
     String LANG_ID = "001";
-    String POSTPAID = "POSTPAID";
     String APS_VERIFY_TRANSACTION_SUCCESS="TXN_SUCCESS";
 
     String CURRENCY_INR="INR";
@@ -32,4 +31,7 @@ public interface ApbConstants {
     String FRESH_CARD_TYPE = "FRESH";
     String SAVED_CARD_TYPE = "SAVED";
     String IV_USER= "iv-user";
+    String PRE_DEBIT_SI= "pre_debit_SI";
+    String LOB_AUTO_PAY_REGISTER = "AUTO_PAY_REGISTER";
+    String LOB_SI_WYNK = "SI_WYNK";
 }

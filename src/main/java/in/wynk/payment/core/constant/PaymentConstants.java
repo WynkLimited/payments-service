@@ -103,4 +103,5 @@ public interface PaymentConstants extends BaseConstants {
     String AUTH_TYPE_WEB_UNAUTH="WEB_UNAUTH";
     String CONTENT_TYPE ="Content-Type";
     String APPLICATION_JSON= "application/json";
+    String ORDER_ID = "orderId";
 }

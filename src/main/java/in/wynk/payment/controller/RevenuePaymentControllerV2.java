@@ -133,7 +133,6 @@ public class RevenuePaymentControllerV2 {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(PAYMENT_METHOD, paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);
-        final WynkResponseEntity.WynkResponseEntityBuilder<AbstractChargingResponse> builder = WynkResponseEntity.builder();
         AbstractCoreChargingResponse response = manager.charge(request);
         //TODO: Presentation Layer
         return null;

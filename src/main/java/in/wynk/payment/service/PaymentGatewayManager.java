@@ -23,6 +23,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
@@ -60,7 +61,7 @@ import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
-@Service
+@Service(BeanConstant.PAYMENT_MANAGER_V2)
 @RequiredArgsConstructor
 public class PaymentGatewayManager
         implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
@@ -72,6 +73,7 @@ public class PaymentGatewayManager
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
+    private final PaymentMethodCachingService paymentMethodCachingService;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
@@ -85,14 +87,15 @@ public class PaymentGatewayManager
 
     @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
     public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
-        final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
-        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
-        final TransactionStatus existingStatus = transaction.getStatus();
-        final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
-                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
-                        new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
-                        });
         try {
+            PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
+            final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
+            final TransactionStatus existingStatus = transaction.getStatus();
+            final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
+                    BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
+                            new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
+                            });
+
             AbstractCoreChargingResponse response = chargingService.charge(request);
             if (paymentGateway.isPreDebit()) {
                 final TransactionStatus finalStatus = TransactionContext.get().getStatus();
@@ -104,12 +107,12 @@ public class PaymentGatewayManager
             this.handleGatewayFailure(ex);
             throw ex;
         } finally {
-            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+           /* eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
                     .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(
                     Optional.ofNullable(SessionContextHolder.getId())).build());
             sqsManagerService.publishSQSMessage(
                     PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
-                            .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
+                            .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());*/
         }
     }
 

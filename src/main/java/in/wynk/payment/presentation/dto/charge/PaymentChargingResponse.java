@@ -1,18 +1,15 @@
-package in.wynk.payment.dto.gateway.charge;
+package in.wynk.payment.presentation.dto.charge;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
 @AnalysedEntity
-@NoArgsConstructor
-public abstract class AbstractChargingGatewayResponse {
+public abstract class PaymentChargingResponse {
     private String tid;
     private TransactionStatus transactionStatus;
-    private PaymentEvent transactionType;
+    private final String transactionType;
 }

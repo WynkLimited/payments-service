@@ -1,4 +1,4 @@
-package in.wynk.payment.presentation.dto;
+package in.wynk.payment.presentation.dto.verify;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.payu.VerificationType;

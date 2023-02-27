@@ -1,4 +1,4 @@
-package in.wynk.payment.presentation.dto;
+package in.wynk.payment.presentation.dto.status;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.common.enums.TransactionStatus;

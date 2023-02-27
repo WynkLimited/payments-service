@@ -1,4 +1,4 @@
-package in.wynk.payment.presentation.dto;
+package in.wynk.payment.presentation.dto.status;
 
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;

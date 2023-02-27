@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
-public class AbstractVerificationResponse {
+public abstract class AbstractVerificationResponse {
     private String verifyValue;
     private VerificationType verificationType;
     private boolean valid;

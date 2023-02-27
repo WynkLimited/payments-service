@@ -1,11 +1,11 @@
-package in.wynk.payment.presentation.dto;
+package in.wynk.payment.presentation.dto.charge.card;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
-@SuperBuilder
 @Getter
+@SuperBuilder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DefaultVerifyUserPaymentResponse extends VerifyUserPaymentResponse {
+public abstract class SeamlessCardPaymentChargingResponse extends CardPaymentChargingResponse {
 }

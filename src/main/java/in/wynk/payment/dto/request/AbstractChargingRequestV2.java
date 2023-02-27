@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
@@ -21,6 +22,9 @@ import javax.validation.Valid;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = DefaultChargingRequestV2.class)
+})
 public abstract class AbstractChargingRequestV2 {
 
     @Valid

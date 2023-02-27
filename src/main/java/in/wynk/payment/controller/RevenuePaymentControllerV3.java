@@ -7,7 +7,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.request.VerificationRequestV2;
-import in.wynk.payment.presentation.dto.VerifyUserPaymentResponse;
+import in.wynk.payment.presentation.dto.verify.VerifyUserPaymentResponse;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;

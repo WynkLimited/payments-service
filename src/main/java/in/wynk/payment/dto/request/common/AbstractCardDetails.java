@@ -29,6 +29,12 @@ public abstract class AbstractCardDetails {
     @Analysed
     private boolean isSaveCard;
 
+    @Analysed
+    private Boolean inAppOtpSupport;
+
+    @Analysed
+    private Boolean otpLessSupport;
+
     @Analysed(name = "cardDetailsType")
     public abstract String getType();
 

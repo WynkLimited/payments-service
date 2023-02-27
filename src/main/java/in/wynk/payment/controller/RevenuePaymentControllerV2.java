@@ -17,11 +17,11 @@ import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.dto.response.AbstractChargingResponse;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.presentation.PaymentCallbackPresentation;
-import in.wynk.payment.presentation.dto.PaymentStatusResponse;
+import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
+import in.wynk.payment.presentation.dto.status.PaymentStatusResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.utils.LoadClientUtils;
@@ -29,6 +29,7 @@ import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.util.Pair;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -129,13 +130,14 @@ public class RevenuePaymentControllerV2 {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public WynkResponseEntity<AbstractChargingResponse> doCharging (@PathVariable String sid, @RequestBody AbstractChargingRequestV2 request) {
+    public WynkResponseEntity<PaymentChargingResponse> doCharging (@PathVariable String sid, @RequestBody AbstractChargingRequestV2 request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(PAYMENT_METHOD, paymentMethodCache.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);
-        final WynkResponseEntity.WynkResponseEntityBuilder<AbstractChargingResponse> builder = WynkResponseEntity.builder();
-        AbstractCoreChargingResponse response = manager.charge(request);
-        //TODO: Presentation Layer
+        final WynkResponseEntity<PaymentChargingResponse> responseEntity =
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>>() {
+                }).transform(() -> Pair.of(request, manager.charge(request)));
+        AnalyticService.update(responseEntity);
         return null;
     }
 

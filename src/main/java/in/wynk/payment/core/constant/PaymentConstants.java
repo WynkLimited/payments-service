@@ -67,6 +67,9 @@ public interface PaymentConstants extends BaseConstants {
     String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
     String TDR ="tdr";
+    String PAYU_CHARGE ="PayU_charge";
+    String OTP_LESS= "OTP_LESS";
+    String FORM_BASED= "FORM_BASED";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PHONEPE_WALLET = "PHONEPE_WALLET";

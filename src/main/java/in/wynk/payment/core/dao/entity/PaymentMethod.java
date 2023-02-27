@@ -21,6 +21,8 @@ public class PaymentMethod extends MongoBaseEntity<String> {
 
     private boolean trialSupported;
     private boolean autoRenewSupported;
+    private boolean inAppOtpSupport;
+    private boolean otpLessSupport;
 
     private String group;
     private String flowType;

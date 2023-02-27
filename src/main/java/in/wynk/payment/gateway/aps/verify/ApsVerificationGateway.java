@@ -84,7 +84,7 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                             });
                     if (Objects.nonNull(response) && response.isResult()) {
                         final ApsBinVerificationResponseData body = response.getData();
-                        return BinVerificationResponse.builder().cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode())
+                        return BinVerificationResponse.builder().autoPayEnable(body.isAutoPayEnable()).cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode())
                                 .autoRenewSupported(body.isAutoPayEnable()).build();
                     }
                 } catch (Exception e) {
@@ -105,14 +105,13 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                     final HttpHeaders headers = new HttpHeaders();
 
                     RequestEntity<VerificationRequestV2> entity = new RequestEntity<>(request, headers, HttpMethod.GET, URI.create(uri.toString()));
-                    ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> wrapper =
+                    ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
                             common.exchange(entity, new ParameterizedTypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
                             });
-                    final ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response = wrapper;
 
                     if (Objects.nonNull(response) && response.isResult()) {
                         ApsVpaVerificationData body = response.getData();
-                        return VpaVerificationResponse.builder().verifyValue(request.getVerifyValue()).verificationType(VerificationType.VPA).autoRenewSupported(response.isAutoPayHandleValid())
+                        return VpaVerificationResponse.builder().autoPayHandleValid(response.isAutoPayHandleValid()).verifyValue(request.getVerifyValue()).verificationType(VerificationType.VPA).autoRenewSupported(response.isAutoPayHandleValid())
                                 .vpa(response.getVpa()).payerAccountName(response.getPayeeAccountName())
                                 .valid(response.isVpaValid())
                                 .build();

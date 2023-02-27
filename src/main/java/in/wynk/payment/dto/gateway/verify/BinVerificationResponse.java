@@ -19,6 +19,7 @@ public class BinVerificationResponse extends AbstractVerificationResponse {
     private String zeroRedirectSupport;
     private boolean isATMPINCard;
     private boolean authorizedByBank;
+    private boolean autoPayEnable;
 
     public static BinVerificationResponse from(PayUCardInfo binVerificationResponse){
         return BinVerificationResponse.builder()

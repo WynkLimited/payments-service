@@ -21,10 +21,7 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.ClientCallbackEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.core.event.PurchaseInitEvent;
+import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
@@ -44,18 +41,23 @@ import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import javax.annotation.PostConstruct;
+import java.net.SocketTimeoutException;
 import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
 @Service
@@ -110,21 +112,6 @@ public class PaymentGatewayManager
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
-
-    /*@Override
-    public AbstractPaymentInstrumentVerificationResponse verify (VerificationRequest verificationRequest) {
-        log.info("executing verify method for verifyValue {} ", verificationRequest.getVerifyValue());
-        IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest> verificationService = BeanLocatorFactory.getBean(verificationRequest.getPaymentCode()
-        .getCode().concat(VERIFY),
-                new ParameterizedTypeReference<IMerchantVerificationServiceV2<AbstractPaymentInstrumentVerificationResponse, VerificationRequest>>() {
-                });
-        try {
-           return verificationService.verify(verificationRequest);
-        }catch (Exception e) {
-            log.error(PaymentLoggingMarker.VERIFICATION_FAILURE, e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY040);
-        }
-    }*/
 
     @Override
     public AbstractVerificationResponse verify (VerificationRequestV2 request) {
@@ -231,9 +218,26 @@ public class PaymentGatewayManager
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(VERSION_2),
                         new ParameterizedTypeReference<IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>>() {
                         });
+        final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
-        } finally {
+        } catch(RestClientException e) {
+            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
+            if (e.getRootCause() != null) {
+                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
+                    log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
+                    errorEventBuilder.code(PAY036.getErrorCode());
+                    errorEventBuilder.description(PAY036.getErrorMessage() + "for "+ paymentGateway);
+                    eventPublisher.publishEvent(errorEventBuilder.build());
+                    throw new WynkRuntimeException(PAY036);
+                } else {
+                    handleException(errorEventBuilder, paymentGateway, e);
+                }
+            } else {
+                handleException(errorEventBuilder,paymentGateway, e);
+            }
+        } finally{
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
                         PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
@@ -244,7 +248,13 @@ public class PaymentGatewayManager
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
                     .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
         }
+    }
 
+    private void handleException (PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
+        errorEventBuilder.code(PAY024.getErrorCode());
+        errorEventBuilder.description(PAY024.getErrorMessage()+"for "+paymentGateway);
+        eventPublisher.publishEvent(errorEventBuilder.build());
+        throw new WynkRuntimeException(PAY024, e);
     }
 
     @Override

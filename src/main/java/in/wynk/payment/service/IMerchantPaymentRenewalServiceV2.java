@@ -7,7 +7,6 @@ import in.wynk.payment.dto.PaymentRenewalChargingMessage;
  */
 public interface IMerchantPaymentRenewalServiceV2<T extends PaymentRenewalChargingMessage> {
     void renew (T paymentRenewalChargingMessage);
-
     default boolean supportsRenewalReconciliation () {
         return true;
     }

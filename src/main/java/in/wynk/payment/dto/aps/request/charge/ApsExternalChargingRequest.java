@@ -41,6 +41,6 @@ public class ApsExternalChargingRequest<T extends AbstractPaymentInfo> {
      * Send this flag as false in case of bill payment otherwise false for other/dummy transactions.
      */
     @Builder.Default
-    @JsonProperty("isPennyDropTxn")
-    private boolean pennyDropTxn = false;
+    @JsonProperty("isBillPayment")
+    private boolean billPayment = false;
 }

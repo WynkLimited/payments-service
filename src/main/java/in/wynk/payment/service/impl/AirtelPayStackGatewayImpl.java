@@ -136,7 +136,7 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
         try {
             return httpTemplate.exchange(entity, target);
         } catch (Exception e) {
-            throw new WynkRuntimeException(PAY024, e);
+            throw new WynkRuntimeException(PAY041, e);
         }
     }
 

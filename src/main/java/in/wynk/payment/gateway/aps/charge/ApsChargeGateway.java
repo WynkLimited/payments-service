@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.charge;
 
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
@@ -133,14 +134,14 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
                         //iv-user is mandatory header
-                        headers.set(IV_USER, request.getUserDetails().getMsisdn());
+                        headers.set(IV_USER, request.getUserDetails().getMsisdn().replace("+91",""));
                         Calendar cal = Calendar.getInstance();
                         cal.add(Calendar.HOUR, 24);
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
-                        apsChargingRequestBuilder.signature(generateSignature()).pennyDropTxn(false);
+                        paymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
+                        apsChargingRequestBuilder.signature(generateSignature()).billPayment(false);
                     }
 
                     final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
@@ -151,7 +152,11 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                 });
                         if (Objects.nonNull(response)) {
                             if (response.isResult()) {
-                                return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
+                                String transactionType = transaction.getType().getValue();
+                                if(Objects.isNull(response.getData().getPgSystemId())) {
+                                    transactionType= PaymentEvent.PURCHASE.getValue();
+                                }
+                                return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transactionType)
                                         .url(CLIENT_POLLING_SCREEN_URL).build();
                             } else {
                                 throw new WynkRuntimeException(PaymentErrorType.PAY038, response.getErrorMessage());
@@ -162,7 +167,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         log.error(APS_CHARGING_FAILURE, "unable to call APS external service due to ", e);
                         throw new WynkRuntimeException(PaymentErrorType.PAY038, e);
                     }
-                    throw new WynkRuntimeException(PaymentErrorType.PAY024);
+                    throw new WynkRuntimeException(PaymentErrorType.PAY041);
                 }
             }
         }
@@ -229,7 +234,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                 .build();
 
                     }
-                    throw new WynkRuntimeException(PaymentErrorType.PAY024);
+                    throw new WynkRuntimeException(PaymentErrorType.PAY041);
                 }
             }
         }
@@ -331,7 +336,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                             Date today = cal.getTime();
                             cal.add(Calendar.YEAR, 10);
                             Date next10Year = cal.getTime();
-                            abstractCardPaymentInfoBuilder.productCategory(POSTPAID).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
+                            abstractCardPaymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
                         }
                         final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                         final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
@@ -348,7 +353,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         }
                         throw new WynkRuntimeException(PaymentErrorType.PAY038, Objects.requireNonNull(response).getErrorMessage());
                     } catch (Exception e) {
-                        throw new WynkRuntimeException(PaymentErrorType.PAY024, e);
+                        throw new WynkRuntimeException(PaymentErrorType.PAY041, e);
                     }
                 }
             }
@@ -391,7 +396,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final ApsNetBankingChargingResponse chargingResponse = response.getData();
                     return NetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(chargingResponse.getHtml()).build();
                 }
-                throw new WynkRuntimeException(PaymentErrorType.PAY024);
+                throw new WynkRuntimeException(PaymentErrorType.PAY041);
             }
         }
     }

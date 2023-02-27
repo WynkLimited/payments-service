@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.verify;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.aps.response.verify.ApsVpaVerificationData;
 import in.wynk.payment.dto.common.ApiResponse;
 import lombok.*;
@@ -17,7 +18,8 @@ public class ApsVpaVerificationResponseWrapper<T extends ApsVpaVerificationData>
     private T data;
     private String vpa;
     private String payeeAccountName;
-    private boolean isAutoPayHandleValid;
+    @JsonProperty("isAutoPayHandleValid")
+    private boolean autoPayHandleValid;
     private String errorMessage;
     private boolean vpaValid;
 }

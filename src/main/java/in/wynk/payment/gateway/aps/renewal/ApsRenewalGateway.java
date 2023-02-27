@@ -8,7 +8,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.TransactionContext;
@@ -24,7 +23,6 @@ import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
-import io.netty.channel.ConnectTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,13 +36,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 
-import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_RENEWAL_STATUS_ERROR;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 /**
@@ -98,9 +94,9 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
             }
 
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PAY033.getErrorCode())) {
+            if (e.getErrorCode().equals(PAY014.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
-            } else if (e.getErrorCode().equals(PAY034.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {
+            } else if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
             throw e;
@@ -114,7 +110,7 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
 
     private ApsSiPaymentRecurringResponse doChargingForRenewal (MerchantTransaction merchantTransaction, String mode) {
         Transaction transaction = TransactionContext.get();
-        final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         String invoiceNumber = RecurringTransactionUtils.generateInvoiceNumber();
         ApsSiPaymentRecurringRequest apsSiPaymentRecurringRequest =
@@ -131,31 +127,8 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
             return Objects.requireNonNull(response).getData();
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(APS_RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
-                    errorEventBuilder.code(PAY033.getErrorCode());
-                    errorEventBuilder.description(PAY033.getErrorMessage());
-                    eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PAY033);
-                } else {
-                    handleException(errorEventBuilder, e);
-                }
-            } else {
-                handleException(errorEventBuilder, e);
-            }
-        } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+            throw new WynkRuntimeException(e);
         }
-        return null;
-    }
-
-    private void handleException (PaymentErrorEvent.Builder errorEventBuilder, RestClientException e) {
-        errorEventBuilder.code(PAY034.getErrorCode());
-        errorEventBuilder.description(PAY034.getErrorMessage());
-        eventPublisher.publishEvent(errorEventBuilder.build());
-        throw new WynkRuntimeException(PAY034, e);
     }
 
     private void updateTransactionStatus (PlanPeriodDTO planPeriodDTO, ApsSiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {

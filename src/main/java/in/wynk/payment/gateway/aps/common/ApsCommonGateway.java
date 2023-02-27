@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 
 /**
  * @author Nishesh Pandey
@@ -72,7 +72,7 @@ public class ApsCommonGateway {
         try {
             return httpTemplate.exchange(entity, target).getBody();
         } catch (Exception e) {
-            throw new WynkRuntimeException(PAY024, e);
+            throw new WynkRuntimeException(PAY041, e);
         }
     }
 

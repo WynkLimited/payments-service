@@ -69,13 +69,13 @@ public class PaymentGatewayManager
         IVerificationService<AbstractVerificationResponse, VerificationRequestV2>, IPreDebitNotificationService {
 
     private final ICouponManager couponManager;
-    private final PaymentCachingService cachingService;
+    //ßprivate final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final IMerchantTransactionService merchantTransactionService;
-    private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
+    //private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
 

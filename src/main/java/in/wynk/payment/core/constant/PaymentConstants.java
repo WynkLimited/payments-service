@@ -45,6 +45,7 @@ public interface PaymentConstants extends BaseConstants {
     String ADD_TO_BILL = "ADD_TO_BILL";
     String SEAMLESS = "SEAMLESS";
     String NON_SEAMLESS = "NON_SEAMLESS";
+    String HTML_TYPE = "HTML_TYPE";
     String DEFAULT_COUNTRY_CODE = "IN";
     String DEBIT_CARD = "DEBIT_CARD";
     String APP_NAME = "APP_NAME";

@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request.common;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
@@ -27,7 +28,8 @@ public abstract class AbstractCardDetails {
     private CardInfo cardInfo;
 
     @Analysed
-    private boolean isSaveCard;
+    @JsonProperty("isSaveCard")
+    private boolean saveCard;
 
     @Analysed(name = "cardDetailsType")
     public abstract String getType();

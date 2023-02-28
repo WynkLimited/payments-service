@@ -246,21 +246,22 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
         public CardCharging () {
-            upiDelegate.put(INTENT, new CardSeamlessCharging());
-            upiDelegate.put(COLLECT_IN_APP, new CardNonSeamlessCharging());
+            upiDelegate.put(PaymentConstants.SEAMLESS, new CardSeamlessCharging());
+            upiDelegate.put(PaymentConstants.NON_SEAMLESS, new CardNonSeamlessCharging());
         }
 
         @Override
         public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
-            return null;
+            String flowType = paymentMethodCachingService.get(request.getPaymentId()).getFlowType();
+            return upiDelegate.get(flowType).charge(request);
         }
 
         private class CardSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
             public CardSeamlessCharging () {
-                upiDelegate.put(INTENT, new CardOtpLessCharging());
-                upiDelegate.put(COLLECT_IN_APP, new CardInAppCharging());
+                cardDelegate.put(INTENT, new CardOtpLessCharging());
+                cardDelegate.put(COLLECT_IN_APP, new CardInAppCharging());
             }
 
             @Override
@@ -286,15 +287,15 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         }
 
         private class CardNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
             public CardNonSeamlessCharging () {
-                upiDelegate.put(INTENT, new CardHtmlTypeCharging());//APS supports html type
+                cardDelegate.put(PaymentConstants.HTML_TYPE, new CardHtmlTypeCharging());//APS supports html type
             }
 
             @Override
             public AbstractNonSeamlessCardChargingResponse charge (AbstractChargingRequestV2 request) {
-                return null;
+                return cardDelegate.get(PaymentConstants.HTML_TYPE).charge(request);
             }
 
             private class CardHtmlTypeCharging implements IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2> {
@@ -360,10 +361,10 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
     private class NetBankingCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
-        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> netBankingDelegate = new HashMap<>();
 
         public NetBankingCharging () {
-            upiDelegate.put(PaymentConstants.NET_BANKING, new NetBanking());
+            netBankingDelegate.put(PaymentConstants.NET_BANKING, new NetBanking());
         }
 
         @Override

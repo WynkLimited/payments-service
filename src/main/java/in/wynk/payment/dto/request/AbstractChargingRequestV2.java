@@ -33,6 +33,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.validation.Valid;
+
 import static in.wynk.common.constant.BaseConstants.*;
 
 /**
@@ -45,15 +47,17 @@ import static in.wynk.common.constant.BaseConstants.*;
 @AllArgsConstructor
 public class AbstractChargingRequestV2 implements IChargingDetails, IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
+    @Valid
     @Analysed
     private AbstractProductDetails productDetails;
 
+    @Valid
     @Analysed
     private GeoLocation geoLocation;
 
+    @Valid
+    @Analysed
     private AbstractPaymentDetails paymentDetails;
-
-    private IPageUrlDetails pageUrlDetails;
 
     @Override
     public PaymentGateway getPaymentCode () {

@@ -87,18 +87,18 @@ public class PaymentGatewayManager
 
     @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
     public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
-        try {
-            PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
-            final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
-            final TransactionStatus existingStatus = transaction.getStatus();
-            final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
-                    BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
-                            new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
-                            });
+        PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
+        final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
+        final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
+                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
+                        new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
+                        });
 
+        try {
             AbstractCoreChargingResponse response = chargingService.charge(request);
             if (paymentGateway.isPreDebit()) {
                 final TransactionStatus finalStatus = TransactionContext.get().getStatus();
+                final TransactionStatus existingStatus = transaction.getStatus();
                 transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
                 exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             }
@@ -107,12 +107,12 @@ public class PaymentGatewayManager
             this.handleGatewayFailure(ex);
             throw ex;
         } finally {
-           /* eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
                     .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(
                     Optional.ofNullable(SessionContextHolder.getId())).build());
             sqsManagerService.publishSQSMessage(
                     PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
-                            .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());*/
+                            .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
 

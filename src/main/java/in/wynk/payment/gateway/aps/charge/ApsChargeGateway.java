@@ -48,7 +48,6 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_FAILURE;
 import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
@@ -134,7 +133,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
                         //iv-user is mandatory header
-                        headers.set(IV_USER, request.getUserDetails().getMsisdn().replace("+91",""));
+                        headers.set(IV_USER, request.getUserDetails().getMsisdn().replace("+91", ""));
                         Calendar cal = Calendar.getInstance();
                         cal.add(Calendar.HOUR, 24);
                         Date today = cal.getTime();
@@ -150,21 +149,11 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         ApsApiResponseWrapper<ApsUpiCollectChargingResponse> response =
                                 common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
                                 });
-                        if (Objects.nonNull(response)) {
-                            if (response.isResult()) {
-                                String transactionType = transaction.getType().getValue();
-                                if(Objects.isNull(response.getData().getPgSystemId())) {
-                                    transactionType= PaymentEvent.PURCHASE.getValue();
-                                }
-                                return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transactionType)
-                                        .url(CLIENT_POLLING_SCREEN_URL).build();
-                            } else {
-                                throw new WynkRuntimeException(PaymentErrorType.PAY038, response.getErrorMessage());
-                            }
+                        if (Objects.nonNull(response) && response.isResult()) {
+                            return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response))
+                                    .url(CLIENT_POLLING_SCREEN_URL).build();
                         }
-
                     } catch (Exception e) {
-                        log.error(APS_CHARGING_FAILURE, "unable to call APS external service due to ", e);
                         throw new WynkRuntimeException(PaymentErrorType.PAY038, e);
                     }
                     throw new WynkRuntimeException(PaymentErrorType.PAY041);
@@ -238,6 +227,13 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                 }
             }
         }
+    }
+
+    private String updateTransactionType (ApsApiResponseWrapper<ApsUpiCollectChargingResponse> response) {
+        if (Objects.isNull(response.getData().getPgSystemId())) {
+            return PaymentEvent.PURCHASE.getValue();
+        }
+        return PaymentEvent.SUBSCRIBE.getValue();
     }
 
     //This should be updated as per signatutre generation rule from APS
@@ -336,7 +332,8 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                             Date today = cal.getTime();
                             cal.add(Calendar.YEAR, 10);
                             Date next10Year = cal.getTime();
-                            abstractCardPaymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
+                            abstractCardPaymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString())
+                                    .paymentEndDate(next10Year.toString());
                         }
                         final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                         final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();

@@ -93,8 +93,10 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
         @Override
         public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
-            final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-            String flowType = paymentDetails.getUpiDetails().isSeamless() ? PaymentConstants.SEAMLESS : PaymentConstants.NON_SEAMLESS;
+            String flowType = paymentMethodCachingService.get(request.getPaymentId()).getFlowType();
+            if (Objects.isNull(flowType)) {
+                throw new WynkRuntimeException("flowType in configuration should not be null");
+            }
             return upiDelegate.get(flowType).charge(request);
         }
 
@@ -243,17 +245,20 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
     private class CardCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
-        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
         public CardCharging () {
-            upiDelegate.put(PaymentConstants.SEAMLESS, new CardSeamlessCharging());
-            upiDelegate.put(PaymentConstants.NON_SEAMLESS, new CardNonSeamlessCharging());
+            cardDelegate.put(PaymentConstants.SEAMLESS, new CardSeamlessCharging());
+            cardDelegate.put(PaymentConstants.NON_SEAMLESS, new CardNonSeamlessCharging());
         }
 
         @Override
         public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
             String flowType = paymentMethodCachingService.get(request.getPaymentId()).getFlowType();
-            return upiDelegate.get(flowType).charge(request);
+            if (Objects.isNull(flowType)) {
+                throw new WynkRuntimeException("flowType in configuration should not be null");
+            }
+            return cardDelegate.get(flowType).charge(request);
         }
 
         private class CardSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {

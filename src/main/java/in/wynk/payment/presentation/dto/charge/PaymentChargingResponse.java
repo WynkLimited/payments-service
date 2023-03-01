@@ -12,4 +12,5 @@ public abstract class PaymentChargingResponse {
     private String tid;
     private TransactionStatus transactionStatus;
     private final String transactionType;
+    private String action;
 }

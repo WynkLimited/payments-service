@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentChargingAction;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
@@ -118,6 +119,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                     return IntentSeamlessUpiPaymentChargingResponse.builder()
                             .deepLink(form)
                             .appPackage((String) method.getMeta().get(APP_PACKAGE))
+                            .action(PaymentChargingAction.INTENT.getAction())
                             .build();
                 }
             }
@@ -151,7 +153,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                     final UpiCollectChargingResponse response = (UpiCollectChargingResponse) payload.getSecond();
                     final String url = EncryptionUtils.encrypt(encryptionKey, response.getUrl());
                     return CollectNonSeamlessUpiPaymentChargingResponse.builder()
-                            .url(url).build();
+                            .url(url).action(PaymentChargingAction.REDIRECT.getAction()).build();
                 }
             }
         }
@@ -223,7 +225,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                     final CardKeyValueTypeChargingResponse response = (CardKeyValueTypeChargingResponse) payload.getSecond();
                     final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
                     return KeyValueTypeNonSeamlessCardPaymentChargingResponse.builder()
-                            .form(encForm).build();
+                            .form(encForm).action(PaymentChargingAction.KEY_VALUE.getAction()).build();
                 }
             }
 
@@ -232,7 +234,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 public HtmlTypeNonSeamlessCardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
                     final CardHtmlTypeChargingResponse response = (CardHtmlTypeChargingResponse) payload.getSecond();
                     return HtmlTypeNonSeamlessCardPaymentChargingResponse.builder()
-                            .html(response.getHtml()).build();
+                            .html(response.getHtml()).action(PaymentChargingAction.HTML.getAction()).build();
                 }
             }
         }
@@ -264,7 +266,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 final NonSeamlessNetBankingChargingResponse response = (NonSeamlessNetBankingChargingResponse) payload.getSecond();
                 final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
                 return NonSeamlessNetBankingPaymentChargingResponse.builder()
-                        .form(encForm).build();
+                        .form(encForm).action(PaymentChargingAction.KEY_VALUE.getAction()).build();
             }
         }
     }

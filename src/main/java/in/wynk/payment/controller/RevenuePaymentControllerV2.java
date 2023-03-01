@@ -14,13 +14,17 @@ import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
+import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
+import in.wynk.payment.presentation.IPaymentPresentation;
+import in.wynk.payment.presentation.IPaymentPresentationV2;
 import in.wynk.payment.presentation.PaymentCallbackPresentation;
+import in.wynk.payment.presentation.dto.callback.PaymentCallbackResponse;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
 import in.wynk.payment.presentation.dto.status.PaymentStatusResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
@@ -66,10 +70,11 @@ public class RevenuePaymentControllerV2 {
         return verificationResponseWynkResponseEntity;
     }
 
+    //This version is for payment refactoring task
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public WynkResponseEntity<AbstractPaymentCallbackResponse> handleCallback (@PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) {
+    public WynkResponseEntity<PaymentCallbackResponse> handleCallback (@PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) {
         LoadClientUtils.loadClient(false);
         final PaymentGateway paymentGateway;
         if (StringUtils.isEmpty(pc)) {
@@ -83,13 +88,18 @@ public class RevenuePaymentControllerV2 {
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        return BeanLocatorFactory.getBean(PaymentCallbackPresentation.class).transform(manager.handleCallback(request));
+        final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
+                }).transform(manager.handleCallback(request));
+        AnalyticService.update(responseEntity);
+        return responseEntity;
     }
 
+    //This version is for payment refactoring task
     @ManageSession(sessionId = "#sid")
     @GetMapping(path = "/callback/{sid}/{pc}")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<AbstractPaymentCallbackResponse> handleCallbackGet (@PathVariable String sid, @PathVariable String pc, @RequestParam MultiValueMap<String, String> payload) {
+    public WynkResponseEntity<PaymentCallbackResponse> handleCallbackGet (@PathVariable String sid, @PathVariable String pc, @RequestParam MultiValueMap<String, String> payload) {
         LoadClientUtils.loadClient(false);
         final PaymentGateway paymentGateway;
         final Map<String, Object> terraformed = new HashMap<>(payload.toSingleValueMap());
@@ -104,13 +114,18 @@ public class RevenuePaymentControllerV2 {
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(terraformed).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        return BeanLocatorFactory.getBean(PaymentCallbackPresentation.class).transform(manager.handleCallback(request));
+        final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
+                }).transform(manager.handleCallback(request));
+        AnalyticService.update(responseEntity);
+        return responseEntity;
     }
 
+    //This version is for payment refactoring task
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public WynkResponseEntity<AbstractPaymentCallbackResponse> handleCallbackJSON (@PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
+    public WynkResponseEntity<PaymentCallbackResponse> handleCallbackJSON (@PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
         LoadClientUtils.loadClient(false);
         final PaymentGateway paymentGateway;
         if (StringUtils.isEmpty(pc)) {
@@ -124,7 +139,11 @@ public class RevenuePaymentControllerV2 {
         final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        return BeanLocatorFactory.getBean(PaymentCallbackPresentation.class).transform(manager.handleCallback(request));
+        final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
+                }).transform(manager.handleCallback(request));
+        AnalyticService.update(responseEntity);
+        return responseEntity;
     }
 
     //This version is for payment refactoring task
@@ -136,10 +155,10 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(PAYMENT_METHOD, paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);
         final WynkResponseEntity<PaymentChargingResponse> responseEntity =
-                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>>() {
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>>() {
                 }).transform(() -> Pair.of(request, manager.charge(request)));
         AnalyticService.update(responseEntity);
-        return null;
+        return responseEntity;
     }
 
     //This version is for payment refactoring task

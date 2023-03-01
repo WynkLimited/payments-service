@@ -3,14 +3,15 @@ package in.wynk.payment.service;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.service.ICouponManager;
-import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.IWynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
@@ -24,10 +25,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PaymentRenewalChargingMessage;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
-import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -192,10 +190,13 @@ public class PaymentGatewayManager
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
-                BeanLocatorFactory.getBean(pg.getCode().concat(VERSION_2), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
+                BeanLocatorFactory.getBean(pg.getCode().concat(CALLBACK), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
         try {
             final AbstractPaymentCallbackResponse response = callbackService.handleCallback(request.getBody());
+            if (pg.isPreDebit() && Objects.nonNull(response)) {
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY302.getErrorCode()).description(PaymentErrorType.PAY302.getErrorMessage()).build());
+            }
             return CallbackResponseWrapper.builder().callbackResponse(response).transaction(transaction).build();
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
@@ -206,6 +207,45 @@ public class PaymentGatewayManager
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
             // .callbackRequest(request.getBody()).build()).build());
+        }
+    }
+
+    @ClientAware(clientAlias = "#request.clientAlias")
+    public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
+        final IReceiptDetailService<?, IAPNotification> receiptDetailService =
+                BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
+                });
+        DecodedNotificationWrapper<IAPNotification> wrapper = receiptDetailService.isNotificationEligible(request.getPayload());
+        AnalyticService.update(wrapper.getDecodedNotification());
+        if (wrapper.isEligible()) {
+            final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
+            if (mapping != null) {
+                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+                final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
+                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                                .clientAlias(request.getClientAlias()).build());
+                transactionInitRequest.setEvent(event);
+                final Transaction transaction = transactionManager.init(transactionInitRequest);
+                handleNotification(transaction, mapping);
+                return WynkResponseEntity.<Void>builder().success(true).build();
+            }
+        }
+        return WynkResponseEntity.<Void>builder().success(false).build();
+    }
+
+    private <T> void handleNotification(Transaction transaction, UserPlanMapping<T> mapping) {
+        final TransactionStatus existingStatus = transaction.getStatus();
+        final IPaymentNotificationService<T> notificationService =
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IPaymentNotificationService<T>>() {
+                });
+        try {
+            notificationService.handleNotification(transaction, mapping);
+        } catch (WynkRuntimeException e) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+        } finally {
+            TransactionStatus finalStatus = TransactionContext.get().getStatus();
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
         }
     }
 

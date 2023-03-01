@@ -399,7 +399,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         String reqType = PaymentRequestType.SUBSCRIBE.name();
         String udf1 = PAYU_SI_KEY.toUpperCase();
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, 24);
         Date today = cal.getTime();
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();

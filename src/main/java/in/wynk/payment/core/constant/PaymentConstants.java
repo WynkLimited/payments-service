@@ -69,6 +69,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_METHOD = "paymentMethod";
     String TDR ="tdr";
     String PAYU_CHARGE ="PayU_charge";
+    String PAYU_CALLBACK ="PayU_callback";
     String OTP_LESS= "OTP_LESS";
     String FORM_BASED= "FORM_BASED";
     String SHOULD_WINBACK = "shouldWinBack";
@@ -100,6 +101,7 @@ public interface PaymentConstants extends BaseConstants {
     String WYNK_LIMITED= "Wynk Limited";
     String CHARGE="_charge";
     String VERIFY="_verify";
+    String CALLBACK="_callback";
     String CHANNEL_ID="channel-id";
     String AUTH_TYPE_WEB_UNAUTH="WEB_UNAUTH";
     String CONTENT_TYPE ="Content-Type";

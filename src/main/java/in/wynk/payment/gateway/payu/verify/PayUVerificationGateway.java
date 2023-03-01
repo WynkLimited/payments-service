@@ -60,7 +60,7 @@ public class PayUVerificationGateway implements IVerificationService<AbstractVer
                 cardInfo.setCardType(UNKNOWN.toUpperCase());
                 cardInfo.setCardCategory(UNKNOWN.toUpperCase());
             }
-            return BinVerificationResponse.builder().valid(cardInfo.isValid()).isDomestic(cardInfo.getIsDomestic().equalsIgnoreCase("Y")).autoRenewSupported(cardInfo.isAutoRenewSupported()).issuingBank(cardInfo.getIssuingBank()).cardType(cardInfo.getCardType()).cardCategory(cardInfo.getCardCategory()).build();
+            return BinVerificationResponse.from(cardInfo);
         }
     }
 
@@ -71,7 +71,7 @@ public class PayUVerificationGateway implements IVerificationService<AbstractVer
             final MultiValueMap<String, String> verifyVpaRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue());
             final PayUVpaVerificationResponse response = common.exchange(common.INFO_API, verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
             });
-            return VpaVerificationResponse.builder().vpa(response.getVpa()).payerAccountName(response.getPayerAccountName()).valid(response.getIsVPAValid() == 1).build();
+            return VpaVerificationResponse.from(response);
         }
     }
 }

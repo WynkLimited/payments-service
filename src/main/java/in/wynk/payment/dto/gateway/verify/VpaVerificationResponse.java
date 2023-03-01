@@ -12,7 +12,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class VpaVerificationResponse extends AbstractVerificationResponse {
-    private int isVPAValid;
+    private boolean isVPAValid;
     private String vpa;
     private String status;
     private String payerAccountName;
@@ -26,7 +26,7 @@ public class VpaVerificationResponse extends AbstractVerificationResponse {
                 .vpa(vpaVerificationResponse.getVpa())
                 .valid(vpaVerificationResponse.isValid())
                 .verificationType(VerificationType.VPA)
-                .isVPAValid(vpaVerificationResponse.getIsVPAValid())
+                .isVPAValid(vpaVerificationResponse.getIsVPAValid() == 1)
                 .status(vpaVerificationResponse.getStatus())
                 .payerAccountName(vpaVerificationResponse.getPayerAccountName())
                 .autoPayVPAValid(vpaVerificationResponse.isAutoPayVPAValid())

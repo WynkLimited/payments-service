@@ -15,7 +15,6 @@ public interface PaymentConstants extends BaseConstants {
     String INTENT = "INTENT";
 
     String UPI = "UPI";
-    String INTENT = "INTENT";
     String CARD = "CARD";
     String PAYU = "PAYU";
     String TXN_ID = "tid";

@@ -39,4 +39,14 @@ public class PaymentCode extends MongoBaseEntity<String> {
         return this.getId();
     }
 
+    @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!PaymentCode.class.isAssignableFrom(obj.getClass())) return false;
+        return this.getId().equals(((PaymentCode) obj).getId());
+    }
 }

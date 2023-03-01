@@ -62,6 +62,11 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     }
 
     @Override
+    public boolean isAutoRenewOpted() {
+        return Boolean.TRUE;
+    }
+
+    @Override
     public IAppDetails getAppDetails() {
         return AppDetails.builder()
                 .appId(StringUtils.isNotBlank(this.iapVerificationRequest.getAppId()) ? this.iapVerificationRequest.getAppId() : (this.iapVerificationRequest.getPaymentCode().getId().equalsIgnoreCase("ITUNES") ? "MOBILITY" : "FIRESTICK"))

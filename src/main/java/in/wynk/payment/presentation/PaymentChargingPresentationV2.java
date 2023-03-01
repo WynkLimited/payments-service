@@ -5,6 +5,7 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentChargingAction;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
@@ -13,6 +14,8 @@ import in.wynk.payment.dto.gateway.netbanking.NonSeamlessNetBankingChargingRespo
 import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
+import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
+import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.presentation.dto.charge.*;
 import in.wynk.payment.presentation.dto.charge.card.*;
@@ -77,8 +80,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
         @Override
         public UpiPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-            final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
-            return upiDelegate.get(method.getFlowType()).transform(payload);
+            final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) payload.getFirst().getPaymentDetails();
+            String flowType = paymentDetails.getUpiDetails().isSeamless() ? PaymentConstants.SEAMLESS : PaymentConstants.NON_SEAMLESS;
+            return upiDelegate.get(flowType).transform(payload);
         }
 
         public class UpiSeamless implements IPaymentPresentationV2<SeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
@@ -170,8 +174,12 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
         @Override
         public CardPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-            final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
-            return cardDelegate.get(method.getFlowType()).transform(payload);
+            final PaymentMethod method = paymentMethodCachingService.get(payload.getFirst().getPaymentDetails().getPaymentId());
+            final CardPaymentDetails paymentDetails = (CardPaymentDetails) payload.getFirst().getPaymentDetails();
+            boolean inAppOtpSupport = (Objects.nonNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
+            boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
+            String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
+            return cardDelegate.get(flowType).transform(payload);
         }
 
         public class CardSeamless implements IPaymentPresentationV2<SeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {

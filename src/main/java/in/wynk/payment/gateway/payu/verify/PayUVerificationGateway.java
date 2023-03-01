@@ -2,17 +2,22 @@ package in.wynk.payment.gateway.payu.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.PayUBinWrapper;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUCommand;
+import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequestV2;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.gateway.IPaymentInstrumentValidator;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.service.IVerificationService;
+import in.wynk.payment.service.impl.PayUPaymentGateway;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.util.HashMap;
@@ -20,22 +25,22 @@ import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 
-
-
+@Slf4j
+@Service(PaymentConstants.PAYU_VERIFY)
 public class PayUVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
 
     private final PayUCommonGateway common;
-    private final Map<String, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequestV2>> delegate = new HashMap<>();
+    private final Map<VerificationType, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequestV2>> delegate = new HashMap<>();
 
     public PayUVerificationGateway(PayUCommonGateway common) {
         this.common = common;
-        this.delegate.put("VPA", new VPA());
-        this.delegate.put("CARD", new CARD());
+        this.delegate.put(VerificationType.VPA, new VPA());
+        this.delegate.put(VerificationType.BIN, new CARD());
     }
 
     @Override
     public AbstractVerificationResponse verify(VerificationRequestV2 request) {
-        return delegate.get(request.getVerificationType().getType().toLowerCase()).verify(request);
+        return delegate.get(request.getVerificationType()).verify(request);
     }
 
     private class CARD implements IPaymentInstrumentValidator<BinVerificationResponse, VerificationRequestV2> {
@@ -69,6 +74,4 @@ public class PayUVerificationGateway implements IVerificationService<AbstractVer
             return VpaVerificationResponse.builder().vpa(response.getVpa()).payerAccountName(response.getPayerAccountName()).valid(response.getIsVPAValid() == 1).build();
         }
     }
-
-
 }

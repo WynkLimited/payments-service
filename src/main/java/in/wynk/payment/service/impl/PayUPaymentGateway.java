@@ -71,7 +71,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
  */
 @Slf4j
 @Service(PAYU_MERCHANT_PAYMENT_SERVICE + VERSION_2)
-public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayChargingResponse, PayUChargingRequest<?>>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayChargingResponse, PayUChargingRequest<?>> {
 
     private final IErrorCodesCacheService errorCodesCacheServiceImpl;
     private final RestTemplate restTemplate;
@@ -80,7 +80,6 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
     private final ApplicationEventPublisher eventPublisher;
     private final ICacheService<PaymentMethod, String> paymentMethodCachingService;
     private final Map<String, IPaymentChargingService<? extends PayUGatewayChargingResponse, PayUChargingRequest<?>>> chargeDelegate = new HashMap<>();
-    private final Map<Class<? extends AbstractTransactionReconciliationStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegate = new HashMap<>();
     private final Map<VerificationType, IMerchantVerificationService> verificationDelegate = new HashMap<>();
 
     @Value("${payment.merchant.payu.api.info}")
@@ -101,8 +100,6 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
-        this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
-        this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());
     }
 
     @Override
@@ -159,17 +156,6 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
                 + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle
                 + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUMerchantSecret;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
-    }
-
-    @Override
-    public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
-        final Transaction transaction = TransactionContext.get();
-        final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> reconStatusService =
-                statusDelegate.get(request.getClass());
-        if (Objects.isNull(reconStatusService)){
-            throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
-        }
-        return reconStatusService.status(request);
     }
 
     public void syncChargingTransactionFromSource (Transaction transaction, Optional<String> failureReasonOption) {
@@ -295,41 +281,6 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
-        }
-    }
-
-    private class ChargingTransactionReconciliationStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
-
-        @Override
-        public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
-            final Transaction transaction = TransactionContext.get();
-            syncChargingTransactionFromSource(transaction, Optional.empty());
-            if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY004);
-            } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY003);
-            }
-            return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
-        }
-    }
-
-    private class RefundTransactionReconciliationStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
-
-        @Override
-        public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
-            final Transaction transaction = TransactionContext.get();
-            RefundTransactionReconciliationStatusRequest refundRequest = (RefundTransactionReconciliationStatusRequest) request;
-            syncRefundTransactionFromSource(transaction, refundRequest.getExtTxnId());
-            if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                log.error(PAYU_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY004);
-            } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                log.error(PAYU_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY003);
-            }
-            return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }
     }
 

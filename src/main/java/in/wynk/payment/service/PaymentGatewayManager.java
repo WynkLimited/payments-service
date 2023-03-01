@@ -123,12 +123,12 @@ public class PaymentGatewayManager
             Optional<String> verifyPaymentCode = client.getMeta(BaseConstants.DEFAULT_VERIFY_PAYMENT_GATEWAY);
             paymentCode = verifyPaymentCode.get();
         } else {
-            log.warn(PaymentLoggingMarker.PAYMENT_VERIFY_USER_PAYMENT_FAILURE, "default verify gateway is not registered in client : {}", client.getAlias());
-            paymentCode = BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE + VERSION_2;
+            log.info(PaymentLoggingMarker.PAYMENT_VERIFY_USER_PAYMENT_FAILURE, "default verify gateway is not registered in client : {}", client.getAlias());
+            paymentCode = BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
         }
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IVerificationService<AbstractVerificationResponse, VerificationRequestV2> verifyService =
-                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequestV2>>() {
+                BeanLocatorFactory.getBean(paymentCode.concat(VERIFY), new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequestV2>>() {
                 });
         return verifyService.verify(request);
     }
@@ -185,7 +185,7 @@ public class PaymentGatewayManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
+    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback(CallbackRequestWrapper<?> request) {
         final PaymentGateway pg = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
@@ -205,8 +205,6 @@ public class PaymentGatewayManager
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
-            // .callbackRequest(request.getBody()).build()).build());
         }
     }
 
@@ -250,7 +248,7 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public void renew (PaymentRenewalChargingMessage request) {
+    public void renew(PaymentRenewalChargingMessage request) {
         PaymentGateway paymentGateway = PaymentCodeCachingService.getFromPaymentCode(request.getPaymentCode());
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
@@ -293,7 +291,7 @@ public class PaymentGatewayManager
         }
     }
 
-    private void handleException (PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
+    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
         errorEventBuilder.code(PAY024.getErrorCode());
         errorEventBuilder.description(PAY024.getErrorMessage()+"for "+paymentGateway);
         eventPublisher.publishEvent(errorEventBuilder.build());
@@ -301,12 +299,12 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public boolean supportsRenewalReconciliation () {
+    public boolean supportsRenewalReconciliation() {
         return IMerchantPaymentRenewalServiceV2.super.supportsRenewalReconciliation();
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
+    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage message) {
         log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
         AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
@@ -335,7 +333,7 @@ public class PaymentGatewayManager
             try {
                 final PaymentGateway paymentGateway = transaction.getPaymentChannel();
                 final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusService =
-                        BeanLocatorFactory.getBean(paymentGateway.getCode() + VERSION_2,
+                        BeanLocatorFactory.getBean(paymentGateway.getCode().concat(PAYMENT_STATUS),
                                 new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
                                 });
                 return statusService.status(request);

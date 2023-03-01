@@ -10,10 +10,8 @@ import lombok.Getter;
 public class UpiDetails {
     @Analysed
     private String vpa;
+
+    @Analysed
     @JsonProperty("isIntent")
-    @Analysed
     private boolean intent;
-    @JsonProperty("isSeamless")
-    @Analysed
-    private boolean seamless;
 }

@@ -10,7 +10,6 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.service.ICouponManager;
-import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.IWynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
@@ -19,7 +18,6 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
@@ -57,8 +55,9 @@ import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.*;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY036;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_ERROR;
 
 @Slf4j
 @Service(BeanConstant.PAYMENT_MANAGER_V2)
@@ -69,13 +68,10 @@ public class PaymentGatewayManager
         IVerificationService<AbstractVerificationResponse, VerificationRequestV2>, IPreDebitNotificationService {
 
     private final ICouponManager couponManager;
-    //ßprivate final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
-    private final IMerchantTransactionService merchantTransactionService;
-    //private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
 
@@ -104,8 +100,8 @@ public class PaymentGatewayManager
             }
             return response;
         } catch (Exception ex) {
-            this.handleGatewayFailure(ex);
-            throw ex;
+            this.publishEvent(ex);
+            throw new PaymentRuntimeException(ex);
         } finally {
             eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
                     .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(
@@ -148,14 +144,14 @@ public class PaymentGatewayManager
         }
     }
 
-    private void handleGatewayFailure (Exception ex) {
+    private void publishEvent (Exception ex) {
         final Transaction transaction = TransactionContext.get();
         final PaymentErrorEvent.Builder eventBuilder = PaymentErrorEvent.builder(transaction.getIdStr()).clientAlias(transaction.getClientAlias());
         if (ex instanceof WynkRuntimeException) {
             final WynkRuntimeException original = (WynkRuntimeException) ex;
             final IWynkErrorType errorType = original.getErrorType();
             eventBuilder.code(errorType.getErrorCode());
-            eventBuilder.code(errorType.getErrorMessage());
+            eventBuilder.description(errorType.getErrorMessage());
         } else {
             eventBuilder.code(PaymentErrorType.PAY002.getErrorCode()).description(ex.getMessage());
         }

@@ -42,9 +42,13 @@ public class BasicPricingManager implements IPricingManager {
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
             final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
+            if (nativeRequest.isAutoRenewOpted()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
-                if (nativeRequest.isAutoRenewOpted()) nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
+                if (nativeRequest.isAutoRenewOpted()) {
+                    nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
+                }
                 if (nativeRequest.isTrialOpted()) {
+                    nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setAmount(cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice());
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
@@ -52,8 +56,6 @@ public class BasicPricingManager implements IPricingManager {
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
             if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentCode().getId())) couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
-            else if (nativeRequest.isAutoRenewOpted()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
-
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {
             final PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;

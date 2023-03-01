@@ -13,6 +13,7 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY602;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY603;
 import static in.wynk.subscription.common.enums.PlanType.FREE;
 
 public class PlanValidator<T extends IPlanValidatorRequest> extends BaseHandler<T> {
@@ -25,6 +26,8 @@ public class PlanValidator<T extends IPlanValidatorRequest> extends BaseHandler<
             final SelectivePlansComputationResponse selectivePlansComputationResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(SelectivePlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
             if (Objects.isNull(selectivePlansComputationResponse) || (!selectivePlansComputationResponse.getEligiblePlans().contains(planId) && (request.isTrialOpted() || !selectivePlansComputationResponse.getActivePlans().contains(planId))))
                 throw new WynkRuntimeException(PAY602);
+            if (request.isTrialOpted() && !request.isAutoRenewOpted())
+                throw new WynkRuntimeException(PAY603);
         }
         super.handle(request);
     }

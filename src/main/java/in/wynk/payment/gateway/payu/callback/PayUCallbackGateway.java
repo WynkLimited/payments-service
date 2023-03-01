@@ -146,38 +146,14 @@ public class PayUCallbackGateway implements IPaymentCallback<AbstractPaymentCall
             @Override
             public AbstractPaymentCallbackResponse handleCallback(PayUAutoRefundCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
-                syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
+                common.syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
                 // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
                 if (transaction.getStatus() == TransactionStatus.SUCCESS)
                     transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
                 return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
             }
 
-            private void syncRefundTransactionFromSource(Transaction transaction, String refundRequestId) {
-                MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
-                try {
-                    MultiValueMap<String, String> payURefundStatusRequest = common.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.CHECK_ACTION_STATUS.getCode(), refundRequestId);
-                    merchantTransactionEventBuilder.request(payURefundStatusRequest);
-                    PayUVerificationResponse<Map<String, PayURefundTransactionDetails>>
-                            payUPaymentRefundResponse = common.exchange(common.INFO_API, payURefundStatusRequest, new TypeReference<PayUVerificationResponse<Map<String, PayURefundTransactionDetails>>>() {
-                    });
-                    merchantTransactionEventBuilder.response(payUPaymentRefundResponse);
-                    Map<String, PayURefundTransactionDetails> payURefundTransactionDetails = payUPaymentRefundResponse.getTransactionDetails(refundRequestId);
-                    merchantTransactionEventBuilder.externalTransactionId(payURefundTransactionDetails.get(refundRequestId).getRequestId());
-                    AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.get(refundRequestId).getRequestId());
-                    payURefundTransactionDetails.put(transaction.getIdStr(), payURefundTransactionDetails.get(refundRequestId));
-                    payURefundTransactionDetails.remove(refundRequestId);
-                    common.syncTransactionWithSourceResponse(PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
-                } catch (HttpStatusCodeException e) {
-                    merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-                } catch (Exception e) {
-                    log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
-                    throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-                } finally {
-                    eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
-                }
-            }
+
         }
     }
 

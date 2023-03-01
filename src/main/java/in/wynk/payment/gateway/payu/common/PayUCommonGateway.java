@@ -18,6 +18,7 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
+import in.wynk.payment.dto.payu.PayURefundTransactionDetails;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
@@ -37,6 +38,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.Map;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -145,7 +147,33 @@ public class PayUCommonGateway {
         }
     }
 
-    public void syncTransactionWithSourceResponse(PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
+    public void syncRefundTransactionFromSource(Transaction transaction, String refundRequestId) {
+        MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        try {
+            MultiValueMap<String, String> payURefundStatusRequest = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.CHECK_ACTION_STATUS.getCode(), refundRequestId);
+            merchantTransactionEventBuilder.request(payURefundStatusRequest);
+            PayUVerificationResponse<Map<String, PayURefundTransactionDetails>>
+                    payUPaymentRefundResponse = exchange(INFO_API, payURefundStatusRequest, new TypeReference<PayUVerificationResponse<Map<String, PayURefundTransactionDetails>>>() {
+            });
+            merchantTransactionEventBuilder.response(payUPaymentRefundResponse);
+            Map<String, PayURefundTransactionDetails> payURefundTransactionDetails = payUPaymentRefundResponse.getTransactionDetails(refundRequestId);
+            merchantTransactionEventBuilder.externalTransactionId(payURefundTransactionDetails.get(refundRequestId).getRequestId());
+            AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.get(refundRequestId).getRequestId());
+            payURefundTransactionDetails.put(transaction.getIdStr(), payURefundTransactionDetails.get(refundRequestId));
+            payURefundTransactionDetails.remove(refundRequestId);
+            syncTransactionWithSourceResponse(PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
+        } catch (HttpStatusCodeException e) {
+            merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        } catch (Exception e) {
+            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        } finally {
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+        }
+    }
+
+    private void syncTransactionWithSourceResponse(PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
         int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();

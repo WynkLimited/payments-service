@@ -80,8 +80,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
         @Override
         public UpiPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-            final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) payload.getFirst().getPaymentDetails();
-            String flowType = paymentDetails.getUpiDetails().isSeamless() ? PaymentConstants.SEAMLESS : PaymentConstants.NON_SEAMLESS;
+            String flowType = paymentMethodCachingService.get(payload.getFirst().getPaymentDetails().getPaymentId()).getFlowType();
             return upiDelegate.get(flowType).transform(payload);
         }
 
@@ -119,7 +118,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                             "&tn=" + response.getTn() +
                             "&mc=" + response.getMc() +
                             "&tid=" + response.getTid();
-                    final String form = EncryptionUtils.encrypt(encryptionKey, stringBuilder);
+                    final String form = EncryptionUtils.encrypt(stringBuilder, encryptionKey);
                     return IntentSeamlessUpiPaymentChargingResponse.builder()
                             .deepLink(form)
                             .appPackage((String) method.getMeta().get(APP_PACKAGE))

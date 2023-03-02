@@ -172,8 +172,12 @@ public class PaymentGatewayManager
 
     @Override
     public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
-        final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> delegatorStatusService =
-                statusDelegator.get(request.getClass());
+        IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> delegatorStatusService;
+        if(AbstractTransactionReconciliationStatusRequest.class.isAssignableFrom(request.getClass())){
+            delegatorStatusService = statusDelegator.get(AbstractTransactionReconciliationStatusRequest.class);
+        } else {
+            delegatorStatusService = statusDelegator.get(request.getClass());
+        }
         if (Objects.isNull(delegatorStatusService)) {
             throw new WynkRuntimeException(PaymentErrorType.PAY008);
         }

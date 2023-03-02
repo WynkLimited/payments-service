@@ -77,8 +77,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
         @Override
         public AbstractCoreUpiChargingResponse charge(AbstractChargingRequestV2 request) {
-            final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-            String flowType = paymentDetails.getUpiDetails().isSeamless() ? PaymentConstants.SEAMLESS : PaymentConstants.NON_SEAMLESS;
+            String flowType = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getFlowType();
             return upiDelegate.get(flowType).charge(request);
         }
 

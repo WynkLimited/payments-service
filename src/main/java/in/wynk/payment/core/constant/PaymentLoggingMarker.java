@@ -20,6 +20,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APS_REFUND_STATUS = MarkerFactory.getMarker("APS_REFUND_STATUS");
     Marker APS_CHARGING_FAILURE = MarkerFactory.getMarker("APS_CHARGING_FAILURE");
     Marker APS_VALIDATION_FAILURE = MarkerFactory.getMarker("APS_VALIDATION_FAILURE");
+    Marker APS_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_REFUND_STATUS_VERIFICATION");
     Marker VERIFICATION_FAILURE = MarkerFactory.getMarker("VERIFICATION_FAILURE");
 
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");

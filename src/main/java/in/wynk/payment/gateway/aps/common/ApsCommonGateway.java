@@ -7,6 +7,8 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
@@ -72,6 +74,7 @@ public class ApsCommonGateway {
         try {
             return httpTemplate.exchange(entity, target).getBody();
         } catch (Exception e) {
+            log.error(PaymentLoggingMarker.APS_API_FAILURE,e.getMessage());
             throw new WynkRuntimeException(PAY041, e);
         }
     }

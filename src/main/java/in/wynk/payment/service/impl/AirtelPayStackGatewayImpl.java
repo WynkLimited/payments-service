@@ -67,7 +67,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STAT
 
 @Slf4j
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
-public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusService implements
+public class AirtelPayStackGatewayImpl implements
         IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>,
         IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest>
           {
@@ -76,15 +76,10 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
     private String REFUND_ENDPOINT;
     @Value("${aps.payment.init.settlement.api}")
     private String SETTLEMENT_ENDPOINT;
-
     @Value("${aps.payment.option.api}")
     private String PAYMENT_OPTION_ENDPOINT;
     @Value("${aps.payment.saved.details.api}")
     private String SAVED_DETAILS_ENDPOINT;
-    @Value("${aps.payment.refund.status.api}")
-    private String REFUND_STATUS_ENDPOINT;
-    @Value("${aps.payment.charge.status.api}")
-    private String CHARGING_STATUS_ENDPOINT;
     @Value("${payment.polling.page}")
     private String CLIENT_POLLING_SCREEN_URL;
 
@@ -105,7 +100,6 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
                                       ApplicationEventPublisher eventPublisher, ResourceLoader resourceLoader,
                                       PaymentMethodCachingService paymentMethodCachingService, ObjectMapper objectMapper, PaymentCachingService cachingService,
                                       IMerchantTransactionService merchantTransactionService, ITransactionManagerService transactionManager) {
-        super(cache, errorCache);
         this.cache = cache;
         this.httpTemplate = httpTemplate;
         this.eventPublisher = eventPublisher;
@@ -137,97 +131,6 @@ public class AirtelPayStackGatewayImpl extends AbstractMerchantPaymentStatusServ
             return httpTemplate.exchange(entity, target);
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY041, e);
-        }
-    }
-
-    @Override
-    public WynkResponseEntity<AbstractChargingStatusResponse> status (AbstractTransactionReconciliationStatusRequest request) {
-        final Transaction transaction = TransactionContext.get();
-        if (request instanceof ChargingTransactionReconciliationStatusRequest) {
-            syncChargingTransactionFromSource(transaction);
-        } else if (request instanceof RefundTransactionReconciliationStatusRequest) {
-            syncRefundTransactionFromSource(transaction, request.getExtTxnId());
-        } else {
-            throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
-        }
-        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            return WynkResponseEntity.<AbstractChargingStatusResponse>builder()
-                    .data(ChargingStatusResponse.success(transaction.getIdStr(), cache.validTillDate(transaction.getPlanId()), transaction.getPlanId())).build();
-        } else if (transaction.getStatus() == TransactionStatus.FAILURE) {
-            return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(ChargingStatusResponse.failure(transaction.getIdStr(), transaction.getPlanId())).build();
-        }
-        throw new WynkRuntimeException(PAY025);
-    }
-
-    private void syncRefundTransactionFromSource (Transaction transaction, String refundId) {
-        TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
-        final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
-        try {
-            final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
-            final HttpHeaders headers = new HttpHeaders();
-            final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(refundStatusRequest, headers, HttpMethod.POST, URI.create(REFUND_STATUS_ENDPOINT));
-            final ResponseEntity<ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse>> response =
-                    httpTemplate.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse>>() {
-                    });
-            final ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse> wrapper = response.getBody();
-            assert wrapper != null;
-            if (!wrapper.isResult()) {
-                throw new WynkRuntimeException("Unable to initiate Refund");
-            }
-            final ApsExternalPaymentRefundStatusResponse body = wrapper.getData();
-            mBuilder.request(refundStatusRequest);
-            mBuilder.response(body);
-            mBuilder.externalTransactionId(body.getRefundId());
-            if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_SUCCESS")) {
-                finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
-                finalTransactionStatus = TransactionStatus.FAILURE;
-            }
-        } catch (HttpStatusCodeException e) {
-            mBuilder.response(e.getResponseBodyAsString());
-            throw new WynkRuntimeException(PAY998, e);
-        } catch (Exception e) {
-            log.error(APS_REFUND_STATUS, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
-            throw new WynkRuntimeException(PAY998, e);
-        } finally {
-            transaction.setStatus(finalTransactionStatus.name());
-            eventPublisher.publishEvent(mBuilder.build());
-        }
-
-    }
-
-    public void syncChargingTransactionFromSource (Transaction transaction) {
-        final String txnId = transaction.getIdStr();
-        final boolean fetchHistoryTransaction = false;
-        final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
-        try {
-            final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
-            final ResponseEntity<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>> response =
-                    httpTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>>() {
-                    });
-            final ApsApiResponseWrapper<List<ApsChargeStatusResponse>> wrapper = response.getBody();
-            assert wrapper != null;
-            if (wrapper.isResult()) {
-                final List<ApsChargeStatusResponse> body = wrapper.getData();
-                final ApsChargeStatusResponse status = body.get(0);
-                if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
-                    transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-                } else if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
-                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                }
-                builder.request(status).response(status);
-                builder.externalTransactionId(status.getPgId());
-            }
-        } catch (HttpStatusCodeException e) {
-            builder.request(e.getResponseBodyAsString()).response(e.getResponseBodyAsString());
-            throw new WynkRuntimeException(PAY998, e);
-        } catch (Exception e) {
-            log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
-            throw new WynkRuntimeException(PAY998, e);
-        } finally {
-            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-                eventPublisher.publishEvent(builder.build());
-            }
         }
     }
 

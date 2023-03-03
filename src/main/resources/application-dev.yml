@@ -525,6 +525,11 @@ webview:
   host: https://pay-stage.wynk.in
 
 wynk:
+  kafka:
+    enabled: false
+  multi:
+    kafka:
+      enabled: false
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true

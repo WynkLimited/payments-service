@@ -6,6 +6,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -103,7 +104,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             private class PayUUpiCollectInAppCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
                 @Override
                 public UpiCollectInAppChargingResponse charge (AbstractChargingRequestV2 request) {
-                    throw new WynkRuntimeException("Method is not implemented");
+                    throw new WynkRuntimeException(PaymentErrorType.PAY888);
                 }
             }
 
@@ -201,7 +202,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         public AbstractCoreCardChargingResponse charge(AbstractChargingRequestV2 request) {
             final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
-            boolean inAppOtpSupport = (Objects.nonNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
+            boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
             boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
             String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
             return cardDelegate.get(flowType).charge(request);
@@ -285,7 +286,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
             @Override
             public NetBankingChargingResponse charge(AbstractChargingRequestV2 request) {
-                throw new WynkRuntimeException("Method is not implemented");
+                throw new WynkRuntimeException(PaymentErrorType.PAY888);
             }
         }
 

@@ -32,7 +32,7 @@ public class PaymentOptionsControllerV2 {
     /**
      * This Api returns payments eligible payment methods and groups having minimum 1 payment method
      */
-    @GetMapping("/options/{sid}")
+    @PostMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
     public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethods(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {

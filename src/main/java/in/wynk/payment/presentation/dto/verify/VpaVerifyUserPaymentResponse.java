@@ -7,5 +7,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DefaultVerifyUserPaymentResponse extends VerifyUserPaymentResponse {
+public class VpaVerifyUserPaymentResponse extends VerifyUserPaymentResponse {
 }

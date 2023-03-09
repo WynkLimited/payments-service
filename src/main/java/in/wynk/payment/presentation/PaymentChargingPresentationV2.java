@@ -6,6 +6,7 @@ import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentChargingAction;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
@@ -66,7 +67,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
     @SneakyThrows
     private String handleFormSpec (Map<String, String> form) {
-        return EncryptionUtils.encrypt(encryptionKey, gson.toJson(form));
+        return EncryptionUtils.encrypt(gson.toJson(form), encryptionKey);
     }
 
     private class UpiChargingPresentation implements IPaymentPresentationV2<UpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
@@ -130,7 +131,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             public class UpiSeamlessCollectInApp implements IPaymentPresentationV2<CollectInAppSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
                 @Override
                 public CollectInAppSeamlessUpiPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                    throw new WynkRuntimeException("Method is not implemented");
+                    throw new WynkRuntimeException(PaymentErrorType.PAY888);
                 }
             }
         }
@@ -154,7 +155,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 @Override
                 public CollectNonSeamlessUpiPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
                     final UpiCollectChargingResponse response = (UpiCollectChargingResponse) payload.getSecond();
-                    final String url = EncryptionUtils.encrypt(encryptionKey, response.getUrl());
+                    final String url = EncryptionUtils.encrypt(response.getUrl(), encryptionKey);
                     return CollectNonSeamlessUpiPaymentChargingResponse.builder()
                             .url(url).action(PaymentChargingAction.REDIRECT.getAction()).build();
                 }
@@ -175,7 +176,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         public CardPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCachingService.get(payload.getFirst().getPaymentDetails().getPaymentId());
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) payload.getFirst().getPaymentDetails();
-            boolean inAppOtpSupport = (Objects.nonNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
+            boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
             boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
             String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
             return cardDelegate.get(flowType).transform(payload);
@@ -199,14 +200,14 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             public class CardSeamlessOtpLess implements IPaymentPresentationV2<OtpLessSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
                 @Override
                 public OtpLessSeamlessCardPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                    throw new WynkRuntimeException("Method is not implemented");
+                    throw new WynkRuntimeException(PaymentErrorType.PAY888);
                 }
             }
 
             public class CardSeamlessInApp implements IPaymentPresentationV2<InAppSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
                 @Override
                 public InAppSeamlessCardPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                    throw new WynkRuntimeException("Method is not implemented");
+                    throw new WynkRuntimeException(PaymentErrorType.PAY888);
                 }
             }
         }
@@ -264,7 +265,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         public class NetBankingSeamless implements IPaymentPresentationV2<SeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
             @Override
             public SeamlessNetBankingPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                throw new WynkRuntimeException("Method is not implemented");
+                throw new WynkRuntimeException(PaymentErrorType.PAY888);
             }
         }
         public class NetBankingNonSeamless implements IPaymentPresentationV2<NonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {

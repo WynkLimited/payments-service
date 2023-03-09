@@ -32,9 +32,11 @@ public abstract class AbstractCardDetails {
     private boolean saveCard;
 
     @Analysed
+    @JsonProperty("inAppOtpSupport")
     private Boolean inAppOtpSupport;
 
     @Analysed
+    @JsonProperty("otpLessSupport")
     private Boolean otpLessSupport;
 
     @Analysed(name = "cardDetailsType")

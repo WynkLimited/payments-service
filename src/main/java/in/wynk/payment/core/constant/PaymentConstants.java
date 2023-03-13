@@ -48,6 +48,9 @@ public interface PaymentConstants extends BaseConstants {
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
     String MERCHANT_CLIENT_ID = "clientId";
+    String SEAMLESS_FLOW = "SEAMLESS";
+    String NON_SEAMLESS_FLOW = "NON_SEAMLESS";
+    String NON_SEAMLESS_REDIRECT_FLOW = "NON_SEAMLESS_REDIRECT_FLOW";
     String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
     String TDR ="tdr";
@@ -60,13 +63,12 @@ public interface PaymentConstants extends BaseConstants {
     String FORM_BASED= "FORM_BASED";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
-    String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";
     String WINBACK_CAMPAIGN = "winback_campaign";
-    String APB_PAYTM_WALLET = "APB_PAYTM_WALLET";
+
     String PHONEPE_AUTO_DEBIT = "PHONEPE_AUTO_DEBIT";
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
     String PAYMENT_DETAILS_KEY = "PAYMENT_DETAILS_KEY:";

@@ -14,4 +14,5 @@ public interface UpiConstants {
     String AM= "am";
     String CU= "cu";
     String TN= "tn";
+    String UPI_PAYEE_NAME = "UPI_PAYEE_NAME";
 }

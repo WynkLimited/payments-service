@@ -6,4 +6,3 @@ package in.wynk.payment.core.constant;
 public interface NetBankingConstants {
     String NET_BANKING = "NET_BANKING";
 }
-

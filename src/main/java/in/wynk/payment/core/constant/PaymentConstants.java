@@ -5,13 +5,10 @@ import in.wynk.common.constant.BaseConstants;
 public interface PaymentConstants extends BaseConstants {
 
     String SKU_ID = "skuId";
-    String SAVED = "SAVED";
-    String CARD = "CARD";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
     String ERROR = "error";
     String VERSION_2 = "V2";
-    String WALLET = "WALLET";
     String SUBSID = "subsId";
     String STATUS = "status";
     String FAILED = "failed";
@@ -29,7 +26,6 @@ public interface PaymentConstants extends BaseConstants {
     String MESSAGE = "message";
     String PIPE_SEPARATOR = "|";
     String SOURCE_MODE = "mode";
-    String UPI_PAYEE_NAME = "UPI_PAYEE_NAME";
     String BANK_CODE = "bankCode";
     String SANDBOX_ENV = "Sandbox";
     String MERCHANT_TOKEN = "token";
@@ -47,21 +43,15 @@ public interface PaymentConstants extends BaseConstants {
     String NON_SEAMLESS = "NON_SEAMLESS";
     String HTML_TYPE = "HTML_TYPE";
     String DEFAULT_COUNTRY_CODE = "IN";
-    String DEBIT_CARD = "DEBIT_CARD";
     String APP_NAME = "APP_NAME";
     String BASE_USER_EMAIL = "@wynk.in";
-    String CREDIT_CARD = "CREDIT_CARD";
-    String NET_BANKING = "NET_BANKING";
     String BILLING = "BILLING";
     String APP_PACKAGE = "package_name";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
-    String PAYTM_WALLET = "PAYTM_WALLET";
-    String WALLET_USER_ID = "walletUserId";
     String MERCHANT_CLIENT_ID = "clientId";
-    String GOOGLE_WALLET = "GOOGLE_WALLET";
     String SEAMLESS_FLOW = "SEAMLESS";
     String NON_SEAMLESS_FLOW = "NON_SEAMLESS";
     String NON_SEAMLESS_REDIRECT_FLOW = "NON_SEAMLESS_REDIRECT_FLOW";
@@ -77,7 +67,6 @@ public interface PaymentConstants extends BaseConstants {
     String FORM_BASED= "FORM_BASED";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
-    String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
     String AIRTEL_PAY_STACK = "aps";
     String AIRTEL_PAY_STACK_CHARGE = "aps_charge";
@@ -87,7 +76,7 @@ public interface PaymentConstants extends BaseConstants {
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";
     String WINBACK_CAMPAIGN = "winback_campaign";
-    String APB_PAYTM_WALLET = "APB_PAYTM_WALLET";
+
     String PHONEPE_AUTO_DEBIT = "PHONEPE_AUTO_DEBIT";
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
     String PAYMENT_DETAILS_KEY = "PAYMENT_DETAILS_KEY:";

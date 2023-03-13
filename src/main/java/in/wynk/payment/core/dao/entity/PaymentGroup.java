@@ -15,8 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class PaymentGroup extends MongoBaseEntity<String> {
     private String displayName;
     private int hierarchy;
-    @Builder.Default
-    private String description= "Testing description";;
+    private String description;
 
     @Override
     public int hashCode() {

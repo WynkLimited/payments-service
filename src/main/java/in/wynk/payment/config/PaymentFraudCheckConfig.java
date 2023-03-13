@@ -1,7 +1,7 @@
 package in.wynk.payment.config;
 
-import in.wynk.client.validations.ClientValidator;
 import in.wynk.common.validations.IHandler;
+import in.wynk.client.validations.ClientValidator;
 import in.wynk.payment.validations.CouponValidator;
 import in.wynk.payment.validations.PaymentMethodValidator;
 import in.wynk.payment.validations.PlanValidator;

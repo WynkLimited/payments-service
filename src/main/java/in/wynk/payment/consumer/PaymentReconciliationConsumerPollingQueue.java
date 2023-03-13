@@ -38,12 +38,12 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     @Autowired
     private PaymentGatewayManager manager;
 
-    public PaymentReconciliationConsumerPollingQueue (String queueName,
-                                                      AmazonSQS sqs,
-                                                      ObjectMapper objectMapper,
-                                                      ISQSMessageExtractor messagesExtractor,
-                                                      ExecutorService messageHandlerThreadPool,
-                                                      ScheduledExecutorService pollingThreadPool) {
+    public PaymentReconciliationConsumerPollingQueue(String queueName,
+                                                     AmazonSQS sqs,
+                                                     ObjectMapper objectMapper,
+                                                     ISQSMessageExtractor messagesExtractor,
+                                                     ExecutorService messageHandlerThreadPool,
+                                                     ScheduledExecutorService pollingThreadPool) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
@@ -52,7 +52,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentReconciliation")
-    public void consume (PaymentReconciliationMessage message) {
+    public void consume(PaymentReconciliationMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
         final AbstractTransactionReconciliationStatusRequest transactionStatusRequest;
@@ -78,12 +78,12 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     }
 
     @Override
-    public Class<PaymentReconciliationMessage> messageType () {
+    public Class<PaymentReconciliationMessage> messageType() {
         return PaymentReconciliationMessage.class;
     }
 
     @Override
-    public void start () {
+    public void start() {
         if (reconciliationPollingEnabled) {
             log.info("Starting PaymentReconciliationConsumerPollingQueue...");
             pollingThreadPool.scheduleWithFixedDelay(
@@ -96,7 +96,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     }
 
     @Override
-    public void stop () {
+    public void stop() {
         if (reconciliationPollingEnabled) {
             log.info("Shutting down PaymentReconciliationConsumerPollingQueue ...");
             pollingThreadPool.shutdownNow();

@@ -34,7 +34,6 @@ import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentChargingServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
-import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.UpiConstants.*;
+import static in.wynk.payment.core.constant.NetBankingConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 /**
@@ -64,7 +64,6 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final ApsCommonGateway common;
 
-
     @Value("${aps.payment.init.charge.upi.api}")
     private String UPI_CHARGING_ENDPOINT;
     @Value("${aps.payment.init.charge.api}")
@@ -72,12 +71,12 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
     @Value("${payment.polling.page}")
     private String CLIENT_POLLING_SCREEN_URL;
 
-    public ApsChargeGateway (PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common, ApsClientService apsClientService) {
+    public ApsChargeGateway (PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common) {
         this.paymentMethodCachingService = paymentMethodCachingService;
         this.common = common;
         chargingDelegate.put(UPI, new UpiCharging());
         chargingDelegate.put(PaymentConstants.CARD, new CardCharging());
-        chargingDelegate.put(PaymentConstants.NET_BANKING, new NetBankingCharging());
+        chargingDelegate.put(NET_BANKING, new NetBankingCharging());
     }
 
     @Override
@@ -350,7 +349,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                 .paymentInfo(abstractCardPaymentInfoBuilder.build()).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                         RequestEntity<ApsExternalChargingRequest<?>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
                         ApsApiResponseWrapper<ApsCardChargingResponse> response =
-                                common.exchange(payRequest, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
+                                common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
                                 });
                         if (Objects.nonNull(response) && response.isResult()) {
                             final ApsCardChargingResponse cardChargingResponse = response.getData();
@@ -372,7 +371,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> netBankingDelegate = new HashMap<>();
 
         public NetBankingCharging () {
-            netBankingDelegate.put(PaymentConstants.NET_BANKING, new NetBanking());
+            netBankingDelegate.put(NET_BANKING, new NetBanking());
         }
 
         @Override

@@ -37,14 +37,14 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delayTimeUnit}")
     private TimeUnit renewalPoolingDelayTimeUnit;
 
-    public PaymentRenewalConsumerPollingQueue (String queueName,
-                                               AmazonSQS sqs,
-                                               ObjectMapper objectMapper,
-                                               ISQSMessageExtractor messagesExtractor,
-                                               ExecutorService messageHandlerThreadPool,
-                                               ScheduledExecutorService pollingThreadPool,
-                                               ISqsManagerService sqsManagerService,
-                                               ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager) {
+    public PaymentRenewalConsumerPollingQueue(String queueName,
+                                              AmazonSQS sqs,
+                                              ObjectMapper objectMapper,
+                                              ISQSMessageExtractor messagesExtractor,
+                                              ExecutorService messageHandlerThreadPool,
+                                              ScheduledExecutorService pollingThreadPool,
+                                              ISqsManagerService sqsManagerService,
+                                              ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.objectMapper = objectMapper;
         this.pollingThreadPool = pollingThreadPool;
@@ -68,7 +68,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     }
 
     @Override
-    public void stop () {
+    public void stop() {
         if (renewalPollingEnabled) {
             log.info("Shutting down PaymentRenewalConsumerPollingQueue ...");
             pollingThreadPool.shutdownNow();
@@ -79,7 +79,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalMessage")
-    public void consume (PaymentRenewalMessage message) {
+    public void consume(PaymentRenewalMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
@@ -97,7 +97,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     }
 
     @Override
-    public Class<PaymentRenewalMessage> messageType () {
+    public Class<PaymentRenewalMessage> messageType() {
         return PaymentRenewalMessage.class;
     }
 

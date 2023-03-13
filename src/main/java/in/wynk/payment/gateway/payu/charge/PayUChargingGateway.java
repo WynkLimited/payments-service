@@ -42,7 +42,8 @@ import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_S
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
 import static in.wynk.payment.core.constant.UpiConstants.*;
-import static in.wynk.payment.core.constant.UpiConstants.TN;
+import static in.wynk.payment.core.constant.NetBankingConstants.*;
+import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -72,8 +73,8 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
         public PayUUpiCharging() {
-            upiDelegate.put(SEAMLESS, new PayUUpiSeamlessCharging());
-            upiDelegate.put(NON_SEAMLESS, new PayUUpiNonSeamlessCharging());
+            upiDelegate.put(SEAMLESS.getValue(), new PayUUpiSeamlessCharging());
+            upiDelegate.put(NON_SEAMLESS.getValue(), new PayUUpiNonSeamlessCharging());
         }
 
         @Override
@@ -87,16 +88,16 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public PayUUpiSeamlessCharging () {
-                upiDelegate.put(INTENT, new PayUUpiIntentCharging());
-                upiDelegate.put(COLLECT_IN_APP, new PayUUpiCollectInAppCharging());
+                upiDelegate.put(INTENT.getValue(), new PayUUpiIntentCharging());
+                upiDelegate.put(COLLECT_IN_APP.getValue(), new PayUUpiCollectInAppCharging());
             }
 
             @Override
             public AbstractSeamlessUpiChargingResponse charge (AbstractChargingRequestV2 request) {
                 UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                String flow = INTENT;
+                String flow = INTENT.getValue();
                 if (!upiPaymentDetails.getUpiDetails().isIntent()) {
-                    flow = COLLECT_IN_APP;
+                    flow = COLLECT_IN_APP.getValue();
                 }
                 return upiDelegate.get(flow).charge(request);
             }
@@ -149,7 +150,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public PayUUpiNonSeamlessCharging () {
-                upiDelegate.put(COLLECT, new PayUUpiCollectCharging());
+                upiDelegate.put(COLLECT.getValue(), new PayUUpiCollectCharging());
             }
 
             @Override
@@ -194,8 +195,8 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
         public PayUCardCharging() {
-            cardDelegate.put(SEAMLESS, new PayUCardSeamlessCharging());
-            cardDelegate.put(NON_SEAMLESS, new PayUCardNonSeamlessCharging());
+            cardDelegate.put(SEAMLESS.getValue(), new PayUCardSeamlessCharging());
+            cardDelegate.put(NON_SEAMLESS.getValue(), new PayUCardNonSeamlessCharging());
         }
 
         @Override
@@ -204,7 +205,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
             boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
             boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
-            String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
+            String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS.getValue() : NON_SEAMLESS.getValue();
             return cardDelegate.get(flowType).charge(request);
         }
 
@@ -214,13 +215,13 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
             public PayUCardSeamlessCharging() {
                 cardDelegate.put(OTP_LESS, new PayUCardOtpLessCharging());
-                cardDelegate.put(COLLECT_IN_APP, new PayUCardCollectInAppCharging());
+                cardDelegate.put(COLLECT_IN_APP.getValue(), new PayUCardCollectInAppCharging());
             }
 
             @Override
             public AbstractSeamlessCardChargingResponse charge(AbstractChargingRequestV2 request) {
                 final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
-                String flow = COLLECT_IN_APP;
+                String flow = COLLECT_IN_APP.getValue();
                 if(Objects.nonNull(paymentDetails.getCardDetails().getOtpLessSupport()) && paymentDetails.getCardDetails().getOtpLessSupport()) {
                     flow = OTP_LESS;
                 }
@@ -272,8 +273,8 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> nbDelegate = new HashMap<>();
 
         public PayUNetBankingCharging() {
-            nbDelegate.put(SEAMLESS, new PayUNetBankingSeamlessCharging());
-            nbDelegate.put(NON_SEAMLESS, new PayUNetBankingNonSeamlessCharging());
+            nbDelegate.put(SEAMLESS.getValue(), new PayUNetBankingSeamlessCharging());
+            nbDelegate.put(NON_SEAMLESS.getValue(), new PayUNetBankingNonSeamlessCharging());
         }
 
         @Override

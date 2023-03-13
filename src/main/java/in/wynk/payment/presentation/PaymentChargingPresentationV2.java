@@ -5,7 +5,6 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentChargingAction;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -16,9 +15,8 @@ import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
-import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
-import in.wynk.payment.presentation.dto.charge.*;
+import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.card.*;
 import in.wynk.payment.presentation.dto.charge.netbanking.NetBankingPaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.netbanking.NonSeamlessNetBankingPaymentChargingResponse;
@@ -33,10 +31,15 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.UpiConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.UPI;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
 
 @Slf4j
 @Service

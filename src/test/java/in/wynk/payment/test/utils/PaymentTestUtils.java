@@ -14,7 +14,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.CARD;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
+import static in.wynk.payment.core.constant.WalletConstants.PAYTM_WALLET;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public class PaymentTestUtils {

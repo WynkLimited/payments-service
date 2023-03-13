@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
 
 @Getter
 @SuperBuilder
@@ -23,7 +24,7 @@ public class WalletPaymentDetails extends AbstractPaymentDetails {
 
     @Override
     public String getPaymentMode() {
-        return PaymentConstants.WALLET;
+        return WALLET;
     }
 
 }

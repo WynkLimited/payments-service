@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
 
 @Getter
 @SuperBuilder
@@ -22,6 +23,6 @@ public class CardPaymentDetails extends AbstractPaymentDetails {
 
     @Override
     public String getPaymentMode() {
-        return PaymentConstants.CARD;
+        return CARD;
     }
 }

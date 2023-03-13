@@ -39,8 +39,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
+import static in.wynk.payment.core.constant.UpiConstants.*;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
 
 /**
  * @author Nishesh Pandey
@@ -156,14 +160,14 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         List<Object> alertDetails = new ArrayList<>();
         alertDetails.add(Objects.nonNull(paymentMethod.getMeta().get("alert")) ? (String) paymentMethod.getMeta().get("alert") : null);
         switch (group) {
-            case UpiConstants.UPI:
+            case UPI:
                 if (Objects.isNull(paymentMethodDTO.getUpi())) {
                     paymentMethodDTO.setUpi(new ArrayList<>());
                 }
                 List<UPI.UpiSavedDetails> saved = new ArrayList<>();
-                saved.add(UPI.UpiSavedDetails.builder().vpa(Objects.nonNull(paymentMethod.getMeta().get("VPA")) ? (String) paymentMethod.getMeta().get("VPA") : null).build());
+                saved.add(in.wynk.payment.dto.response.upi.UPI.UpiSavedDetails.builder().vpa(Objects.nonNull(paymentMethod.getMeta().get("VPA")) ? (String) paymentMethod.getMeta().get("VPA") : null).build());
                 paymentMethodDTO.getUpi()
-                        .add(UPI.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
+                        .add(in.wynk.payment.dto.response.upi.UPI.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
                                 .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
                                 .savedDetails(saved)
                                 .alertDetails(alertDetails)
@@ -171,7 +175,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                         .intentDetails(UpiWalletSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get("package_name")).build()).build())
                                 .build());
                 break;
-            case PaymentConstants.CARD:
+            case CARD:
                 if (Objects.isNull(paymentMethodDTO.getCard())) {
                     paymentMethodDTO.setCard(new ArrayList<>());
                 }
@@ -183,7 +187,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                 .savedDetails(cardSavedDetails)
                                 .build());
                 break;
-            case PaymentConstants.NET_BANKING:
+            case NET_BANKING:
                 if (Objects.isNull(paymentMethodDTO.getNetBanking())) {
                     paymentMethodDTO.setNetBanking(new ArrayList<>());
                 }
@@ -194,7 +198,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                 .supportingDetails(SupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported()).build())
                                 .build());
                 break;
-            case PaymentConstants.WALLET:
+            case WALLET:
                 if (Objects.isNull(paymentMethodDTO.getWallet())) {
                     paymentMethodDTO.setWallet(new ArrayList<>());
                 }

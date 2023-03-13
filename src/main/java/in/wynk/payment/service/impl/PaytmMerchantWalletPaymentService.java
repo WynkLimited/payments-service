@@ -68,6 +68,8 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CALLBACK_PAYLOAD_PARSING_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET_USER_ID;
 
 @Slf4j
 @Service(PAYTM_MERCHANT_WALLET_SERVICE)

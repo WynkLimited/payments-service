@@ -48,9 +48,11 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.UpiConstants.*;
-import static in.wynk.payment.core.constant.NetBankingConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 /**
@@ -75,7 +77,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         this.paymentMethodCachingService = paymentMethodCachingService;
         this.common = common;
         chargingDelegate.put(UPI, new UpiCharging());
-        chargingDelegate.put(PaymentConstants.CARD, new CardCharging());
+        chargingDelegate.put(CARD, new CardCharging());
         chargingDelegate.put(NET_BANKING, new NetBankingCharging());
     }
 
@@ -111,7 +113,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
             @Override
             public AbstractCoreUpiChargingResponse charge (AbstractChargingRequestV2 request) {
-                return upiDelegate.get(COLLECT).charge(request);
+                return upiDelegate.get(COLLECT.getValue()).charge(request);
             }
 
             /**

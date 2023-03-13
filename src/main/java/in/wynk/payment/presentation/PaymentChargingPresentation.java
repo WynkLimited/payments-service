@@ -6,8 +6,6 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
-import static in.wynk.payment.constant.FlowType.*;
-
 import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.gateway.IPostFormSpec;
@@ -43,8 +41,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.UpiConstants.*;
+import static in.wynk.payment.constant.FlowType.*;
+import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
+import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_PN;
 import static in.wynk.payment.core.constant.UpiConstants.UPI_MERCHANT_CODE;
 
 /**

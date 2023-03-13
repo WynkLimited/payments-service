@@ -7,17 +7,13 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
-import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.*;
-import in.wynk.payment.presentation.PaymentStatusPresentation;
 import in.wynk.payment.service.IMerchantVerificationService;
-import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
@@ -44,8 +40,6 @@ public class RevenuePaymentController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
-    private final PaymentGatewayManager manager;
-    private final PaymentStatusPresentation paymentStatusPresentation;
 
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")

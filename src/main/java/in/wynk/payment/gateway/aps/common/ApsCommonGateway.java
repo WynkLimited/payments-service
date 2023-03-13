@@ -11,6 +11,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.utils.PropertyResolverUtils;
+import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.AuthSchemes;
@@ -21,6 +22,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -45,12 +47,14 @@ public class ApsCommonGateway {
     private EncryptionUtils.RSA rsa;
     private final RestTemplate httpTemplate;
     private final ResourceLoader resourceLoader;
+    private final ApsClientService apsClientService;
     private final Gson gson;
 
-    public ApsCommonGateway (@Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ResourceLoader resourceLoader, Gson gson) {
+    public ApsCommonGateway (@Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson) {
+        this.gson = gson;
         this.httpTemplate = httpTemplate;
         this.resourceLoader = resourceLoader;
-        this.gson = gson;
+        this.apsClientService = apsClientService;
     }
 
     @SneakyThrows
@@ -72,9 +76,9 @@ public class ApsCommonGateway {
 
     public <T> T exchange (RequestEntity<?> entity, ParameterizedTypeReference<T> target) {
         try {
-            return httpTemplate.exchange(entity, target).getBody();
+            return apsClientService.apsOperations(httpTemplate, entity, target).getBody();
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.APS_API_FAILURE,e.getMessage());
+            log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage());
             throw new WynkRuntimeException(PAY041, e);
         }
     }

@@ -32,6 +32,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
@@ -47,6 +48,7 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
  * @author Nishesh Pandey
  */
 @Slf4j
+@Service(PaymentConstants.AIRTEL_PAY_STACK_RENEW)
 public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> {
 
     @Value("${aps.payment.renewal.api}")

@@ -19,6 +19,7 @@ import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
+import static in.wynk.payment.constant.FlowType.*;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
@@ -128,7 +129,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             String encryptedParams;
             if (UpiPaymentDetails.class.isAssignableFrom(chargingRequest.getPurchaseDetails().getPaymentDetails().getClass())) {
                 final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) chargingRequest.getPurchaseDetails().getPaymentDetails());
-                final String bankCode = upiDetails.isIntent() || chargingRequest.isIntent() ? INTENT : UPI;
+                final String bankCode = upiDetails.isIntent() || chargingRequest.isIntent() ? INTENT.getValue() : UPI;
                 try {
                     if (bankCode.equalsIgnoreCase(UPI)) {
                         payUPayload.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());

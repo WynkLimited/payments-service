@@ -34,6 +34,7 @@ import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentChargingServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -48,6 +49,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
@@ -62,6 +64,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final ApsCommonGateway common;
 
+
     @Value("${aps.payment.init.charge.upi.api}")
     private String UPI_CHARGING_ENDPOINT;
     @Value("${aps.payment.init.charge.api}")
@@ -69,7 +72,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
     @Value("${payment.polling.page}")
     private String CLIENT_POLLING_SCREEN_URL;
 
-    public ApsChargeGateway (PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common) {
+    public ApsChargeGateway (PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common, ApsClientService apsClientService) {
         this.paymentMethodCachingService = paymentMethodCachingService;
         this.common = common;
         chargingDelegate.put(UPI, new UpiCharging());
@@ -87,8 +90,8 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
         public UpiCharging () {
-            upiDelegate.put(PaymentConstants.SEAMLESS, new UpiSeamlessCharging());
-            upiDelegate.put(PaymentConstants.NON_SEAMLESS, new UpiNonSeamlessCharging());
+            upiDelegate.put(SEAMLESS.getValue(), new UpiSeamlessCharging());
+            upiDelegate.put(NON_SEAMLESS.getValue(), new UpiNonSeamlessCharging());
         }
 
         @Override
@@ -104,7 +107,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public UpiNonSeamlessCharging () {
-                upiDelegate.put(COLLECT, new UpiCollectCharging());
+                upiDelegate.put(COLLECT.getValue(), new UpiCollectCharging());
             }
 
             @Override
@@ -167,16 +170,16 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public UpiSeamlessCharging () {
-                upiDelegate.put(INTENT, new UpiIntentCharging());
-                upiDelegate.put(COLLECT_IN_APP, new UpiCollectInAppCharging());
+                upiDelegate.put(INTENT.getValue(), new UpiIntentCharging());
+                upiDelegate.put(COLLECT_IN_APP.getValue(), new UpiCollectInAppCharging());
             }
 
             @Override
             public AbstractSeamlessUpiChargingResponse charge (AbstractChargingRequestV2 request) {
                 UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                String flow = INTENT;
+                String flow = INTENT.getValue();
                 if (!upiPaymentDetails.getUpiDetails().isIntent()) {
-                    flow = COLLECT_IN_APP;
+                    flow = COLLECT_IN_APP.getValue();
                 }
                 return upiDelegate.get(flow).charge(request);
             }
@@ -248,8 +251,8 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
         public CardCharging () {
-            cardDelegate.put(PaymentConstants.SEAMLESS, new CardSeamlessCharging());
-            cardDelegate.put(PaymentConstants.NON_SEAMLESS, new CardNonSeamlessCharging());
+            cardDelegate.put(SEAMLESS.getValue(), new CardSeamlessCharging());
+            cardDelegate.put(NON_SEAMLESS.getValue(), new CardNonSeamlessCharging());
         }
 
         @Override
@@ -265,8 +268,8 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
             public CardSeamlessCharging () {
-                cardDelegate.put(INTENT, new CardOtpLessCharging());
-                cardDelegate.put(COLLECT_IN_APP, new CardInAppCharging());
+                cardDelegate.put(INTENT.getValue(), new CardOtpLessCharging());
+                cardDelegate.put(COLLECT_IN_APP.getValue(), new CardInAppCharging());
             }
 
             @Override
@@ -347,7 +350,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                 .paymentInfo(abstractCardPaymentInfoBuilder.build()).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                         RequestEntity<ApsExternalChargingRequest<?>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
                         ApsApiResponseWrapper<ApsCardChargingResponse> response =
-                                common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
+                                common.exchange(payRequest, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
                                 });
                         if (Objects.nonNull(response) && response.isResult()) {
                             final ApsCardChargingResponse cardChargingResponse = response.getData();

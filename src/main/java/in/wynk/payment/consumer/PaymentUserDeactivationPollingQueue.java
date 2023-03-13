@@ -8,8 +8,6 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.common.messages.PaymentUserDeactivationMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.event.PaymentUserDeactivationEvent;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;

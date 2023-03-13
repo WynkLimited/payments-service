@@ -257,7 +257,7 @@ public class PaymentGatewayManager
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> renewalService =
-                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(VERSION_2),
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(RENEW),
                         new ParameterizedTypeReference<IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>>() {
                         });
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());

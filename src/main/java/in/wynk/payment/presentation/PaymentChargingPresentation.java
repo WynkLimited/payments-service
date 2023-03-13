@@ -6,6 +6,9 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import static in.wynk.payment.constant.FlowType.*;
+
+import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.gateway.IPostFormSpec;
 import in.wynk.payment.dto.gateway.IRedirectSpec;
@@ -85,9 +88,9 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private final Map<String, IPaymentPresentation<? extends AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public UpiChargingPresentation () {
-            delegate.put(SEAMLESS_FLOW, new Seamless());
-            delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
-            delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
+            delegate.put(SEAMLESS.getValue(), new Seamless());
+            delegate.put(NON_SEAMLESS.getValue(), new NonSeamless());
+            delegate.put(NON_SEAMLESS_REDIRECT_FLOW.getValue(), new Redirect());
         }
 
         @Override
@@ -104,14 +107,14 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
                 final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
                 final PlanDTO planToBePurchased = paymentCache.getPlan(payload.getTransaction().getPlanId());
                 final OfferDTO offerToBePurchased = paymentCache.getOffer(planToBePurchased.getLinkedOfferId());
-                final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
+                final String prefix = (String) method.getMeta().getOrDefault(UpiConstants.UPI_PREFIX, "upi");
                 final IUpiIntentSpec intentSpec = (IUpiIntentSpec) payload.getPgResponse();
                 final String stringBuilder = prefix +
                         ":" +
                         "//" +
                         "pay" +
                         "?pa=" + intentSpec.getPayeeVpa() +
-                        "&pn=" + Optional.of(intentSpec.getPayeeDisplayName()).orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(UPI_PAYEE_NAME).orElse(DEFAULT_PN)) +
+                        "&pn=" + Optional.of(intentSpec.getPayeeDisplayName()).orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(UpiConstants.UPI_PAYEE_NAME).orElse(DEFAULT_PN)) +
                         "&tr=" + intentSpec.getMerchantOrderID() +
                         "&am=" + intentSpec.getAmountToBePaid() +
                         "&cu=" + intentSpec.getCurrencyCode().orElse("INR") +
@@ -150,8 +153,8 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private final Map<String, IPaymentPresentation<? extends AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public NetBankingChargingPresentation () {
-            delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
-            delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
+            delegate.put(NON_SEAMLESS.getValue(), new NonSeamless());
+            delegate.put(NON_SEAMLESS_REDIRECT_FLOW.getValue(), new Redirect());
         }
 
         @Override
@@ -185,9 +188,9 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private final Map<String, IPaymentPresentation<? extends AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public CardChargingPresentation () {
-            delegate.put(SEAMLESS_FLOW, new Seamless());
-            delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
-            delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
+            delegate.put(SEAMLESS.getValue(), new Seamless());
+            delegate.put(NON_SEAMLESS.getValue(), new NonSeamless());
+            delegate.put(NON_SEAMLESS_REDIRECT_FLOW.getValue(), new Redirect());
         }
 
         @Override
@@ -229,9 +232,9 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         private final Map<String, IPaymentPresentation<? extends AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public WalletChargingPresentation () {
-            delegate.put(SEAMLESS_FLOW, new Seamless());
-            delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
-            delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
+            delegate.put(SEAMLESS.getValue(), new Seamless());
+            delegate.put(NON_SEAMLESS.getValue(), new NonSeamless());
+            delegate.put(NON_SEAMLESS_REDIRECT_FLOW.getValue(), new Redirect());
         }
 
         @Override

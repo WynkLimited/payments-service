@@ -3,8 +3,6 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
-import in.wynk.common.validations.MongoBaseEntityConstraint;
-import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.WebPaymentOptionsRequest;
 import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.paymentoption.PaymentOptionsDTO;
@@ -14,11 +12,6 @@ import in.wynk.session.aspect.advice.ManageSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
-
-import static in.wynk.common.constant.CacheBeanNameConstants.ITEM_DTO;
-import static in.wynk.common.constant.CacheBeanNameConstants.PLAN_DTO;
 
 /**
  * @author Nishesh Pandey
@@ -31,6 +24,9 @@ public class PaymentOptionsControllerV2 {
 
     /**
      * This Api returns payments eligible payment methods and groups having minimum 1 payment method
+     * @param sid
+     * @param request
+     * @return
      */
     @PostMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")

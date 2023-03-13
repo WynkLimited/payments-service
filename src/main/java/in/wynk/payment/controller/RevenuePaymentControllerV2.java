@@ -7,9 +7,7 @@ import in.wynk.common.dto.IWynkPresentation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -146,7 +144,12 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
-    //This version is for payment refactoring task
+    /**
+     *  This version is for payment refactoring task
+     * @param sid
+     * @param request
+     * @return
+     */
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")

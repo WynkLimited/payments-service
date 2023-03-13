@@ -3,6 +3,7 @@ package in.wynk.payment.dto.request;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.WalletConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.paytm.PaytmPaymentRefundRequest;
@@ -29,7 +30,7 @@ public abstract class AbstractPaymentRefundRequest {
         switch (originalTransaction.getPaymentChannel().getId()) {
             case PAYU:
                 return PayUPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
-            case PAYTM_WALLET:
+            case WalletConstants.PAYTM_WALLET:
                 return PaytmPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case PHONEPE_WALLET:
                 return PhonePePaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);

@@ -48,9 +48,6 @@ public interface PaymentConstants extends BaseConstants {
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
     String MERCHANT_CLIENT_ID = "clientId";
-    //String SEAMLESS_FLOW = "SEAMLESS";
-   // String NON_SEAMLESS_FLOW = "NON_SEAMLESS";
-    //String NON_SEAMLESS_REDIRECT_FLOW = "NON_SEAMLESS_REDIRECT_FLOW";
     String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
     String TDR ="tdr";

@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.core.constant.UpiConstants.UPI_MERCHANT_CODE;
 
 /**

@@ -4,7 +4,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 
-import static in.wynk.payment.dto.apb.ApbConstants.FRESH_CARD_TYPE;
+import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
 
 @Getter
 @AnalysedEntity

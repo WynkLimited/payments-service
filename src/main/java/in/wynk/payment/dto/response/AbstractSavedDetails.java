@@ -12,6 +12,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.PersistenceConstructor;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
 
 
 /**
@@ -23,8 +25,8 @@ import org.springframework.data.annotation.PersistenceConstructor;
 @AnalysedEntity
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = CardDetails.class, name = PaymentConstants.CARD),
-        @JsonSubTypes.Type(value = SavedWalletPayment.class, name = PaymentConstants.WALLET),
+        @JsonSubTypes.Type(value = CardDetails.class, name = CARD),
+        @JsonSubTypes.Type(value = SavedWalletPayment.class, name = WALLET),
         @JsonSubTypes.Type(value = SavedBillingPayment.class, name =  PaymentConstants.BILLING)
 })
 public abstract class AbstractSavedDetails {

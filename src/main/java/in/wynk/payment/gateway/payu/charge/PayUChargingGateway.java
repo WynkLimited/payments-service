@@ -45,6 +45,8 @@ import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.core.constant.UpiConstants.TN;
 import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 
 @Slf4j
 @Service(PaymentConstants.PAYU_CHARGE)

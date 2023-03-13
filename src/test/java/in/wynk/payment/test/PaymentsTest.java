@@ -31,7 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.core.constant.PaymentConstants.PHONEPE_WALLET;
+import static in.wynk.payment.core.constant.WalletConstants.PHONEPE_WALLET;
 import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
 import static org.mockito.ArgumentMatchers.anyInt;

@@ -44,6 +44,7 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
 import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.core.constant.WalletConstants.WALLET;
+import static in.wynk.common.constant.BaseConstants.ADDTOBILL;
 
 /**
  * @author Nishesh Pandey
@@ -221,7 +222,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                         .intentDetails(UpiWalletSupportingDetails.IntentDetails.builder().packageName(packageName).build()).build())
                                 .build());
                 break;
-            case PaymentConstants.BILLING:
+            case PaymentConstants.ADDTOBILL:
                 if (Objects.isNull(paymentMethodDTO.getBilling())) {
                     paymentMethodDTO.setBilling(new ArrayList<>());
                 }

@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Getter
 @ToString
 @SuperBuilder
-@Payment(groupId = "UPI", mode = "inApp")
+@Payment(groupId = "UPI", mode = "INAPP")
 public class UpiCollectInAppChargingResponse extends AbstractSeamlessUpiChargingResponse {
     @Field("package_name")
     private String packageName;

@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-@Payment(groupId = "UPI", mode = "intent")
+@Payment(groupId = "UPI", mode = "INTENT")
 public class UpiIntentChargingResponse extends AbstractSeamlessUpiChargingResponse{
     private String pa;
     private String pn;

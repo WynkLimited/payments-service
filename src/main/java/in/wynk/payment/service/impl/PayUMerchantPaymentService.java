@@ -19,8 +19,8 @@ import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
-import static in.wynk.payment.constant.FlowType.*;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
@@ -62,14 +62,16 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.constant.FlowType.INTENT;
+import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.dto.payu.PayUCommand.*;
+import static in.wynk.payment.dto.payu.PayUCommand.PAYU_GETTDR;
+import static in.wynk.payment.dto.payu.PayUCommand.UPI_MANDATE_REVOKE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
-import static in.wynk.payment.core.constant.UpiConstants.*;
 
 @Slf4j
 @Service(PAYU_MERCHANT_PAYMENT_SERVICE)
@@ -129,9 +131,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             String encryptedParams;
             if (UpiPaymentDetails.class.isAssignableFrom(chargingRequest.getPurchaseDetails().getPaymentDetails().getClass())) {
                 final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) chargingRequest.getPurchaseDetails().getPaymentDetails());
-                final String bankCode = upiDetails.isIntent() || chargingRequest.isIntent() ? INTENT.getValue() : UPI;
+                final String bankCode = upiDetails.isIntent() || chargingRequest.isIntent() ? UpiConstants.INTENT : UpiConstants.UPI;
                 try {
-                    if (bankCode.equalsIgnoreCase(UPI)) {
+                    if (bankCode.equalsIgnoreCase(UpiConstants.UPI)) {
                         payUPayload.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
                         encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode, new TypeReference<PayUUpiCollectResponse>() {
                         }).getResult().getOtpPostUrl(), encryptionKey);
@@ -524,7 +526,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 requestMap.add(key, payUPayload.get(key));
             }
             payUPayload.clear();
-            requestMap.add(PAYU_PG, UPI);
+            requestMap.add(PAYU_PG, "UPI");
             requestMap.add(PAYU_TXN_S2S_FLOW, "4");
             requestMap.add(PAYU_BANKCODE, bankCode);
             HttpHeaders headers = new HttpHeaders();

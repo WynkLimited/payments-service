@@ -8,6 +8,6 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-@Payment(groupId = "CARD", mode = "otpLess")
+@Payment(groupId = "CARD", mode = "OTP_LESS")
 public class OtpLessCardChargingResponse extends AbstractSeamlessCardChargingResponse{
 }

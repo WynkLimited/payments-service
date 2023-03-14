@@ -11,7 +11,7 @@ import java.util.Map;
 @Getter
 @ToString
 @SuperBuilder
-@Payment(groupId = "CARD", mode = "keyValue")
+@Payment(groupId = "CARD", mode = "KEY_VALUE")
 public class CardKeyValueTypeChargingResponse extends AbstractNonSeamlessCardChargingResponse {
     @JsonProperty("info")
     private Map<String, String> form;

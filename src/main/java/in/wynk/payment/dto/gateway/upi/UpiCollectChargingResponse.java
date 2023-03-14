@@ -9,7 +9,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-@Payment(groupId = "UPI", mode = "collect")
+@Payment(groupId = "UPI", mode = "COLLECT")
 public class UpiCollectChargingResponse extends AbstractNonSeamlessUpiChargingResponse {
     @JsonProperty("redirectUrl")
     private String url;

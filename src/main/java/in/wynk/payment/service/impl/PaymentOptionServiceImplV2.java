@@ -3,7 +3,6 @@ package in.wynk.payment.service.impl;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
@@ -156,23 +155,32 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private void addPaymentMethod (PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier) {
 
         String group = paymentMethod.getGroup();
-        String description = Objects.nonNull(paymentMethod.getMeta().get("description")) ? (String) paymentMethod.getMeta().get("description") : null;
+        boolean isMetaAvailable = Objects.nonNull(paymentMethod.getMeta());
+        String description = null;
+        String packageName = null;
+        String vpa = null;
         List<Object> alertDetails = new ArrayList<>();
-        alertDetails.add(Objects.nonNull(paymentMethod.getMeta().get("alert")) ? (String) paymentMethod.getMeta().get("alert") : null);
+        if(isMetaAvailable) {
+            description= Objects.nonNull(paymentMethod.getMeta().get("description")) ? (String) paymentMethod.getMeta().get("description") : null;
+            packageName=(String) paymentMethod.getMeta().get("package_name");
+            alertDetails.add(Objects.nonNull(paymentMethod.getMeta().get("alert")) ? (String) paymentMethod.getMeta().get("alert") : null);
+            vpa = Objects.nonNull(paymentMethod.getMeta().get("VPA")) ? (String) paymentMethod.getMeta().get("VPA") : null;
+        }
+
         switch (group) {
             case UPI:
                 if (Objects.isNull(paymentMethodDTO.getUpi())) {
                     paymentMethodDTO.setUpi(new ArrayList<>());
                 }
                 List<UPI.UpiSavedDetails> saved = new ArrayList<>();
-                saved.add(in.wynk.payment.dto.response.upi.UPI.UpiSavedDetails.builder().vpa(Objects.nonNull(paymentMethod.getMeta().get("VPA")) ? (String) paymentMethod.getMeta().get("VPA") : null).build());
+                saved.add(in.wynk.payment.dto.response.upi.UPI.UpiSavedDetails.builder().vpa(vpa).build());
                 paymentMethodDTO.getUpi()
                         .add(in.wynk.payment.dto.response.upi.UPI.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
                                 .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
                                 .savedDetails(saved)
                                 .alertDetails(alertDetails)
                                 .supportingDetails(UpiWalletSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
-                                        .intentDetails(UpiWalletSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get("package_name")).build()).build())
+                                        .intentDetails(UpiWalletSupportingDetails.IntentDetails.builder().packageName(packageName).build()).build())
                                 .build());
                 break;
             case CARD:
@@ -210,7 +218,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                 .savedDetails(walletSavedDetails)
                                 .alertDetails(alertDetails)
                                 .supportingDetails(UpiWalletSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
-                                        .intentDetails(UpiWalletSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get("package_name")).build()).build())
+                                        .intentDetails(UpiWalletSupportingDetails.IntentDetails.builder().packageName(packageName).build()).build())
                                 .build());
                 break;
             case PaymentConstants.BILLING:

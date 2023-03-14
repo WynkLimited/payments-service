@@ -5,6 +5,7 @@ package in.wynk.payment.core.constant;
  */
 public interface UpiConstants {
     String UPI = "UPI";
+    String INTENT = "INTENT";
     String UPI_PAYEE_NAME = "UPI_PAYEE_NAME";
     String UPI_PREFIX = "upi_prefix";
     String UPI_MERCHANT_CODE = "5815";

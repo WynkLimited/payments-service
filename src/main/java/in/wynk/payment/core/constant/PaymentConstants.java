@@ -56,8 +56,6 @@ public interface PaymentConstants extends BaseConstants {
     String PAYU_PAYMENT_STATUS ="PayU_payment_status";
     String APS_PAYMENT_STATUS ="aps_payment_status";
     String PAYU_VERIFY ="PayU_verify";
-    String OTP_LESS= "OTP_LESS";
-    String FORM_BASED= "FORM_BASED";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PAYMENT_API_CLIENT = "paymentApi";

@@ -6,7 +6,6 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.constant.FlowType;
 import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.gateway.IPostFormSpec;
@@ -42,10 +41,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_PN;
 import static in.wynk.payment.core.constant.UpiConstants.UPI_MERCHANT_CODE;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.*;
+import static in.wynk.payment.core.constant.NetBankingConstants.*;
+import static in.wynk.payment.core.constant.CardConstants.*;
 
 /**
  * @author Nishesh Pandey
@@ -61,7 +63,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
     private final PaymentCachingService paymentCache;
     private final IEntityCacheService<ClientDetails, String> clientCache;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
-    private final Map<FlowType, IPaymentPresentation<? extends AbstractChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+    private final Map<String, IPaymentPresentation<? extends AbstractChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
     @PostConstruct
     public void init () {
@@ -86,7 +88,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class UpiChargingPresentation implements IPaymentPresentation<AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<FlowType, IPaymentPresentation<? extends AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<String, IPaymentPresentation<? extends AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public UpiChargingPresentation () {
             delegate.put(SEAMLESS, new Seamless());
@@ -151,7 +153,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class NetBankingChargingPresentation implements IPaymentPresentation<AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<FlowType, IPaymentPresentation<? extends AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<String, IPaymentPresentation<? extends AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public NetBankingChargingPresentation () {
             delegate.put(NON_SEAMLESS, new NonSeamless());
@@ -186,7 +188,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class CardChargingPresentation implements IPaymentPresentation<AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<FlowType, IPaymentPresentation<? extends AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<String, IPaymentPresentation<? extends AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public CardChargingPresentation () {
             delegate.put(SEAMLESS, new Seamless());
@@ -230,7 +232,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class WalletChargingPresentation implements IPaymentPresentation<AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<FlowType, IPaymentPresentation<? extends AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<String, IPaymentPresentation<? extends AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public WalletChargingPresentation () {
             delegate.put(SEAMLESS, new Seamless());

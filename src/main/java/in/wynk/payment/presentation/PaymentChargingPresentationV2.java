@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.constant.FlowType;
 import in.wynk.payment.core.constant.PaymentChargingAction;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
@@ -36,9 +35,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.UpiConstants.UPI_PREFIX;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.*;
+import static in.wynk.payment.core.constant.NetBankingConstants.*;
+import static in.wynk.payment.core.constant.CardConstants.*;
 
 @Slf4j
 @Service
@@ -51,7 +53,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
     private final Gson gson;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final PaymentMethodCachingService paymentMethodCachingService;
-    private final Map<FlowType, IPaymentPresentationV2<? extends PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> delegate = new HashMap<>();
+    private final Map<String, IPaymentPresentationV2<? extends PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> delegate = new HashMap<>();
 
     @PostConstruct
     public void init () {
@@ -74,7 +76,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
     private class UpiChargingPresentation implements IPaymentPresentationV2<UpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
 
-        private final Map<FlowType, IPaymentPresentationV2<? extends UpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiDelegate = new HashMap<>();
+        private final Map<String, IPaymentPresentationV2<? extends UpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiDelegate = new HashMap<>();
 
         public UpiChargingPresentation () {
             upiDelegate.put(SEAMLESS, new UpiSeamless());
@@ -89,7 +91,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
         public class UpiSeamless implements IPaymentPresentationV2<SeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends SeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiSeamlessDelegate = new HashMap<>();
+            private final Map<String, IPaymentPresentationV2<? extends SeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiSeamlessDelegate = new HashMap<>();
 
             public UpiSeamless () {
                 upiSeamlessDelegate.put(INTENT, new UpiSeamlessIntent());
@@ -167,7 +169,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
     private class CardChargingPresentation implements IPaymentPresentationV2<CardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
 
-        private final Map<FlowType, IPaymentPresentationV2<? extends CardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardDelegate = new HashMap<>();
+        private final Map<String, IPaymentPresentationV2<? extends CardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardDelegate = new HashMap<>();
 
         public CardChargingPresentation () {
             cardDelegate.put(SEAMLESS, new CardSeamless());
@@ -180,13 +182,13 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) payload.getFirst().getPaymentDetails();
             boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
             boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
-            FlowType flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
+            String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
             return cardDelegate.get(flowType).transform(payload);
         }
 
         public class CardSeamless implements IPaymentPresentationV2<SeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends SeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardSeamlessDelegate = new HashMap<>();
+            private final Map<String, IPaymentPresentationV2<? extends SeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardSeamlessDelegate = new HashMap<>();
 
             public CardSeamless () {
                 cardSeamlessDelegate.put(OTP_LESS, new CardSeamlessOtpLess());
@@ -216,7 +218,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
         public class CardNonSeamless implements IPaymentPresentationV2<NonSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends NonSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardNonSeamlessDelegate = new HashMap<>();
+            private final Map<String, IPaymentPresentationV2<? extends NonSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardNonSeamlessDelegate = new HashMap<>();
 
             public CardNonSeamless () {
                 cardNonSeamlessDelegate.put(KEY_VALUE, new CardNonSeamlessKeyValueType());
@@ -252,7 +254,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
     private class NetBankingChargingPresentation implements IPaymentPresentationV2<NetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
 
-        private final Map<FlowType, IPaymentPresentationV2<? extends NetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> nbDelegate = new HashMap<>();
+        private final Map<String, IPaymentPresentationV2<? extends NetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> nbDelegate = new HashMap<>();
 
         public NetBankingChargingPresentation () {
             nbDelegate.put(SEAMLESS, new NetBankingSeamless());

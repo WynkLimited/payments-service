@@ -62,8 +62,6 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.constant.FlowType.INTENT;
-import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;

@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.common;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
@@ -60,6 +61,16 @@ public class ApsCommonGateway {
         String token= generateToken();
         try {
             return apsClientService.apsOperations(token, entity, target).getBody();
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage());
+            throw new WynkRuntimeException(PAY041, e);
+        }
+    }
+
+    public <T> T exchange1 (RequestEntity<?> entity, TypeReference<T> target) {
+        String token= generateToken();
+        try {
+            return apsClientService.apsOperations1(token, entity, target).getBody();
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage());
             throw new WynkRuntimeException(PAY041, e);

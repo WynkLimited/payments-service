@@ -50,12 +50,12 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_CLIENT_ID = "clientId";
     String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
-    String TDR ="tdr";
-    String PAYU_CHARGE ="PayU_charge";
-    String PAYU_CALLBACK ="PayU_callback";
-    String PAYU_PAYMENT_STATUS ="PayU_payment_status";
-    String APS_PAYMENT_STATUS ="aps_payment_status";
-    String PAYU_VERIFY ="PayU_verify";
+    String TDR = "tdr";
+    String PAYU_CHARGE = "PayU_charge";
+    String PAYU_CALLBACK = "PayU_callback";
+    String PAYU_PAYMENT_STATUS = "PayU_payment_status";
+    String APS_PAYMENT_STATUS = "aps_payment_status";
+    String PAYU_VERIFY = "PayU_verify";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PAYMENT_API_CLIENT = "paymentApi";
@@ -93,6 +93,16 @@ public interface PaymentConstants extends BaseConstants {
     String CHARGE = "_charge";
     String VERIFY = "_verify";
     String RENEW = "_renew";
-    String CALLBACK="_callback";
-    String PAYMENT_STATUS="_payment_status";
+    String CALLBACK = "_callback";
+    String PAYMENT_STATUS = "_payment_status";
+    String SEAMLESS = "SEAMLESS";
+    String NON_SEAMLESS = "NON_SEAMLESS";
+    String INAPP = "INAPP";
+    String COLLECT_IN_APP = "COLLECT_IN_APP";
+    String NON_SEAMLESS_REDIRECT_FLOW = "NON_SEAMLESS_REDIRECT_FLOW";
+    String OTP_LESS = "OTP_LESS";
+    String FORM_BASED = "FORM_BASED";
+    String WALLET = "WALLET";
+    String KEY_VALUE = "KEY_VALUE";
+    String HTML = "HTML";
 }

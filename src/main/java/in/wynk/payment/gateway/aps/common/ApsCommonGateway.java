@@ -14,6 +14,7 @@ import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.MultiMap;
 import org.apache.http.client.config.AuthSchemes;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -27,6 +28,8 @@ import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 
@@ -86,17 +89,17 @@ public class ApsCommonGateway {
         }
     }
 
-    private HttpHeaders generateHeaders () {
+    private MultiValueMap<String, String> generateHeaders () {
         final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
         final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
         final String password = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
         String token = AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
-        HttpHeaders requestHeaders = new HttpHeaders();
-        requestHeaders.set(HttpHeaders.AUTHORIZATION, token);
-        requestHeaders.set(CHANNEL_ID, AUTH_TYPE_WEB_UNAUTH);
-        requestHeaders.set(CONTENT_TYPE, APPLICATION_JSON);
-        requestHeaders.set(HttpHeaders.AUTHORIZATION, token);
-        return requestHeaders;
+
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.set(CHANNEL_ID, AUTH_TYPE_WEB_UNAUTH);
+        headers.set(CONTENT_TYPE, APPLICATION_JSON);
+        headers.set(HttpHeaders.AUTHORIZATION, token);
+        return headers;
     }
 
     @SneakyThrows

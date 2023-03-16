@@ -214,9 +214,11 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final RequestEntity<ApsExternalChargingRequest<IntentUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
 
                     //ApsApiResponseWrapper response = common.exchange1(requestEntity, ApsApiResponseWrapper.class);
+                    /*ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>*/
                     ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse> response =
-                            common.exchange1(requestEntity, new TypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
-                            });
+                            common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
+                            });/* new TypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
+                            });*/
 
                     if (Objects.nonNull(response) && response.isResult()) {
                         Map<String, String> map = Arrays.stream(((ApsUpiIntentChargingChargingResponse)response.getData()).getUpiLink().split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))

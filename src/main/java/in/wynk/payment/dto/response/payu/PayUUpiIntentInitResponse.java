@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY104;
 import static in.wynk.payment.dto.payu.PayUConstants.WYNK_UPI_MERCHANT_CODE;
-import static in.wynk.payment.dto.payu.PayUConstants.WYNK_UPI_MERCHANT_CODE;
 
 @Getter
 @NoArgsConstructor

@@ -8,7 +8,6 @@ import lombok.experimental.SuperBuilder;
 
 @Getter
 @ToString
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @SuperBuilder
 public class IntentUpiPaymentInfo extends AbstractUpiPaymentInfo {
 

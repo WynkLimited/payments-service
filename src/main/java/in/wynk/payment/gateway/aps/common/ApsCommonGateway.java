@@ -19,12 +19,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import org.springframework.http.HttpMethod;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 
@@ -44,6 +46,11 @@ public class ApsCommonGateway {
     private final ApsClientService apsClientService;
     private final Gson gson;
 
+    private final String CHANNEL_ID = "channel-id";
+    private final String AUTH_TYPE_WEB_UNAUTH = "WEB_UNAUTH";
+    private final String CONTENT_TYPE = "Content-Type";
+    private final String APPLICATION_JSON = "application/json";
+
     public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson) {
         this.gson = gson;
         this.resourceLoader = resourceLoader;
@@ -58,30 +65,38 @@ public class ApsCommonGateway {
     }
 
     public <T> T exchange (RequestEntity<?> entity, ParameterizedTypeReference<T> target) {
-        String token= generateToken();
+       // String token= generateToken();
         try {
-            return apsClientService.apsOperations(token, entity, target).getBody();
+            return apsClientService.apsOperations("token", entity, target).getBody();
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage());
             throw new WynkRuntimeException(PAY041, e);
         }
     }
 
-    public <T> T exchange1 (RequestEntity<?> entity, TypeReference<T> target) {
-        String token= generateToken();
+    public <T> T exchange1 (String url, HttpMethod method, Object body, TypeReference<T> target) {
         try {
-            return apsClientService.apsOperations1(token, entity, target).getBody();
+            String response = apsClientService.apsOperations1(generateHeaders(), url, method, body);
+            log.info("received response");
+            //convert to target
+            return null;
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage());
             throw new WynkRuntimeException(PAY041, e);
         }
     }
 
-    private static String generateToken () {
+    private HttpHeaders generateHeaders () {
         final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
         final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
         final String password = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
-        return AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
+        String token = AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.set(HttpHeaders.AUTHORIZATION, token);
+        requestHeaders.set(CHANNEL_ID, AUTH_TYPE_WEB_UNAUTH);
+        requestHeaders.set(CONTENT_TYPE, APPLICATION_JSON);
+        requestHeaders.set(HttpHeaders.AUTHORIZATION, token);
+        return requestHeaders;
     }
 
     @SneakyThrows

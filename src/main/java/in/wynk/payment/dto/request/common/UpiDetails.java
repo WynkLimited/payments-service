@@ -10,8 +10,7 @@ import java.io.Serializable;
 
 @Getter
 @AnalysedEntity
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class UpiDetails implements Serializable {
+public class UpiDetails {
     @Analysed
     private String vpa;
 

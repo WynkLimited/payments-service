@@ -101,6 +101,9 @@ public class AbstractChargingRequestV2 implements IChargingDetails, IPaymentMeth
 
     @Override
     public String getCountryCode () {
+        if(this.getGeoLocation() == null){
+            return "IN";
+        }
         return this.getGeoLocation().getCountryCode();
     }
 

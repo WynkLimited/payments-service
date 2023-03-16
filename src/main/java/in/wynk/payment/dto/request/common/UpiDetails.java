@@ -15,6 +15,6 @@ public class UpiDetails {
     private String vpa;
 
     @Analysed
-    @JsonProperty("isIntent")
+    /*@JsonProperty("isIntent")*/
     private boolean intent;
 }

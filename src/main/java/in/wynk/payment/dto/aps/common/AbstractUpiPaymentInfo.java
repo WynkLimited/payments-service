@@ -8,8 +8,8 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 public abstract class AbstractUpiPaymentInfo extends AbstractPaymentInfo {
-
     public abstract String getUpiFlow();
+    private String upiApp;
 
     @Override
     public String getPaymentMode() {

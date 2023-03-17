@@ -39,7 +39,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -49,11 +48,11 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static in.wynk.payment.core.constant.CardConstants.CARD;
 import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
-import static in.wynk.payment.core.constant.UpiConstants.*;
-import static in.wynk.payment.core.constant.CardConstants.*;
-import static in.wynk.payment.core.constant.NetBankingConstants.*;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 
 /**
@@ -129,13 +128,14 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
                     final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-
+                    final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
+                    final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     final HttpHeaders headers = new HttpHeaders();
                     ApsExternalChargingRequest.ApsExternalChargingRequestBuilder<CollectUpiPaymentInfo> apsChargingRequestBuilder =
                             ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(transaction.getIdStr()).userInfo(userInfo)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
+                            CollectUpiPaymentInfo.builder().upiApp(payAppName).vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
 
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
@@ -147,15 +147,12 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
                         paymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
-                        apsChargingRequestBuilder.signature(generateSignature()).billPayment(false);
+                        apsChargingRequestBuilder.billPayment(false);
                     }
 
                     final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
                     try {
-                       /* ApsApiResponseWrapper<ApsUpiCollectChargingResponse> response =
-                                common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
-                                });*/
                         ApsApiResponseWrapper<ApsUpiCollectChargingResponse> response =
                                 common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
                                 });
@@ -208,20 +205,14 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final IntentUpiPaymentInfo upiIntentDetails =
-                            IntentUpiPaymentInfo.builder().upiDetails(IntentUpiPaymentInfo.UpiDetails.builder().appName(payAppName).build()).paymentAmount(transaction.getAmount()).build();
+                            IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(transaction.getAmount()).build();
                     //TODO: Update request for UPI Intent once done from APS and call mandate creation
                     final ApsExternalChargingRequest<IntentUpiPaymentInfo> payRequest =
                             ApsExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                    final HttpHeaders headers = new HttpHeaders();
-                    final RequestEntity<ApsExternalChargingRequest<IntentUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
-
-                    //ApsApiResponseWrapper response = common.exchange1(requestEntity, ApsApiResponseWrapper.class);
-                    /*ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>*/
                     ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse> response =
                             common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
-                            });/* new TypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
-                            });*/
+                            });
 
                     if (Objects.nonNull(response) && response.isResult()) {
                         Map<String, String> map = Arrays.stream(((ApsUpiIntentChargingChargingResponse)response.getData()).getUpiLink().split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
@@ -247,11 +238,6 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
             return PaymentEvent.PURCHASE.getValue();
         }
         return PaymentEvent.SUBSCRIBE.getValue();
-    }
-
-    //This should be updated as per signatutre generation rule from APS
-    private String generateSignature () {
-        return "AAAADPKS85n2ZNckSP82K8SH1HqFufrnEW7JDvotTMgF76pZDPKBzRVv8i0F CURjJh4AdSxh3-gIXOlF8gS5Tw==";
     }
 
     private class CardCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
@@ -356,10 +342,6 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
                         ApsExternalChargingRequest<?> payRequest = ApsExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr())
                                 .paymentInfo(abstractCardPaymentInfoBuilder.build()).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                        RequestEntity<ApsExternalChargingRequest<?>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
-                       /* ApsApiResponseWrapper<ApsCardChargingResponse> response =
-                                common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
-                                });*/
                         ApsApiResponseWrapper<ApsCardChargingResponse> response =
                                 common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
                                 });
@@ -404,11 +386,6 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                 final ApsExternalChargingRequest<NetBankingPaymentInfo> payRequest =
                         ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                final HttpHeaders headers = new HttpHeaders();
-                final RequestEntity<ApsExternalChargingRequest<NetBankingPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(CHARGING_ENDPOINT));
-                /*ApsApiResponseWrapper<ApsNetBankingChargingResponse> response =
-                        common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsNetBankingChargingResponse>>() {
-                        });*/
                 ApsApiResponseWrapper<ApsNetBankingChargingResponse> response =
                         common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsNetBankingChargingResponse>>() {
                         });

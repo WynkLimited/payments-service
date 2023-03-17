@@ -25,11 +25,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import in.wynk.payment.core.constant.PaymentConstants;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -132,7 +130,7 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
                     common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>>() {
                     });*/
             ApsApiResponseWrapper<List<ApsChargeStatusResponse>> response =
-                    common.exchange1(uri.toString(), HttpMethod.GET, null, new TypeReference<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>>() {
+                    common.exchange(uri.toString(), HttpMethod.GET, null, new TypeReference<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>>() {
                     });
             assert response != null;
             if (response.isResult()) {
@@ -170,7 +168,7 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
                     common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse>>() {
                     });*/
             ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse> response =
-                    common.exchange1(REFUND_STATUS_ENDPOINT, HttpMethod.POST, refundStatusRequest, new TypeReference<ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse>>() {
+                    common.exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, refundStatusRequest, new TypeReference<ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse>>() {
                     });
             assert response != null;
             if (!response.isResult()) {

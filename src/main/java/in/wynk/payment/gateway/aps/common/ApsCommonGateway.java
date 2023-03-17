@@ -61,9 +61,9 @@ public class ApsCommonGateway {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange1 (String url, HttpMethod method, Object body, TypeReference<T> target) {
+    public <T> T exchange (String url, HttpMethod method, Object body, TypeReference<T> target) {
         try {
-            ResponseEntity<?> response = apsClientService.apsOperations1(generateToken(), url, method, body);
+            ResponseEntity<?> response = apsClientService.apsOperations(generateToken(), url, method, body);
             log.info("received response from vas for APS {}", response);
             return objectMapper.readValue(gson.toJson(response.getBody()), target);
         } catch (HttpStatusCodeException hex) {

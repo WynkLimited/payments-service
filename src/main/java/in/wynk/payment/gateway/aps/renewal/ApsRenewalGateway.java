@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -128,7 +127,7 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
             /*ApsApiResponseWrapper<ApsSiPaymentRecurringResponse> response = common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsSiPaymentRecurringResponse>>() {
             });*/
             ApsApiResponseWrapper<ApsSiPaymentRecurringResponse> response =
-                    common.exchange1(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, new TypeReference<ApsApiResponseWrapper<ApsSiPaymentRecurringResponse>>() {
+                    common.exchange(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, new TypeReference<ApsApiResponseWrapper<ApsSiPaymentRecurringResponse>>() {
                     });
             return Objects.requireNonNull(response).getData();
         } catch (RestClientException e) {

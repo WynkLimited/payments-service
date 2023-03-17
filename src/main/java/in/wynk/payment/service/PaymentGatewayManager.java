@@ -17,6 +17,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
@@ -56,6 +57,7 @@ import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTIO
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY036;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.CHARGING_API_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_ERROR;
 
 @Slf4j
@@ -100,7 +102,7 @@ public class PaymentGatewayManager
             return response;
         } catch (Exception ex) {
             this.publishEvent(ex);
-            throw new PaymentRuntimeException(ex);
+            throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex);
         } finally {
             /*eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
                     .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(
@@ -154,6 +156,7 @@ public class PaymentGatewayManager
         } else {
             eventBuilder.code(PaymentErrorType.PAY002.getErrorCode()).description(ex.getMessage());
         }
+        log.error(CHARGING_API_FAILURE, ex.getMessage());
         eventPublisher.publishEvent(eventBuilder.build());
     }
 

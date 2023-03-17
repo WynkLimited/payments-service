@@ -19,7 +19,6 @@ import in.wynk.payment.service.IVerificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -84,7 +83,7 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                             common.exchange(entity, new ParameterizedTypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
                             });*/
                     ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData> response =
-                            common.exchange1(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, new TypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
+                            common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, new TypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
                             });
                     if (Objects.nonNull(response) && response.isResult()) {
                         final ApsBinVerificationResponseData body = response.getData();
@@ -113,7 +112,7 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                             common.exchange(entity, new ParameterizedTypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
                             });*/
                     ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
-                            common.exchange1(uri.toString(), HttpMethod.POST, request, new TypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
+                            common.exchange(uri.toString(), HttpMethod.POST, request, new TypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
                             });
 
                     if (Objects.nonNull(response) && response.isResult()) {

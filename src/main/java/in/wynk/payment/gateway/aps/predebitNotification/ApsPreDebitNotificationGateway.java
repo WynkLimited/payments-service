@@ -15,7 +15,6 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -57,7 +56,7 @@ public class ApsPreDebitNotificationGateway implements IPreDebitNotificationServ
             /*ApsApiResponseWrapper<ApsPreDebitNotification> response = common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsPreDebitNotification>>() {
             });*/
             ApsApiResponseWrapper<ApsPreDebitNotification> response =
-                    common.exchange1(PRE_DEBIT_API, HttpMethod.POST, request, new TypeReference<ApsApiResponseWrapper<ApsPreDebitNotification>>() {
+                    common.exchange(PRE_DEBIT_API, HttpMethod.POST, request, new TypeReference<ApsApiResponseWrapper<ApsPreDebitNotification>>() {
                     });
             TransactionStatus transactionStatus =
                     TXN_SUCCESS.equals(Objects.requireNonNull(response).getData().getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;

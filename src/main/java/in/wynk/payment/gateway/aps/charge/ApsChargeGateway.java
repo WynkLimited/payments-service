@@ -154,7 +154,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
                     try {
                         ApsApiResponseWrapper<ApsUpiCollectChargingResponse> response =
-                                common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
+                                common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsUpiCollectChargingResponse>>() {
                                 });
                         if (Objects.nonNull(response) && response.isResult()) {
                             return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response))
@@ -211,7 +211,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                             ApsExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                     ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse> response =
-                            common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
+                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
                             });
 
                     if (Objects.nonNull(response) && response.isResult()) {
@@ -343,7 +343,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         ApsExternalChargingRequest<?> payRequest = ApsExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr())
                                 .paymentInfo(abstractCardPaymentInfoBuilder.build()).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                         ApsApiResponseWrapper<ApsCardChargingResponse> response =
-                                common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
+                                common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsCardChargingResponse>>() {
                                 });
                         if (Objects.nonNull(response) && response.isResult()) {
                             final ApsCardChargingResponse cardChargingResponse = response.getData();
@@ -387,7 +387,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                 ApsApiResponseWrapper<ApsNetBankingChargingResponse> response =
-                        common.exchange1(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsNetBankingChargingResponse>>() {
+                        common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsApiResponseWrapper<ApsNetBankingChargingResponse>>() {
                         });
                 if (Objects.nonNull(response) && response.isResult()) {
                     final ApsNetBankingChargingResponse chargingResponse = response.getData();

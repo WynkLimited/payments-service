@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.verify;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -79,8 +80,11 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
-                    ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData> response =
+                   /* ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData> response =
                             common.exchange(entity, new ParameterizedTypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
+                            });*/
+                    ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData> response =
+                            common.exchange1(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, new TypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
                             });
                     if (Objects.nonNull(response) && response.isResult()) {
                         final ApsBinVerificationResponseData body = response.getData();
@@ -105,8 +109,11 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                     final HttpHeaders headers = new HttpHeaders();
 
                     RequestEntity<VerificationRequestV2> entity = new RequestEntity<>(request, headers, HttpMethod.GET, URI.create(uri.toString()));
-                    ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
+                    /*ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
                             common.exchange(entity, new ParameterizedTypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
+                            });*/
+                    ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
+                            common.exchange1(uri.toString(), HttpMethod.POST, request, new TypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
                             });
 
                     if (Objects.nonNull(response) && response.isResult()) {

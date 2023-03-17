@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.status;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -127,8 +128,11 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
 
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
-            ApsApiResponseWrapper<List<ApsChargeStatusResponse>> response =
+            /*ApsApiResponseWrapper<List<ApsChargeStatusResponse>> response =
                     common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>>() {
+                    });*/
+            ApsApiResponseWrapper<List<ApsChargeStatusResponse>> response =
+                    common.exchange1(uri.toString(), HttpMethod.GET, null, new TypeReference<ApsApiResponseWrapper<List<ApsChargeStatusResponse>>>() {
                     });
             assert response != null;
             if (response.isResult()) {
@@ -162,8 +166,11 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
             final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(refundStatusRequest, headers, HttpMethod.POST, URI.create(REFUND_STATUS_ENDPOINT));
-            ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse> response =
+            /*ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse> response =
                     common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse>>() {
+                    });*/
+            ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse> response =
+                    common.exchange1(REFUND_STATUS_ENDPOINT, HttpMethod.POST, refundStatusRequest, new TypeReference<ApsApiResponseWrapper<ApsExternalPaymentRefundStatusResponse>>() {
                     });
             assert response != null;
             if (!response.isResult()) {

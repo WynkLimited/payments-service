@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.predebitNotification;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -53,8 +54,11 @@ public class ApsPreDebitNotificationGateway implements IPreDebitNotificationServ
             ApsPreDebitNotificationRequest request = buildApsPreDebitInfoRequest(message.getTransactionId(), message.getDate(), UPI, transaction.getAmount(), invoiceNumber);
             final HttpHeaders headers = new HttpHeaders();
             RequestEntity<ApsPreDebitNotificationRequest> requestEntity = new RequestEntity<>(request, headers, HttpMethod.POST, URI.create(PRE_DEBIT_API));
-            ApsApiResponseWrapper<ApsPreDebitNotification> response = common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsPreDebitNotification>>() {
-            });
+            /*ApsApiResponseWrapper<ApsPreDebitNotification> response = common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsPreDebitNotification>>() {
+            });*/
+            ApsApiResponseWrapper<ApsPreDebitNotification> response =
+                    common.exchange1(PRE_DEBIT_API, HttpMethod.POST, request, new TypeReference<ApsApiResponseWrapper<ApsPreDebitNotification>>() {
+                    });
             TransactionStatus transactionStatus =
                     TXN_SUCCESS.equals(Objects.requireNonNull(response).getData().getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
             if (response.isResult()) {

@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.renewal;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
@@ -124,8 +125,11 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>> requestEntity =
                     new RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>>(apsSiPaymentRecurringRequest, headers, HttpMethod.POST, URI.create(SI_PAYMENT_API));
-            ApsApiResponseWrapper<ApsSiPaymentRecurringResponse> response = common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsSiPaymentRecurringResponse>>() {
-            });
+            /*ApsApiResponseWrapper<ApsSiPaymentRecurringResponse> response = common.exchange(requestEntity, new ParameterizedTypeReference<ApsApiResponseWrapper<ApsSiPaymentRecurringResponse>>() {
+            });*/
+            ApsApiResponseWrapper<ApsSiPaymentRecurringResponse> response =
+                    common.exchange1(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, new TypeReference<ApsApiResponseWrapper<ApsSiPaymentRecurringResponse>>() {
+                    });
             return Objects.requireNonNull(response).getData();
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());

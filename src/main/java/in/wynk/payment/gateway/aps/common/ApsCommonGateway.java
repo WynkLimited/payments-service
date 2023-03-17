@@ -1,6 +1,7 @@
 package in.wynk.payment.gateway.aps.common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
@@ -16,12 +17,12 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.AuthSchemes;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 
 import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
@@ -44,16 +45,13 @@ public class ApsCommonGateway {
     private final ResourceLoader resourceLoader;
     private final ApsClientService apsClientService;
     private final Gson gson;
+    private ObjectMapper objectMapper;
 
-    private final String CHANNEL_ID = "channel-id";
-    private final String AUTH_TYPE_WEB_UNAUTH = "WEB_UNAUTH";
-    private final String CONTENT_TYPE = "Content-Type";
-    private final String APPLICATION_JSON = "application/json";
-
-    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson) {
+    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson,ObjectMapper objectMapper) {
         this.gson = gson;
         this.resourceLoader = resourceLoader;
         this.apsClientService = apsClientService;
+        this.objectMapper = objectMapper;
     }
 
     @SneakyThrows
@@ -63,24 +61,17 @@ public class ApsCommonGateway {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange (RequestEntity<?> entity, ParameterizedTypeReference<T> target) {
-       // String token= generateToken();
-        try {
-            return apsClientService.apsOperations("token", entity, target).getBody();
-        } catch (Exception e) {
-            log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage());
-            throw new WynkRuntimeException(PAY041, e);
-        }
-    }
-
     public <T> T exchange1 (String url, HttpMethod method, Object body, TypeReference<T> target) {
         try {
-            String response = apsClientService.apsOperations1(generateToken(), url, method, body);
-            log.info("received response");
-            return null;
+            ResponseEntity<?> response = apsClientService.apsOperations1(generateToken(), url, method, body);
+            log.info("received response from vas for APS {}", response);
+            return objectMapper.readValue(gson.toJson(response.getBody()), target);
+        } catch (HttpStatusCodeException hex) {
+            log.error(PaymentLoggingMarker.APS_API_FAILURE, hex.getResponseBodyAsString(), hex);
+            throw new WynkRuntimeException(PAY041);
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage());
-            throw new WynkRuntimeException(PAY041, e);
+            log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage(), e);
+            throw new WynkRuntimeException(PAY041);
         }
     }
 

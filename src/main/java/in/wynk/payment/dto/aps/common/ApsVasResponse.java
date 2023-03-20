@@ -1,19 +1,18 @@
 package in.wynk.payment.dto.aps.common;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@Setter
 @Builder
 @ToString
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ApsVasResponse<T> {
-    //headers
     private ApsResponseBody<T> body;
     private String statusCode;
 }

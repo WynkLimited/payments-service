@@ -11,7 +11,6 @@ import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.dto.aps.common.ApsVasResponse;
 import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
@@ -20,16 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.AuthSchemes;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 

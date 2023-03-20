@@ -7,14 +7,12 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.ApsResponseBody;
-import in.wynk.payment.dto.aps.common.ApsVasResponse;
+import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.aps.request.renewal.ApsSiPaymentRecurringRequest;
@@ -126,11 +124,11 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>> requestEntity =
                     new RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>>(apsSiPaymentRecurringRequest, headers, HttpMethod.POST, URI.create(SI_PAYMENT_API));
-            ApsVasResponse<ApsResponseBody<ApsSiPaymentRecurringResponse>> response =
-                    common.exchange(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, new TypeReference<ApsVasResponse<ApsResponseBody<ApsSiPaymentRecurringResponse>>>() {
+           ApsResponseWrapper<ApsSiPaymentRecurringResponse> response =
+                    common.exchange(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, new TypeReference<ApsResponseWrapper<ApsSiPaymentRecurringResponse>>() {
                     });
-            if(Objects.nonNull(response.getBody().getData()) && response.getBody().isResult()){
-                return response.getBody().getData().getData();
+            if(Objects.nonNull(response.getData()) && response.isResult()){
+                return response.getData();
             }
             throw new WynkRuntimeException(PAY041);
         } catch (RestClientException e) {

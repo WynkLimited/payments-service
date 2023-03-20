@@ -5,8 +5,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
-import in.wynk.payment.dto.aps.common.ApsResponseBody;
-import in.wynk.payment.dto.aps.common.ApsVasResponse;
+import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.request.predebit.ApsPreDebitNotificationRequest;
 import in.wynk.payment.dto.aps.response.predebit.ApsPreDebitNotification;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
@@ -53,11 +52,11 @@ public class ApsPreDebitNotificationGateway implements IPreDebitNotificationServ
             ApsPreDebitNotificationRequest request = buildApsPreDebitInfoRequest(message.getTransactionId(), message.getDate(), UPI, transaction.getAmount(), invoiceNumber);
             final HttpHeaders headers = new HttpHeaders();
             RequestEntity<ApsPreDebitNotificationRequest> requestEntity = new RequestEntity<>(request, headers, HttpMethod.POST, URI.create(PRE_DEBIT_API));
-            ApsVasResponse<ApsResponseBody<ApsPreDebitNotification>> response =
-                    common.exchange(PRE_DEBIT_API, HttpMethod.POST, request, new TypeReference<ApsVasResponse<ApsResponseBody<ApsPreDebitNotification>>>() {
+            ApsResponseWrapper<ApsPreDebitNotification> response =
+                    common.exchange(PRE_DEBIT_API, HttpMethod.POST, request, new TypeReference<ApsResponseWrapper<ApsPreDebitNotification>>() {
                     });
-            if (Objects.nonNull(response.getBody().getData()) && response.getBody().isResult()) {
-                final ApsPreDebitNotification apsPreDebitNotification = response.getBody().getData().getData();
+            if (Objects.nonNull(response.getData()) && response.isResult()) {
+                final ApsPreDebitNotification apsPreDebitNotification = response.getData();
                 TransactionStatus transactionStatus =
                         TXN_SUCCESS.equals(apsPreDebitNotification.getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
                 return ApsPreDebitNotification.builder().requestId(request.getPreDebitRequestId()).tid(message.getTransactionId()).transactionStatus(transactionStatus)

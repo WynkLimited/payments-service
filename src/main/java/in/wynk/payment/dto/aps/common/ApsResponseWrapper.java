@@ -12,7 +12,8 @@ import lombok.*;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class ApsVasResponse<T> {
-    private ApsResponseBody<T> body;
-    private String statusCode;
+public class ApsResponseWrapper<T> {
+    private T data;
+    private String requestId;
+    private boolean result;
 }

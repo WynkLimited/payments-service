@@ -36,7 +36,7 @@ public class PayUUpiIntentGatewayChargingResponse extends AbstractPayUUpiGateway
 
     @Override
     public String getMerchantCategoryCode() {
-        return PayUConstants.WYNK_UPI_MERCHANT_CODE;
+        return PayUConstants.PAYU_MERCHANT_CODE;
     }
 
     @Override

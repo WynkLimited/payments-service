@@ -126,7 +126,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                         String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
                         return UpiIntentChargingResponse.builder().tid(transaction.getIdStr().replaceAll("-", "")).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
                                 .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.DEFAULT_PN)).tr(map.get(TR)).am(map.get(AM))
-                                .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.WYNK_UPI_MERCHANT_CODE)
+                                .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                                 .build();
                     }
                     throw new WynkRuntimeException(PAY015);

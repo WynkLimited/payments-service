@@ -52,17 +52,13 @@ public class ApsPreDebitNotificationGateway implements IPreDebitNotificationServ
             ApsPreDebitNotificationRequest request = buildApsPreDebitInfoRequest(message.getTransactionId(), message.getDate(), UPI, transaction.getAmount(), invoiceNumber);
             final HttpHeaders headers = new HttpHeaders();
             RequestEntity<ApsPreDebitNotificationRequest> requestEntity = new RequestEntity<>(request, headers, HttpMethod.POST, URI.create(PRE_DEBIT_API));
-            ApsResponseWrapper<ApsPreDebitNotification> response =
-                    common.exchange(PRE_DEBIT_API, HttpMethod.POST, request, new TypeReference<ApsResponseWrapper<ApsPreDebitNotification>>() {
-                    });
-            if (Objects.nonNull(response.getData()) && response.isResult()) {
-                final ApsPreDebitNotification apsPreDebitNotification = response.getData();
+            ApsPreDebitNotification apsPreDebitNotification =
+                    common.exchange(PRE_DEBIT_API, HttpMethod.POST, request, ApsPreDebitNotification.class);
+
                 TransactionStatus transactionStatus =
                         TXN_SUCCESS.equals(apsPreDebitNotification.getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
                 return ApsPreDebitNotification.builder().requestId(request.getPreDebitRequestId()).tid(message.getTransactionId()).transactionStatus(transactionStatus)
                         .notificationStatus(apsPreDebitNotification.getNotificationStatus()).build();
-            }
-            throw new WynkRuntimeException(PAY032);
         } catch (Exception e) {
             log.error(APS_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY032);

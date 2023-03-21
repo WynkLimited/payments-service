@@ -124,13 +124,8 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>> requestEntity =
                     new RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>>(apsSiPaymentRecurringRequest, headers, HttpMethod.POST, URI.create(SI_PAYMENT_API));
-           ApsResponseWrapper<ApsSiPaymentRecurringResponse> response =
-                    common.exchange(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, new TypeReference<ApsResponseWrapper<ApsSiPaymentRecurringResponse>>() {
-                    });
-            if(Objects.nonNull(response.getData()) && response.isResult()){
-                return response.getData();
-            }
-            throw new WynkRuntimeException(PAY041);
+            return common.exchange(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, ApsSiPaymentRecurringResponse.class);
+
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(e);

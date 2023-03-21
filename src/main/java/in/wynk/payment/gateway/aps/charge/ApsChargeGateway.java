@@ -1,6 +1,5 @@
 package in.wynk.payment.gateway.aps.charge;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -152,18 +151,10 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
                     final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
-                    try {
-                        ApsResponseWrapper<ApsUpiCollectChargingResponse> response =
-                                common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsResponseWrapper<ApsUpiCollectChargingResponse>>() {
-                                });
-                        if (Objects.nonNull(response.getData()) && response.isResult()) {
-                            return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response))
-                                    .url(CLIENT_POLLING_SCREEN_URL).build();
-                        }
-                        throw new WynkRuntimeException(PaymentErrorType.PAY041);
-                    } catch (Exception e) {
-                        throw new WynkRuntimeException(PaymentErrorType.PAY038, e);
-                    }
+                    ApsUpiCollectChargingResponse response =
+                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsUpiCollectChargingResponse.class);
+                    return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response))
+                            .url(CLIENT_POLLING_SCREEN_URL).build();
                 }
             }
         }
@@ -210,32 +201,27 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final ApsExternalChargingRequest<IntentUpiPaymentInfo> payRequest =
                             ApsExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                    ApsResponseWrapper<ApsUpiIntentChargingChargingResponse> response =
-                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsResponseWrapper<ApsUpiIntentChargingChargingResponse>>() {
-                            });
 
-                    if (Objects.nonNull(response.getData()) && response.isResult()) {
-                        final ApsUpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse = response.getData();
-                        Map<String, String> map = Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
-                                .collect(Collectors.toMap(x -> x[0], x -> x[1]));
-                        PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
-                        String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
+                    ApsUpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
+                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsUpiIntentChargingChargingResponse.class);
+                    Map<String, String> map = Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
+                            .collect(Collectors.toMap(x -> x[0], x -> x[1]));
+                    PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
+                    String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
-                        //if mandate created, means transaction type is SUBSCRIBE else PURCHASE
-                        return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
-                                .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
-                                .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
-                                .build();
-                    }
-                    throw new WynkRuntimeException(PaymentErrorType.PAY041);
+                    //if mandate created, means transaction type is SUBSCRIBE else PURCHASE
+                    return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
+                            .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
+                            .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
+                            .build();
                 }
             }
         }
     }
 
     private String updateTransactionType (
-            ApsResponseWrapper<ApsUpiCollectChargingResponse> response) {
-        if (Objects.isNull(response.getData().getPgSystemId())) {
+            ApsUpiCollectChargingResponse response) {
+        if (Objects.isNull(response.getPgSystemId())) {
             return PaymentEvent.PURCHASE.getValue();
         }
         return PaymentEvent.SUBSCRIBE.getValue();
@@ -343,17 +329,10 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
                         ApsExternalChargingRequest<?> payRequest = ApsExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr())
                                 .paymentInfo(abstractCardPaymentInfoBuilder.build()).channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                        ApsResponseWrapper<ApsCardChargingResponse> response =
-                                common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsResponseWrapper<ApsCardChargingResponse>>() {
-                                });
-                        if (Objects.nonNull(response.getData()) && response.isResult()) {
-                            final ApsCardChargingResponse cardChargingResponse = response.getData();
-                            return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType("SUBSCRIBE")
-                                    .html(cardChargingResponse.getHtml()).build();
-                        }
-                        ;
-                        throw new WynkRuntimeException(PaymentErrorType.PAY038);
-
+                        ApsCardChargingResponse cardChargingResponse =
+                                common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsCardChargingResponse.class);
+                        return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType("SUBSCRIBE")
+                                .html(cardChargingResponse.getHtml()).build();
                     } catch (Exception e) {
                         throw new WynkRuntimeException(PaymentErrorType.PAY041, e);
                     }
@@ -389,14 +368,9 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                 final ApsExternalChargingRequest<NetBankingPaymentInfo> payRequest =
                         ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                ApsResponseWrapper<ApsNetBankingChargingResponse> response =
-                        common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, new TypeReference<ApsResponseWrapper<ApsNetBankingChargingResponse>>() {
-                        });
-                if (Objects.nonNull(response.getData()) && response.isResult()) {
-                    final ApsNetBankingChargingResponse apsNetBankingChargingResponse = response.getData();
-                    return NetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
-                }
-                throw new WynkRuntimeException(PaymentErrorType.PAY041);
+                ApsNetBankingChargingResponse apsNetBankingChargingResponse =
+                        common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsNetBankingChargingResponse.class);
+                return NetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }
     }

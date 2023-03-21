@@ -11,7 +11,9 @@ import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.CardDetails;
+import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
@@ -67,27 +69,20 @@ public class ApsCommonGateway {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange (String url, HttpMethod method, Object body, TypeReference<T> target) {
-
+    public <T> T exchange (String url, HttpMethod method, Object body, Class<T> target) {
         ResponseEntity<String> responseEntity = apsClientService.apsOperations(generateToken(), url, method, body);
         try {
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
-                //String responseBody = gson.toJson(responseEntity.getBody());
-                T response=objectMapper.readValue(responseEntity.getBody(), target);
-               // ApsVasResponse apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsVasResponse.class);
-                log.info("VAS Response-------> {}", response);
-                return response;
-               // log.info("Mapped VAS Response-------> {}", responseBody);
-               /* if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode()) && apsVasResponse.getBody().isResult()) {
-                    return gson.fromJson(gson.toJson(apsVasResponse.getBody().getData()), target);
+                ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
+               if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode())) {
+                   return gson.fromJson(gson.toJson(apsVasResponse.getBody()), target);
                 }
-                log.error(PaymentLoggingMarker.APS_API_FAILURE, apsVasResponse.getBody().toString());*/
+                log.error(PaymentLoggingMarker.APS_API_FAILURE, apsVasResponse.getBody().toString());
             }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage(), e);
             throw new WynkRuntimeException(PAY041);
         }
-
         throw new WynkRuntimeException(PAY041);
     }
 

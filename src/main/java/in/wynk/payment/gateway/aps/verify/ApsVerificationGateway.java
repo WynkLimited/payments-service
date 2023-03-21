@@ -19,6 +19,7 @@ import in.wynk.payment.service.IVerificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -79,17 +80,15 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
+
                    /* ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData> response =
-                            common.exchange(entity, new ParameterizedTypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
-                            });*/
-                    ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData> response =
-                            common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, new TypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
+                            common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, new ParameterizedTypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
                             });
                     if (Objects.nonNull(response) && response.isResult()) {
                         final ApsBinVerificationResponseData body = response.getData();
                         return BinVerificationResponse.builder().autoPayEnable(body.isAutoPayEnable()).cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode())
                                 .autoRenewSupported(body.isAutoPayEnable()).build();
-                    }
+                    }*/
                 } catch (Exception e) {
                     log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to ", e);
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
@@ -110,9 +109,9 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                     RequestEntity<VerificationRequestV2> entity = new RequestEntity<>(request, headers, HttpMethod.GET, URI.create(uri.toString()));
                     /*ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
                             common.exchange(entity, new ParameterizedTypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
-                            });*/
+                            });*//*
                     ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
-                            common.exchange(uri.toString(), HttpMethod.POST, request, new TypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
+                            common.exchange(uri.toString(), HttpMethod.POST, request, new ParameterizedTypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
                             });
 
                     if (Objects.nonNull(response) && response.isResult()) {
@@ -121,7 +120,7 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                                 .vpa(response.getVpa()).payerAccountName(response.getPayeeAccountName())
                                 .valid(response.isVpaValid())
                                 .build();
-                    }
+                    }*/
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);

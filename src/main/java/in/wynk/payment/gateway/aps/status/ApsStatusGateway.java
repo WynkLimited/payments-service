@@ -124,12 +124,9 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
 
-            ApsResponseWrapper<ApsChargeStatusResponse> response =
-                    common.exchange(uri.toString(), HttpMethod.GET, null, new TypeReference<ApsResponseWrapper<ApsChargeStatusResponse>>() {
-                    });
+            ApsChargeStatusResponse status =
+                    common.exchange(uri.toString(), HttpMethod.GET, null,ApsChargeStatusResponse.class);
 
-            if (Objects.nonNull(response.getData()) && response.isResult()) {
-                final ApsChargeStatusResponse status = response.getData();
                 if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
                     transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                 } else if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
@@ -137,8 +134,6 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
                 }
                 builder.request(status).response(status);
                 builder.externalTransactionId(status.getPgId());
-            }
-            throw new WynkRuntimeException(PAY998);
 
         } catch (HttpStatusCodeException e) {
             builder.request(e.getResponseBodyAsString()).response(e.getResponseBodyAsString());
@@ -160,11 +155,8 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
             final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(refundStatusRequest, headers, HttpMethod.POST, URI.create(REFUND_STATUS_ENDPOINT));
-            ApsResponseWrapper<ApsExternalPaymentRefundStatusResponse> response =
-                    common.exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, refundStatusRequest, new TypeReference<ApsResponseWrapper<ApsExternalPaymentRefundStatusResponse>>() {
-                    });
-            if(Objects.nonNull(response.getData()) && response.isResult()){
-                final ApsExternalPaymentRefundStatusResponse body= response.getData();
+            ApsExternalPaymentRefundStatusResponse body =
+                    common.exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
                 mBuilder.request(refundStatusRequest);
                 mBuilder.response(body);
                 mBuilder.externalTransactionId(body.getRefundId());
@@ -173,7 +165,6 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
                 } else if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
                     finalTransactionStatus = TransactionStatus.FAILURE;
                 }
-            }
 
         } catch (HttpStatusCodeException e) {
             mBuilder.response(e.getResponseBodyAsString());

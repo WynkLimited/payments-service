@@ -1,31 +1,27 @@
 package in.wynk.payment.gateway.aps.common;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.CardDetails;
-import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.AuthSchemes;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.http.*;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
@@ -43,23 +39,15 @@ public class ApsCommonGateway {
     @Value("${aps.payment.encryption.key.path}")
     private String RSA_PUBLIC_KEY;
 
-    @Value("${payment.googlePlay.mockUrl}")
-    private String mockUrl;
-
     private EncryptionUtils.RSA rsa;
     private final ResourceLoader resourceLoader;
     private final ApsClientService apsClientService;
     private final Gson gson;
-    private ObjectMapper objectMapper;
-    private final RestTemplate restTemplate;
 
-    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ObjectMapper objectMapper,
-                             @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson) {
         this.gson = gson;
         this.resourceLoader = resourceLoader;
         this.apsClientService = apsClientService;
-        this.objectMapper = objectMapper;
-        this.restTemplate = restTemplate;
     }
 
     @SneakyThrows

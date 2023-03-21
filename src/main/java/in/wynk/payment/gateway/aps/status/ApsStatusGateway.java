@@ -1,6 +1,5 @@
 package in.wynk.payment.gateway.aps.status;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -9,7 +8,6 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.request.status.refund.ApsRefundStatusRequest;
 import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
@@ -124,16 +122,16 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
 
-            ApsChargeStatusResponse status =
-                    common.exchange(uri.toString(), HttpMethod.GET, null,ApsChargeStatusResponse.class);
+            ApsChargeStatusResponse[] status =
+                    common.exchange(uri.toString(), HttpMethod.GET, null, ApsChargeStatusResponse[].class);
 
-                if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
-                    transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-                } else if (status.getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
-                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                }
-                builder.request(status).response(status);
-                builder.externalTransactionId(status.getPgId());
+            if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
+                transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+            } else if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            }
+            builder.request(status).response(status);
+            builder.externalTransactionId(status[0].getPgId());
 
         } catch (HttpStatusCodeException e) {
             builder.request(e.getResponseBodyAsString()).response(e.getResponseBodyAsString());
@@ -153,18 +151,16 @@ public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentSt
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
-            final HttpHeaders headers = new HttpHeaders();
-            final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(refundStatusRequest, headers, HttpMethod.POST, URI.create(REFUND_STATUS_ENDPOINT));
             ApsExternalPaymentRefundStatusResponse body =
                     common.exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
-                mBuilder.request(refundStatusRequest);
-                mBuilder.response(body);
-                mBuilder.externalTransactionId(body.getRefundId());
-                if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_SUCCESS")) {
-                    finalTransactionStatus = TransactionStatus.SUCCESS;
-                } else if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
-                    finalTransactionStatus = TransactionStatus.FAILURE;
-                }
+            mBuilder.request(refundStatusRequest);
+            mBuilder.response(body);
+            mBuilder.externalTransactionId(body.getRefundId());
+            if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_SUCCESS")) {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+            } else if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+            }
 
         } catch (HttpStatusCodeException e) {
             mBuilder.response(e.getResponseBodyAsString());

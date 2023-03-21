@@ -222,7 +222,7 @@ payment:
     ####### payu props #########
     aps:
       api:
-        base: https://kongqa.airtel.com/preprod-236
+        base: http://intpay.india.airtel.itm
       encryption:
         key: classpath:/cryptography/aps/public.key
       airtelxstream:

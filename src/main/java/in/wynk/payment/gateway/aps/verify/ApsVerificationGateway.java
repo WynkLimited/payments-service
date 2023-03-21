@@ -1,17 +1,13 @@
 package in.wynk.payment.gateway.aps.verify;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.request.verify.aps.ApsBinVerificationRequest;
 import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
 import in.wynk.payment.dto.aps.response.verify.ApsVpaVerificationData;
-import in.wynk.payment.dto.aps.verify.ApsCardVerificationResponseWrapper;
-import in.wynk.payment.dto.aps.verify.ApsVpaVerificationResponseWrapper;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
-import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequestV2;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
@@ -19,7 +15,6 @@ import in.wynk.payment.service.IVerificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -29,7 +24,6 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static in.wynk.payment.core.constant.PaymentConstants.WYNK;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_BIN_VERIFICATION;
@@ -81,19 +75,16 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                 final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
 
-                   /* ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData> response =
-                            common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, new ParameterizedTypeReference<ApsCardVerificationResponseWrapper<ApsBinVerificationResponseData>>() {
-                            });
-                    if (Objects.nonNull(response) && response.isResult()) {
-                        final ApsBinVerificationResponseData body = response.getData();
-                        return BinVerificationResponse.builder().autoPayEnable(body.isAutoPayEnable()).cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode())
-                                .autoRenewSupported(body.isAutoPayEnable()).build();
-                    }*/
+                    ApsBinVerificationResponseData body =
+                            common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, ApsBinVerificationResponseData.class);
+
+                    return BinVerificationResponse.builder().autoPayEnable(body.isAutoPayEnable()).cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode())
+                            .autoRenewSupported(body.isAutoPayEnable()).build();
+
                 } catch (Exception e) {
                     log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to ", e);
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
                 }
-                throw new WynkRuntimeException(PaymentErrorType.PAY039);
             }
         }
 
@@ -107,25 +98,19 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                     final HttpHeaders headers = new HttpHeaders();
 
                     RequestEntity<VerificationRequestV2> entity = new RequestEntity<>(request, headers, HttpMethod.GET, URI.create(uri.toString()));
-                    /*ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
-                            common.exchange(entity, new ParameterizedTypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
-                            });*//*
-                    ApsVpaVerificationResponseWrapper<ApsVpaVerificationData> response =
-                            common.exchange(uri.toString(), HttpMethod.POST, request, new ParameterizedTypeReference<ApsVpaVerificationResponseWrapper<ApsVpaVerificationData>>() {
-                            });
+                    ApsVpaVerificationData body = common.exchange(uri.toString(), HttpMethod.GET, request, ApsVpaVerificationData.class);
 
-                    if (Objects.nonNull(response) && response.isResult()) {
-                        ApsVpaVerificationData body = response.getData();
-                        return VpaVerificationResponse.builder().autoPayHandleValid(response.isAutoPayHandleValid()).verifyValue(request.getVerifyValue()).verificationType(VerificationType.VPA).autoRenewSupported(response.isAutoPayHandleValid())
-                                .vpa(response.getVpa()).payerAccountName(response.getPayeeAccountName())
-                                .valid(response.isVpaValid())
-                                .build();
-                    }*/
+
+                   /* return VpaVerificationResponse.builder().autoPayHandleValid(response.isAutoPayHandleValid()).verifyValue(request.getVerifyValue()).verificationType(VerificationType.VPA)
+                            .autoRenewSupported(response.isAutoPayHandleValid())
+                            .vpa(response.getVpa()).payerAccountName(response.getPayeeAccountName())
+                            .valid(response.isVpaValid())
+                            .build();*/
+                    return null;
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
                 }
-                throw new WynkRuntimeException(PaymentErrorType.PAY039);
             }
         }
     }

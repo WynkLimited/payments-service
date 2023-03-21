@@ -5,12 +5,13 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
 @SuperBuilder
 @ToString
-public class ApsChargeStatusResponse {
+public class ApsChargeStatusResponse implements Serializable {
     private String pgId;
     private String orderId;
     private String pgStatus;

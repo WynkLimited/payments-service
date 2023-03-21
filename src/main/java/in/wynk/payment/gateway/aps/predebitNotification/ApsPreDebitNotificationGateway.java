@@ -1,11 +1,9 @@
 package in.wynk.payment.gateway.aps.predebitNotification;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
-import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.request.predebit.ApsPreDebitNotificationRequest;
 import in.wynk.payment.dto.aps.response.predebit.ApsPreDebitNotification;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
@@ -15,12 +13,7 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.RequestEntity;
-
-import java.net.URI;
-import java.util.Objects;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY032;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_PRE_DEBIT_NOTIFICATION_ERROR;
@@ -50,15 +43,10 @@ public class ApsPreDebitNotificationGateway implements IPreDebitNotificationServ
             Transaction transaction = transactionManager.get(message.getTransactionId());
             String invoiceNumber = RecurringTransactionUtils.generateInvoiceNumber();
             ApsPreDebitNotificationRequest request = buildApsPreDebitInfoRequest(message.getTransactionId(), message.getDate(), UPI, transaction.getAmount(), invoiceNumber);
-            final HttpHeaders headers = new HttpHeaders();
-            RequestEntity<ApsPreDebitNotificationRequest> requestEntity = new RequestEntity<>(request, headers, HttpMethod.POST, URI.create(PRE_DEBIT_API));
-            ApsPreDebitNotification apsPreDebitNotification =
-                    common.exchange(PRE_DEBIT_API, HttpMethod.POST, request, ApsPreDebitNotification.class);
-
-                TransactionStatus transactionStatus =
-                        TXN_SUCCESS.equals(apsPreDebitNotification.getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
-                return ApsPreDebitNotification.builder().requestId(request.getPreDebitRequestId()).tid(message.getTransactionId()).transactionStatus(transactionStatus)
-                        .notificationStatus(apsPreDebitNotification.getNotificationStatus()).build();
+            ApsPreDebitNotification apsPreDebitNotification = common.exchange(PRE_DEBIT_API, HttpMethod.POST, request, ApsPreDebitNotification.class);
+            TransactionStatus transactionStatus = TXN_SUCCESS.equals(apsPreDebitNotification.getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
+            return ApsPreDebitNotification.builder().requestId(request.getPreDebitRequestId()).tid(message.getTransactionId()).transactionStatus(transactionStatus)
+                    .notificationStatus(apsPreDebitNotification.getNotificationStatus()).build();
         } catch (Exception e) {
             log.error(APS_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY032);

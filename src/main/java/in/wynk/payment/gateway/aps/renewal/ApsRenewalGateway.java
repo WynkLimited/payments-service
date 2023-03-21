@@ -1,6 +1,5 @@
 package in.wynk.payment.gateway.aps.renewal;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
@@ -12,7 +11,6 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.aps.request.renewal.ApsSiPaymentRecurringRequest;
@@ -28,16 +26,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 
-import java.net.URI;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
@@ -116,14 +111,10 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         String invoiceNumber = RecurringTransactionUtils.generateInvoiceNumber();
         ApsSiPaymentRecurringRequest apsSiPaymentRecurringRequest =
-                ApsSiPaymentRecurringRequest.builder().transactionId(transaction.getIdStr()).userInfo(UserInfo.builder().loginId("7417656401").build())
-                        .siPaymentInfo(SiPaymentInfo.builder().mandateTransactionId(merchantTransaction.getExternalTransactionId()).paymentMode(mode).paymentAmount(amount).invoiceNumber(invoiceNumber)
-                                .build())
+                ApsSiPaymentRecurringRequest.builder().transactionId(transaction.getIdStr()).userInfo(UserInfo.builder().loginId("7417656401").build()).siPaymentInfo(
+                                SiPaymentInfo.builder().mandateTransactionId(merchantTransaction.getExternalTransactionId()).paymentMode(mode).paymentAmount(amount).invoiceNumber(invoiceNumber).build())
                         .build();
         try {
-            final HttpHeaders headers = new HttpHeaders();
-            final RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>> requestEntity =
-                    new RequestEntity<ApsSiPaymentRecurringRequest<SiPaymentInfo>>(apsSiPaymentRecurringRequest, headers, HttpMethod.POST, URI.create(SI_PAYMENT_API));
             return common.exchange(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, ApsSiPaymentRecurringResponse.class);
 
         } catch (RestClientException e) {

@@ -145,7 +145,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             private final Map<String, IPaymentPresentationV2<? extends NonSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiNonSeamlessDelegate = new HashMap<>();
 
             public UpiNonSeamless () {
-                upiNonSeamlessDelegate.put("collect", new UpiNonSeamlessCollect());
+                upiNonSeamlessDelegate.put("COLLECT", new UpiNonSeamlessCollect());
             }
 
             @Override

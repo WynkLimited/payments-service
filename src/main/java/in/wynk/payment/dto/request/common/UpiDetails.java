@@ -4,9 +4,11 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 
+import java.io.Serializable;
+
 @Getter
 @AnalysedEntity
-public class UpiDetails {
+public class UpiDetails implements Serializable {
     @Analysed
     private String vpa;
 

@@ -155,7 +155,7 @@ public class AbstractChargingRequestV2 implements IChargingDetails, IPaymentMeth
     @Override
     @JsonIgnore
     public ICallbackDetails getCallbackDetails () {
-        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web}") + SLASH + SessionContextHolder.getId() + SLASH +
+        return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.web2}") + SLASH + SessionContextHolder.getId() + SLASH +
                 BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentDetails().getPaymentId()).getPaymentCode().getCode();
     }
 

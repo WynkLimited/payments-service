@@ -95,6 +95,7 @@ service:
 payment:
   callback:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
+    web2: ${service.payment.api.root}/wynk/v2/payment/callback
     s2s: ${service.payment.api.root}/wynk/v1/callback
   rajtv:
     payOption:

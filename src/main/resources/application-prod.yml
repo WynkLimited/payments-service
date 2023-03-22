@@ -1035,4 +1035,4 @@ lock:
 ######## lib-auth props #######
 security:
   exempt:
-    paths: /actuator/**,/wynk/v1/**,/wynk/v2/**
+    paths: /actuator/**,/wynk/v1/**,/wynk/v2/**,/wynk/v3/**

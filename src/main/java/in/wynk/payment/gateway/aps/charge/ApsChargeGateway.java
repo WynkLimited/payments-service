@@ -243,11 +243,11 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         }
 
         private class CardSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
+            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardSeamlessDelegate = new HashMap<>();
 
             public CardSeamlessCharging () {
-                cardDelegate.put(INTENT, new CardOtpLessCharging());
-                cardDelegate.put(COLLECT_IN_APP, new CardInAppCharging());
+                cardSeamlessDelegate.put(INTENT, new CardOtpLessCharging());
+                cardSeamlessDelegate.put(COLLECT_IN_APP, new CardInAppCharging());
             }
 
             @Override
@@ -273,15 +273,15 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
         }
 
         private class CardNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
+            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardNonSeamlessDelegate = new HashMap<>();
 
             public CardNonSeamlessCharging () {
-                cardDelegate.put(HTML, new CardHtmlTypeCharging());//APS supports html type
+                cardNonSeamlessDelegate.put(HTML, new CardHtmlTypeCharging());//APS supports html type
             }
 
             @Override
             public AbstractNonSeamlessCardChargingResponse charge (AbstractChargingRequestV2 request) {
-                return cardDelegate.get(PaymentConstants.HTML_TYPE).charge(request);
+                return cardNonSeamlessDelegate.get(PaymentConstants.HTML).charge(request);
             }
 
             private class CardHtmlTypeCharging implements IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2> {
@@ -326,7 +326,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         ApsExternalChargingRequest<?> payRequest =
                                 ApsExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
                                         .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                        ApsCardChargingResponse cardChargingResponse = common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsCardChargingResponse.class);
+                        ApsCardChargingResponse cardChargingResponse = common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsCardChargingResponse.class);
                         return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType("SUBSCRIBE")
                                 .html(cardChargingResponse.getHtml()).build();
                     } catch (Exception e) {

@@ -147,7 +147,7 @@ public class RevenuePaymentControllerV2 {
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
-    public WynkResponseEntity<PaymentChargingResponse> doCharging (@PathVariable String sid, @RequestBody AbstractChargingRequestV2 request) {
+    public WynkResponseEntity<PaymentChargingResponse> doCharging (@PathVariable String sid, @RequestBody WebChargingRequestV2 request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(PAYMENT_METHOD, paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);

@@ -53,6 +53,7 @@ public interface PaymentConstants extends BaseConstants {
     String TDR = "tdr";
     String PAYU_CHARGE = "PayU_charge";
     String PAYU_CALLBACK = "PayU_callback";
+    String APS_CALLBACK = "aps_callback";
     String PAYU_PAYMENT_STATUS = "PayU_payment_status";
     String APS_PAYMENT_STATUS = "aps_payment_status";
     String PAYU_VERIFY = "PayU_verify";

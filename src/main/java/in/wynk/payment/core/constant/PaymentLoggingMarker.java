@@ -13,6 +13,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APS_RENEWAL_TIMEOUT_ERROR = MarkerFactory.getMarker("APS_RENEWAL_TIMEOUT_ERROR");
     Marker RENEWAL_API_FAILURE = MarkerFactory.getMarker("RENEWAL_API_FAILURE");
     Marker APS_API_FAILURE = MarkerFactory.getMarker("APS_API_FAILURE");
+    Marker APS_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("APS_CHARGING_CALLBACK_FAILURE");
     Marker APS_OPERATION_FAILURE = MarkerFactory.getMarker("APS_OPERATION_FAILURE");
     Marker APS_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_CHARGING_STATUS_VERIFICATION");
     Marker APS_VPA_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");

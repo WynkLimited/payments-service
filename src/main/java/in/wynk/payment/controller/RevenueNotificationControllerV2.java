@@ -13,6 +13,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
+import in.wynk.payment.dto.request.CallbackRequestWrapperV2;
 import in.wynk.payment.dto.request.NotificationRequest;
 import in.wynk.payment.service.PaymentGatewayManager;
 import lombok.RequiredArgsConstructor;
@@ -87,7 +88,7 @@ public class RevenueNotificationControllerV2 {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        paymentGatewayManager.handleCallback(CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build());
+        paymentGatewayManager.handleCallback(CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).build());
         return WynkResponseEntity.<Void>builder().success(true).build();
     }
 }

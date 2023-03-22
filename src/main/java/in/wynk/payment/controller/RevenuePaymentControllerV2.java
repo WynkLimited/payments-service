@@ -15,10 +15,7 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
-import in.wynk.payment.dto.request.AbstractChargingRequestV2;
-import in.wynk.payment.dto.request.CallbackRequestWrapper;
-import in.wynk.payment.dto.request.ChargingTransactionStatusRequest;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.presentation.IPaymentPresentation;
@@ -85,7 +82,7 @@ public class RevenuePaymentControllerV2 {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build();
+        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
@@ -111,7 +108,7 @@ public class RevenuePaymentControllerV2 {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(terraformed).build();
+        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(terraformed).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
@@ -121,7 +118,7 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
-    //This version is for payment refactoring task
+    //This version is for payment refactoring task.Used to receive call back after payment request as part of redirction url
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -136,7 +133,7 @@ public class RevenuePaymentControllerV2 {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapper<?> request = CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build();
+        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =

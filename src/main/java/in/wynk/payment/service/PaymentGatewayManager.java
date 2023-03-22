@@ -64,7 +64,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_
 @Service(BeanConstant.PAYMENT_MANAGER_V2)
 @RequiredArgsConstructor
 public class PaymentGatewayManager
-        implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapper<?>>,
+        implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
         IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IVerificationService<AbstractVerificationResponse, VerificationRequestV2>, IPreDebitNotificationService {
 
@@ -189,7 +189,7 @@ public class PaymentGatewayManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback(CallbackRequestWrapper<?> request) {
+    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback(CallbackRequestWrapperV2<?> request) {
         final PaymentGateway pg = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();

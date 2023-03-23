@@ -90,12 +90,14 @@ public interface PaymentConstants extends BaseConstants {
     String AIRTEL_PAY_STACK_CHARGE = "aps_charge";
     String AIRTEL_PAY_STACK_VERIFY = "aps_verify";
     String AIRTEL_PAY_STACK_RENEW = "aps_renew";
+    String AIRTEL_PAY_STACK_REFUND = "aps_refund";
     String APS = "APS";
     String CHARGE = "_charge";
     String VERIFY = "_verify";
     String RENEW = "_renew";
     String CALLBACK = "_callback";
     String PAYMENT_STATUS = "_payment_status";
+    String REFUND ="_refund";
     String SEAMLESS = "SEAMLESS";
     String NON_SEAMLESS = "NON_SEAMLESS";
     String INAPP = "INAPP";

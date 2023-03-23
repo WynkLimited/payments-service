@@ -9,7 +9,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-@Payment(groupId = "CARD", mode = "html")
+@Payment(groupId = "CARD", mode = "HTML")
 public class CardHtmlTypeChargingResponse extends AbstractNonSeamlessCardChargingResponse {
     @JsonProperty("info")
     private String html;

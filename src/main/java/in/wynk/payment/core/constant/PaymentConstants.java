@@ -1,9 +1,15 @@
 package in.wynk.payment.core.constant;
 
 import in.wynk.common.constant.BaseConstants;
+import io.vavr.collection.Array;
+
+import java.util.Arrays;
+import java.util.List;
 
 public interface PaymentConstants extends BaseConstants {
+
     String SKU_ID = "skuId";
+    String SAVED = "SAVED";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
     String ERROR = "error";
@@ -37,12 +43,11 @@ public interface PaymentConstants extends BaseConstants {
     String APB_GATEWAY = "APB_GATEWAY";
     String DEFAULT_PN = "Wynk Limited";
     String ADD_TO_BILL = "ADD_TO_BILL";
-    String HTML_TYPE = "HTML_TYPE";
     String DEFAULT_COUNTRY_CODE = "IN";
-    String APP_NAME = "APP_NAME";
-    String BASE_USER_EMAIL = "@wynk.in";
     String BILLING = "BILLING";
     String APP_PACKAGE = "package_name";
+    String APP_NAME = "APP_NAME";
+    String BASE_USER_EMAIL = "@wynk.in";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";
@@ -50,21 +55,15 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_CLIENT_ID = "clientId";
     String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
-    String TDR = "tdr";
-    String PAYU_CHARGE = "PayU_charge";
-    String PAYU_CALLBACK = "PayU_callback";
-    String APS_CALLBACK = "aps_callback";
-    String PAYU_PAYMENT_STATUS = "PayU_payment_status";
-    String APS_PAYMENT_STATUS = "aps_payment_status";
-    String PAYU_VERIFY = "PayU_verify";
+    String TDR ="tdr";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
+    String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";
     String WINBACK_CAMPAIGN = "winback_campaign";
-
     String PHONEPE_AUTO_DEBIT = "PHONEPE_AUTO_DEBIT";
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
     String PAYMENT_DETAILS_KEY = "PAYMENT_DETAILS_KEY:";
@@ -78,6 +77,8 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
+
+    List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
     String WYNK_LIMITED = "Wynk Limited";
     String CHANNEL_ID = "channel-id";
@@ -108,4 +109,10 @@ public interface PaymentConstants extends BaseConstants {
     String WALLET = "WALLET";
     String KEY_VALUE = "KEY_VALUE";
     String HTML = "HTML";
+    String PAYU_CHARGE = "PayU_charge";
+    String PAYU_CALLBACK = "PayU_callback";
+    String APS_CALLBACK = "aps_callback";
+    String PAYU_PAYMENT_STATUS = "PayU_payment_status";
+    String APS_PAYMENT_STATUS = "aps_payment_status";
+    String PAYU_VERIFY = "PayU_verify";
 }

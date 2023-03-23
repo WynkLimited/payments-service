@@ -33,6 +33,9 @@ public class Transaction {
     @Column(name = "paid_amount")
     private double amount;
 
+    @Column(name = "mandate_amount")
+    private double mandateAmount;
+
     @Column(name = "discount_amount")
     private double discount;
 

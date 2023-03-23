@@ -39,4 +39,14 @@ public class PaymentGateway extends MongoBaseEntity<String> {
         return this.getId();
     }
 
+    @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!PaymentGateway.class.isAssignableFrom(obj.getClass())) return false;
+        return this.getId().equals(((PaymentGateway) obj).getId());
+    }
 }

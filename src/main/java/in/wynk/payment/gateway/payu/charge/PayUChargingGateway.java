@@ -45,8 +45,6 @@ import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_S
 import static in.wynk.payment.core.constant.CardConstants.CARD;
 import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.INTENT;
-import static in.wynk.payment.core.constant.PaymentConstants.UPI;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
 import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;

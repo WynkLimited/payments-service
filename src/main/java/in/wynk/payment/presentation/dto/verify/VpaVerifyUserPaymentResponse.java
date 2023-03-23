@@ -8,4 +8,8 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class VpaVerifyUserPaymentResponse extends VerifyUserPaymentResponse {
+    private boolean isAutoPayVPAValid;
+    private boolean isAutoPayBankValid;
+    private String vpa;
+    private String payerAccountName;
 }

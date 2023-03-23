@@ -1,6 +1,7 @@
 package in.wynk.payment.gateway.payu.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
@@ -16,6 +17,7 @@ import in.wynk.payment.gateway.IPaymentInstrumentValidator;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.service.IVerificationService;
 import in.wynk.payment.service.impl.PayUPaymentGateway;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -30,10 +32,12 @@ import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 public class PayUVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
 
     private final PayUCommonGateway common;
+    private final ObjectMapper objectMapper;
     private final Map<VerificationType, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequestV2>> delegate = new HashMap<>();
 
-    public PayUVerificationGateway(PayUCommonGateway common) {
+    public PayUVerificationGateway(PayUCommonGateway common, ObjectMapper objectMapper) {
         this.common = common;
+        this.objectMapper = objectMapper;
         this.delegate.put(VerificationType.VPA, new VPA());
         this.delegate.put(VerificationType.BIN, new CARD());
     }
@@ -66,9 +70,12 @@ public class PayUVerificationGateway implements IVerificationService<AbstractVer
 
     private class VPA implements IPaymentInstrumentValidator<VpaVerificationResponse, VerificationRequestV2> {
 
+        @SneakyThrows
         @Override
         public VpaVerificationResponse verify (VerificationRequestV2 request) {
-            final MultiValueMap<String, String> verifyVpaRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue());
+            final MultiValueMap<String, String> verifyVpaRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{
+                put("validateAutoPayVPA", "1");
+            }}));
             final PayUVpaVerificationResponse response = common.exchange(common.INFO_API, verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
             });
             return VpaVerificationResponse.from(response);

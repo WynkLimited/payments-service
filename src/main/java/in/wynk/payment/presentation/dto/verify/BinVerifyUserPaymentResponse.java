@@ -9,4 +9,7 @@ import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BinVerifyUserPaymentResponse extends VerifyUserPaymentResponse {
     private boolean inAppOtpSupport;
+    private String cardCategory;
+    private String cardType;
+    private String isDomestic;
 }

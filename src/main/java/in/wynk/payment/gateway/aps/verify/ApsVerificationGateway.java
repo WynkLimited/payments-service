@@ -8,6 +8,7 @@ import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
 import in.wynk.payment.dto.aps.response.verify.ApsVpaVerificationData;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
+import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequestV2;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
@@ -25,7 +26,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import static in.wynk.payment.core.constant.PaymentConstants.WYNK;
+import static in.wynk.payment.core.constant.PaymentConstants.LOB_AUTO_PAY_REGISTER_WYNK;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_BIN_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFICATION;
 
@@ -75,11 +76,10 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                 final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
 
-                    ApsBinVerificationResponseData body =
+                    ApsBinVerificationResponseData apsBinVerificationResponseData =
                             common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, ApsBinVerificationResponseData.class);
 
-                    return BinVerificationResponse.builder().autoPayEnable(body.isAutoPayEnable()).cardCategory(body.getCardCategory()).cardType(body.getCardNetwork()).issuingBank(body.getBankCode())
-                            .autoRenewSupported(body.isAutoPayEnable()).build();
+                    return BinVerificationResponse.fromAps(apsBinVerificationResponseData);
 
                 } catch (Exception e) {
                     log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to ", e);
@@ -92,21 +92,14 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
             @Override
             public AbstractVerificationResponse verify (VerificationRequestV2 request) {
                 String userVpa = request.getVerifyValue();
-                String lob = WYNK;
+                String lob = LOB_AUTO_PAY_REGISTER_WYNK;
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
                 try {
                     final HttpHeaders headers = new HttpHeaders();
-
                     RequestEntity<VerificationRequestV2> entity = new RequestEntity<>(request, headers, HttpMethod.GET, URI.create(uri.toString()));
-                    ApsVpaVerificationData body = common.exchange(uri.toString(), HttpMethod.GET, request, ApsVpaVerificationData.class);
+                    ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, request, ApsVpaVerificationData.class);
 
-
-                   /* return VpaVerificationResponse.builder().autoPayHandleValid(response.isAutoPayHandleValid()).verifyValue(request.getVerifyValue()).verificationType(VerificationType.VPA)
-                            .autoRenewSupported(response.isAutoPayHandleValid())
-                            .vpa(response.getVpa()).payerAccountName(response.getPayeeAccountName())
-                            .valid(response.isVpaValid())
-                            .build();*/
-                    return null;
+                    return VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);

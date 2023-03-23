@@ -294,6 +294,10 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
                     final Transaction transaction = TransactionContext.get();
                     final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
+                    String paymentMode="DEBIT_CARD";
+                    if(Objects.nonNull(paymentDetails.getCardDetails().getCardInfo().getCategory()) && (paymentDetails.getCardDetails().getCardInfo().getCategory().equals("CREDIT") || paymentDetails.getCardDetails().getCardInfo().getCategory().equals("creditcard"))){
+                        paymentMode= "CREDIT_CARD";
+                    }
                     AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
                     try {
                         if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
@@ -303,14 +307,12 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                             .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
                             final String encCardInfo = common.encryptCardData(credentials);
                             abstractCardPaymentInfoBuilder =
-                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode(cardDetails.getCardInfo().getBankCode()).saveCard(cardDetails.isSaveCard())
-                                            .paymentAmount(transaction.getAmount()).paymentMode(cardDetails.getCardInfo().getCategory());
+                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode(cardDetails.getCardInfo().getBankCode()).saveCard(cardDetails.isSaveCard()).paymentMode(paymentMode).paymentAmount(transaction.getAmount());
                         } else {
                             final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
                             final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardToken(cardDetails.getCardToken()).build();
                             final String encCardInfo = common.encryptCardData(credentials);
-                            abstractCardPaymentInfoBuilder = SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).saveCard(cardDetails.isSaveCard()).paymentAmount(transaction.getAmount())
-                                    .paymentMode(cardDetails.getCardInfo().getCategory());
+                            abstractCardPaymentInfoBuilder = SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).saveCard(cardDetails.isSaveCard()).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                         }
                         assert abstractCardPaymentInfoBuilder != null;
                         final HttpHeaders headers = new HttpHeaders();

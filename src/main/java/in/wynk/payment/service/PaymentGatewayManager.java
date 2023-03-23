@@ -125,7 +125,7 @@ public class PaymentGatewayManager
             paymentCode = verifyPaymentCode.get();
         } else {
             log.info(PaymentLoggingMarker.PAYMENT_VERIFY_USER_PAYMENT_FAILURE, "default verify gateway is not registered in client : {}", client.getAlias());
-            paymentCode = BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
+            paymentCode = "aps";
         }
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IVerificationService<AbstractVerificationResponse, VerificationRequestV2> verifyService =

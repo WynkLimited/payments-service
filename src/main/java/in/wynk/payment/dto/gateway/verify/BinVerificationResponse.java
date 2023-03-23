@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.gateway.verify;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.VerificationType;
@@ -32,6 +33,19 @@ public class BinVerificationResponse extends AbstractVerificationResponse {
                 .cardCategory(binVerificationResponse.getCardCategory())
                 .siSupport(binVerificationResponse.getSiSupport())
                 .autoRenewSupported(binVerificationResponse.isAutoRenewSupported())
+                .build();
+    }
+
+    public static BinVerificationResponse fromAps(ApsBinVerificationResponseData binVerificationResponse){
+        return BinVerificationResponse.builder()
+                .valid(!binVerificationResponse.isBlocked())
+                .verificationType(VerificationType.BIN)
+                .cardType(binVerificationResponse.getCardNetwork())
+                .isDomestic(binVerificationResponse.isDomestic())
+                .issuingBank(binVerificationResponse.getBankName())
+                .cardCategory(binVerificationResponse.getCardCategory())
+                .siSupport(binVerificationResponse.isAutoPayEnable() ? "YES": "No")
+                .autoRenewSupported(binVerificationResponse.isAutoPayEnable())
                 .build();
     }
 }

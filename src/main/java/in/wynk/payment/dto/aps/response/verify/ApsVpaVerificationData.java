@@ -11,6 +11,10 @@ import lombok.ToString;
 public class ApsVpaVerificationData {
     private String status;
     private ResponseStatus responseStatus;
+    private String vpa;
+    private String payeeAccountName;
+    private boolean vpaValid;
+    private boolean isAutoPayHandleValid;
 
     @Getter
     @ToString

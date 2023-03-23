@@ -45,9 +45,9 @@ import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_PN;
 import static in.wynk.payment.core.constant.UpiConstants.UPI_MERCHANT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.UpiConstants.*;
-import static in.wynk.payment.core.constant.NetBankingConstants.*;
-import static in.wynk.payment.core.constant.CardConstants.*;
+import static in.wynk.payment.core.constant.UpiConstants.UPI;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
 
 /**
  * @author Nishesh Pandey

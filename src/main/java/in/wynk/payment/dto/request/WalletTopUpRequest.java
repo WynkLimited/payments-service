@@ -110,6 +110,11 @@ public class WalletTopUpRequest<T extends IPurchaseDetails> implements IPaymentM
     }
 
     @Override
+    public boolean isAutoRenewOpted() {
+        return this.purchaseDetails.getPaymentDetails().isAutoRenew();
+    }
+
+    @Override
     public ClientDetails getClientDetails() {
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
         return (ClientDetails) (WebPurchaseDetails.class.isAssignableFrom(purchaseDetails.getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)) : clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));

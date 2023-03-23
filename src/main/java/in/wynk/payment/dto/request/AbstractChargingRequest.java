@@ -121,6 +121,10 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
         return this.purchaseDetails.getPaymentDetails().isTrialOpted();
     }
 
+    public boolean isAutoRenewOpted() {
+        return this.purchaseDetails.getPaymentDetails().isAutoRenew();
+    }
+
     @Override
     public ClientDetails getClientDetails() {
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);

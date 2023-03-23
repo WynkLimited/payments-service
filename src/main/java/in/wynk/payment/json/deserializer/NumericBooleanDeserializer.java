@@ -13,4 +13,5 @@ public class NumericBooleanDeserializer extends JsonDeserializer<Boolean> {
     public Boolean deserialize(JsonParser parser, DeserializationContext context) throws IOException, JsonProcessingException {
         return "1".equalsIgnoreCase(parser.getText());
     }
+
 }

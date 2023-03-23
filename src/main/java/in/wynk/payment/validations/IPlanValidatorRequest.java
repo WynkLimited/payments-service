@@ -9,6 +9,8 @@ public interface IPlanValidatorRequest extends IBaseRequest {
 
     boolean isTrialOpted();
 
+    boolean isAutoRenewOpted();
+
     IAppDetails getAppDetails();
 
     IUserDetails getUserDetails();

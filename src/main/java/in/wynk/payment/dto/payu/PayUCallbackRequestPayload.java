@@ -97,4 +97,5 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     private String getUDFOrDefault(String value) {
         return StringUtils.isEmpty(value) ? PaymentConstants.PIPE_SEPARATOR : value.concat(PaymentConstants.PIPE_SEPARATOR);
     }
+
 }

@@ -254,6 +254,9 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
+            AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
+        }
         if (Objects.nonNull(event.getTransaction().getCoupon())) {
             String couponCode = event.getTransaction().getCoupon();
             CouponCodeLink couponLinkOption = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode.toUpperCase(Locale.ROOT));
@@ -267,8 +270,8 @@ public class PaymentEventListener {
             Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
             }).get(couponId);
             AnalyticService.update(COUPON_GROUP, coupon.getId());
-            AnalyticService.update(DISCOUNT_TYPE, PERCENTAGE);
-            AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscountPercent());
+            AnalyticService.update(DISCOUNT_TYPE, coupon.getDiscountType().toString());
+            AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscount());
         }
         AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
         AnalyticService.update(INIT_TIMESTAMP, event.getTransaction().getInitTime().getTime().getTime());

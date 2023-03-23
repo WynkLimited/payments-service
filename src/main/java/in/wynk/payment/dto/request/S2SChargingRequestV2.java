@@ -42,4 +42,8 @@ public class S2SChargingRequestV2 extends AbstractChargingRequestV2 {
         return () -> EmbeddedPropertyResolver.resolveEmbeddedValue("${payment.callback.s2s}") + SLASH + BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentDetails().getPaymentId()).getPaymentCode().name();
     }
 
+    @Override
+    public boolean isAutoRenewOpted () {
+        return this.getPaymentDetails().isAutoRenew();
+    }
 }

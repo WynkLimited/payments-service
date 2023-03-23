@@ -15,6 +15,9 @@ public abstract class AbstractTransactionInitRequest {
     @Setter
     private double amount;
     @Setter
+    @Builder.Default
+    private double mandateAmount = -1;
+    @Setter
     private double discount;
 
     private String uid;

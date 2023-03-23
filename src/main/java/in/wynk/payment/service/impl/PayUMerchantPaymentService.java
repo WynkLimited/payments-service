@@ -30,6 +30,7 @@ import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.payu.*;
+import in.wynk.payment.dto.payu.PayUUpiCollectResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.*;
@@ -137,7 +138,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                         }).getResult().getOtpPostUrl(), encryptionKey);
                     } else {
                         encryptedParams = EncryptionUtils.encrypt(this.initUpiPayU(payUPayload, bankCode, new TypeReference<PayUUpiIntentInitResponse>() {
-                        }).getDeepLink(), encryptionKey);
+                        }).getDeepLink(chargingRequest.getPurchaseDetails().getPaymentDetails().isAutoRenew()), encryptionKey);
                     }
                 } catch (HttpStatusCodeException e) {
                     log.error(PAYU_API_FAILURE, e.getMessage(), e);
@@ -325,6 +326,19 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
+                /**
+                 * PayU check to verify whether mandate transaction is successfully registered with standing instruction sist,
+                 * otherwise consider it as normal transaction without mandate
+                 * */
+                if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType()) && PayUChargingTransactionDetails.class.isAssignableFrom(transactionDetails.getClass())) {
+                    final PayUChargingTransactionDetails chargingDetails = (PayUChargingTransactionDetails) transactionDetails;
+                    if (!PAYU_PAYMENT_SOURCE_SIST.equalsIgnoreCase(chargingDetails.getPaymentSource())) {
+                        transaction.setType(PaymentEvent.PURCHASE.getValue());
+                        transaction.setMandateAmount(-1);
+                        AnalyticService.update(PAYU_PAYMENT_SOURCE_SIST, chargingDetails.getPaymentSource());
+                        log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "transaction was initiated with auto-pay but si is not captured.");
+                    }
+                }
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
@@ -352,7 +366,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         Map<String, String> payloadTemp;
         if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
             //payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
-            payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount, selectedPlan, transaction.getType());
+            payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount, transaction, transaction.getType());
         } else {
             payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
         }
@@ -386,19 +400,18 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     //Not used therefore commenting as of now
-    private Map<String, String> getPayload(String client, UUID transactionId, String email, String uid, int planId, double finalPlanAmount, PlanDTO selectedPlan, PaymentEvent paymentEvent) {
+    private Map<String, String> getPayload(String client, UUID transactionId, String email, String uid, int planId, double finalPlanAmount, Transaction transaction, PaymentEvent paymentEvent) {
         Map<String, String> payload = new HashMap<>();
         String reqType = PaymentRequestType.SUBSCRIBE.name();
         String udf1 = PAYU_SI_KEY.toUpperCase();
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, 24);
         Date today = cal.getTime();
         cal.add(Calendar.YEAR, 5); // 5 yrs from now
         Date next5Year = cal.getTime();
         boolean isFreeTrial = paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION;
         BillingUtils billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
         try {
-            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), finalPlanAmount, today, next5Year));
+            String siDetails = objectMapper.writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), transaction.getMandateAmount(), today, next5Year));
             String checksumHash = getChecksumHashForPayment(client, transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
             payload.put(PAYU_SI_KEY, "1");
             payload.put(PAYU_API_VERSION, "7");

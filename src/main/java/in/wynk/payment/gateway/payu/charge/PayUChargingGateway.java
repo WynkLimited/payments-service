@@ -7,6 +7,7 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -24,6 +25,7 @@ import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
+import in.wynk.payment.dto.response.payu.AbstractPayUUpiResponse;
 import in.wynk.payment.dto.response.payu.PayUUpiIntentInitResponse;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentChargingServiceV2;
@@ -96,7 +98,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             @Override
             public AbstractSeamlessUpiChargingResponse charge (AbstractChargingRequestV2 request) {
                 UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                String flow = INTENT;
+                String flow = UpiConstants.INTENT;
                 if (!upiPaymentDetails.getUpiDetails().isIntent()) {
                     flow = COLLECT_IN_APP;
                 }
@@ -118,7 +120,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                     final Transaction transaction = TransactionContext.get();
                     final Map<String, String> form = getPayload(request);
                     final PayUUpiIntentInitResponse res = initIntentUpiPayU(form);
-                    final PayUUpiIntentInitResponse.Result result = res.getResult();
+                    PayUUpiIntentInitResponse.IntentResult result = res.getResult();
                     if (Objects.nonNull(result) && Objects.nonNull(result.getIntentURIData())) {
                         Map<String, String> map = Arrays.stream(result.getIntentURIData().split(AND)).map(s -> s.split(EQUAL, 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                                 .collect(Collectors.toMap(x -> x[0], x -> x[1]));

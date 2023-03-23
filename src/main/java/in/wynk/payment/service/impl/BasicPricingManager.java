@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dao.entity.CouponCodeLink;
+import in.wynk.coupon.core.enums.DiscountType;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponManager;
 import in.wynk.coupon.core.service.impl.CouponCodeLinkServiceImpl;
@@ -42,17 +43,20 @@ public class BasicPricingManager implements IPricingManager {
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
             final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
+            if (nativeRequest.isAutoRenewOpted()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
-                if (nativeRequest.isAutoRenewOpted()) nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
+                if (nativeRequest.isAutoRenewOpted()) {
+                    nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
+                }
                 if (nativeRequest.isTrialOpted()) {
+                    nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setAmount(cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice());
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
-            if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentGateway().getId()))
-                couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
+            if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentGateway().getId())) couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {
             final PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;
@@ -66,9 +70,9 @@ public class BasicPricingManager implements IPricingManager {
                 if (!coupon.isCaseSensitive()) {
                     couponCode = codeLink.getCouponId().toUpperCase(Locale.ROOT);
                 }
-                final Double discountPercent = couponCachingService.get(couponCode).getDiscountPercent();
-                request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(request.getAmount() * (1 - discountPercent / 100))));
-                request.setDiscount(discountPercent);
+                final Double discount = couponCachingService.get(couponCode).getDiscount();
+                request.setAmount(Double.parseDouble(new DecimalFormat("#.00").format(coupon.getDiscountType()== DiscountType.FLAT ? request.getAmount()-discount : request.getAmount() *(1 - discount/100))));
+                request.setDiscount(discount);
             }
         }
     }

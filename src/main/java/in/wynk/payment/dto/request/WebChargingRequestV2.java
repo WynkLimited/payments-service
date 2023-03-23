@@ -28,6 +28,11 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class WebChargingRequestV2 extends AbstractChargingRequestV2 {
 
     @Override
+    public boolean isAutoRenewOpted () {
+        return this.getPaymentDetails().isAutoRenew();
+    }
+
+    @Override
     @Analysed
     @JsonIgnore
     public IAppDetails getAppDetails () {

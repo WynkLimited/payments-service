@@ -40,6 +40,9 @@ public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetai
     @JsonProperty("field9")
     private String payUResponseFailureMessage;
 
+    @JsonProperty("payment_source")
+    private String paymentSource;
+
     @JsonProperty("bankcode")
     private String bankCode;
 

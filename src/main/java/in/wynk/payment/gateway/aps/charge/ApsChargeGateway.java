@@ -50,7 +50,10 @@ import java.util.stream.Collectors;
 import static in.wynk.payment.core.constant.CardConstants.CARD;
 import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
 import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.SEAMLESS;
+import static in.wynk.payment.core.constant.PaymentConstants.NON_SEAMLESS;
+import static in.wynk.payment.core.constant.PaymentConstants.COLLECT_IN_APP;
+import static in.wynk.payment.core.constant.PaymentConstants.HTML;
 import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.*;
 

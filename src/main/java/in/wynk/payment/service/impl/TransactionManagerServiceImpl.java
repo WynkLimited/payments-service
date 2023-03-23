@@ -199,7 +199,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     private Transaction initPlanTransaction(PlanTransactionInitRequest transactionInitRequest) {
-        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
+        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).mandateAmount(transactionInitRequest.getMandateAmount()).coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
         return initTransaction(txn);
     }
 
@@ -260,8 +260,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
             }).get(couponId);
             AnalyticService.update(COUPON_GROUP, coupon.getId());
-            AnalyticService.update(DISCOUNT_TYPE, PERCENTAGE);
-            AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscountPercent());
+            AnalyticService.update(DISCOUNT_TYPE, coupon.getDiscountType().toString());
+            AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscount());
         }
         AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         AnalyticService.update(TRANSACTION_STATUS, transaction.getStatus().getValue());

@@ -39,8 +39,8 @@ import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.UpiConstants.UPI_PREFIX;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.UpiConstants.*;
-import static in.wynk.payment.core.constant.NetBankingConstants.*;
-import static in.wynk.payment.core.constant.CardConstants.*;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
 
 @Slf4j
 @Service

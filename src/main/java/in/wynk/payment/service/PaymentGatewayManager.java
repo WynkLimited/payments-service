@@ -35,6 +35,7 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
+import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
@@ -66,13 +67,14 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_
 public class PaymentGatewayManager
         implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
         IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
-        IVerificationService<AbstractVerificationResponse, VerificationRequestV2>, IPreDebitNotificationService {
+        IVerificationService<AbstractVerificationResponse, VerificationRequestV2>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
+    private final IMerchantTransactionService merchantTransactionService;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
 
@@ -354,6 +356,36 @@ public class PaymentGatewayManager
                 reviseTransactionAndExhaustCoupon(transaction, existingStatus, builder.build());
                 publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
             }
+        }
+    }
+
+    @Override
+    @TransactionAware(txnId = "#request.originalTransactionId")
+    public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
+        final Transaction originalTransaction = TransactionContext.get();
+        try {
+            final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
+            final Transaction refundTransaction =
+                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
+            final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode().concat(REFUND),
+                    new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
+                    });
+            final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
+            final WynkResponseEntity<AbstractPaymentRefundResponse> refundInitResponse = refundService.refund(refundRequest);
+            if (Objects.nonNull(refundInitResponse.getBody())) {
+                final AbstractPaymentRefundResponse refundResponse = refundInitResponse.getBody().getData();
+                if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
+                    sqsManagerService.publishSQSMessage(
+                            PaymentReconciliationMessage.builder().paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundResponse.getExternalReferenceId())
+                                    .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
+                                    .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
+                }
+            }
+            return refundInitResponse;
+        } catch (WynkRuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
         }
     }
 }

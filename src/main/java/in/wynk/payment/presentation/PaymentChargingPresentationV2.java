@@ -12,7 +12,6 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
 import in.wynk.payment.dto.gateway.card.CardKeyValueTypeChargingResponse;
 import in.wynk.payment.dto.gateway.netbanking.NonSeamlessNetBankingChargingResponse;
-import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
@@ -28,6 +27,7 @@ import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
@@ -37,12 +37,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
-import static in.wynk.payment.core.constant.UpiConstants.UPI_PREFIX;
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.UpiConstants.*;
-import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
-import static in.wynk.payment.core.constant.CardConstants.CARD;
 
 @Slf4j
 @Service
@@ -113,22 +111,38 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 @SneakyThrows
                 @Override
                 public IntentSeamlessUpiPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                    AbstractChargingRequestV2 request = payload.getFirst();
                     UpiIntentChargingResponse response = (UpiIntentChargingResponse) payload.getSecond();
                     final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
                     final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
-                    final String stringBuilder = prefix +
-                            ":" +
-                            "//" +
-                            "pay" +
-                            "?pa=" + response.getPa() +
-                            "&pn=" + response.getPn() +
-                            "&tr=" + response.getTr() +
-                            "&am=" + response.getAm() +
-                            "&cu=" + response.getCu() +
-                            "&tn=" + response.getTn() +
-                            "&mc=" + response.getMc() +
-                            "&tid=" + response.getTid();
-                    final String form = EncryptionUtils.encrypt(stringBuilder, encryptionKey);
+                    StringBuilder stringBuilder = new StringBuilder(prefix);
+                    if (!request.isAutoRenewOpted()) stringBuilder.append("://pay?");
+                    else {
+                        stringBuilder.append("://mandate?");
+                        if (!StringUtils.isEmpty(response.getMn())) stringBuilder.append("&mn=").append(response.getMn());
+                        if (!StringUtils.isEmpty(response.getRev())) stringBuilder.append("&rev=").append(response.getRev());
+                        if (!StringUtils.isEmpty(response.getMode())) stringBuilder.append("&mode=").append(response.getMode());
+                        if (!StringUtils.isEmpty(response.getRecur())) stringBuilder.append("&recur=").append(response.getRecur());
+                        if (!StringUtils.isEmpty(response.getOrgId())) stringBuilder.append("&orgid=").append(response.getOrgId());
+                        if (!StringUtils.isEmpty(response.getBlock())) stringBuilder.append("&block=").append(response.getBlock());
+                        if (!StringUtils.isEmpty(response.getAmRule())) stringBuilder.append("&amrule=").append(response.getAmRule());
+                        if (!StringUtils.isEmpty(response.getPurpose())) stringBuilder.append("&purpose=").append(response.getPurpose());
+                        if (!StringUtils.isEmpty(response.getTxnType())) stringBuilder.append("&txnType=").append(response.getTxnType());
+                        if (!StringUtils.isEmpty(response.getRecurType())) stringBuilder.append("&recurtype=").append(response.getRecurType());
+                        if (!StringUtils.isEmpty(response.getRecurValue())) stringBuilder.append("&recurvalue=").append(response.getRecurValue());
+                        if (!StringUtils.isEmpty(response.getValidityEnd())) stringBuilder.append("&validityend=").append(response.getValidityEnd());
+                        if (!StringUtils.isEmpty(response.getValidityStart())) stringBuilder.append("&validitystart=").append(response.getValidityStart());
+                        stringBuilder.append("&");
+                    }
+                    stringBuilder.append("pa=").append(response.getPa());
+                    stringBuilder.append("&pn=").append(response.getPn());
+                    stringBuilder.append("&tr=").append(response.getTr());
+                    stringBuilder.append("&am=").append(response.getAm());
+                    stringBuilder.append("&cu=").append(response.getCu());
+                    stringBuilder.append("&tn=").append(response.getTn());
+                    stringBuilder.append("&mc=").append(response.getMc());
+                    stringBuilder.append("&tid=").append(response.getTid().replaceAll("-", ""));
+                    final String form = EncryptionUtils.encrypt(stringBuilder.toString(), encryptionKey);
                     return IntentSeamlessUpiPaymentChargingResponse.builder()
                             .deepLink(form)
                             .appPackage((String) method.getMeta().get(APP_PACKAGE))

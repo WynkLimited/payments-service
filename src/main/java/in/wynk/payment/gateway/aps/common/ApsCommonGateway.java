@@ -17,6 +17,7 @@ import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.dto.aps.request.status.refund.ApsRefundStatusRequest;
 import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
@@ -80,8 +81,8 @@ public class ApsCommonGateway {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange (String url, HttpMethod method, Object body, Class<T> target) {
-        ResponseEntity<String> responseEntity = apsClientService.apsOperations(generateToken(), url, method, body);
+    public <T> T exchange (String url, HttpMethod method,String loginId, Object body, Class<T> target) {
+        ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(), url, method, body);
         try {
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
@@ -110,7 +111,7 @@ public class ApsCommonGateway {
         try {
             final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
             ApsExternalPaymentRefundStatusResponse body =
-                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
+                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST,getLoginId(transaction.getMsisdn()), refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
             mBuilder.request(refundStatusRequest);
             mBuilder.response(body);
             mBuilder.externalTransactionId(body.getRefundId());
@@ -143,7 +144,7 @@ public class ApsCommonGateway {
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
 
-            ApsChargeStatusResponse[] status = exchange(uri.toString(), HttpMethod.GET, null, ApsChargeStatusResponse[].class);
+            ApsChargeStatusResponse[] status = exchange(uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()),null, ApsChargeStatusResponse[].class);
 
             if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
@@ -169,5 +170,9 @@ public class ApsCommonGateway {
     @SneakyThrows
     public String encryptCardData (CardDetails credentials) {
         return rsa.encrypt(gson.toJson(credentials));
+    }
+
+    public String getLoginId (String msisdn) {
+        return msisdn.replace("+91","");
     }
 }

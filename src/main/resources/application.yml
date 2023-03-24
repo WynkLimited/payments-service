@@ -149,7 +149,7 @@ payment:
   timeout:
     page: ${webview.host}/#/txn-state/session-out/
   polling:
-    page: ${webview.host}/#/txn-state/payment-poll/
+    page: ${webview.host}/payment-timer/v2/
   googlePlay:
       baseUrl: https://androidpublisher.googleapis.com/androidpublisher/v3/applications/
       purchaseUrl: /purchases/subscriptions/

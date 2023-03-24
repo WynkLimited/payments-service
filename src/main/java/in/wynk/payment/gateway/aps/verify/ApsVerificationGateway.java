@@ -16,9 +16,7 @@ import in.wynk.payment.service.IVerificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -73,12 +71,8 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
             @Override
             public BinVerificationResponse verify (VerificationRequestV2 request) {
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
-                final RequestEntity<ApsBinVerificationRequest> entity = new RequestEntity<>(binRequest, new HttpHeaders(), HttpMethod.POST, URI.create(BIN_VERIFY_ENDPOINT));
                 try {
-
-                    ApsBinVerificationResponseData apsBinVerificationResponseData =
-                            common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, binRequest, ApsBinVerificationResponseData.class);
-
+                    ApsBinVerificationResponseData apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, "", binRequest, ApsBinVerificationResponseData.class);
                     return BinVerificationResponse.fromAps(apsBinVerificationResponseData);
 
                 } catch (Exception e) {
@@ -95,10 +89,7 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                 String lob = LOB_AUTO_PAY_REGISTER_WYNK;
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
                 try {
-                    final HttpHeaders headers = new HttpHeaders();
-                    RequestEntity<VerificationRequestV2> entity = new RequestEntity<>(request, headers, HttpMethod.GET, URI.create(uri.toString()));
-                    ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, request, ApsVpaVerificationData.class);
-
+                    ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, "", request, ApsVpaVerificationData.class);
                     return VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);

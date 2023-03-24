@@ -114,8 +114,10 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
                 ApsSiPaymentRecurringRequest.builder().transactionId(transaction.getIdStr()).userInfo(UserInfo.builder().loginId("7417656401").build()).siPaymentInfo(
                                 SiPaymentInfo.builder().mandateTransactionId(merchantTransaction.getExternalTransactionId()).paymentMode(mode).paymentAmount(amount).invoiceNumber(invoiceNumber).build())
                         .build();
+
         try {
-            return common.exchange(SI_PAYMENT_API, HttpMethod.POST, apsSiPaymentRecurringRequest, ApsSiPaymentRecurringResponse.class);
+            //fix login id as msisdn
+            return common.exchange(SI_PAYMENT_API, HttpMethod.POST,"" ,apsSiPaymentRecurringRequest, ApsSiPaymentRecurringResponse.class);
 
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());

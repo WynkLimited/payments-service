@@ -1,6 +1,7 @@
 package in.wynk.payment.presentation;
 
 import com.google.gson.Gson;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
@@ -23,6 +24,7 @@ import in.wynk.payment.presentation.dto.charge.netbanking.NonSeamlessNetBankingP
 import in.wynk.payment.presentation.dto.charge.netbanking.SeamlessNetBankingPaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.upi.*;
 import in.wynk.queue.dto.Payment;
+import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
     @Value("${payment.encKey}")
     private String encryptionKey;
+
+    @Value("${payment.polling.page}")
+    private String CLIENT_POLLING_SCREEN_URL;
 
     private final Gson gson;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
@@ -158,8 +163,10 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 @SneakyThrows
                 @Override
                 public CollectNonSeamlessUpiPaymentChargingResponse transform (Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                    final UpiCollectChargingResponse response = (UpiCollectChargingResponse) payload.getSecond();
-                    final String url = EncryptionUtils.encrypt(response.getUrl(), encryptionKey);
+                    final SessionDTO sessionDTO = SessionContextHolder.getBody();
+                    String os= sessionDTO.get("os");
+                    String sid = SessionContextHolder.getId();
+                   String url=CLIENT_POLLING_SCREEN_URL.concat(sid).concat("/").concat(os);
                     return CollectNonSeamlessUpiPaymentChargingResponse.builder()
                             .url(url).action(PaymentChargingAction.REDIRECT.getAction()).build();
                 }

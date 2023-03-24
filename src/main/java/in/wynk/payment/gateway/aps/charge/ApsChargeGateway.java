@@ -38,24 +38,19 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.CardConstants.CARD;
 import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
 import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
-import static in.wynk.payment.core.constant.PaymentConstants.SEAMLESS;
-import static in.wynk.payment.core.constant.PaymentConstants.NON_SEAMLESS;
-import static in.wynk.payment.core.constant.PaymentConstants.COLLECT_IN_APP;
-import static in.wynk.payment.core.constant.PaymentConstants.HTML;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.UpiConstants.*;
-import static in.wynk.payment.dto.apb.ApbConstants.*;
+import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
+import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER;
 
 /**
  * @author Nishesh Pandey
@@ -72,8 +67,6 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
     private String UPI_CHARGING_ENDPOINT;
     @Value("${aps.payment.init.charge.api}")
     private String CHARGING_ENDPOINT;
-    @Value("${payment.polling.page}")
-    private String CLIENT_POLLING_SCREEN_URL;
 
     public ApsChargeGateway (PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common) {
         this.paymentMethodCachingService = paymentMethodCachingService;
@@ -130,19 +123,13 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
                     final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                    final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
-                    final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
-                    final HttpHeaders headers = new HttpHeaders();
                     ApsExternalChargingRequest.ApsExternalChargingRequestBuilder<CollectUpiPaymentInfo> apsChargingRequestBuilder =
                             ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(transaction.getIdStr()).userInfo(userInfo)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
                             CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
-
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
-                        //iv-user is mandatory header
-                        headers.set(IV_USER, request.getUserDetails().getMsisdn().replace("+91", ""));
                         Calendar cal = Calendar.getInstance();
                         cal.add(Calendar.HOUR, 24);
                         Date today = cal.getTime();
@@ -152,10 +139,9 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         apsChargingRequestBuilder.billPayment(false);
                     }
                     final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
-                    final RequestEntity<ApsExternalChargingRequest<CollectUpiPaymentInfo>> requestEntity = new RequestEntity<>(payRequest, headers, HttpMethod.POST, URI.create(UPI_CHARGING_ENDPOINT));
-                    ApsUpiCollectChargingResponse response = common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsUpiCollectChargingResponse.class);
-                    return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response))
-                            .url(CLIENT_POLLING_SCREEN_URL).build();
+                    ApsUpiCollectChargingResponse response =
+                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsUpiCollectChargingResponse.class);
+                    return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response)).build();
                 }
             }
         }
@@ -201,9 +187,8 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                     final ApsExternalChargingRequest<IntentUpiPaymentInfo> payRequest =
                             ApsExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-
                     ApsUpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
-                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsUpiIntentChargingChargingResponse.class);
+                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsUpiIntentChargingChargingResponse.class);
                     Map<String, String> map = Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                             .collect(Collectors.toMap(x -> x[0], x -> x[1]));
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
@@ -294,9 +279,10 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
                     final Transaction transaction = TransactionContext.get();
                     final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
-                    String paymentMode="DEBIT_CARD";
-                    if(Objects.nonNull(paymentDetails.getCardDetails().getCardInfo().getCategory()) && (paymentDetails.getCardDetails().getCardInfo().getCategory().equals("CREDIT") || paymentDetails.getCardDetails().getCardInfo().getCategory().equals("creditcard"))){
-                        paymentMode= "CREDIT_CARD";
+                    String paymentMode = "DEBIT_CARD";
+                    if (Objects.nonNull(paymentDetails.getCardDetails().getCardInfo().getCategory()) &&
+                            (paymentDetails.getCardDetails().getCardInfo().getCategory().equals("CREDIT") || paymentDetails.getCardDetails().getCardInfo().getCategory().equals("creditcard"))) {
+                        paymentMode = "CREDIT_CARD";
                     }
                     AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
                     try {
@@ -307,17 +293,17 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                             .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
                             final String encCardInfo = common.encryptCardData(credentials);
                             abstractCardPaymentInfoBuilder =
-                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode(cardDetails.getCardInfo().getBankCode()).saveCard(cardDetails.isSaveCard()).paymentMode(paymentMode).paymentAmount(transaction.getAmount());
+                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode(cardDetails.getCardInfo().getBankCode()).saveCard(cardDetails.isSaveCard())
+                                            .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
                         } else {
                             final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
                             final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardToken(cardDetails.getCardToken()).build();
                             final String encCardInfo = common.encryptCardData(credentials);
-                            abstractCardPaymentInfoBuilder = SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).saveCard(cardDetails.isSaveCard()).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
+                            abstractCardPaymentInfoBuilder =
+                                    SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).saveCard(cardDetails.isSaveCard()).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                         }
                         assert abstractCardPaymentInfoBuilder != null;
-                        final HttpHeaders headers = new HttpHeaders();
                         if (paymentDetails.isAutoRenew()) {
-                            headers.set(IV_USER, request.getUserDetails().getMsisdn());
                             Calendar cal = Calendar.getInstance();
                             cal.add(Calendar.HOUR, 24);
                             Date today = cal.getTime();
@@ -331,7 +317,8 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         ApsExternalChargingRequest<?> payRequest =
                                 ApsExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
                                         .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                        ApsCardChargingResponse cardChargingResponse = common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsCardChargingResponse.class);
+                        ApsCardChargingResponse cardChargingResponse =
+                                common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsCardChargingResponse.class);
                         return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType("SUBSCRIBE")
                                 .html(cardChargingResponse.getHtml()).build();
                     } catch (Exception e) {
@@ -369,7 +356,8 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                 final ApsExternalChargingRequest<NetBankingPaymentInfo> payRequest =
                         ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                ApsNetBankingChargingResponse apsNetBankingChargingResponse = common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, payRequest, ApsNetBankingChargingResponse.class);
+                ApsNetBankingChargingResponse apsNetBankingChargingResponse =
+                        common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsNetBankingChargingResponse.class);
                 return NetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }

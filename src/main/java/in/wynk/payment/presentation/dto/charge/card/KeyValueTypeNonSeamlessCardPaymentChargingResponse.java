@@ -13,4 +13,6 @@ import lombok.experimental.SuperBuilder;
 public class KeyValueTypeNonSeamlessCardPaymentChargingResponse extends NonSeamlessCardPaymentChargingResponse {
     @JsonProperty("info")
     private String form;
+    @JsonProperty("redirectUrl")
+    private String url;
 }

@@ -24,8 +24,9 @@ import in.wynk.payment.dto.payu.PaymentRequestType;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
+import in.wynk.payment.dto.request.common.FreshCardDetails;
+import in.wynk.payment.dto.request.common.SavedCardDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
-import in.wynk.payment.dto.response.payu.AbstractPayUUpiResponse;
 import in.wynk.payment.dto.response.payu.PayUUpiIntentInitResponse;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentChargingServiceV2;
@@ -34,6 +35,7 @@ import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
 import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
@@ -53,6 +56,9 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 @Slf4j
 @Service(PaymentConstants.PAYU_CHARGE)
 public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+
+    @Value("${payment.merchant.payu.api.payment}")
+    public String PAYMENT_API;
 
     private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> delegate = new HashMap<>();
     private final PaymentMethodCachingService paymentMethodCachingService;
@@ -119,6 +125,8 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 public UpiIntentChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
                     final Map<String, String> form = getPayload(request);
+                    final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+                    form.put(PAYU_VPA, paymentDetails.getUpiDetails().getVpa());
                     final PayUUpiIntentInitResponse res = initIntentUpiPayU(form);
                     PayUUpiIntentInitResponse.IntentResult result = res.getResult();
                     if (Objects.nonNull(result) && Objects.nonNull(result.getIntentURIData())) {
@@ -265,7 +273,26 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 public CardKeyValueTypeChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
                     final Map<String, String> form = getPayload(request);
-                    return CardKeyValueTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).build();
+                    final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
+                    final String storeCard = (paymentDetails.getCardDetails().isSaveCard()) ? "1" : "0";
+                    form.put(PAYU_STORE_CARD, storeCard);
+                    form.put(PAYU_BANKCODE, paymentDetails.getCardDetails().getCardInfo().getBankCode());
+                    if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
+                        FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
+                        form.put(PAYU_CARD_EXP_MON, cardDetails.getExpiryInfo().getMonth());
+                        form.put(PAYU_CARD_EXP_YEAR, cardDetails.getExpiryInfo().getYear());
+                        form.put(PAYU_CARD_NUM, cardDetails.getCardNumber());
+                        form.put(PAYU_CARD_HOLDER_NAME, cardDetails.getCardHolderName());
+                        form.put(PAYU_CARD_CVV, cardDetails.getCardInfo().getCvv());
+                    } else {
+                        SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
+                        form.put(PAYU_CARD_TOKEN, cardDetails.getCardToken());
+                        form.put(PAYU_CARD_CVV, cardDetails.getCardInfo().getCvv());
+                    }
+                    final String pg = (paymentDetails.getCardDetails().getCardInfo().getCategory().equalsIgnoreCase("creditcard") ||
+                            paymentDetails.getCardDetails().getCardInfo().getCategory().equalsIgnoreCase("CREDIT")) ? "CC" : "DC";
+                    form.put(PAYU_PG, pg);
+                    return CardKeyValueTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
                 }
             }
         }
@@ -300,6 +327,8 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             public NonSeamlessNetBankingChargingResponse charge(AbstractChargingRequestV2 request) {
                 final Transaction transaction = TransactionContext.get();
                 final Map<String, String> form = getPayload(request);
+                final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
+                form.put(PAYU_ENFORCE_PAY_METHOD, (String) method.getMeta().get(PaymentConstants.BANK_CODE));
                 return NonSeamlessNetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).build();
             }
         }

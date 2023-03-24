@@ -28,7 +28,7 @@ public class PaymentMethodVerificationPresentation implements IWynkPresentation<
                         .verificationType(vpaVerificationResponse.getVerificationType())
                         .autoPayVPAValid(vpaVerificationResponse.isAutoPayVPAValid())
                         .autoPayBankValid(vpaVerificationResponse.isAutoPayBankValid()).build();
-                return WynkResponseEntity.<VerifyUserPaymentResponse>builder().data(response).status(response.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
+                return WynkResponseEntity.<VerifyUserPaymentResponse>builder().data(response).build();
             case BIN:
                 BinVerificationResponse binVerificationResponse = (BinVerificationResponse) payload;
                 VerifyUserPaymentResponse verifyResponse = BinVerifyUserPaymentResponse.builder().valid(binVerificationResponse.isValid())
@@ -38,7 +38,7 @@ public class PaymentMethodVerificationPresentation implements IWynkPresentation<
                         .cardCategory(binVerificationResponse.getCardCategory())
                         .cardType(binVerificationResponse.getCardType())
                         .isDomestic(binVerificationResponse.isDomestic()? "Y" : "N").build();
-                return WynkResponseEntity.<VerifyUserPaymentResponse>builder().data(verifyResponse).status(verifyResponse.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
+                return WynkResponseEntity.<VerifyUserPaymentResponse>builder().data(verifyResponse).build();
             default:
                 return WynkResponseEntity.<VerifyUserPaymentResponse>builder().build();
         }

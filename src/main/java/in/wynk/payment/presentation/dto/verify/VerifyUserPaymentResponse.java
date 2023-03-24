@@ -11,5 +11,4 @@ import lombok.experimental.SuperBuilder;
 public abstract class VerifyUserPaymentResponse {
     private final VerificationType verificationType;
     private final boolean valid;
-    private final boolean autoRenewSupported;
 }

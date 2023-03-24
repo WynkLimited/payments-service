@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class VerifyUserPaymentPresentation implements IWynkPresentation<WynkResponseEntity<VerifyUserPaymentResponse>, AbstractVerificationResponse> {
+public class PaymentMethodVerificationPresentation implements IWynkPresentation<WynkResponseEntity<VerifyUserPaymentResponse>, AbstractVerificationResponse> {
 
     @Override
     public WynkResponseEntity<VerifyUserPaymentResponse> transform(AbstractVerificationResponse payload) {
@@ -25,10 +25,9 @@ public class VerifyUserPaymentPresentation implements IWynkPresentation<WynkResp
             case VPA:
                 VpaVerificationResponse vpaVerificationResponse = (VpaVerificationResponse) payload;
                 VerifyUserPaymentResponse response = VpaVerifyUserPaymentResponse.builder().valid(vpaVerificationResponse.isValid())
-                        .autoRenewSupported(vpaVerificationResponse.isAutoRenewSupported())
                         .verificationType(vpaVerificationResponse.getVerificationType())
-                        .isAutoPayVPAValid(vpaVerificationResponse.isAutoPayVPAValid())
-                        .isAutoPayBankValid(vpaVerificationResponse.isAutoPayBankValid()).build();
+                        .autoPayVPAValid(vpaVerificationResponse.isAutoPayVPAValid())
+                        .autoPayBankValid(vpaVerificationResponse.isAutoPayBankValid()).build();
                 return WynkResponseEntity.<VerifyUserPaymentResponse>builder().data(response).status(response.isValid() ? HttpStatus.OK : HttpStatus.BAD_REQUEST).build();
             case BIN:
                 BinVerificationResponse binVerificationResponse = (BinVerificationResponse) payload;

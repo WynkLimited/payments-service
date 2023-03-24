@@ -12,4 +12,5 @@ public class BinVerifyUserPaymentResponse extends VerifyUserPaymentResponse {
     private String cardCategory;
     private String cardType;
     private String isDomestic;
+    private boolean autoRenewSupported;
 }

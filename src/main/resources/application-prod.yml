@@ -499,6 +499,11 @@ webview:
 
 ########### MONGO CONFIG ###########
 wynk:
+  kafka:
+    enabled: false
+  multi:
+    kafka:
+      enabled: false
   mongodb:
     enabled: true
     sources:

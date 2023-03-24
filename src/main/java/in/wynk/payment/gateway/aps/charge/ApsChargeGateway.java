@@ -189,7 +189,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                     ApsUpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
                             common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsUpiIntentChargingChargingResponse.class);
-                    Map<String, String> map = Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
+                    Map<String, String> map = Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                             .collect(Collectors.toMap(x -> x[0], x -> x[1]));
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();

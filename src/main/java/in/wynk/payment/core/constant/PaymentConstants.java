@@ -1,7 +1,6 @@
 package in.wynk.payment.core.constant;
 
 import in.wynk.common.constant.BaseConstants;
-import io.vavr.collection.Array;
 
 import java.util.Arrays;
 import java.util.List;
@@ -116,4 +115,5 @@ public interface PaymentConstants extends BaseConstants {
     String APS_PAYMENT_STATUS = "aps_payment_status";
     String PAYU_VERIFY = "PayU_verify";
     String LOB_AUTO_PAY_REGISTER_WYNK = "AUTO_PAY_REGISTER"; //to be updated once APS releases the change
+
 }

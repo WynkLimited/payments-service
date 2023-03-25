@@ -5,10 +5,11 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.common.enums.BillingCycle;
+import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.UpiConstants;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -21,11 +22,11 @@ import in.wynk.payment.dto.gateway.upi.*;
 import in.wynk.payment.dto.payu.PayUConstants;
 import in.wynk.payment.dto.payu.PayUUpiCollectResponse;
 import in.wynk.payment.dto.payu.PaymentRequestType;
+import in.wynk.payment.dto.payu.SiDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
-import in.wynk.payment.dto.response.payu.AbstractPayUUpiResponse;
 import in.wynk.payment.dto.response.payu.PayUUpiIntentInitResponse;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentChargingServiceV2;
@@ -82,7 +83,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
         @Override
         public AbstractCoreUpiChargingResponse charge(AbstractChargingRequestV2 request) {
-            String flowType = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getFlowType();
+            final String flowType = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getFlowType();
             return upiDelegate.get(flowType).charge(request);
         }
 
@@ -90,14 +91,14 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
-            public PayUUpiSeamlessCharging () {
+            public PayUUpiSeamlessCharging() {
                 upiDelegate.put(INTENT, new PayUUpiIntentCharging());
                 upiDelegate.put(COLLECT_IN_APP, new PayUUpiCollectInAppCharging());
             }
 
             @Override
-            public AbstractSeamlessUpiChargingResponse charge (AbstractChargingRequestV2 request) {
-                UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+            public AbstractSeamlessUpiChargingResponse charge(AbstractChargingRequestV2 request) {
+                final UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
                 String flow = UpiConstants.INTENT;
                 if (!upiPaymentDetails.getUpiDetails().isIntent()) {
                     flow = COLLECT_IN_APP;
@@ -107,25 +108,35 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
             private class PayUUpiCollectInAppCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
                 @Override
-                public UpiCollectInAppChargingResponse charge (AbstractChargingRequestV2 request) {
-                    throw new WynkRuntimeException(PaymentErrorType.PAY888);
+                public UpiCollectInAppChargingResponse charge(AbstractChargingRequestV2 request) {
+                    final Transaction transaction = TransactionContext.get();
+                    try {
+                        final Map<String, String> form = PayUChargingGateway.this.buildPayUForm(request);
+                        final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) request.getPaymentDetails());
+                        form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
+                        init(UPI, form, new TypeReference<PayUUpiCollectResponse>() {
+                        });
+                        return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
+                    } catch (Exception e) {
+                        throw new WynkRuntimeException(PAY015, e);
+                    }
                 }
             }
 
             private class PayUUpiIntentCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
 
                 @Override
-                @SneakyThrows
                 public UpiIntentChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
-                    final Map<String, String> form = getPayload(request);
-                    final PayUUpiIntentInitResponse res = initIntentUpiPayU(form);
-                    PayUUpiIntentInitResponse.IntentResult result = res.getResult();
+                    final Map<String, String> form = PayUChargingGateway.this.buildPayUForm(request);
+                    final PayUUpiIntentInitResponse res = init(UpiConstants.INTENT, form, new TypeReference<PayUUpiIntentInitResponse>() {
+                    });
+                    final PayUUpiIntentInitResponse.IntentResult result = res.getResult();
                     if (Objects.nonNull(result) && Objects.nonNull(result.getIntentURIData())) {
-                        Map<String, String> map = Arrays.stream(result.getIntentURIData().split(AND)).map(s -> s.split(EQUAL, 2)).filter(p -> StringUtils.isNotBlank(p[1]))
+                        final Map<String, String> map = Arrays.stream(result.getIntentURIData().split(AND)).map(s -> s.split(EQUAL, 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                                 .collect(Collectors.toMap(x -> x[0], x -> x[1]));
-                        PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
-                        String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
+                        final PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
+                        final String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
                         return UpiIntentChargingResponse.builder().tid(transaction.getIdStr().replaceAll("-", "")).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
                                 .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.DEFAULT_PN)).tr(map.get(TR)).am(map.get(AM))
                                 .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
@@ -135,16 +146,16 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 }
             }
 
-            private PayUUpiIntentInitResponse initIntentUpiPayU(Map<String, String> payUPayload) {
-                MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
+            private <T> T init(String bankCode, Map<String, String> payUPayload, TypeReference<T> target) {
+                final MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
                 for (String key : payUPayload.keySet()) {
                     requestMap.add(key, payUPayload.get(key));
                 }
                 payUPayload.clear();
-                requestMap.add(PAYU_PG, "UPI");
-                requestMap.add(PAYU_TXN_S2S_FLOW, "4");
-                requestMap.add(PAYU_BANKCODE, "INTENT");
-                return common.exchange(common.PAYMENT_API, requestMap, new TypeReference<PayUUpiIntentInitResponse>() {});
+                requestMap.add(PAYU_PG, UPI);
+                requestMap.add(PAYU_TXN_S2S_FLOW, PAYU_TXN_S2S_FLOW_VALUE);
+                requestMap.add(PAYU_BANKCODE, bankCode);
+                return common.exchange(common.PAYMENT_API, requestMap, target);
             }
         }
 
@@ -152,12 +163,12 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
             private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
-            public PayUUpiNonSeamlessCharging () {
+            public PayUUpiNonSeamlessCharging() {
                 upiDelegate.put(COLLECT, new PayUUpiCollectCharging());
             }
 
             @Override
-            public AbstractCoreUpiChargingResponse charge (AbstractChargingRequestV2 request) {
+            public AbstractCoreUpiChargingResponse charge(AbstractChargingRequestV2 request) {
                 return upiDelegate.get(COLLECT).charge(request);
             }
 
@@ -166,29 +177,15 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 @Override
                 public UpiCollectChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
-                    final Map<String, String> form = getPayload(request);
-                    final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) request.getPaymentDetails());
-                    form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
-                    final PayUUpiCollectResponse res = initCollectUpiPayU(form);
-                    final PayUUpiCollectResponse.CollectResult result = res.getResult();
-                    if (Objects.nonNull(result) && Objects.nonNull(result.getOtpPostUrl())) {
-                        return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
-                                .url(result.getOtpPostUrl()).build();
+                    try {
+                        final Map<String, String> form = PayUChargingGateway.this.buildPayUForm(request);
+                        final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) request.getPaymentDetails());
+                        form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
+                        return UpiCollectChargingResponse.builder().form(form).tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
+                    } catch (Exception e) {
+                        throw new WynkRuntimeException(PAY015, e);
                     }
-                    throw new WynkRuntimeException(PAY015);
                 }
-            }
-
-            private PayUUpiCollectResponse initCollectUpiPayU(Map<String, String> payUPayload) {
-                MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
-                for (String key : payUPayload.keySet()) {
-                    requestMap.add(key, payUPayload.get(key));
-                }
-                payUPayload.clear();
-                requestMap.add(PAYU_PG,"UPI");
-                requestMap.add(PAYU_TXN_S2S_FLOW, "4");
-                requestMap.add(PAYU_BANKCODE, "UPI");
-                return common.exchange(common.PAYMENT_API, requestMap, new TypeReference<PayUUpiCollectResponse>() {});
             }
         }
     }
@@ -206,9 +203,9 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         public AbstractCoreCardChargingResponse charge(AbstractChargingRequestV2 request) {
             final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
-            boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
-            boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
-            String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
+            final boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
+            final boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
+            final String flowType = (inAppOtpSupport || isOtpLessSupport) ? SEAMLESS : NON_SEAMLESS;
             return cardDelegate.get(flowType).charge(request);
         }
 
@@ -225,7 +222,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             public AbstractSeamlessCardChargingResponse charge(AbstractChargingRequestV2 request) {
                 final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
                 String flow = COLLECT_IN_APP;
-                if(Objects.nonNull(paymentDetails.getCardDetails().getOtpLessSupport()) && paymentDetails.getCardDetails().getOtpLessSupport()) {
+                if (Objects.nonNull(paymentDetails.getCardDetails().getOtpLessSupport()) && paymentDetails.getCardDetails().getOtpLessSupport()) {
                     flow = OTP_LESS;
                 }
                 return cardDelegate.get(flow).charge(request);
@@ -264,7 +261,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 @Override
                 public CardKeyValueTypeChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
-                    final Map<String, String> form = getPayload(request);
+                    final Map<String, String> form = PayUChargingGateway.this.buildPayUForm(request);
                     return CardKeyValueTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).build();
                 }
             }
@@ -299,7 +296,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
             @Override
             public NonSeamlessNetBankingChargingResponse charge(AbstractChargingRequestV2 request) {
                 final Transaction transaction = TransactionContext.get();
-                final Map<String, String> form = getPayload(request);
+                final Map<String, String> form = PayUChargingGateway.this.buildPayUForm(request);
                 return NonSeamlessNetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).build();
             }
         }
@@ -332,13 +329,15 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
 
             @Override
             public NonSeamlessWalletChargingGatewayResponse charge(PayUChargingRequest<?> request) {
-                final Map<String, String> form = getPayload(request);
+                final Map<String, String> form = buildPayUForm(request);
                 return NonSeamlessWalletChargingGatewayResponse.builder().form(form).build();
             }
         }
     }*/
 
-    private Map<String, String> getPayload(AbstractChargingRequestV2 chargingRequest) {
+
+    @SneakyThrows
+    private Map<String, String> buildPayUForm(AbstractChargingRequestV2 chargingRequest) {
         final Transaction transaction = TransactionContext.get();
         final int planId = transaction.getPlanId();
         double finalPlanAmount = transaction.getAmount();
@@ -347,10 +346,34 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         final String email = uid + BASE_USER_EMAIL;
         final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), transaction.getPaymentChannel().getCode().toLowerCase(), MERCHANT_ID);
         String userCredentials = payUMerchantKey + COLON + uid;
-        Map<String, String> payloadTemp;
-        payloadTemp = getPayload(transaction.getClientAlias(), transaction.getId(), email, uid, planId, finalPlanAmount);
+        Map<String, String> payload = new HashMap<>();
+        if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+            String reqType = PaymentRequestType.SUBSCRIBE.name();
+            String udf1 = PAYU_SI_KEY.toUpperCase();
+            Calendar cal = Calendar.getInstance();
+            Date today = cal.getTime();
+            cal.add(Calendar.YEAR, 5); // 5 yrs from now
+            Date next5Year = cal.getTime();
+            boolean isFreeTrial = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION;
+            BillingUtils billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
+            String siDetails = common.getMapper().writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), transaction.getMandateAmount(), today, next5Year));
+            String checksumHash = calculateChecksum(transaction.getClientAlias(), transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
+            payload.put(PAYU_SI_KEY, "1");
+            payload.put(PAYU_API_VERSION, "7");
+            payload.put(PAYU_HASH, checksumHash);
+            payload.put(PAYU_UDF1_PARAMETER, udf1);
+            payload.put(PAYU_SI_DETAILS, siDetails);
+            payload.put(PAYU_REQUEST_TYPE, reqType);
+            payload.put(PAYU_FREE_TRIAL, isFreeTrial ? "1" : "0");
+        } else {
+            String udf1 = StringUtils.EMPTY;
+            String reqType = PaymentRequestType.DEFAULT.name();
+            String checksumHash = calculateChecksum(transaction.getClientAlias(), transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount);
+            payload.put(PAYU_HASH, checksumHash);
+            payload.put(PAYU_REQUEST_TYPE, reqType);
+            payload.put(PAYU_UDF1_PARAMETER, udf1);
+        }
         // Mandatory according to document
-        Map<String, String> payload = new HashMap<>(payloadTemp);
         payload.put(PAYU_MERCHANT_KEY, payUMerchantKey);
         payload.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
         payload.put(PAYU_TRANSACTION_AMOUNT, String.valueOf(finalPlanAmount));
@@ -358,8 +381,8 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         payload.put(PAYU_CUSTOMER_FIRSTNAME, uid);
         payload.put(PAYU_CUSTOMER_EMAIL, email);
         payload.put(PAYU_CUSTOMER_MSISDN, msisdn);
-        payload.put(PAYU_SUCCESS_URL, ((IChargingDetails) chargingRequest).getCallbackDetails().getCallbackUrl());
-        payload.put(PAYU_FAILURE_URL, ((IChargingDetails) chargingRequest).getCallbackDetails().getCallbackUrl());
+        payload.put(PAYU_SUCCESS_URL, chargingRequest.getCallbackDetails().getCallbackUrl());
+        payload.put(PAYU_FAILURE_URL, chargingRequest.getCallbackDetails().getCallbackUrl());
         // Not in document
         payload.put(PAYU_IS_FALLBACK_ATTEMPT, String.valueOf(false));
         payload.put(ERROR, PAYU_REDIRECT_MESSAGE);
@@ -367,18 +390,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
         return payload;
     }
 
-    private Map<String, String> getPayload(String client, UUID transactionId, String email, String uid, int planId, double finalPlanAmount) {
-        Map<String, String> payload = new HashMap<>();
-        String udf1 = StringUtils.EMPTY;
-        String reqType = PaymentRequestType.DEFAULT.name();
-        String checksumHash = getChecksumHashForPayment(client, transactionId, udf1, email, uid, String.valueOf(planId), finalPlanAmount);
-        payload.put(PAYU_HASH, checksumHash);
-        payload.put(PAYU_REQUEST_TYPE, reqType);
-        payload.put(PAYU_UDF1_PARAMETER, udf1);
-        return payload;
-    }
-
-    private String getChecksumHashForPayment(String client, UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {
+    private String calculateChecksum(String client, UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount) {
         final String payUMerchantKey = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
         final String payUMerchantSecret = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
         String rawChecksum = payUMerchantKey
@@ -386,4 +398,12 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + payUMerchantSecret;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
     }
+
+    private String calculateChecksum(String client, UUID transactionId, String udf1, String email, String firstName, String planTitle, double amount, String siDetails) {
+        final String payUMerchantKey = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
+        final String payUMerchantSecret = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
+        String rawChecksum = payUMerchantKey + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + siDetails + PIPE_SEPARATOR + payUMerchantSecret;
+        return EncryptionUtils.generateSHA512Hash(rawChecksum);
+    }
+
 }

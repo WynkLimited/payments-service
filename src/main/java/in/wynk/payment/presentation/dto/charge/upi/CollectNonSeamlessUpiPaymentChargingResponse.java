@@ -11,6 +11,6 @@ import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Payment(groupId = "UPI", mode = "collect")
 public class CollectNonSeamlessUpiPaymentChargingResponse extends NonSeamlessUpiPaymentChargingResponse {
-    @JsonProperty("redirectUrl")
-    private String url;
+    @JsonProperty("info")
+    private String form;
 }

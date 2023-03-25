@@ -37,6 +37,8 @@ public interface PayUConstants {
     String PAYU_PAYMENT_SOURCE_SIST = "sist";
     String PAYU_TRANSACTION_AMOUNT = "amount";
     String PAYU_TXN_S2S_FLOW = "txn_s2s_flow";
+
+    String PAYU_TXN_S2S_FLOW_VALUE = "4";
     String PAYU_NETBANKING_MODE = "netbanking";
     String PAYU_STATUS_NOT_FOUND = "Not Found";
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";

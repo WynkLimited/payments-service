@@ -19,7 +19,7 @@ public abstract class AbstractCoreChargingResponse {
     private TransactionStatus transactionStatus;
     private String transactionType;
 
-    public Long getExpiry () {
+    public Long getExpiry() {
         return System.currentTimeMillis() + TimeUnit.DAYS.toMillis(3);
     }
 }

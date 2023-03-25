@@ -58,7 +58,8 @@ public class PayUCommonGateway {
     public String PAYMENT_API;
 
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+    @Getter
+    private final ObjectMapper mapper;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     @Getter
@@ -67,7 +68,7 @@ public class PayUCommonGateway {
     public PayUCommonGateway(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher) {
         this.cache = cache;
         this.restTemplate = restTemplate;
-        this.objectMapper = objectMapper;
+        this.mapper = objectMapper;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
     }
@@ -75,9 +76,7 @@ public class PayUCommonGateway {
     public  <T> T exchange(String uri, MultiValueMap<String, String> request, TypeReference<T> target) {
         try {
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(uri)).body(request), String.class).getBody();
-            return objectMapper.readValue(response, target);
-        } catch (HttpStatusCodeException ex) {
-            throw new WynkRuntimeException(PAY015, ex);
+            return mapper.readValue(response, target);
         } catch (Exception ex) {
             throw new WynkRuntimeException(PAY015, ex);
         }

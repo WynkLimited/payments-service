@@ -114,6 +114,8 @@ public interface PaymentConstants extends BaseConstants {
     String PAYU_PAYMENT_STATUS = "PayU_payment_status";
     String APS_PAYMENT_STATUS = "aps_payment_status";
     String PAYU_VERIFY = "PayU_verify";
+    String PAYU_RENEW = "PayU_renew";
+    String PAYU_REFUND = "PayU_refund";
     String LOB_AUTO_PAY_REGISTER_WYNK = "AUTO_PAY_REGISTER"; //to be updated once APS releases the change
     String PAYMENT_TIMER_KEY = "payment_timer";
     String PAYMENT_STATUS_POLL_KEY = "payment_status_poll";

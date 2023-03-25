@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import in.wynk.common.dto.ICacheService;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 
@@ -44,6 +46,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_ST
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
+@Service(PaymentConstants.PAYU_RENEW)
 public class PayURenewalGateway implements IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     private final Gson gson;

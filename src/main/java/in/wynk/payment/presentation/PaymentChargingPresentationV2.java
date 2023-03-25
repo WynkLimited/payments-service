@@ -273,7 +273,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                     final CardKeyValueTypeChargingResponse response = (CardKeyValueTypeChargingResponse) payload.getSecond();
                     final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
                     return KeyValueTypeNonSeamlessCardPaymentChargingResponse.builder()
-                            .form(encForm).action(PaymentChargingAction.KEY_VALUE.getAction()).build();
+                            .form(encForm).url(response.getUrl()).action(PaymentChargingAction.KEY_VALUE.getAction()).build();
                 }
             }
 

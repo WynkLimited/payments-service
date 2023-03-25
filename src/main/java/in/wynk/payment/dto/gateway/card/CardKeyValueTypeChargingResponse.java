@@ -15,4 +15,5 @@ import java.util.Map;
 public class CardKeyValueTypeChargingResponse extends AbstractNonSeamlessCardChargingResponse {
     @JsonProperty("info")
     private Map<String, String> form;
+    private String url;
 }

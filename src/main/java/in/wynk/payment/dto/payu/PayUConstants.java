@@ -58,4 +58,10 @@ public interface PayUConstants {
     String PAYU_DECODED_S2S_RESPONSE = "decoded_s2s_response";
     String PAYU_INVOICE_DISPLAY_NUMBER = "invoiceDisplayNumber";
     String PAYU_MERCHANT_CODE = "5815";
+    String PAYU_STORE_CARD = "store_card";
+    String PAYU_CARD_EXP_MON = "ccexpmon";
+    String PAYU_CARD_EXP_YEAR = "ccexpyr";
+    String PAYU_CARD_NUM = "ccnum";
+    String PAYU_CARD_HOLDER_NAME = "ccname";
+    String PAYU_CARD_CVV = "ccvv";
 }

@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.verify;
 
+import in.wynk.payment.dto.aps.common.TokenizationConfig;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,28 +25,4 @@ public class ApsBinVerificationResponseData {
     private boolean domestic;
     private TokenizationConfig tokenizationConfig;
     private String blockedReason;
-
-
-
-    @Getter
-    @Setter
-    @Builder
-    public static class TokenizationConfig {
-        private String consentText;
-        private String consentSubText;
-        private String consentPopupHeader;
-        private List<ConsentPopupTnC> consentPopupTnC;
-        private String consentPopupButton;
-        private boolean consentChecked;
-
-        @Getter
-        @Setter
-        @Builder
-        public static class ConsentPopupTnC{
-            private String iconURL;
-            private boolean gradient;
-            private String text;
-            private String subText;
-        }
-    }
 }

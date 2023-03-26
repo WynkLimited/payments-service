@@ -293,14 +293,15 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                             .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
                             final String encCardInfo = common.encryptCardData(credentials);
                             abstractCardPaymentInfoBuilder =
-                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).bankCode(cardDetails.getCardInfo().getBankCode()).saveCard(cardDetails.isSaveCard())
+                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
+                                            .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
                                             .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
                         } else {
                             final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
-                            final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardToken(cardDetails.getCardToken()).build();
+                            final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
                             final String encCardInfo = common.encryptCardData(credentials);
                             abstractCardPaymentInfoBuilder =
-                                    SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).saveCard(cardDetails.isSaveCard()).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
+                                    SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                         }
                         assert abstractCardPaymentInfoBuilder != null;
                         if (paymentDetails.isAutoRenew()) {
@@ -357,7 +358,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                         ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                 ApsNetBankingChargingResponse apsNetBankingChargingResponse =
-                        common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsNetBankingChargingResponse.class);
+                        common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsNetBankingChargingResponse.class);
                 return NetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }

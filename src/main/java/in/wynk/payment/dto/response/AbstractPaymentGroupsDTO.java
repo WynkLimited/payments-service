@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class PaymentGroupsDTO {
+public class AbstractPaymentGroupsDTO {
     private String id; //group
     private String title; //display Name
     private String description;

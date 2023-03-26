@@ -4,13 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.dto.PlanDetails;
-import in.wynk.payment.dto.response.PaymentGroupsDTO;
-import in.wynk.payment.dto.response.billing.Billing;
+import in.wynk.payment.dto.response.AbstractPaymentGroupsDTO;
+import in.wynk.payment.dto.response.billing.AddToBill;
 import in.wynk.payment.dto.response.card.Card;
 import in.wynk.payment.dto.response.netbanking.NetBanking;
 import in.wynk.payment.dto.response.upi.UPI;
@@ -21,7 +17,6 @@ import lombok.experimental.SuperBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * @author Nishesh Pandey
@@ -34,9 +29,11 @@ public class PaymentOptionsDTO {
     private final IProductDetails productDetails;
     private final PlanDetails planDetails;
     @JsonProperty("pay_group_details")
-    private final List<PaymentGroupsDTO> paymentGroups;
+    private final List<AbstractPaymentGroupsDTO> paymentGroups;
     @JsonProperty("payment_method_details")
     private final PaymentMethodDTO paymentMethods;
+    @JsonProperty("saved_payment_details")
+    private final List<AbstractSavedPaymentDTO> savedPaymentDTO;
 
     @Getter
     @Setter
@@ -54,8 +51,8 @@ public class PaymentOptionsDTO {
         @JsonProperty("NET_BANKING")
         private List<NetBanking> netBanking;
 
-        @JsonProperty("BILLING")
-        private List<Billing> billing;
+        @JsonProperty("ADD_TO_BILL")
+        private List<AddToBill> billing;
 
     }
 

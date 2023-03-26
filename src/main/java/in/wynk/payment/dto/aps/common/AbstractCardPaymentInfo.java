@@ -8,6 +8,4 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 public abstract class AbstractCardPaymentInfo extends AbstractPaymentInfo {
-    private String bankCode;
-    private boolean saveCard;
 }

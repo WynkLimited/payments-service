@@ -245,7 +245,7 @@ aps:
       vpa:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/validate/vpa/{userVpa}?lob={lob}
     option:
-      api: ${payment.merchant.aps.api.base}/ps/payment-options/v3/fetch
+      api: ${payment.merchant.aps.api.base}/ps/payment-options/v6/fetch
     saved:
       option:
         api: ${payment.merchant.aps.api.base}/ps/payment-options/saved-options

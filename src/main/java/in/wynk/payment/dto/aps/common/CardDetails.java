@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -7,9 +8,11 @@ import lombok.Getter;
 @Builder
 public class CardDetails {
     private String cardNumber;
-    private String cvv;
-    private String expiryMonth;
-    private String expiryYear;
+    private String cardRefNumber;//It will be tokenized card in payment options
     private String nameOnCard;
-    private String cardToken;
+    private String cvv;
+    private String expiryYear;
+    private String expiryMonth;
+    private String cardType;
+    private String cardBin;
 }

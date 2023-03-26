@@ -8,6 +8,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.SkuToSkuCachingService;
+import in.wynk.payment.dto.aps.response.option.ApsPaymentOptionsResponse;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.Category;
 import lombok.Getter;
@@ -45,6 +46,8 @@ public class PaymentCachingService {
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
     private final Map<String, ProductDTO> products = new ConcurrentHashMap<>();
+
+    private final Map<String, ApsPaymentOptionsResponse> savedOptions = new ConcurrentHashMap<>();
 
     private final Map<String, List<PaymentMethod>> groupedPaymentMethods = new ConcurrentHashMap<>();
 
@@ -137,6 +140,29 @@ public class PaymentCachingService {
                 writeLock.unlock();
             }
         }
+    }
+
+    public void loadSavedOptions(String msisdn, ApsPaymentOptionsResponse data) {
+        if (writeLock.tryLock()) {
+            try {
+                Map<String, ApsPaymentOptionsResponse> map = new HashMap<>();
+                if(map.containsKey(msisdn)){
+                    savedOptions.clear();
+                }
+                map.put(msisdn, data);
+                savedOptions.putAll(map);
+            } catch (Throwable th) {
+                log.error(APPLICATION_ERROR, "Exception occurred while refreshing partner aps saved data cache. Exception: {}", th.getMessage(), th);
+                throw th;
+            } finally {
+                writeLock.unlock();
+            }
+        }
+    }
+
+    public ApsPaymentOptionsResponse getSavedPaymentOptions(String msisdn){
+        return savedOptions.get(msisdn);
+
     }
 
     public ItemDTO getItem(String itemId) {

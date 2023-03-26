@@ -43,12 +43,8 @@ public class AirtelPayStackGatewayImpl implements IMerchantPaymentSettlement<Def
 
     @Value("${aps.payment.init.settlement.api}")
     private String SETTLEMENT_ENDPOINT;
-    @Value("${aps.payment.option.api}")
-    private String PAYMENT_OPTION_ENDPOINT;
     @Value("${aps.payment.saved.details.api}")
     private String SAVED_DETAILS_ENDPOINT;
-    @Value("${payment.polling.page}")
-    private String CLIENT_POLLING_SCREEN_URL;
 
     private final RestTemplate httpTemplate;
     private final PaymentMethodCachingService paymentMethodCachingService;

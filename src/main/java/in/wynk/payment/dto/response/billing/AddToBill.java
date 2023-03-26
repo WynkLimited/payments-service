@@ -2,7 +2,7 @@ package in.wynk.payment.dto.response.billing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.response.PaymentMethodDetails;
+import in.wynk.payment.dto.response.AbstractPaymentMethodDetails;
 import in.wynk.payment.dto.response.SupportingDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,20 +17,8 @@ import java.util.List;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class Billing extends PaymentMethodDetails {
-    private BillingFeatures features;
-    @JsonProperty("saved_details")
-    private List<BillingSavedDetails> savedDetails;
-
+public class AddToBill extends AbstractPaymentMethodDetails {
     private SupportingDetails supportingDetails;
-
-    @Getter
-    @AllArgsConstructor
-    @Builder
-    @AnalysedEntity
-    public static class BillingFeatures {
-
-    }
 
     @AllArgsConstructor
     @Builder

@@ -1,7 +1,7 @@
 package in.wynk.payment.core.constant;
 
 public enum PaymentChargingAction {
-    HTML("HTML"), REDIRECT("REDIRECT"), IN_APP("IN_APP"), INTENT("INTENT"), KEY_VALUE("KEY_VALUE"), OTP_LESS("OTP_LESS");
+    HTML("HTML"), ROUTE("ROUTE"), REDIRECT("REDIRECT"), IN_APP("IN_APP"), INTENT("INTENT"), KEY_VALUE("KEY_VALUE"), OTP_LESS("OTP_LESS");
 
     private final String action;
 

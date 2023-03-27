@@ -13,9 +13,9 @@ import in.wynk.payment.dto.PollingConfig;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
 import in.wynk.payment.dto.gateway.card.CardKeyValueTypeChargingResponse;
-import in.wynk.payment.dto.gateway.netbanking.NonSeamlessNetBankingChargingResponse;
+import in.wynk.payment.dto.gateway.netbanking.NetBankingHtmlTypeResponse;
+import in.wynk.payment.dto.gateway.netbanking.NetBankingKeyValueTypeResponse;
 import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
-import in.wynk.payment.dto.gateway.upi.UpiCollectInAppChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.S2SChargingRequestV2;
@@ -23,11 +23,8 @@ import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.card.*;
-import in.wynk.payment.presentation.dto.charge.netbanking.NetBankingPaymentChargingResponse;
-import in.wynk.payment.presentation.dto.charge.netbanking.NonSeamlessNetBankingPaymentChargingResponse;
-import in.wynk.payment.presentation.dto.charge.netbanking.SeamlessNetBankingPaymentChargingResponse;
+import in.wynk.payment.presentation.dto.charge.netbanking.*;
 import in.wynk.payment.presentation.dto.charge.upi.*;
-import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.queue.dto.Payment;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -305,7 +302,11 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         @Override
         public NetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
-            return nbDelegate.get(method.getFlowType()).transform(payload);
+            String flowType = NON_SEAMLESS;
+            if (Objects.nonNull(method.getFlowType())) {
+                flowType = method.getFlowType();
+            }
+            return nbDelegate.get(flowType).transform(payload);
         }
 
         public class NetBankingSeamless implements IPaymentPresentationV2<SeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
@@ -316,12 +317,37 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
 
         public class NetBankingNonSeamless implements IPaymentPresentationV2<NonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+
+            private final Map<String, IPaymentPresentationV2<? extends NonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> netBankingNonSeamlessDelegate = new HashMap<>();
+
+            public NetBankingNonSeamless() {
+                netBankingNonSeamlessDelegate.put(KEY_VALUE, new NetBankingNonSeamlessKeyValueType());
+               netBankingNonSeamlessDelegate.put(HTML, new NetBankingNonSeamlessHtmlType());
+            }
+
             @Override
             public NonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                final NonSeamlessNetBankingChargingResponse response = (NonSeamlessNetBankingChargingResponse) payload.getSecond();
-                final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
-                return NonSeamlessNetBankingPaymentChargingResponse.builder()
-                        .form(encForm).action(PaymentChargingAction.KEY_VALUE.getAction()).build();
+                final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
+                return netBankingNonSeamlessDelegate.get(payment.mode()).transform(payload);
+            }
+
+            public class NetBankingNonSeamlessKeyValueType implements IPaymentPresentationV2<KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+                @Override
+                public KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                    final NetBankingKeyValueTypeResponse response = (NetBankingKeyValueTypeResponse) payload.getSecond();
+                    final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
+                    return KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse.builder()
+                            .form(encForm).action(PaymentChargingAction.KEY_VALUE.getAction()).build();
+                }
+            }
+
+            public class NetBankingNonSeamlessHtmlType implements IPaymentPresentationV2<HtmlTypeNonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+                @Override
+                public HtmlTypeNonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                    final NetBankingHtmlTypeResponse response = (NetBankingHtmlTypeResponse) payload.getSecond();
+                    return HtmlTypeNonSeamlessNetBankingPaymentChargingResponse.builder()
+                            .html(response.getHtml()).action(PaymentChargingAction.HTML.getAction()).build();
+                }
             }
         }
     }

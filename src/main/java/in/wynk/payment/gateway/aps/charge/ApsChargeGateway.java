@@ -24,6 +24,7 @@ import in.wynk.payment.dto.gateway.card.AbstractSeamlessCardChargingResponse;
 import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
 import in.wynk.payment.dto.gateway.netbanking.AbstractCoreNetBankingChargingResponse;
 import in.wynk.payment.dto.gateway.netbanking.NetBankingChargingResponse;
+import in.wynk.payment.dto.gateway.netbanking.NetBankingHtmlTypeResponse;
 import in.wynk.payment.dto.gateway.upi.*;
 import in.wynk.payment.dto.payu.PayUConstants;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
@@ -342,7 +343,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
         @Override
         public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
-            return null;
+            return netBankingDelegate.get(NET_BANKING).charge(request);
         }
 
         private class NetBanking implements IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2> {
@@ -360,7 +361,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                 ApsNetBankingChargingResponse apsNetBankingChargingResponse =
                         common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsNetBankingChargingResponse.class);
-                return NetBankingChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
+                return NetBankingHtmlTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }
     }

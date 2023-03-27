@@ -29,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Component;
@@ -74,6 +75,10 @@ public class PayUCommonGateway {
     }
 
     public  <T> T exchange(String uri, MultiValueMap<String, String> request, TypeReference<T> target) {
+       return exchange(uri, request, new HttpHeaders(), target);
+    }
+
+    public  <T> T exchange(String uri, MultiValueMap<String, String> request, HttpHeaders headers, TypeReference<T> target) {
         try {
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(uri)).body(request), String.class).getBody();
             return mapper.readValue(response, target);

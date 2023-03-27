@@ -38,6 +38,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -165,7 +167,10 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 requestMap.add(PAYU_PG, UPI);
                 requestMap.add(PAYU_TXN_S2S_FLOW, PAYU_TXN_S2S_FLOW_VALUE);
                 requestMap.add(PAYU_BANKCODE, bankCode);
-                return common.exchange(common.PAYMENT_API, requestMap, target);
+                HttpHeaders headers = new HttpHeaders();
+                headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
+                headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+                return common.exchange(common.PAYMENT_API, requestMap, headers, target);
             }
         }
 

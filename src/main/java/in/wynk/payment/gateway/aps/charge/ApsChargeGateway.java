@@ -119,29 +119,7 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
 
                 @Override
                 public UpiCollectChargingResponse charge (AbstractChargingRequestV2 request) {
-                    final Transaction transaction = TransactionContext.get();
-                    final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
-                    final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
-                    final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                    ApsExternalChargingRequest.ApsExternalChargingRequestBuilder<CollectUpiPaymentInfo> apsChargingRequestBuilder =
-                            ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(transaction.getIdStr()).userInfo(userInfo)
-                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
-                    CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
-                    //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
-                    if (paymentDetails.isAutoRenew()) {
-                        Calendar cal = Calendar.getInstance();
-                        cal.add(Calendar.HOUR, 24);
-                        Date today = cal.getTime();
-                        cal.add(Calendar.YEAR, 10); // 10 yrs from now
-                        Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
-                        apsChargingRequestBuilder.billPayment(false);
-                    }
-                    final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
-                    ApsUpiCollectChargingResponse response =
-                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsUpiCollectChargingResponse.class);
-                    return UpiCollectChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response)).build();
+                    throw new WynkRuntimeException("This flow is not supported in APS");
                 }
             }
         }
@@ -167,8 +145,30 @@ public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<Abstr
             private class UpiCollectInAppCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
                 @Override
                 public UpiCollectInAppChargingResponse charge (AbstractChargingRequestV2 request) {
-                    //TODO: implement upi collect in app flow
-                    return UpiCollectInAppChargingResponse.builder().build();
+                    final Transaction transaction = TransactionContext.get();
+                    final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
+                    final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                    final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+                    ApsExternalChargingRequest.ApsExternalChargingRequestBuilder<CollectUpiPaymentInfo> apsChargingRequestBuilder =
+                            ApsExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(transaction.getIdStr()).userInfo(userInfo)
+                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
+                    CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
+                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
+                    //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
+                    if (paymentDetails.isAutoRenew()) {
+                        Calendar cal = Calendar.getInstance();
+                        cal.add(Calendar.HOUR, 24);
+                        Date today = cal.getTime();
+                        cal.add(Calendar.YEAR, 10); // 10 yrs from now
+                        Date next10Year = cal.getTime();
+                        paymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
+                        apsChargingRequestBuilder.billPayment(false);
+                    }
+                    final ApsExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
+                    ApsUpiCollectChargingResponse response =
+                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsUpiCollectChargingResponse.class);
+                    return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response)).build();
+                   // return UpiCollectInAppChargingResponse.builder().build();
                 }
             }
 

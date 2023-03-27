@@ -13,6 +13,7 @@ import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
 import in.wynk.payment.dto.gateway.card.CardKeyValueTypeChargingResponse;
 import in.wynk.payment.dto.gateway.netbanking.NonSeamlessNetBankingChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
+import in.wynk.payment.dto.gateway.upi.UpiCollectInAppChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;

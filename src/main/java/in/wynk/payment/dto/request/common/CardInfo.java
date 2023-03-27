@@ -4,9 +4,11 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 
+import java.io.Serializable;
+
 @Getter
 @AnalysedEntity
-public class CardInfo {
+public class CardInfo implements Serializable {
     @Analysed
     private String type;
     @Analysed

@@ -46,7 +46,7 @@ public class RevenuePaymentControllerV3 {
 
     @PostMapping("/option/{sid}")
     @ManageSession(sessionId = "#sid")
-    public WynkResponseEntity<ApsPaymentOptionsResponse> option(@PathVariable String sid, @Valid @RequestBody VerificationRequestV2 request) {
+    public WynkResponseEntity<ApsPaymentOptionsResponse> option(@PathVariable String sid, @Valid @RequestBody String request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         ApsPaymentOptionsResponse res = gateway.payOption();

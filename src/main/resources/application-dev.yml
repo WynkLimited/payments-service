@@ -1052,3 +1052,8 @@ security:
 
 logging:
   profile: staging
+
+
+event:
+  stream:
+    dp: data-science-subscription-funnel-information

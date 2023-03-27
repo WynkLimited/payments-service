@@ -1036,3 +1036,7 @@ lock:
 security:
   exempt:
     paths: /actuator/**,/wynk/v1/**,/wynk/v2/**
+
+event:
+  stream:
+    dp: data-science-subscription-funnel-information

@@ -36,7 +36,10 @@ import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
+import in.wynk.stream.producer.IEventPublisher;
+import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
+import in.wynk.tinylytics.utils.AppUtils;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +48,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -63,6 +68,7 @@ import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPS
 @RequiredArgsConstructor
 public class PaymentEventListener {
     private final ObjectMapper mapper;
+    private final IEventPublisher iEventPublisher;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
     private final ITaskScheduler taskScheduler;
@@ -72,6 +78,9 @@ public class PaymentEventListener {
     private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManagerService;
     private final IMerchantTransactionService merchantTransactionService;
+    @Value("${event.stream.dp}")
+    private String dpStream;
+
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
@@ -301,7 +310,9 @@ public class PaymentEventListener {
 
     private void publishBranchEvent(Map<String, Object> meta, String event) {
         meta.put(EVENT, event);
-        eventPublisher.publishEvent(BranchRawDataEvent.builder().data(meta).build());
+        BranchEvent branchEvent= AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
+        iEventPublisher.publish(dpStream, branchEvent.getEvent_name(), branchEvent);
+        log.debug("Transaction Snapshot Event {}", branchEvent);
     }
 
     private Map<String, Object> branchMeta(EventsWrapper eventsWrapper) {

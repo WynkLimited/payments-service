@@ -993,3 +993,7 @@ lock:
 security:
   exempt:
     paths: /wynk/v1/**,/wynk/v2/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**
+
+event:
+  stream:
+    dp: data-science-subscription-funnel-information

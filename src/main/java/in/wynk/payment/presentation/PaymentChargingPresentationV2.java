@@ -2,6 +2,7 @@ package in.wynk.payment.presentation;
 
 import com.google.gson.Gson;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
@@ -9,6 +10,7 @@ import in.wynk.payment.core.constant.PaymentChargingAction;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.PollingConfig;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gateway.card.CardHtmlTypeChargingResponse;
 import in.wynk.payment.dto.gateway.card.CardKeyValueTypeChargingResponse;
 import in.wynk.payment.dto.gateway.netbanking.NonSeamlessNetBankingChargingResponse;
@@ -16,6 +18,7 @@ import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiCollectInAppChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
+import in.wynk.payment.dto.request.S2SChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
@@ -24,6 +27,7 @@ import in.wynk.payment.presentation.dto.charge.netbanking.NetBankingPaymentCharg
 import in.wynk.payment.presentation.dto.charge.netbanking.NonSeamlessNetBankingPaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.netbanking.SeamlessNetBankingPaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.upi.*;
+import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.queue.dto.Payment;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -160,7 +164,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                             .deepLink(form)
                             .action(PaymentChargingAction.INTENT.getAction())
                             .appPackage((String) method.getMeta().get(APP_PACKAGE))
-                            .pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId()))
+                            .pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass())))
                             .build();
                 }
             }
@@ -172,7 +176,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                     final String os = sessionDTO.get(OS);
                     final String sid = SessionContextHolder.getId();
                     final String url = CLIENT_POLLING_SCREEN_URL.concat(sid).concat(SLASH).concat(os);
-                    return CollectInAppSeamlessUpiPaymentChargingResponse.builder().url(url).action(PaymentChargingAction.REDIRECT.getAction()).pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId())).build();
+                    return CollectInAppSeamlessUpiPaymentChargingResponse.builder().url(url).action(PaymentChargingAction.REDIRECT.getAction()).pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass()))).build();
                 }
             }
         }
@@ -329,10 +333,15 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
     }
 
-    private PollingConfig buildPollingConfig(String payId) {
-        Map<String, Object> meta = paymentMethodCache.get(payId).getMeta();
-        long timer = (long) meta.getOrDefault(PAYMENT_TIMER_KEY, 40);
-        long interval = (long) meta.getOrDefault(PAYMENT_STATUS_POLL_KEY, 10);
-        return PollingConfig.builder().interval(interval).frequency(timer / interval).timeout(timer).build();
+    private PollingConfig buildPollingConfig(String payId, boolean isS2S) {
+        final Map<String, Object> meta = paymentMethodCache.get(payId).getMeta();
+        final long timer = ((Double) meta.getOrDefault(PAYMENT_TIMER_KEY, 40.0)).longValue();
+        final long interval = ((Double) meta.getOrDefault(PAYMENT_STATUS_POLL_KEY, 10.0)).longValue();
+        final StringBuilder pollingEndpoint = new StringBuilder();
+        if (!isS2S)
+            pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v2.poll}")).append(SessionContextHolder.getId());
+        else
+            pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v2.pollS2S}")).append(TransactionContext.get().getIdStr());
+        return PollingConfig.builder().interval(interval).frequency(timer / interval).timeout(timer).endpoint(pollingEndpoint.toString()).build();
     }
 }

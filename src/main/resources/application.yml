@@ -90,6 +90,12 @@ service:
     api:
       endpoint:
         winBack: ${service.payment.api.root}/wynk/s2s/v1/customer/winback/
+        v1:
+          poll: ${service.payment.api.root}/wynk/v1/payment/status/
+          pollS2S: ${service.payment.api.root}/wynk/s2s/v1/payment/status/
+        v2:
+          poll: ${service.payment.api.root}/wynk/v2/payment/status/
+          pollS2S: ${service.payment.api.root}/wynk/s2s/v2/payment/status/
 
 ####### payment props #######session-out
 payment:

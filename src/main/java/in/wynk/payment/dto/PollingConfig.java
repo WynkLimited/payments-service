@@ -9,4 +9,5 @@ public class PollingConfig {
     private long interval;
     private long frequency;
     private long timeout;
+    private String endpoint;
 }

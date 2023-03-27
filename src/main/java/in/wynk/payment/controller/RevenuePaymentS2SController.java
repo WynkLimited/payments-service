@@ -88,9 +88,19 @@ public class RevenuePaymentS2SController {
         return response;
     }
 
-    //this endpoint is used to refund using APS
-
     @PostMapping("/v1/payment/refund")
+    @AnalyseTransaction(name = "initRefund")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
+    public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@Valid @RequestBody PaymentRefundInitRequest request) {
+        LoadClientUtils.loadClient(true);
+        AnalyticService.update(request);
+        WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = paymentManager.refund(request);
+        AnalyticService.update(baseResponse.getBody());
+        return baseResponse;
+    }
+
+    //this endpoint is used to refund using APS
+    @PostMapping("/v2/payment/refund")
     @AnalyseTransaction(name = "initRefund")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
     public WynkResponseEntity<AbstractPaymentRefundResponse> doRefundV2(@Valid @RequestBody PaymentRefundInitRequest request) {
@@ -101,16 +111,6 @@ public class RevenuePaymentS2SController {
         return baseResponse;
     }
 
-    @PostMapping("/v2/payment/refund")
-    @AnalyseTransaction(name = "initRefund")
-    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
-    public WynkResponseEntity<AbstractPaymentRefundResponse> doRefund(@Valid @RequestBody PaymentRefundInitRequest request) {
-        LoadClientUtils.loadClient(true);
-        AnalyticService.update(request);
-        WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = paymentManager.refund(request);
-        AnalyticService.update(baseResponse.getBody());
-        return baseResponse;
-    }
 
     @GetMapping("/v1/customer/winback/{tid}")
     @AnalyseTransaction(name = "customerWinBack")

@@ -12,6 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -22,7 +24,7 @@ import lombok.experimental.SuperBuilder;
         @JsonSubTypes.Type(value = SavedCardDetails.class, name = SAVED_CARD_TYPE),
         @JsonSubTypes.Type(value = FreshCardDetails.class, name = FRESH_CARD_TYPE)
 })
-public abstract class AbstractCardDetails {
+public abstract class AbstractCardDetails implements Serializable {
 
     @Analysed
     private CardInfo cardInfo;

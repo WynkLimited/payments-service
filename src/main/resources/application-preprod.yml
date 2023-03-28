@@ -498,6 +498,11 @@ webview:
   host: https://pay-preprod.wynk.in
 
 wynk:
+  kafka:
+    enabled: false
+  multi:
+    kafka:
+      enabled: false
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true

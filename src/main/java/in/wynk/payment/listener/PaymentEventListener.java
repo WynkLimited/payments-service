@@ -37,6 +37,7 @@ import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
 import in.wynk.stream.producer.IEventPublisher;
+import in.wynk.stream.producer.impl.KinesisEventPublisher;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.tinylytics.utils.AppUtils;
@@ -68,7 +69,7 @@ import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPS
 @RequiredArgsConstructor
 public class PaymentEventListener {
     private final ObjectMapper mapper;
-    private final IEventPublisher iEventPublisher;
+    private final KinesisEventPublisher iEventPublisher;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
     private final ITaskScheduler taskScheduler;

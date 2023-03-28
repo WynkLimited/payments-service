@@ -13,4 +13,6 @@ import java.util.Map;
 @Payment(groupId = "NET_BANKING", mode = "KEY_VALUE")
 public class NetBankingKeyValueTypeResponse extends AbstractCoreNetBankingChargingResponse {
     private Map<String, String> form;
+
+    private String url;
 }

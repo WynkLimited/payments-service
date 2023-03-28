@@ -333,7 +333,7 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                 final Map<String, String> form = PayUChargingGateway.this.buildPayUForm(request);
                 final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
                 form.put(PAYU_ENFORCE_PAY_METHOD, (String) method.getMeta().get(PaymentConstants.BANK_CODE));
-                return NetBankingKeyValueTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).build();
+                return NetBankingKeyValueTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
             }
         }
     }

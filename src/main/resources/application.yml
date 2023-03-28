@@ -103,57 +103,98 @@ payment:
     web: ${service.payment.api.root}/wynk/v1/payment/callback
     web2: ${service.payment.api.root}/wynk/v2/payment/callback
     s2s: ${service.payment.api.root}/wynk/v1/callback
+    s2s2: ${service.payment.api.root}/wynk/v2/callback
   rajtv:
     payOption:
       page: ${webview.rajtv.host}/#/payment-option/
     success:
       page: ${webview.rajtv.host}/#/subscription/success/
+      v2:
+        page: ${webview.rajtv.host}/#/txn-state/v2/success/
     failure:
       page: ${webview.rajtv.host}/#/txn-state/payment-failed/
+      v2:
+        page: ${webview.rajtv.host}/#/txn-state/v2/payment-failed/
     pending:
       page: ${webview.rajtv.host}/#/txn-state/payment-pending/
+      v2:
+        page: ${webview.rajtv.host}/#/txn-state/v2/payment-pending/
     unknown:
       page: ${webview.rajtv.host}/#/txn-state/payment-unknown/
+      v2:
+        page: ${webview.rajtv.host}/#/txn-state/v2/payment-unknown/
     timeout:
       page: ${webview.rajtv.host}/#/txn-state/session-out/
+      v2:
+        page: ${webview.rajtv.host}/#/txn-state/v2/session-out/
   iqvideo:
     payOption:
       page: ${webview.iqvideo.host}/#/payment-option/
     success:
       page: ${webview.iqvideo.host}/#/subscription/success/
+      v2:
+        page: ${webview.iqvideo.host}/#/txn-state/v2/success/
     failure:
       page: ${webview.iqvideo.host}/#/txn-state/payment-failed/
+      v2:
+        page: ${webview.iqvideo.host}/#/txn-state/v2/payment-failed/
     pending:
       page: ${webview.iqvideo.host}/#/txn-state/payment-pending/
+      v2:
+        page: ${webview.iqvideo.host}/#/txn-state/v2/payment-pending/
     unknown:
       page: ${webview.iqvideo.host}/#/txn-state/payment-unknown/
+      v2:
+        page: ${webview.iqvideo.host}/#/txn-state/v2/payment-unknown/
     timeout:
       page: ${webview.iqvideo.host}/#/txn-state/session-out/
+      v2:
+        page: ${webview.iqvideo.host}/#/txn-state/v2/session-out/
   enterr10:
     payOption:
       page: ${webview.enterr10.host}/#/payment-option/
     success:
       page: ${webview.enterr10.host}/#/subscription/success/
+      v2:
+        page: ${webview.enterr10.host}/#/txn-state/v2/success/
     failure:
       page: ${webview.enterr10.host}/#/txn-state/payment-failed/
+      v2:
+        page: ${webview.enterr10.host}/#/txn-state/v2/payment-failed/
     pending:
       page: ${webview.enterr10.host}/#/txn-state/payment-pending/
+      v2:
+        page: ${webview.enterr10.host}/#/txn-state/v2/payment-pending/
     unknown:
       page: ${webview.enterr10.host}/#/txn-state/payment-unknown/
+      v2:
+        page: ${webview.enterr10.host}/#/txn-state/v2/payment-unknown/
     timeout:
       page: ${webview.enterr10.host}/#/txn-state/session-out/
+      v2:
+        page: ${webview.enterr10.host}/#/txn-state/v2/session-out/
   payOption:
     page: ${webview.host}/#/payment-option/
   success:
     page: ${webview.host}/#/subscription/success/
+    v2:
+      page: ${webview.host}/#/txn-state/v2/success/
   failure:
     page: ${webview.host}/#/txn-state/payment-failed/
+    v2:
+      page: ${webview.host}/#/txn-state/v2/payment-failed/
   pending:
     page: ${webview.host}/#/txn-state/payment-pending/
+    v2:
+      page: ${webview.host}/#/txn-state/v2/payment-pending/
   unknown:
     page: ${webview.host}/#/txn-state/payment-unknown/
+    v2:
+      page: ${webview.host}/#/txn-state/v2/payment-unknown/
   timeout:
     page: ${webview.host}/#/txn-state/session-out/
+    v2:
+      page: ${webview.host}/#/txn-state/v2/session-out/
   polling:
     page: ${webview.host}/payment-timer/v2/
   googlePlay:

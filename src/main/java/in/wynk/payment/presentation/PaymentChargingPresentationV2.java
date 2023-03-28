@@ -19,6 +19,7 @@ import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.dto.request.S2SChargingRequestV2;
+import in.wynk.payment.dto.request.WebChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
@@ -169,11 +170,15 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             public class UpiSeamlessCollectInApp implements IPaymentPresentationV2<CollectInAppSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
                 @Override
                 public CollectInAppSeamlessUpiPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                    final SessionDTO sessionDTO = SessionContextHolder.getBody();
-                    final String os = sessionDTO.get(OS);
-                    final String sid = SessionContextHolder.getId();
-                    final String url = CLIENT_POLLING_SCREEN_URL.concat(sid).concat(SLASH).concat(os);
-                    return CollectInAppSeamlessUpiPaymentChargingResponse.builder().url(url).action(PaymentChargingAction.REDIRECT.getAction()).pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass()))).build();
+                    final CollectInAppSeamlessUpiPaymentChargingResponse.CollectInAppSeamlessUpiPaymentChargingResponseBuilder<?,?> builder = CollectInAppSeamlessUpiPaymentChargingResponse.builder().pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass())));
+                    if (WebChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass())) {
+                        final SessionDTO sessionDTO = SessionContextHolder.getBody();
+                        final String os = sessionDTO.get(OS);
+                        final String sid = SessionContextHolder.getId();
+                        final String url = CLIENT_POLLING_SCREEN_URL.concat(sid).concat(SLASH).concat(os);
+                        return builder.url(url).action(PaymentChargingAction.REDIRECT.getAction()).build();
+                    }
+                    return builder.build();
                 }
             }
         }

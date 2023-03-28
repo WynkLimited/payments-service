@@ -342,7 +342,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                     final NetBankingKeyValueTypeResponse response = (NetBankingKeyValueTypeResponse) payload.getSecond();
                     final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
                     return KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse.builder()
-                            .form(encForm).action(PaymentChargingAction.KEY_VALUE.getAction()).build();
+                            .form(encForm).action(PaymentChargingAction.KEY_VALUE.getAction()).url(response.getUrl()).build();
                 }
             }
 

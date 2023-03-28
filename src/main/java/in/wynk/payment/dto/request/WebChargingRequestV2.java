@@ -60,15 +60,15 @@ public class WebChargingRequestV2 extends AbstractChargingRequestV2 {
         final IAppDetails appDetails = getAppDetails();
         final SessionDTO session = SessionContextHolder.getBody();
         final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(appDetails.getService());
-        final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", clientAlias);
+        final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER_V2.replace("%c", clientAlias);
         final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL) :
-                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}"), appDetails);
+                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.v2.page}"), appDetails);
         final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL) :
-                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.page}"), appDetails);
+                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.v2.page}"), appDetails);
         final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? session.get(PENDING_WEB_URL) :
-                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "pending"), "${payment.pending.page}"), appDetails);
+                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "pending"), "${payment.pending.v2.page}"), appDetails);
         final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? session.get(UNKNOWN_WEB_URL) :
-                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "unknown"), "${payment.unknown.page}"), appDetails);
+                buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "unknown"), "${payment.unknown.v2.page}"), appDetails);
         return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
     }
 

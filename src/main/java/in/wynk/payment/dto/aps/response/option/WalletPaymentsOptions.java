@@ -1,6 +1,9 @@
 package in.wynk.payment.dto.aps.response.option;
 
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -11,7 +14,10 @@ import java.util.List;
  */
 @Getter
 @SuperBuilder
-public class WalletPaymentsOptions {
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
+public class WalletPaymentsOptions extends AbstractPaymentOptions {
 private List<SubOption> subOption;
 
     @Getter

@@ -1,8 +1,6 @@
 package in.wynk.payment.dto.aps.response.option;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Map;
 
@@ -10,7 +8,9 @@ import java.util.Map;
  * @author Nishesh Pandey
  */
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class QuickCheckoutConfig {
     private boolean offer;
     private boolean offerByLine;

@@ -1,19 +1,21 @@
 package in.wynk.payment.dto.aps.response.option;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@Setter
-@ToString
-public class WalletSavedOptions {
+@SuperBuilder
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
+public class WalletSavedOptions extends AbstractSavedPayOptions {
     private String walletType;
     private String walletId;
-    private String walletBalance;
+    private Double walletBalance;
     private boolean recommended;
     private boolean isLinked;
 }

@@ -1,11 +1,13 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.aps.response.option.ApsPaymentOptionsResponse;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
 import in.wynk.payment.dto.response.*;
@@ -20,6 +22,7 @@ import in.wynk.payment.dto.response.wallet.Wallet;
 import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
+import in.wynk.payment.gateway.aps.paymentOptions.ApsPaymentOptionsGateway;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
@@ -58,6 +61,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final PaymentCachingService paymentCachingService;
     private final IPaymentOptionComputationManager paymentOptionManager;
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
+    private final ApsPaymentOptionsGateway gateway;
+    private ObjectMapper objectMapper;
 
     /**
      * Point sale is for selling individual items like movie or song
@@ -112,6 +117,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     }
 
     private List<UpiSavedDetails> addSavedPaymentOptions (String msisdn) {
+        //ApsPaymentOptionsResponse response = gateway.payOption(msisdn);
+        //AbstractSavedPaymentDTO savedOptions=objectMapper.convertValue(response.getSavedUserOptions(),AbstractSavedPaymentDTO.class);
         List<UpiSavedDetails> list= new ArrayList<>();
         list.add(UpiSavedDetails.builder().vpa("Test code").vpaTokenId("to be implemented").build());
        return list;

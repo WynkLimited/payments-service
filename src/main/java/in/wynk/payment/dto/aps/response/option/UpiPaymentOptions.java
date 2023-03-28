@@ -1,6 +1,9 @@
 package in.wynk.payment.dto.aps.response.option;
 
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
@@ -10,7 +13,10 @@ import java.util.List;
  */
 @Getter
 @SuperBuilder
-public class UpiPaymentOptions {
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpiPaymentOptions extends AbstractPaymentOptions {
     private String health;
     private List<UpiSupportedApps> upiSupportedApps;
 

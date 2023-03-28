@@ -11,12 +11,11 @@ import in.wynk.payment.dto.payu.PayUBinWrapper;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.payu.VerificationType;
-import in.wynk.payment.dto.request.VerificationRequestV2;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.gateway.IPaymentInstrumentValidator;
 import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.service.IVerificationService;
-import in.wynk.payment.service.impl.PayUPaymentGateway;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,11 +28,11 @@ import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 
 @Slf4j
 @Service(PaymentConstants.PAYU_VERIFY)
-public class PayUVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
+public class PayUVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
     private final PayUCommonGateway common;
     private final ObjectMapper objectMapper;
-    private final Map<VerificationType, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequestV2>> delegate = new HashMap<>();
+    private final Map<VerificationType, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequest>> delegate = new HashMap<>();
 
     public PayUVerificationGateway(PayUCommonGateway common, ObjectMapper objectMapper) {
         this.common = common;
@@ -43,14 +42,14 @@ public class PayUVerificationGateway implements IVerificationService<AbstractVer
     }
 
     @Override
-    public AbstractVerificationResponse verify(VerificationRequestV2 request) {
+    public AbstractVerificationResponse verify(VerificationRequest request) {
         return delegate.get(request.getVerificationType()).verify(request);
     }
 
-    private class CARD implements IPaymentInstrumentValidator<BinVerificationResponse, VerificationRequestV2> {
+    private class CARD implements IPaymentInstrumentValidator<BinVerificationResponse, VerificationRequest> {
 
         @Override
-        public BinVerificationResponse verify(VerificationRequestV2 request) {
+        public BinVerificationResponse verify(VerificationRequest request) {
             MultiValueMap<String, String> verifyBinRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{request.getVerifyValue(), null, null, "1"});
             PayUCardInfo cardInfo;
             try {
@@ -68,11 +67,11 @@ public class PayUVerificationGateway implements IVerificationService<AbstractVer
         }
     }
 
-    private class VPA implements IPaymentInstrumentValidator<VpaVerificationResponse, VerificationRequestV2> {
+    private class VPA implements IPaymentInstrumentValidator<VpaVerificationResponse, VerificationRequest> {
 
         @SneakyThrows
         @Override
-        public VpaVerificationResponse verify (VerificationRequestV2 request) {
+        public VpaVerificationResponse verify (VerificationRequest request) {
             final MultiValueMap<String, String> verifyVpaRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{
                 put("validateAutoPayVPA", "1");
             }}));

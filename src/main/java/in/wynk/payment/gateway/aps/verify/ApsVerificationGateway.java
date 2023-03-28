@@ -10,7 +10,7 @@ import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
-import in.wynk.payment.dto.request.VerificationRequestV2;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IVerificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import static in.wynk.common.constant.BaseConstants.WYNK;
 import static in.wynk.payment.core.constant.PaymentConstants.LOB_AUTO_PAY_REGISTER_WYNK;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_BIN_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFICATION;
@@ -33,7 +34,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFIC
  */
 @Slf4j
 @Service(PaymentConstants.AIRTEL_PAY_STACK_VERIFY)
-public class ApsVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
+public class ApsVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
     @Value("${aps.payment.verify.vpa.api}")
     private String VPA_VERIFY_ENDPOINT;
@@ -50,12 +51,12 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
     }
 
     @Override
-    public AbstractVerificationResponse verify (VerificationRequestV2 request) {
+    public AbstractVerificationResponse verify (VerificationRequest request) {
         return verification.verify(request);
     }
 
-    private class PaymentMethodEligibilityVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
-        private final Map<VerificationType, IVerificationService<AbstractVerificationResponse, VerificationRequestV2>> verificationDelegate = new HashMap<>();
+    private class PaymentMethodEligibilityVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
+        private final Map<VerificationType, IVerificationService<AbstractVerificationResponse, VerificationRequest>> verificationDelegate = new HashMap<>();
 
         public PaymentMethodEligibilityVerification () {
             verificationDelegate.put(VerificationType.VPA, new VpaVerification());
@@ -63,13 +64,13 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
         }
 
         @Override
-        public AbstractVerificationResponse verify (VerificationRequestV2 request) {
+        public AbstractVerificationResponse verify (VerificationRequest request) {
             return verificationDelegate.get(request.getVerificationType()).verify(request);
         }
 
-        private class BinVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
+        private class BinVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
             @Override
-            public BinVerificationResponse verify (VerificationRequestV2 request) {
+            public BinVerificationResponse verify (VerificationRequest request) {
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 try {
                     ApsBinVerificationResponseData apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, "", binRequest, ApsBinVerificationResponseData.class);
@@ -82,11 +83,11 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
             }
         }
 
-        private class VpaVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequestV2> {
+        private class VpaVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
             @Override
-            public AbstractVerificationResponse verify (VerificationRequestV2 request) {
+            public AbstractVerificationResponse verify (VerificationRequest request) {
                 String userVpa = request.getVerifyValue();
-                String lob = LOB_AUTO_PAY_REGISTER_WYNK;
+                String lob = WYNK;
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
                 try {
                     ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, "", request, ApsVpaVerificationData.class);

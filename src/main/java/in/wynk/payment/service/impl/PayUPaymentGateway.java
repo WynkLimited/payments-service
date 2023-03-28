@@ -16,7 +16,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.common.response.*;
+import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.*;
@@ -34,10 +34,13 @@ import in.wynk.payment.dto.payu.internal.charge.upi.PayUUpiIntentGatewayCharging
 import in.wynk.payment.dto.payu.internal.charge.wallet.AbstractPayUWalletGatewayChargingResponse;
 import in.wynk.payment.dto.payu.internal.charge.wallet.PayUWalletGatewayNonSeamlessChargingResponse;
 import in.wynk.payment.dto.payu.internal.charge.wallet.PayUWalletGatewaySeamlessChargingResponse;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IMerchantVerificationService;
+import in.wynk.payment.service.IPaymentChargingService;
+import in.wynk.payment.service.IVerificationService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -55,15 +58,18 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static in.wynk.common.constant.BaseConstants.COLON;
 import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 /**
@@ -294,13 +300,13 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
         }
 
         @Override
-        public AbstractVerificationResponse verify(VerificationRequestV2 request) {
+        public AbstractVerificationResponse verify(VerificationRequest request) {
             return verificationHolder.get(request.getVerificationType()).verify(request);
         }
 
         private class PayUBinVerification implements IVerificationService {
             @Override
-            public BinVerificationResponse verify(VerificationRequestV2 request) {
+            public BinVerificationResponse verify(VerificationRequest request) {
                 MultiValueMap<String, String> verifyBinRequest = buildPayUInfoRequest(request.getClient(), PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{request.getVerifyValue(), null, null, "1"});
                 PayUCardInfo cardInfo;
                 try {
@@ -321,7 +327,7 @@ public class PayUPaymentGateway implements IPaymentChargingService<PayUGatewayCh
         private class PayUVpaVerification implements IVerificationService {
             @SneakyThrows
             @Override
-            public VpaVerificationResponse verify(VerificationRequestV2 request) {
+            public VpaVerificationResponse verify(VerificationRequest request) {
 
                 MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{
                     put("validateAutoPayVPA", "1");

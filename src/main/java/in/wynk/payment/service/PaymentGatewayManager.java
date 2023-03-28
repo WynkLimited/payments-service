@@ -67,7 +67,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_
 public class PaymentGatewayManager
         implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
         IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
-        IVerificationService<AbstractVerificationResponse, VerificationRequestV2>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest> {
+        IVerificationService<AbstractVerificationResponse, VerificationRequest>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -116,20 +116,11 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public AbstractVerificationResponse verify (VerificationRequestV2 request) {
-        String paymentCode;
-        Client client = ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT002));
-        Optional<Boolean> verifyPGOptional = client.getMeta(BaseConstants.DEFAULT_VERIFY_PAYMENT_GATEWAY);
-        if (verifyPGOptional.isPresent() && verifyPGOptional.get()) {
-            Optional<String> verifyPaymentCode = client.getMeta(BaseConstants.DEFAULT_VERIFY_PAYMENT_GATEWAY);
-            paymentCode = verifyPaymentCode.get();
-        } else {
-            log.info(PaymentLoggingMarker.PAYMENT_VERIFY_USER_PAYMENT_FAILURE, "default verify gateway is not registered in client : {}", client.getAlias());
-            paymentCode = "aps";
-        }
+    public AbstractVerificationResponse verify (VerificationRequest request) {
+        String paymentCode= request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
-        final IVerificationService<AbstractVerificationResponse, VerificationRequestV2> verifyService =
-                BeanLocatorFactory.getBean(paymentCode.concat(VERIFY), new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequestV2>>() {
+        final IVerificationService<AbstractVerificationResponse, VerificationRequest> verifyService =
+                BeanLocatorFactory.getBean(paymentCode.concat(VERIFY), new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequest>>() {
                 });
         return verifyService.verify(request);
     }

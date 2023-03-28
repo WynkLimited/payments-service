@@ -25,7 +25,6 @@ import javax.validation.Valid;
 public class RevenuePaymentControllerV3 {
 
     private final PaymentGatewayManager paymentGatewayManager;
-    private final ApsPaymentOptionsGateway gateway;
 
     //This version is for payment refactoring task
     @PostMapping("/verify/{sid}")
@@ -38,14 +37,5 @@ public class RevenuePaymentControllerV3 {
         }).transform(paymentGatewayManager.verify(request));
         AnalyticService.update(responseEntity.getBody().getData());
         return responseEntity;
-    }
-
-    @PostMapping("/option/{sid}")
-    @ManageSession(sessionId = "#sid")
-    public WynkResponseEntity<ApsPaymentOptionsResponse> option(@PathVariable String sid, @Valid @RequestBody String request) {
-        LoadClientUtils.loadClient(false);
-        AnalyticService.update(request);
-        ApsPaymentOptionsResponse res = gateway.payOption();
-        return /*new WynkResponseEntity<ApsPaymentOptionsResponse>(res, HttpStatus.OK, new HttpHeaders());*/null;
     }
 }

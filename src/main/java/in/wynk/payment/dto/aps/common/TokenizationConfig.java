@@ -2,7 +2,6 @@ package in.wynk.payment.dto.aps.common;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
@@ -10,7 +9,6 @@ import java.util.List;
  * @author Nishesh Pandey
  */
 @Getter
-@Setter
 @Builder
 public class TokenizationConfig {
     private String consentText;
@@ -21,7 +19,6 @@ public class TokenizationConfig {
     private boolean consentChecked;
 
     @Getter
-    @Setter
     @Builder
     public static class ConsentPopupTnC{
         private String iconURL;

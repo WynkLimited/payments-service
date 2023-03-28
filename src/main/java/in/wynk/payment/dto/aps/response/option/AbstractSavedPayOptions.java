@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
@@ -18,11 +19,14 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", defaultImpl = DefaultSavedPayOptions.class, visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = WalletSavedOptions.class, name = "WALLETS"),
-        @JsonSubTypes.Type(value = UpiSavedOptions.class, name = "UPI")
+        @JsonSubTypes.Type(value = UpiSavedOptions.class, name = "UPI"),
+        @JsonSubTypes.Type(value = CardSavedPayOptions.class, name = "CARD")
 })
-public class SavedPayOptions {
+public abstract class AbstractSavedPayOptions {
     private String type;
     private String order;
     private String minAmount;

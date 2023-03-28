@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.aps.response.option;
 
-import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import lombok.AllArgsConstructor;
+import in.wynk.payment.dto.response.paymentoption.AbstractSavedPaymentDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -11,7 +10,6 @@ import lombok.experimental.SuperBuilder;
  */
 @Getter
 @SuperBuilder
-@AnalysedEntity
 @NoArgsConstructor
-public class CardPaymentOptions extends AbstractPaymentOptions {
+public class DefaultSavedPayOptions extends AbstractSavedPayOptions {
 }

@@ -14,5 +14,5 @@ import lombok.ToString;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApsPaymentOptionRequest {
     @Builder.Default
-    private String lob ="PREPAID";
+    private String lob ="WYNK";
 }

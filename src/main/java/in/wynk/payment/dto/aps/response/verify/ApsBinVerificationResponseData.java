@@ -1,16 +1,13 @@
 package in.wynk.payment.dto.aps.response.verify;
 
 import in.wynk.payment.dto.aps.common.TokenizationConfig;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
 
 @Getter
 @ToString
-@Builder
+@NoArgsConstructor
 public class ApsBinVerificationResponseData {
     private String cardBin;
     private String cardNetwork;

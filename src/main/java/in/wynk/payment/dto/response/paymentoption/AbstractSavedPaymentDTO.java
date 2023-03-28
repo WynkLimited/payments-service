@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "group", visible = true, defaultImpl = DefaultSavedPayOptions.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "group", visible = true, defaultImpl = DefaultSavedPaymentDTO.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = UpiSavedDetails.class, name = "UPI"),
         @JsonSubTypes.Type(value = WalletSavedDetails.class, name = "WALLET"),

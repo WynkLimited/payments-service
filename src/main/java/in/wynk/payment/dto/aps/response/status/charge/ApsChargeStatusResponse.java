@@ -2,6 +2,7 @@ package in.wynk.payment.dto.aps.response.status.charge;
 
 import in.wynk.payment.dto.aps.common.RefundInfo;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @Getter
 @SuperBuilder
 @ToString
+@NoArgsConstructor
 public class ApsChargeStatusResponse implements Serializable {
     private String pgId;
     private String orderId;

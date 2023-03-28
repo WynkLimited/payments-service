@@ -2,6 +2,7 @@ package in.wynk.payment.dto.aps.response.predebit;
 
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
@@ -11,6 +12,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @ToString
+@NoArgsConstructor
 public class ApsPreDebitNotification extends AbstractPreDebitNotificationResponse {
     private String errorMessage;
     private NotificationStatus notificationStatus;

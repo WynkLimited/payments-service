@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
@@ -58,6 +59,7 @@ public class ApsCommonGateway {
     private String CHARGING_STATUS_ENDPOINT;
 
     private final Gson gson;
+    private final ObjectMapper objectMapper;
     private final RestTemplate httpTemplate;
     private EncryptionUtils.RSA rsa;
     private final ResourceLoader resourceLoader;
@@ -66,8 +68,9 @@ public class ApsCommonGateway {
 
 
 
-    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
+    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
         this.gson = gson;
+        this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;
         this.resourceLoader = resourceLoader;
         this.apsClientService = apsClientService;
@@ -87,7 +90,7 @@ public class ApsCommonGateway {
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
                if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode())) {
-                   return gson.fromJson(gson.toJson(apsVasResponse.getBody()), target);
+                   return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
                 log.error(PaymentLoggingMarker.APS_API_FAILURE, apsVasResponse.getBody().toString());
             }

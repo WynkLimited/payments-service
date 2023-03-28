@@ -117,8 +117,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     }
 
     private List<UpiSavedDetails> addSavedPaymentOptions (String msisdn) {
-        //ApsPaymentOptionsResponse response = gateway.payOption(msisdn);
-        //AbstractSavedPaymentDTO savedOptions=objectMapper.convertValue(response.getSavedUserOptions(),AbstractSavedPaymentDTO.class);
+        ApsPaymentOptionsResponse response = gateway.payOption(msisdn);
+        AbstractSavedPaymentDTO savedOptions=objectMapper.convertValue(response.getSavedUserOptions(),AbstractSavedPaymentDTO.class);
         List<UpiSavedDetails> list= new ArrayList<>();
         list.add(UpiSavedDetails.builder().vpa("Test code").vpaTokenId("to be implemented").build());
        return list;
@@ -223,17 +223,29 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                 .build());
                 break;
             case PaymentConstants.ADDTOBILL:
-                if (Objects.isNull(paymentMethodDTO.getBilling())) {
-                    paymentMethodDTO.setBilling(new ArrayList<>());
+                if (Objects.isNull(paymentMethodDTO.getAddToBills())) {
+                    paymentMethodDTO.setAddToBills(new ArrayList<>());
                 }
-                paymentMethodDTO.getBilling()
+                paymentMethodDTO.getAddToBills()
+                        .add(AddToBill.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
+                                .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
+                                .supportingDetails(SupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported()).build())
+                                .build());
+                break;
+
+                //TODO: Google Play Billing
+            /*case PaymentConstants.BILLING:
+                if (Objects.isNull(paymentMethodDTO.getAddToBills())) {
+                    paymentMethodDTO.setAddToBills(new ArrayList<>());
+                }
+                paymentMethodDTO.getAddToBills()
                         .add(AddToBill.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
                                 .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
                                 .supportingDetails(SupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported()).build())
                                 .build());
                 break;
             default:
-                throw new WynkRuntimeException("Payment Method not supported");
+                throw new WynkRuntimeException("Payment Method not supported");*/
         }
     }
 

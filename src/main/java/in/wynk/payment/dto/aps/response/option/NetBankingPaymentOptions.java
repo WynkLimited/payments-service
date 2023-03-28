@@ -22,6 +22,8 @@ public class NetBankingPaymentOptions  extends AbstractPaymentOptions {
 
     @Getter
     @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class NetBankingSubOptions {
         private String type;
         private String subType;

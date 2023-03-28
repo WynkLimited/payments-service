@@ -1,4 +1,14 @@
-package in.wynk.payment.dto.response.billing;/**
+package in.wynk.payment.dto.response.billing;
+
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import lombok.Getter;
+import lombok.experimental.SuperBuilder;
+
+/**
  * @author Nishesh Pandey
- */public class GooglePlayBilling {
+ */
+@Getter
+@SuperBuilder
+@AnalysedEntity
+public class GooglePlayBilling {
 }

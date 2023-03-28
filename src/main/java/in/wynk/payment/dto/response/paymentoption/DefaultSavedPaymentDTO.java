@@ -1,4 +1,14 @@
-package in.wynk.payment.dto.response.paymentoption;/**
+package in.wynk.payment.dto.response.paymentoption;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+/**
  * @author Nishesh Pandey
- */public class DefaultSavedPaymentDTO {
+ */
+@Getter
+@SuperBuilder
+@NoArgsConstructor
+public class DefaultSavedPaymentDTO extends AbstractSavedPaymentDTO{
 }

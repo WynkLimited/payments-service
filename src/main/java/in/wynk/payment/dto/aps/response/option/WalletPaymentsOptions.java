@@ -22,6 +22,8 @@ private List<SubOption> subOption;
 
     @Getter
     @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SubOption{
         private String type;
         private String subType;
@@ -30,6 +32,6 @@ private List<SubOption> subOption;
         private String iconUrl;
         private BigDecimal minAmount;
         private boolean insufficientFlowDisabled;
-        private boolean insufficientFlowDisabledLabel;
+        private String insufficientFlowDisabledLabel;
     }
 }

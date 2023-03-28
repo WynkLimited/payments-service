@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
+
 /**
  * @author Nishesh Pandey
  */
@@ -28,10 +30,10 @@ import lombok.experimental.SuperBuilder;
 })
 public abstract class AbstractSavedPayOptions {
     private String type;
-    private String order;
-    private String minAmount;
+    private Integer order;
+    private BigDecimal minAmount;
     private String health;
-    private String healthSr;
+    private Integer healthSr;
     private boolean preferred;
     private boolean showOnQuickCheckout;
     private boolean hidden;

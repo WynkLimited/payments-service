@@ -7,6 +7,7 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.dto.response.AbstractPaymentGroupsDTO;
 import in.wynk.payment.dto.response.billing.AddToBill;
+import in.wynk.payment.dto.response.billing.GooglePlayBilling;
 import in.wynk.payment.dto.response.card.Card;
 import in.wynk.payment.dto.response.netbanking.NetBanking;
 import in.wynk.payment.dto.response.upi.UPI;
@@ -52,7 +53,10 @@ public class PaymentOptionsDTO {
         private List<NetBanking> netBanking;
 
         @JsonProperty("ADD_TO_BILL")
-        private List<AddToBill> billing;
+        private List<AddToBill> addToBills;
+
+        @JsonProperty("BILLING")
+        private List<GooglePlayBilling> billing;
 
     }
 

@@ -22,6 +22,8 @@ public class UpiPaymentOptions extends AbstractPaymentOptions {
 
     @Getter
     @SuperBuilder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class UpiSupportedApps{
         private String upiPspAppName;
         private String androidCustomisationString;

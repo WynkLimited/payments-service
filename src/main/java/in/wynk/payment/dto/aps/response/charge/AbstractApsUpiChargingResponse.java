@@ -11,7 +11,6 @@ import lombok.ToString;
 @NoArgsConstructor
 public class AbstractApsUpiChargingResponse extends AbstractApsExternalChargingResponse {
     private boolean hyperSdk;
-    @JsonProperty("isApbDirectUpi")
-    private boolean apbDirectUpi;
+    private boolean isApbDirectUpi;
     private PollConfig pollingConfig;
 }

@@ -18,7 +18,6 @@ import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.dto.aps.request.status.refund.ApsRefundStatusRequest;
 import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
-import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
@@ -42,7 +41,8 @@ import java.util.Base64;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY998;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
 
 /**
  * @author Nishesh Pandey

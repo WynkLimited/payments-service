@@ -1,9 +1,6 @@
 package in.wynk.payment.dto.aps.response.option;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
@@ -13,6 +10,7 @@ import java.util.List;
  */
 @Getter
 @SuperBuilder
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class SavedUserOptions {

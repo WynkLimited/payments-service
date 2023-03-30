@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = WalletSavedOptions.class, name = "WALLETS"),
         @JsonSubTypes.Type(value = UpiSavedOptions.class, name = "UPI"),
-        @JsonSubTypes.Type(value = CardSavedPayOptions.class, name = "CARD")
+        @JsonSubTypes.Type(value = CardSavedPayOptions.class, name = "CARDS")
 })
 public abstract class AbstractSavedPayOptions {
     private String type;
@@ -39,6 +39,5 @@ public abstract class AbstractSavedPayOptions {
     private boolean hidden;
     private String rank;
     private String iconUrl;
-    private boolean valid;
     private boolean favourite;
 }

@@ -2,6 +2,7 @@ package in.wynk.payment.dto.response.paymentoption;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -10,10 +11,11 @@ import java.math.BigDecimal;
  * @author Nishesh Pandey
  */
 @Getter
+@NoArgsConstructor
 @SuperBuilder
-public class WalletSavedDetails extends AbstractSavedPaymentDTO {
+public class WalletSavedDetails extends SavedPaymentDTO {
     @JsonProperty("is_linked")
-private boolean linked;
+    private boolean linked;
     @JsonProperty("is_valid")
     private boolean valid;
     @JsonProperty("can_checkout")

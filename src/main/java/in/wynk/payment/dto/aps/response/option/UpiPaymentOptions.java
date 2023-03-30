@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
  * @author Nishesh Pandey
  */
 @Getter
+@ToString
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
@@ -21,6 +23,7 @@ public class UpiPaymentOptions extends AbstractPaymentOptions {
     private List<UpiSupportedApps> upiSupportedApps;
 
     @Getter
+    @ToString
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
@@ -28,6 +31,7 @@ public class UpiPaymentOptions extends AbstractPaymentOptions {
         private String upiPspAppName;
         private String androidCustomisationString;
         private String iosCustomisationString;
+        private String displayName;
         private boolean enable;
         private Integer order;
         private String hyperSdkPackageName;

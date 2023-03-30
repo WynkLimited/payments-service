@@ -9,6 +9,7 @@ import java.util.Map;
  */
 @Getter
 @Builder
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuickCheckoutConfig {

@@ -17,4 +17,18 @@ public interface UpiConstants {
     String AM= "am";
     String CU= "cu";
     String TN= "tn";
+
+    String MN ="mn";
+    String REV = "rev";
+    String MODE = "mode";
+    String RECUR = "recur";
+    String ORG_ID = "orgid";
+    String BLOCK = "block";
+    String AM_RULE = "amrule";
+    String PURPOSE = "purpose";
+    String TXN_TYPE = "txnType";
+    String RECUR_TYPE = "recurtype";
+    String RECUR_VALUE = "recurvalue";
+    String VALIDITY_END = "validityend";
+    String VALIDITY_START = "validitystart";
 }

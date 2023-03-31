@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.aps.request.verify.aps;
+package in.wynk.payment.dto.aps.request.verify;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.common.constant.BaseConstants;

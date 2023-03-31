@@ -1,9 +1,10 @@
 package in.wynk.payment.gateway.aps.verify;
 
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.dto.aps.request.verify.aps.ApsBinVerificationRequest;
+import in.wynk.payment.dto.aps.request.verify.ApsBinVerificationRequest;
 import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
 import in.wynk.payment.dto.aps.response.verify.ApsVpaVerificationData;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
@@ -13,6 +14,7 @@ import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IVerificationService;
+import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static in.wynk.common.constant.BaseConstants.WYNK;
-import static in.wynk.payment.core.constant.PaymentConstants.LOB_AUTO_PAY_REGISTER_WYNK;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_BIN_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFICATION;
 
@@ -72,8 +73,9 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
             @Override
             public BinVerificationResponse verify (VerificationRequest request) {
                 final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
+                final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
-                    ApsBinVerificationResponseData apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, "", binRequest, ApsBinVerificationResponseData.class);
+                    ApsBinVerificationResponseData apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, common.getLoginId(sessionDTO.get("msisdn")), binRequest, ApsBinVerificationResponseData.class);
                     return BinVerificationResponse.fromAps(apsBinVerificationResponseData);
 
                 } catch (Exception e) {
@@ -89,8 +91,9 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
                 String userVpa = request.getVerifyValue();
                 String lob = WYNK;
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
+                final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
-                    ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, "", request, ApsVpaVerificationData.class);
+                    ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, common.getLoginId(sessionDTO.get("msisdn")), request, ApsVpaVerificationData.class);
                     return VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);

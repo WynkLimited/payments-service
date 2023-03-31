@@ -28,6 +28,7 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
+import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
@@ -67,7 +68,8 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_
 public class PaymentGatewayManager
         implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
         IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
-        IVerificationService<AbstractVerificationResponse, VerificationRequest>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest> {
+        IVerificationService<AbstractVerificationResponse, VerificationRequest>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>,
+        IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>{
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -125,6 +127,15 @@ public class PaymentGatewayManager
         return verifyService.verify(request);
     }
 
+    @Override
+    public AbstractPaymentMethodDeleteResponse delete (PaymentMethodDeleteRequest request) {
+        String paymentCode= request.getPaymentCode().getCode();
+        AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
+        final IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> deleteService =
+                BeanLocatorFactory.getBean(paymentCode.concat(DELETE), new ParameterizedTypeReference<IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>>() {
+                });
+        return deleteService.delete(request);
+    }
 
     private void exhaustCouponIfApplicable (TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {

@@ -149,9 +149,29 @@ public class PayUChargingGateway implements IMerchantPaymentChargingServiceV2<Ab
                                 .collect(Collectors.toMap(x -> x[0], x -> x[1]));
                         final PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
                         final String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
-                        return UpiIntentChargingResponse.builder().tid(transaction.getIdStr().replaceAll("-", "")).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
-                                .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.DEFAULT_PN)).tr(map.get(TR)).am(map.get(AM))
-                                .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
+                        return UpiIntentChargingResponse.builder()
+                                .mn(map.get(MN))
+                                .rev(map.get(REV))
+                                .mode(map.get(MODE))
+                                .recur(map.get(RECUR))
+                                .block(map.get(BLOCK))
+                                .orgId(map.get(ORG_ID))
+                                .mc(PAYU_MERCHANT_CODE)
+                                .amRule(map.get(AM_RULE))
+                                .purpose(map.get(PURPOSE))
+                                .txnType(map.get(TXN_TYPE))
+                                .pa(result.getMerchantVpa())
+                                .tid(transaction.getIdStr())
+                                .recurType(map.get(RECUR_TYPE))
+                                .pn(PaymentConstants.DEFAULT_PN)
+                                .recurValue(map.get(RECUR_VALUE))
+                                .validityEnd(map.get(VALIDITY_END))
+                                .validityStart(map.get(VALIDITY_START))
+                                .cu(map.getOrDefault(CU, CURRENCY_INR))
+                                .transactionStatus(transaction.getStatus())
+                                .tr(result.getPaymentId()).am(result.getAmount())
+                                .transactionType(transaction.getType().getValue())
+                                .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                                 .build();
                     }
                     throw new WynkRuntimeException(PAY015);

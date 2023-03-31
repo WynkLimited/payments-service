@@ -14,6 +14,17 @@ import java.io.Serializable;
 @SuperBuilder
 @NoArgsConstructor
 public class ApsCallBackRequestPayload extends CallbackRequest implements Serializable {
+    private String type;
+    private String pgSystemId;
+    private String bankRefId;
+    private String mid;
+    private String currency;
+    private String paymentMode;
+    private String amount;
+    private String status;
+    private String pg;
+    private String bankCode;
+    private String vpa;
     private String orderId;
     private String pgId;
     private String redirectionDestination;
@@ -22,6 +33,10 @@ public class ApsCallBackRequestPayload extends CallbackRequest implements Serial
     private String interval;
     private String lob;
     private String paymentStatus;
+    private String errorCode;
+    private String errorMessage;
+    private String signature;
+    private long timestamp;
 
    public String getTransactionId() {
         return this.getOrderId();

@@ -35,22 +35,24 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
 @Service(PaymentConstants.APS_CALLBACK)
 public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
+    private final String REFUND_CALLBACK_TYPE = "REFUND_STATUS";
+    private final String CHARGE_CALLBACK_TYPE = "PAYMENT_STATUS";
+
     private final ApsCommonGateway common;
     private final ObjectMapper objectMapper;
-    private final Map<Class<? extends IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>>, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
+    private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
     public ApsCallbackGateway(ApsCommonGateway common, ObjectMapper objectMapper) {
         this.common = common;
         this.objectMapper = objectMapper;
-        this.delegator.put(GenericApsCallbackHandler.class, new GenericApsCallbackHandler());
-        this.delegator.put(RefundApsCallBackHandler.class, new RefundApsCallBackHandler());
+        this.delegator.put(CHARGE_CALLBACK_TYPE, new GenericApsCallbackHandler());
+        this.delegator.put(REFUND_CALLBACK_TYPE, new RefundApsCallBackHandler());
     }
 
     @Override
     public AbstractPaymentCallbackResponse handleCallback(ApsCallBackRequestPayload callbackRequest) {
         try {
-            final IPaymentCallback callbackService = delegator.get(
-                    ApsAutoRefundCallbackRequestPayload.class.isAssignableFrom(callbackRequest.getClass()) ? RefundApsCallBackHandler.class : GenericApsCallbackHandler.class);
+            final IPaymentCallback callbackService = delegator.get(callbackRequest.getType());
             return callbackService.handleCallback(callbackRequest);
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
@@ -60,8 +62,8 @@ public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallb
     @Override
     public ApsCallBackRequestPayload parseCallback(Map<String, Object> payload) {
         try {
-            final String json = objectMapper.writeValueAsString(payload);
-            return objectMapper.readValue(json, ApsCallBackRequestPayload.class);
+            final String type = ((String) payload.getOrDefault("type", CHARGE_CALLBACK_TYPE));
+            return delegator.get(type).parseCallback(payload);
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY006, e);
         }
@@ -94,6 +96,16 @@ public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallb
             }
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
+
+        @Override
+        public ApsCallBackRequestPayload parseCallback(Map<String, Object> payload) {
+            try {
+                final String json = objectMapper.writeValueAsString(payload);
+                return objectMapper.readValue(json, ApsCallBackRequestPayload.class);
+            } catch (Exception e) {
+                throw new WynkRuntimeException(PAY006, e);
+            }
+        }
     }
 
     private class RefundApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsAutoRefundCallbackRequestPayload> {
@@ -101,12 +113,23 @@ public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallb
         @Override
         public AbstractPaymentCallbackResponse handleCallback(ApsAutoRefundCallbackRequestPayload callbackRequest) {
             final Transaction transaction = TransactionContext.get();
-            common.syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
+            common.syncRefundTransactionFromSource(transaction, callbackRequest.getRefundId());
             // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
             if (transaction.getStatus() == TransactionStatus.SUCCESS)
                 transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
+
+        @Override
+        public ApsAutoRefundCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+            try {
+                final String json = objectMapper.writeValueAsString(payload);
+                return objectMapper.readValue(json, ApsAutoRefundCallbackRequestPayload.class);
+            } catch (Exception e) {
+                throw new WynkRuntimeException(PAY006, e);
+            }
+        }
+
     }
 
 }

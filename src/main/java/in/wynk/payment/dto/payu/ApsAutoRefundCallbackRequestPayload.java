@@ -13,20 +13,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 public class ApsAutoRefundCallbackRequestPayload extends ApsCallBackRequestPayload {
-    @JsonProperty("bank_arn")
-    private String bankArn;
-    @JsonProperty("bank_ref_num")
-    private String bankReference;
-    @JsonProperty("request_id")
-    private String requestId;
-    private String token;
-    private String action;
-    @JsonProperty("amt")
-    private String amount;
-    private String key;
-    private String remark;
-    private String additionalValue1;
-    private String additionalValue2;
-    @JsonProperty("refund_mode")
-    private String refundMode;
+    private String refundId;
+    private String refundSystemId;
+    private String refundOrderId;
+    private String bankRefId;
 }

@@ -39,10 +39,16 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.CardConstants.CARDS;
+import static in.wynk.payment.core.constant.NetBankingConstants.NETBANKING;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY998;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
+import static in.wynk.payment.core.constant.WalletConstants.WALLETS;
 
 /**
  * @author Nishesh Pandey
@@ -177,5 +183,16 @@ public class ApsCommonGateway {
 
     public String getLoginId (String msisdn) {
         return msisdn.replace("+91","");
+    }
+
+    public boolean isGroupEligible (String type, String group) {
+        if (CARDS.equals(type)) {
+            type = CARD;
+        } else if (WALLETS.equals(type)) {
+            type = WALLET;
+        } else if (NETBANKING.equals(type)) {
+            type = NET_BANKING;
+        }
+        return group.equals(type);
     }
 }

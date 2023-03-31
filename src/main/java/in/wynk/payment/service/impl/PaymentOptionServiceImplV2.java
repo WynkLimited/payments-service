@@ -1,6 +1,5 @@
 package in.wynk.payment.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
@@ -10,14 +9,18 @@ import in.wynk.payment.dto.aps.response.option.*;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
 import in.wynk.payment.dto.response.*;
+import in.wynk.payment.dto.response.billing.AddToBill;
 import in.wynk.payment.dto.response.card.Card;
 import in.wynk.payment.dto.response.netbanking.NetBanking;
-import in.wynk.payment.dto.response.paymentoption.*;
+import in.wynk.payment.dto.response.paymentoption.CardSavedDetails;
 import in.wynk.payment.dto.response.paymentoption.PaymentOptionsDTO;
+import in.wynk.payment.dto.response.paymentoption.SavedPaymentDTO;
+import in.wynk.payment.dto.response.paymentoption.UpiSavedDetails;
 import in.wynk.payment.dto.response.wallet.Wallet;
 import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
+import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.gateway.aps.paymentOptions.ApsPaymentOptionsGateway;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
@@ -40,7 +43,10 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.CardConstants.CARDS;
 import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_PAY_STACK;
+import static in.wynk.payment.core.constant.PaymentConstants.ADDTOBILL;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
 import static in.wynk.payment.core.constant.UpiConstants.UPI;
@@ -58,7 +64,13 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final IPaymentOptionComputationManager paymentOptionManager;
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
     private final ApsPaymentOptionsGateway gateway;
-    private final ObjectMapper objectMapper;
+    private final ApsCommonGateway common;
+
+
+    public static final String META_DESCRIPTION = "description";
+    public static final String META_PACKAGE_NAME = "package_name";
+    public static final String SAVE_SUPPORTED = "saveSupported";
+    public static final String APP_NAME = "APP_NAME";
 
     /**
      * Point sale is for selling individual items like movie or song
@@ -109,61 +121,9 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         } else {
             paymentGroups = getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan, paymentMethodDTO, apsPaymentOptionsResponse.getPayOptions());
         }
-        builder.savedPaymentDTO(addSavedPaymentOptions(apsPaymentOptionsResponse, paymentMethodDTO));
+        builder.savedPaymentDTO(addSavedPaymentOptions(apsPaymentOptionsResponse.getSavedUserOptions().getPayOptions(), paymentMethodDTO));
         return builder.paymentGroups(paymentGroups).paymentMethods(paymentMethodDTO).msisdn(request.getUserDetails().getMsisdn())
                 .productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build();
-    }
-
-    private List<SavedPaymentDTO> addSavedPaymentOptions (ApsPaymentOptionsResponse apsPaymentOptionsResponse, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
-        List<SavedPaymentDTO> abstractSavedPaymentDTOList = convertToSavedOptionDto(apsPaymentOptionsResponse.getSavedUserOptions().getPayOptions(), paymentMethodDTO);
-        return abstractSavedPaymentDTOList;
-    }
-
-    private List<SavedPaymentDTO> convertToSavedOptionDto (List<AbstractSavedPayOptions> payOptions, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
-        List<SavedPaymentDTO> abstractSavedPaymentDTOList = new ArrayList<>();
-        for (AbstractSavedPayOptions payOption : payOptions) {
-            switch (payOption.getType()) {
-                case UPI:
-                    UpiSavedOptions upiDetails = (UpiSavedOptions) payOption;
-                    List<in.wynk.payment.dto.response.upi.UPI> upiPayment =
-                            paymentMethodDTO.getUpi().stream().filter(upi -> upi.getCode().equals("aps") && upi.getAppName().equals(upiDetails.getUpiApp())).collect(Collectors.toList());
-                    if (upiPayment.size() > 0) {
-                        abstractSavedPaymentDTOList.add(
-                                UpiSavedDetails.builder().id(upiPayment.get(0).getId()).code("aps").group(upiDetails.getType()).isFavorite(upiDetails.isFavourite())
-                                        .isRecommended(upiDetails.isPreferred())
-                                        .health(upiDetails.getHealth()).vpa(upiDetails.getUserVPA()).build());
-                    }
-
-                    break;
-                case "CARDS":
-                    CardSavedPayOptions cardDetails = (CardSavedPayOptions) payOption;
-                    List<Card> cardPayment = paymentMethodDTO.getCard().stream().filter(card -> card.getCode().equals("aps")).collect(Collectors.toList());
-                    if (cardPayment.size() > 0) {
-                        abstractSavedPaymentDTOList.add(
-                                CardSavedDetails.builder().id(cardPayment.get(0).getId()).code("aps").group(cardDetails.getType()).isFavorite(cardDetails.isFavourite())
-                                        .isRecommended(cardDetails.isPreferred())
-                                        .health(cardDetails.getHealth()).autoPayEnabled(cardDetails.isAutoPayEnable()).
-                                        cardToken(cardDetails.getCardRefNo()).cardNumber(cardDetails.getCardNumber()).cardType(cardDetails.getCardType()).cardCategory(cardDetails.getCardCategory())
-                                        .cardbin(cardDetails.getCardBin()).bankName(cardDetails.getCardBankName())
-                                        .bankCode(cardDetails.getBankCode()).expiryMonth(cardDetails.getExpiryMonth()).expiryYear(cardDetails.getExpiryYear())
-                                        .cvv(Integer.parseInt(cardDetails.getCvvLength()))
-                                        .icon(cardDetails.getIconUrl()).isFavorite(cardDetails.isFavourite())
-                                        .isRecommended(cardDetails.isPreferred()).active(!cardDetails.isExpired() && !cardDetails.isBlocked()).build());
-                    }
-                    break;
-                //TODo: Phase 2
-                /*case "WALLETS":
-                    WalletSavedOptions walletDetails = (WalletSavedOptions) payOption;
-                    abstractSavedPaymentDTOList.add(
-                            WalletSavedDetails.builder()*//*.id()*//*.code("APS").group(walletDetails.getType()).isFavorite(walletDetails.isFavourite()).isRecommended(walletDetails.isPreferred())
-                                    .health(walletDetails.getHealth()).linked(walletDetails.isLinked()).valid(walletDetails.isValid()).canCheckOut(walletDetails.isShowOnQuickCheckout())
-                                    .addMoneyAllowed(true).id(walletDetails.getWalletId()).balance(walletDetails.getWalletBalance())
-                                    .minBalance(walletDetails.getMinAmount()).build());*/
-
-            }
-        }
-        return abstractSavedPaymentDTOList;
-
     }
 
     private PaymentOptionsDTO getPaymentOptionsDetailsForPoint (IPaymentOptionsRequest request) {
@@ -214,157 +174,77 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                    List<AbstractPaymentOptions> payOptions) {
         String group = paymentMethod.getGroup();
 
-        boolean isMetaAvailable = Objects.nonNull(paymentMethod.getMeta());
-        final String description = isMetaAvailable && Objects.nonNull(paymentMethod.getMeta().get("description")) ? (String) paymentMethod.getMeta().get("description") : null;
-
         //if APS, check if it comes into eligible methods and update other details required for UI as well
-        if ("aps".equals(paymentMethod.getPaymentCode().getCode())) {
+        if (AIRTEL_PAY_STACK.equals(paymentMethod.getPaymentCode().getCode())) {
             payOptions.forEach(payOption -> {
-                if (isGroupEligible(payOption.getType(), group)) {
+
+                if (common.isGroupEligible(payOption.getType(), group)) {
                     switch (group) {
                         case UPI:
                             UpiPaymentOptions upiPaymentOptions = (UpiPaymentOptions) payOption;
-                            addUpiDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, upiPaymentOptions);
+                            upiPaymentOptions.getUpiSupportedApps().forEach(upiSupportedApps -> {
+                                if (upiSupportedApps.getUpiPspAppName().equalsIgnoreCase((String) paymentMethod.getMeta().get(APP_NAME))) {
+                                    addUpiDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, upiSupportedApps.getHealth());
+                                }
+                            });
                             break;
                         case CARD:
-                            CardPaymentOptions cardPaymentOptions = (CardPaymentOptions) payOption;
-                            addCardDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, cardPaymentOptions, description);
+                            addCardDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier);
                             break;
                         case NET_BANKING:
                             NetBankingPaymentOptions netBankingPaymentOptions = (NetBankingPaymentOptions) payOption;
-                            addNetBankingDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, netBankingPaymentOptions, description);
+                            netBankingPaymentOptions.getSubOption().forEach(netBankingSubOptions -> {
+                                if (netBankingSubOptions.getSubType().equalsIgnoreCase((String) paymentMethod.getMeta().get("bankCode"))) {
+                                    addNetBankingDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, netBankingSubOptions.getHealth());
+                                }
+                            });
                             break;
                         case WALLET:
                             WalletPaymentsOptions walletPaymentsOptions = (WalletPaymentsOptions) payOption;
-                            addNetWalletDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, walletPaymentsOptions);
+                            //TODO: update code for wallet from APS
+                            walletPaymentsOptions.getSubOption().forEach(walletSubOption -> {
+                                if (walletSubOption.getSubType().equalsIgnoreCase(paymentMethod.getSubtitle())) {
+                                    addNetWalletDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, walletSubOption.getHealth());
+                                }
+                            });
                             break;
                     }
                 }
             });
         } else {
-            addEligiblePaymentMethod(group, paymentMethodDTO, paymentMethod, autoRenewalSupplier, description);
+            addEligiblePaymentMethodForPayU(group, paymentMethodDTO, paymentMethod, autoRenewalSupplier);
         }
 
     }
 
-    private boolean isGroupEligible (String type, String group) {
-        if (type.equals("CARDS")) {
-            type = CARD;
-        } else if ("WALLETS".equals(type)) {
-            type = WALLET;
-        } else if ("NETBANKING".equals(type)) {
-            type = NET_BANKING;
-        }
-        return type.equals(group);
-    }
-
-    private void addNetWalletDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
-                                      WalletPaymentsOptions walletPaymentsOptions) {
-
-        if (Objects.isNull(paymentMethodDTO.getWallet())) {
-            paymentMethodDTO.setWallet(new ArrayList<>());
-        }
-        if (Objects.isNull(paymentMethod.getMeta())) {
-            throw new WynkRuntimeException("Meta information is missing in payment method");
-        }
-        String health = null;
-        if (Objects.nonNull(walletPaymentsOptions)) {
-            health = walletPaymentsOptions.getSubOption().get(0).getHealth();
-        }
-        paymentMethodDTO.getWallet()
-                .add(Wallet.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).health(health).description((String) paymentMethod.getMeta().get("description"))
-                        .code(paymentMethod.getPaymentCode().getCode())
-                        .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
-                        .supportingDetails(WalletCardSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
-                                .intentDetails(WalletCardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get("package_name")).build()).build())
-                        .build());
-    }
-
-    private void addNetBankingDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
-                                       NetBankingPaymentOptions netBankingPaymentOptions, String description) {
-        if (Objects.isNull(paymentMethodDTO.getNetBanking())) {
-            paymentMethodDTO.setNetBanking(new ArrayList<>());
-        }
-        String health = null;
-        if (Objects.nonNull(netBankingPaymentOptions)) {
-            health = netBankingPaymentOptions.getSubOption().get(0).getHealth();
-        }
-        paymentMethodDTO.getNetBanking()
-                .add(NetBanking.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).health(health).description(description).code(paymentMethod.getPaymentCode().getCode())
-                        .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
-                        .supportingDetails(SupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported()).build())
-                        .build());
-    }
-
-    private void addCardDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier, CardPaymentOptions cardPaymentOptions,
-                                 String description) {
-        if (Objects.isNull(paymentMethodDTO.getCard())) {
-            paymentMethodDTO.setCard(new ArrayList<>());
-        }
-        Map<String, String> map = new HashMap<>();
-        map.put("icon", paymentMethod.getIconUrl());
-        map.putAll((Map<String, String>) paymentMethod.getMeta().get("card_type_to_icon_map"));
-        boolean saveSupported = Objects.nonNull(paymentMethod.getMeta().get("saveSupported")) && (boolean) paymentMethod.getMeta().get("saveSupported");
-        paymentMethodDTO.getCard()
-                .add(Card.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
-                        .uiDetails(map).supportingDetails(WalletCardSupportingDetails.builder().saveSupported(saveSupported).intentDetails(
-                                WalletCardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get("package_name")).build()).build()).build());
-    }
-
-    private void addUpiDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
-                                UpiPaymentOptions upiPaymentOptions) {
-        if (Objects.isNull(paymentMethodDTO.getUpi())) {
-            paymentMethodDTO.setUpi(new ArrayList<>());
-        }
-        if (Objects.isNull(paymentMethod.getMeta())) {
-            throw new WynkRuntimeException("Meta information is missing in payment method");
-        }
-        String health = null;
-        if (Objects.nonNull(upiPaymentOptions)) {
-            health = upiPaymentOptions.getHealth();
-        }
-        boolean saveSupported = Objects.nonNull(paymentMethod.getMeta().get("saveSupported")) && (boolean) paymentMethod.getMeta().get("saveSupported");
-        paymentMethodDTO.getUpi()
-                .add(in.wynk.payment.dto.response.upi.UPI.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).health(health)
-                        .description((String) paymentMethod.getMeta().get("description"))
-                        .code(paymentMethod.getPaymentCode().getCode()).appName((String) paymentMethod.getMeta().get("APP_NAME"))
-                        .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
-                        .supportingDetails(in.wynk.payment.dto.response.upi.UPI.UpiSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
-                                .suffixes(paymentMethod.getSuffixes()).paymentStatusPoll((Double) paymentMethod.getMeta().get("payment_status_poll")).saveSupported(saveSupported)
-                                .paymentTimer((Double) paymentMethod.getMeta().get("payment_timer")).packageName((String) paymentMethod.getMeta().get("package_name"))
-                                .intent((Boolean) paymentMethod.getMeta().get("intent"))
-                                .buildCheck((Map<String, Map<String, Integer>>) paymentMethod.getMeta().get("build_check")).build())
-                        .build());
-    }
-
-    private void addEligiblePaymentMethod (String group, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
-                                           String description) {
+    private void addEligiblePaymentMethodForPayU (String group, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier) {
         switch (group) {
             case UPI:
                 addUpiDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, null);
                 break;
             case CARD:
-                addCardDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, null, description);
+                addCardDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier);
                 break;
             case NET_BANKING:
-                addNetBankingDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, null, description);
+                addNetBankingDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, null);
                 break;
             case WALLET:
                 addNetWalletDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, null);
                 break;
-            //Phase2
-            /*case PaymentConstants.ADDTOBILL:
+
+            case ADDTOBILL:
                 if (Objects.isNull(paymentMethodDTO.getAddToBills())) {
                     paymentMethodDTO.setAddToBills(new ArrayList<>());
                 }
+                final String description =
+                        Objects.nonNull(paymentMethod.getMeta()) && Objects.nonNull(paymentMethod.getMeta().get(META_DESCRIPTION)) ? (String) paymentMethod.getMeta().get(META_DESCRIPTION) : null;
                 paymentMethodDTO.getAddToBills()
-                        .add(AddToBill.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description("description").code(paymentMethod.getPaymentCode().getCode())
+                        .add(AddToBill.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
                                 .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
-                                .supportingDetails(SupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported()).build())
-                                .build());
-                break;*/
+                                .supportingDetails(SupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported()).build()).build());
+                break;
 
-            //TODO: Google Play Billing
+            //TODO: Google Play Billing Phase 2
             /*case PaymentConstants.BILLING:
                 if (Objects.isNull(paymentMethodDTO.getAddToBills())) {
                     paymentMethodDTO.setAddToBills(new ArrayList<>());
@@ -379,6 +259,77 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                 throw new WynkRuntimeException("Payment Method not supported");*/
         }
 
+    }
+
+
+    private void addNetWalletDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
+                                      String health) {
+
+        if (Objects.isNull(paymentMethodDTO.getWallet())) {
+            paymentMethodDTO.setWallet(new ArrayList<>());
+        }
+        if (Objects.isNull(paymentMethod.getMeta())) {
+            throw new WynkRuntimeException("Meta information is missing in payment method");
+        }
+        paymentMethodDTO.getWallet()
+                .add(Wallet.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).health(health).description((String) paymentMethod.getMeta().get(META_DESCRIPTION))
+                        .code(paymentMethod.getPaymentCode().getCode())
+                        .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
+                        .supportingDetails(WalletCardSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
+                                .intentDetails(WalletCardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME)).build()).build())
+                        .build());
+    }
+
+    private void addNetBankingDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
+                                       String health) {
+        if (Objects.isNull(paymentMethodDTO.getNetBanking())) {
+            paymentMethodDTO.setNetBanking(new ArrayList<>());
+        }
+        final String description = Objects.nonNull(paymentMethod.getMeta()) && Objects.nonNull(paymentMethod.getMeta().get(META_DESCRIPTION)) ? (String) paymentMethod.getMeta().get(META_DESCRIPTION) : null;
+        paymentMethodDTO.getNetBanking()
+                .add(NetBanking.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).health(health).description(description).code(paymentMethod.getPaymentCode().getCode())
+                        .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
+                        .supportingDetails(SupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported()).build())
+                        .build());
+    }
+
+    private void addCardDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier) {
+        if (Objects.isNull(paymentMethodDTO.getCard())) {
+            paymentMethodDTO.setCard(new ArrayList<>());
+        }
+        Map<String, String> map = new HashMap<>();
+        map.put("icon", paymentMethod.getIconUrl());
+        map.putAll((Map<String, String>) paymentMethod.getMeta().get("card_type_to_icon_map"));
+        final String description = Objects.nonNull(paymentMethod.getMeta()) && Objects.nonNull(paymentMethod.getMeta().get(META_DESCRIPTION)) ? (String) paymentMethod.getMeta().get(META_DESCRIPTION) : null;
+        boolean saveSupported = Objects.nonNull(paymentMethod.getMeta().get(SAVE_SUPPORTED)) && (boolean) paymentMethod.getMeta().get(SAVE_SUPPORTED);
+        paymentMethodDTO.getCard()
+                .add(Card.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
+                        .uiDetails(map).supportingDetails(WalletCardSupportingDetails.builder().saveSupported(saveSupported).intentDetails(
+                                WalletCardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME)).build()).build()).build());
+    }
+
+    private void addUpiDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
+                                String health) {
+        if (Objects.isNull(paymentMethod.getMeta())) {
+            throw new WynkRuntimeException("Meta information is missing in payment method");
+        }
+
+        if (Objects.isNull(paymentMethodDTO.getUpi())) {
+            paymentMethodDTO.setUpi(new ArrayList<>());
+        }
+
+        boolean saveSupported = Objects.nonNull(paymentMethod.getMeta().get(SAVE_SUPPORTED)) && (boolean) paymentMethod.getMeta().get(SAVE_SUPPORTED);
+        paymentMethodDTO.getUpi()
+                .add(in.wynk.payment.dto.response.upi.UPI.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).health(health)
+                        .description((String) paymentMethod.getMeta().get(META_DESCRIPTION))
+                        .code(paymentMethod.getPaymentCode().getCode()).appName((String) paymentMethod.getMeta().get(APP_NAME))
+                        .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
+                        .supportingDetails(in.wynk.payment.dto.response.upi.UPI.UpiSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
+                                .suffixes(paymentMethod.getSuffixes()).paymentStatusPoll((Double) paymentMethod.getMeta().get("payment_status_poll")).saveSupported(saveSupported)
+                                .paymentTimer((Double) paymentMethod.getMeta().get("payment_timer")).packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME))
+                                .intent((Boolean) paymentMethod.getMeta().get("intent"))
+                                .buildCheck((Map<String, Map<String, Integer>>) paymentMethod.getMeta().get("build_check")).build())
+                        .build());
     }
 
     private List<PaymentMethod> filterPaymentMethodsBasedOnEligibility (PaymentOptionsComputationResponse response, List<PaymentMethod> methods) {
@@ -403,6 +354,48 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                             .timeUnit(trialPlan.getPeriod().getTimeUnit()).build());
         }
         return planDetailsBuilder.build();
+    }
+
+    private List<SavedPaymentDTO> addSavedPaymentOptions (List<AbstractSavedPayOptions> payOptions, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
+        List<SavedPaymentDTO> abstractSavedPaymentDTOList = new ArrayList<>();
+        for (AbstractSavedPayOptions payOption : payOptions) {
+            switch (payOption.getType()) {
+                case UPI:
+                    UpiSavedOptions upiDetails = (UpiSavedOptions) payOption;
+                    List<in.wynk.payment.dto.response.upi.UPI> upiPayment =
+                            paymentMethodDTO.getUpi().stream().filter(upi -> upi.getCode().equals(AIRTEL_PAY_STACK) && upi.getAppName().equals(upiDetails.getUpiApp())).collect(Collectors.toList());
+                    if (upiPayment.size() > 0) {
+                        abstractSavedPaymentDTOList.add(UpiSavedDetails.builder().id(upiPayment.get(0).getId()).code(AIRTEL_PAY_STACK).group(upiDetails.getType()).isFavorite(upiDetails.isFavourite())
+                                .isRecommended(upiDetails.isPreferred()).health(upiDetails.getHealth()).vpa(upiDetails.getUserVPA()).build());
+                    }
+
+                    break;
+                case CARDS:
+                    CardSavedPayOptions cardDetails = (CardSavedPayOptions) payOption;
+                    List<Card> cardPayment = paymentMethodDTO.getCard().stream().filter(card -> card.getCode().equals(AIRTEL_PAY_STACK)).collect(Collectors.toList());
+                    if (cardPayment.size() > 0) {
+                        abstractSavedPaymentDTOList.add(
+                                CardSavedDetails.builder().id(cardPayment.get(0).getId()).code(AIRTEL_PAY_STACK).group(cardDetails.getType()).isFavorite(cardDetails.isFavourite())
+                                        .isRecommended(cardDetails.isPreferred()).health(cardDetails.getHealth()).autoPayEnabled(cardDetails.isAutoPayEnable()).cardToken(cardDetails.getCardRefNo())
+                                        .cardNumber(cardDetails.getCardNumber()).cardType(cardDetails.getCardType()).cardCategory(cardDetails.getCardCategory()).cardbin(cardDetails.getCardBin())
+                                        .bankName(cardDetails.getCardBankName()).bankCode(cardDetails.getBankCode()).expiryMonth(cardDetails.getExpiryMonth()).expiryYear(cardDetails.getExpiryYear())
+                                        .cvv(Integer.parseInt(cardDetails.getCvvLength())).icon(cardDetails.getIconUrl()).isFavorite(cardDetails.isFavourite()).isRecommended(cardDetails.isPreferred())
+                                        .active(!cardDetails.isExpired() && !cardDetails.isBlocked()).build());
+                    }
+                    break;
+                //TODo: Phase 2
+                /*case "WALLETS":
+                    WalletSavedOptions walletDetails = (WalletSavedOptions) payOption;
+                    abstractSavedPaymentDTOList.add(
+                            WalletSavedDetails.builder()*//*.id()*//*.code(AIRTEL_PAY_STACK).group(walletDetails.getType()).isFavorite(walletDetails.isFavourite()).isRecommended(walletDetails
+                            .isPreferred())
+                               .health(walletDetails.getHealth()).linked(walletDetails.isLinked()).valid(walletDetails.isValid()).canCheckOut(walletDetails.isShowOnQuickCheckout())
+                                    .addMoneyAllowed(true).id(walletDetails.getWalletId()).balance(walletDetails.getWalletBalance())
+                                    .minBalance(walletDetails.getMinAmount()).build());*/
+
+            }
+        }
+        return abstractSavedPaymentDTOList;
     }
 
     private PaymentOptionsDTO.PointDetails buildPointDetails (ItemDTO item) {

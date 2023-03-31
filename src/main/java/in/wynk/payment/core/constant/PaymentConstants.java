@@ -95,6 +95,7 @@ public interface PaymentConstants extends BaseConstants {
     String APS = "APS";
     String CHARGE = "_charge";
     String VERIFY = "_verify";
+    String DELETE = "_delete";
     String RENEW = "_renew";
     String CALLBACK = "_callback";
     String PAYMENT_STATUS = "_payment_status";
@@ -112,6 +113,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYU_CHARGE = "PayU_charge";
     String PAYU_CALLBACK = "PayU_callback";
     String APS_CALLBACK = "aps_callback";
+    String APS_DELETE = "aps_delete";
     String APS_PAYMENT_OPTIONS = "apsPaymentOptions";
     String PAYU_PAYMENT_STATUS = "PayU_payment_status";
     String APS_PAYMENT_STATUS = "aps_payment_status";

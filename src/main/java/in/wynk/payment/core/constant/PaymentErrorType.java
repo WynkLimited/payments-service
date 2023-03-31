@@ -47,6 +47,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY036("Payment Renewal Timeout", "Timeout occurred while making SI payment on APS", HttpStatus.REQUEST_TIMEOUT, PaymentLoggingMarker.PAYU_RENEWAL_TIMEOUT_ERROR),
     PAY037("Payment Renewal Failure", "An Error occurred while making SI payment on APS", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_STATUS_ERROR),
     PAY038("APS Charging Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_CHARGING_FAILURE),
+    PAY042("APS Card Deletion Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_SAVED_CARD_DELETION),
+    PAY043("APS VPA Deletion Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_SAVED_CARD_DELETION),
     PAY039("APS Payment instrument validation Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_VALIDATION_FAILURE),
     PAY040("Payment method Verification Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.VERIFICATION_FAILURE),
     PAY041("APS API Failure", "Exception Occurred while calling Aps Server", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_API_FAILURE),

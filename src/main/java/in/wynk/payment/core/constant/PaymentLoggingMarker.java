@@ -18,6 +18,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APS_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_CHARGING_STATUS_VERIFICATION");
     Marker APS_VPA_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
     Marker APS_BIN_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
+    Marker APS_SAVED_CARD_DELETION = MarkerFactory.getMarker("APS_SAVED_CARD_DELETION");
+    Marker APS_SAVED_VPA_DELETION = MarkerFactory.getMarker("APS_SAVED_VPA_DELETION");
     Marker APS_REFUND_STATUS = MarkerFactory.getMarker("APS_REFUND_STATUS");
     Marker APS_CHARGING_FAILURE = MarkerFactory.getMarker("APS_CHARGING_FAILURE");
     Marker APS_VALIDATION_FAILURE = MarkerFactory.getMarker("APS_VALIDATION_FAILURE");

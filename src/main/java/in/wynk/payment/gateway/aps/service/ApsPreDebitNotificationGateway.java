@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.predebitNotification;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -7,7 +7,7 @@ import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.aps.request.predebit.ApsPreDebitNotificationRequest;
 import in.wynk.payment.dto.aps.response.predebit.ApsPreDebitNotification;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IPreDebitNotificationService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.utils.RecurringTransactionUtils;

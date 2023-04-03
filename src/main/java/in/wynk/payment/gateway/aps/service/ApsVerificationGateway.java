@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.verify;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
@@ -11,7 +11,7 @@ import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IVerificationService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;

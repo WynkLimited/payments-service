@@ -1,9 +1,8 @@
-package in.wynk.payment.gateway.payu.verify;
+package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
@@ -14,7 +13,6 @@ import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
 import in.wynk.payment.gateway.IPaymentInstrumentValidator;
-import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.service.IVerificationService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -27,14 +25,14 @@ import java.util.Map;
 import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 
 @Slf4j
-@Service(PaymentConstants.PAYU_VERIFY)
-public class PayUVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
+@Service
+public class PayUVerificationGatewayService implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
-    private final PayUCommonGateway common;
+    private final PayUCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final Map<VerificationType, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequest>> delegate = new HashMap<>();
 
-    public PayUVerificationGateway(PayUCommonGateway common, ObjectMapper objectMapper) {
+    public PayUVerificationGatewayService (PayUCommonGatewayService common, ObjectMapper objectMapper) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.delegate.put(VerificationType.VPA, new VPA());

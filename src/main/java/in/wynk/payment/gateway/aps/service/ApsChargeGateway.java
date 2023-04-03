@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.charge;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
@@ -31,7 +31,6 @@ import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.common.FreshCardDetails;
 import in.wynk.payment.dto.request.common.SavedCardDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentChargingServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
 import lombok.SneakyThrows;

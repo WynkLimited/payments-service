@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.delete;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
@@ -10,7 +10,7 @@ import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteCardResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteVpaResponse;
 import in.wynk.payment.dto.request.PaymentMethodDeleteRequest;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IPaymentDeleteService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;

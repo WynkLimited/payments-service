@@ -1,17 +1,14 @@
-package in.wynk.payment.gateway.payu.renewal;
+package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
-import in.wynk.common.dto.ICacheService;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -22,7 +19,7 @@ import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.gateway.IPaymentRenewal;
-import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
+import in.wynk.payment.gateway.payu.service.PayUCommonGatewayService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
@@ -46,18 +43,18 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_ST
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
-@Service(PaymentConstants.PAYU_RENEW)
-public class PayURenewalGateway implements IPaymentRenewal<PaymentRenewalChargingRequest> {
+@Service
+public class PayURenewalGatewayService implements IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     private final Gson gson;
-    private final PayUCommonGateway common;
+    private final PayUCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     private final IMerchantTransactionService merchantTransactionService;
 
-    public PayURenewalGateway(PayUCommonGateway common, Gson gson, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
+    public PayURenewalGatewayService (PayUCommonGatewayService common, Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
         this.gson = gson;
         this.common = common;
         this.objectMapper = objectMapper;

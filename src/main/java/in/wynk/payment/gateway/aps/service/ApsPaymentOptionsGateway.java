@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.paymentOptions;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.payment.core.constant.CardConstants;
 import in.wynk.payment.core.constant.NetBankingConstants;
@@ -11,7 +11,7 @@ import in.wynk.payment.dto.aps.response.option.paymentOptions.AbstractPaymentOpt
 import in.wynk.payment.dto.aps.response.option.paymentOptions.NetBankingPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.UpiPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.WalletPaymentsOptions;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 

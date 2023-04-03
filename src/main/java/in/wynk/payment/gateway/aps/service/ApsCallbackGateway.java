@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.callback;
+package in.wynk.payment.gateway.aps.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.enums.PaymentEvent;
@@ -15,7 +15,6 @@ import in.wynk.payment.dto.payu.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.payu.ApsCallBackRequestPayload;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

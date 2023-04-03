@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.common;
+package in.wynk.payment.gateway.aps.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.renewal;
+package in.wynk.payment.gateway.aps.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
@@ -16,7 +16,7 @@ import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.aps.request.renewal.ApsSiPaymentRecurringRequest;
 import in.wynk.payment.dto.aps.response.renewal.ApsRenewalStatusResponse;
 import in.wynk.payment.dto.aps.response.renewal.ApsSiPaymentRecurringResponse;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentRenewalServiceV2;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;

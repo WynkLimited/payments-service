@@ -221,6 +221,8 @@ payment:
   merchant:
     ####### payu props #########
     aps:
+      salt: <PUT_SALT_HERE>
+      secret: <PUT_SECRET_HERE>
       api:
         base: http://intpay.india.airtel.itm
       encryption:

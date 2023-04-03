@@ -17,7 +17,10 @@ import in.wynk.payment.dto.payu.ApsCallBackRequestPayload;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
+import in.wynk.payment.utils.aps.SignatureUtil;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
@@ -37,12 +40,15 @@ public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallb
 
     private final String REFUND_CALLBACK_TYPE = "REFUND_STATUS";
     private final String CHARGE_CALLBACK_TYPE = "PAYMENT_STATUS";
-
+    private final String salt;
+    private final String secret;
     private final ApsCommonGateway common;
     private final ObjectMapper objectMapper;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGateway(ApsCommonGateway common, ObjectMapper objectMapper) {
+    public ApsCallbackGateway(@Value("${payment.merchant.aps.salt}") String salt,@Value("${payment.merchant.aps.secret}") String secret, ApsCommonGateway common, ObjectMapper objectMapper) {
+        this.salt = salt;
+        this.secret = secret;
         this.common = common;
         this.objectMapper = objectMapper;
         this.delegator.put(CHARGE_CALLBACK_TYPE, new GenericApsCallbackHandler());
@@ -67,6 +73,10 @@ public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallb
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY006, e);
         }
+    }
+    @SneakyThrows
+    public boolean isValid(ApsCallBackRequestPayload payload) {
+        return SignatureUtil.verifySignature(payload.getSignature(), payload, secret, salt);
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
@@ -106,6 +116,7 @@ public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallb
                 throw new WynkRuntimeException(PAY006, e);
             }
         }
+
     }
 
     private class RefundApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsAutoRefundCallbackRequestPayload> {

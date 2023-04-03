@@ -12,4 +12,7 @@ public interface IPaymentCallback<R extends AbstractPaymentCallbackResponse, T e
     default T parseCallback(Map<String, Object> payload) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
+    default <T> boolean isValid(T request) {
+        throw new WynkRuntimeException(PaymentErrorType.PAY888);
+    }
 }

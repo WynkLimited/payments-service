@@ -9,8 +9,6 @@ import in.wynk.payment.dto.request.CombinedS2SPaymentDetailsRequest;
 import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
-import in.wynk.payment.gateway.aps.pay.options.ApsPaymentOptionsGateway;
 import in.wynk.payment.service.IPaymentOptionService;
 import in.wynk.payment.service.IUserPreferredPaymentService;
 import in.wynk.payment.utils.LoadClientUtils;
@@ -26,8 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentOptionsS2SController {
 
     private final IPaymentOptionService paymentMethodService;
-    private final ApsPaymentOptionsGateway gateway;
-    private final ApsCommonGateway common;
     private final IUserPreferredPaymentService<CombinedPaymentDetailsResponse, AbstractPreferredPaymentDetailsControllerRequest<?>> preferredPaymentService;
 
     @PostMapping("/options")

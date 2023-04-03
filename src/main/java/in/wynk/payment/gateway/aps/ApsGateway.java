@@ -15,16 +15,7 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.aps.callback.ApsCallbackGateway;
-import in.wynk.payment.gateway.aps.charge.ApsChargeGateway;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
-import in.wynk.payment.gateway.aps.delete.ApsDeleteGateway;
-import in.wynk.payment.gateway.aps.pay.options.ApsPaymentOptionsGateway;
-import in.wynk.payment.gateway.aps.predebitNotification.ApsPreDebitNotificationGateway;
-import in.wynk.payment.gateway.aps.refund.ApsRefundGateway;
-import in.wynk.payment.gateway.aps.renewal.ApsRenewalGateway;
-import in.wynk.payment.gateway.aps.status.ApsStatusGateway;
-import in.wynk.payment.gateway.aps.verify.ApsVerificationGateway;
+import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.service.impl.ApsPaymentSettlementGateway;
 import lombok.RequiredArgsConstructor;
@@ -50,16 +41,16 @@ public class ApsGateway implements
         IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>,
         IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
 
-    private final ApsRefundGateway refundGateway;
-    private final ApsDeleteGateway deleteGateway;
-    private final ApsChargeGateway chargeGateway;
-    private final ApsStatusGateway statusGateway;
-    private final ApsRenewalGateway renewalGateway;
-    private final ApsCallbackGateway callbackGateway;
-    private final ApsVerificationGateway verificationGateway;
-    private final ApsPaymentOptionsGateway payOptionsGateway;
-    private final ApsPaymentSettlementGateway settlementGateway;
-    private final ApsPreDebitNotificationGateway preDebitGateway;
+    private final IPaymentOptionEligibility payOptionsGateway;
+    private final ApsPreDebitNotificationGatewayServiceImpl preDebitGateway;
+    private final IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> renewalGateway;
+    private final IVerificationService<AbstractVerificationResponse, VerificationRequest> verificationGateway;
+    private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
+    private final IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
+    private final IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> deleteGateway;
+    private final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusGateway;
+    private final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargeGateway;
+    private final IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> settlementGateway;
 
     public ApsGateway(@Value("${payment.merchant.aps.salt}") String salt,
                       @Value("${payment.merchant.aps.secret}") String secret,
@@ -75,23 +66,23 @@ public class ApsGateway implements
                       @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint,
                       @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
                       ObjectMapper mapper,
-                      ApsCommonGateway commonGateway,
+                      ApsCommonGatewayService commonGateway,
                       PaymentCachingService payCache,
                       PaymentMethodCachingService cache,
                       ApplicationEventPublisher eventPublisher,
                       ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
-        this.statusGateway = new ApsStatusGateway(commonGateway);
-        this.callbackGateway = new ApsCallbackGateway(salt, secret, commonGateway, mapper);
-        this.payOptionsGateway = new ApsPaymentOptionsGateway(payOptionEndpoint, commonGateway);
-        this.refundGateway = new ApsRefundGateway(refundEndpoint, eventPublisher, commonGateway);
-        this.deleteGateway = new ApsDeleteGateway(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
+        this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
+        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper);
+        this.payOptionsGateway = new ApsPaymentOptionsGatewayServiceImpl(payOptionEndpoint, commonGateway);
+        this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
+        this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, payCache);
-        this.chargeGateway = new ApsChargeGateway(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
-        this.preDebitGateway =  new ApsPreDebitNotificationGateway(preDebitEndpoint, transactionManager, commonGateway);
-        this.verificationGateway = new ApsVerificationGateway(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
-        this.renewalGateway = new ApsRenewalGateway(siPaymentApi, commonGateway, merchantTransactionService, payCache, mapper, eventPublisher);
+        this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
+        this.preDebitGateway =  new ApsPreDebitNotificationGatewayServiceImpl(preDebitEndpoint, transactionManager, commonGateway);
+        this.verificationGateway = new ApsVerificationGatewayServiceImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
+        this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, commonGateway, merchantTransactionService, payCache, mapper, eventPublisher);
     }
 
 

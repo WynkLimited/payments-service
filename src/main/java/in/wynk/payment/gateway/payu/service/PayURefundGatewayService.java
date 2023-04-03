@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.payu.refund;
+package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import in.wynk.common.dto.StandardBusinessErrorDetails;
@@ -6,7 +6,6 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -15,7 +14,7 @@ import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.payu.PayUPaymentRefundRequest;
 import in.wynk.payment.dto.payu.PayUPaymentRefundResponse;
 import in.wynk.payment.dto.response.payu.PayURefundInitResponse;
-import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
+import in.wynk.payment.gateway.payu.service.PayUCommonGatewayService;
 import in.wynk.payment.service.IMerchantPaymentRefundService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,13 +22,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 @Slf4j
-@Service(PaymentConstants.PAYU_REFUND)
-public class PayURefundGateway implements IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
+@Service
+public class PayURefundGatewayService implements IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
 
-    private final PayUCommonGateway common;
+    private final PayUCommonGatewayService common;
     private final ApplicationEventPublisher eventPublisher;
 
-    public PayURefundGateway(ApplicationEventPublisher eventPublisher, PayUCommonGateway common){
+    public PayURefundGatewayService (ApplicationEventPublisher eventPublisher, PayUCommonGatewayService common){
         this.common= common;
         this.eventPublisher= eventPublisher;
     }

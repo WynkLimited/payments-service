@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.callback;
+package in.wynk.payment.gateway.aps.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.enums.PaymentEvent;
@@ -15,7 +15,6 @@ import in.wynk.payment.dto.payu.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.payu.ApsCallBackRequestPayload;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -32,17 +31,17 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
+public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
     private final String REFUND_CALLBACK_TYPE = "REFUND_STATUS";
     private final String CHARGE_CALLBACK_TYPE = "PAYMENT_STATUS";
     private final String salt;
     private final String secret;
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGateway(String salt, String secret, ApsCommonGateway common, ObjectMapper objectMapper) {
+    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;

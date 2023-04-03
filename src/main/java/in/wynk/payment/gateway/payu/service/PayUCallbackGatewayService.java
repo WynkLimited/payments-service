@@ -1,32 +1,24 @@
-package in.wynk.payment.gateway.payu.callback;
+package in.wynk.payment.gateway.payu.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.dto.payu.*;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.payu.common.PayUCommonGateway;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpStatusCodeException;
 
 import java.text.DecimalFormat;
 import java.util.EnumSet;
@@ -40,15 +32,15 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
-@Service(PaymentConstants.PAYU_CALLBACK)
-public class PayUCallbackGateway implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
+@Service
+public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
-    private final PayUCommonGateway common;
+    private final PayUCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
 
-    public PayUCallbackGateway(PayUCommonGateway common, ApplicationEventPublisher eventPublisher, ObjectMapper objectMapper) {
+    public PayUCallbackGatewayService (PayUCommonGatewayService common, ApplicationEventPublisher eventPublisher, ObjectMapper objectMapper) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;

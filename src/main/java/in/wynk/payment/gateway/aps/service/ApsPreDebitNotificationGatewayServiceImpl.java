@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.predebitNotification;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -7,7 +7,6 @@ import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.aps.request.predebit.ApsPreDebitNotificationRequest;
 import in.wynk.payment.dto.aps.response.predebit.ApsPreDebitNotification;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IPreDebitNotificationService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
@@ -24,15 +23,15 @@ import static in.wynk.payment.dto.apb.ApbConstants.TXN_SUCCESS;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsPreDebitNotificationGateway implements IPreDebitNotificationService {
+public class ApsPreDebitNotificationGatewayServiceImpl implements IPreDebitNotificationService {
 
     @Value("${aps.payment.predebit.api}")
     private String PRE_DEBIT_API;
 
     private ITransactionManagerService transactionManager;
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
 
-    public ApsPreDebitNotificationGateway (String preDebitEndpoint, ITransactionManagerService transactionManager, ApsCommonGateway common) {
+    public ApsPreDebitNotificationGatewayServiceImpl(String preDebitEndpoint, ITransactionManagerService transactionManager, ApsCommonGatewayService common) {
         this.common = common;
         this.transactionManager = transactionManager;
         this.PRE_DEBIT_API = preDebitEndpoint;

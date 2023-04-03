@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.verify;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
@@ -11,7 +11,6 @@ import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IVerificationService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -30,16 +29,16 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFIC
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
+public class ApsVerificationGatewayServiceImpl implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
-    private String VPA_VERIFY_ENDPOINT;
-    private String BIN_VERIFY_ENDPOINT;
+    private final String VPA_VERIFY_ENDPOINT;
+    private final String BIN_VERIFY_ENDPOINT;
 
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private final RestTemplate httpTemplate;
     private final PaymentMethodEligibilityVerification verification = new PaymentMethodEligibilityVerification();
 
-    public ApsVerificationGateway (String vpaVerifyEndpoint, String binVerifyEndpoint, RestTemplate httpTemplate, ApsCommonGateway common) {
+    public ApsVerificationGatewayServiceImpl(String vpaVerifyEndpoint, String binVerifyEndpoint, RestTemplate httpTemplate, ApsCommonGatewayService common) {
         this.httpTemplate = httpTemplate;
         this.common = common;
         this.VPA_VERIFY_ENDPOINT = vpaVerifyEndpoint;
@@ -84,8 +83,7 @@ public class ApsVerificationGateway implements IVerificationService<AbstractVeri
             @Override
             public AbstractVerificationResponse verify (VerificationRequest request) {
                 String userVpa = request.getVerifyValue();
-                String lob = WYNK;
-                final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
+                final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, WYNK);
                 final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
                     ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, common.getLoginId(sessionDTO.get("msisdn")), request, ApsVpaVerificationData.class);

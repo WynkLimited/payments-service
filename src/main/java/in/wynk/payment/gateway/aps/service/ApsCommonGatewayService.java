@@ -1,5 +1,6 @@
-package in.wynk.payment.gateway.aps.common;
+package in.wynk.payment.gateway.aps.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
@@ -10,9 +11,11 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.dto.aps.common.ApsFailureResponse;
 import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.dto.aps.request.status.refund.ApsRefundStatusRequest;
@@ -56,7 +59,7 @@ import static in.wynk.payment.core.constant.WalletConstants.WALLETS;
 
 @Slf4j
 @Service
-public class ApsCommonGateway {
+public class ApsCommonGatewayService {
     @Value("${aps.payment.encryption.key.path}")
     private String RSA_PUBLIC_KEY;
     @Value("${aps.payment.refund.status.api}")
@@ -73,8 +76,8 @@ public class ApsCommonGateway {
     private final ApplicationEventPublisher eventPublisher;
 
 
-    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
-                             @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
+    public ApsCommonGatewayService (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
+                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;
@@ -92,17 +95,17 @@ public class ApsCommonGateway {
 
     public <T> T exchange (String url, HttpMethod method, String loginId, Object body, Class<T> target) {
         ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(), url, method, body);
-        try {
-            if (responseEntity.getStatusCode() == HttpStatus.OK) {
+        if (responseEntity.getStatusCode() == HttpStatus.OK) {
+            try {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
-                if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode())) {
+                if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
                     return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
-                log.error(PaymentLoggingMarker.APS_API_FAILURE, apsVasResponse.getBody().toString());
+                ApsFailureResponse failureResponse = objectMapper.readValue((String) apsVasResponse.getBody(), ApsFailureResponse.class);
+                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), "APS Validation Error");
+            } catch (JsonProcessingException ex) {
+                throw new WynkRuntimeException("Unknown Object from Aps", ex);
             }
-        } catch (Exception e) {
-            log.error(PaymentLoggingMarker.APS_API_FAILURE, e.getMessage(), e);
-            throw new WynkRuntimeException(PAY041);
         }
         throw new WynkRuntimeException(PAY041);
     }

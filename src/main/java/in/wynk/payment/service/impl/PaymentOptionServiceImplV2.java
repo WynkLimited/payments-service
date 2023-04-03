@@ -26,7 +26,8 @@ import in.wynk.payment.dto.response.wallet.Wallet;
 import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
-import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsGatewayServiceImpl;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
@@ -68,8 +69,6 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final PaymentCachingService paymentCachingService;
     private final IPaymentOptionComputationManager paymentOptionManager;
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
-    private final ApsCommonGateway common;
-
 
     public static final String META_DESCRIPTION = "description";
     public static final String META_PACKAGE_NAME = "package_name";
@@ -123,7 +122,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         } else {
             paymentGroups = getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan, paymentMethodDTO);
         }
-        builder.savedPaymentDTO(addSavedPaymentOptions(apsPaymentOptionsResponse.getSavedUserOptions().getPayOptions(), paymentMethodDTO));
+       // builder.savedPaymentDTO(addSavedPaymentOptions(apsPaymentOptionsResponse.getSavedUserOptions().getPayOptions(), paymentMethodDTO));
         return builder.paymentGroups(paymentGroups).paymentMethods(paymentMethodDTO).msisdn(request.getUserDetails().getMsisdn())
                 .productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build();
     }
@@ -139,8 +138,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                 .si(request.getUserDetails().getSi())
                 .build());
         PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO = new PaymentOptionsDTO.PaymentMethodDTO();
-        List<AbstractPaymentGroupsDTO> paymentGroups = getFilteredPaymentGroups((paymentMethod -> true), (() -> false), eligibilityRequest, null, paymentMethodDTO,
-                null);
+        List<AbstractPaymentGroupsDTO> paymentGroups = getFilteredPaymentGroups((paymentMethod -> true), (() -> false), eligibilityRequest, null, paymentMethodDTO);
         return PaymentOptionsDTO.builder().paymentGroups(paymentGroups).paymentMethods(paymentMethodDTO).productDetails(buildPointDetails(item)).build();
     }
 
@@ -155,7 +153,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
             final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
             methods = filterPaymentMethodsBasedOnEligibility(response, methods);
             methods.forEach(method -> {
-                addPaymentMethod(method, paymentMethodDTO, autoRenewalSupplier, payOptions);
+                addPaymentMethod(method, paymentMethodDTO, autoRenewalSupplier);
             });
             if (methods.size() > 0) {
                 AbstractPaymentGroupsDTO groupsDTO = AbstractPaymentGroupsDTO.builder().id(group.getId()).title(group.getDisplayName()).description(group.getDescription()).build();
@@ -171,10 +169,9 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return paymentGroups;
     }
 
-    private void addPaymentMethod(PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier,
-                                  List<AbstractPaymentOptions> payOptions) {
+    private void addPaymentMethod (PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier) {
         String group = paymentMethod.getGroup();
-
+        List<AbstractPaymentOptions> payOptions= new ArrayList<>();
         //if APS, check if it comes into eligible methods and update other details required for UI as well
         if (AIRTEL_PAY_STACK.equals(paymentMethod.getPaymentCode().getCode())) {
             payOptions.forEach(payOption -> {

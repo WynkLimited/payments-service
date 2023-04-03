@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.payu.common;
+package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +49,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Component
-public class PayUCommonGateway {
+public class PayUCommonGatewayService {
 
     @Value("${payment.encKey}")
     public String ENC_KEY;
@@ -66,7 +66,7 @@ public class PayUCommonGateway {
     @Getter
     private final ICacheService<PaymentMethod, String> cache;
 
-    public PayUCommonGateway(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher) {
+    public PayUCommonGatewayService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher) {
         this.cache = cache;
         this.restTemplate = restTemplate;
         this.mapper = objectMapper;

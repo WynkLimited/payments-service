@@ -123,5 +123,6 @@ public interface PaymentConstants extends BaseConstants {
     String LOB_AUTO_PAY_REGISTER_WYNK = "AUTO_PAY_REGISTER"; //to be updated once APS releases the change
     String PAYMENT_TIMER_KEY = "payment_timer";
     String PAYMENT_STATUS_POLL_KEY = "payment_status_poll";
+    String FIELD_TYPE = "type";
 
 }

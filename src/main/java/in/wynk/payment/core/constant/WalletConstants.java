@@ -5,6 +5,7 @@ package in.wynk.payment.core.constant;
  */
 public interface WalletConstants {
     String WALLET = "WALLET";
+    String WALLETS = "WALLETS";
     String PAYTM_WALLET = "PAYTM_WALLET";
     String WALLET_USER_ID = "walletUserId";
     String GOOGLE_WALLET = "GOOGLE_WALLET";

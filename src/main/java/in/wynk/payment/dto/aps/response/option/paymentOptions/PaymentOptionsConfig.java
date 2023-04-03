@@ -1,10 +1,7 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import in.wynk.payment.dto.aps.common.TokenizationConfig;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author Nishesh Pandey
@@ -12,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentOptionsConfig {

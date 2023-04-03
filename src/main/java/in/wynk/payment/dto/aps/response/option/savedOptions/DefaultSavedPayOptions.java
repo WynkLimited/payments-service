@@ -1,6 +1,5 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.savedOptions;
 
-import in.wynk.payment.dto.response.paymentoption.AbstractSavedPaymentDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;

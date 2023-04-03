@@ -1,6 +1,8 @@
 package in.wynk.payment.dto.aps.response.option;
 
-import in.wynk.common.dto.IErrorDetails;
+import in.wynk.payment.dto.aps.response.option.paymentOptions.AbstractPaymentOptions;
+import in.wynk.payment.dto.aps.response.option.paymentOptions.PaymentOptionsConfig;
+import in.wynk.payment.dto.aps.response.option.savedOptions.SavedUserOptions;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

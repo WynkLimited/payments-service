@@ -1,20 +1,22 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.savedOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
+@ToString
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class CardSavedPayOptions extends AbstractSavedPayOptions{
+public class CardSavedPayOptions extends AbstractSavedPayOptions {
     private String createdOn;
     private String updatedOn;
     private String lastUsedOn;

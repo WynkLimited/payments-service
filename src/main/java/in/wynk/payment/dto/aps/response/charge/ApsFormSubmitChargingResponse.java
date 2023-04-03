@@ -1,6 +1,5 @@
 package in.wynk.payment.dto.aps.response.charge;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -14,6 +13,6 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 @NoArgsConstructor
-public class ApsFormSubmitChargingResponse extends AbstractApsExternalChargingResponse {
+public abstract class ApsFormSubmitChargingResponse extends AbstractApsExternalChargingResponse {
     private String html;
 }

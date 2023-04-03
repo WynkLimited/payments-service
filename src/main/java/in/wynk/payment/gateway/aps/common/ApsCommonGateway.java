@@ -18,7 +18,6 @@ import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.dto.aps.request.status.refund.ApsRefundStatusRequest;
 import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
-import in.wynk.payment.dto.request.AbstractChargingRequestV2;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
@@ -40,9 +39,16 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.core.constant.CardConstants.CARDS;
+import static in.wynk.payment.core.constant.NetBankingConstants.NETBANKING;
+import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY998;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
+import static in.wynk.payment.core.constant.WalletConstants.WALLET;
+import static in.wynk.payment.core.constant.WalletConstants.WALLETS;
 
 /**
  * @author Nishesh Pandey
@@ -67,8 +73,8 @@ public class ApsCommonGateway {
     private final ApplicationEventPublisher eventPublisher;
 
 
-
-    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
+    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
+                             @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;
@@ -84,13 +90,13 @@ public class ApsCommonGateway {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange (String url, HttpMethod method,String loginId, Object body, Class<T> target) {
+    public <T> T exchange (String url, HttpMethod method, String loginId, Object body, Class<T> target) {
         ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(), url, method, body);
         try {
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
-               if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode())) {
-                   return objectMapper.convertValue(apsVasResponse.getBody(), target);
+                if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode())) {
+                    return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
                 log.error(PaymentLoggingMarker.APS_API_FAILURE, apsVasResponse.getBody().toString());
             }
@@ -114,7 +120,7 @@ public class ApsCommonGateway {
         try {
             final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
             ApsExternalPaymentRefundStatusResponse body =
-                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST,getLoginId(transaction.getMsisdn()), refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
+                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
             mBuilder.request(refundStatusRequest);
             mBuilder.response(body);
             mBuilder.externalTransactionId(body.getRefundId());
@@ -147,7 +153,7 @@ public class ApsCommonGateway {
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
 
-            ApsChargeStatusResponse[] status = exchange(uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()),null, ApsChargeStatusResponse[].class);
+            ApsChargeStatusResponse[] status = exchange(uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
 
             if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
@@ -176,6 +182,17 @@ public class ApsCommonGateway {
     }
 
     public String getLoginId (String msisdn) {
-        return msisdn.replace("+91","");
+        return msisdn.replace("+91", "");
+    }
+
+    public boolean isGroupEligible (String type, String group) {
+        if (CARDS.equals(type)) {
+            type = CARD;
+        } else if (WALLETS.equals(type)) {
+            type = WALLET;
+        } else if (NETBANKING.equals(type)) {
+            type = NET_BANKING;
+        }
+        return group.equals(type);
     }
 }

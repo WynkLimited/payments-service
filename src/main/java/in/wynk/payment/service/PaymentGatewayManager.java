@@ -91,7 +91,7 @@ public class PaymentGatewayManager
         PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
         final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
-                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(CHARGE),
+                BeanLocatorFactory.getBean(paymentGateway.getCode(),
                         new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
                         });
 
@@ -122,7 +122,7 @@ public class PaymentGatewayManager
         String paymentCode= request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IVerificationService<AbstractVerificationResponse, VerificationRequest> verifyService =
-                BeanLocatorFactory.getBean(paymentCode.concat(VERIFY), new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequest>>() {
+                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequest>>() {
                 });
         return verifyService.verify(request);
     }
@@ -132,7 +132,7 @@ public class PaymentGatewayManager
         String paymentCode= request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> deleteService =
-                BeanLocatorFactory.getBean(paymentCode.concat(DELETE), new ParameterizedTypeReference<IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>>() {
+                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>>() {
                 });
         return deleteService.delete(request);
     }
@@ -198,7 +198,7 @@ public class PaymentGatewayManager
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
-                BeanLocatorFactory.getBean(pg.getCode().concat(CALLBACK), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
+                BeanLocatorFactory.getBean(pg.getCode(), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
         try {
             final AbstractPaymentCallbackResponse response = callbackService.handleCallback(request.getBody());
@@ -264,7 +264,7 @@ public class PaymentGatewayManager
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> renewalService =
-                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(RENEW),
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
                         new ParameterizedTypeReference<IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>>() {
                         });
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
@@ -341,7 +341,7 @@ public class PaymentGatewayManager
             try {
                 final PaymentGateway paymentGateway = transaction.getPaymentChannel();
                 final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusService =
-                        BeanLocatorFactory.getBean(paymentGateway.getCode().concat(PAYMENT_STATUS),
+                        BeanLocatorFactory.getBean(paymentGateway.getCode(),
                                 new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
                                 });
                 return statusService.status(request);
@@ -369,7 +369,7 @@ public class PaymentGatewayManager
             final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
                     transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
-            final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode().concat(REFUND),
+            final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
                     new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
                     });
             final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());

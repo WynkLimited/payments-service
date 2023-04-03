@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.savedOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;

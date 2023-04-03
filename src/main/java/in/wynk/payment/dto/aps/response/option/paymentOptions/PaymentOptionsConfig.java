@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import in.wynk.payment.dto.aps.common.TokenizationConfig;
 import lombok.*;

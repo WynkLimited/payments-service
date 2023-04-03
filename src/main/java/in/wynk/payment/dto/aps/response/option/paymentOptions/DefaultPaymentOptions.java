@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,5 +10,5 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @NoArgsConstructor
-public class DefaultSavedPayOptions extends AbstractSavedPayOptions {
+public class DefaultPaymentOptions extends AbstractPaymentOptions {
 }

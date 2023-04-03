@@ -73,8 +73,8 @@ public class ApsCommonGateway {
     private final ApplicationEventPublisher eventPublisher;
 
 
-
-    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
+    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
+                             @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;
@@ -90,13 +90,13 @@ public class ApsCommonGateway {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange (String url, HttpMethod method,String loginId, Object body, Class<T> target) {
+    public <T> T exchange (String url, HttpMethod method, String loginId, Object body, Class<T> target) {
         ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(), url, method, body);
         try {
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
-               if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode())) {
-                   return objectMapper.convertValue(apsVasResponse.getBody(), target);
+                if (HttpStatus.OK.getReasonPhrase().equals(apsVasResponse.getStatusCode())) {
+                    return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
                 log.error(PaymentLoggingMarker.APS_API_FAILURE, apsVasResponse.getBody().toString());
             }
@@ -120,7 +120,7 @@ public class ApsCommonGateway {
         try {
             final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
             ApsExternalPaymentRefundStatusResponse body =
-                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST,getLoginId(transaction.getMsisdn()), refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
+                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
             mBuilder.request(refundStatusRequest);
             mBuilder.response(body);
             mBuilder.externalTransactionId(body.getRefundId());
@@ -153,7 +153,7 @@ public class ApsCommonGateway {
             final HttpHeaders headers = new HttpHeaders();
             final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
 
-            ApsChargeStatusResponse[] status = exchange(uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()),null, ApsChargeStatusResponse[].class);
+            ApsChargeStatusResponse[] status = exchange(uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
 
             if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
@@ -182,7 +182,7 @@ public class ApsCommonGateway {
     }
 
     public String getLoginId (String msisdn) {
-        return msisdn.replace("+91","");
+        return msisdn.replace("+91", "");
     }
 
     public boolean isGroupEligible (String type, String group) {

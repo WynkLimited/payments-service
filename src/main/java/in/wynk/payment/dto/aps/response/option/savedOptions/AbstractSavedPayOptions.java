@@ -1,9 +1,13 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.savedOptions;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.core.constant.CardConstants;
+import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.UpiConstants;
+import in.wynk.payment.core.constant.WalletConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,11 +26,11 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", defaultImpl = DefaultSavedPayOptions.class, visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = PaymentConstants.FIELD_TYPE, defaultImpl = DefaultSavedPayOptions.class, visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = WalletSavedOptions.class, name = "WALLETS"),
-        @JsonSubTypes.Type(value = UpiSavedOptions.class, name = "UPI"),
-        @JsonSubTypes.Type(value = CardSavedPayOptions.class, name = "CARDS")
+        @JsonSubTypes.Type(value = WalletSavedOptions.class, name = WalletConstants.WALLETS),
+        @JsonSubTypes.Type(value = UpiSavedOptions.class, name = UpiConstants.UPI),
+        @JsonSubTypes.Type(value = CardSavedPayOptions.class, name = CardConstants.CARDS)
 })
 public abstract class AbstractSavedPayOptions {
     private String type;

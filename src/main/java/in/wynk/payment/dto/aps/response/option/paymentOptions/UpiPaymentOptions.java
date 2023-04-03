@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
@@ -27,7 +27,7 @@ public class UpiPaymentOptions extends AbstractPaymentOptions {
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class UpiSupportedApps{
+    public static class UpiSupportedApps {
         private String upiPspAppName;
         private String androidCustomisationString;
         private String iosCustomisationString;

@@ -4,6 +4,8 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.FlowType;
+import in.wynk.payment.core.constant.NetBankingConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
@@ -41,10 +43,11 @@ import org.springframework.http.HttpMethod;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static in.wynk.payment.core.constant.CardConstants.CARD;
+import static in.wynk.payment.constant.FlowType.COLLECT;
+import static in.wynk.payment.constant.FlowType.INTENT;
+import static in.wynk.payment.constant.FlowType.UPI;
+import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
-import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
 import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER;
@@ -55,7 +58,7 @@ import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER;
 @Slf4j
 public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
-    private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> chargingDelegate = new HashMap<>();
+    private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> chargingDelegate = new HashMap<>();
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final ApsCommonGatewayService common;
     private String UPI_CHARGING_ENDPOINT;
@@ -74,11 +77,11 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
     @Override
     public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
         final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
-        return chargingDelegate.get(method.getGroup().toUpperCase()).charge(request);
+        return chargingDelegate.get(FlowType.valueOf(method.getGroup().toUpperCase(Locale.ROOT))).charge(request);
     }
 
     private class UpiCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
-        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+        private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
         public UpiCharging () {
             upiDelegate.put(SEAMLESS, new UpiSeamlessCharging());
@@ -91,11 +94,11 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
             if (Objects.isNull(flowType)) {
                 throw new WynkRuntimeException("flowType in configuration should not be null");
             }
-            return upiDelegate.get(flowType).charge(request);
+            return upiDelegate.get(FlowType.valueOf(flowType)).charge(request);
         }
 
         private class UpiNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public UpiNonSeamlessCharging () {
                 upiDelegate.put(COLLECT, new UpiCollectCharging());
@@ -120,7 +123,7 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
         }
 
         private class UpiSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public UpiSeamlessCharging () {
                 upiDelegate.put(INTENT, new UpiIntentCharging());
@@ -130,7 +133,7 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
             @Override
             public AbstractSeamlessUpiChargingResponse charge (AbstractChargingRequestV2 request) {
                 UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                String flow = INTENT;
+                FlowType flow = INTENT;
                 if (!upiPaymentDetails.getUpiDetails().isIntent()) {
                     flow = COLLECT_IN_APP;
                 }
@@ -163,7 +166,7 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
                     ApsUpiCollectChargingResponse response =
                             common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsUpiCollectChargingResponse.class);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response)).build();
-                   // return UpiCollectInAppChargingResponse.builder().build();
+                    // return UpiCollectInAppChargingResponse.builder().build();
                 }
             }
 
@@ -184,8 +187,9 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                     ApsUpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
                             common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, ApsUpiIntentChargingChargingResponse.class);
-                    Map<String, String> map = Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
-                            .collect(Collectors.toMap(x -> x[0], x -> x[1]));
+                    Map<String, String> map =
+                            Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
+                                    .collect(Collectors.toMap(x -> x[0], x -> x[1]));
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
@@ -209,7 +213,7 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
 
     private class CardCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
-        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
+        private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
         public CardCharging () {
             cardDelegate.put(SEAMLESS, new CardSeamlessCharging());
@@ -222,11 +226,11 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
             if (Objects.isNull(flowType)) {
                 throw new WynkRuntimeException("flowType in configuration should not be null");
             }
-            return cardDelegate.get(flowType).charge(request);
+            return cardDelegate.get(FlowType.valueOf(flowType)).charge(request);
         }
 
         private class CardSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardSeamlessDelegate = new HashMap<>();
+            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardSeamlessDelegate = new HashMap<>();
 
             public CardSeamlessCharging () {
                 cardSeamlessDelegate.put(INTENT, new CardOtpLessCharging());
@@ -256,7 +260,7 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
         }
 
         private class CardNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
-            private final Map<String, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardNonSeamlessDelegate = new HashMap<>();
+            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardNonSeamlessDelegate = new HashMap<>();
 
             public CardNonSeamlessCharging () {
                 cardNonSeamlessDelegate.put(HTML, new CardHtmlTypeCharging());//APS supports html type
@@ -264,7 +268,7 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
 
             @Override
             public AbstractNonSeamlessCardChargingResponse charge (AbstractChargingRequestV2 request) {
-                return cardNonSeamlessDelegate.get(PaymentConstants.HTML).charge(request);
+                return cardNonSeamlessDelegate.get(HTML).charge(request);
             }
 
             private class CardHtmlTypeCharging implements IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2> {
@@ -328,7 +332,7 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
 
     private class NetBankingCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
-        private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> netBankingDelegate = new HashMap<>();
+        private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> netBankingDelegate = new HashMap<>();
 
         public NetBankingCharging () {
             netBankingDelegate.put(NET_BANKING, new NetBanking());
@@ -348,7 +352,8 @@ public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV
                 final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                 final String redirectUrl = ((IChargingDetails) request).getCallbackDetails().getCallbackUrl();
                 final NetBankingPaymentInfo netBankingInfo =
-                        NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount()).paymentMode(NET_BANKING).build();
+                        NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount())
+                                .paymentMode(NetBankingConstants.NET_BANKING).build();
                 final ApsExternalChargingRequest<NetBankingPaymentInfo> payRequest =
                         ApsExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();

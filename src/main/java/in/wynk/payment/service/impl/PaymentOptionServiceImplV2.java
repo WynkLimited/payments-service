@@ -69,7 +69,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final PaymentCachingService paymentCachingService;
     private final IPaymentOptionComputationManager paymentOptionManager;
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
-    private final ApsPaymentOptionsGatewayService gateway;
+    //private final ApsPaymentOptionsGatewayService gateway;
     private final ApsCommonGatewayService common;
 
 

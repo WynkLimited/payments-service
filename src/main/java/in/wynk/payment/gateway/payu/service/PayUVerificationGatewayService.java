@@ -25,7 +25,6 @@ import java.util.Map;
 import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 
 @Slf4j
-@Service
 public class PayUVerificationGatewayService implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
     private final PayUCommonGatewayService common;

@@ -25,7 +25,6 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_REFUND_STATUS_VERIFICATION;
 
 @Slf4j
-@Service
 public class PayUStatusGatewayService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
     private final PayUCommonGatewayService common;

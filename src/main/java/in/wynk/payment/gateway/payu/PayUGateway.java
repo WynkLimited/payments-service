@@ -49,7 +49,6 @@ public class PayUGateway implements IVerificationService<AbstractVerificationRes
                       PaymentCachingService payCache,
                       PaymentMethodCachingService cache,
                       ApplicationEventPublisher eventPublisher,
-                      ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService) {
         this.statusGateway = new PayUStatusGatewayService(commonGateway);
         this.callbackGateway = new PayUCallbackGatewayService(commonGateway, eventPublisher, mapper);

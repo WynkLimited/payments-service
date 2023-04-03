@@ -6,6 +6,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.FlowType;
 import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.gateway.IPostFormSpec;
@@ -41,13 +42,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_PN;
 import static in.wynk.payment.core.constant.UpiConstants.UPI_MERCHANT_CODE;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.UpiConstants.UPI;
-import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
-import static in.wynk.payment.core.constant.CardConstants.CARD;
 
 /**
  * @author Nishesh Pandey
@@ -63,7 +61,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
     private final PaymentCachingService paymentCache;
     private final IEntityCacheService<ClientDetails, String> clientCache;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
-    private final Map<String, IPaymentPresentation<? extends AbstractChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+    private final Map<FlowType, IPaymentPresentation<? extends AbstractChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
     @PostConstruct
     public void init () {
@@ -76,7 +74,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
     @Override
     public WynkResponseEntity<AbstractChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
-        return (WynkResponseEntity<AbstractChargingResponse>) delegate.get(method.getGroup()).transform(payload);
+        return (WynkResponseEntity<AbstractChargingResponse>) delegate.get(FlowType.valueOf(method.getGroup())).transform(payload);
     }
 
     @SneakyThrows
@@ -88,7 +86,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class UpiChargingPresentation implements IPaymentPresentation<AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<String, IPaymentPresentation<? extends AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<FlowType, IPaymentPresentation<? extends AbstractUpiChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public UpiChargingPresentation () {
             delegate.put(SEAMLESS, new Seamless());
@@ -99,7 +97,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         @Override
         public WynkResponseEntity<AbstractUpiChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
-            return (WynkResponseEntity<AbstractUpiChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
+            return (WynkResponseEntity<AbstractUpiChargingResponse>) delegate.get(FlowType.valueOf(method.getFlowType())).transform(payload);
         }
 
         private class Seamless implements IPaymentPresentation<SeamlessUpiChargingResponse, ChargingGatewayResponseWrapper<?>> {
@@ -117,7 +115,8 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
                         "//" +
                         "pay" +
                         "?pa=" + intentSpec.getPayeeVpa() +
-                        "&pn=" + Optional.of(intentSpec.getPayeeDisplayName()).orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(UpiConstants.UPI_PAYEE_NAME).orElse(DEFAULT_PN)) +
+                        "&pn=" + Optional.of(intentSpec.getPayeeDisplayName())
+                        .orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(UpiConstants.UPI_PAYEE_NAME).orElse(DEFAULT_PN)) +
                         "&tr=" + intentSpec.getMerchantOrderID() +
                         "&am=" + intentSpec.getAmountToBePaid() +
                         "&cu=" + intentSpec.getCurrencyCode().orElse("INR") +
@@ -153,7 +152,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class NetBankingChargingPresentation implements IPaymentPresentation<AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<String, IPaymentPresentation<? extends AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<FlowType, IPaymentPresentation<? extends AbstractNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public NetBankingChargingPresentation () {
             delegate.put(NON_SEAMLESS, new NonSeamless());
@@ -163,7 +162,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         @Override
         public WynkResponseEntity<AbstractNetBankingChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
-            return (WynkResponseEntity<AbstractNetBankingChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
+            return (WynkResponseEntity<AbstractNetBankingChargingResponse>) delegate.get(FlowType.valueOf(method.getFlowType())).transform(payload);
         }
 
         public class NonSeamless implements IPaymentPresentation<NonSeamlessNetBankingChargingResponse, ChargingGatewayResponseWrapper<?>> {
@@ -188,7 +187,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class CardChargingPresentation implements IPaymentPresentation<AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<String, IPaymentPresentation<? extends AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<FlowType, IPaymentPresentation<? extends AbstractCardChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public CardChargingPresentation () {
             delegate.put(SEAMLESS, new Seamless());
@@ -199,7 +198,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         @Override
         public WynkResponseEntity<AbstractCardChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
-            return (WynkResponseEntity<AbstractCardChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
+            return (WynkResponseEntity<AbstractCardChargingResponse>) delegate.get(FlowType.valueOf(method.getFlowType())).transform(payload);
         }
 
         public class Seamless implements IPaymentPresentation<SeamlessCardChargingResponse, ChargingGatewayResponseWrapper<?>> {
@@ -232,7 +231,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
 
     private class WalletChargingPresentation implements IPaymentPresentation<AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>> {
 
-        private final Map<String, IPaymentPresentation<? extends AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
+        private final Map<FlowType, IPaymentPresentation<? extends AbstractWalletChargingResponse, ChargingGatewayResponseWrapper<?>>> delegate = new HashMap<>();
 
         public WalletChargingPresentation () {
             delegate.put(SEAMLESS, new Seamless());
@@ -243,7 +242,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         @Override
         public WynkResponseEntity<AbstractWalletChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
-            return (WynkResponseEntity<AbstractWalletChargingResponse>) delegate.get(method.getFlowType()).transform(payload);
+            return (WynkResponseEntity<AbstractWalletChargingResponse>) delegate.get(FlowType.valueOf(method.getFlowType())).transform(payload);
         }
 
         public class Seamless implements IPaymentPresentation<SeamlessWalletChargingResponse, ChargingGatewayResponseWrapper<?>> {

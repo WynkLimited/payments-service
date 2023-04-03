@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
-@RequiredArgsConstructor
+/*@RequiredArgsConstructor*/
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
 public class ApsGateway implements
         IPaymentOptionEligibility,

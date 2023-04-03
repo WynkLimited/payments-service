@@ -10,7 +10,6 @@ import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteCardResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteVpaResponse;
 import in.wynk.payment.dto.request.PaymentMethodDeleteRequest;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IPaymentDeleteService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -28,15 +27,15 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_SAVED_VPA_D
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsDeleteGateway implements IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
+public class ApsDeleteGatewayService implements IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
 
     private String DELETE_CARD_ENDPOINT;
     private String DELETE_VPA_ENDPOINT;
 
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private final PaymentMethodDeletion verification = new PaymentMethodDeletion();
 
-    public ApsDeleteGateway(String deleteCardEndpoint, String deleteVpaEndpoint, ApsCommonGateway common) {
+    public ApsDeleteGatewayService (String deleteCardEndpoint, String deleteVpaEndpoint, ApsCommonGatewayService common) {
         this.common = common;
         this.DELETE_VPA_ENDPOINT = deleteVpaEndpoint;
         this.DELETE_CARD_ENDPOINT = deleteCardEndpoint;

@@ -31,17 +31,17 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
+public class ApsCallbackGatewayService implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
     private final String REFUND_CALLBACK_TYPE = "REFUND_STATUS";
     private final String CHARGE_CALLBACK_TYPE = "PAYMENT_STATUS";
     private final String salt;
     private final String secret;
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGateway(String salt, String secret, ApsCommonGateway common, ObjectMapper objectMapper) {
+    public ApsCallbackGatewayService (String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;

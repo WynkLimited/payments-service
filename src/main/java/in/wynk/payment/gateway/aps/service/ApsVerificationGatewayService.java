@@ -11,7 +11,6 @@ import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IVerificationService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -30,16 +29,16 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFIC
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
+public class ApsVerificationGatewayService implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
     private String VPA_VERIFY_ENDPOINT;
     private String BIN_VERIFY_ENDPOINT;
 
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private final RestTemplate httpTemplate;
     private final PaymentMethodEligibilityVerification verification = new PaymentMethodEligibilityVerification();
 
-    public ApsVerificationGateway (String vpaVerifyEndpoint, String binVerifyEndpoint, RestTemplate httpTemplate, ApsCommonGateway common) {
+    public ApsVerificationGatewayService (String vpaVerifyEndpoint, String binVerifyEndpoint, RestTemplate httpTemplate, ApsCommonGatewayService common) {
         this.httpTemplate = httpTemplate;
         this.common = common;
         this.VPA_VERIFY_ENDPOINT = vpaVerifyEndpoint;

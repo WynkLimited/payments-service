@@ -15,16 +15,15 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.aps.service.ApsCallbackGateway;
-import in.wynk.payment.gateway.aps.service.ApsChargeGateway;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
-import in.wynk.payment.gateway.aps.service.ApsDeleteGateway;
-import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsGateway;
-import in.wynk.payment.gateway.aps.service.ApsPreDebitNotificationGateway;
-import in.wynk.payment.gateway.aps.service.ApsRefundGateway;
-import in.wynk.payment.gateway.aps.service.ApsRenewalGateway;
-import in.wynk.payment.gateway.aps.status.ApsStatusGateway;
-import in.wynk.payment.gateway.aps.service.ApsVerificationGateway;
+import in.wynk.payment.gateway.aps.service.ApsCallbackGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsChargeGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsDeleteGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsPreDebitNotificationGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsRefundGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsRenewalGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsVerificationGatewayService;
 import in.wynk.payment.service.*;
 import in.wynk.payment.service.impl.ApsPaymentSettlementGateway;
 import lombok.RequiredArgsConstructor;
@@ -50,16 +49,16 @@ public class ApsGateway implements
         IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>,
         IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
 
-    private final ApsRefundGateway refundGateway;
-    private final ApsDeleteGateway deleteGateway;
-    private final ApsChargeGateway chargeGateway;
-    private final ApsStatusGateway statusGateway;
-    private final ApsRenewalGateway renewalGateway;
-    private final ApsCallbackGateway callbackGateway;
-    private final ApsVerificationGateway verificationGateway;
-    private final ApsPaymentOptionsGateway payOptionsGateway;
+    private final ApsRefundGatewayService refundGateway;
+    private final ApsDeleteGatewayService deleteGateway;
+    private final ApsChargeGatewayService chargeGateway;
+    private final in.wynk.payment.gateway.aps.status.ApsStatusGatewayService statusGateway;
+    private final ApsRenewalGatewayService renewalGateway;
+    private final ApsCallbackGatewayService callbackGateway;
+    private final ApsVerificationGatewayService verificationGateway;
+    private final ApsPaymentOptionsGatewayService payOptionsGateway;
     private final ApsPaymentSettlementGateway settlementGateway;
-    private final ApsPreDebitNotificationGateway preDebitGateway;
+    private final ApsPreDebitNotificationGatewayService preDebitGateway;
 
     public ApsGateway(@Value("${payment.merchant.aps.salt}") String salt,
                       @Value("${payment.merchant.aps.secret}") String secret,
@@ -75,23 +74,23 @@ public class ApsGateway implements
                       @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint,
                       @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
                       ObjectMapper mapper,
-                      ApsCommonGateway commonGateway,
+                      ApsCommonGatewayService commonGateway,
                       PaymentCachingService payCache,
                       PaymentMethodCachingService cache,
                       ApplicationEventPublisher eventPublisher,
                       ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
-        this.statusGateway = new ApsStatusGateway(commonGateway);
-        this.callbackGateway = new ApsCallbackGateway(salt, secret, commonGateway, mapper);
-        this.payOptionsGateway = new ApsPaymentOptionsGateway(payOptionEndpoint, commonGateway);
-        this.refundGateway = new ApsRefundGateway(refundEndpoint, eventPublisher, commonGateway);
-        this.deleteGateway = new ApsDeleteGateway(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
+        this.statusGateway = new in.wynk.payment.gateway.aps.status.ApsStatusGatewayService(commonGateway);
+        this.callbackGateway = new ApsCallbackGatewayService(salt, secret, commonGateway, mapper);
+        this.payOptionsGateway = new ApsPaymentOptionsGatewayService(payOptionEndpoint, commonGateway);
+        this.refundGateway = new ApsRefundGatewayService(refundEndpoint, eventPublisher, commonGateway);
+        this.deleteGateway = new ApsDeleteGatewayService(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, payCache);
-        this.chargeGateway = new ApsChargeGateway(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
-        this.preDebitGateway =  new ApsPreDebitNotificationGateway(preDebitEndpoint, transactionManager, commonGateway);
-        this.verificationGateway = new ApsVerificationGateway(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
-        this.renewalGateway = new ApsRenewalGateway(siPaymentApi, commonGateway, merchantTransactionService, payCache, mapper, eventPublisher);
+        this.chargeGateway = new ApsChargeGatewayService(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
+        this.preDebitGateway =  new ApsPreDebitNotificationGatewayService(preDebitEndpoint, transactionManager, commonGateway);
+        this.verificationGateway = new ApsVerificationGatewayService(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
+        this.renewalGateway = new ApsRenewalGatewayService(siPaymentApi, commonGateway, merchantTransactionService, payCache, mapper, eventPublisher);
     }
 
 

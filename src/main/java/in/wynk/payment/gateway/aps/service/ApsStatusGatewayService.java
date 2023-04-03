@@ -11,7 +11,7 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.service.IPaymentStatusService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,14 +27,14 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STAT
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+public class ApsStatusGatewayService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
 
     private final Map<Class<? extends AbstractTransactionReconciliationStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>
             statusDelegate = new HashMap<>();
 
-    public ApsStatusGateway (ApsCommonGateway common) {
+    public ApsStatusGatewayService (ApsCommonGatewayService common) {
         this.common = common;
         this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
         this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());

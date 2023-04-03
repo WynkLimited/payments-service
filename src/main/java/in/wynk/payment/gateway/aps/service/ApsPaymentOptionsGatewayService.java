@@ -11,7 +11,6 @@ import in.wynk.payment.dto.aps.response.option.paymentOptions.AbstractPaymentOpt
 import in.wynk.payment.dto.aps.response.option.paymentOptions.NetBankingPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.UpiPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.WalletPaymentsOptions;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 
@@ -24,11 +23,11 @@ import java.util.stream.Collectors;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsPaymentOptionsGateway implements IPaymentOptionEligibility {
+public class ApsPaymentOptionsGatewayService implements IPaymentOptionEligibility {
 
     private String PAYMENT_OPTION_ENDPOINT;
 
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
 
     private final Map<String, String> PAY_GROUP_MIGRATION_MAPPING = new HashMap<String, String>() {{
         put(CardConstants.CARD, CardConstants.CARDS);
@@ -36,7 +35,7 @@ public class ApsPaymentOptionsGateway implements IPaymentOptionEligibility {
         put(NetBankingConstants.NET_BANKING, NetBankingConstants.NETBANKING);
     }};
 
-    public ApsPaymentOptionsGateway(String payOptionEndpoint, ApsCommonGateway common) {
+    public ApsPaymentOptionsGatewayService (String payOptionEndpoint, ApsCommonGatewayService common) {
         this.common = common;
         this.PAYMENT_OPTION_ENDPOINT = payOptionEndpoint;
     }

@@ -13,7 +13,6 @@ import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.refund.ApsExternalPaymentRefundRequest;
 import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentRefundService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -23,13 +22,13 @@ import org.springframework.http.HttpMethod;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsRefundGateway implements IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
+public class ApsRefundGatewayService implements IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
 
     private final String REFUND_ENDPOINT;
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private final ApplicationEventPublisher eventPublisher;
 
-    public ApsRefundGateway(String refundEndpoint, ApplicationEventPublisher eventPublisher, ApsCommonGateway common){
+    public ApsRefundGatewayService (String refundEndpoint, ApplicationEventPublisher eventPublisher, ApsCommonGatewayService common){
         this.common= common;
         this.eventPublisher= eventPublisher;
         this.REFUND_ENDPOINT = refundEndpoint;

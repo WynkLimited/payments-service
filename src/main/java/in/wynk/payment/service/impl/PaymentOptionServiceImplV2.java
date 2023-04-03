@@ -26,8 +26,8 @@ import in.wynk.payment.dto.response.wallet.Wallet;
 import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
-import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsGateway;
+import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsGatewayService;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
@@ -69,8 +69,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final PaymentCachingService paymentCachingService;
     private final IPaymentOptionComputationManager paymentOptionManager;
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
-    private final ApsPaymentOptionsGateway gateway;
-    private final ApsCommonGateway common;
+    private final ApsPaymentOptionsGatewayService gateway;
+    private final ApsCommonGatewayService common;
 
 
     public static final String META_DESCRIPTION = "description";

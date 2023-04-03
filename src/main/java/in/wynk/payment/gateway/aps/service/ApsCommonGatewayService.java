@@ -59,7 +59,7 @@ import static in.wynk.payment.core.constant.WalletConstants.WALLETS;
 
 @Slf4j
 @Service
-public class ApsCommonGateway {
+public class ApsCommonGatewayService {
     @Value("${aps.payment.encryption.key.path}")
     private String RSA_PUBLIC_KEY;
     @Value("${aps.payment.refund.status.api}")
@@ -76,8 +76,8 @@ public class ApsCommonGateway {
     private final ApplicationEventPublisher eventPublisher;
 
 
-    public ApsCommonGateway (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
-                             @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
+    public ApsCommonGatewayService (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
+                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;

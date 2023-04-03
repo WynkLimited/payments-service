@@ -16,7 +16,6 @@ import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.aps.request.renewal.ApsSiPaymentRecurringRequest;
 import in.wynk.payment.dto.aps.response.renewal.ApsRenewalStatusResponse;
 import in.wynk.payment.dto.aps.response.renewal.ApsSiPaymentRecurringResponse;
-import in.wynk.payment.gateway.aps.service.ApsCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentRenewalServiceV2;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -42,20 +41,20 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> {
+public class ApsRenewalGatewayService implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> {
 
     @Value("${aps.payment.renewal.api}")
     private String SI_PAYMENT_API;
 
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private final IMerchantTransactionService merchantTransactionService;
     private PaymentCachingService cachingService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
 
-    public ApsRenewalGateway (String siPaymentApi, ApsCommonGateway common, IMerchantTransactionService merchantTransactionService, PaymentCachingService cachingService, ObjectMapper objectMapper,
-                              ApplicationEventPublisher eventPublisher) {
+    public ApsRenewalGatewayService (String siPaymentApi, ApsCommonGatewayService common, IMerchantTransactionService merchantTransactionService, PaymentCachingService cachingService, ObjectMapper objectMapper,
+                                     ApplicationEventPublisher eventPublisher) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.SI_PAYMENT_API = siPaymentApi;

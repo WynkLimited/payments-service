@@ -53,15 +53,15 @@ import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+public class ApsChargeGatewayService implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
     private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> chargingDelegate = new HashMap<>();
     private final PaymentMethodCachingService paymentMethodCachingService;
-    private final ApsCommonGateway common;
+    private final ApsCommonGatewayService common;
     private String UPI_CHARGING_ENDPOINT;
     private String CHARGING_ENDPOINT;
 
-    public ApsChargeGateway (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common) {
+    public ApsChargeGatewayService (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
         this.common = common;
         this.UPI_CHARGING_ENDPOINT = upiChargeEndpoint;
         this.CHARGING_ENDPOINT = commonChargeEndpoint;

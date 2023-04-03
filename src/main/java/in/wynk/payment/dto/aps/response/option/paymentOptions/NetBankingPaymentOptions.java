@@ -22,12 +22,17 @@ import java.util.List;
 public class NetBankingPaymentOptions extends AbstractPaymentOptions {
     private List<NetBankingSubOptions> subOption;
 
+    @Override
+    public List<NetBankingSubOptions> getOption() {
+        return getSubOption();
+    }
+
     @Getter
     @ToString
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class NetBankingSubOptions {
+    public static class NetBankingSubOptions implements ISubOption {
         private String type;
         private String subType;
         private String name;
@@ -35,5 +40,10 @@ public class NetBankingPaymentOptions extends AbstractPaymentOptions {
         private boolean recommended;
         private String iconUrl;
         private BigDecimal minAmount;
+
+        @Override
+        public String getId() {
+            return getSubType();
+        }
     }
 }

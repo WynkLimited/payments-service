@@ -5,7 +5,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
-import in.wynk.payment.dto.aps.response.option.ApsPaymentOptionsResponse;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.AbstractPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.NetBankingPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.UpiPaymentOptions;
@@ -28,7 +27,6 @@ import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
-import in.wynk.payment.gateway.aps.paymentOptions.ApsPaymentOptionsGateway;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
@@ -70,7 +68,6 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final PaymentCachingService paymentCachingService;
     private final IPaymentOptionComputationManager paymentOptionManager;
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
-    private final ApsPaymentOptionsGateway gateway;
     private final ApsCommonGateway common;
 
 
@@ -86,7 +83,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
      * @return
      */
     @Override
-    public PaymentOptionsDTO getPaymentOptions (AbstractPaymentOptionsRequest<?> request) {
+    public PaymentOptionsDTO getPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         PaymentOptionsDTO paymentOptions;
         if (request.getPaymentOptionRequest().getProductDetails().getType().equalsIgnoreCase(PLAN)) {
             paymentOptions = getPaymentOptionsDetailsForPlan(request.getPaymentOptionRequest());
@@ -100,7 +97,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return paymentOptions;
     }
 
-    private PaymentOptionsDTO getPaymentOptionsDetailsForPlan (IPaymentOptionsRequest request) {
+    private PaymentOptionsDTO getPaymentOptionsDetailsForPlan(IPaymentOptionsRequest request) {
         boolean trialEligible = false;
         PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
         final PlanDTO paidPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
@@ -121,7 +118,6 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         }
         PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO = new PaymentOptionsDTO.PaymentMethodDTO();
         List<AbstractPaymentGroupsDTO> paymentGroups;
-       // ApsPaymentOptionsResponse apsPaymentOptionsResponse = gateway.payOption(request.getUserDetails().getMsisdn());
         if (trialEligible) {
             paymentGroups = getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan, paymentMethodDTO);
         } else {
@@ -132,7 +128,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                 .productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build();
     }
 
-    private PaymentOptionsDTO getPaymentOptionsDetailsForPoint (IPaymentOptionsRequest request) {
+    private PaymentOptionsDTO getPaymentOptionsDetailsForPoint(IPaymentOptionsRequest request) {
         final ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item)
                 .couponCode(request.getCouponId())
@@ -148,9 +144,9 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return PaymentOptionsDTO.builder().paymentGroups(paymentGroups).paymentMethods(paymentMethodDTO).productDetails(buildPointDetails(item)).build();
     }
 
-    private List<AbstractPaymentGroupsDTO> getFilteredPaymentGroups (Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier,
-                                                                     PaymentOptionsEligibilityRequest request, PlanDTO planDTO,
-                                                                     PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
+    private List<AbstractPaymentGroupsDTO> getFilteredPaymentGroups(Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier,
+                                                                    PaymentOptionsEligibilityRequest request, PlanDTO planDTO,
+                                                                    PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<AbstractPaymentGroupsDTO> paymentGroups = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
@@ -175,8 +171,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return paymentGroups;
     }
 
-    private void addPaymentMethod (PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier,
-                                   List<AbstractPaymentOptions> payOptions) {
+    private void addPaymentMethod(PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier,
+                                  List<AbstractPaymentOptions> payOptions) {
         String group = paymentMethod.getGroup();
 
         //if APS, check if it comes into eligible methods and update other details required for UI as well
@@ -207,7 +203,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                         case WALLET:
                             WalletPaymentsOptions walletPaymentsOptions = (WalletPaymentsOptions) payOption;
                             //TODO: update code for wallet from APS
-                            walletPaymentsOptions.getSubOption().forEach(walletSubOption -> {
+                            walletPaymentsOptions.getWalletSubOption().forEach(walletSubOption -> {
                                 if (walletSubOption.getSubType().equalsIgnoreCase(paymentMethod.getSubtitle())) {
                                     addNetWalletDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, walletSubOption.getHealth());
                                 }
@@ -222,7 +218,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
 
     }
 
-    private void addEligiblePaymentMethodForPayU (String group, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier) {
+    private void addEligiblePaymentMethodForPayU(String group, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier) {
         switch (group) {
             case UPI:
                 addUpiDetails(paymentMethodDTO, paymentMethod, autoRenewalSupplier, null);
@@ -267,8 +263,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     }
 
 
-    private void addNetWalletDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
-                                      String health) {
+    private void addNetWalletDetails(PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
+                                     String health) {
 
         if (Objects.isNull(paymentMethodDTO.getWallet())) {
             paymentMethodDTO.setWallet(new ArrayList<>());
@@ -285,8 +281,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                         .build());
     }
 
-    private void addNetBankingDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
-                                       String health) {
+    private void addNetBankingDetails(PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
+                                      String health) {
         if (Objects.isNull(paymentMethodDTO.getNetBanking())) {
             paymentMethodDTO.setNetBanking(new ArrayList<>());
         }
@@ -299,7 +295,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                         .build());
     }
 
-    private void addCardDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier) {
+    private void addCardDetails(PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier) {
         if (Objects.isNull(paymentMethodDTO.getCard())) {
             paymentMethodDTO.setCard(new ArrayList<>());
         }
@@ -315,8 +311,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                                 WalletCardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME)).build()).build()).build());
     }
 
-    private void addUpiDetails (PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
-                                String health) {
+    private void addUpiDetails(PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
+                               String health) {
         if (Objects.isNull(paymentMethod.getMeta())) {
             throw new WynkRuntimeException("Meta information is missing in payment method");
         }
@@ -339,12 +335,12 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                         .build());
     }
 
-    private List<PaymentMethod> filterPaymentMethodsBasedOnEligibility (PaymentOptionsComputationResponse response, List<PaymentMethod> methods) {
+    private List<PaymentMethod> filterPaymentMethodsBasedOnEligibility(PaymentOptionsComputationResponse response, List<PaymentMethod> methods) {
         Set<PaymentMethod> eligibilityResultSet = response.getPaymentMethods();
         return methods.stream().filter(eligibilityResultSet::contains).collect(Collectors.toList());
     }
 
-    private PaymentOptionsDTO.PlanDetails buildPlanDetails (String planId, boolean trialEligible) {
+    private PaymentOptionsDTO.PlanDetails buildPlanDetails(String planId, boolean trialEligible) {
         PlanDTO plan = paymentCachingService.getPlan(planId);
         OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());
         PartnerDTO partner = paymentCachingService.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
@@ -363,7 +359,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return planDetailsBuilder.build();
     }
 
-    private List<SavedPaymentDTO> addSavedPaymentOptions (List<AbstractSavedPayOptions> payOptions, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
+    private List<SavedPaymentDTO> addSavedPaymentOptions(List<AbstractSavedPayOptions> payOptions, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
         List<SavedPaymentDTO> abstractSavedPaymentDTOList = new ArrayList<>();
         for (AbstractSavedPayOptions payOption : payOptions) {
             switch (payOption.getType()) {
@@ -405,7 +401,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return abstractSavedPaymentDTOList;
     }
 
-    private PaymentOptionsDTO.PointDetails buildPointDetails (ItemDTO item) {
+    private PaymentOptionsDTO.PointDetails buildPointDetails(ItemDTO item) {
         return PaymentOptionsDTO.PointDetails.builder()
                 .id(item.getId())
                 .title(item.getName())

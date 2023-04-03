@@ -19,7 +19,7 @@ import in.wynk.payment.gateway.aps.callback.ApsCallbackGateway;
 import in.wynk.payment.gateway.aps.charge.ApsChargeGateway;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.gateway.aps.delete.ApsDeleteGateway;
-import in.wynk.payment.gateway.aps.paymentOptions.ApsPaymentOptionsGateway;
+import in.wynk.payment.gateway.aps.pay.options.ApsPaymentOptionsGateway;
 import in.wynk.payment.gateway.aps.predebitNotification.ApsPreDebitNotificationGateway;
 import in.wynk.payment.gateway.aps.refund.ApsRefundGateway;
 import in.wynk.payment.gateway.aps.renewal.ApsRenewalGateway;

@@ -12,6 +12,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * @author Nishesh Pandey
@@ -33,4 +34,14 @@ import java.math.BigDecimal;
 public abstract class AbstractPaymentOptions {
     private String type;
     private BigDecimal minAmount;
+
+    public abstract <T extends ISubOption> List<T> getOption();
+
+    public interface ISubOption {
+         String getId();
+
+         default boolean isEnabled() {
+             return Boolean.TRUE;
+         }
+    }
 }

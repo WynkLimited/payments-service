@@ -20,14 +20,19 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WalletPaymentsOptions extends AbstractPaymentOptions {
-    private List<SubOption> subOption;
+    private List<WalletSubOption> walletSubOption;
+
+    @Override
+    public List<WalletSubOption> getOption() {
+        return getWalletSubOption();
+    }
 
     @Getter
     @ToString
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class SubOption {
+    public static class WalletSubOption implements ISubOption {
         private String type;
         private String subType;
         private String health;
@@ -36,5 +41,11 @@ public class WalletPaymentsOptions extends AbstractPaymentOptions {
         private BigDecimal minAmount;
         private boolean insufficientFlowDisabled;
         private String insufficientFlowDisabledLabel;
+
+        @Override
+        public String getId() {
+            return getSubType();
+        }
+
     }
 }

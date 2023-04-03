@@ -220,8 +220,8 @@ payment:
   merchant:
     ####### payu props #########
     aps:
-      salt: <PUT_SALT_HERE>
-      secret: <PUT_SECRET_HERE>
+      salt: 4O6goRqeKvs=
+      secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
         base: https://paydigi.airtel.in
       encryption:

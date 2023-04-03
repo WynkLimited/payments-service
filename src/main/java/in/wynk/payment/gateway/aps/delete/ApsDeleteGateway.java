@@ -69,6 +69,10 @@ public class ApsDeleteGateway implements IPaymentDeleteService<AbstractPaymentMe
                     Boolean response = common.exchange(DELETE_CARD_ENDPOINT, HttpMethod.POST, common.getLoginId(sessionDTO.get("msisdn")), deleteCardRequest, Boolean.class);
                     return DeleteCardResponse.builder().deleted(response).build();
                 } catch (Exception e) {
+                    if(e instanceof WynkRuntimeException) {
+                        log.error(APS_SAVED_CARD_DELETION,e.getMessage());
+                        return DeleteCardResponse.builder().deleted(false).build();
+                    }
                     log.error(APS_SAVED_CARD_DELETION, "Card deletion failure due to ", e);
                     throw new WynkRuntimeException(PaymentErrorType.PAY042, e);
                 }

@@ -1,9 +1,10 @@
-package in.wynk.payment.dto.aps.response.option;
+package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -13,25 +14,26 @@ import java.util.List;
  * @author Nishesh Pandey
  */
 @Getter
+@ToString
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletPaymentsOptions extends AbstractPaymentOptions {
-private List<SubOption> subOption;
+public class NetBankingPaymentOptions extends AbstractPaymentOptions {
+    private List<NetBankingSubOptions> subOption;
 
     @Getter
+    @ToString
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class SubOption{
+    public static class NetBankingSubOptions {
         private String type;
         private String subType;
+        private String name;
         private String health;
         private boolean recommended;
         private String iconUrl;
         private BigDecimal minAmount;
-        private boolean insufficientFlowDisabled;
-        private String insufficientFlowDisabledLabel;
     }
 }

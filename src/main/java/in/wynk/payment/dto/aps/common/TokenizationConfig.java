@@ -1,9 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -12,6 +9,7 @@ import java.util.List;
  */
 @Getter
 @Builder
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class TokenizationConfig {
@@ -24,6 +22,7 @@ public class TokenizationConfig {
 
     @Getter
     @Builder
+    @ToString
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ConsentPopupTnC{

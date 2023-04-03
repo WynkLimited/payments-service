@@ -12,9 +12,15 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class WalletSupportingDetails extends SupportingDetails {
+public class WalletCardSupportingDetails extends SupportingDetails {
     @JsonProperty("intent_details")
     private IntentDetails intentDetails;
+    private boolean saveSupported;
+
+    @JsonProperty("isSaveSupported")
+    public boolean isSaveSupported () {
+        return this.saveSupported;
+    }
 
     @Getter
     @AllArgsConstructor

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.response.AbstractPaymentMethodDetails;
 import in.wynk.payment.dto.response.SupportingDetails;
+import in.wynk.payment.dto.response.UiDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +20,8 @@ import java.util.List;
 @AnalysedEntity
 public class AddToBill extends AbstractPaymentMethodDetails {
     private SupportingDetails supportingDetails;
+    @JsonProperty("ui_details")
+    private UiDetails uiDetails;
 
     @AllArgsConstructor
     @Builder

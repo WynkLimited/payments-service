@@ -1,12 +1,10 @@
 package in.wynk.payment.gateway.aps.paymentOptions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.aps.request.option.ApsPaymentOptionRequest;
 import in.wynk.payment.dto.aps.response.option.ApsPaymentOptionsResponse;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
-import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
@@ -30,7 +28,7 @@ public class ApsPaymentOptionsGateway {
 
     public ApsPaymentOptionsResponse payOption (String msisdn) {
         final ApsPaymentOptionRequest request = ApsPaymentOptionRequest.builder().build();
-        return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, msisdn, request, ApsPaymentOptionsResponse.class);
+        return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, ApsPaymentOptionsResponse.class);
     }
 }
 

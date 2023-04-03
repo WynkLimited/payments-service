@@ -14,8 +14,5 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 public abstract class AbstractPaymentMethodDetails extends AbstractPaymentGroupsDTO {
     private String code;
-    @JsonProperty("ui_details")
-    private UiDetails uiDetails;
-    @Builder.Default
-    private String health="UP";
+    private String health;
 }

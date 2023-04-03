@@ -34,7 +34,7 @@ public class PaymentOptionsDTO {
     @JsonProperty("payment_method_details")
     private final PaymentMethodDTO paymentMethods;
     @JsonProperty("saved_payment_details")
-    private final List<AbstractSavedPaymentDTO> savedPaymentDTO;
+    private final List<SavedPaymentDTO> savedPaymentDTO;
 
     @Getter
     @Setter

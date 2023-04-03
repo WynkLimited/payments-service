@@ -13,7 +13,10 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.*;
 import in.wynk.payment.dto.aps.request.charge.ApsExternalChargingRequest;
-import in.wynk.payment.dto.aps.response.charge.*;
+import in.wynk.payment.dto.aps.response.charge.ApsCardChargingResponse;
+import in.wynk.payment.dto.aps.response.charge.ApsNetBankingChargingResponse;
+import in.wynk.payment.dto.aps.response.charge.ApsUpiCollectChargingResponse;
+import in.wynk.payment.dto.aps.response.charge.ApsUpiIntentChargingChargingResponse;
 import in.wynk.payment.dto.gateway.card.AbstractCoreCardChargingResponse;
 import in.wynk.payment.dto.gateway.card.AbstractNonSeamlessCardChargingResponse;
 import in.wynk.payment.dto.gateway.card.AbstractSeamlessCardChargingResponse;
@@ -34,9 +37,7 @@ import in.wynk.payment.service.PaymentCachingService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,24 +54,22 @@ import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER;
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(PaymentConstants.AIRTEL_PAY_STACK_CHARGE)
 public class ApsChargeGateway implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
     private final Map<String, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> chargingDelegate = new HashMap<>();
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final ApsCommonGateway common;
-
-    @Value("${aps.payment.init.charge.upi.api}")
     private String UPI_CHARGING_ENDPOINT;
-    @Value("${aps.payment.init.charge.api}")
     private String CHARGING_ENDPOINT;
 
-    public ApsChargeGateway (PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common) {
-        this.paymentMethodCachingService = paymentMethodCachingService;
+    public ApsChargeGateway (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGateway common) {
         this.common = common;
-        chargingDelegate.put(UPI, new UpiCharging());
+        this.UPI_CHARGING_ENDPOINT = upiChargeEndpoint;
+        this.CHARGING_ENDPOINT = commonChargeEndpoint;
         chargingDelegate.put(CARD, new CardCharging());
+        chargingDelegate.put(UPI, new UpiCharging());
         chargingDelegate.put(NET_BANKING, new NetBankingCharging());
+        this.paymentMethodCachingService = paymentMethodCachingService;
     }
 
     @Override

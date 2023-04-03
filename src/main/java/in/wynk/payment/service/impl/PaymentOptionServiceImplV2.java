@@ -121,12 +121,11 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         }
         PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO = new PaymentOptionsDTO.PaymentMethodDTO();
         List<AbstractPaymentGroupsDTO> paymentGroups;
-        ApsPaymentOptionsResponse apsPaymentOptionsResponse = gateway.payOption(request.getUserDetails().getMsisdn());
+       // ApsPaymentOptionsResponse apsPaymentOptionsResponse = gateway.payOption(request.getUserDetails().getMsisdn());
         if (trialEligible) {
-            paymentGroups = getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan, paymentMethodDTO,
-                    apsPaymentOptionsResponse.getPayOptions());
+            paymentGroups = getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan, paymentMethodDTO);
         } else {
-            paymentGroups = getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan, paymentMethodDTO, apsPaymentOptionsResponse.getPayOptions());
+            paymentGroups = getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan, paymentMethodDTO);
         }
         builder.savedPaymentDTO(addSavedPaymentOptions(apsPaymentOptionsResponse.getSavedUserOptions().getPayOptions(), paymentMethodDTO));
         return builder.paymentGroups(paymentGroups).paymentMethods(paymentMethodDTO).msisdn(request.getUserDetails().getMsisdn())
@@ -151,8 +150,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
 
     private List<AbstractPaymentGroupsDTO> getFilteredPaymentGroups (Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier,
                                                                      PaymentOptionsEligibilityRequest request, PlanDTO planDTO,
-                                                                     PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO,
-                                                                     List<AbstractPaymentOptions> payOptions) {
+                                                                     PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
         Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         List<AbstractPaymentGroupsDTO> paymentGroups = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {

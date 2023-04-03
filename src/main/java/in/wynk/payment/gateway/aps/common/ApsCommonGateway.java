@@ -29,7 +29,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.*;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -55,7 +55,7 @@ import static in.wynk.payment.core.constant.WalletConstants.WALLETS;
  */
 
 @Slf4j
-@Component
+@Service
 public class ApsCommonGateway {
     @Value("${aps.payment.encryption.key.path}")
     private String RSA_PUBLIC_KEY;

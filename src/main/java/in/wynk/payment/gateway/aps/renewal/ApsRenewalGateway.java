@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
@@ -43,7 +42,6 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(PaymentConstants.AIRTEL_PAY_STACK_RENEW)
 public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> {
 
     @Value("${aps.payment.renewal.api}")
@@ -56,13 +54,14 @@ public class ApsRenewalGateway implements IMerchantPaymentRenewalServiceV2<Payme
     private final ApplicationEventPublisher eventPublisher;
 
 
-    public ApsRenewalGateway (ApsCommonGateway common, IMerchantTransactionService merchantTransactionService, PaymentCachingService cachingService, ObjectMapper objectMapper,
+    public ApsRenewalGateway (String siPaymentApi, ApsCommonGateway common, IMerchantTransactionService merchantTransactionService, PaymentCachingService cachingService, ObjectMapper objectMapper,
                               ApplicationEventPublisher eventPublisher) {
         this.common = common;
-        this.merchantTransactionService = merchantTransactionService;
-        this.cachingService = cachingService;
         this.objectMapper = objectMapper;
+        this.SI_PAYMENT_API = siPaymentApi;
+        this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
+        this.merchantTransactionService = merchantTransactionService;
     }
 
     @Override

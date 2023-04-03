@@ -1,14 +1,11 @@
 package in.wynk.payment.service.impl;
 
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.util.concurrent.RateLimiter;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
-import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.sattlement.ApsSettlementRequest;
 import in.wynk.payment.dto.request.PaymentGatewaySettlementRequest;
@@ -20,12 +17,9 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.AuthSchemes;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
@@ -38,30 +32,22 @@ import java.util.stream.Collectors;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Slf4j
-@Service(PaymentConstants.AIRTEL_PAY_STACK)
-public class AirtelPayStackGatewayImpl implements IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
+public class ApsPaymentSettlementGateway implements IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
 
-    @Value("${aps.payment.init.settlement.api}")
     private String SETTLEMENT_ENDPOINT;
-    @Value("${aps.payment.saved.details.api}")
-    private String SAVED_DETAILS_ENDPOINT;
-
     private final RestTemplate httpTemplate;
-    private final PaymentMethodCachingService paymentMethodCachingService;
     private final PaymentCachingService cachingService;
-    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
 
 
-    public AirtelPayStackGatewayImpl (@Qualifier("apsHttpTemplate") RestTemplate httpTemplate, PaymentCachingService cache, IErrorCodesCacheService errorCache,
-                                      PaymentMethodCachingService paymentMethodCachingService, PaymentCachingService cachingService) {
+    public ApsPaymentSettlementGateway(String settlementEndpoint, RestTemplate httpTemplate, PaymentCachingService cachingService) {
         this.httpTemplate = httpTemplate;
-        this.paymentMethodCachingService = paymentMethodCachingService;
         this.cachingService = cachingService;
+        this.SETTLEMENT_ENDPOINT = settlementEndpoint;
     }
 
     @SneakyThrows
     @PostConstruct
-    private void init () {
+    private void init() {
         this.httpTemplate.getInterceptors().add((request, body, execution) -> {
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
             final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
@@ -75,7 +61,7 @@ public class AirtelPayStackGatewayImpl implements IMerchantPaymentSettlement<Def
     }
 
     @Override
-    public DefaultPaymentSettlementResponse settle (PaymentGatewaySettlementRequest request) {
+    public DefaultPaymentSettlementResponse settle(PaymentGatewaySettlementRequest request) {
         final String settlementOrderId = UUIDs.random().toString();
         final Transaction transaction = TransactionContext.get();
         final PlanDTO purchasedPlan = cachingService.getPlan(transaction.getPlanId());

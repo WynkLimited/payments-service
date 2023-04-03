@@ -5,7 +5,6 @@ import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -18,26 +17,22 @@ import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IMerchantPaymentRefundService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Service;
 /**
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(PaymentConstants.AIRTEL_PAY_STACK_REFUND)
 public class ApsRefundGateway implements IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
 
-    @Value("${aps.payment.init.refund.api}")
-    private String REFUND_ENDPOINT;
-
+    private final String REFUND_ENDPOINT;
     private final ApsCommonGateway common;
     private final ApplicationEventPublisher eventPublisher;
 
-    public ApsRefundGateway(ApplicationEventPublisher eventPublisher, ApsCommonGateway common){
+    public ApsRefundGateway(String refundEndpoint, ApplicationEventPublisher eventPublisher, ApsCommonGateway common){
         this.common= common;
         this.eventPublisher= eventPublisher;
+        this.REFUND_ENDPOINT = refundEndpoint;
     }
 
 

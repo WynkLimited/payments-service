@@ -2,7 +2,6 @@ package in.wynk.payment.gateway.aps.delete;
 
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.common.DeleteType;
 import in.wynk.payment.dto.aps.request.delete.DeleteCardRequest;
@@ -15,9 +14,7 @@ import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IPaymentDeleteService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,19 +28,18 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_SAVED_VPA_D
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(PaymentConstants.APS_DELETE)
 public class ApsDeleteGateway implements IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
 
-    @Value("${aps.payment.delete.card}")
     private String DELETE_CARD_ENDPOINT;
-    @Value("${aps.payment.delete.vpa}")
     private String DELETE_VPA_ENDPOINT;
 
     private final ApsCommonGateway common;
     private final PaymentMethodDeletion verification = new PaymentMethodDeletion();
 
-    public ApsDeleteGateway(ApsCommonGateway common) {
+    public ApsDeleteGateway(String deleteCardEndpoint, String deleteVpaEndpoint, ApsCommonGateway common) {
         this.common = common;
+        this.DELETE_VPA_ENDPOINT = deleteVpaEndpoint;
+        this.DELETE_CARD_ENDPOINT = deleteCardEndpoint;
     }
 
     @Override

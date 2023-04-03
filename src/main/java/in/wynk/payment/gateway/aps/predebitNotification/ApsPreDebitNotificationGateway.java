@@ -32,9 +32,10 @@ public class ApsPreDebitNotificationGateway implements IPreDebitNotificationServ
     private ITransactionManagerService transactionManager;
     private final ApsCommonGateway common;
 
-    public ApsPreDebitNotificationGateway (ITransactionManagerService transactionManager, ApsCommonGateway common) {
-        this.transactionManager = transactionManager;
+    public ApsPreDebitNotificationGateway (String preDebitEndpoint, ITransactionManagerService transactionManager, ApsCommonGateway common) {
         this.common = common;
+        this.transactionManager = transactionManager;
+        this.PRE_DEBIT_API = preDebitEndpoint;
     }
 
     @Override

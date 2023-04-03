@@ -2,7 +2,6 @@ package in.wynk.payment.gateway.aps.status;
 
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
@@ -15,7 +14,6 @@ import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
 import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IPaymentStatusService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,9 +27,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STAT
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(PaymentConstants.APS_PAYMENT_STATUS)
 public class ApsStatusGateway implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
-
 
     private final ApsCommonGateway common;
 

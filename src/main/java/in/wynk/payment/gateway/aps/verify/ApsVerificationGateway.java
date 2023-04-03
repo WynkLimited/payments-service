@@ -2,7 +2,6 @@ package in.wynk.payment.gateway.aps.verify;
 
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.request.verify.ApsBinVerificationRequest;
 import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
@@ -16,10 +15,7 @@ import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.service.IVerificationService;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
@@ -34,21 +30,20 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFIC
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(PaymentConstants.AIRTEL_PAY_STACK_VERIFY)
 public class ApsVerificationGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
-    @Value("${aps.payment.verify.vpa.api}")
     private String VPA_VERIFY_ENDPOINT;
-    @Value("${aps.payment.verify.bin.api}")
     private String BIN_VERIFY_ENDPOINT;
 
     private final ApsCommonGateway common;
     private final RestTemplate httpTemplate;
     private final PaymentMethodEligibilityVerification verification = new PaymentMethodEligibilityVerification();
 
-    public ApsVerificationGateway (@Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ApsCommonGateway common) {
+    public ApsVerificationGateway (String vpaVerifyEndpoint, String binVerifyEndpoint, RestTemplate httpTemplate, ApsCommonGateway common) {
         this.httpTemplate = httpTemplate;
         this.common = common;
+        this.VPA_VERIFY_ENDPOINT = vpaVerifyEndpoint;
+        this.BIN_VERIFY_ENDPOINT = binVerifyEndpoint;
     }
 
     @Override

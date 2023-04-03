@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
@@ -20,8 +19,6 @@ import in.wynk.payment.gateway.aps.common.ApsCommonGateway;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -35,7 +32,6 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(PaymentConstants.APS_CALLBACK)
 public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
     private final String REFUND_CALLBACK_TYPE = "REFUND_STATUS";
@@ -46,7 +42,7 @@ public class ApsCallbackGateway implements IPaymentCallback<AbstractPaymentCallb
     private final ObjectMapper objectMapper;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGateway(@Value("${payment.merchant.aps.salt}") String salt,@Value("${payment.merchant.aps.secret}") String secret, ApsCommonGateway common, ObjectMapper objectMapper) {
+    public ApsCallbackGateway(String salt, String secret, ApsCommonGateway common, ObjectMapper objectMapper) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;

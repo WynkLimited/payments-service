@@ -13,17 +13,12 @@ public interface PaymentConstants extends BaseConstants {
     String TXN_ID = "tid";
     String ERROR = "error";
     String VERSION_2 = "V2";
-    String SUBSID = "subsId";
-    String STATUS = "status";
     String FAILED = "failed";
     String QUEUED = "queued";
     String PROD_ENV = "PROD";
-    int MERCHANT_CODE = 5815;
     String ITUNES = "ITUNES";
     String MERCHANT_ID = "id";
     String FAILURE = "failure";
-    String AUTO_REFUND = "autoRefund";
-    String RENEWAL = "renewal";
     String REQUEST = "request";
     String PENDING = "pending";
     String SUCCESS = "success";
@@ -42,8 +37,6 @@ public interface PaymentConstants extends BaseConstants {
     String APB_GATEWAY = "APB_GATEWAY";
     String DEFAULT_PN = "Wynk Limited";
     String ADD_TO_BILL = "ADD_TO_BILL";
-    String DEFAULT_COUNTRY_CODE = "IN";
-    String BILLING = "BILLING";
     String APP_PACKAGE = "package_name";
     String APP_NAME = "APP_NAME";
     String BASE_USER_EMAIL = "@wynk.in";
@@ -52,9 +45,8 @@ public interface PaymentConstants extends BaseConstants {
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
     String MERCHANT_CLIENT_ID = "clientId";
-    String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
-    String TDR ="tdr";
+    String TDR = "tdr";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PAYMENT_API_CLIENT = "paymentApi";

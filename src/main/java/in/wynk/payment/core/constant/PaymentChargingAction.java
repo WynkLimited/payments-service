@@ -5,11 +5,11 @@ public enum PaymentChargingAction {
 
     private final String action;
 
-    PaymentChargingAction(String action) {
+    PaymentChargingAction (String action) {
         this.action = action;
     }
 
-    public String getAction() {
+    public String getAction () {
         return this.action;
     }
 }

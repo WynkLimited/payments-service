@@ -17,6 +17,7 @@ import java.util.Map;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentMethod extends MongoBaseEntity<String> {
 
+    private String alias;
     private int hierarchy;
 
     private boolean trialSupported;

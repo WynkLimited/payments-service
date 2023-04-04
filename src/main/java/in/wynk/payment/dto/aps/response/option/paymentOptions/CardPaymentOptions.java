@@ -2,6 +2,7 @@ package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.CardConstants;
+import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -25,10 +26,10 @@ public class CardPaymentOptions extends AbstractPaymentOptions {
         return Collections.singletonList(new CardSubOption());
     }
 
-    private static class CardSubOption implements ISubOption {
+    public static class CardSubOption implements ISubOption {
         @Override
         public String getId() {
-            return CardConstants.CARD.concat("002");
+            return PaymentConstants.APS.concat("_").concat(CardConstants.CARD.concat("002"));
         }
 
     }

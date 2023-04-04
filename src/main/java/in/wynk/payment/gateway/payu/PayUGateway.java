@@ -61,7 +61,7 @@ public class PayUGateway implements IVerificationService<AbstractVerificationRes
 
 
     @Override
-    public AbstractPaymentCallbackResponse handleCallback (PayUCallbackRequestPayload callbackRequest) {
+    public AbstractPaymentCallbackResponse handleCallback(PayUCallbackRequestPayload callbackRequest) {
         return callbackGateway.handleCallback(callbackRequest);
     }
 

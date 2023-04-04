@@ -2,7 +2,6 @@ package in.wynk.payment.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -12,7 +11,14 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public abstract class AbstractPaymentMethodDetails extends AbstractPaymentGroupsDTO {
+public abstract class AbstractPaymentMethodDTO {
+    private String id;
     private String code;
+    private String title;
     private String health;
+    private String description;
+    @JsonProperty("ui_details")
+    private UiDetails uiDetails;
+    @JsonProperty("supporting_details")
+    private SupportingDetails supportingDetails;
 }

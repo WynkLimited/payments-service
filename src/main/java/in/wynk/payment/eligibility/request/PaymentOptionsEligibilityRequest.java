@@ -2,15 +2,18 @@ package in.wynk.payment.eligibility.request;
 
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.eligibility.dto.IEligibilityRequest;
+import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
+import in.wynk.payment.service.IPaymentInstrumentsGatewayProxy;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 @Getter
@@ -28,9 +31,16 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     private final String si;
 
     private final PaymentOptionsEligibilityRequestProxy paymentOptionsEligibilityRequestProxy;
+    private final Map<String, AbstractPaymentInstrumentsProxy> payInstrumentProxyMap = new HashMap<>();
 
     @Setter
     private String group;
+
+    public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode,String userId) {
+        if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode)) return payInstrumentProxyMap.get(payCode);
+        final AbstractPaymentInstrumentsProxy proxy = BeanLocatorFactory.getBean(payCode, IPaymentInstrumentsGatewayProxy.class).load(userId);
+        return payInstrumentProxyMap.put(payCode, proxy);
+    }
 
     public static PaymentOptionsEligibilityRequest from(PaymentOptionsComputationDTO computationDTO) {
         final PlanDTO planDTO = computationDTO.getPlanDTO();

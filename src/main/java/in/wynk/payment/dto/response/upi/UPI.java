@@ -2,7 +2,7 @@ package in.wynk.payment.dto.response.upi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.response.AbstractPaymentMethodDetails;
+import in.wynk.payment.dto.response.AbstractPaymentMethodDTO;
 import in.wynk.payment.dto.response.SupportingDetails;
 import in.wynk.payment.dto.response.UiDetails;
 import lombok.Getter;
@@ -17,12 +17,10 @@ import java.util.Map;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class UPI extends AbstractPaymentMethodDetails {
+public class UPI extends AbstractPaymentMethodDTO {
     @JsonProperty("supporting_details")
     private UpiSupportingDetails supportingDetails;
     private String appName;
-    @JsonProperty("ui_details")
-    private UiDetails uiDetails;
 
     @Getter
     @SuperBuilder

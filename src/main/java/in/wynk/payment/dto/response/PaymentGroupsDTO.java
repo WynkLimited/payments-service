@@ -1,16 +1,16 @@
 package in.wynk.payment.dto.response;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@SuperBuilder
+@Builder
 @AnalysedEntity
-public class AbstractPaymentGroupsDTO {
+public class PaymentGroupsDTO {
     private String id; //group
     private String title; //display Name
     private String description;

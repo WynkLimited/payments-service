@@ -10,5 +10,5 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @NoArgsConstructor
-public class DefaultSavedPayOptions extends AbstractSavedPayOptions {
+public class NetBankingSavedPayOptions extends AbstractSavedPayOptions {
 }

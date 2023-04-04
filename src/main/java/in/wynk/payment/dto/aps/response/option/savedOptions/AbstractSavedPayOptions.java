@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = PaymentConstants.FIELD_TYPE, defaultImpl = DefaultSavedPayOptions.class, visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = PaymentConstants.FIELD_TYPE, defaultImpl = NetBankingSavedPayOptions.class, visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = WalletSavedOptions.class, name = WalletConstants.WALLETS),
         @JsonSubTypes.Type(value = UpiSavedOptions.class, name = UpiConstants.UPI),

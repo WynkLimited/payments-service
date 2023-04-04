@@ -5,14 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
-import in.wynk.payment.dto.response.AbstractPaymentGroupsDTO;
-import in.wynk.payment.dto.response.billing.AddToBill;
-import in.wynk.payment.dto.response.billing.GooglePlayBilling;
-import in.wynk.payment.dto.response.card.Card;
-import in.wynk.payment.dto.response.netbanking.NetBanking;
-import in.wynk.payment.dto.response.upi.UPI;
-import in.wynk.payment.dto.response.wallet.Wallet;
-import lombok.*;
+import in.wynk.payment.dto.response.AbstractPaymentMethodDTO;
+import in.wynk.payment.dto.response.PaymentGroupsDTO;
+import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
 import java.util.List;
@@ -28,37 +23,36 @@ import java.util.concurrent.TimeUnit;
 public class PaymentOptionsDTO {
     private final String msisdn;
     private final IProductDetails productDetails;
-    private final PlanDetails planDetails;
     @JsonProperty("pay_group_details")
-    private final List<AbstractPaymentGroupsDTO> paymentGroups;
+    private final List<PaymentGroupsDTO> paymentGroups;
     @JsonProperty("payment_method_details")
-    private final PaymentMethodDTO paymentMethods;
+    private final Map<String, List<AbstractPaymentMethodDTO>> paymentMethods;
     @JsonProperty("saved_payment_details")
     private final List<SavedPaymentDTO> savedPaymentDTO;
 
-    @Getter
-    @Setter
-    @AnalysedEntity
-    public static class PaymentMethodDTO {
-        @JsonProperty("UPI")
-        private List<UPI> upi;
-
-        @JsonProperty("CARD")
-        private List<Card> card;
-
-        @JsonProperty("WALLET")
-        private List<Wallet> wallet;
-
-        @JsonProperty("NET_BANKING")
-        private List<NetBanking> netBanking;
-
-        @JsonProperty("ADD_TO_BILL")
-        private List<AddToBill> addToBills;
-
-        @JsonProperty("BILLING")
-        private List<GooglePlayBilling> billing;
-
-    }
+//    @Getter
+//    @Setter
+//    @AnalysedEntity
+//    public static class PaymentMethodDTO {
+//        @JsonProperty("UPI")
+//        private List<UPI> upi;
+//
+//        @JsonProperty("CARD")
+//        private List<Card> card;
+//
+//        @JsonProperty("WALLET")
+//        private List<Wallet> wallet;
+//
+//        @JsonProperty("NET_BANKING")
+//        private List<NetBanking> netBanking;
+//
+//        @JsonProperty("ADD_TO_BILL")
+//        private List<AddToBill> addToBills;
+//
+//        @JsonProperty("BILLING")
+//        private List<GooglePlayBilling> billing;
+//
+//    }
 
     @SuperBuilder
     @Getter

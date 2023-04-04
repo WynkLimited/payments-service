@@ -5,6 +5,7 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -30,8 +31,8 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
 public class ApsGateway implements
-        IPaymentOptionEligibility,
         IPreDebitNotificationService,
+        IPaymentInstrumentsGatewayProxy,
         IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>,
         IVerificationService<AbstractVerificationResponse, VerificationRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>,
@@ -41,7 +42,7 @@ public class ApsGateway implements
         IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>,
         IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
 
-    private final IPaymentOptionEligibility payOptionsGateway;
+    private final IPaymentInstrumentsGatewayProxy payOptionsGateway;
     private final ApsPreDebitNotificationGatewayServiceImpl preDebitGateway;
     private final IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> renewalGateway;
     private final IVerificationService<AbstractVerificationResponse, VerificationRequest> verificationGateway;
@@ -75,7 +76,7 @@ public class ApsGateway implements
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
         this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper);
-        this.payOptionsGateway = new ApsPaymentOptionsGatewayServiceImpl(payOptionEndpoint, commonGateway);
+        this.payOptionsGateway = new ApsPaymentOptionsGatewayGatewayServiceImpl(payOptionEndpoint, commonGateway);
         this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, payCache);
@@ -86,10 +87,10 @@ public class ApsGateway implements
     }
 
 
-    @Override
-    public boolean isEligible(String msisdn, String payGroup, String payId) {
-        return payOptionsGateway.isEligible(msisdn, payGroup, payId);
-    }
+//    @Override
+//    public boolean isEligible(String msisdn, String payGroup, String payId) {
+//        return payOptionsGateway.isEligible(msisdn, payGroup, payId);
+//    }
 
     @Override
     public AbstractPaymentCallbackResponse handleCallback(ApsCallBackRequestPayload callbackRequest) {
@@ -134,5 +135,10 @@ public class ApsGateway implements
     @Override
     public DefaultPaymentSettlementResponse settle(PaymentGatewaySettlementRequest request) {
         return settlementGateway.settle(request);
+    }
+
+    @Override
+    public AbstractPaymentInstrumentsProxy load(String userId) {
+        return payOptionsGateway.load(userId);
     }
 }

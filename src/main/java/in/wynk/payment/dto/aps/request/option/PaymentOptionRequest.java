@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.request.option;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.common.constant.BaseConstants;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -12,7 +13,7 @@ import lombok.ToString;
 @Builder
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ApsPaymentOptionRequest {
+public class PaymentOptionRequest {
     @Builder.Default
-    private String lob ="WYNK";
+    private String lob = BaseConstants.WYNK;
 }

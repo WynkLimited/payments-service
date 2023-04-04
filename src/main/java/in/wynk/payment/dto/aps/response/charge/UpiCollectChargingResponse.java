@@ -7,7 +7,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @NoArgsConstructor
-public class ApsUpiCollectChargingResponse extends AbstractApsUpiChargingResponse {
+public class UpiCollectChargingResponse extends AbstractUpiChargingResponse {
    private boolean inAppUPIFlow;
 
 }

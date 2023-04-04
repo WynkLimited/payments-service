@@ -13,9 +13,9 @@ import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
-import in.wynk.payment.dto.aps.request.renewal.ApsSiPaymentRecurringRequest;
-import in.wynk.payment.dto.aps.response.renewal.ApsRenewalStatusResponse;
-import in.wynk.payment.dto.aps.response.renewal.ApsSiPaymentRecurringResponse;
+import in.wynk.payment.dto.aps.request.renewal.SiPaymentRecurringRequest;
+import in.wynk.payment.dto.aps.response.renewal.RenewalStatusResponse;
+import in.wynk.payment.dto.aps.response.renewal.SiPaymentRecurringResponse;
 import in.wynk.payment.service.IPaymentRenewalService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -77,7 +77,7 @@ public class ApsRenewalGatewayService implements IPaymentRenewalService<PaymentR
             throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
         }
         try {
-            ApsSiPaymentRecurringResponse apsRenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), ApsSiPaymentRecurringResponse.class);
+            SiPaymentRecurringResponse apsRenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), SiPaymentRecurringResponse.class);
             String mode = apsRenewalResponse.getBody().getData().getPaymentMode();
             AnalyticService.update(PaymentConstants.PAYMENT_MODE, mode);
             if (isMandateExisting()) {
@@ -103,19 +103,19 @@ public class ApsRenewalGatewayService implements IPaymentRenewalService<PaymentR
         return true;
     }
 
-    private ApsSiPaymentRecurringResponse doChargingForRenewal (MerchantTransaction merchantTransaction, String mode) {
+    private SiPaymentRecurringResponse doChargingForRenewal (MerchantTransaction merchantTransaction, String mode) {
         Transaction transaction = TransactionContext.get();
 
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         String invoiceNumber = RecurringTransactionUtils.generateInvoiceNumber();
-        ApsSiPaymentRecurringRequest apsSiPaymentRecurringRequest =
-                ApsSiPaymentRecurringRequest.builder().transactionId(transaction.getIdStr()).userInfo(UserInfo.builder().loginId("7417656401").build()).siPaymentInfo(
+        SiPaymentRecurringRequest apsSiPaymentRecurringRequest =
+                SiPaymentRecurringRequest.builder().transactionId(transaction.getIdStr()).userInfo(UserInfo.builder().loginId("7417656401").build()).siPaymentInfo(
                                 SiPaymentInfo.builder().mandateTransactionId(merchantTransaction.getExternalTransactionId()).paymentMode(mode).paymentAmount(amount).invoiceNumber(invoiceNumber).build())
                         .build();
 
         try {
             //fix login id as msisdn
-            return common.exchange(SI_PAYMENT_API, HttpMethod.POST,"" ,apsSiPaymentRecurringRequest, ApsSiPaymentRecurringResponse.class);
+            return common.exchange(SI_PAYMENT_API, HttpMethod.POST,"" ,apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
 
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -123,10 +123,10 @@ public class ApsRenewalGatewayService implements IPaymentRenewalService<PaymentR
         }
     }
 
-    private void updateTransactionStatus (PlanPeriodDTO planPeriodDTO, ApsSiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
+    private void updateTransactionStatus (PlanPeriodDTO planPeriodDTO, SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
         int retryInterval = planPeriodDTO.getRetryInterval();
         if (apsRenewalResponse.getStatusCodeValue() == HttpStatus.OK.value()) {
-            ApsRenewalStatusResponse renewalResponse = apsRenewalResponse.getBody().getData();
+            RenewalStatusResponse renewalResponse = apsRenewalResponse.getBody().getData();
             if (PG_STATUS_SUCCESS.equalsIgnoreCase(renewalResponse.getPgStatus())) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
             } else if (PG_STATUS_FAILED.equalsIgnoreCase(renewalResponse.getPgStatus())) {

@@ -13,7 +13,7 @@ import lombok.ToString;
 @ToString
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ApsExternalChargingRequest<T extends AbstractPaymentInfo> {
+public class ExternalChargingRequest<T extends AbstractPaymentInfo> {
 
     /**
      * Partner Correlation ID. i.e self
@@ -33,10 +33,7 @@ public class ApsExternalChargingRequest<T extends AbstractPaymentInfo> {
      * Redirection info
      */
     private ChannelInfo channelInfo;
-    /**
-     * Signature is Order checksum for validation
-     */
-    private String signature;
+
     /**
      * Send this flag as false in case of bill payment otherwise false for other/dummy transactions.
      */

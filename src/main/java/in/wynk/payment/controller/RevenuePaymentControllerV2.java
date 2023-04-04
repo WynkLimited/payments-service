@@ -3,26 +3,21 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
-import in.wynk.common.dto.IErrorDetails;
 import in.wynk.common.dto.IWynkPresentation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
-import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.presentation.IPaymentPresentation;
 import in.wynk.payment.presentation.IPaymentPresentationV2;
-import in.wynk.payment.presentation.PaymentCallbackPresentation;
 import in.wynk.payment.presentation.dto.callback.PaymentCallbackResponse;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
 import in.wynk.payment.presentation.dto.status.PaymentStatusResponse;
@@ -70,7 +65,6 @@ public class RevenuePaymentControllerV2 {
         return verificationResponseWynkResponseEntity;
     }
 
-    //This version is for payment refactoring task
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -95,7 +89,6 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
-    //This version is for payment refactoring task
     @ManageSession(sessionId = "#sid")
     @GetMapping(path = "/callback/{sid}/{pc}")
     @AnalyseTransaction(name = "paymentCallback")
@@ -121,7 +114,6 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
-    //This version is for payment refactoring task.Used to receive call back after payment request as part of redirction url
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -146,7 +138,6 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
-    //This version is for payment refactoring task
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCharging")
@@ -161,7 +152,6 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
-    //This version is for payment refactoring task
     @GetMapping("/status/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentStatus")
@@ -178,7 +168,7 @@ public class RevenuePaymentControllerV2 {
     @PostMapping("/delete/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "deletePaymentMethod")
-    public WynkResponseEntity<AbstractPaymentMethodDeleteResponse> delete(@PathVariable String sid, @Valid @RequestBody PaymentMethodDeleteRequest request) {
+    public WynkResponseEntity<AbstractPaymentMethodDeleteResponse> delete (@PathVariable String sid, @Valid @RequestBody PaymentMethodDeleteRequest request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         return WynkResponseEntity.<AbstractPaymentMethodDeleteResponse>builder().data(manager.delete(request)).status(HttpStatus.OK).build();

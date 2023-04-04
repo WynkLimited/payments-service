@@ -13,7 +13,7 @@ import lombok.ToString;
 @Builder
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ApsBinVerificationRequest {
+public class BinVerificationRequest {
     private String cardBin;
     @Builder.Default
     private String lob = BaseConstants.WYNK;

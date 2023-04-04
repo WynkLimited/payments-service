@@ -9,7 +9,7 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 @NoArgsConstructor
-public abstract class AbstractApsExternalChargingResponse {
+public abstract class AbstractExternalChargingResponse {
     private String pgId;
     private String orderId;
     private String paymentGateway;

@@ -8,7 +8,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @NoArgsConstructor
-public class ApsVpaVerificationData {
+public class VpaVerificationResponse {
     private String status;
     private ResponseStatus responseStatus;
     private String vpa;

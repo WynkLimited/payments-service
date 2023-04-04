@@ -16,7 +16,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApsPaymentOptionsResponse {
+public class PaymentOptionsResponse {
     private PaymentOptionsConfig config;
     private SavedUserOptions savedUserOptions;
     private List<AbstractPaymentOptions> payOptions;

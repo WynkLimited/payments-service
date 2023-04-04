@@ -2,7 +2,6 @@ package in.wynk.payment.dto.gateway.verify;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import in.wynk.payment.dto.aps.response.verify.ApsVpaVerificationData;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
@@ -22,7 +21,7 @@ public class VpaVerificationResponse extends AbstractVerificationResponse {
     private boolean autoPayBankValid;
 
     public static VpaVerificationResponse from(PayUVpaVerificationResponse vpaVerificationResponse){
-        return VpaVerificationResponse.builder()
+        return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.builder()
                 .vpa(vpaVerificationResponse.getVpa())
                 .valid(vpaVerificationResponse.getIsVPAValid() == 1)
                 .verificationType(VerificationType.VPA)
@@ -33,8 +32,8 @@ public class VpaVerificationResponse extends AbstractVerificationResponse {
                 .build();
     }
 
-    public static VpaVerificationResponse fromAps(ApsVpaVerificationData vpaVerificationResponse){
-        return VpaVerificationResponse.builder()
+    public static VpaVerificationResponse fromAps(in.wynk.payment.dto.aps.response.verify.VpaVerificationResponse vpaVerificationResponse){
+        return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.builder()
                 .vpa(vpaVerificationResponse.getVpa())
                 .valid(vpaVerificationResponse.isVpaValid())
                 .verificationType(VerificationType.VPA)

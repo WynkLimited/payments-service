@@ -19,7 +19,7 @@ public class PhonePePaymentRefundResponse extends AbstractPaymentRefundResponse 
     private final String providerReferenceId;
 
     @Override
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(PHONEPE_WALLET);
     }
 

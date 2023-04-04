@@ -10,8 +10,5 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @SuperBuilder
-public class ApsCardChargingResponse extends ApsFormSubmitChargingResponse {
-    private boolean directOtpApplicable;
-    private String successUrl;
-    private String errorUrl;
+public class NetBankingChargingResponse extends ApsFormSubmitChargingResponse {
 }

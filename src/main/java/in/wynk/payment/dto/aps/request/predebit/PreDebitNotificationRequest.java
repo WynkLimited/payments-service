@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @ToString
-public class ApsPreDebitNotificationRequest extends SiPaymentInfo {
+public class PreDebitNotificationRequest extends SiPaymentInfo {
     private String preDebitRequestId;
     private String debitDate;
     private double amount;

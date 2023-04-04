@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class ApsExternalPaymentRefundRequest {
+public class ExternalPaymentRefundRequest {
     private String pgId;
     private String postingId;
     private String refundAmount;

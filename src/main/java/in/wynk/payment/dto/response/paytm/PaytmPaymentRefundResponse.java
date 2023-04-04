@@ -19,7 +19,7 @@ public class PaytmPaymentRefundResponse extends AbstractPaymentRefundResponse {
     private final String paytmTxnId;
 
     @Override
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(PAYTM_WALLET);
     }
 

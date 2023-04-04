@@ -8,7 +8,7 @@ import java.util.List;
 @Getter
 @ToString
 @NoArgsConstructor
-public class ApsBinVerificationResponseData {
+public class BinVerificationResponse {
     private String cardBin;
     private String cardNetwork;
     private String cardCategory;

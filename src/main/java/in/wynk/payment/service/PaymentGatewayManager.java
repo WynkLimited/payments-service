@@ -69,7 +69,7 @@ public class PaymentGatewayManager
         implements IPaymentRenewalService<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
         IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IVerificationService<AbstractVerificationResponse, VerificationRequest>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>,
-        IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>{
+        IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -119,7 +119,7 @@ public class PaymentGatewayManager
 
     @Override
     public AbstractVerificationResponse verify (VerificationRequest request) {
-        String paymentCode= request.getPaymentCode().getCode();
+        String paymentCode = request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IVerificationService<AbstractVerificationResponse, VerificationRequest> verifyService =
                 BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequest>>() {
@@ -129,7 +129,7 @@ public class PaymentGatewayManager
 
     @Override
     public AbstractPaymentMethodDeleteResponse delete (PaymentMethodDeleteRequest request) {
-        String paymentCode= request.getPaymentCode().getCode();
+        String paymentCode = request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> deleteService =
                 BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>>() {
@@ -180,7 +180,7 @@ public class PaymentGatewayManager
     @Override
     public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
         IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> delegatorStatusService;
-        if(AbstractTransactionReconciliationStatusRequest.class.isAssignableFrom(request.getClass())){
+        if (AbstractTransactionReconciliationStatusRequest.class.isAssignableFrom(request.getClass())) {
             delegatorStatusService = statusDelegator.get(AbstractTransactionReconciliationStatusRequest.class);
         } else {
             delegatorStatusService = statusDelegator.get(request.getClass());
@@ -193,7 +193,7 @@ public class PaymentGatewayManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback(CallbackRequestWrapperV2<?> request) {
+    public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handleCallback (CallbackRequestWrapperV2<?> request) {
         final PaymentGateway pg = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
@@ -203,7 +203,8 @@ public class PaymentGatewayManager
         try {
             final AbstractPaymentCallbackResponse response = callbackService.handleCallback(request.getBody());
             if (pg.isPreDebit() && Objects.nonNull(response)) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY302.getErrorCode()).description(PaymentErrorType.PAY302.getErrorMessage()).build());
+                eventPublisher.publishEvent(
+                        PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY302.getErrorCode()).description(PaymentErrorType.PAY302.getErrorMessage()).build());
             }
             return CallbackResponseWrapper.builder().callbackResponse(response).transaction(transaction).build();
         } catch (WynkRuntimeException e) {
@@ -217,7 +218,7 @@ public class PaymentGatewayManager
     }
 
     @ClientAware(clientAlias = "#request.clientAlias")
-    public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
+    public WynkResponseEntity<Void> handleNotification (NotificationRequest request) {
         final IReceiptDetailService<?, IAPNotification> receiptDetailService =
                 BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
                 });
@@ -239,7 +240,7 @@ public class PaymentGatewayManager
         return WynkResponseEntity.<Void>builder().success(false).build();
     }
 
-    private <T> void handleNotification(Transaction transaction, UserPlanMapping<T> mapping) {
+    private <T> void handleNotification (Transaction transaction, UserPlanMapping<T> mapping) {
         final TransactionStatus existingStatus = transaction.getStatus();
         final IPaymentNotificationService<T> notificationService =
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IPaymentNotificationService<T>>() {
@@ -256,7 +257,7 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public void renew(PaymentRenewalChargingMessage request) {
+    public void renew (PaymentRenewalChargingMessage request) {
         PaymentGateway paymentGateway = PaymentCodeCachingService.getFromPaymentCode(request.getPaymentCode());
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
@@ -270,22 +271,22 @@ public class PaymentGatewayManager
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
-        } catch(RestClientException e) {
+        } catch (RestClientException e) {
             PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
                     errorEventBuilder.code(PAY036.getErrorCode());
-                    errorEventBuilder.description(PAY036.getErrorMessage() + "for "+ paymentGateway);
+                    errorEventBuilder.description(PAY036.getErrorMessage() + "for " + paymentGateway);
                     eventPublisher.publishEvent(errorEventBuilder.build());
                     throw new WynkRuntimeException(PAY036);
                 } else {
                     handleException(errorEventBuilder, paymentGateway, e);
                 }
             } else {
-                handleException(errorEventBuilder,paymentGateway, e);
+                handleException(errorEventBuilder, paymentGateway, e);
             }
-        } finally{
+        } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
@@ -299,20 +300,20 @@ public class PaymentGatewayManager
         }
     }
 
-    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
+    private void handleException (PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
         errorEventBuilder.code(PAY024.getErrorCode());
-        errorEventBuilder.description(PAY024.getErrorMessage()+"for "+paymentGateway);
+        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway);
         eventPublisher.publishEvent(errorEventBuilder.build());
         throw new WynkRuntimeException(PAY024, e);
     }
 
     @Override
-    public boolean supportsRenewalReconciliation() {
+    public boolean supportsRenewalReconciliation () {
         return IPaymentRenewalService.super.supportsRenewalReconciliation();
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage message) {
+    public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
         log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
         AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
@@ -363,7 +364,7 @@ public class PaymentGatewayManager
 
     @Override
     @TransactionAware(txnId = "#request.originalTransactionId")
-    public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
+    public WynkResponseEntity<AbstractPaymentRefundResponse> refund (PaymentRefundInitRequest request) {
         final Transaction originalTransaction = TransactionContext.get();
         try {
             final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());

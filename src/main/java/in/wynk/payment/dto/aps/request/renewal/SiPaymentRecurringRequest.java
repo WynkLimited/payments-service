@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
  */
 @Getter
 @SuperBuilder
-public class ApsSiPaymentRecurringRequest<T extends SiPaymentInfo> {
+public class SiPaymentRecurringRequest<T extends SiPaymentInfo> {
     private T siPaymentInfo;
     private UserInfo userInfo;
     @JsonProperty("orderId")

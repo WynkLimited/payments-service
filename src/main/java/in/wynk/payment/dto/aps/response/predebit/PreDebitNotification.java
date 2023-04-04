@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @ToString
 @NoArgsConstructor
-public class ApsPreDebitNotification extends AbstractPreDebitNotificationResponse {
+public class PreDebitNotification extends AbstractPreDebitNotificationResponse {
     private String errorMessage;
     private NotificationStatus notificationStatus;
 }

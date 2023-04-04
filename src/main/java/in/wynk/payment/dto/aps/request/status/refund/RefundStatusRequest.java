@@ -7,7 +7,7 @@ import lombok.ToString;
 @Getter
 @Builder
 @ToString
-public class ApsRefundStatusRequest {
+public class RefundStatusRequest {
     /**
     * Refund Id for which refund status details needs to be fetched.
     */

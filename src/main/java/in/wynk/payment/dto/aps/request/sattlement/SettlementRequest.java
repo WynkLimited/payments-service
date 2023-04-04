@@ -9,7 +9,7 @@ import java.util.List;
 @Getter
 @Builder
 @ToString
-public class ApsSettlementRequest {
+public class SettlementRequest {
 
     private String orderId;
     private String channel;

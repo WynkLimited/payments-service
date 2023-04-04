@@ -6,6 +6,6 @@ import lombok.*;
 @Getter
 @ToString
 @NoArgsConstructor
-public class ApsUpiIntentChargingChargingResponse extends AbstractApsUpiChargingResponse {
+public class UpiIntentChargingChargingResponse extends AbstractUpiChargingResponse {
     private String upiLink;
 }

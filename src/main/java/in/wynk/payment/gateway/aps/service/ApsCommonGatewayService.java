@@ -11,15 +11,13 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.aps.common.ApsFailureResponse;
 import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.CardDetails;
-import in.wynk.payment.dto.aps.request.status.refund.ApsRefundStatusRequest;
-import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
+import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
+import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
@@ -121,9 +119,9 @@ public class ApsCommonGatewayService {
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            final ApsRefundStatusRequest refundStatusRequest = ApsRefundStatusRequest.builder().refundId(refundId).build();
-            ApsExternalPaymentRefundStatusResponse body =
-                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ApsExternalPaymentRefundStatusResponse.class);
+            final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(refundId).build();
+            ExternalPaymentRefundStatusResponse body =
+                    exchange(REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ExternalPaymentRefundStatusResponse.class);
             mBuilder.request(refundStatusRequest);
             mBuilder.response(body);
             mBuilder.externalTransactionId(body.getRefundId());
@@ -154,7 +152,7 @@ public class ApsCommonGatewayService {
             final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
 
             final HttpHeaders headers = new HttpHeaders();
-            final RequestEntity<ApsRefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
+            final RequestEntity<RefundStatusRequest> requestEntity = new RequestEntity<>(null, headers, HttpMethod.GET, URI.create(uri.toString()));
 
             ApsChargeStatusResponse[] status = exchange(uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
 

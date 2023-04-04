@@ -3,12 +3,10 @@ package in.wynk.payment.gateway.aps.service;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.dto.aps.request.verify.ApsBinVerificationRequest;
-import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
-import in.wynk.payment.dto.aps.response.verify.ApsVpaVerificationData;
+import in.wynk.payment.dto.aps.request.verify.BinVerificationRequest;
+import in.wynk.payment.dto.aps.response.verify.BinVerificationResponse;
+import in.wynk.payment.dto.aps.response.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
-import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
-import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.service.IVerificationService;
@@ -65,12 +63,13 @@ public class ApsVerificationGatewayService implements IVerificationService<Abstr
 
         private class BinVerification implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
             @Override
-            public BinVerificationResponse verify (VerificationRequest request) {
-                final ApsBinVerificationRequest binRequest = ApsBinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
+            public in.wynk.payment.dto.gateway.verify.BinVerificationResponse verify (VerificationRequest request) {
+                final BinVerificationRequest binRequest = BinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
-                    ApsBinVerificationResponseData apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, common.getLoginId(sessionDTO.get("msisdn")), binRequest, ApsBinVerificationResponseData.class);
-                    return BinVerificationResponse.fromAps(apsBinVerificationResponseData);
+                    BinVerificationResponse
+                            apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, common.getLoginId(sessionDTO.get("msisdn")), binRequest, BinVerificationResponse.class);
+                    return in.wynk.payment.dto.gateway.verify.BinVerificationResponse.fromAps(apsBinVerificationResponseData);
 
                 } catch (Exception e) {
                     log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to ", e);
@@ -87,8 +86,8 @@ public class ApsVerificationGatewayService implements IVerificationService<Abstr
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, lob);
                 final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
-                    ApsVpaVerificationData apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, common.getLoginId(sessionDTO.get("msisdn")), request, ApsVpaVerificationData.class);
-                    return VpaVerificationResponse.fromAps(apsVpaVerificationData);
+                    VpaVerificationResponse apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, common.getLoginId(sessionDTO.get("msisdn")), request, VpaVerificationResponse.class);
+                    return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);

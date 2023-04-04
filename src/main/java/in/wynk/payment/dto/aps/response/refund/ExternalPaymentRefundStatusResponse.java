@@ -8,6 +8,6 @@ import lombok.ToString;
 @Getter
 @ToString
 @NoArgsConstructor
-public class ApsExternalPaymentRefundStatusResponse extends RefundInfo {
+public class ExternalPaymentRefundStatusResponse extends RefundInfo {
 
 }

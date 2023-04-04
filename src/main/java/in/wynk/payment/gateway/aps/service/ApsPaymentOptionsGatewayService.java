@@ -1,8 +1,8 @@
 package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.payment.dto.IPaymentOptionEligibility;
-import in.wynk.payment.dto.aps.request.option.ApsPaymentOptionRequest;
-import in.wynk.payment.dto.aps.response.option.ApsPaymentOptionsResponse;
+import in.wynk.payment.dto.aps.request.option.PaymentOptionRequest;
+import in.wynk.payment.dto.aps.response.option.PaymentOptionsResponse;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.AbstractPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.NetBankingPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.UpiPaymentOptions;
@@ -44,15 +44,15 @@ public class ApsPaymentOptionsGatewayService implements IPaymentOptionEligibilit
         this.PAYMENT_OPTION_ENDPOINT = payOptionEndpoint;
     }
 
-    public ApsPaymentOptionsResponse payOption (String msisdn) {
-        final ApsPaymentOptionRequest request = ApsPaymentOptionRequest.builder().build();
-        return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, ApsPaymentOptionsResponse.class);
+    public PaymentOptionsResponse payOption (String msisdn) {
+        final PaymentOptionRequest request = PaymentOptionRequest.builder().build();
+        return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
     }
 
     @Override
     public boolean isEligible (String msisdn, String payGroup, String payId) {
         final String group = PAY_GROUP_MIGRATION_MAPPING.getOrDefault(payGroup, payGroup);
-        final ApsPaymentOptionsResponse response = payOption(msisdn);
+        final PaymentOptionsResponse response = payOption(msisdn);
         final List<AbstractPaymentOptions> payOption = response.getPayOptions();
         final List<AbstractPaymentOptions> filteredPayOption = payOption.stream().filter(option -> option.getType().equalsIgnoreCase(group)).collect(Collectors.toList());
         final boolean isGroupEligible = payOption.stream().filter(option -> option.getType().equalsIgnoreCase(group)).findAny().isPresent();

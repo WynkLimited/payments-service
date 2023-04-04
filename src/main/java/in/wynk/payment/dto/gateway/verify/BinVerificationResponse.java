@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.gateway.verify;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import in.wynk.payment.dto.aps.response.verify.ApsBinVerificationResponseData;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.payu.PayUCardInfo;
 import in.wynk.payment.dto.payu.VerificationType;
@@ -24,7 +23,7 @@ public class BinVerificationResponse extends AbstractVerificationResponse {
     private boolean inAppOtpSupport;
 
     public static BinVerificationResponse from(PayUCardInfo binVerificationResponse){
-        return BinVerificationResponse.builder()
+        return in.wynk.payment.dto.gateway.verify.BinVerificationResponse.builder()
                 .valid(binVerificationResponse.isValid())
                 .verificationType(VerificationType.BIN)
                 .cardType(binVerificationResponse.getCardType())
@@ -36,8 +35,8 @@ public class BinVerificationResponse extends AbstractVerificationResponse {
                 .build();
     }
 
-    public static BinVerificationResponse fromAps(ApsBinVerificationResponseData binVerificationResponse){
-        return BinVerificationResponse.builder()
+    public static BinVerificationResponse fromAps(in.wynk.payment.dto.aps.response.verify.BinVerificationResponse binVerificationResponse){
+        return in.wynk.payment.dto.gateway.verify.BinVerificationResponse.builder()
                 .valid(!binVerificationResponse.isBlocked())
                 .verificationType(VerificationType.BIN)
                 .cardType(binVerificationResponse.getCardNetwork())

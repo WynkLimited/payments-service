@@ -14,6 +14,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @ToString
 @NoArgsConstructor
-public class ApsRenewalStatusResponse  extends ApsChargeStatusResponse {
+public class RenewalStatusResponse extends ApsChargeStatusResponse {
     private String pgSystemId;
 }

@@ -3,16 +3,21 @@ package in.wynk.payment.presentation;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.IWynkPresentation;
+import in.wynk.payment.core.constant.CardConstants;
+import in.wynk.payment.core.constant.NetBankingConstants;
+import in.wynk.payment.core.constant.UpiConstants;
+import in.wynk.payment.core.constant.WalletConstants;
+import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
-import in.wynk.payment.dto.common.FilteredPaymentOptionsResult;
+import in.wynk.payment.dto.common.*;
 import in.wynk.payment.dto.response.AbstractPaymentMethodDTO;
 import in.wynk.payment.dto.response.PaymentGroupsDTO;
 import in.wynk.payment.dto.response.card.Card;
 import in.wynk.payment.dto.response.netbanking.NetBanking;
-import in.wynk.payment.dto.response.paymentoption.PaymentOptionsDTO;
+import in.wynk.payment.dto.response.paymentoption.*;
 import in.wynk.payment.dto.response.upi.UPI;
 import in.wynk.payment.dto.response.wallet.Wallet;
 import in.wynk.payment.service.PaymentCachingService;
@@ -25,10 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -39,64 +41,180 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
     private final PaymentGroupCachingService groupCache;
     private final PaymentMethodCachingService methodCache;
 
+    private final IPresentation<IProductDetails ,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> productPresentation = new ProductPresentation();
+    private final IPresentation<List<SavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> detailsPresentation = new SavedDetailsPresentation();
+    private final IPresentation<Map<String, List<AbstractPaymentMethodDTO>>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> methodPresentation = new PaymentMethodPresentation();
+
     @Override
     public PaymentOptionsDTO transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-        IPaymentOptionsRequest request = payload.getFirst();
-        FilteredPaymentOptionsResult result = payload.getSecond();
-        final PaymentOptionsDTO.PaymentOptionsDTOBuilder<?,?> builder = PaymentOptionsDTO.builder();
-        if (request.getProductDetails().getType().equalsIgnoreCase(BaseConstants.PLAN)) builder.productDetails(buildPlanDetails(request.getProductDetails().getId(), result.isTrialEligible()));
-        else builder.productDetails(buildPointDetails(request.getProductDetails().getId()));
+        final FilteredPaymentOptionsResult result = payload.getSecond();
+        final PaymentOptionsDTO.PaymentOptionsDTOBuilder<?, ?> builder = PaymentOptionsDTO.builder().productDetails(productPresentation.transform(payload));
         final Set<String> uniqueGroupIds = result.getMethods().stream().map(in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO::getGroup).collect(Collectors.toSet());
         builder.paymentGroups(uniqueGroupIds.stream().filter(groupCache::containsKey).map(groupCache::get).sorted(Comparator.comparingInt(PaymentGroup::getHierarchy)).map(group -> PaymentGroupsDTO.builder().id(group.getId()).title(group.getDisplayName()).description(group.getDescription()).build()).collect(Collectors.toList()));
+        return builder.paymentMethods(methodPresentation.transform(payload)).savedPaymentDTO(detailsPresentation.transform(payload)).build();
     }
 
-    private class PaymentMethodPresentation implements IPresentation<Map<String, List<AbstractPaymentMethodDTO>>,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+    private class ProductPresentation implements IPresentation<IProductDetails ,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+        private final Map<String, IPresentation<? extends IProductDetails ,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>>> delegate = new HashMap<>();
+
+        public ProductPresentation() {
+            delegate.put(BaseConstants.PLAN, new PlanProductPresentation());
+            delegate.put(BaseConstants.POINT, new ItemProductPresentation());
+        }
+        @Override
+        public IProductDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+            return delegate.get(payload.getFirst().getProductDetails().getType()).transform(payload);
+        }
+
+        private class PlanProductPresentation implements IPresentation<PaymentOptionsDTO.PlanDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+
+            @Override
+            public PaymentOptionsDTO.PlanDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+                final boolean trialEligible = payload.getSecond().isTrialEligible();
+                final String planId = payload.getFirst().getProductDetails().getId();
+                PlanDTO plan = payCache.getPlan(planId);
+                OfferDTO offer = payCache.getOffer(plan.getLinkedOfferId());
+                PartnerDTO partner = payCache.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : BaseConstants.DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
+                PaymentOptionsDTO.PlanDetails.PlanDetailsBuilder<?, ?> planDetailsBuilder =
+                        PaymentOptionsDTO.PlanDetails.builder().id(planId).validityUnit(plan.getPeriod().getValidityUnit()).perMonthValue((int) plan.getPrice().getMonthlyAmount())
+                                .discountedPrice(plan.getPrice().getAmount()).price((int) plan.getPrice().getDisplayAmount()).discount(plan.getPrice().getSavings()).partnerLogo(partner.getPartnerLogo())
+                                .month(plan.getPeriod().getMonth()).freeTrialAvailable(trialEligible).partnerName(partner.getName()).dailyAmount(plan.getPrice().getDailyAmount())
+                                .currency(plan.getPrice().getCurrency()).title(offer.getTitle()).day(plan.getPeriod().getDay()).sku(plan.getSku()).subType(plan.getPlanType().getValue());
+                if (trialEligible) {
+                    final PlanDTO trialPlan = payCache.getPlan(plan.getLinkedFreePlanId());
+                    planDetailsBuilder.trialDetails(
+                            PaymentOptionsDTO.TrialPlanDetails.builder().id(String.valueOf(trialPlan.getId())).day(trialPlan.getPeriod().getDay()).month(trialPlan.getPeriod().getMonth())
+                                    .validityUnit(trialPlan.getPeriod().getValidityUnit()).validity(trialPlan.getPeriod().getValidity()).currency(trialPlan.getPrice().getCurrency())
+                                    .timeUnit(trialPlan.getPeriod().getTimeUnit()).build());
+                }
+                return planDetailsBuilder.build();
+            }
+        }
+
+        private class ItemProductPresentation implements IPresentation<PaymentOptionsDTO.PointDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+
+            @Override
+            public PaymentOptionsDTO.PointDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+                final ItemDTO item = payCache.getItem(payload.getFirst().getProductDetails().getId());
+                return PaymentOptionsDTO.PointDetails.builder()
+                        .id(item.getId())
+                        .title(item.getName())
+                        .price(item.getPrice())
+                        .build();
+            }
+        }
+    }
+
+    private class PaymentMethodPresentation implements IPresentation<Map<String, List<AbstractPaymentMethodDTO>>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+
+        private final Map<String, IPresentation<? extends AbstractPaymentMethodDTO, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>>> delegate = new HashMap<>();
+
+        public PaymentMethodPresentation() {
+            delegate.put(UpiConstants.UPI, new UPIPresentation());
+            delegate.put(CardConstants.CARD, new CardPresentation());
+            delegate.put(WalletConstants.WALLET, new WalletPresentation());
+            delegate.put(NetBankingConstants.NET_BANKING, new NetBankingPresentation());
+        }
 
         @Override
         public Map<String, List<AbstractPaymentMethodDTO>> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-            return null;
+            final Map<String, List<AbstractPaymentMethodDTO>> payMap = new HashMap<>();
+            final List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredMethods = payload.getSecond().getMethods();
+            filteredMethods.forEach(method -> {
+                if (!payMap.containsKey(method.getGroup())) payMap.put(method.getGroup(), new ArrayList<>());
+                payMap.get(method.getGroup()).add(delegate.get(method.getGroup()).transform(payload));
+            });
+            return payMap;
         }
 
-        private class UPIPresentation implements IPresentation<List<UPI>,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+        private class UPIPresentation implements IPresentation<UPI, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
             @Override
-            public List<UPI> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+            public UPI transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
                 return null;
             }
 
         }
 
-        private class CardPresentation implements IPresentation<List<Card>,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+        private class CardPresentation implements IPresentation<Card, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
             @Override
-            public List<Card> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+            public Card transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
                 return null;
             }
 
         }
 
-        private class WalletPresentation implements IPresentation<List<Wallet>,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+        private class WalletPresentation implements IPresentation<Wallet, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
             @Override
-            public List<Wallet> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+            public Wallet transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
                 return null;
             }
 
         }
 
-        private class NetBankingPresentation implements IPresentation<List<NetBanking>,Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+        private class NetBankingPresentation implements IPresentation<NetBanking, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
             @Override
-            public List<NetBanking> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+            public NetBanking transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
                 return null;
             }
 
         }
-
 
     }
 
+    private class SavedDetailsPresentation implements IPresentation<List<SavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
+        private final Map<String, IPresentation<? extends SavedPaymentDTO, ? extends AbstractSavedInstrumentInfo>> delegate = new HashMap<>();
+
+        public SavedDetailsPresentation() {
+            delegate.put(UpiConstants.UPI, new UPIPresentation());
+            delegate.put(CardConstants.CARD, new CardPresentation());
+            delegate.put(WalletConstants.WALLET, new WalletPresentation());
+            delegate.put(NetBankingConstants.NET_BANKING, new NetBankingPresentation());
+        }
+        @Override
+        public List<SavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> delegate.get(details.getType()).transform(details)).collect(Collectors.toList());
+        }
+
+        private class UPIPresentation implements IPresentation<UpiSavedDetails, UpiSavedInfo> {
+
+            @Override
+            public UpiSavedDetails transform(UpiSavedInfo payload) {
+                return null;
+            }
+
+        }
+
+        private class CardPresentation implements IPresentation<CardSavedDetails, SavedCardInfo> {
+
+            @Override
+            public CardSavedDetails transform(SavedCardInfo payload) {
+                return null;
+            }
+
+        }
+
+        private class WalletPresentation implements IPresentation<WalletSavedDetails, WalletSavedInfo> {
+
+            @Override
+            public WalletSavedDetails transform(WalletSavedInfo payload) {
+                return null;
+            }
+
+        }
+
+        private class NetBankingPresentation implements IPresentation<NetBankingSavedDetails, NetBankingSavedInfo> {
+
+            @Override
+            public NetBankingSavedDetails transform(NetBankingSavedInfo payload) {
+                return null;
+            }
+        }
+    }
 
     private void addPaymentMethod(PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier) {
         String group = paymentMethod.getGroup();
@@ -302,31 +420,4 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         return abstractSavedPaymentDTOList;
     }
 
-    private PaymentOptionsDTO.PlanDetails buildPlanDetails(String planId, boolean trialEligible) {
-        PlanDTO plan = payCache.getPlan(planId);
-        OfferDTO offer = payCache.getOffer(plan.getLinkedOfferId());
-        PartnerDTO partner = payCache.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : BaseConstants.DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
-        PaymentOptionsDTO.PlanDetails.PlanDetailsBuilder<?, ?> planDetailsBuilder =
-                PaymentOptionsDTO.PlanDetails.builder().id(planId).validityUnit(plan.getPeriod().getValidityUnit()).perMonthValue((int) plan.getPrice().getMonthlyAmount())
-                        .discountedPrice(plan.getPrice().getAmount()).price((int) plan.getPrice().getDisplayAmount()).discount(plan.getPrice().getSavings()).partnerLogo(partner.getPartnerLogo())
-                        .month(plan.getPeriod().getMonth()).freeTrialAvailable(trialEligible).partnerName(partner.getName()).dailyAmount(plan.getPrice().getDailyAmount())
-                        .currency(plan.getPrice().getCurrency()).title(offer.getTitle()).day(plan.getPeriod().getDay()).sku(plan.getSku()).subType(plan.getPlanType().getValue());
-        if (trialEligible) {
-            final PlanDTO trialPlan = payCache.getPlan(plan.getLinkedFreePlanId());
-            planDetailsBuilder.trialDetails(
-                    PaymentOptionsDTO.TrialPlanDetails.builder().id(String.valueOf(trialPlan.getId())).day(trialPlan.getPeriod().getDay()).month(trialPlan.getPeriod().getMonth())
-                            .validityUnit(trialPlan.getPeriod().getValidityUnit()).validity(trialPlan.getPeriod().getValidity()).currency(trialPlan.getPrice().getCurrency())
-                            .timeUnit(trialPlan.getPeriod().getTimeUnit()).build());
-        }
-        return planDetailsBuilder.build();
-    }
-
-    private PaymentOptionsDTO.PointDetails buildPointDetails(String itemID) {
-        final ItemDTO item = payCache.getItem(itemID);
-        return PaymentOptionsDTO.PointDetails.builder()
-                .id(item.getId())
-                .title(item.getName())
-                .price(item.getPrice())
-                .build();
-    }
 }

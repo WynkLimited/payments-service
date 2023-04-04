@@ -37,14 +37,14 @@ public class PaymentMethodsPlanEligibilityEvaluation extends PaymentOptionsCommo
             if (StringUtils.isBlank(root.getMsisdn())) {
                 resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
             } else {
-                final String payId = getEntity().getId();
+                final String alias = getEntity().getAlias();
                 final String msisdn = getRoot().getMsisdn();
                 final String groupId = getEntity().getGroup();
                 final String pg = getEntity().getPaymentCode().getCode();
                 final AbstractPaymentInstrumentsProxy proxy = getRoot().getPaymentInstrumentsProxy(pg, msisdn);
                 final List<AbstractPaymentOptionInfo> payOption = proxy.getPaymentInstruments(msisdn);
                 try {
-                    final boolean isEligible = payOption.stream().filter(option -> option.getType().equalsIgnoreCase(groupId)).filter(AbstractPaymentOptionInfo::isEnabled).map(AbstractPaymentOptionInfo::getId).anyMatch(optionId -> payId.equalsIgnoreCase(optionId));
+                    final boolean isEligible = payOption.stream().filter(option -> option.getType().equalsIgnoreCase(groupId)).filter(AbstractPaymentOptionInfo::isEnabled).map(AbstractPaymentOptionInfo::getId).anyMatch(optionId -> alias.equalsIgnoreCase(optionId));
                     if (isEligible) {
                         resultBuilder.status(EligibilityStatus.ELIGIBLE);
                     } else {

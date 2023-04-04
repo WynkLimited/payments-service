@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 @AnalysedEntity
 public class PaymentOptionsDTO {
     private final String msisdn;
+    @JsonProperty("product_details")
     private final IProductDetails productDetails;
     @JsonProperty("pay_group_details")
     private final List<PaymentGroupsDTO> paymentGroups;

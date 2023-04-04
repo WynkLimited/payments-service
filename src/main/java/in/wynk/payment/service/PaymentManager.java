@@ -266,7 +266,7 @@ public class PaymentManager
 
     @ClientAware(clientId = "#clientId")
     public BaseResponse<?> doVerifyIap (String clientId, IapVerificationRequest request) {
-        final PaymentGateway paymentGateway = request.getPaymentCode();
+        final PaymentGateway paymentGateway = request.getPaymentGateway();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
         BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, request, null));

@@ -16,7 +16,7 @@ import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.aps.request.renewal.ApsSiPaymentRecurringRequest;
 import in.wynk.payment.dto.aps.response.renewal.ApsRenewalStatusResponse;
 import in.wynk.payment.dto.aps.response.renewal.ApsSiPaymentRecurringResponse;
-import in.wynk.payment.service.IMerchantPaymentRenewalServiceV2;
+import in.wynk.payment.service.IPaymentRenewalService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
@@ -41,7 +41,7 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsRenewalGatewayService implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> {
+public class ApsRenewalGatewayService implements IPaymentRenewalService<PaymentRenewalChargingMessage> {
 
     @Value("${aps.payment.renewal.api}")
     private String SI_PAYMENT_API;

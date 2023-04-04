@@ -31,7 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.core.constant.WalletConstants.PHONEPE_WALLET;
+import static in.wynk.payment.constant.WalletConstants.PHONEPE_WALLET;
 import static in.wynk.payment.test.utils.PaymentTestUtils.PLAN_ID;
 import static in.wynk.payment.test.utils.PaymentTestUtils.dummyPlanDTO;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -49,7 +49,7 @@ public class PaymentsTest {
     @Autowired
     protected ISessionManager sessionManager;
 
-    public void setup(Session<String, SessionDTO> session) {
+    public void setup (Session<String, SessionDTO> session) {
         Mockito.doReturn(PaymentTestUtils.dummyPlansDTO()).when(subscriptionServiceManager).getPlans();
         sessionManager.put(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + UUIDs.timeBased().toString(), session, 10, TimeUnit.MINUTES);
         SessionContextHolder.set(session);
@@ -57,30 +57,31 @@ public class PaymentsTest {
     }
 
     @Test
-    public void phonePeChargingTest() {
+    public void phonePeChargingTest () {
         PaymentGateway code = PaymentCodeCachingService.getFromPaymentCode(PHONEPE_WALLET);
         WynkResponseEntity<?> response = doChargingTest(code);
         assert response.getStatus().is3xxRedirection();
     }
 
-    protected WynkResponseEntity<?> doChargingTest(PaymentGateway paymentGateway) {
+    protected WynkResponseEntity<?> doChargingTest (PaymentGateway paymentGateway) {
         IMerchantPaymentChargingService chargingService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantPaymentChargingService.class);
-        AbstractChargingRequest<?> request = DefaultChargingRequest.builder().purchaseDetails(S2SPurchaseDetails.builder().productDetails(PlanDetails.builder().planId(PLAN_ID).build()).build()).build();
+        AbstractChargingRequest<?> request =
+                DefaultChargingRequest.builder().purchaseDetails(S2SPurchaseDetails.builder().productDetails(PlanDetails.builder().planId(PLAN_ID).build()).build()).build();
         return chargingService.charge(request);
     }
 
-    protected WynkResponseEntity<?> callbackTest(PaymentGateway paymentGateway, CallbackRequest request) {
+    protected WynkResponseEntity<?> callbackTest (PaymentGateway paymentGateway, CallbackRequest request) {
         IMerchantPaymentCallbackService callbackService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantPaymentCallbackService.class);
         return callbackService.handleCallback(request);
     }
 
-    protected WynkResponseEntity<?> statusTest(PaymentGateway paymentGateway, AbstractTransactionStatusRequest statusRequest) {
+    protected WynkResponseEntity<?> statusTest (PaymentGateway paymentGateway, AbstractTransactionStatusRequest statusRequest) {
         IMerchantPaymentStatusService callbackService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantPaymentStatusService.class);
         return callbackService.status(statusRequest);
     }
 
     @After
-    public void finish() {
+    public void finish () {
         Session<String, SessionDTO> session = SessionContextHolder.get();
         sessionManager.put(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + UUIDs.timeBased().toString(), session, 10, TimeUnit.MINUTES);
     }

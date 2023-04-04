@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
-import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;

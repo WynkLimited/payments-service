@@ -42,16 +42,16 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import static in.wynk.payment.core.constant.CardConstants.CARD;
-import static in.wynk.payment.core.constant.CardConstants.CARDS;
-import static in.wynk.payment.core.constant.NetBankingConstants.NETBANKING;
-import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.constant.CardConstants.CARD;
+import static in.wynk.payment.constant.CardConstants.CARDS;
+import static in.wynk.payment.constant.NetBankingConstants.NETBANKING;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY998;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
-import static in.wynk.payment.core.constant.WalletConstants.WALLET;
-import static in.wynk.payment.core.constant.WalletConstants.WALLETS;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
+import static in.wynk.payment.constant.WalletConstants.WALLETS;
 
 /**
  * @author Nishesh Pandey

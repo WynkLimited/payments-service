@@ -7,6 +7,6 @@ import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 /**
  * @author Nishesh Pandey
  */
-public interface IMerchantPaymentChargingServiceV2<R extends AbstractCoreChargingResponse, T extends AbstractChargingRequestV2> {
+public interface IPaymentChargingServiceV2<R extends AbstractCoreChargingResponse, T extends AbstractChargingRequestV2> {
     R charge(T request);
 }

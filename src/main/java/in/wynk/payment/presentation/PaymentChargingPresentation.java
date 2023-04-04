@@ -7,7 +7,6 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.FlowType;
-import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.gateway.IPostFormSpec;
 import in.wynk.payment.dto.gateway.IRedirectSpec;
@@ -45,7 +44,9 @@ import java.util.Optional;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_PN;
-import static in.wynk.payment.core.constant.UpiConstants.UPI_MERCHANT_CODE;
+import static in.wynk.payment.constant.UpiConstants.UPI_MERCHANT_CODE;
+import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
+import static in.wynk.payment.constant.UpiConstants.UPI_PAYEE_NAME;
 
 /**
  * @author Nishesh Pandey
@@ -108,7 +109,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
                 final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
                 final PlanDTO planToBePurchased = paymentCache.getPlan(payload.getTransaction().getPlanId());
                 final OfferDTO offerToBePurchased = paymentCache.getOffer(planToBePurchased.getLinkedOfferId());
-                final String prefix = (String) method.getMeta().getOrDefault(UpiConstants.UPI_PREFIX, "upi");
+                final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
                 final IUpiIntentSpec intentSpec = (IUpiIntentSpec) payload.getPgResponse();
                 final String stringBuilder = prefix +
                         ":" +
@@ -116,7 +117,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
                         "pay" +
                         "?pa=" + intentSpec.getPayeeVpa() +
                         "&pn=" + Optional.of(intentSpec.getPayeeDisplayName())
-                        .orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(UpiConstants.UPI_PAYEE_NAME).orElse(DEFAULT_PN)) +
+                        .orElse(clientCache.get(payload.getTransaction().getClientAlias()).<String>getMeta(UPI_PAYEE_NAME).orElse(DEFAULT_PN)) +
                         "&tr=" + intentSpec.getMerchantOrderID() +
                         "&am=" + intentSpec.getAmountToBePaid() +
                         "&cu=" + intentSpec.getCurrencyCode().orElse("INR") +

@@ -44,7 +44,7 @@ import java.util.Objects;
 
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.UpiConstants.UPI_PREFIX;
+import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
 
 @Slf4j
 @Service

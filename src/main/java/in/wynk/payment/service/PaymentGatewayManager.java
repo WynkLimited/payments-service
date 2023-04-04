@@ -66,8 +66,8 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_
 @Service(BeanConstant.PAYMENT_MANAGER_V2)
 @RequiredArgsConstructor
 public class PaymentGatewayManager
-        implements IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
-        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
+        implements IPaymentRenewalService<PaymentRenewalChargingMessage>, IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
+        IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IVerificationService<AbstractVerificationResponse, VerificationRequest>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest>,
         IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>{
 
@@ -90,9 +90,9 @@ public class PaymentGatewayManager
     public AbstractCoreChargingResponse charge (AbstractChargingRequestV2 request) {
         PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
-        final IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
+        final IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
                 BeanLocatorFactory.getBean(paymentGateway.getCode(),
-                        new ParameterizedTypeReference<IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
+                        new ParameterizedTypeReference<IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
                         });
 
         try {
@@ -263,9 +263,9 @@ public class PaymentGatewayManager
                         .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
-        final IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage> renewalService =
+        final IPaymentRenewalService<PaymentRenewalChargingMessage> renewalService =
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
-                        new ParameterizedTypeReference<IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>>() {
+                        new ParameterizedTypeReference<IPaymentRenewalService<PaymentRenewalChargingMessage>>() {
                         });
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
@@ -308,7 +308,7 @@ public class PaymentGatewayManager
 
     @Override
     public boolean supportsRenewalReconciliation() {
-        return IMerchantPaymentRenewalServiceV2.super.supportsRenewalReconciliation();
+        return IPaymentRenewalService.super.supportsRenewalReconciliation();
     }
 
     @Override

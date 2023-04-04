@@ -8,9 +8,9 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.constant.FlowType;
+import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -31,7 +31,7 @@ import in.wynk.payment.dto.request.common.FreshCardDetails;
 import in.wynk.payment.dto.request.common.SavedCardDetails;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.payu.PayUUpiIntentInitResponse;
-import in.wynk.payment.service.IMerchantPaymentChargingServiceV2;
+import in.wynk.payment.service.IPaymentChargingServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
@@ -50,18 +50,18 @@ import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
-import static in.wynk.payment.core.constant.CardConstants.FRESH_CARD_TYPE;
+import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.UpiConstants.*;
+import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
-public class PayUChargingGatewayService implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+public class PayUChargingGatewayService implements IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
     public String PAYMENT_API;
-    private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> delegate = new HashMap<>();
+    private final Map<FlowType, IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> delegate = new HashMap<>();
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final PayUCommonGatewayService common;
 
@@ -80,8 +80,8 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
         return delegate.get(method.getGroup().toUpperCase()).charge(request);
     }
 
-    private class PayUUpiCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
-        private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+    private class PayUUpiCharging implements IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+        private final Map<FlowType, IPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
         public PayUUpiCharging() {
             upiDelegate.put(SEAMLESS, new PayUUpiSeamlessCharging());
@@ -94,9 +94,9 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
             return upiDelegate.get(flowType).charge(request);
         }
 
-        private class PayUUpiSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
+        private class PayUUpiSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
 
-            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public PayUUpiSeamlessCharging() {
                 upiDelegate.put(INTENT, new PayUUpiIntentCharging());
@@ -113,7 +113,7 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
                 return upiDelegate.get(flow).charge(request);
             }
 
-            private class PayUUpiCollectInAppCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
+            private class PayUUpiCollectInAppCharging implements IPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
                 @Override
                 public UpiCollectInAppChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
@@ -130,7 +130,7 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
                 }
             }
 
-            private class PayUUpiIntentCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
+            private class PayUUpiIntentCharging implements IPaymentChargingServiceV2<AbstractSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
 
                 @Override
                 public UpiIntentChargingResponse charge(AbstractChargingRequestV2 request) {
@@ -192,9 +192,9 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
             }
         }
 
-        private class PayUUpiNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
+        private class PayUUpiNonSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
 
-            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2>> upiDelegate = new HashMap<>();
 
             public PayUUpiNonSeamlessCharging() {
                 upiDelegate.put(COLLECT, new PayUUpiCollectCharging());
@@ -205,7 +205,7 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
                 return upiDelegate.get(COLLECT).charge(request);
             }
 
-            private class PayUUpiCollectCharging implements IMerchantPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
+            private class PayUUpiCollectCharging implements IPaymentChargingServiceV2<AbstractNonSeamlessUpiChargingResponse, AbstractChargingRequestV2> {
 
                 @Override
                 public UpiCollectChargingResponse charge(AbstractChargingRequestV2 request) {
@@ -223,9 +223,9 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
         }
     }
 
-    private class PayUCardCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+    private class PayUCardCharging implements IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
-        private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
+        private final Map<FlowType, IPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
         public PayUCardCharging() {
             cardDelegate.put(SEAMLESS, new PayUCardSeamlessCharging());
@@ -242,9 +242,9 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
             return cardDelegate.get(flowType).charge(request);
         }
 
-        private class PayUCardSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
+        private class PayUCardSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
 
-            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
             public PayUCardSeamlessCharging() {
                 cardDelegate.put(OTP_LESS, new PayUCardOtpLessCharging());
@@ -261,14 +261,14 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
                 return cardDelegate.get(flow).charge(request);
             }
 
-            private class PayUCardOtpLessCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2> {
+            private class PayUCardOtpLessCharging implements IPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2> {
                 @Override
                 public OtpLessCardChargingResponse charge(AbstractChargingRequestV2 request) {
                     throw new WynkRuntimeException("Otp Less Card charging is not implemented");
                 }
             }
 
-            private class PayUCardCollectInAppCharging implements IMerchantPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2> {
+            private class PayUCardCollectInAppCharging implements IPaymentChargingServiceV2<AbstractSeamlessCardChargingResponse, AbstractChargingRequestV2> {
                 @Override
                 public CardInAppChargingResponse charge(AbstractChargingRequestV2 request) {
                     throw new WynkRuntimeException("Collect In app charging is not implemented");
@@ -276,9 +276,9 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
             }
         }
 
-        private class PayUCardNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
+        private class PayUCardNonSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreCardChargingResponse, AbstractChargingRequestV2> {
 
-            private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2>> cardDelegate = new HashMap<>();
 
             public PayUCardNonSeamlessCharging() {
                 cardDelegate.put(FORM_BASED, new PayUCardFormTypeCharging());
@@ -289,7 +289,7 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
                 return cardDelegate.get(FORM_BASED).charge(request);
             }
 
-            private class PayUCardFormTypeCharging implements IMerchantPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2> {
+            private class PayUCardFormTypeCharging implements IPaymentChargingServiceV2<AbstractNonSeamlessCardChargingResponse, AbstractChargingRequestV2> {
 
                 @Override
                 public CardKeyValueTypeChargingResponse charge(AbstractChargingRequestV2 request) {
@@ -320,9 +320,9 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
         }
     }
 
-    private class PayUNetBankingCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+    private class PayUNetBankingCharging implements IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
-        private final Map<FlowType, IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> nbDelegate = new HashMap<>();
+        private final Map<FlowType, IPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2>> nbDelegate = new HashMap<>();
 
         public PayUNetBankingCharging() {
             nbDelegate.put(SEAMLESS, new PayUNetBankingSeamlessCharging());
@@ -335,7 +335,7 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
             return nbDelegate.get(paymentMethod.getFlowType()).charge(request);
         }
 
-        private class PayUNetBankingSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2> {
+        private class PayUNetBankingSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2> {
 
             @Override
             public NetBankingChargingResponse charge(AbstractChargingRequestV2 request) {
@@ -343,7 +343,7 @@ public class PayUChargingGatewayService implements IMerchantPaymentChargingServi
             }
         }
 
-        private class PayUNetBankingNonSeamlessCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2> {
+        private class PayUNetBankingNonSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2> {
 
             @Override
             public NetBankingKeyValueTypeResponse charge(AbstractChargingRequestV2 request) {

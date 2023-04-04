@@ -48,15 +48,15 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.CardConstants.CARD;
-import static in.wynk.payment.core.constant.CardConstants.CARDS;
-import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.constant.CardConstants.CARD;
+import static in.wynk.payment.constant.CardConstants.CARDS;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
 import static in.wynk.payment.core.constant.PaymentConstants.ADDTOBILL;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_PAY_STACK;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
-import static in.wynk.payment.core.constant.UpiConstants.UPI;
-import static in.wynk.payment.core.constant.WalletConstants.WALLET;
+import static in.wynk.payment.constant.UpiConstants.UPI;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
 
 /**
  * @author Nishesh Pandey

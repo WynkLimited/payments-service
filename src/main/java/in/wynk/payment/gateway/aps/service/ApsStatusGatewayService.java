@@ -1,4 +1,4 @@
-package in.wynk.payment.gateway.aps.status;
+package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -11,7 +11,6 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
-import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.service.IPaymentStatusService;
 import lombok.extern.slf4j.Slf4j;
 

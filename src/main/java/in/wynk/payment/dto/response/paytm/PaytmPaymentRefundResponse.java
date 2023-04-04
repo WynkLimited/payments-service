@@ -8,7 +8,7 @@ import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
-import static in.wynk.payment.core.constant.WalletConstants.PAYTM_WALLET;
+import static in.wynk.payment.constant.WalletConstants.PAYTM_WALLET;
 
 @Getter
 @SuperBuilder

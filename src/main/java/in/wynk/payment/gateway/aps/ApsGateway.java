@@ -15,18 +15,9 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
 import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.aps.service.ApsCallbackGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsChargeGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsDeleteGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsPreDebitNotificationGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsRefundGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsRenewalGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsVerificationGatewayService;
+import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.service.impl.ApsPaymentSettlementGateway;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,24 +26,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
-/*@RequiredArgsConstructor*/
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
 public class ApsGateway implements
         IPaymentOptionEligibility,
         IPreDebitNotificationService,
-        IMerchantPaymentRenewalServiceV2<PaymentRenewalChargingMessage>,
+        IPaymentRenewalService<PaymentRenewalChargingMessage>,
         IVerificationService<AbstractVerificationResponse, VerificationRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>,
         IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest>,
         IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>,
-        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>,
+        IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>,
         IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
 
     private final ApsRefundGatewayService refundGateway;
     private final ApsDeleteGatewayService deleteGateway;
     private final ApsChargeGatewayService chargeGateway;
-    private final in.wynk.payment.gateway.aps.status.ApsStatusGatewayService statusGateway;
+    private final ApsStatusGatewayService statusGateway;
     private final ApsRenewalGatewayService renewalGateway;
     private final ApsCallbackGatewayService callbackGateway;
     private final ApsVerificationGatewayService verificationGateway;
@@ -81,7 +71,7 @@ public class ApsGateway implements
                       ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
-        this.statusGateway = new in.wynk.payment.gateway.aps.status.ApsStatusGatewayService(commonGateway);
+        this.statusGateway = new ApsStatusGatewayService(commonGateway);
         this.callbackGateway = new ApsCallbackGatewayService(salt, secret, commonGateway, mapper);
         this.payOptionsGateway = new ApsPaymentOptionsGatewayService(payOptionEndpoint, commonGateway);
         this.refundGateway = new ApsRefundGatewayService(refundEndpoint, eventPublisher, commonGateway);

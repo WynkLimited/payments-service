@@ -123,4 +123,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker CHARGING_API_FAILURE = MarkerFactory.getMarker("CHARGING_API_FAILURE");
 
+    Marker EXTERNAL_ELIGIBILITY_FAILURE = MarkerFactory.getMarker("EXTERNAL_ELIGIBILITY_FAILURE");
+
 }

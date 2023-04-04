@@ -20,6 +20,7 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private int hierarchy;
 
     private boolean trialSupported;
+    private boolean saveDetailsSupported;
     private boolean autoRenewSupported;
     private boolean inAppOtpSupport;
     private boolean otpLessSupport;

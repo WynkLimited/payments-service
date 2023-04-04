@@ -1044,4 +1044,4 @@ security:
 
 event:
   stream:
-    dp: data-science-subscription-funnel-information
+    dp: wcf-data-science-prod-subscription-funnel

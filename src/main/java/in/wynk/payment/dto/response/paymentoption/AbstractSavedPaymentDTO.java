@@ -13,6 +13,7 @@ public abstract class AbstractSavedPaymentDTO {
     private String id;
     private String code;
     private String group;
+    private Integer order;
     @JsonProperty("is_preferred")
     private boolean preferred;
     @JsonProperty("is_favourite")

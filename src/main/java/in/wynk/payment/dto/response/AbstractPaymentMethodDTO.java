@@ -17,6 +17,7 @@ public abstract class AbstractPaymentMethodDTO {
     private String title;
     private String health;
     private String group;
+    private Integer order;
     private String description;
     @JsonProperty("ui_details")
     private UiDetails uiDetails;

@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.service;
 
+import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
@@ -25,6 +26,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 
 /**
  * @author Nishesh Pandey
@@ -215,6 +218,8 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
         }
     }
 
+
+    @Cacheable(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#msisdn", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
     private PaymentOptionsResponse payOption(String msisdn) {
         final PaymentOptionRequest request = PaymentOptionRequest.builder().build();
         return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);

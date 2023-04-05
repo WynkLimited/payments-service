@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
@@ -16,7 +17,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentOptionsResponse {
+public class PaymentOptionsResponse implements Serializable {
     private PaymentOptionsConfig config;
     private SavedUserOptions savedUserOptions;
     private List<AbstractPaymentOptions> payOptions;

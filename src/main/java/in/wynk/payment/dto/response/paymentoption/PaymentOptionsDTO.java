@@ -29,7 +29,7 @@ public class PaymentOptionsDTO {
     @JsonProperty("payment_method_details")
     private final Map<String, List<AbstractPaymentMethodDTO>> paymentMethods;
     @JsonProperty("saved_payment_details")
-    private final List<SavedPaymentDTO> savedPaymentDTO;
+    private final List<AbstractSavedPaymentDTO> savedPaymentDTO;
 
 //    @Getter
 //    @Setter

@@ -7,6 +7,9 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public abstract class AbstractSavedInstrumentInfo {
     private String type;
+    private String id;
+    private String code;
+    private String group;
     private String title;
     private String iconUrl;
     private String health;

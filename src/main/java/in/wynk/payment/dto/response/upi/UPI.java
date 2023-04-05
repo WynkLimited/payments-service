@@ -20,7 +20,6 @@ import java.util.Map;
 public class UPI extends AbstractPaymentMethodDTO {
     @JsonProperty("supporting_details")
     private UpiSupportingDetails supportingDetails;
-    private String appName;
 
     @Getter
     @SuperBuilder
@@ -28,7 +27,6 @@ public class UPI extends AbstractPaymentMethodDTO {
     public static class UpiSupportingDetails extends SupportingDetails {
         private boolean intent;
         private List<String> suffixes;
-        private boolean saveSupported;
         @JsonProperty("payment_status_poll")
         private Double paymentStatusPoll;
         @JsonProperty("payment_timer")
@@ -37,11 +35,6 @@ public class UPI extends AbstractPaymentMethodDTO {
         private String packageName;
         @JsonProperty("build_check")
         private Map<String, Map<String, Integer>> buildCheck;
-
-        @JsonProperty("isSaveSupported")
-        public boolean isSaveSupported () {
-            return this.saveSupported;
-        }
     }
 }
 

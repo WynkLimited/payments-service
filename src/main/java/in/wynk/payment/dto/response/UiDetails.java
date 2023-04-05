@@ -4,13 +4,13 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@AllArgsConstructor
-@Builder
+@SuperBuilder
 @AnalysedEntity
 public class UiDetails {
     private String icon;

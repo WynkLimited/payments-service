@@ -4,6 +4,6 @@ import in.wynk.payment.dto.common.AbstractSavedInstrumentInfo;
 
 import java.util.List;
 
-public interface IUserPaymentDetails {
-    List<AbstractSavedInstrumentInfo> getSavedDetails(String userId);
+public interface IUserPaymentDetails<T extends AbstractSavedInstrumentInfo> {
+    List<T> getSavedDetails(String userId);
 }

@@ -43,11 +43,6 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final IPaymentOptionComputationManager<PaymentOptionsComputationResponse, PaymentOptionsEligibilityRequest> paymentOptionManager;
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
-//    public static final String META_DESCRIPTION = "description";
-//    public static final String META_PACKAGE_NAME = "package_name";
-//    public static final String SAVE_SUPPORTED = "saveSupported";
-//    public static final String APP_NAME = "APP_NAME";
-
     @Override
     public FilteredPaymentOptionsResult getPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         if (request.getPaymentOptionRequest().getProductDetails().getType().equalsIgnoreCase(PLAN)) {
@@ -221,8 +216,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
 //                .add(Wallet.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).health(health).description((String) paymentMethod.getMeta().get(META_DESCRIPTION))
 //                        .code(paymentMethod.getPaymentCode().getCode())
 //                        .uiDetails(UiDetails.builder().icon(paymentMethod.getIconUrl()).build())
-//                        .supportingDetails(WalletCardSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
-//                                .intentDetails(WalletCardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME)).build()).build())
+//                        .supportingDetails(CardSupportingDetails.builder().autoRenewSupported(autoRenewalSupplier.get() && paymentMethod.isAutoRenewSupported())
+//                                .intentDetails(CardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME)).build()).build())
 //                        .build());
 //    }
 //
@@ -252,8 +247,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
 //        boolean saveSupported = Objects.nonNull(paymentMethod.getMeta().get(SAVE_SUPPORTED)) && (boolean) paymentMethod.getMeta().get(SAVE_SUPPORTED);
 //        paymentMethodDTO.getCard()
 //                .add(Card.builder().id(paymentMethod.getId()).title(paymentMethod.getDisplayName()).description(description).code(paymentMethod.getPaymentCode().getCode())
-//                        .uiDetails(map).supportingDetails(WalletCardSupportingDetails.builder().saveSupported(saveSupported).intentDetails(
-//                                WalletCardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME)).build()).build()).build());
+//                        .uiDetails(map).supportingDetails(CardSupportingDetails.builder().saveSupported(saveSupported).intentDetails(
+//                                CardSupportingDetails.IntentDetails.builder().packageName((String) paymentMethod.getMeta().get(META_PACKAGE_NAME)).build()).build()).build());
 //    }
 //
 //    private void addUpiDetails(PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, PaymentMethod paymentMethod, Supplier<Boolean> autoRenewalSupplier,
@@ -300,8 +295,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
 //        return planDetailsBuilder.build();
 //    }
 //
-//    private List<SavedPaymentDTO> addSavedPaymentOptions(List<AbstractSavedPayOptions> payOptions, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
-//        List<SavedPaymentDTO> abstractSavedPaymentDTOList = new ArrayList<>();
+//    private List<AbstractSavedPaymentDTO> addSavedPaymentOptions(List<AbstractSavedPayOptions> payOptions, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO) {
+//        List<AbstractSavedPaymentDTO> abstractSavedPaymentDTOList = new ArrayList<>();
 //        for (AbstractSavedPayOptions payOption : payOptions) {
 //            switch (payOption.getType()) {
 //                case UPI:

@@ -3,6 +3,8 @@ package in.wynk.payment.eligibility.request;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.eligibility.dto.IEligibilityRequest;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
+import in.wynk.payment.dto.common.AbstractPaymentOptionInfo;
+import in.wynk.payment.dto.common.AbstractSavedInstrumentInfo;
 import in.wynk.payment.service.IPaymentInstrumentsGatewayProxy;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -20,6 +22,7 @@ import java.util.Objects;
 @SuperBuilder
 public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRequest {
 
+    private final String si;
     private final String os;
     private final String uid;
     private final String appId;
@@ -27,17 +30,18 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     private final String service;
     private final String couponCode;
     private final String countryCode;
+
     private final int buildNo;
-    private final String si;
 
     private final PaymentOptionsEligibilityRequestProxy paymentOptionsEligibilityRequestProxy;
-    private final Map<String, AbstractPaymentInstrumentsProxy> payInstrumentProxyMap = new HashMap<>();
+    private final Map<String, AbstractPaymentInstrumentsProxy<AbstractPaymentOptionInfo, AbstractSavedInstrumentInfo>> payInstrumentProxyMap = new HashMap<>();
 
     @Setter
     private String group;
 
-    public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode,String userId) {
-        if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode)) return payInstrumentProxyMap.get(payCode);
+    public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode, String userId) {
+        if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))
+            return payInstrumentProxyMap.get(payCode);
         final AbstractPaymentInstrumentsProxy proxy = BeanLocatorFactory.getBean(payCode, IPaymentInstrumentsGatewayProxy.class).load(userId);
         return payInstrumentProxyMap.put(payCode, proxy);
     }

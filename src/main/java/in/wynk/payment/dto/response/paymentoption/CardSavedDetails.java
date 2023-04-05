@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @SuperBuilder
-public class CardSavedDetails extends SavedPaymentDTO {
+public class CardSavedDetails extends AbstractSavedPaymentDTO {
     @JsonProperty("card_token")
     private String cardToken;
     @JsonProperty("card_number")
@@ -35,9 +35,14 @@ public class CardSavedDetails extends SavedPaymentDTO {
     @JsonProperty("bank_code")
     private String bankCode;
     @JsonProperty("cvv_length")
-    private Integer cvv;
+    private String cvvLength;
     @JsonProperty("icon_url")
     private String icon;
     @JsonProperty("is_active")
     private boolean active;
+    @JsonProperty("is_blocked")
+    private boolean blocked;
+    @JsonProperty("is_expired")
+    private boolean expired;
+
 }

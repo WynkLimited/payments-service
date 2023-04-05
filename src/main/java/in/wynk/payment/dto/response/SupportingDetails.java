@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,6 +14,9 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public class SupportingDetails {
+    @JsonProperty("save_supported")
+    private boolean saveSupported;
+    @JsonProperty("auto_renew_supported")
     private boolean autoRenewSupported;
 
 }

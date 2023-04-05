@@ -7,6 +7,6 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @NoArgsConstructor
-public class NetBankingSavedDetails extends SavedPaymentDTO {
+public class NetBankingSavedDetails extends AbstractSavedPaymentDTO {
 
 }

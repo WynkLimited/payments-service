@@ -97,6 +97,8 @@ public class PaymentOptionsDTO {
         @Analysed
         private final String paymentId;
         @Analysed
+        private final String alias;
+        @Analysed
         private final String group;
         @Analysed
         private final int hierarchy;
@@ -113,6 +115,7 @@ public class PaymentOptionsDTO {
 
         public PaymentMethodDTO(PaymentMethod method, Supplier<Boolean> autoRenewSupplier) {
             this.paymentId = method.getId();
+            this.alias = method.getAlias();
             this.group = method.getGroup();
             this.meta = method.getMeta();
             this.hierarchy = method.getHierarchy();

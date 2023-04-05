@@ -2,23 +2,25 @@ package in.wynk.payment.dto.response.paymentoption;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@NoArgsConstructor
 @SuperBuilder
-public class SavedPaymentDTO {
+public abstract class AbstractSavedPaymentDTO {
     private String id;
     private String code;
     private String group;
+    @JsonProperty("is_preferred")
+    private boolean preferred;
     @JsonProperty("is_favourite")
-    private boolean isFavorite;
+    private boolean favorite;
     @JsonProperty("is_recommended")
-    private boolean isRecommended;
+    private boolean recommended;
+    @JsonProperty("is_express_checkout")
+    private boolean expressCheckout;
     @JsonProperty("health_status")
     private String health;
     @JsonProperty("auto_pay_enabled")

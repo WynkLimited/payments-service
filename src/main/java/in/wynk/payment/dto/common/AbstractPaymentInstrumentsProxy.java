@@ -7,4 +7,5 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public abstract class AbstractPaymentInstrumentsProxy implements IPaymentInstrumentsGatewayService, IUserPaymentDetails { }
+public abstract class AbstractPaymentInstrumentsProxy<T extends AbstractPaymentOptionInfo, K extends AbstractSavedInstrumentInfo> implements IPaymentInstrumentsGatewayService<T>, IUserPaymentDetails<K> {
+}

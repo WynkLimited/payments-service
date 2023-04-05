@@ -1,14 +1,14 @@
 package in.wynk.payment.dto.common;
 
-import in.wynk.payment.core.constant.WalletConstants;
+import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
-public class WalletOptionInfo extends AbstractPaymentOptionInfo {
+public class BillingOptionInfo extends AbstractPaymentOptionInfo {
     @Override
     public String getType() {
-        return WalletConstants.WALLET;
+        return AddToBillConstants.ADDTOBILL;
     }
 }

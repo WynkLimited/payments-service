@@ -316,13 +316,13 @@ public class PayUTestData {
         return PayUDataConstant.UNKNOWN_PAYU_TRANSACTION_STATUS;
     }
 
-    public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentGateway code) {
+    public static AbstractTransactionStatusRequest buildOneTimePaymentStatusRequest(PaymentGateway pg) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                 .transactionId(PayUDataConstant.ONE_TIME_TRANSACTION_ID.toString())
                 .build();
     }
 
-    public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentGateway code) {
+    public static AbstractTransactionStatusRequest buildRecurringPaymentStatusRequest(PaymentGateway pg) {
         return ChargingTransactionReconciliationStatusRequest.builder()
                 .transactionId(PayUDataConstant.RECURRING_TRANSACTION_ID.toString())
                 .build();

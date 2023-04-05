@@ -24,15 +24,15 @@ public class RevenuePaymentControllerV3 {
 
     private final PaymentGatewayManager paymentGatewayManager;
 
-    //This version is for payment refactoring task
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public WynkResponseEntity<VerifyUserPaymentResponse> verifyV2(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
+    public WynkResponseEntity<VerifyUserPaymentResponse> verifyV2 (@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
-        final WynkResponseEntity<VerifyUserPaymentResponse> responseEntity = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<WynkResponseEntity<VerifyUserPaymentResponse>, AbstractVerificationResponse>>() {
-        }).transform(paymentGatewayManager.verify(request));
+        final WynkResponseEntity<VerifyUserPaymentResponse> responseEntity =
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<WynkResponseEntity<VerifyUserPaymentResponse>, AbstractVerificationResponse>>() {
+                }).transform(paymentGatewayManager.verify(request));
         AnalyticService.update(responseEntity.getBody().getData());
         return responseEntity;
     }

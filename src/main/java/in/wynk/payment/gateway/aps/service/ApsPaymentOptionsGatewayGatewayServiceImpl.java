@@ -1,11 +1,11 @@
 package in.wynk.payment.gateway.aps.service;
 
-import in.wynk.payment.core.constant.CardConstants;
-import in.wynk.payment.core.constant.NetBankingConstants;
-import in.wynk.payment.core.constant.UpiConstants;
-import in.wynk.payment.core.constant.WalletConstants;
-import in.wynk.payment.dto.aps.request.option.ApsPaymentOptionRequest;
-import in.wynk.payment.dto.aps.response.option.ApsPaymentOptionsResponse;
+import in.wynk.payment.constant.CardConstants;
+import in.wynk.payment.constant.NetBankingConstants;
+import in.wynk.payment.constant.UpiConstants;
+import in.wynk.payment.constant.WalletConstants;
+import in.wynk.payment.dto.aps.request.option.PaymentOptionRequest;
+import in.wynk.payment.dto.aps.response.option.PaymentOptionsResponse;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.CardPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.NetBankingPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.UpiPaymentOptions;
@@ -50,7 +50,7 @@ public class ApsPaymentOptionsGatewayGatewayServiceImpl implements IPaymentInstr
     }
 
     public class ApsPaymentInstrumentsProxy extends AbstractPaymentInstrumentsProxy {
-        private final ApsPaymentOptionsResponse response;
+        private final PaymentOptionsResponse response;
 
         public ApsPaymentInstrumentsProxy(String userId) {
             super();
@@ -186,9 +186,9 @@ public class ApsPaymentOptionsGatewayGatewayServiceImpl implements IPaymentInstr
         }
     }
 
-    private ApsPaymentOptionsResponse payOption(String msisdn) {
-        final ApsPaymentOptionRequest request = ApsPaymentOptionRequest.builder().build();
-        return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, ApsPaymentOptionsResponse.class);
+    private PaymentOptionsResponse payOption(String msisdn) {
+        final PaymentOptionRequest request = PaymentOptionRequest.builder().build();
+        return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
     }
 }
 

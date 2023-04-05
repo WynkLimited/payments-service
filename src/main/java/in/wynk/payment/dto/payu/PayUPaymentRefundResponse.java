@@ -21,7 +21,7 @@ public class PayUPaymentRefundResponse extends AbstractPaymentRefundResponse {
     private final String authPayUId;
 
     @Override
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(PAYU);
     }
 

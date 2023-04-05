@@ -7,8 +7,6 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
@@ -31,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.Map;
-import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ORIGINAL_SID;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION;
@@ -99,7 +96,6 @@ public class RevenuePaymentS2SController {
         return baseResponse;
     }
 
-    //this endpoint is used to refund using APS
     @PostMapping("/v2/payment/refund")
     @AnalyseTransaction(name = "initRefund")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
@@ -172,7 +168,7 @@ public class RevenuePaymentS2SController {
     @ManageSession(sessionId = "#request.sid")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequest request) {
         LoadClientUtils.loadClient(true);
-        AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().getCode());
+        AnalyticService.update(PAYMENT_METHOD, request.getPaymentGateway().getCode());
         AnalyticService.update(request);
         BaseResponse<?> baseResponse = paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(), request);
         AnalyticService.update(baseResponse);

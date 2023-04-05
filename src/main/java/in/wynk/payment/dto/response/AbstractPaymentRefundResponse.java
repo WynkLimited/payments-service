@@ -38,7 +38,7 @@ public abstract class AbstractPaymentRefundResponse {
     private final TransactionStatus transactionStatus;
 
     @Analysed
-    public abstract PaymentGateway getPaymentCode();
+    public abstract PaymentGateway getPaymentGateway();
 
     public abstract String getExternalReferenceId();
 

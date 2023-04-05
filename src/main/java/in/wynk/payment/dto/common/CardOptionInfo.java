@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.common;
 
-import in.wynk.payment.core.constant.CardConstants;
+import in.wynk.payment.constant.CardConstants;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 

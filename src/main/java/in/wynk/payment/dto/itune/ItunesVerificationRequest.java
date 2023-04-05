@@ -26,7 +26,7 @@ public class ItunesVerificationRequest extends IapVerificationRequest {
     private String receipt;
 
     @Override
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(ITUNES);
     }
 

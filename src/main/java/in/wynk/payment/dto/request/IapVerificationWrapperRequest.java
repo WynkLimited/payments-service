@@ -51,7 +51,7 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     @Override
     public PaymentGateway getPaymentCode() {
         if(iapVerificationRequest != null) {
-            return this.iapVerificationRequest.getPaymentCode();
+            return this.iapVerificationRequest.getPaymentGateway();
         }
         return this.iapVerificationRequestV2.getPaymentCode();
     }
@@ -69,7 +69,7 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     @Override
     public IAppDetails getAppDetails() {
         return AppDetails.builder()
-                .appId(StringUtils.isNotBlank(this.iapVerificationRequest.getAppId()) ? this.iapVerificationRequest.getAppId() : (this.iapVerificationRequest.getPaymentCode().getId().equalsIgnoreCase("ITUNES") ? "MOBILITY" : "FIRESTICK"))
+                .appId(StringUtils.isNotBlank(this.iapVerificationRequest.getAppId()) ? this.iapVerificationRequest.getAppId() : (this.iapVerificationRequest.getPaymentGateway().getId().equalsIgnoreCase("ITUNES") ? "MOBILITY" : "FIRESTICK"))
                 .deviceId(this.iapVerificationRequest.getDeviceId())
                 .buildNo(this.iapVerificationRequest.getBuildNo())
                 .service(this.iapVerificationRequest.getService())

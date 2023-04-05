@@ -88,7 +88,7 @@ public abstract class IapVerificationRequest {
     @Analysed
     private GeoLocation geoLocation;
 
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 

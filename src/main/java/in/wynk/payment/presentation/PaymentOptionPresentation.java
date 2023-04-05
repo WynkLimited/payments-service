@@ -3,15 +3,20 @@ package in.wynk.payment.presentation;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.IWynkPresentation;
-import in.wynk.payment.core.constant.CardConstants;
-import in.wynk.payment.core.constant.NetBankingConstants;
-import in.wynk.payment.core.constant.UpiConstants;
-import in.wynk.payment.core.constant.WalletConstants;
+import in.wynk.payment.constant.CardConstants;
+import in.wynk.payment.constant.NetBankingConstants;
+import in.wynk.payment.constant.UpiConstants;
+import in.wynk.payment.constant.WalletConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.aps.response.option.paymentOptions.AbstractPaymentOptions;
+import in.wynk.payment.dto.aps.response.option.paymentOptions.UpiPaymentOptions;
+import in.wynk.payment.dto.aps.response.option.savedOptions.AbstractSavedPayOptions;
+import in.wynk.payment.dto.aps.response.option.savedOptions.UpiSavedOptions;
 import in.wynk.payment.dto.common.*;
 import in.wynk.payment.dto.response.AbstractPaymentMethodDTO;
 import in.wynk.payment.dto.response.PaymentGroupsDTO;
@@ -29,8 +34,10 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
+import static in.wynk.payment.constant.CardConstants.CARDS;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Component
@@ -177,7 +184,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         }
         @Override
         public List<SavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> delegate.get(details.getType()).transform(details)).collect(Collectors.toList());
+            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> delegate.get(details.getType()).transform(null)).collect(Collectors.toList());
         }
 
         private class UPIPresentation implements IPresentation<UpiSavedDetails, UpiSavedInfo> {
@@ -216,7 +223,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         }
     }
 
-    private void addPaymentMethod(PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier) {
+    /*private void addPaymentMethod(PaymentMethod paymentMethod, PaymentOptionsDTO.PaymentMethodDTO paymentMethodDTO, Supplier<Boolean> autoRenewalSupplier) {
         String group = paymentMethod.getGroup();
         List<AbstractPaymentOptions> payOptions = new ArrayList<>();
         //if APS, check if it comes into eligible methods and update other details required for UI as well
@@ -289,7 +296,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 break;
 
             //TODO: Google Play Billing Phase 2
-            /*case PaymentConstants.BILLING:
+            *//*case PaymentConstants.BILLING:
                 if (Objects.isNull(paymentMethodDTO.getAddToBills())) {
                     paymentMethodDTO.setAddToBills(new ArrayList<>());
                 }
@@ -300,7 +307,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .build());
                 break;
             default:
-                throw new WynkRuntimeException("Payment Method not supported");*/
+                throw new WynkRuntimeException("Payment Method not supported");*//*
         }
 
     }
@@ -406,18 +413,18 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                     }
                     break;
                 //TODo: Phase 2
-                /*case "WALLETS":
+                *//*case "WALLETS":
                     WalletSavedOptions walletDetails = (WalletSavedOptions) payOption;
                     abstractSavedPaymentDTOList.add(
-                            WalletSavedInfo.builder()*//*.id()*//*.code(AIRTEL_PAY_STACK).group(walletDetails.getType()).isFavorite(walletDetails.isFavourite()).isRecommended(walletDetails
+                            WalletSavedInfo.builder()*//**//*.id()*//**//*.code(AIRTEL_PAY_STACK).group(walletDetails.getType()).isFavorite(walletDetails.isFavourite()).isRecommended(walletDetails
                             .isPreferred())
                                .health(walletDetails.getHealth()).linked(walletDetails.isLinked()).valid(walletDetails.isValid()).canCheckOut(walletDetails.isShowOnQuickCheckout())
                                     .addMoneyAllowed(true).id(walletDetails.getWalletId()).balance(walletDetails.getWalletBalance())
-                                    .minBalance(walletDetails.getMinAmount()).build());*/
+                                    .minBalance(walletDetails.getMinAmount()).build());*//*
 
             }
         }
         return abstractSavedPaymentDTOList;
-    }
+    }*/
 
 }

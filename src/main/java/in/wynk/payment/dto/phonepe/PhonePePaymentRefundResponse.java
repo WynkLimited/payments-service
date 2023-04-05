@@ -8,7 +8,7 @@ import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
-import static in.wynk.payment.core.constant.WalletConstants.PHONEPE_WALLET;
+import static in.wynk.payment.constant.WalletConstants.PHONEPE_WALLET;
 
 @Getter
 @SuperBuilder
@@ -19,7 +19,7 @@ public class PhonePePaymentRefundResponse extends AbstractPaymentRefundResponse 
     private final String providerReferenceId;
 
     @Override
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(PHONEPE_WALLET);
     }
 

@@ -4,8 +4,8 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
-import in.wynk.payment.dto.aps.request.predebit.ApsPreDebitNotificationRequest;
-import in.wynk.payment.dto.aps.response.predebit.ApsPreDebitNotification;
+import in.wynk.payment.dto.aps.request.predebit.PreDebitNotificationRequest;
+import in.wynk.payment.dto.aps.response.predebit.PreDebitNotification;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.service.IPreDebitNotificationService;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -16,7 +16,7 @@ import org.springframework.http.HttpMethod;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY032;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_PRE_DEBIT_NOTIFICATION_ERROR;
-import static in.wynk.payment.core.constant.UpiConstants.UPI;
+import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.dto.apb.ApbConstants.TXN_SUCCESS;
 
 /**
@@ -42,10 +42,10 @@ public class ApsPreDebitNotificationGatewayServiceImpl implements IPreDebitNotif
         try {
             Transaction transaction = transactionManager.get(message.getTransactionId());
             String invoiceNumber = RecurringTransactionUtils.generateInvoiceNumber();
-            ApsPreDebitNotificationRequest request = buildApsPreDebitInfoRequest(message.getTransactionId(), message.getDate(), UPI, transaction.getAmount(), invoiceNumber);
-            ApsPreDebitNotification apsPreDebitNotification = common.exchange(PRE_DEBIT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()),request, ApsPreDebitNotification.class);
+            PreDebitNotificationRequest request = buildApsPreDebitInfoRequest(message.getTransactionId(), message.getDate(), UPI, transaction.getAmount(), invoiceNumber);
+            PreDebitNotification apsPreDebitNotification = common.exchange(PRE_DEBIT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()),request, PreDebitNotification.class);
             TransactionStatus transactionStatus = TXN_SUCCESS.equals(apsPreDebitNotification.getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
-            return ApsPreDebitNotification.builder().requestId(request.getPreDebitRequestId()).tid(message.getTransactionId()).transactionStatus(transactionStatus)
+            return PreDebitNotification.builder().requestId(request.getPreDebitRequestId()).tid(message.getTransactionId()).transactionStatus(transactionStatus)
                     .notificationStatus(apsPreDebitNotification.getNotificationStatus()).build();
         } catch (Exception e) {
             log.error(APS_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
@@ -62,11 +62,11 @@ public class ApsPreDebitNotificationGatewayServiceImpl implements IPreDebitNotif
      * @return Aps notification request with randomly created pre-debit Request id.
      */
 
-    private ApsPreDebitNotificationRequest buildApsPreDebitInfoRequest (String transactionId, String preDebitDate, String paymentMode, double amount, String invoiceNumber) {
+    private PreDebitNotificationRequest buildApsPreDebitInfoRequest (String transactionId, String preDebitDate, String paymentMode, double amount, String invoiceNumber) {
         long preDebitFirst = (long) (Math.random() * 100000000000000000L) + 910000000000000000L;
         long preDebitSecond = (long) (Math.random() * 90000000000000000L);
         String preDebitRequestId = preDebitFirst + "_" + preDebitSecond;
-        return ApsPreDebitNotificationRequest.builder().mandateTransactionId(transactionId).preDebitRequestId(preDebitRequestId).debitDate(preDebitDate).paymentMode(paymentMode)
+        return PreDebitNotificationRequest.builder().mandateTransactionId(transactionId).preDebitRequestId(preDebitRequestId).debitDate(preDebitDate).paymentMode(paymentMode)
                 .invoiceNumber(invoiceNumber).amount(amount).build();
     }
 }

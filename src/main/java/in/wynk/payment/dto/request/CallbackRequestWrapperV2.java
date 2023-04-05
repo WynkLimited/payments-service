@@ -54,7 +54,7 @@ public class CallbackRequestWrapperV2<T extends CallbackRequest> extends Callbac
         public B payload(Map<String, Object> payload) {
             if (Objects.isNull(paymentGateway))
                 throw new WynkRuntimeException("You must supply payment code first, before supplying payload");
-            this.body = BeanLocatorFactory.getBean(paymentGateway.getCode().concat(PaymentConstants.CALLBACK), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, T>>() {
+            this.body = BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, T>>() {
             }).parseCallback(payload);
             return self();
         }

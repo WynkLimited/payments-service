@@ -43,7 +43,6 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_ST
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
-@Service
 public class PayURenewalGatewayService implements IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     private final Gson gson;

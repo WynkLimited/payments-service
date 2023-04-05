@@ -32,7 +32,7 @@ import org.springframework.stereotype.Service;
  */
 @Service(PaymentConstants.PAYU)
 public class PayUGateway implements IVerificationService<AbstractVerificationResponse, VerificationRequest>,
-        IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
+        IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload>, IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     private final PayUVerificationGatewayService verificationGateway;
@@ -49,7 +49,6 @@ public class PayUGateway implements IVerificationService<AbstractVerificationRes
                       PaymentCachingService payCache,
                       PaymentMethodCachingService cache,
                       ApplicationEventPublisher eventPublisher,
-                      ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService) {
         this.statusGateway = new PayUStatusGatewayService(commonGateway);
         this.callbackGateway = new PayUCallbackGatewayService(commonGateway, eventPublisher, mapper);

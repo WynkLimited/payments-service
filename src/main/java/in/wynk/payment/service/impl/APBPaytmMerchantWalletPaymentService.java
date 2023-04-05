@@ -50,7 +50,7 @@ import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_TOKEN;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.core.constant.WalletConstants.WALLET;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
 import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.*;
 
 @Slf4j

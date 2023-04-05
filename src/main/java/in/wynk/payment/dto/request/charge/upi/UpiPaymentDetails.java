@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.Objects;
 
-import static in.wynk.payment.core.constant.UpiConstants.UPI;
+import static in.wynk.payment.constant.UpiConstants.UPI;
 
 @Getter
 @SuperBuilder

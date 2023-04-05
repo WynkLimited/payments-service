@@ -21,10 +21,10 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
-import static in.wynk.payment.core.constant.UpiConstants.UPI;
-import static in.wynk.payment.core.constant.CardConstants.CARD;
-import static in.wynk.payment.core.constant.WalletConstants.WALLET;
-import static in.wynk.payment.core.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.constant.UpiConstants.*;
+import static in.wynk.payment.constant.CardConstants.CARD;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
 
 import javax.validation.constraints.NotNull;
 

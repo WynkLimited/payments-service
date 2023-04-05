@@ -10,23 +10,31 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.data.enums.State;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.RecurringDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.UserBillingDetail;
 import in.wynk.payment.dto.addtobill.ATBOrderStatus;
+import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
+import in.wynk.payment.dto.common.BillingOptionInfo;
+import in.wynk.payment.dto.common.BillingSavedInfo;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.DefaultChargingRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
-import in.wynk.payment.dto.UserBillingDetail;
 import in.wynk.payment.dto.response.addtobill.AddToBillChargingResponse;
 import in.wynk.payment.dto.response.addtobill.UserAddToBillDetails;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
@@ -34,33 +42,36 @@ import in.wynk.payment.service.*;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.atb.*;
-import in.wynk.vas.client.dto.atb.CatalogueEligibilityAndPricingRequest;
 import in.wynk.vas.client.service.CatalogueVasClientService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
-import static in.wynk.payment.core.constant.PaymentErrorType.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.ATB01;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY201;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.ATBOrderStatus.COMPLETED;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
-public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService implements IExternalPaymentEligibilityService, IMerchantPaymentChargingService<AddToBillChargingResponse, DefaultChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
+public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService implements IExternalPaymentEligibilityService, IPaymentInstrumentsGatewayProxy<PaymentOptionsPlanEligibilityRequest>, IMerchantPaymentChargingService<AddToBillChargingResponse, DefaultChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
 
+    private final PaymentMethodCachingService payCache;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final CatalogueVasClientService catalogueVasClientService;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService) {
         super(cachingService, errorCodesCacheServiceImpl);
+        this.payCache = payCache;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.catalogueVasClientService = catalogueVasClientService;
@@ -121,37 +132,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         return builder.build();
     }
 
-
-    @Override
-    public Boolean isEligible(PaymentOptionsPlanEligibilityRequest root) {
-        return checkEligibility(root.getPlanId(), root.getSi());
-    }
-
-    private Boolean checkEligibility(String planId, String si) {
-        try {
-            final PlanDTO plan = cachingService.getPlan(planId);
-            final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-            if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
-                log.error("plan serviceIds or offer serviceGroup is not present");
-            } else {
-                final CatalogueEligibilityAndPricingResponse response = this.getEligibility(planId, si);
-                if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
-                    for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                        if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
-            return false;
-        }
-    }
-
-
     @Cacheable(cacheName = "AddToBillEligibilityCheck", cacheKey = "'addToBill-eligibility:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
     private CatalogueEligibilityAndPricingResponse getEligibility(String planId, String si) {
         try {
@@ -162,7 +142,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return null;
             } else {
                 final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).isBundle(offer.isThanksBundle()).build();
-                final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request,Boolean.TRUE);
+                final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request, Boolean.TRUE);
                 return response;
             }
         } catch (Exception e) {
@@ -314,4 +294,90 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             return null;
         }
     }
+
+    @Override
+    public boolean isEligible(PaymentMethod entity, PaymentOptionsPlanEligibilityRequest request) {
+        try {
+            final BillPaymentInstrumentsProxy proxy = ((BillPaymentInstrumentsProxy) request.getPaymentInstrumentsProxy(entity.getPaymentCode().getCode()));
+            final PlanDTO plan = cachingService.getPlan(proxy.getPlanId());
+            final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
+            if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
+                log.error("plan serviceIds or offer serviceGroup is not present");
+            } else {
+                final CatalogueEligibilityAndPricingResponse response = proxy.getResponse();
+                if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
+                    for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
+                        if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public AbstractPaymentInstrumentsProxy<?, ?> load(PaymentOptionsPlanEligibilityRequest request) {
+        return new BillPaymentInstrumentsProxy(request.getPlanId(), request.getSi());
+    }
+
+    @Getter
+    private class BillPaymentInstrumentsProxy extends AbstractPaymentInstrumentsProxy<BillingOptionInfo, BillingSavedInfo> {
+
+        private final String planId;
+        private final CatalogueEligibilityAndPricingResponse response;
+
+        public BillPaymentInstrumentsProxy(String planId, String si) {
+            super();
+            this.planId = planId;
+            response = getEligibility(planId, si);
+        }
+
+        @Override
+        public List<BillingOptionInfo> getPaymentInstruments(String userId) {
+            final PaymentMethod method = payCache.get(BaseConstants.ADDTOBILL);
+            return Collections.singletonList(BillingOptionInfo.builder()
+                    .id(BaseConstants.ADDTOBILL)
+                    .recommended(Boolean.TRUE)
+                    .order(method.getHierarchy())
+                    .enabled(method.getState().equals(State.ACTIVE))
+                    .title(method.getDisplayName())
+                    .build());
+        }
+
+        @Override
+        public List<BillingSavedInfo> getSavedDetails(String userId) {
+            final PlanDTO plan = cachingService.getPlan(planId);
+            final PaymentMethod method = payCache.get(BaseConstants.ADDTOBILL);
+            final BillingSavedInfo.BillingSavedInfoBuilder<?, ?> builder = BillingSavedInfo.builder();
+            if (Objects.nonNull(response)) {
+                for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
+                    if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
+                        builder.linkedSis(eligibleServices.getLinkedSis()).enable(response.isSuccess());
+                        break;
+                    }
+                }
+            }
+            return Collections.singletonList(builder
+                    .autoPayEnabled(method.isAutoRenewSupported())
+                    .code(method.getPaymentCode().getCode())
+                    .id(BaseConstants.ADDTOBILL)
+                    .type(BaseConstants.ADDTOBILL)
+                    .group(method.getGroup())
+                    .recommended(Boolean.TRUE)
+                    .valid(response.isSuccess())
+                    .iconUrl(method.getIconUrl())
+                    .order(method.getHierarchy())
+                    .title(method.getDisplayName())
+                    .expressCheckout(Boolean.TRUE)
+                    .build());
+        }
+
+    }
+
 }

@@ -7,7 +7,7 @@ import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.request.sattlement.ApsSettlementRequest;
+import in.wynk.payment.dto.aps.request.sattlement.SettlementRequest;
 import in.wynk.payment.dto.request.PaymentGatewaySettlementRequest;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
 import in.wynk.payment.service.IMerchantPaymentSettlement;
@@ -65,15 +65,15 @@ public class ApsPaymentSettlementGateway implements IMerchantPaymentSettlement<D
         final String settlementOrderId = UUIDs.random().toString();
         final Transaction transaction = TransactionContext.get();
         final PlanDTO purchasedPlan = cachingService.getPlan(transaction.getPlanId());
-        final List<ApsSettlementRequest.OrderDetails> orderDetails = purchasedPlan.getActivationServiceIds().stream()
-                .map(serviceId -> ApsSettlementRequest.OrderDetails.builder().serviceOrderId(request.getTid()).serviceId(serviceId)
-                        .paymentDetails(ApsSettlementRequest.OrderDetails.PaymentDetails.builder().paymentAmount(Double.toString(transaction.getAmount())).build()).build())
+        final List<SettlementRequest.OrderDetails> orderDetails = purchasedPlan.getActivationServiceIds().stream()
+                .map(serviceId -> SettlementRequest.OrderDetails.builder().serviceOrderId(request.getTid()).serviceId(serviceId)
+                        .paymentDetails(SettlementRequest.OrderDetails.PaymentDetails.builder().paymentAmount(Double.toString(transaction.getAmount())).build()).build())
                 .collect(Collectors.toList());
-        final ApsSettlementRequest settlementRequest = ApsSettlementRequest.builder().channel("DIGITAL_STORE").orderId(settlementOrderId)
-                .paymentDetails(ApsSettlementRequest.PaymentDetails.builder().paymentTransactionId(request.getTid()).orderPaymentAmount(transaction.getAmount()).build())
+        final SettlementRequest settlementRequest = SettlementRequest.builder().channel("DIGITAL_STORE").orderId(settlementOrderId)
+                .paymentDetails(SettlementRequest.PaymentDetails.builder().paymentTransactionId(request.getTid()).orderPaymentAmount(transaction.getAmount()).build())
                 .serviceOrderDetails(orderDetails).build();
         final HttpHeaders headers = new HttpHeaders();
-        final RequestEntity<ApsSettlementRequest> requestEntity = new RequestEntity<>(settlementRequest, headers, HttpMethod.POST, URI.create(SETTLEMENT_ENDPOINT));
+        final RequestEntity<SettlementRequest> requestEntity = new RequestEntity<>(settlementRequest, headers, HttpMethod.POST, URI.create(SETTLEMENT_ENDPOINT));
         httpTemplate.exchange(requestEntity, String.class);
         return DefaultPaymentSettlementResponse.builder().referenceId(settlementOrderId).build();
     }

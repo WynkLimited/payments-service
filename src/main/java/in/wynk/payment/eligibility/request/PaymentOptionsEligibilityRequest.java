@@ -39,10 +39,10 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     @Setter
     private String group;
 
-    public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode, String userId) {
+    public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode) {
         if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))
             return payInstrumentProxyMap.get(payCode);
-        final AbstractPaymentInstrumentsProxy proxy = BeanLocatorFactory.getBean(payCode, IPaymentInstrumentsGatewayProxy.class).load(userId);
+        final AbstractPaymentInstrumentsProxy proxy = BeanLocatorFactory.getBean(payCode, IPaymentInstrumentsGatewayProxy.class).load(this);
         return payInstrumentProxyMap.put(payCode, proxy);
     }
 

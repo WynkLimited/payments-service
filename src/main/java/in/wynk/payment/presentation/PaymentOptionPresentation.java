@@ -3,14 +3,13 @@ package in.wynk.payment.presentation;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.IWynkPresentation;
-import in.wynk.payment.core.constant.CardConstants;
-import in.wynk.payment.core.constant.NetBankingConstants;
-import in.wynk.payment.core.constant.UpiConstants;
-import in.wynk.payment.core.constant.WalletConstants;
+import in.wynk.payment.constant.CardConstants;
+import in.wynk.payment.constant.NetBankingConstants;
+import in.wynk.payment.constant.UpiConstants;
+import in.wynk.payment.constant.WalletConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
-import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.aps.common.HealthStatus;
@@ -53,7 +52,6 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
     private final PaymentCachingService payCache;
     private final PaymentGroupCachingService groupCache;
-    private final PaymentMethodCachingService methodCache;
 
     private final IPresentation<IProductDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> productPresentation = new ProductPresentation();
     private final IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> detailsPresentation = new SavedDetailsPresentation();
@@ -123,7 +121,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
     private interface IPaymentOptionInfoPresentation<T extends AbstractPaymentMethodDTO, P extends AbstractPaymentOptionInfo> extends IPresentation<T, Pair<PaymentMethodDTO, Optional<P>>> {
     }
 
-    private class PaymentMethodPresentation implements IPresentation<Map<String, List<AbstractPaymentMethodDTO>>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+    private static class PaymentMethodPresentation implements IPresentation<Map<String, List<AbstractPaymentMethodDTO>>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
         private final Map<String, IPaymentOptionInfoPresentation> delegate = new HashMap<>();
 
@@ -147,9 +145,8 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             return payMap;
         }
 
-        private class UPIPresentation implements IPaymentOptionInfoPresentation<UPI, UpiOptionInfo> {
+        private static class UPIPresentation implements IPaymentOptionInfoPresentation<UPI, UpiOptionInfo> {
             private static final String INTENT_SUPPORT = "intent";
-
             @Override
             public UPI transform(Pair<PaymentMethodDTO, Optional<UpiOptionInfo>> payload) {
                 final PaymentMethodDTO methodDTO = payload.getFirst();
@@ -176,13 +173,10 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .build())
                         .build();
             }
-
         }
 
-        private class CardPresentation implements IPaymentOptionInfoPresentation<Card, CardOptionInfo> {
-
+        private static class CardPresentation implements IPaymentOptionInfoPresentation<Card, CardOptionInfo> {
             private static final String SUPPORTED_CARD_ICONS = "supported_card_icons";
-
             @Override
             public Card transform(Pair<PaymentMethodDTO, Optional<CardOptionInfo>> payload) {
                 final PaymentMethodDTO methodDTO = payload.getFirst();
@@ -207,7 +201,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         }
 
-        private class WalletPresentation implements IPaymentOptionInfoPresentation<Wallet, WalletOptionInfo> {
+        private static class WalletPresentation implements IPaymentOptionInfoPresentation<Wallet, WalletOptionInfo> {
 
             @Override
             public Wallet transform(Pair<PaymentMethodDTO, Optional<WalletOptionInfo>> payload) {
@@ -232,7 +226,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         }
 
-        private class NetBankingPresentation implements IPaymentOptionInfoPresentation<NetBanking, NetBankingOptionInfo> {
+        private static class NetBankingPresentation implements IPaymentOptionInfoPresentation<NetBanking, NetBankingOptionInfo> {
             @Override
             public NetBanking transform(Pair<PaymentMethodDTO, Optional<NetBankingOptionInfo>> payload) {
                 final PaymentMethodDTO methodDTO = payload.getFirst();
@@ -256,7 +250,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         }
 
-        private class BillingPresentation implements IPaymentOptionInfoPresentation<AddToBill, BillingOptionInfo> {
+        private static class BillingPresentation implements IPaymentOptionInfoPresentation<AddToBill, BillingOptionInfo> {
 
             @Override
             public AddToBill transform(Pair<PaymentMethodDTO, Optional<BillingOptionInfo>> payload) {
@@ -282,9 +276,11 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
     }
 
-    private class SavedDetailsPresentation implements IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+    private interface ISavedDetailsPresentation<R extends AbstractSavedPaymentDTO, T extends AbstractSavedInstrumentInfo> extends IPresentation<R, T> {}
 
-        private final Map<String, IPresentation<? extends AbstractSavedPaymentDTO, ? extends AbstractSavedInstrumentInfo>> delegate = new HashMap<>();
+    private static class SavedDetailsPresentation implements IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+
+        private final Map<String, ISavedDetailsPresentation> delegate = new HashMap<>();
 
         public SavedDetailsPresentation() {
             delegate.put(UpiConstants.UPI, new UPIPresentation());
@@ -296,11 +292,10 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> delegate.get(details.getType()).transform(details)).collect(Collectors.toList());
+            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getType()).transform(details))).collect(Collectors.toList());
         }
 
-        private class UPIPresentation implements IPresentation<UpiSavedDetails, UpiSavedInfo> {
-
+        private static class UPIPresentation implements ISavedDetailsPresentation<UpiSavedDetails, UpiSavedInfo> {
             @Override
             public UpiSavedDetails transform(UpiSavedInfo payload) {
 
@@ -320,8 +315,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         }
 
-        private class CardPresentation implements IPresentation<CardSavedDetails, SavedCardInfo> {
-
+        private static class CardPresentation implements ISavedDetailsPresentation<CardSavedDetails, SavedCardInfo> {
             @Override
             public CardSavedDetails transform(SavedCardInfo payload) {
                 return CardSavedDetails.builder()
@@ -353,8 +347,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         }
 
-        private class WalletPresentation implements IPresentation<WalletSavedDetails, WalletSavedInfo> {
-
+        private static class WalletPresentation implements ISavedDetailsPresentation<WalletSavedDetails, WalletSavedInfo> {
             @Override
             public WalletSavedDetails transform(WalletSavedInfo payload) {
                 return WalletSavedDetails.builder()
@@ -372,15 +365,13 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .recommended(payload.isRecommended())
                         .autoPayEnabled(payload.isAutoPayEnabled())
                         .expressCheckout(payload.isExpressCheckout())
-                        //.canCheckOut(payload.is)
                         .addMoneyAllowed(payload.isAddMoneyAllowed())
                         .build();
             }
 
         }
 
-        private class NetBankingPresentation implements IPresentation<NetBankingSavedDetails, NetBankingSavedInfo> {
-
+        private static class NetBankingPresentation implements ISavedDetailsPresentation<NetBankingSavedDetails, NetBankingSavedInfo> {
             @Override
             public NetBankingSavedDetails transform(NetBankingSavedInfo payload) {
                 return NetBankingSavedDetails.builder()
@@ -397,7 +388,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             }
         }
 
-        private class BillingPresentation implements IPresentation<BillingSavedDetails, BillingSavedInfo> {
+        private static class BillingPresentation implements ISavedDetailsPresentation<BillingSavedDetails, BillingSavedInfo> {
             @Override
             public BillingSavedDetails transform(BillingSavedInfo payload) {
                 return BillingSavedDetails.builder()

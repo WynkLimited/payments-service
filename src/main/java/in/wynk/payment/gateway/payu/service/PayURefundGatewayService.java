@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 @Slf4j
-@Service
 public class PayURefundGatewayService implements IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
 
     private final PayUCommonGatewayService common;

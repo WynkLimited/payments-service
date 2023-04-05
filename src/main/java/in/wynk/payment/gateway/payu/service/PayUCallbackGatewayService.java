@@ -32,7 +32,6 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
-@Service
 public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
     private final PayUCommonGatewayService common;

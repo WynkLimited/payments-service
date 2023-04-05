@@ -30,7 +30,7 @@ public class AmazonIapVerificationRequest extends IapVerificationRequest {
     private UserData userData;
 
     @Override
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(AMAZON_IAP);
     }
 

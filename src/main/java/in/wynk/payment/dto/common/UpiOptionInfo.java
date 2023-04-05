@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.common;
 
-import in.wynk.payment.core.constant.UpiConstants;
+import in.wynk.payment.constant.UpiConstants;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 

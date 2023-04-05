@@ -11,8 +11,8 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.request.refund.ApsExternalPaymentRefundRequest;
-import in.wynk.payment.dto.aps.response.refund.ApsExternalPaymentRefundStatusResponse;
+import in.wynk.payment.dto.aps.request.refund.ExternalPaymentRefundRequest;
+import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
 import in.wynk.payment.service.IMerchantPaymentRefundService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -46,10 +46,10 @@ public class ApsRefundGatewayServiceImpl implements IMerchantPaymentRefundServic
                         .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
                         .paymentEvent(refundTransaction.getType());
         try {
-            final ApsExternalPaymentRefundRequest refundRequest =
-                    ApsExternalPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).build();
-            ApsExternalPaymentRefundStatusResponse body =
-                    common.exchange(REFUND_ENDPOINT, HttpMethod.POST,common.getLoginId(refundTransaction.getMsisdn()),refundRequest, ApsExternalPaymentRefundStatusResponse.class);
+            final ExternalPaymentRefundRequest refundRequest =
+                    ExternalPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).build();
+            ExternalPaymentRefundStatusResponse body =
+                    common.exchange(REFUND_ENDPOINT, HttpMethod.POST,common.getLoginId(refundTransaction.getMsisdn()),refundRequest, ExternalPaymentRefundStatusResponse.class);
 
             mBuilder.request(refundRequest);
             mBuilder.response(body);

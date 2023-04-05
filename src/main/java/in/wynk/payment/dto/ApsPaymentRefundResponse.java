@@ -16,7 +16,7 @@ public class ApsPaymentRefundResponse extends AbstractPaymentRefundResponse {
     private String requestId;
 
     @Override
-    public PaymentGateway getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(PaymentConstants.AIRTEL_PAY_STACK);
     }
 

@@ -35,6 +35,7 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private String paymentCode;
     private String ruleExpression;
 
+    private String tag;
     private List<String> suffixes;
     private Map<String, Object> meta;
 
@@ -44,6 +45,10 @@ public class PaymentMethod extends MongoBaseEntity<String> {
 
     public String getAlias() {
         return StringUtils.isNotEmpty(alias) ? alias: getId();
+    }
+
+    public String getTag() {
+        return StringUtils.isEmpty(tag) ? getId(): tag;
     }
 
 }

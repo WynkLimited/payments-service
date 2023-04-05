@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public class SupportingDetails {
-    @JsonProperty("save_supported")
+    @JsonProperty("is_save_supported")
     private boolean saveSupported;
     @JsonProperty("auto_renew_supported")
     private boolean autoRenewSupported;

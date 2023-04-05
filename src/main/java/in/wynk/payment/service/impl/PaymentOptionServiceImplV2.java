@@ -106,7 +106,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
             List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredDTO = filterMethods.stream().map((pm) -> new in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             finalMethods.addAll(filteredDTO);
         }
-        return new ArrayList<>(finalMethods.stream().collect(Collectors.toMap(PaymentOptionsDTO.PaymentMethodDTO::getTag, Function.identity(), (pm1, pm2) -> pm1.getHierarchy() > pm2.getHierarchy() ? pm1: pm2)).values());
+        return new ArrayList<>(finalMethods.stream().collect(Collectors.toMap(PaymentOptionsDTO.PaymentMethodDTO::getTag, Function.identity(), (pm1, pm2) -> pm1.getHierarchy() < pm2.getHierarchy() ? pm1: pm2)).values());
     }
 
     private List<PaymentMethod> filterPaymentMethodsBasedOnEligibility(PaymentOptionsComputationResponse response, List<PaymentMethod> methods) {

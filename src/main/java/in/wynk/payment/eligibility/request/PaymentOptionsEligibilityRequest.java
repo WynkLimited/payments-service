@@ -43,7 +43,8 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
         if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))
             return payInstrumentProxyMap.get(payCode);
         final AbstractPaymentInstrumentsProxy proxy = BeanLocatorFactory.getBean(payCode, IPaymentInstrumentsGatewayProxy.class).load(this);
-        return payInstrumentProxyMap.put(payCode, proxy);
+        payInstrumentProxyMap.put(payCode, proxy);
+        return proxy;
     }
 
     public static PaymentOptionsEligibilityRequest from(PaymentOptionsComputationDTO computationDTO) {

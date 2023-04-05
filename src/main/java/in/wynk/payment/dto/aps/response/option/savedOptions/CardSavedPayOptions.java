@@ -1,6 +1,8 @@
 package in.wynk.payment.dto.aps.response.option.savedOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.constant.CardConstants;
+import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -39,4 +41,9 @@ public class CardSavedPayOptions extends AbstractSavedPayOptions {
     private boolean showTokenizationConsent;
     private String iconUrl;
     private boolean expired;
+
+    @Override
+    public String getId() {
+        return PaymentConstants.APS.concat("_").concat(CardConstants.CARD);
+    }
 }

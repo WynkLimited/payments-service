@@ -334,16 +334,21 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private class BillPaymentInstrumentsProxy extends AbstractPaymentInstrumentsProxy<BillingOptionInfo, BillingSavedInfo> {
 
         private final String planId;
+        private final List<BillingOptionInfo> billingOptionCache;
+        private final List<BillingSavedInfo> billingSavedInfoCache;
         private final CatalogueEligibilityAndPricingResponse response;
 
         public BillPaymentInstrumentsProxy(String planId, String si) {
             super();
             this.planId = planId;
-            response = getEligibility(planId, si);
+            this.response = getEligibility(planId, si);
+            this.billingSavedInfoCache = getSavedDetails(si);
+            this.billingOptionCache = getPaymentInstruments(si);
         }
 
         @Override
         public List<BillingOptionInfo> getPaymentInstruments(String userId) {
+            if (Objects.nonNull(billingOptionCache)) return billingOptionCache;
             final PaymentMethod method = payCache.get(BaseConstants.ADDTOBILL);
             return Collections.singletonList(BillingOptionInfo.builder()
                     .id(BaseConstants.ADDTOBILL)
@@ -356,6 +361,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
         @Override
         public List<BillingSavedInfo> getSavedDetails(String userId) {
+            if (Objects.nonNull(billingSavedInfoCache)) return billingSavedInfoCache;
             final PlanDTO plan = cachingService.getPlan(planId);
             final PaymentMethod method = payCache.get(BaseConstants.ADDTOBILL);
             final List<BillingSavedInfo> savedInfoList = new ArrayList<>();
@@ -370,8 +376,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 savedInfoList.add(builder
                         .autoPayEnabled(method.isAutoRenewSupported())
                         .code(method.getPaymentCode().getCode())
-                        .id(BaseConstants.ADDTOBILL)
-                        .type(BaseConstants.ADDTOBILL)
+                        .id(method.getId())
+                        .type(method.getGroup())
                         .group(method.getGroup())
                         .recommended(Boolean.TRUE)
                         .valid(response.isSuccess())

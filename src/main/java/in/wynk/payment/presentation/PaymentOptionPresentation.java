@@ -9,7 +9,9 @@ import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.constant.WalletConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.aps.common.HealthStatus;
@@ -52,6 +54,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
     private final PaymentCachingService payCache;
     private final PaymentGroupCachingService groupCache;
+    private final PaymentMethodCachingService methodCache;
 
     private final IPresentation<IProductDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> productPresentation = new ProductPresentation();
     private final IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> detailsPresentation = new SavedDetailsPresentation();
@@ -170,7 +173,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .paymentStatusPoll((Double) methodDTO.getMeta().get(POLLING_FREQUENCY))
                                 .buildCheck((Map<String, Map<String, Integer>>) methodDTO.getMeta().get(BUILD_CHECK))
                                 .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
-                                .packageName((String) methodDTO.getMeta().getOrDefault(META_PACKAGE_NAME, payOptional.map(info -> info.getPackageId()).orElse(null)))
+                                .packageName((String) methodDTO.getMeta().getOrDefault(META_PACKAGE_NAME, payOptional.map(UpiOptionInfo::getPackageId).orElse(null)))
                                 .build())
                         .build();
             }
@@ -283,7 +286,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
     private interface ISavedDetailsPresentation<R extends AbstractSavedPaymentDTO, T extends AbstractSavedInstrumentInfo> extends IPresentation<R, T> {}
 
-    private static class SavedDetailsPresentation implements IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
+    private class SavedDetailsPresentation implements IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
         private final Map<String, ISavedDetailsPresentation> delegate = new HashMap<>();
 
@@ -297,77 +300,82 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getType()).transform(details))).collect(Collectors.toList());
+            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> {
+                final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1));
+                return proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> aliasToIds.containsKey(details.getId()));
+            }).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details))).collect(Collectors.toList());
         }
 
-        private static class UPIPresentation implements ISavedDetailsPresentation<UpiSavedDetails, UpiSavedInfo> {
+        private class UPIPresentation implements ISavedDetailsPresentation<UpiSavedDetails, UpiSavedInfo> {
             @Override
             public UpiSavedDetails transform(UpiSavedInfo payload) {
-
+                final PaymentMethod method = methodCache.getByAlias(payload.getId());
                 return UpiSavedDetails.builder()
+                        .id(method.getId())
                         .vpa(payload.getVpa())
-                        .id(payload.getPayId())
-                        .code(payload.getCode())
-                        .group(payload.getGroup())
+                        .group(method.getGroup())
                         .health(payload.getHealth())
                         .favorite(payload.isFavourite())
                         .preferred(payload.isPreferred())
                         .packageName(payload.getPackageId())
                         .recommended(payload.isRecommended())
+                        .code(method.getPaymentCode().getCode())
                         .autoPayEnabled(payload.isAutoPayEnabled())
                         .build();
             }
 
         }
 
-        private static class CardPresentation implements ISavedDetailsPresentation<CardSavedDetails, SavedCardInfo> {
+        private class CardPresentation implements ISavedDetailsPresentation<CardSavedDetails, SavedCardInfo> {
             @Override
             public CardSavedDetails transform(SavedCardInfo payload) {
+                final PaymentMethod method = methodCache.getByAlias(payload.getId());
                 return CardSavedDetails.builder()
-                        .id(payload.getId())
-                        .code(payload.getCode())
-                        .group(payload.getGroup())
-                        .health(payload.getHealth())
-                        .favorite(payload.isFavourite())
-                        .preferred(payload.isPreferred())
-                        .recommended(payload.isRecommended())
-                        .autoPayEnabled(payload.isAutoPayEnabled())
-                        .expressCheckout(payload.isExpressCheckout())
-                        .cardToken(payload.getCardRefNo())
-                        .cardNumber(payload.getMaskedCardNumber())
-                        .bankName(payload.getCardBankName())
-                        .expiryMonth(payload.getExpiryMonth())
-                        .expiryYear(payload.getExpiryYear())
-                        .cardType(payload.getCardType())
-                        .cardCategory(payload.getCardCategory())
-                        .cardbin(payload.getCardBin())
-                        .bankCode(payload.getBankCode())
-                        .cvvLength(payload.getCvvLength())
+                        .id(method.getId())
+                        .group(method.getGroup())
                         .icon(payload.getIconUrl())
                         .active(payload.isEnable())
+                        .health(payload.getHealth())
                         .expired(payload.isExpired())
                         .blocked(payload.isBlocked())
+                        .cardbin(payload.getCardBin())
+                        .bankCode(payload.getBankCode())
+                        .cardType(payload.getCardType())
+                        .favorite(payload.isFavourite())
+                        .preferred(payload.isPreferred())
+                        .cvvLength(payload.getCvvLength())
+                        .cardToken(payload.getCardRefNo())
+                        .expiryYear(payload.getExpiryYear())
+                        .bankName(payload.getCardBankName())
+                        .recommended(payload.isRecommended())
+                        .expiryMonth(payload.getExpiryMonth())
+                        .code(method.getPaymentCode().getCode())
+                        .cardNumber(payload.getMaskedCardNumber())
+                        .autoPayEnabled(payload.isAutoPayEnabled())
+                        .expressCheckout(payload.isExpressCheckout())
+                        .cardCategory(payload.getCardCategory())
                         .build();
             }
 
         }
 
-        private static class WalletPresentation implements ISavedDetailsPresentation<WalletSavedDetails, WalletSavedInfo> {
+        private class WalletPresentation implements ISavedDetailsPresentation<WalletSavedDetails, WalletSavedInfo> {
             @Override
             public WalletSavedDetails transform(WalletSavedInfo payload) {
+                final PaymentMethod method = methodCache.getByAlias(payload.getId());
                 return WalletSavedDetails.builder()
-                        .id(payload.getId())
-                        .code(payload.getCode())
+                        .id(method.getId())
                         .valid(payload.isValid())
-                        .group(payload.getGroup())
+                        .group(method.getGroup())
                         .linked(payload.isLinked())
                         .health(payload.getHealth())
                         .balance(payload.getBalance())
                         .favorite(payload.isFavourite())
                         .walletId(payload.getWalletId())
-                        .minBalance(payload.getMinBalance())
                         .preferred(payload.isPreferred())
+                        .minBalance(payload.getMinBalance())
                         .recommended(payload.isRecommended())
+                        .code(method.getPaymentCode().getCode())
                         .autoPayEnabled(payload.isAutoPayEnabled())
                         .expressCheckout(payload.isExpressCheckout())
                         .addMoneyAllowed(payload.isAddMoneyAllowed())
@@ -376,35 +384,37 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         }
 
-        private static class NetBankingPresentation implements ISavedDetailsPresentation<NetBankingSavedDetails, NetBankingSavedInfo> {
+        private class NetBankingPresentation implements ISavedDetailsPresentation<NetBankingSavedDetails, NetBankingSavedInfo> {
             @Override
             public NetBankingSavedDetails transform(NetBankingSavedInfo payload) {
+                final PaymentMethod method = methodCache.getByAlias(payload.getId());
                 return NetBankingSavedDetails.builder()
-                        .id(payload.getId())
-                        .code(payload.getCode())
-                        .group(payload.getGroup())
+                        .id(method.getId())
+                        .group(method.getGroup())
                         .health(payload.getHealth())
                         .favorite(payload.isFavourite())
                         .preferred(payload.isPreferred())
                         .recommended(payload.isRecommended())
+                        .code(method.getPaymentCode().getCode())
                         .autoPayEnabled(payload.isAutoPayEnabled())
                         .expressCheckout(payload.isExpressCheckout())
                         .build();
             }
         }
 
-        private static class BillingPresentation implements ISavedDetailsPresentation<BillingSavedDetails, BillingSavedInfo> {
+        private class BillingPresentation implements ISavedDetailsPresentation<BillingSavedDetails, BillingSavedInfo> {
             @Override
             public BillingSavedDetails transform(BillingSavedInfo payload) {
+                final PaymentMethod method = methodCache.getByAlias(payload.getId());
                 return BillingSavedDetails.builder()
-                        .id(payload.getId())
-                        .code(payload.getCode())
-                        .group(payload.getGroup())
+                        .id(method.getId())
+                        .group(method.getGroup())
                         .health(payload.getHealth())
                         .favorite(payload.isFavourite())
                         .preferred(payload.isPreferred())
                         .linkedSis(payload.getLinkedSis())
                         .recommended(payload.isRecommended())
+                        .code(method.getPaymentCode().getCode())
                         .autoPayEnabled(payload.isAutoPayEnabled())
                         .expressCheckout(payload.isExpressCheckout())
                         .build();

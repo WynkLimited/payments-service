@@ -30,4 +30,5 @@ public interface UpiConstants {
     String RECUR_VALUE = "recurvalue";
     String VALIDITY_END = "validityend";
     String VALIDITY_START = "validitystart";
+    String DEFAULT_COLLECT = "DEFAULT_COLLECT";
 }

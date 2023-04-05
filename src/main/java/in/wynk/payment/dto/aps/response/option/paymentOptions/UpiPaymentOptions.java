@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -46,7 +47,7 @@ public class UpiPaymentOptions extends AbstractPaymentOptions {
         private List<String> disabledLobs;
         @Override
         public String getId() {
-            return PaymentConstants.APS.concat("_").concat(getUpiPspAppName());
+            return PaymentConstants.APS.concat("_").concat(UpiConstants.UPI).concat("_").concat(getUpiPspAppName());
         }
 
         @Override

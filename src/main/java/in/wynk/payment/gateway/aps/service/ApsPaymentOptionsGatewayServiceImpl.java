@@ -53,15 +53,21 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
 
     @Getter
     private class ApsPaymentInstrumentsProxy extends AbstractPaymentInstrumentsProxy {
+
         private final PaymentOptionsResponse response;
+        private final List<AbstractPaymentOptionInfo> payOptionsCache;
+        private final List<AbstractSavedInstrumentInfo> savedInstrumentCache;
 
         public ApsPaymentInstrumentsProxy(String userId) {
             super();
-            response = payOption(userId);
+            this.response = payOption(userId);
+            this.payOptionsCache = getPaymentInstruments(userId);
+            this.savedInstrumentCache = getSavedDetails(userId);
         }
 
         @Override
         public List<AbstractPaymentOptionInfo> getPaymentInstruments(String userId) {
+            if (Objects.nonNull(payOptionsCache)) return payOptionsCache;
             final List<AbstractPaymentOptionInfo> payInfoList = new ArrayList<>();
             if (!CollectionUtils.isEmpty(response.getPayOptions())) {
                 response.getPayOptions().forEach(option -> {
@@ -70,15 +76,19 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                             case CardConstants.CARDS:
                                 final List<CardOptionInfo> cardOptionInfoList = ((CardPaymentOptions) option).getOption().stream().map(cardOption -> CardOptionInfo.builder().id(cardOption.getId()).order(payInfoList.size()).enabled(cardOption.isEnabled()).build()).collect(Collectors.toList());
                                 payInfoList.addAll(cardOptionInfoList);
+                                break;
                             case UpiConstants.UPI:
                                 final List<UpiOptionInfo> upiOptionInfoList = ((UpiPaymentOptions) option).getOption().stream().map(upiOption -> UpiOptionInfo.builder().enabled(upiOption.isEnabled()).id(upiOption.getId()).health(upiOption.getHealth()).title(upiOption.getDisplayName()).order(upiOption.getOrder()).packageId(upiOption.getHyperSdkPackageName()).build()).collect(Collectors.toList());
                                 payInfoList.addAll(upiOptionInfoList);
+                                break;
                             case WalletConstants.WALLETS:
                                 final List<WalletOptionInfo> walletOptionInfoList = ((WalletPaymentsOptions) option).getOption().stream().map(walletOption -> WalletOptionInfo.builder().id(walletOption.getId()).enabled(walletOption.isEnabled()).title(walletOption.getId()).recommended(walletOption.isRecommended()).health(walletOption.getHealth()).order(payInfoList.size()).build()).collect(Collectors.toList());
                                 payInfoList.addAll(walletOptionInfoList);
+                                break;
                             case NetBankingConstants.NETBANKING:
                                 final List<NetBankingOptionInfo> netBankingOptionInfoList = ((NetBankingPaymentOptions) option).getOption().stream().map(bankOption -> NetBankingOptionInfo.builder().id(bankOption.getId()).health(bankOption.getHealth()).title(bankOption.getName()).recommended(bankOption.isRecommended()).enabled(bankOption.isEnabled()).build()).collect(Collectors.toList());
                                 payInfoList.addAll(netBankingOptionInfoList);
+                                break;
                         }
                     }
                 });
@@ -88,15 +98,18 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
 
         @Override
         public List<AbstractSavedInstrumentInfo> getSavedDetails(String userId) {
+            if (Objects.nonNull(savedInstrumentCache)) return savedInstrumentCache;
             final List<AbstractSavedInstrumentInfo> savedDetails = new ArrayList<>();
-            if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
+            if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && !CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
                 response.getSavedUserOptions().getPayOptions().forEach(savedOption -> {
                     final String paymentGroup = PAY_GROUP_MIGRATION_MAPPING.getOrDefault(savedOption.getType(), savedOption.getType());
                     switch (savedOption.getType()) {
                         case CardConstants.CARDS:
                             final CardSavedPayOptions savedCardOption = ((CardSavedPayOptions) savedOption);
                             final SavedCardInfo cardInfo = SavedCardInfo.builder()
+                                    .id(savedCardOption.getId())
                                     .type(paymentGroup)
+                                    .group(paymentGroup)
                                     .order(savedOption.getOrder())
                                     .health(savedCardOption.getHealth())
                                     .expired(savedCardOption.isExpired())
@@ -130,10 +143,13 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                                     .enable(!savedCardOption.isBlocked() && !savedCardOption.isExpired() && !savedCardOption.isHidden())
                                     .build();
                             savedDetails.add(cardInfo);
+                            break;
                         case UpiConstants.UPI:
                             final UpiSavedOptions savedUpiOption = ((UpiSavedOptions) savedOption);
                             final UpiSavedInfo upiInfo = UpiSavedInfo.builder()
                                     .type(paymentGroup)
+                                    .group(paymentGroup)
+                                    .id(savedUpiOption.getId())
                                     .iconUrl(savedUpiOption.getIconUrl())
                                     .health(savedUpiOption.getHealth())
                                     .order(savedUpiOption.getOrder())
@@ -146,14 +162,16 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                                     .preferred(savedUpiOption.isPreferred())
                                     .expressCheckout(savedUpiOption.isShowOnQuickCheckout())
                                     .vpa(savedUpiOption.getUserVPA())
-                                    .payId(savedUpiOption.getUpiPspAppName())
                                     .packageId(savedUpiOption.getHyperSdkPackageName())
                                     .build();
                             savedDetails.add(upiInfo);
+                            break;
                         case WalletConstants.WALLETS:
                             final WalletSavedOptions savedWalletOption = ((WalletSavedOptions) savedOption);
                             final WalletSavedInfo walletInfo = WalletSavedInfo.builder()
                                     .type(paymentGroup)
+                                    .group(paymentGroup)
+                                    .id(savedWalletOption.getId())
                                     .valid(savedWalletOption.isValid())
                                     .order(savedWalletOption.getOrder())
                                     .linked(savedWalletOption.isLinked())
@@ -171,10 +189,13 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                                     .expressCheckout(savedWalletOption.isShowOnQuickCheckout())
                                     .build();
                             savedDetails.add(walletInfo);
+                            break;
                         case NetBankingConstants.NETBANKING:
                             final NetBankingSavedPayOptions savedBankOption = ((NetBankingSavedPayOptions) savedOption);
                             final NetBankingSavedInfo bankInfo = NetBankingSavedInfo.builder()
                                     .type(paymentGroup)
+                                    .group(paymentGroup)
+                                    .id(savedBankOption.getId())
                                     .order(savedBankOption.getOrder())
                                     .health(savedBankOption.getHealth())
                                     .enable(!savedBankOption.isHidden())
@@ -184,6 +205,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                                     .expressCheckout(savedBankOption.isShowOnQuickCheckout())
                                     .build();
                             savedDetails.add(bankInfo);
+                            break;
                     }
                 });
             }

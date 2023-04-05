@@ -7,6 +7,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class UpiSavedInfo extends AbstractSavedInstrumentInfo {
     private String vpa;
-    private String payId;
     private String packageId;
 }

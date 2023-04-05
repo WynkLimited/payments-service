@@ -36,13 +36,17 @@ import static in.wynk.payment.constant.WalletConstants.WALLETS;
 public abstract class AbstractSavedPayOptions {
     private String type;
     private Integer order;
-    private BigDecimal minAmount;
     private String health;
-    private Integer healthSr;
-    private boolean preferred;
-    private boolean showOnQuickCheckout;
-    private boolean hidden;
     private String rank;
     private String iconUrl;
+
+    private Integer healthSr;
+    private BigDecimal minAmount;
+
+    private boolean hidden;
     private boolean favourite;
+    private boolean preferred;
+    private boolean showOnQuickCheckout;
+
+    public abstract String getId();
 }

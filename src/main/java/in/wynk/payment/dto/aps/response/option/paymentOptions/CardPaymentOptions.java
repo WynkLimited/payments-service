@@ -29,7 +29,7 @@ public class CardPaymentOptions extends AbstractPaymentOptions {
     public static class CardSubOption implements ISubOption {
         @Override
         public String getId() {
-            return PaymentConstants.APS.concat("_").concat(CardConstants.CARD.concat("002"));
+            return PaymentConstants.APS.concat("_").concat(CardConstants.CARD);
         }
 
     }

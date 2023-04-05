@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.response.option.savedOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,4 +26,9 @@ public class WalletSavedOptions extends AbstractSavedPayOptions {
     private boolean recommended;
     private boolean isLinked;
     private boolean valid;
+
+    @Override
+    public String getId() {
+        return PaymentConstants.APS.concat("_").concat(getWalletType());
+    }
 }

@@ -19,6 +19,7 @@ import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.service.IPaymentInstrumentsGatewayProxy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.util.CollectionUtils;
 
@@ -146,6 +147,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                             break;
                         case UpiConstants.UPI:
                             final UpiSavedOptions savedUpiOption = ((UpiSavedOptions) savedOption);
+                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA())) break;
                             final UpiSavedInfo upiInfo = UpiSavedInfo.builder()
                                     .type(paymentGroup)
                                     .group(paymentGroup)
@@ -162,7 +164,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                                     .preferred(savedUpiOption.isPreferred())
                                     .expressCheckout(savedUpiOption.isShowOnQuickCheckout())
                                     .vpa(savedUpiOption.getUserVPA())
-                                    .packageId(savedUpiOption.getHyperSdkPackageName())
+                                    .packageId(savedUpiOption.getAndroidCustomisationString())
                                     .build();
                             savedDetails.add(upiInfo);
                             break;

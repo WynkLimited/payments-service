@@ -317,7 +317,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .health(payload.getHealth())
                         .favorite(payload.isFavourite())
                         .preferred(payload.isPreferred())
-                        .packageName(payload.getPackageId())
+                        .packageName((String) method.getMeta().getOrDefault(META_PACKAGE_NAME, payload.getPackageId()))
                         .recommended(payload.isRecommended())
                         .code(method.getPaymentCode().getCode())
                         .autoPayEnabled(payload.isAutoPayEnabled())

@@ -156,6 +156,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .code(methodDTO.getPaymentCode())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
+                        .description(methodDTO.getSubtitle())
                         .group(methodDTO.getGroup())
                         .description(methodDTO.getSubtitle())
                         .uiDetails(UiDetails.builder()
@@ -184,6 +185,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 return Card.builder()
                         .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
+                        .description(methodDTO.getSubtitle())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
                         .group(methodDTO.getGroup())
@@ -210,6 +212,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 return Wallet.builder()
                         .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
+                        .description(methodDTO.getSubtitle())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
                         .group(methodDTO.getGroup())
@@ -234,6 +237,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 return NetBanking.builder()
                         .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
+                        .description(methodDTO.getSubtitle())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
                         .group(methodDTO.getGroup())
@@ -259,6 +263,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 return AddToBill.builder()
                         .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
+                        .description(methodDTO.getSubtitle())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
                         .group(methodDTO.getGroup())
@@ -292,7 +297,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getType()).transform(details))).collect(Collectors.toList());
+            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream()).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getType()).transform(details))).collect(Collectors.toList());
         }
 
         private static class UPIPresentation implements ISavedDetailsPresentation<UpiSavedDetails, UpiSavedInfo> {

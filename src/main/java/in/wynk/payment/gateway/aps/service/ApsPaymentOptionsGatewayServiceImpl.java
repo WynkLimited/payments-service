@@ -87,7 +87,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
         @Override
         public List<AbstractSavedInstrumentInfo> getSavedDetails(String userId) {
             final List<AbstractSavedInstrumentInfo> savedDetails = new ArrayList<>();
-            if (Objects.nonNull(response.getSavedUserOptions()) && CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
+            if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
                 response.getSavedUserOptions().getPayOptions().forEach(savedOption -> {
                     final String paymentGroup = PAY_GROUP_MIGRATION_MAPPING.getOrDefault(savedOption.getType(), savedOption.getType());
                     switch (savedOption.getType()) {

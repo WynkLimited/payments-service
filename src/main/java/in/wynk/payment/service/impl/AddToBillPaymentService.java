@@ -300,6 +300,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     public boolean isEligible(PaymentMethod entity, PaymentOptionsPlanEligibilityRequest request) {
         try {
             final BillPaymentInstrumentsProxy proxy = ((BillPaymentInstrumentsProxy) request.getPaymentInstrumentsProxy(entity.getPaymentCode().getCode()));
+            if (Objects.isNull(proxy)) return Boolean.FALSE;
             final PlanDTO plan = cachingService.getPlan(proxy.getPlanId());
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
@@ -355,6 +356,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         public List<BillingSavedInfo> getSavedDetails(String userId) {
             final PlanDTO plan = cachingService.getPlan(planId);
             final PaymentMethod method = payCache.get(BaseConstants.ADDTOBILL);
+            final List<BillingSavedInfo> savedInfoList = new ArrayList<>();
             final BillingSavedInfo.BillingSavedInfoBuilder<?, ?> builder = BillingSavedInfo.builder();
             if (Objects.nonNull(response)) {
                 for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
@@ -363,20 +365,21 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                         break;
                     }
                 }
+                savedInfoList.add(builder
+                        .autoPayEnabled(method.isAutoRenewSupported())
+                        .code(method.getPaymentCode().getCode())
+                        .id(BaseConstants.ADDTOBILL)
+                        .type(BaseConstants.ADDTOBILL)
+                        .group(method.getGroup())
+                        .recommended(Boolean.TRUE)
+                        .valid(response.isSuccess())
+                        .iconUrl(method.getIconUrl())
+                        .order(method.getHierarchy())
+                        .title(method.getDisplayName())
+                        .expressCheckout(Boolean.TRUE)
+                        .build());
             }
-            return Collections.singletonList(builder
-                    .autoPayEnabled(method.isAutoRenewSupported())
-                    .code(method.getPaymentCode().getCode())
-                    .id(BaseConstants.ADDTOBILL)
-                    .type(BaseConstants.ADDTOBILL)
-                    .group(method.getGroup())
-                    .recommended(Boolean.TRUE)
-                    .valid(response.isSuccess())
-                    .iconUrl(method.getIconUrl())
-                    .order(method.getHierarchy())
-                    .title(method.getDisplayName())
-                    .expressCheckout(Boolean.TRUE)
-                    .build());
+            return savedInfoList;
         }
 
     }

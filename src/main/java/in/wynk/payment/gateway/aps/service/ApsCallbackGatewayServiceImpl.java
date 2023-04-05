@@ -53,7 +53,8 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     @Override
     public AbstractPaymentCallbackResponse handleCallback(ApsCallBackRequestPayload callbackRequest) {
         try {
-            final IPaymentCallback callbackService = delegator.get(callbackRequest.getType());
+            final String callbackType = Optional.ofNullable(callbackRequest.getType()).orElse(CHARGE_CALLBACK_TYPE);
+            final IPaymentCallback callbackService = delegator.get(callbackType);
             return callbackService.handleCallback(callbackRequest);
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);

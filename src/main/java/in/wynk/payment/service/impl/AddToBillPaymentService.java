@@ -27,6 +27,7 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.UserBillingDetail;
 import in.wynk.payment.dto.addtobill.ATBOrderStatus;
+import in.wynk.payment.dto.aps.common.HealthStatus;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.BillingOptionInfo;
 import in.wynk.payment.dto.common.BillingSavedInfo;
@@ -48,6 +49,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.actuate.health.Health;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -373,6 +375,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                         .group(method.getGroup())
                         .recommended(Boolean.TRUE)
                         .valid(response.isSuccess())
+                        .health(HealthStatus.UP.name())
                         .iconUrl(method.getIconUrl())
                         .order(method.getHierarchy())
                         .title(method.getDisplayName())

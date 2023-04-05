@@ -21,7 +21,6 @@ public abstract class AbstractSavedPaymentDTO {
     private boolean recommended;
     @JsonProperty("is_express_checkout")
     private boolean expressCheckout;
-    @JsonProperty("health_status")
     private String health;
     @JsonProperty("auto_pay_enabled")
     private boolean autoPayEnabled;// upi collect will never support autoPay. Wallet might support.So, this will always be false for UPI and wallet

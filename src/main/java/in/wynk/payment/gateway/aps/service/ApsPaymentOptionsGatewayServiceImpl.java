@@ -65,19 +65,21 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
             final List<AbstractPaymentOptionInfo> payInfoList = new ArrayList<>();
             if (!CollectionUtils.isEmpty(response.getPayOptions())) {
                 response.getPayOptions().forEach(option -> {
-                    switch (option.getType()) {
-                        case CardConstants.CARDS:
-                            final List<CardOptionInfo> cardOptionInfoList = ((CardPaymentOptions) option).getOption().stream().map(cardOption -> CardOptionInfo.builder().id(cardOption.getId()).order(payInfoList.size()).enabled(cardOption.isEnabled()).build()).collect(Collectors.toList());
-                            payInfoList.addAll(cardOptionInfoList);
-                        case UpiConstants.UPI:
-                            final List<UpiOptionInfo> upiOptionInfoList = ((UpiPaymentOptions) option).getOption().stream().map(upiOption -> UpiOptionInfo.builder().enabled(upiOption.isEnabled()).id(upiOption.getId()).health(upiOption.getHealth()).title(upiOption.getDisplayName()).order(upiOption.getOrder()).packageId(upiOption.getHyperSdkPackageName()).build()).collect(Collectors.toList());
-                            payInfoList.addAll(upiOptionInfoList);
-                        case WalletConstants.WALLETS:
-                            final List<WalletOptionInfo> walletOptionInfoList = ((WalletPaymentsOptions) option).getOption().stream().map(walletOption -> WalletOptionInfo.builder().id(walletOption.getId()).enabled(walletOption.isEnabled()).title(walletOption.getId()).recommended(walletOption.isRecommended()).health(walletOption.getHealth()).order(payInfoList.size()).build()).collect(Collectors.toList());
-                            payInfoList.addAll(walletOptionInfoList);
-                        case NetBankingConstants.NETBANKING:
-                            final List<NetBankingOptionInfo> netBankingOptionInfoList = ((NetBankingPaymentOptions) option).getOption().stream().map(bankOption -> NetBankingOptionInfo.builder().id(bankOption.getId()).health(bankOption.getHealth()).title(bankOption.getName()).recommended(bankOption.isRecommended()).enabled(bankOption.isEnabled()).build()).collect(Collectors.toList());
-                            payInfoList.addAll(netBankingOptionInfoList);
+                    if (Objects.nonNull(option.getOption())) {
+                        switch (option.getType()) {
+                            case CardConstants.CARDS:
+                                final List<CardOptionInfo> cardOptionInfoList = ((CardPaymentOptions) option).getOption().stream().map(cardOption -> CardOptionInfo.builder().id(cardOption.getId()).order(payInfoList.size()).enabled(cardOption.isEnabled()).build()).collect(Collectors.toList());
+                                payInfoList.addAll(cardOptionInfoList);
+                            case UpiConstants.UPI:
+                                final List<UpiOptionInfo> upiOptionInfoList = ((UpiPaymentOptions) option).getOption().stream().map(upiOption -> UpiOptionInfo.builder().enabled(upiOption.isEnabled()).id(upiOption.getId()).health(upiOption.getHealth()).title(upiOption.getDisplayName()).order(upiOption.getOrder()).packageId(upiOption.getHyperSdkPackageName()).build()).collect(Collectors.toList());
+                                payInfoList.addAll(upiOptionInfoList);
+                            case WalletConstants.WALLETS:
+                                final List<WalletOptionInfo> walletOptionInfoList = ((WalletPaymentsOptions) option).getOption().stream().map(walletOption -> WalletOptionInfo.builder().id(walletOption.getId()).enabled(walletOption.isEnabled()).title(walletOption.getId()).recommended(walletOption.isRecommended()).health(walletOption.getHealth()).order(payInfoList.size()).build()).collect(Collectors.toList());
+                                payInfoList.addAll(walletOptionInfoList);
+                            case NetBankingConstants.NETBANKING:
+                                final List<NetBankingOptionInfo> netBankingOptionInfoList = ((NetBankingPaymentOptions) option).getOption().stream().map(bankOption -> NetBankingOptionInfo.builder().id(bankOption.getId()).health(bankOption.getHealth()).title(bankOption.getName()).recommended(bankOption.isRecommended()).enabled(bankOption.isEnabled()).build()).collect(Collectors.toList());
+                                payInfoList.addAll(netBankingOptionInfoList);
+                        }
                     }
                 });
             }

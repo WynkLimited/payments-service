@@ -9,7 +9,6 @@ import lombok.experimental.SuperBuilder;
  * @author Nishesh Pandey
  */
 @Getter
-@NoArgsConstructor
 @SuperBuilder
 public class WalletSavedDetails extends AbstractSavedPaymentDTO {
     @JsonProperty("is_linked")

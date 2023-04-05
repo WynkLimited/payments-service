@@ -95,9 +95,7 @@ public class PaymentOptionsDTO {
     @AnalysedEntity
     public static class PaymentMethodDTO {
         @Analysed
-        private final String paymentId;
-        @Analysed
-        private final String alias;
+        private final String id;
         @Analysed
         private final String group;
         @Analysed
@@ -114,8 +112,7 @@ public class PaymentOptionsDTO {
         private final List<String> suffixes;
 
         public PaymentMethodDTO(PaymentMethod method, Supplier<Boolean> autoRenewSupplier) {
-            this.paymentId = method.getId();
-            this.alias = method.getAlias();
+            this.id = method.getId();
             this.group = method.getGroup();
             this.meta = method.getMeta();
             this.hierarchy = method.getHierarchy();

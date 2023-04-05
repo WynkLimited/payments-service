@@ -17,6 +17,7 @@ import in.wynk.payment.dto.aps.response.option.savedOptions.WalletSavedOptions;
 import in.wynk.payment.dto.common.*;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.service.IPaymentInstrumentsGatewayProxy;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.util.CollectionUtils;
@@ -50,7 +51,8 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
         return new ApsPaymentInstrumentsProxy(request.getMsisdn());
     }
 
-    public class ApsPaymentInstrumentsProxy extends AbstractPaymentInstrumentsProxy {
+    @Getter
+    private class ApsPaymentInstrumentsProxy extends AbstractPaymentInstrumentsProxy {
         private final PaymentOptionsResponse response;
 
         public ApsPaymentInstrumentsProxy(String userId) {

@@ -14,6 +14,8 @@ import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 
+import java.util.Objects;
+
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY601;
 
@@ -22,7 +24,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
     public void handle(T request) {
         PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(request.getPaymentId());
 
-        PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (request.getProductDetails().getType() == PLAN ?
+        PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (Objects.equals(request.getProductDetails().getType(), PLAN) ?
                 PaymentOptionsPlanEligibilityRequest.builder().planId(request.getProductDetails().getId()) :
                 PaymentOptionsItemEligibilityRequest.builder().itemId(request.getProductDetails().getId()))
                 .countryCode(request.getCountryCode())
@@ -34,7 +36,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
                 .os(request.getOs())
                 .si(request.getSi())
                 .build();
-        AbstractEligibilityEvaluation<PaymentMethod, PaymentOptionsEligibilityRequest> abstractEligibilityEvaluation = (request.getProductDetails().getType() == PLAN ?
+        AbstractEligibilityEvaluation<PaymentMethod, PaymentOptionsEligibilityRequest> abstractEligibilityEvaluation = (Objects.equals(request.getProductDetails().getType(), PLAN) ?
                 PaymentMethodsPlanEligibilityEvaluation.builder() :
                 PaymentMethodsItemEligibilityEvaluation.builder())
                 .root(paymentOptionsEligibilityRequest)

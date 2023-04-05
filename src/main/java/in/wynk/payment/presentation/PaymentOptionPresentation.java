@@ -140,7 +140,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             final Map<String, AbstractPaymentOptionInfo> optionInfoMap = payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().map(proxy -> proxy.getPaymentInstruments(payload.getFirst().getUserDetails().getMsisdn())).flatMap(Collection::stream).collect(Collectors.toMap(AbstractPaymentOptionInfo::getId, Function.identity(), (k1, k2) -> k1));
             filteredMethods.forEach(method -> {
                 if (!payMap.containsKey(method.getGroup())) payMap.put(method.getGroup(), new ArrayList<>());
-                payMap.get(method.getGroup()).add((AbstractPaymentMethodDTO) delegate.get(method.getGroup()).transform(Pair.of(method, Optional.ofNullable(optionInfoMap.get(method.getAlias())))));
+                payMap.get(method.getGroup()).add((AbstractPaymentMethodDTO) delegate.get(method.getGroup()).transform(Pair.of(method, Optional.ofNullable(optionInfoMap.get(method.getId())))));
             });
             return payMap;
         }
@@ -152,7 +152,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<UpiOptionInfo> payOptional = payload.getSecond();
                 return UPI.builder()
-                        .id(methodDTO.getPaymentId())
+                        .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
@@ -169,7 +169,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .paymentStatusPoll((Double) methodDTO.getMeta().get(POLLING_FREQUENCY))
                                 .buildCheck((Map<String, Map<String, Integer>>) methodDTO.getMeta().get(BUILD_CHECK))
                                 .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
-                                .packageName((String) methodDTO.getMeta().getOrDefault(META_PACKAGE_NAME, payOptional.map(info -> ((UpiOptionInfo) info).getPackageId()).orElse(null)))
+                                .packageName((String) methodDTO.getMeta().getOrDefault(META_PACKAGE_NAME, payOptional.map(info -> info.getPackageId()).orElse(null)))
                                 .build())
                         .build();
             }
@@ -182,7 +182,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<CardOptionInfo> payOptional = payload.getSecond();
                 return Card.builder()
-                        .id(methodDTO.getPaymentId())
+                        .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
@@ -208,7 +208,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<WalletOptionInfo> payOptional = payload.getSecond();
                 return Wallet.builder()
-                        .id(methodDTO.getPaymentId())
+                        .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
@@ -232,7 +232,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<NetBankingOptionInfo> payOptional = payload.getSecond();
                 return NetBanking.builder()
-                        .id(methodDTO.getPaymentId())
+                        .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())
@@ -257,7 +257,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<BillingOptionInfo> payOptional = payload.getSecond();
                 return AddToBill.builder()
-                        .id(methodDTO.getPaymentId())
+                        .id(methodDTO.getId())
                         .code(methodDTO.getPaymentCode())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
                         .title(methodDTO.getDisplayName())

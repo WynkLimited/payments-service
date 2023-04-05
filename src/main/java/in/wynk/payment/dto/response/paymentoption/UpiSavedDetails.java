@@ -10,7 +10,6 @@ import lombok.experimental.SuperBuilder;
  */
 @Getter
 @SuperBuilder
-@NoArgsConstructor
 public class UpiSavedDetails extends AbstractSavedPaymentDTO {
     private String vpa;
     @JsonProperty("package_name")

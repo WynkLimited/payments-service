@@ -39,7 +39,7 @@ public class PaymentMethodsPlanEligibilityEvaluation extends PaymentOptionsCommo
             } else {
                 try {
                     final boolean isExternalEligible = BeanLocatorFactory.getBean(getEntity().getPaymentCode().getCode(), new ParameterizedTypeReference<IExternalPaymentEligibilityService>() {
-                    }).isEligible(getEntity(), getRoot());
+                    }).isEligible(getEntity(), root);
                     if (isExternalEligible) {
                         resultBuilder.status(EligibilityStatus.ELIGIBLE);
                     } else {

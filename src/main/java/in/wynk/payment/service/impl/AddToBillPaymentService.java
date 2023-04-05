@@ -44,6 +44,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.atb.*;
 import in.wynk.vas.client.service.CatalogueVasClientService;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;

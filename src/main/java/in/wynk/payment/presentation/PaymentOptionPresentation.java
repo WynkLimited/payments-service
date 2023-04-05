@@ -300,8 +300,8 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
+            final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1));
             return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> {
-                final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1));
                 return proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> aliasToIds.containsKey(details.getId()));
             }).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details))).collect(Collectors.toList());
         }

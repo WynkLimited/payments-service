@@ -43,6 +43,6 @@ public class UpiSavedOptions extends AbstractSavedPayOptions {
         return upiPspAppName;
     }
     public String getId() {
-        return PaymentConstants.APS.concat("_").concat(getUpiPspAppName());
+        return PaymentConstants.APS.concat("_").concat(UpiConstants.UPI).concat("_").concat(getUpiPspAppName());
     }
 }

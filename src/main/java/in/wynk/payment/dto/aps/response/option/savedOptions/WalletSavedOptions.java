@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.response.option.savedOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.constant.WalletConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,6 +30,6 @@ public class WalletSavedOptions extends AbstractSavedPayOptions {
 
     @Override
     public String getId() {
-        return PaymentConstants.APS.concat("_").concat(getWalletType());
+        return PaymentConstants.APS.concat("_").concat(WalletConstants.WALLET).concat("_").concat(getWalletType());
     }
 }

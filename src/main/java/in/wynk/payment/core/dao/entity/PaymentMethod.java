@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private boolean inAppOtpSupport;
     private boolean otpLessSupport;
 
+    private String alias;
     private String group;
     private String flowType;
     private String iconUrl;
@@ -38,6 +40,10 @@ public class PaymentMethod extends MongoBaseEntity<String> {
 
     public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
+    }
+
+    public String getAlias() {
+        return StringUtils.isNotEmpty(alias) ? alias: getId();
     }
 
 }

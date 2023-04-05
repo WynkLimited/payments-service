@@ -3,6 +3,8 @@ package in.wynk.payment.dto.aps.response.option.paymentOptions;
 import in.wynk.payment.dto.aps.common.TokenizationConfig;
 import lombok.*;
 
+import java.io.Serializable;
+
 /**
  * @author Nishesh Pandey
  */
@@ -12,7 +14,7 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentOptionsConfig {
+public class PaymentOptionsConfig implements Serializable {
     private TokenizationConfig cardTokenizationConfig;
     private QuickCheckoutConfig quickCheckoutConfig;
     private ExperimentConfig experimentConfig;

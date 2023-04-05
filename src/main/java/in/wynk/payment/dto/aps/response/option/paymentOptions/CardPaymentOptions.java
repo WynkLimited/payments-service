@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
@@ -19,7 +20,7 @@ import java.util.List;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
-public class CardPaymentOptions extends AbstractPaymentOptions {
+public class CardPaymentOptions extends AbstractPaymentOptions implements Serializable {
 
     @Override
     public List<CardSubOption> getOption() {

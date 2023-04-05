@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -16,7 +17,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavedUserOptions {
+public class SavedUserOptions implements Serializable {
     private String loginId;
     private String lobId;
     private List<AbstractSavedPayOptions> payOptions;

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -20,7 +21,7 @@ import java.util.List;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpiPaymentOptions extends AbstractPaymentOptions {
+public class UpiPaymentOptions extends AbstractPaymentOptions implements Serializable {
     private String health;
     private List<UpiSubOption> upiSupportedApps;
 

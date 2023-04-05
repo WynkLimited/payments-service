@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,7 +14,7 @@ import java.util.List;
 @Getter
 @SuperBuilder
 @NoArgsConstructor
-public class DefaultPaymentOptions extends AbstractPaymentOptions {
+public class DefaultPaymentOptions extends AbstractPaymentOptions implements Serializable {
     @Override
     public <T extends ISubOption> List<T> getOption() {
         return Collections.emptyList();

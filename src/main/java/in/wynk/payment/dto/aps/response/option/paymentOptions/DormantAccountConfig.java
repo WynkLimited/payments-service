@@ -2,6 +2,8 @@ package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import lombok.*;
 
+import java.io.Serializable;
+
 /**
  * @author Nishesh Pandey
  */
@@ -10,7 +12,7 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class DormantAccountConfig {
+public class DormantAccountConfig implements Serializable {
     private String offertSubText;
     private String offerText;
     private String accountSubText;

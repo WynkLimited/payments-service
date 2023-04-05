@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -36,7 +37,7 @@ import static in.wynk.payment.constant.WalletConstants.WALLETS;
         @JsonSubTypes.Type(value = WalletPaymentsOptions.class, name = WALLETS),
         @JsonSubTypes.Type(value = NetBankingPaymentOptions.class, name = NETBANKING)
 })
-public abstract class AbstractPaymentOptions {
+public abstract class AbstractPaymentOptions implements Serializable {
     private String type;
     private BigDecimal minAmount;
 

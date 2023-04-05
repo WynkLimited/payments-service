@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -21,7 +22,7 @@ import java.util.List;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletPaymentsOptions extends AbstractPaymentOptions {
+public class WalletPaymentsOptions extends AbstractPaymentOptions implements Serializable {
     private List<WalletSubOption> walletSubOption;
 
     @Override

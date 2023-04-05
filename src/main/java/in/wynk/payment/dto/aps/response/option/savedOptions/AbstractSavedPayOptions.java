@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 import static in.wynk.payment.constant.CardConstants.CARDS;
@@ -33,7 +34,7 @@ import static in.wynk.payment.constant.WalletConstants.WALLETS;
         @JsonSubTypes.Type(value = UpiSavedOptions.class, name = UPI),
         @JsonSubTypes.Type(value = CardSavedPayOptions.class, name = CARDS)
 })
-public abstract class AbstractSavedPayOptions {
+public abstract class AbstractSavedPayOptions implements Serializable {
     private String type;
     private Integer order;
     private String health;

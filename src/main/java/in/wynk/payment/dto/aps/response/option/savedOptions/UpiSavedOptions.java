@@ -10,6 +10,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -21,7 +22,7 @@ import java.util.List;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpiSavedOptions extends AbstractSavedPayOptions {
+public class UpiSavedOptions extends AbstractSavedPayOptions implements Serializable {
 
     private String upiApp;
     private String userVPA;

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
@@ -20,7 +21,7 @@ import java.math.BigDecimal;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class WalletSavedOptions extends AbstractSavedPayOptions {
+public class WalletSavedOptions extends AbstractSavedPayOptions implements Serializable {
     private String walletType;
     private String walletId;
     private BigDecimal walletBalance;

@@ -2,6 +2,7 @@ package in.wynk.payment.dto.aps.common;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -12,7 +13,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class TokenizationConfig {
+public class TokenizationConfig implements Serializable {
     private String consentText;
     private String consentSubText;
     private String consentPopupHeader;
@@ -25,7 +26,7 @@ public class TokenizationConfig {
     @ToString
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ConsentPopupTnC{
+    public static class ConsentPopupTnC implements Serializable {
         private String iconURL;
         private boolean gradient;
         private String text;

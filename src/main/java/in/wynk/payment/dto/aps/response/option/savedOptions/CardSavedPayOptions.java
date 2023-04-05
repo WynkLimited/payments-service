@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
+
 /**
  * @author Nishesh Pandey
  */
@@ -18,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class CardSavedPayOptions extends AbstractSavedPayOptions {
+public class CardSavedPayOptions extends AbstractSavedPayOptions implements Serializable {
     private String createdOn;
     private String updatedOn;
     private String lastUsedOn;

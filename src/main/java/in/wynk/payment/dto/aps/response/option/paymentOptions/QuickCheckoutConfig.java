@@ -2,6 +2,7 @@ package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -12,7 +13,7 @@ import java.util.Map;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuickCheckoutConfig {
+public class QuickCheckoutConfig implements Serializable {
     private boolean offer;
     private boolean offerByLine;
     private Map<String, String> payModeFeatureMap;

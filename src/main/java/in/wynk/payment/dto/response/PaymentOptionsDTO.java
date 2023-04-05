@@ -108,6 +108,7 @@ public class PaymentOptionsDTO {
         private final String paymentCode;
         private final String subtitle;
         private final String iconUrl;
+        private final String tag;
         private final boolean autoRenewSupported;
         private final List<String> suffixes;
 
@@ -115,6 +116,7 @@ public class PaymentOptionsDTO {
             this.id = method.getId();
             this.group = method.getGroup();
             this.meta = method.getMeta();
+            this.tag = method.getTag();
             this.hierarchy = method.getHierarchy();
             this.displayName = method.getDisplayName();
             this.paymentCode = method.getPaymentCode().name();

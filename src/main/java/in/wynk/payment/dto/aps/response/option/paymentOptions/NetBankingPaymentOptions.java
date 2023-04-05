@@ -35,7 +35,7 @@ public class NetBankingPaymentOptions extends AbstractPaymentOptions implements 
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class NetBankingSubOptions implements ISubOption {
+    public static class NetBankingSubOptions implements ISubOption, Serializable {
         private String type;
         private String subType;
         private String name;

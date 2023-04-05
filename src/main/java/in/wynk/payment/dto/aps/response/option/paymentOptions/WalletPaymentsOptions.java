@@ -35,7 +35,7 @@ public class WalletPaymentsOptions extends AbstractPaymentOptions implements Ser
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class WalletSubOption implements ISubOption {
+    public static class WalletSubOption implements ISubOption, Serializable {
         private String type;
         private String subType;
         private String health;

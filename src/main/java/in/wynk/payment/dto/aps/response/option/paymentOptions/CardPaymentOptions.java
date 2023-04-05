@@ -27,7 +27,7 @@ public class CardPaymentOptions extends AbstractPaymentOptions implements Serial
         return Collections.singletonList(new CardSubOption());
     }
 
-    public static class CardSubOption implements ISubOption {
+    public static class CardSubOption implements ISubOption, Serializable {
         @Override
         public String getId() {
             return PaymentConstants.APS.concat("_").concat(CardConstants.CARD);

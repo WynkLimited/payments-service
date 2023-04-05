@@ -35,7 +35,7 @@ public class UpiPaymentOptions extends AbstractPaymentOptions implements Seriali
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class UpiSubOption implements ISubOption {
+    public static class UpiSubOption implements ISubOption, Serializable {
         private String upiPspAppName;
         private String androidCustomisationString;
         private String iosCustomisationString;

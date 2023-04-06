@@ -58,25 +58,25 @@ import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
-public class PayUChargingGatewayService implements IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
+public class PayUChargingGatewayServiceImpl implements IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
 
     public String PAYMENT_API;
-    private final Map<FlowType, IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> delegate = new HashMap<>();
-    private final PaymentMethodCachingService paymentMethodCachingService;
     private final PayUCommonGatewayService common;
+    private final PaymentMethodCachingService methodCache;
+    private final Map<FlowType, IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>> delegate = new HashMap<>();
 
-    public PayUChargingGatewayService (PayUCommonGatewayService common, PaymentMethodCachingService paymentMethodCachingService, String paymentApi) {
+    public PayUChargingGatewayServiceImpl(PayUCommonGatewayService common, PaymentMethodCachingService methodCache, String paymentApi) {
         this.common = common;
-        PAYMENT_API = paymentApi;
-        this.paymentMethodCachingService = paymentMethodCachingService;
-        delegate.put(UPI, new PayUUpiCharging());
-        delegate.put(CARD, new PayUCardCharging());
-        delegate.put(NET_BANKING, new PayUNetBankingCharging());
+        this.PAYMENT_API = paymentApi;
+        this.methodCache = methodCache;
+        this.delegate.put(UPI, new PayUUpiCharging());
+        this.delegate.put(CARD, new PayUCardCharging());
+        this.delegate.put(NET_BANKING, new PayUNetBankingCharging());
     }
 
     @Override
     public AbstractCoreChargingResponse charge(AbstractChargingRequestV2 request) {
-        final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
+        final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
         return delegate.get(method.getGroup().toUpperCase()).charge(request);
     }
 
@@ -90,7 +90,7 @@ public class PayUChargingGatewayService implements IPaymentChargingServiceV2<Abs
 
         @Override
         public AbstractCoreUpiChargingResponse charge(AbstractChargingRequestV2 request) {
-            final String flowType = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getFlowType();
+            final String flowType = methodCache.get(request.getPaymentDetails().getPaymentId()).getFlowType();
             return upiDelegate.get(flowType).charge(request);
         }
 
@@ -118,7 +118,7 @@ public class PayUChargingGatewayService implements IPaymentChargingServiceV2<Abs
                 public UpiCollectInAppChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
                     try {
-                        final Map<String, String> form = PayUChargingGatewayService.this.buildPayUForm(request);
+                        final Map<String, String> form = PayUChargingGatewayServiceImpl.this.buildPayUForm(request);
                         final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) request.getPaymentDetails());
                         form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
                         init(UpiConstants.UPI, form, new TypeReference<PayUUpiCollectResponse>() {
@@ -135,7 +135,7 @@ public class PayUChargingGatewayService implements IPaymentChargingServiceV2<Abs
                 @Override
                 public UpiIntentChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
-                    final Map<String, String> form = PayUChargingGatewayService.this.buildPayUForm(request);
+                    final Map<String, String> form = PayUChargingGatewayServiceImpl.this.buildPayUForm(request);
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
                     final String vpa = paymentDetails.getUpiDetails().getVpa();
                     if (!StringUtils.isEmpty(vpa)) form.put(PAYU_VPA, paymentDetails.getUpiDetails().getVpa());
@@ -211,7 +211,7 @@ public class PayUChargingGatewayService implements IPaymentChargingServiceV2<Abs
                 public UpiCollectChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
                     try {
-                        final Map<String, String> form = PayUChargingGatewayService.this.buildPayUForm(request);
+                        final Map<String, String> form = PayUChargingGatewayServiceImpl.this.buildPayUForm(request);
                         final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) request.getPaymentDetails());
                         form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
                         return UpiCollectChargingResponse.builder().form(form).tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
@@ -234,7 +234,7 @@ public class PayUChargingGatewayService implements IPaymentChargingServiceV2<Abs
 
         @Override
         public AbstractCoreCardChargingResponse charge(AbstractChargingRequestV2 request) {
-            final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
+            final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
             final boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
             final boolean isOtpLessSupport = (Objects.isNull(paymentDetails.getCardDetails().getOtpLessSupport())) ? method.isOtpLessSupport() : paymentDetails.getCardDetails().getOtpLessSupport();
@@ -294,7 +294,7 @@ public class PayUChargingGatewayService implements IPaymentChargingServiceV2<Abs
                 @Override
                 public CardKeyValueTypeChargingResponse charge(AbstractChargingRequestV2 request) {
                     final Transaction transaction = TransactionContext.get();
-                    final Map<String, String> form = PayUChargingGatewayService.this.buildPayUForm(request);
+                    final Map<String, String> form = PayUChargingGatewayServiceImpl.this.buildPayUForm(request);
                     final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
                     final String storeCard = (paymentDetails.getCardDetails().isSaveCard()) ? "1" : "0";
                     form.put(PAYU_STORE_CARD, storeCard);
@@ -348,47 +348,13 @@ public class PayUChargingGatewayService implements IPaymentChargingServiceV2<Abs
             @Override
             public NetBankingKeyValueTypeResponse charge(AbstractChargingRequestV2 request) {
                 final Transaction transaction = TransactionContext.get();
-                final Map<String, String> form = PayUChargingGatewayService.this.buildPayUForm(request);
-                final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
+                final Map<String, String> form = PayUChargingGatewayServiceImpl.this.buildPayUForm(request);
+                final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
                 form.put(PAYU_ENFORCE_PAY_METHOD, (String) method.getMeta().get(PaymentConstants.BANK_CODE));
                 return NetBankingKeyValueTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
             }
         }
     }
-
-    /*private class PayUWalletCharging implements IMerchantPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
-
-        private final Map<String, IPaymentCharging<? extends AbstractWalletChargingGatewayResponse, PayUChargingRequest<?>>> delegate = new HashMap<>();
-
-        public PayUWalletCharging () {
-            delegate.put(SEAMLESS_FLOW, new Seamless());
-            delegate.put(NON_SEAMLESS_FLOW, new NonSeamless());
-        }
-
-        @Override
-        public AbstractWalletChargingGatewayResponse charge(PayUChargingRequest<?> request) {
-            final PaymentMethod paymentMethod = common.getCache().get(request.getPaymentId());
-            return delegate.get(paymentMethod.getFlowType()).charge(request);
-        }
-
-        private class Seamless implements IPaymentCharging<SeamlessWalletChargingGatewayResponse, PayUChargingRequest<?>> {
-
-            @Override
-            public SeamlessWalletChargingGatewayResponse charge(PayUChargingRequest<?> request) {
-                throw new WynkRuntimeException("Method is not implemented");
-            }
-        }
-
-        private class NonSeamless implements IPaymentCharging<NonSeamlessWalletChargingGatewayResponse, PayUChargingRequest<?>> {
-
-            @Override
-            public NonSeamlessWalletChargingGatewayResponse charge(PayUChargingRequest<?> request) {
-                final Map<String, String> form = buildPayUForm(request);
-                return NonSeamlessWalletChargingGatewayResponse.builder().form(form).build();
-            }
-        }
-    }*/
-
 
     @SneakyThrows
     private Map<String, String> buildPayUForm(AbstractChargingRequestV2 chargingRequest) {

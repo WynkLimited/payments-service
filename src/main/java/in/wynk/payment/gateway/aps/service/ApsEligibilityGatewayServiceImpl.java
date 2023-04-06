@@ -10,7 +10,7 @@ import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import java.util.List;
 
 
-public class ApsPaymentOptionEligibilityGatewayServiceImpl implements IExternalPaymentEligibilityService {
+public class ApsEligibilityGatewayServiceImpl implements IExternalPaymentEligibilityService {
 
     @Override
     public boolean isEligible(PaymentMethod entity, PaymentOptionsPlanEligibilityRequest eligibilityRequest) {

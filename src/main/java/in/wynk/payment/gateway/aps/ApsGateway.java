@@ -19,7 +19,6 @@ import in.wynk.payment.dto.payu.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
-import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.gateway.aps.service.*;
@@ -47,10 +46,10 @@ public class ApsGateway implements
         IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>,
         IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>{
 
-    private final IPaymentInstrumentsGatewayProxy payOptionsGateway;
     private final IExternalPaymentEligibilityService eligibilityGateway;
     private final ApsPreDebitNotificationGatewayServiceImpl preDebitGateway;
     private final IPaymentRenewalService<PaymentRenewalChargingMessage> renewalGateway;
+    private final IPaymentInstrumentsGatewayProxy<PaymentOptionsPlanEligibilityRequest> payOptionsGateway;
     private final IVerificationService<AbstractVerificationResponse, VerificationRequest> verificationGateway;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
     private final IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
@@ -81,7 +80,7 @@ public class ApsGateway implements
                       IMerchantTransactionService merchantTransactionService,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
-        this.eligibilityGateway = new ApsPaymentOptionEligibilityGatewayServiceImpl();
+        this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper);
         this.payOptionsGateway = new ApsPaymentOptionsGatewayServiceImpl(payOptionEndpoint, commonGateway);
         this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);

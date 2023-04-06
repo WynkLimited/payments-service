@@ -14,20 +14,18 @@ import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.payu.PayUPaymentRefundRequest;
 import in.wynk.payment.dto.payu.PayUPaymentRefundResponse;
 import in.wynk.payment.dto.response.payu.PayURefundInitResponse;
-import in.wynk.payment.gateway.payu.service.PayUCommonGatewayService;
 import in.wynk.payment.service.IMerchantPaymentRefundService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 @Slf4j
-public class PayURefundGatewayService implements IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
+public class PayURefundGatewayServiceImpl implements IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
 
     private final PayUCommonGatewayService common;
     private final ApplicationEventPublisher eventPublisher;
 
-    public PayURefundGatewayService (ApplicationEventPublisher eventPublisher, PayUCommonGatewayService common){
+    public PayURefundGatewayServiceImpl(PayUCommonGatewayService common, ApplicationEventPublisher eventPublisher){
         this.common= common;
         this.eventPublisher= eventPublisher;
     }

@@ -18,7 +18,7 @@ import java.io.Serializable;
 @SuperBuilder
 @NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "action", defaultImpl = PayUCallbackRequestPayload.class, visible = true)
-@JsonSubTypes(@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = "refund"))
+@JsonSubTypes(@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = PayUConstants.REFUND_CALLBACK_ACTION))
 public class PayUCallbackRequestPayload extends CallbackRequest implements Serializable {
 
     private String mode;
@@ -83,7 +83,7 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     }
 
     public String getAction() {
-        return PayUConstants.GENERIC_CALLBACK;
+        return PayUConstants.GENERIC_CALLBACK_ACTION;
     }
 
     public String getUdf() {

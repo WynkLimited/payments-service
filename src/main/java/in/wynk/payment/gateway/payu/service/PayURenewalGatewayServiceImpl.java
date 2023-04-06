@@ -19,7 +19,6 @@ import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.gateway.IPaymentRenewal;
-import in.wynk.payment.gateway.payu.service.PayUCommonGatewayService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
@@ -27,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 
@@ -43,17 +41,17 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_ST
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
-public class PayURenewalGatewayService implements IPaymentRenewal<PaymentRenewalChargingRequest> {
+public class PayURenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     private final Gson gson;
-    private final PayUCommonGatewayService common;
     private final ObjectMapper objectMapper;
+    private final PayUCommonGatewayService common;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     private final IMerchantTransactionService merchantTransactionService;
 
-    public PayURenewalGatewayService (PayUCommonGatewayService common, Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
+    public PayURenewalGatewayServiceImpl(PayUCommonGatewayService common, Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
         this.gson = gson;
         this.common = common;
         this.objectMapper = objectMapper;

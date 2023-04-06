@@ -11,10 +11,8 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
-import in.wynk.payment.gateway.payu.service.PayUCommonGatewayService;
 import in.wynk.payment.service.IPaymentStatusService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,13 +23,13 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_REFUND_STATUS_VERIFICATION;
 
 @Slf4j
-public class PayUStatusGatewayService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+public class PayUStatusGatewayServiceImpl implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
     private final PayUCommonGatewayService common;
     private final Map<Class<? extends AbstractTransactionReconciliationStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>
             statusDelegate = new HashMap<>();
 
-    public PayUStatusGatewayService (PayUCommonGatewayService common) {
+    public PayUStatusGatewayServiceImpl(PayUCommonGatewayService common) {
         this.common = common;
         this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
         this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());

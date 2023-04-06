@@ -16,7 +16,6 @@ import in.wynk.payment.gateway.IPaymentInstrumentValidator;
 import in.wynk.payment.service.IVerificationService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.util.HashMap;
@@ -25,13 +24,13 @@ import java.util.Map;
 import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 
 @Slf4j
-public class PayUVerificationGatewayService implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
+public class PayUVerificationGatewayServiceImpl implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
 
-    private final PayUCommonGatewayService common;
     private final ObjectMapper objectMapper;
+    private final PayUCommonGatewayService common;
     private final Map<VerificationType, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequest>> delegate = new HashMap<>();
 
-    public PayUVerificationGatewayService (PayUCommonGatewayService common, ObjectMapper objectMapper) {
+    public PayUVerificationGatewayServiceImpl(PayUCommonGatewayService common, ObjectMapper objectMapper) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.delegate.put(VerificationType.VPA, new VPA());

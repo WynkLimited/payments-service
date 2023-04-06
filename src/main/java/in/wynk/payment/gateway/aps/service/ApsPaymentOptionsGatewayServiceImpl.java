@@ -103,7 +103,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
         @Override
         public List<AbstractSavedInstrumentInfo> getSavedDetails(String userId) {
             if (Objects.nonNull(savedInstrumentCache)) return savedInstrumentCache;
-            final Set<AbstractSavedInstrumentInfo> savedDetails = new TreeSet<>(Comparator.comparingInt(AbstractSavedInstrumentInfo::getOrder));
+            final List<AbstractSavedInstrumentInfo> savedDetails = new ArrayList<>();
             if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && !CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
                 response.getSavedUserOptions().getPayOptions().forEach(savedOption -> {
                     final String paymentGroup = PAY_GROUP_MIGRATION_MAPPING.getOrDefault(savedOption.getType(), savedOption.getType());
@@ -150,12 +150,12 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                             break;
                         case UpiConstants.UPI:
                             final UpiSavedOptions savedUpiOption = ((UpiSavedOptions) savedOption);
-                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA()))
+                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA())) {
                                 if (!CollectionUtils.isEmpty(savedUpiOption.getVpaIds()))
                                     for (String vpa : savedUpiOption.getVpaIds())
                                         savedDetails.add(parseUpiSavedInfo(vpa, paymentGroup, savedUpiOption));
-                                else
-                                    savedDetails.add(parseUpiSavedInfo(savedUpiOption.getUserVPA(), paymentGroup, savedUpiOption));
+                            } else
+                                savedDetails.add(parseUpiSavedInfo(savedUpiOption.getUserVPA(), paymentGroup, savedUpiOption));
                             break;
                         case WalletConstants.WALLETS:
                             final WalletSavedOptions savedWalletOption = ((WalletSavedOptions) savedOption);
@@ -200,7 +200,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                     }
                 });
             }
-            return new ArrayList<>(savedDetails);
+            return savedDetails;
         }
     }
 

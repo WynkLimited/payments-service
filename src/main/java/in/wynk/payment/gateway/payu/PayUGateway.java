@@ -2,6 +2,7 @@ package in.wynk.payment.gateway.payu;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -30,10 +31,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
+import static in.wynk.common.constant.BaseConstants.V2;
+
 /**
  * @author Nishesh Pandey
  */
-@Service(PaymentConstants.PAYU)
+@Service(PAYU_MERCHANT_PAYMENT_SERVICE + V2)
 public class PayUGateway implements
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IVerificationService<AbstractVerificationResponse, VerificationRequest>,

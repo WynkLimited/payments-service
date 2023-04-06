@@ -61,6 +61,7 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY036;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CHARGING_API_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_ERROR;
+import static in.wynk.common.constant.BaseConstants.V2;
 
 @Slf4j
 @Service(BeanConstant.PAYMENT_MANAGER_V2)
@@ -91,7 +92,7 @@ public class PaymentGatewayManager
         PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
         final IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> chargingService =
-                BeanLocatorFactory.getBean(paymentGateway.getCode(),
+                BeanLocatorFactory.getBean(paymentGateway.getCode().concat(V2),
                         new ParameterizedTypeReference<IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>>() {
                         });
 
@@ -122,7 +123,7 @@ public class PaymentGatewayManager
         String paymentCode = request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IVerificationService<AbstractVerificationResponse, VerificationRequest> verifyService =
-                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequest>>() {
+                BeanLocatorFactory.getBean(paymentCode.concat(V2), new ParameterizedTypeReference<IVerificationService<AbstractVerificationResponse, VerificationRequest>>() {
                 });
         return verifyService.verify(request);
     }
@@ -132,7 +133,7 @@ public class PaymentGatewayManager
         String paymentCode = request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
         final IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> deleteService =
-                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>>() {
+                BeanLocatorFactory.getBean(paymentCode.concat(V2), new ParameterizedTypeReference<IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>>() {
                 });
         return deleteService.delete(request);
     }
@@ -198,7 +199,7 @@ public class PaymentGatewayManager
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
-                BeanLocatorFactory.getBean(pg.getCode(), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
+                BeanLocatorFactory.getBean(pg.getCode().concat(V2), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
         try {
             final AbstractPaymentCallbackResponse response = callbackService.handleCallback(request.getBody());
@@ -265,7 +266,7 @@ public class PaymentGatewayManager
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IPaymentRenewalService<PaymentRenewalChargingMessage> renewalService =
-                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode().concat(V2),
                         new ParameterizedTypeReference<IPaymentRenewalService<PaymentRenewalChargingMessage>>() {
                         });
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
@@ -342,7 +343,7 @@ public class PaymentGatewayManager
             try {
                 final PaymentGateway paymentGateway = transaction.getPaymentChannel();
                 final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusService =
-                        BeanLocatorFactory.getBean(paymentGateway.getCode(),
+                        BeanLocatorFactory.getBean(paymentGateway.getCode().concat(V2),
                                 new ParameterizedTypeReference<IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
                                 });
                 return statusService.status(request);
@@ -370,7 +371,7 @@ public class PaymentGatewayManager
             final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
                     transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
-            final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
+            final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode().concat(V2),
                     new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
                     });
             final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());

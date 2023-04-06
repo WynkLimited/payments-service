@@ -30,9 +30,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import static in.wynk.common.constant.BaseConstants.V2;
 
 @Slf4j
-@Service(PaymentConstants.AIRTEL_PAY_STACK)
+@Service(PaymentConstants.AIRTEL_PAY_STACK + V2)
 public class ApsGateway implements
         IPreDebitNotificationService,
         IExternalPaymentEligibilityService,

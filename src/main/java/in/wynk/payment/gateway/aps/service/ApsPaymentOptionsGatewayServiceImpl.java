@@ -103,7 +103,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
         @Override
         public List<AbstractSavedInstrumentInfo> getSavedDetails(String userId) {
             if (Objects.nonNull(savedInstrumentCache)) return savedInstrumentCache;
-            final Set<AbstractSavedInstrumentInfo> savedDetails = new TreeSet<>(Comparator.comparingInt(AbstractSavedInstrumentInfo::getOrder));
+            final List<AbstractSavedInstrumentInfo> savedDetails = new ArrayList<>();
             if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && !CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
                 response.getSavedUserOptions().getPayOptions().forEach(savedOption -> {
                     final String paymentGroup = PAY_GROUP_MIGRATION_MAPPING.getOrDefault(savedOption.getType(), savedOption.getType());
@@ -200,7 +200,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                     }
                 });
             }
-            return new ArrayList<>(savedDetails);
+            return savedDetails;
         }
     }
 

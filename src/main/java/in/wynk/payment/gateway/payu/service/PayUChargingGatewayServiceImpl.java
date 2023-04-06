@@ -77,7 +77,7 @@ public class PayUChargingGatewayServiceImpl implements IPaymentChargingServiceV2
     @Override
     public AbstractCoreChargingResponse charge(AbstractChargingRequestV2 request) {
         final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
-        return delegate.get(method.getGroup().toUpperCase()).charge(request);
+        return delegate.get(FlowType.valueOf(method.getGroup().toUpperCase())).charge(request);
     }
 
     private class PayUUpiCharging implements IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2> {
@@ -91,7 +91,7 @@ public class PayUChargingGatewayServiceImpl implements IPaymentChargingServiceV2
         @Override
         public AbstractCoreUpiChargingResponse charge(AbstractChargingRequestV2 request) {
             final String flowType = methodCache.get(request.getPaymentDetails().getPaymentId()).getFlowType();
-            return upiDelegate.get(flowType).charge(request);
+            return upiDelegate.get(FlowType.valueOf(flowType)).charge(request);
         }
 
         private class PayUUpiSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreUpiChargingResponse, AbstractChargingRequestV2> {
@@ -332,7 +332,7 @@ public class PayUChargingGatewayServiceImpl implements IPaymentChargingServiceV2
         @Override
         public AbstractCoreNetBankingChargingResponse charge(AbstractChargingRequestV2 request) {
             final PaymentMethod paymentMethod = common.getCache().get(request.getPaymentDetails().getPaymentId());
-            return nbDelegate.get(paymentMethod.getFlowType()).charge(request);
+            return nbDelegate.get(FlowType.valueOf(paymentMethod.getFlowType())).charge(request);
         }
 
         private class PayUNetBankingSeamlessCharging implements IPaymentChargingServiceV2<AbstractCoreNetBankingChargingResponse, AbstractChargingRequestV2> {

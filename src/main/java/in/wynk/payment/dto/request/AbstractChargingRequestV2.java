@@ -14,10 +14,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
@@ -62,7 +59,8 @@ public abstract class AbstractChargingRequestV2 implements IChargingDetails, IPa
 
     @Override
     public PaymentGateway getPaymentCode () {
-        return PaymentCodeCachingService.getFromPaymentCode(getPaymentId());
+        PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(getPaymentId());
+        return PaymentCodeCachingService.getFromPaymentCode(paymentMethod.getPaymentCode().getCode());
     }
 
     @Override

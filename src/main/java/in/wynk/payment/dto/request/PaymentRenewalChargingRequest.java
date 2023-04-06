@@ -17,5 +17,6 @@ public class PaymentRenewalChargingRequest {
     private int attemptSequence;
     private Integer planId;
     private String clientAlias;
+    private String paymentCode;
     private PaymentGateway paymentGateway;
 }

@@ -16,7 +16,6 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
-import static in.wynk.common.constant.BaseConstants.V2;
 
 @Slf4j
 @Getter
@@ -39,7 +38,7 @@ public class PaymentMethodsPlanEligibilityEvaluation extends PaymentOptionsCommo
                 resultBuilder.reason(CommonEligibilityStatusReason.SI_REQUIRED);
             } else {
                 try {
-                    final boolean isExternalEligible = BeanLocatorFactory.getBean(getEntity().getPaymentCode().getCode().concat(V2), new ParameterizedTypeReference<IExternalPaymentEligibilityService>() {
+                    final boolean isExternalEligible = BeanLocatorFactory.getBean(getEntity().getPaymentCode().getCode(), new ParameterizedTypeReference<IExternalPaymentEligibilityService>() {
                     }).isEligible(getEntity(), root);
                     if (isExternalEligible) {
                         resultBuilder.status(EligibilityStatus.ELIGIBLE);

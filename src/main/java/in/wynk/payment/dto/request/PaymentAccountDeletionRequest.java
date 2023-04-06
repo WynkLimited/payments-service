@@ -5,7 +5,6 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.aps.common.DeleteType;
-import in.wynk.payment.dto.payu.VerificationType;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
@@ -20,7 +19,7 @@ import javax.validation.constraints.NotNull;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentMethodDeleteRequest {
+public class PaymentAccountDeletionRequest {
     @NotBlank
     @Analysed
     private String deleteValue;

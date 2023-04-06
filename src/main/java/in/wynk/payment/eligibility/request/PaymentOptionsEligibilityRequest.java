@@ -5,7 +5,7 @@ import in.wynk.eligibility.dto.IEligibilityRequest;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.AbstractPaymentOptionInfo;
 import in.wynk.payment.dto.common.AbstractSavedInstrumentInfo;
-import in.wynk.payment.service.IPaymentInstrumentsGatewayProxy;
+import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
@@ -42,7 +42,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode) {
         if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))
             return payInstrumentProxyMap.get(payCode);
-        final AbstractPaymentInstrumentsProxy proxy = BeanLocatorFactory.getBean(payCode, IPaymentInstrumentsGatewayProxy.class).load(this);
+        final AbstractPaymentInstrumentsProxy proxy = BeanLocatorFactory.getBean(payCode, IPaymentInstrumentsProxy.class).load(this);
         payInstrumentProxyMap.put(payCode, proxy);
         return proxy;
     }

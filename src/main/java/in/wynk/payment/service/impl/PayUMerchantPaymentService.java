@@ -28,8 +28,8 @@ import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
-import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.payu.PayUUpiCollectResponse;
+import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.*;
@@ -49,7 +49,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
-import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -62,6 +61,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.constant.UpiConstants.INTENT;
+import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -70,12 +71,18 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUCommand.PAYU_GETTDR;
 import static in.wynk.payment.dto.payu.PayUCommand.UPI_MANDATE_REVOKE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
-import static in.wynk.payment.constant.UpiConstants.UPI;
-import static in.wynk.payment.constant.UpiConstants.INTENT;
 
 @Slf4j
-@Service(PAYU_MERCHANT_PAYMENT_SERVICE)
-public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>, IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, IMerchantVerificationService, IMerchantTransactionDetailsService, IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>, IPreDebitNotificationService, ICancellingRecurringService, IMerchantTDRService {
+public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements
+        IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>,
+        IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>,
+        IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>,
+        IMerchantVerificationService, IMerchantTransactionDetailsService,
+        IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>,
+        IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>,
+        IPreDebitNotificationService,
+        ICancellingRecurringService,
+        IMerchantTDRService {
 
     private final Gson gson;
     private final RestTemplate restTemplate;

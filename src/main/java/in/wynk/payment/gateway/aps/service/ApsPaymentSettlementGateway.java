@@ -1,4 +1,4 @@
-package in.wynk.payment.service.impl;
+package in.wynk.payment.gateway.aps.service;
 
 import com.datastax.driver.core.utils.UUIDs;
 import in.wynk.auth.dao.entity.Client;
@@ -8,9 +8,9 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.sattlement.SettlementRequest;
-import in.wynk.payment.dto.request.PaymentGatewaySettlementRequest;
+import in.wynk.payment.dto.request.ApsGatewaySettlementRequest;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
-import in.wynk.payment.service.IMerchantPaymentSettlement;
+import in.wynk.payment.gateway.IPaymentSettlement;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -32,9 +32,10 @@ import java.util.stream.Collectors;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Slf4j
-public class ApsPaymentSettlementGateway implements IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest> {
+public class ApsPaymentSettlementGateway implements IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> {
 
-    private String SETTLEMENT_ENDPOINT;
+    private final String SETTLEMENT_ENDPOINT;
+
     private final RestTemplate httpTemplate;
     private final PaymentCachingService cachingService;
 
@@ -61,7 +62,7 @@ public class ApsPaymentSettlementGateway implements IMerchantPaymentSettlement<D
     }
 
     @Override
-    public DefaultPaymentSettlementResponse settle(PaymentGatewaySettlementRequest request) {
+    public DefaultPaymentSettlementResponse settle(ApsGatewaySettlementRequest request) {
         final String settlementOrderId = UUIDs.random().toString();
         final Transaction transaction = TransactionContext.get();
         final PlanDTO purchasedPlan = cachingService.getPlan(transaction.getPlanId());

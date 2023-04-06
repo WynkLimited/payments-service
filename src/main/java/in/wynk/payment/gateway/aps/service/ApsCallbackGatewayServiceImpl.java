@@ -51,21 +51,21 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handleCallback(ApsCallBackRequestPayload callbackRequest) {
+    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
         try {
             final String callbackType = Optional.ofNullable(callbackRequest.getType()).orElse(CHARGE_CALLBACK_TYPE);
             final IPaymentCallback callbackService = delegator.get(callbackType);
-            return callbackService.handleCallback(callbackRequest);
+            return callbackService.handle(callbackRequest);
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         }
     }
 
     @Override
-    public ApsCallBackRequestPayload parseCallback(Map<String, Object> payload) {
+    public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
         try {
             final String type = ((String) payload.getOrDefault("type", CHARGE_CALLBACK_TYPE));
-            return delegator.get(type).parseCallback(payload);
+            return delegator.get(type).parse(payload);
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY006, e);
         }
@@ -78,7 +78,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handleCallback(ApsCallBackRequestPayload callbackRequest) {
+        public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
             final Transaction transaction = TransactionContext.get();
             common.syncChargingTransactionFromSource(transaction);
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
@@ -104,7 +104,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         }
 
         @Override
-        public ApsCallBackRequestPayload parseCallback(Map<String, Object> payload) {
+        public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsCallBackRequestPayload.class);
@@ -118,7 +118,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private class RefundApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsAutoRefundCallbackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handleCallback(ApsAutoRefundCallbackRequestPayload callbackRequest) {
+        public AbstractPaymentCallbackResponse handle(ApsAutoRefundCallbackRequestPayload callbackRequest) {
             final Transaction transaction = TransactionContext.get();
             common.syncRefundTransactionFromSource(transaction, callbackRequest.getRefundId());
             // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
@@ -128,7 +128,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         }
 
         @Override
-        public ApsAutoRefundCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        public ApsAutoRefundCallbackRequestPayload parse(Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsAutoRefundCallbackRequestPayload.class);

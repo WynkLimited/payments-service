@@ -188,7 +188,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction init (AbstractTransactionInitRequest transactionInitRequest, AbstractChargingRequestV2 request) {
+    public Transaction init (AbstractTransactionInitRequest transactionInitRequest, AbstractPaymentChargingRequest request) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
             purchaseDetailsManger.save(transaction, request);

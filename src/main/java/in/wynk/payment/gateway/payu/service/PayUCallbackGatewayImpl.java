@@ -32,26 +32,26 @@ import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
-public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
+public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
-    private final PayUCommonGatewayService common;
+    private final PayUCommonGateway common;
     private final ObjectMapper objectMapper;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
 
-    public PayUCallbackGatewayService (PayUCommonGatewayService common, ObjectMapper objectMapper) {
+    public PayUCallbackGatewayImpl(PayUCommonGateway common, ObjectMapper objectMapper) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.callbackHandler = new DelegatePayUCallbackHandler();
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handleCallback(PayUCallbackRequestPayload callbackRequest) {
-        return callbackHandler.handleCallback(callbackRequest);
+    public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
+        return callbackHandler.handle(request);
     }
 
     @Override
-    public PayUCallbackRequestPayload parseCallback(Map<String, Object> payload) {
-        return callbackHandler.parseCallback(payload);
+    public PayUCallbackRequestPayload parse(Map<String, Object> payload) {
+        return callbackHandler.parse(payload);
     }
 
     private class DelegatePayUCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
@@ -64,7 +64,7 @@ public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaym
         }
 
         @Override
-        public AbstractPaymentCallbackResponse handleCallback(PayUCallbackRequestPayload callbackRequest) {
+        public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest) {
             final Transaction transaction = TransactionContext.get();
             final String transactionId = transaction.getIdStr();
             try {
@@ -72,7 +72,7 @@ public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaym
                 final String errorMessage = callbackRequest.getErrorMessage();
                 final IPaymentCallback callbackService = delegator.get(callbackRequest.getAction());
                 if (validate(callbackRequest)) {
-                    return callbackService.handleCallback(callbackRequest);
+                    return callbackService.handle(callbackRequest);
                 } else {
                     log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}", callbackRequest.getStatus(), transactionId, callbackRequest.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + transactionId);
@@ -83,7 +83,7 @@ public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaym
         }
 
         @Override
-        public PayUCallbackRequestPayload parseCallback(Map<String, Object> payload) {
+        public PayUCallbackRequestPayload parse(Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, PayUCallbackRequestPayload.class);
@@ -96,7 +96,7 @@ public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaym
         private class GenericPayUCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
             @Override
-            public AbstractPaymentCallbackResponse handleCallback(PayUCallbackRequestPayload callbackRequest) {
+            public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
                 common.syncChargingTransactionFromSource(transaction);
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
@@ -125,7 +125,7 @@ public class PayUCallbackGatewayService implements IPaymentCallback<AbstractPaym
         private class RefundPayUCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUAutoRefundCallbackRequestPayload> {
 
             @Override
-            public AbstractPaymentCallbackResponse handleCallback(PayUAutoRefundCallbackRequestPayload callbackRequest) {
+            public AbstractPaymentCallbackResponse handle(PayUAutoRefundCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
                 common.syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
                 // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded

@@ -6,11 +6,11 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.common.DeleteType;
 import in.wynk.payment.dto.aps.request.delete.DeleteCardRequest;
 import in.wynk.payment.dto.aps.request.delete.DeleteVpaRequest;
-import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
+import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteCardResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteVpaResponse;
-import in.wynk.payment.dto.request.PaymentMethodDeleteRequest;
-import in.wynk.payment.service.IPaymentDeleteService;
+import in.wynk.payment.dto.request.PaymentAccountDeletionRequest;
+import in.wynk.payment.gateway.IPaymentAccountDeletion;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
@@ -27,10 +27,10 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_SAVED_VPA_D
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsDeleteGatewayServiceImpl implements IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
+public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest> {
 
-    private String DELETE_CARD_ENDPOINT;
-    private String DELETE_VPA_ENDPOINT;
+    private final String DELETE_CARD_ENDPOINT;
+    private final String DELETE_VPA_ENDPOINT;
 
     private final ApsCommonGatewayService common;
     private final PaymentMethodDeletion verification = new PaymentMethodDeletion();
@@ -42,12 +42,12 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentDeleteService<Abstra
     }
 
     @Override
-    public AbstractPaymentMethodDeleteResponse delete (PaymentMethodDeleteRequest request) {
+    public AbstractPaymentAccountDeletionResponse delete (PaymentAccountDeletionRequest request) {
         return verification.delete(request);
     }
 
-    private class PaymentMethodDeletion implements IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
-        private final Map<DeleteType, IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest>> deletionDelegate = new HashMap<>();
+    private class PaymentMethodDeletion implements IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest> {
+        private final Map<DeleteType, IPaymentAccountDeletion<? extends AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest>> deletionDelegate = new HashMap<>();
 
         public PaymentMethodDeletion () {
             deletionDelegate.put(DeleteType.VPA, new VpaDeletion());
@@ -55,13 +55,13 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentDeleteService<Abstra
         }
 
         @Override
-        public AbstractPaymentMethodDeleteResponse delete (PaymentMethodDeleteRequest request) {
+        public AbstractPaymentAccountDeletionResponse delete (PaymentAccountDeletionRequest request) {
             return deletionDelegate.get(request.getDeleteType()).delete(request);
         }
 
-        private class CardDeletion implements IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
+        private class CardDeletion implements IPaymentAccountDeletion<DeleteCardResponse, PaymentAccountDeletionRequest> {
             @Override
-            public AbstractPaymentMethodDeleteResponse delete (PaymentMethodDeleteRequest request) {
+            public DeleteCardResponse delete (PaymentAccountDeletionRequest request) {
                 final DeleteCardRequest deleteCardRequest = DeleteCardRequest.builder().referenceNumber(request.getDeleteValue()).build();
                 final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
@@ -78,9 +78,9 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentDeleteService<Abstra
             }
         }
 
-        private class VpaDeletion implements IPaymentDeleteService<AbstractPaymentMethodDeleteResponse, PaymentMethodDeleteRequest> {
+        private class VpaDeletion implements IPaymentAccountDeletion<DeleteVpaResponse, PaymentAccountDeletionRequest> {
             @Override
-            public AbstractPaymentMethodDeleteResponse delete (PaymentMethodDeleteRequest request) {
+            public DeleteVpaResponse delete (PaymentAccountDeletionRequest request) {
                 List<String> vpa= new ArrayList<>();
                 vpa.add(request.getDeleteValue());
                 final DeleteVpaRequest deleteVpaRequest = DeleteVpaRequest.builder().vpaIds(vpa).build();

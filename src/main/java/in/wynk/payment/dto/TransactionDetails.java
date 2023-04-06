@@ -2,7 +2,7 @@ package in.wynk.payment.dto;
 
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.request.AbstractChargingRequestV2;
+import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,5 +11,5 @@ import lombok.Getter;
 public class TransactionDetails {
     private Transaction transaction;
     private IPurchaseDetails purchaseDetails;
-    private AbstractChargingRequestV2 request;
+    private AbstractPaymentChargingRequest request;
 }

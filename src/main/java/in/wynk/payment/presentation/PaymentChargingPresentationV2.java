@@ -18,11 +18,11 @@ import in.wynk.payment.dto.gateway.netbanking.NetBankingHtmlTypeResponse;
 import in.wynk.payment.dto.gateway.netbanking.NetBankingKeyValueTypeResponse;
 import in.wynk.payment.dto.gateway.upi.UpiCollectChargingResponse;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
-import in.wynk.payment.dto.request.AbstractChargingRequestV2;
+import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
 import in.wynk.payment.dto.request.S2SChargingRequestV2;
 import in.wynk.payment.dto.request.WebChargingRequestV2;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
-import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
+import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
 import in.wynk.payment.presentation.dto.charge.card.*;
 import in.wynk.payment.presentation.dto.charge.netbanking.*;
@@ -49,7 +49,7 @@ import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
     @Value("${payment.encKey}")
     private String ENC_KEY;
@@ -58,7 +58,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
 
     private final Gson gson;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
-    private final Map<FlowType, IPaymentPresentationV2<? extends PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> delegate = new HashMap<>();
+    private final Map<FlowType, IPaymentPresentationV2<? extends PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> delegate = new HashMap<>();
 
     @PostConstruct
     public void init() {
@@ -69,7 +69,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
     }
 
     @Override
-    public PaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+    public PaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
         return delegate.get(FlowType.valueOf(method.getGroup().toUpperCase())).transform(payload);
     }
@@ -79,9 +79,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         return EncryptionUtils.encrypt(gson.toJson(form), ENC_KEY);
     }
 
-    private class UpiChargingPresentation implements IPaymentPresentationV2<UpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+    private class UpiChargingPresentation implements IPaymentPresentationV2<UpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-        private final Map<FlowType, IPaymentPresentationV2<? extends UpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiDelegate = new HashMap<>();
+        private final Map<FlowType, IPaymentPresentationV2<? extends UpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> upiDelegate = new HashMap<>();
 
         public UpiChargingPresentation() {
             upiDelegate.put(SEAMLESS, new UpiSeamless());
@@ -89,14 +89,14 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
 
         @Override
-        public UpiPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+        public UpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             String flowType = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId()).getFlowType();
             return upiDelegate.get(FlowType.valueOf(flowType)).transform(payload);
         }
 
-        public class UpiSeamless implements IPaymentPresentationV2<SeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+        public class UpiSeamless implements IPaymentPresentationV2<SeamlessUpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends SeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiSeamlessDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentPresentationV2<? extends SeamlessUpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> upiSeamlessDelegate = new HashMap<>();
 
             public UpiSeamless() {
                 upiSeamlessDelegate.put(INTENT, new UpiSeamlessIntent());
@@ -104,16 +104,16 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             }
 
             @Override
-            public SeamlessUpiPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+            public SeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
                 return upiSeamlessDelegate.get(FlowType.valueOf(payment.mode())).transform(payload);
             }
 
-            public class UpiSeamlessIntent implements IPaymentPresentationV2<IntentSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class UpiSeamlessIntent implements IPaymentPresentationV2<IntentSeamlessUpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @SneakyThrows
                 @Override
-                public IntentSeamlessUpiPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
-                    AbstractChargingRequestV2 request = payload.getFirst();
+                public IntentSeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
+                    AbstractPaymentChargingRequest request = payload.getFirst();
                     UpiIntentChargingResponse response = (UpiIntentChargingResponse) payload.getSecond();
                     final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
                     final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
@@ -167,9 +167,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 }
             }
 
-            public class UpiSeamlessCollectInApp implements IPaymentPresentationV2<CollectInAppSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class UpiSeamlessCollectInApp implements IPaymentPresentationV2<CollectInAppSeamlessUpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @Override
-                public CollectInAppSeamlessUpiPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public CollectInAppSeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     final CollectInAppSeamlessUpiPaymentChargingResponse.CollectInAppSeamlessUpiPaymentChargingResponseBuilder<?,?> builder = CollectInAppSeamlessUpiPaymentChargingResponse.builder().pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass())));
                     if (WebChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass())) {
                         final SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -183,24 +183,24 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             }
         }
 
-        public class UpiNonSeamless implements IPaymentPresentationV2<NonSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+        public class UpiNonSeamless implements IPaymentPresentationV2<NonSeamlessUpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends NonSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> upiNonSeamlessDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentPresentationV2<? extends NonSeamlessUpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> upiNonSeamlessDelegate = new HashMap<>();
 
             public UpiNonSeamless() {
                 upiNonSeamlessDelegate.put(COLLECT, new UpiNonSeamlessCollect());
             }
 
             @Override
-            public NonSeamlessUpiPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+            public NonSeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
                 return upiNonSeamlessDelegate.get(FlowType.valueOf(payment.mode())).transform(payload);
             }
 
-            public class UpiNonSeamlessCollect implements IPaymentPresentationV2<CollectNonSeamlessUpiPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class UpiNonSeamlessCollect implements IPaymentPresentationV2<CollectNonSeamlessUpiPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @SneakyThrows
                 @Override
-                public CollectNonSeamlessUpiPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public CollectNonSeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     UpiCollectChargingResponse response = (UpiCollectChargingResponse) payload.getSecond();
                     final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
                     return CollectNonSeamlessUpiPaymentChargingResponse.builder()
@@ -210,9 +210,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
     }
 
-    private class CardChargingPresentation implements IPaymentPresentationV2<CardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+    private class CardChargingPresentation implements IPaymentPresentationV2<CardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-        private final Map<FlowType, IPaymentPresentationV2<? extends CardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardDelegate = new HashMap<>();
+        private final Map<FlowType, IPaymentPresentationV2<? extends CardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> cardDelegate = new HashMap<>();
 
         public CardChargingPresentation() {
             cardDelegate.put(SEAMLESS, new CardSeamless());
@@ -220,7 +220,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
 
         @Override
-        public CardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+        public CardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
             final CardPaymentDetails paymentDetails = (CardPaymentDetails) payload.getFirst().getPaymentDetails();
             boolean inAppOtpSupport = (Objects.isNull(paymentDetails.getCardDetails().getInAppOtpSupport())) ? method.isInAppOtpSupport() : paymentDetails.getCardDetails().getInAppOtpSupport();
@@ -229,9 +229,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             return cardDelegate.get(flowType).transform(payload);
         }
 
-        public class CardSeamless implements IPaymentPresentationV2<SeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+        public class CardSeamless implements IPaymentPresentationV2<SeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends SeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardSeamlessDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentPresentationV2<? extends SeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> cardSeamlessDelegate = new HashMap<>();
 
             public CardSeamless() {
                 cardSeamlessDelegate.put(OTP_LESS, new CardSeamlessOtpLess());
@@ -239,29 +239,29 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             }
 
             @Override
-            public SeamlessCardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+            public SeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
                 return cardSeamlessDelegate.get(FlowType.valueOf(payment.mode())).transform(payload);
             }
 
-            public class CardSeamlessOtpLess implements IPaymentPresentationV2<OtpLessSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class CardSeamlessOtpLess implements IPaymentPresentationV2<OtpLessSeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @Override
-                public OtpLessSeamlessCardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public OtpLessSeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     throw new WynkRuntimeException(PaymentErrorType.PAY888);
                 }
             }
 
-            public class CardSeamlessInApp implements IPaymentPresentationV2<InAppSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class CardSeamlessInApp implements IPaymentPresentationV2<InAppSeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @Override
-                public InAppSeamlessCardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public InAppSeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     throw new WynkRuntimeException(PaymentErrorType.PAY888);
                 }
             }
         }
 
-        public class CardNonSeamless implements IPaymentPresentationV2<NonSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+        public class CardNonSeamless implements IPaymentPresentationV2<NonSeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends NonSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> cardNonSeamlessDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentPresentationV2<? extends NonSeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> cardNonSeamlessDelegate = new HashMap<>();
 
             public CardNonSeamless() {
                 cardNonSeamlessDelegate.put(KEY_VALUE, new CardNonSeamlessKeyValueType());
@@ -269,14 +269,14 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             }
 
             @Override
-            public NonSeamlessCardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+            public NonSeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
                 return cardNonSeamlessDelegate.get(FlowType.valueOf(payment.mode())).transform(payload);
             }
 
-            public class CardNonSeamlessKeyValueType implements IPaymentPresentationV2<KeyValueTypeNonSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class CardNonSeamlessKeyValueType implements IPaymentPresentationV2<KeyValueTypeNonSeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @Override
-                public KeyValueTypeNonSeamlessCardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public KeyValueTypeNonSeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     final CardKeyValueTypeChargingResponse response = (CardKeyValueTypeChargingResponse) payload.getSecond();
                     final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
                     return KeyValueTypeNonSeamlessCardPaymentChargingResponse.builder()
@@ -284,9 +284,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 }
             }
 
-            public class CardNonSeamlessHtmlType implements IPaymentPresentationV2<HtmlTypeNonSeamlessCardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class CardNonSeamlessHtmlType implements IPaymentPresentationV2<HtmlTypeNonSeamlessCardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @Override
-                public HtmlTypeNonSeamlessCardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public HtmlTypeNonSeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     final CardHtmlTypeChargingResponse response = (CardHtmlTypeChargingResponse) payload.getSecond();
                     return HtmlTypeNonSeamlessCardPaymentChargingResponse.builder()
                             .html(response.getHtml()).action(PaymentChargingAction.HTML.getAction()).build();
@@ -295,9 +295,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
     }
 
-    private class NetBankingChargingPresentation implements IPaymentPresentationV2<NetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+    private class NetBankingChargingPresentation implements IPaymentPresentationV2<NetBankingPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-        private final Map<FlowType, IPaymentPresentationV2<? extends NetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> nbDelegate = new HashMap<>();
+        private final Map<FlowType, IPaymentPresentationV2<? extends NetBankingPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> nbDelegate = new HashMap<>();
 
         public NetBankingChargingPresentation() {
             nbDelegate.put(SEAMLESS, new NetBankingSeamless());
@@ -305,7 +305,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
 
         @Override
-        public NetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+        public NetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
             FlowType flowType = NON_SEAMLESS;
             if (Objects.nonNull(method.getFlowType())) {
@@ -314,16 +314,16 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             return nbDelegate.get(flowType).transform(payload);
         }
 
-        public class NetBankingSeamless implements IPaymentPresentationV2<SeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+        public class NetBankingSeamless implements IPaymentPresentationV2<SeamlessNetBankingPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
             @Override
-            public SeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+            public SeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY888);
             }
         }
 
-        public class NetBankingNonSeamless implements IPaymentPresentationV2<NonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+        public class NetBankingNonSeamless implements IPaymentPresentationV2<NonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
 
-            private final Map<FlowType, IPaymentPresentationV2<? extends NonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>> netBankingNonSeamlessDelegate = new HashMap<>();
+            private final Map<FlowType, IPaymentPresentationV2<? extends NonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>> netBankingNonSeamlessDelegate = new HashMap<>();
 
             public NetBankingNonSeamless() {
                 netBankingNonSeamlessDelegate.put(KEY_VALUE, new NetBankingNonSeamlessKeyValueType());
@@ -331,14 +331,14 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             }
 
             @Override
-            public NonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+            public NonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
                 return netBankingNonSeamlessDelegate.get(FlowType.valueOf(payment.mode())).transform(payload);
             }
 
-            public class NetBankingNonSeamlessKeyValueType implements IPaymentPresentationV2<KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class NetBankingNonSeamlessKeyValueType implements IPaymentPresentationV2<KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @Override
-                public KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     final NetBankingKeyValueTypeResponse response = (NetBankingKeyValueTypeResponse) payload.getSecond();
                     final String encForm = PaymentChargingPresentationV2.this.handleFormSpec(response.getForm());
                     return KeyValueTypeNonSeamlessNetBankingPaymentChargingResponse.builder()
@@ -346,9 +346,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 }
             }
 
-            public class NetBankingNonSeamlessHtmlType implements IPaymentPresentationV2<HtmlTypeNonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+            public class NetBankingNonSeamlessHtmlType implements IPaymentPresentationV2<HtmlTypeNonSeamlessNetBankingPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
                 @Override
-                public HtmlTypeNonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+                public HtmlTypeNonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     final NetBankingHtmlTypeResponse response = (NetBankingHtmlTypeResponse) payload.getSecond();
                     return HtmlTypeNonSeamlessNetBankingPaymentChargingResponse.builder()
                             .html(response.getHtml()).action(PaymentChargingAction.HTML.getAction()).build();
@@ -357,9 +357,9 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         }
     }
 
-    private class WalletChargingPresentation implements IPaymentPresentationV2<CardPaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>> {
+    private class WalletChargingPresentation implements IPaymentPresentationV2<CardPaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>> {
         @Override
-        public CardPaymentChargingResponse transform(Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse> payload) {
+        public CardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             return null;
         }
     }

@@ -11,7 +11,7 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
-import in.wynk.payment.service.IPaymentStatusService;
+import in.wynk.payment.gateway.IPaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -23,32 +23,32 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_REFUND_STATUS_VERIFICATION;
 
 @Slf4j
-public class PayUStatusGatewayServiceImpl implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
-    private final PayUCommonGatewayService common;
-    private final Map<Class<? extends AbstractTransactionReconciliationStatusRequest>, IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>
+    private final PayUCommonGateway common;
+    private final Map<Class<? extends AbstractTransactionReconciliationStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>
             statusDelegate = new HashMap<>();
 
-    public PayUStatusGatewayServiceImpl(PayUCommonGatewayService common) {
+    public PayUStatusGatewayImpl(PayUCommonGateway common) {
         this.common = common;
         this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
         this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());
     }
     @Override
-    public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
+    public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
-        final IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> reconStatusService =
+        final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> reconStatusService =
                 statusDelegate.get(request.getClass());
         if (Objects.isNull(reconStatusService)){
             throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
         }
-        return reconStatusService.status(request);
+        return reconStatusService.reconcile(request);
     }
 
-    private class ChargingTransactionReconciliationStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+    private class ChargingTransactionReconciliationStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
         @Override
-        public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
+        public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
             common.syncChargingTransactionFromSource(transaction);
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
@@ -62,10 +62,10 @@ public class PayUStatusGatewayServiceImpl implements IPaymentStatusService<Abstr
         }
     }
 
-    private class RefundTransactionReconciliationStatusService implements IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+    private class RefundTransactionReconciliationStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
         @Override
-        public AbstractPaymentStatusResponse status (AbstractTransactionStatusRequest request) {
+        public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
             RefundTransactionReconciliationStatusRequest refundRequest = (RefundTransactionReconciliationStatusRequest) request;
             common.syncRefundTransactionFromSource(transaction, refundRequest.getExtTxnId());

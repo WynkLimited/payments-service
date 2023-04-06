@@ -1,8 +1,6 @@
 package in.wynk.payment.gateway.aps.service;
 
 
-import in.wynk.common.dto.TechnicalErrorDetails;
-import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -13,34 +11,34 @@ import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.refund.ExternalPaymentRefundRequest;
 import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
-import in.wynk.payment.service.IMerchantPaymentRefundService;
+import in.wynk.payment.gateway.IPaymentRefund;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
+
 /**
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsRefundGatewayServiceImpl implements IMerchantPaymentRefundService<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
+public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
 
     private final String REFUND_ENDPOINT;
     private final ApsCommonGatewayService common;
     private final ApplicationEventPublisher eventPublisher;
 
-    public ApsRefundGatewayServiceImpl(String refundEndpoint, ApplicationEventPublisher eventPublisher, ApsCommonGatewayService common){
-        this.common= common;
-        this.eventPublisher= eventPublisher;
+    public ApsRefundGatewayServiceImpl(String refundEndpoint, ApplicationEventPublisher eventPublisher, ApsCommonGatewayService common) {
+        this.common = common;
+        this.eventPublisher = eventPublisher;
         this.REFUND_ENDPOINT = refundEndpoint;
     }
 
 
     @Override
-    public WynkResponseEntity<ApsPaymentRefundResponse> refund (ApsPaymentRefundRequest request) {
+    public ApsPaymentRefundResponse doRefund(ApsPaymentRefundRequest request) {
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final Transaction refundTransaction = TransactionContext.get();
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(refundTransaction.getIdStr());
-        final WynkResponseEntity.WynkResponseEntityBuilder<ApsPaymentRefundResponse> responseBuilder = WynkResponseEntity.builder();
         final ApsPaymentRefundResponse.ApsPaymentRefundResponseBuilder<?, ?> refundResponseBuilder =
                 ApsPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId())
                         .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
@@ -49,7 +47,7 @@ public class ApsRefundGatewayServiceImpl implements IMerchantPaymentRefundServic
             final ExternalPaymentRefundRequest refundRequest =
                     ExternalPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).build();
             ExternalPaymentRefundStatusResponse body =
-                    common.exchange(REFUND_ENDPOINT, HttpMethod.POST,common.getLoginId(refundTransaction.getMsisdn()),refundRequest, ExternalPaymentRefundStatusResponse.class);
+                    common.exchange(REFUND_ENDPOINT, HttpMethod.POST, common.getLoginId(refundTransaction.getMsisdn()), refundRequest, ExternalPaymentRefundStatusResponse.class);
 
             mBuilder.request(refundRequest);
             mBuilder.response(body);
@@ -62,14 +60,12 @@ public class ApsRefundGatewayServiceImpl implements IMerchantPaymentRefundServic
             }
         } catch (WynkRuntimeException ex) {
             final PaymentErrorEvent errorEvent = PaymentErrorEvent.builder(refundTransaction.getIdStr()).code(ex.getErrorCode()).description(ex.getErrorTitle()).build();
-            responseBuilder.success(false).status(ex.getErrorType().getHttpResponseStatusCode())
-                    .error(TechnicalErrorDetails.builder().code(errorEvent.getCode()).description(errorEvent.getDescription()).build());
             eventPublisher.publishEvent(errorEvent);
         } finally {
             refundTransaction.setStatus(finalTransactionStatus.getValue());
             refundResponseBuilder.transactionStatus(finalTransactionStatus);
             eventPublisher.publishEvent(mBuilder.build());
         }
-        return responseBuilder.data(refundResponseBuilder.build()).build();
+        return refundResponseBuilder.build();
     }
 }

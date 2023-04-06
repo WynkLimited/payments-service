@@ -10,11 +10,11 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
-import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
+import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
+import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
 import in.wynk.payment.presentation.IPaymentPresentation;
 import in.wynk.payment.presentation.IPaymentPresentationV2;
@@ -84,7 +84,7 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handleCallback(request));
+                }).transform(manager.handle(request));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -109,7 +109,7 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handleCallback(request));
+                }).transform(manager.handle(request));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -133,7 +133,7 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handleCallback(request));
+                }).transform(manager.handle(request));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -146,7 +146,7 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(PAYMENT_METHOD, paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);
         final WynkResponseEntity<PaymentChargingResponse> responseEntity =
-                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractChargingRequestV2, AbstractCoreChargingResponse>>>() {
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>>() {
                 }).transform(() -> Pair.of(request, manager.charge(request)));
         AnalyticService.update(responseEntity);
         return responseEntity;
@@ -160,7 +160,7 @@ public class RevenuePaymentControllerV2 {
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
         final WynkResponseEntity<PaymentStatusResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse>>() {
-                }).transform(() -> manager.status(ChargingTransactionStatusRequest.builder().transactionId(sessionDTO.<String>get(TRANSACTION_ID)).build()));
+                }).transform(() -> manager.reconcile(ChargingTransactionStatusRequest.builder().transactionId(sessionDTO.<String>get(TRANSACTION_ID)).build()));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -168,9 +168,9 @@ public class RevenuePaymentControllerV2 {
     @PostMapping("/delete/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "deletePaymentMethod")
-    public WynkResponseEntity<AbstractPaymentMethodDeleteResponse> delete (@PathVariable String sid, @Valid @RequestBody PaymentMethodDeleteRequest request) {
+    public WynkResponseEntity<AbstractPaymentAccountDeletionResponse> delete (@PathVariable String sid, @Valid @RequestBody PaymentAccountDeletionRequest request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
-        return WynkResponseEntity.<AbstractPaymentMethodDeleteResponse>builder().data(manager.delete(request)).status(HttpStatus.OK).build();
+        return WynkResponseEntity.<AbstractPaymentAccountDeletionResponse>builder().data(manager.delete(request)).status(HttpStatus.OK).build();
     }
 }

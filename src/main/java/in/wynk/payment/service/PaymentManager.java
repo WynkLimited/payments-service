@@ -432,8 +432,8 @@ public class PaymentManager
         final Transaction transaction = TransactionContext.get();
         final String pgId = merchantTransactionService.getPartnerReferenceId(request.getTid());
         return BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
-                new ParameterizedTypeReference<IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>>() {
-                }).settle(PaymentGatewaySettlementRequest.builder().pgId(pgId).tid(transaction.getIdStr()).build());
+                new ParameterizedTypeReference<IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>>() {
+                }).settle(ApsGatewaySettlementRequest.builder().pgId(pgId).tid(transaction.getIdStr()).build());
     }
 
     @Override

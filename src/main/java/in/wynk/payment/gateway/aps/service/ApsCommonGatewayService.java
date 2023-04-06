@@ -102,7 +102,7 @@ public class ApsCommonGatewayService {
                 ApsFailureResponse failureResponse = objectMapper.readValue((String) apsVasResponse.getBody(), ApsFailureResponse.class);
                 throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), "APS Validation Error");
             } catch (JsonProcessingException ex) {
-                throw new WynkRuntimeException("Unknown Object from Aps", ex);
+                throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
             }
         }
         throw new WynkRuntimeException(PAY041);

@@ -2,9 +2,7 @@ package in.wynk.payment.gateway.payu;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-
-import in.wynk.common.dto.WynkResponseEntity;
-import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
@@ -12,83 +10,83 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUPaymentRefundRequest;
 import in.wynk.payment.dto.payu.PayUPaymentRefundResponse;
-import in.wynk.payment.dto.request.AbstractChargingRequestV2;
+import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.request.VerificationRequest;
-import in.wynk.payment.dto.response.AbstractCoreChargingResponse;
-import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.IPaymentRenewal;
-import in.wynk.payment.gateway.payu.service.PayUCallbackGatewayService;
-import in.wynk.payment.gateway.payu.service.PayUChargingGatewayServiceImpl;
-import in.wynk.payment.gateway.payu.service.PayUCommonGatewayService;
-import in.wynk.payment.gateway.payu.service.PayURefundGatewayServiceImpl;
-import in.wynk.payment.gateway.payu.service.PayURenewalGatewayServiceImpl;
-import in.wynk.payment.gateway.payu.service.PayUStatusGatewayServiceImpl;
-import in.wynk.payment.gateway.payu.service.PayUVerificationGatewayServiceImpl;
+import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
+import in.wynk.payment.gateway.*;
+import in.wynk.payment.gateway.payu.service.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.service.impl.PayUMerchantPaymentService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
-import static in.wynk.common.constant.BaseConstants.V2;
 
 /**
  * @author Nishesh Pandey
  */
-@Service(PAYU_MERCHANT_PAYMENT_SERVICE + V2)
-public class PayUGateway implements
+@Service(PAYU_MERCHANT_PAYMENT_SERVICE)
+public class PayUGateway extends PayUMerchantPaymentService implements
         IPaymentRenewal<PaymentRenewalChargingRequest>,
-        IVerificationService<AbstractVerificationResponse, VerificationRequest>,
-        IPaymentChargingServiceV2<AbstractCoreChargingResponse, AbstractChargingRequestV2>,
-        IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>,
-        IPaymentStatusService<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
-        IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
+        IPaymentRefund<PayUPaymentRefundResponse, PayUPaymentRefundRequest>,
+        IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload>,
+        IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>,
+        IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
+        IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
 
-    private final PayURefundGatewayServiceImpl refundGateway;
-    private final PayUStatusGatewayServiceImpl statusGateway;
-    private final PayUChargingGatewayServiceImpl chargeGateway;
-    private final PayURenewalGatewayServiceImpl renewalGateway;
-    private final PayUCallbackGatewayService callbackGateway;
-    private final PayUVerificationGatewayServiceImpl verificationGateway;
+    private final PayURefundGatewayImpl refundGateway;
+    private final PayUStatusGatewayImpl statusGateway;
+    private final PayUChargingGatewayImpl chargeGateway;
+    private final PayURenewalGatewayImpl renewalGateway;
+    private final PayUCallbackGatewayImpl callbackGateway;
+    private final PayUVerificationGatewayImpl verificationGateway;
 
 
     public PayUGateway(@Value("${payment.merchant.payu.api.payment}") String paymentApi,
                        Gson gson,
                        ObjectMapper mapper,
                        PaymentCachingService payCache,
+                       PayUCommonGateway commonGateway,
                        PaymentMethodCachingService cache,
-                       PayUCommonGatewayService commonGateway,
+                       IErrorCodesCacheService errorCodeCache,
                        ApplicationEventPublisher eventPublisher,
-                       IMerchantTransactionService merchantTransactionService) {
-        this.statusGateway = new PayUStatusGatewayServiceImpl(commonGateway);
-        this.callbackGateway = new PayUCallbackGatewayService(commonGateway, mapper);
-        this.refundGateway = new PayURefundGatewayServiceImpl(commonGateway, eventPublisher);
-        this.chargeGateway = new PayUChargingGatewayServiceImpl(commonGateway, cache, paymentApi);
-        this.verificationGateway = new PayUVerificationGatewayServiceImpl(commonGateway, mapper);
-        this.renewalGateway = new PayURenewalGatewayServiceImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService);
+                       ITransactionManagerService transactionManagerService,
+                       IMerchantTransactionService merchantTransactionService,
+                       @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
+        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService);
+        this.statusGateway = new PayUStatusGatewayImpl(commonGateway);
+        this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper);
+        this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher);
+        this.verificationGateway = new PayUVerificationGatewayImpl(commonGateway, mapper);
+        this.chargeGateway = new PayUChargingGatewayImpl(commonGateway, cache, paymentApi);
+        this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService);
     }
 
 
     @Override
-    public AbstractPaymentCallbackResponse handleCallback(PayUCallbackRequestPayload callbackRequest) {
-        return callbackGateway.handleCallback(callbackRequest);
+    public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest) {
+        return callbackGateway.handle(callbackRequest);
     }
 
     @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
-        renewalGateway.doRenewal(paymentRenewalChargingRequest);
+    public void renew(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        renewalGateway.renew(paymentRenewalChargingRequest);
     }
 
     @Override
-    public AbstractCoreChargingResponse charge(AbstractChargingRequestV2 request) {
+    public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
         return chargeGateway.charge(request);
     }
 
     @Override
-    public AbstractPaymentStatusResponse status(AbstractTransactionStatusRequest request) {
-        return statusGateway.status(request);
+    public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
+        return statusGateway.reconcile(request);
     }
 
     @Override
@@ -97,7 +95,7 @@ public class PayUGateway implements
     }
 
     @Override
-    public WynkResponseEntity<PayUPaymentRefundResponse> refund(PayUPaymentRefundRequest request) {
-        return refundGateway.refund(request);
+    public PayUPaymentRefundResponse doRefund(PayUPaymentRefundRequest request) {
+        return refundGateway.doRefund(request);
     }
 }

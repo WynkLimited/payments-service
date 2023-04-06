@@ -110,7 +110,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         return PointTransactionInitRequest.builder().paymentGateway(paymentGateway).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
     }
 
-    public static AbstractTransactionInitRequest from (AbstractChargingRequestV2 request) {
+    public static AbstractTransactionInitRequest from (AbstractPaymentChargingRequest request) {
 
         final PaymentGateway paymentGateway = paymentMethodCaching.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);

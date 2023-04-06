@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import in.wynk.payment.dto.response.UiDetails;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,5 +14,5 @@ public class PayGroupDetails {
     private String title;
     private String description;
     private boolean enabled;
-    private UIDetails uiDetails;
+    private UiDetails uiDetails;
 }

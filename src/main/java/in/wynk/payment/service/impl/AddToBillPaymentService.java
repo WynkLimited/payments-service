@@ -39,17 +39,16 @@ import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.addtobill.AddToBillChargingResponse;
 import in.wynk.payment.dto.response.addtobill.UserAddToBillDetails;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
+import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
 import in.wynk.payment.service.*;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.atb.*;
 import in.wynk.vas.client.service.CatalogueVasClientService;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.actuate.health.Health;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -65,7 +64,7 @@ import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
-public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService implements IExternalPaymentEligibilityService, IPaymentInstrumentsGatewayProxy<PaymentOptionsPlanEligibilityRequest>, IMerchantPaymentChargingService<AddToBillChargingResponse, DefaultChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
+public class AddToBillPaymentService extends AbstractMerchantPaymentStatusService implements IExternalPaymentEligibilityService, IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>, IMerchantPaymentChargingService<AddToBillChargingResponse, DefaultChargingRequest<?>>, IUserPreferredPaymentService<UserAddToBillDetails, PreferredPaymentDetailsRequest<?>>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>, ICancellingRecurringService {
 
     private final PaymentMethodCachingService payCache;
     private final PaymentCachingService cachingService;

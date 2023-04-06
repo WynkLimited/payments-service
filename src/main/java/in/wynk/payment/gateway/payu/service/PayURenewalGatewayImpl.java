@@ -41,17 +41,17 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_ST
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
-public class PayURenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRenewalChargingRequest> {
+public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     private final Gson gson;
     private final ObjectMapper objectMapper;
-    private final PayUCommonGatewayService common;
+    private final PayUCommonGateway common;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     private final IMerchantTransactionService merchantTransactionService;
 
-    public PayURenewalGatewayServiceImpl(PayUCommonGatewayService common, Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
+    public PayURenewalGatewayImpl(PayUCommonGateway common, Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, IMerchantTransactionService merchantTransactionService) {
         this.gson = gson;
         this.common = common;
         this.objectMapper = objectMapper;
@@ -61,7 +61,7 @@ public class PayURenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRen
     }
 
     @Override
-    public void doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    public void renew(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(paymentRenewalChargingRequest.getId());
         if (merchantTransaction == null) {

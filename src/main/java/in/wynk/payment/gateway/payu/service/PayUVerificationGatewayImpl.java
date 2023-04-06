@@ -12,8 +12,7 @@ import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.VerificationRequest;
 import in.wynk.payment.dto.response.payu.PayUVpaVerificationResponse;
-import in.wynk.payment.gateway.IPaymentInstrumentValidator;
-import in.wynk.payment.service.IVerificationService;
+import in.wynk.payment.gateway.IPaymentAccountVerification;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.MultiValueMap;
@@ -24,13 +23,13 @@ import java.util.Map;
 import static in.wynk.common.constant.BaseConstants.UNKNOWN;
 
 @Slf4j
-public class PayUVerificationGatewayServiceImpl implements IVerificationService<AbstractVerificationResponse, VerificationRequest> {
+public class PayUVerificationGatewayImpl implements IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> {
 
     private final ObjectMapper objectMapper;
-    private final PayUCommonGatewayService common;
-    private final Map<VerificationType, IPaymentInstrumentValidator<? extends AbstractVerificationResponse, VerificationRequest>> delegate = new HashMap<>();
+    private final PayUCommonGateway common;
+    private final Map<VerificationType, IPaymentAccountVerification<? extends AbstractVerificationResponse, VerificationRequest>> delegate = new HashMap<>();
 
-    public PayUVerificationGatewayServiceImpl(PayUCommonGatewayService common, ObjectMapper objectMapper) {
+    public PayUVerificationGatewayImpl(PayUCommonGateway common, ObjectMapper objectMapper) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.delegate.put(VerificationType.VPA, new VPA());
@@ -42,7 +41,7 @@ public class PayUVerificationGatewayServiceImpl implements IVerificationService<
         return delegate.get(request.getVerificationType()).verify(request);
     }
 
-    private class CARD implements IPaymentInstrumentValidator<BinVerificationResponse, VerificationRequest> {
+    private class CARD implements IPaymentAccountVerification<BinVerificationResponse, VerificationRequest> {
 
         @Override
         public BinVerificationResponse verify(VerificationRequest request) {
@@ -63,7 +62,7 @@ public class PayUVerificationGatewayServiceImpl implements IVerificationService<
         }
     }
 
-    private class VPA implements IPaymentInstrumentValidator<VpaVerificationResponse, VerificationRequest> {
+    private class VPA implements IPaymentAccountVerification<VpaVerificationResponse, VerificationRequest> {
 
         @SneakyThrows
         @Override

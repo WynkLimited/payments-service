@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @Getter
 @SuperBuilder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public abstract class AbstractCoreChargingResponse {
+public abstract class AbstractPaymentChargingResponse {
 
     private String tid;
     private TransactionStatus transactionStatus;

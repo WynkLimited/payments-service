@@ -8,8 +8,8 @@ import in.wynk.payment.dto.request.CallbackRequest;
 import java.util.Map;
 
 public interface IPaymentCallback<R extends AbstractPaymentCallbackResponse, T extends CallbackRequest> {
-    R handleCallback(T callbackRequest);
-    default T parseCallback(Map<String, Object> payload) {
+    R handle(T callbackRequest);
+    default T parse(Map<String, Object> payload) {
         throw new WynkRuntimeException(PaymentErrorType.PAY888);
     }
     default <T> boolean isValid(T request) {

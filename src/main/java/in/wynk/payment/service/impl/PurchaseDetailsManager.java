@@ -14,7 +14,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.dao.repository.receipts.IPurchasingDetailsDao;
-import in.wynk.payment.dto.request.AbstractChargingRequestV2;
+import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
 import in.wynk.payment.service.IPurchaseDetailsManger;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -46,7 +46,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
 
     @Override
     @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
-    public void save (Transaction transaction, AbstractChargingRequestV2 details) {
+    public void save (Transaction transaction, AbstractPaymentChargingRequest details) {
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
                 .id(transaction.getIdStr())
                 .appDetails(details.getAppDetails())

@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @NoArgsConstructor
-public abstract class AbstractPaymentMethodDeleteResponse {
+public abstract class AbstractPaymentAccountDeletionResponse {
     private Boolean deleted;
 }
 

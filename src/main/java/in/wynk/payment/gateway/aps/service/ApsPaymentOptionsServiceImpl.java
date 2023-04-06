@@ -17,7 +17,7 @@ import in.wynk.payment.dto.aps.response.option.savedOptions.UpiSavedOptions;
 import in.wynk.payment.dto.aps.response.option.savedOptions.WalletSavedOptions;
 import in.wynk.payment.dto.common.*;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
-import in.wynk.payment.service.IPaymentInstrumentsGatewayProxy;
+import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -33,7 +33,7 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsGatewayProxy<PaymentOptionsPlanEligibilityRequest> {
+public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest> {
 
     private final String PAYMENT_OPTION_ENDPOINT;
 
@@ -45,7 +45,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
         put(NetBankingConstants.NETBANKING, NetBankingConstants.NET_BANKING);
     }};
 
-    public ApsPaymentOptionsGatewayServiceImpl(String payOptionEndpoint, ApsCommonGatewayService common) {
+    public ApsPaymentOptionsServiceImpl(String payOptionEndpoint, ApsCommonGatewayService common) {
         this.common = common;
         this.PAYMENT_OPTION_ENDPOINT = payOptionEndpoint;
     }

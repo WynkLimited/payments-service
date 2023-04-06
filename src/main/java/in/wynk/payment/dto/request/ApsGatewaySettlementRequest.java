@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class PaymentGatewaySettlementRequest extends AbstractPaymentSettlementRequest {
+public class ApsGatewaySettlementRequest extends AbstractPaymentSettlementRequest {
     @Analysed
     private String pgId;
 }

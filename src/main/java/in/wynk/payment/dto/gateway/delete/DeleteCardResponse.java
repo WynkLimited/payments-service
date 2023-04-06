@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.gateway.delete;
 
-import in.wynk.payment.dto.common.response.AbstractPaymentMethodDeleteResponse;
+import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -11,5 +11,5 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @NoArgsConstructor
-public class DeleteCardResponse extends AbstractPaymentMethodDeleteResponse {
+public class DeleteCardResponse extends AbstractPaymentAccountDeletionResponse {
 }

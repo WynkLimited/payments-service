@@ -18,14 +18,12 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.PageUrlDetails;
 import in.wynk.payment.dto.UserDetails;
-import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.session.context.SessionContextHolder;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
-public class WebChargingRequestV2 extends AbstractChargingRequestV2 {
+public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
 
     @Override
     public boolean isAutoRenewOpted () {

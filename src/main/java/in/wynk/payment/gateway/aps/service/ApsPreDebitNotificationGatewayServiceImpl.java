@@ -59,7 +59,7 @@ public class ApsPreDebitNotificationGatewayServiceImpl implements IPreDebitNotif
      * @param paymentMode
      * @param amount
      * @param invoiceNumber
-     * @return Aps notification request with randomly created pre-debit Request id.
+     * @return ApsGateway notification request with randomly created pre-debit Request id.
      */
 
     private PreDebitNotificationRequest buildApsPreDebitInfoRequest (String transactionId, String preDebitDate, String paymentMode, double amount, String invoiceNumber) {

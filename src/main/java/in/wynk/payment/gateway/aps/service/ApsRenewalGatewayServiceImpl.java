@@ -9,15 +9,15 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.aps.request.renewal.SiPaymentRecurringRequest;
 import in.wynk.payment.dto.aps.response.renewal.RenewalStatusResponse;
 import in.wynk.payment.dto.aps.response.renewal.SiPaymentRecurringResponse;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.gateway.IPaymentRenewal;
 import in.wynk.payment.service.IMerchantTransactionService;
-import in.wynk.payment.service.IPaymentRenewalService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
@@ -41,19 +41,23 @@ import static in.wynk.payment.dto.apb.ApbConstants.*;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsRenewalGatewayServiceImpl implements IPaymentRenewalService<PaymentRenewalChargingMessage> {
+public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRenewalChargingRequest> {
 
     @Value("${aps.payment.renewal.api}")
     private String SI_PAYMENT_API;
 
-    private final ApsCommonGatewayService common;
-    private final IMerchantTransactionService merchantTransactionService;
-    private PaymentCachingService cachingService;
     private final ObjectMapper objectMapper;
+    private PaymentCachingService cachingService;
+    private final ApsCommonGatewayService common;
     private final ApplicationEventPublisher eventPublisher;
+    private final IMerchantTransactionService merchantTransactionService;
 
 
-    public ApsRenewalGatewayServiceImpl(String siPaymentApi, ApsCommonGatewayService common, IMerchantTransactionService merchantTransactionService, PaymentCachingService cachingService, ObjectMapper objectMapper,
+    public ApsRenewalGatewayServiceImpl(String siPaymentApi,
+                                        ObjectMapper objectMapper,
+                                        ApsCommonGatewayService common,
+                                        PaymentCachingService cachingService,
+                                        IMerchantTransactionService merchantTransactionService,
                                         ApplicationEventPublisher eventPublisher) {
         this.common = common;
         this.objectMapper = objectMapper;
@@ -64,7 +68,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewalService<Paym
     }
 
     @Override
-    public void renew (PaymentRenewalChargingMessage message) {
+    public void renew(PaymentRenewalChargingRequest message) {
         Transaction transaction = TransactionContext.get();
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(message.getId());
         if (merchantTransaction == null) {
@@ -99,11 +103,11 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewalService<Paym
     }
 
 
-    private boolean isMandateExisting () {
+    private boolean isMandateExisting() {
         return true;
     }
 
-    private SiPaymentRecurringResponse doChargingForRenewal (MerchantTransaction merchantTransaction, String mode) {
+    private SiPaymentRecurringResponse doChargingForRenewal(MerchantTransaction merchantTransaction, String mode) {
         Transaction transaction = TransactionContext.get();
 
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
@@ -115,7 +119,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewalService<Paym
 
         try {
             //fix login id as msisdn
-            return common.exchange(SI_PAYMENT_API, HttpMethod.POST,"" ,apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
+            return common.exchange(SI_PAYMENT_API, HttpMethod.POST, "", apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
 
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -123,7 +127,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewalService<Paym
         }
     }
 
-    private void updateTransactionStatus (PlanPeriodDTO planPeriodDTO, SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
+    private void updateTransactionStatus(PlanPeriodDTO planPeriodDTO, SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
         int retryInterval = planPeriodDTO.getRetryInterval();
         if (apsRenewalResponse.getStatusCodeValue() == HttpStatus.OK.value()) {
             RenewalStatusResponse renewalResponse = apsRenewalResponse.getBody().getData();
@@ -148,7 +152,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewalService<Paym
      * @param transaction
      * @return map having client and oderId for which charge status to be fetched
      */
-    private Object buildApsRequest (Transaction transaction) {
+    private Object buildApsRequest(Transaction transaction) {
         MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
         requestMap.add(BaseConstants.CLIENT, transaction.getClientAlias());
         requestMap.add(PaymentConstants.ORDER_ID, transaction.getIdStr());

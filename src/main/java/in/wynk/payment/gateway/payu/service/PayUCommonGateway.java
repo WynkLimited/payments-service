@@ -49,7 +49,7 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
 @Component
-public class PayUCommonGatewayService {
+public class PayUCommonGateway {
 
     @Value("${payment.encKey}")
     public String ENC_KEY;
@@ -66,7 +66,7 @@ public class PayUCommonGatewayService {
     @Getter
     private final ICacheService<PaymentMethod, String> cache;
 
-    public PayUCommonGatewayService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher) {
+    public PayUCommonGateway(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher) {
         this.cache = cache;
         this.restTemplate = restTemplate;
         this.mapper = objectMapper;

@@ -143,7 +143,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             final Map<String, AbstractPaymentOptionInfo> optionInfoMap = payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().map(proxy -> proxy.getPaymentInstruments(payload.getFirst().getUserDetails().getMsisdn())).flatMap(Collection::stream).collect(Collectors.toMap(AbstractPaymentOptionInfo::getId, Function.identity(), (k1, k2) -> k1, LinkedHashMap::new));
             filteredMethods.forEach(method -> {
                 if (!payMap.containsKey(method.getGroup())) payMap.put(method.getGroup(), new ArrayList<>());
-                payMap.get(method.getGroup()).add((AbstractPaymentMethodDTO) delegate.get(method.getGroup()).transform(Pair.of(method, Optional.ofNullable(optionInfoMap.get(method.getId())))));
+                payMap.get(method.getGroup()).add((AbstractPaymentMethodDTO) delegate.get(method.getGroup()).transform(Pair.of(method, Optional.ofNullable(optionInfoMap.get(method.getPaymentId())))));
             });
             payMap.forEach((key, methods) -> methods.sort(Comparator.comparingInt(AbstractPaymentMethodDTO::getOrder)));
             return payMap.entrySet().stream().sorted((e1, e2) -> Integer.compare(groupCache.get(e1.getKey()).getHierarchy(), groupCache.get(e2.getKey()).getHierarchy())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1, LinkedHashMap::new));
@@ -156,7 +156,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<UpiOptionInfo> payOptional = payload.getSecond();
                 return UPI.builder()
-                        .id(methodDTO.getId())
+                        .id(methodDTO.getPaymentId())
                         .order(methodDTO.getHierarchy())
                         .code(methodDTO.getPaymentCode())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
@@ -188,7 +188,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<CardOptionInfo> payOptional = payload.getSecond();
                 return Card.builder()
-                        .id(methodDTO.getId())
+                        .id(methodDTO.getPaymentId())
                         .order(methodDTO.getHierarchy())
                         .code(methodDTO.getPaymentCode())
                         .description(methodDTO.getSubtitle())
@@ -216,7 +216,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<WalletOptionInfo> payOptional = payload.getSecond();
                 return Wallet.builder()
-                        .id(methodDTO.getId())
+                        .id(methodDTO.getPaymentId())
                         .order(methodDTO.getHierarchy())
                         .code(methodDTO.getPaymentCode())
                         .description(methodDTO.getSubtitle())
@@ -242,7 +242,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<NetBankingOptionInfo> payOptional = payload.getSecond();
                 return NetBanking.builder()
-                        .id(methodDTO.getId())
+                        .id(methodDTO.getPaymentId())
                         .order(methodDTO.getHierarchy())
                         .code(methodDTO.getPaymentCode())
                         .description(methodDTO.getSubtitle())
@@ -269,7 +269,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 final Optional<BillingOptionInfo> payOptional = payload.getSecond();
                 return AddToBill.builder()
-                        .id(methodDTO.getId())
+                        .id(methodDTO.getPaymentId())
                         .code(methodDTO.getPaymentCode())
                         .description(methodDTO.getSubtitle())
                         .health(payOptional.map(AbstractPaymentOptionInfo::getHealth).orElse(HealthStatus.UP.name()))
@@ -305,7 +305,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-            final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
+            final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
             return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> aliasToIds.containsKey(details.getId()))).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details))).sorted(Comparator.<AbstractSavedPaymentDTO>comparingInt(savedInfo -> groupCache.get(savedInfo.getGroup()).getHierarchy()).thenComparingInt(AbstractSavedPaymentDTO::getOrder)).collect(Collectors.toList());
         }
 

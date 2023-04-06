@@ -34,8 +34,8 @@ public class PaymentMethodsPlanEligibilityEvaluation extends PaymentOptionsCommo
         final EligibilityResult.EligibilityResultBuilder<PaymentMethod> resultBuilder = EligibilityResult.<PaymentMethod>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
             final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
-            if (StringUtils.isBlank(root.getSi())) {
-                resultBuilder.reason(CommonEligibilityStatusReason.SI_REQUIRED);
+            if (StringUtils.isBlank(root.getMsisdn())) {
+                resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
             } else {
                 try {
                     final boolean isExternalEligible = BeanLocatorFactory.getBean(getEntity().getPaymentCode().getCode(), new ParameterizedTypeReference<IExternalPaymentEligibilityService>() {

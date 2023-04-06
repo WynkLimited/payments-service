@@ -31,52 +31,37 @@ public class PaymentOptionsDTO {
     @JsonProperty("saved_payment_details")
     private final List<AbstractSavedPaymentDTO> savedPaymentDTO;
 
-//    @Getter
-//    @Setter
-//    @AnalysedEntity
-//    public static class PaymentMethodDTO {
-//        @JsonProperty("UPI")
-//        private List<UPI> upi;
-//
-//        @JsonProperty("CARD")
-//        private List<Card> card;
-//
-//        @JsonProperty("WALLET")
-//        private List<Wallet> wallet;
-//
-//        @JsonProperty("NET_BANKING")
-//        private List<NetBanking> netBanking;
-//
-//        @JsonProperty("ADD_TO_BILL")
-//        private List<AddToBill> addToBills;
-//
-//        @JsonProperty("BILLING")
-//        private List<GooglePlayBilling> billing;
-//
-//    }
-
     @SuperBuilder
     @Getter
     @AnalysedEntity
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class PlanDetails implements IProductDetails {
         private final String id;
+        @JsonProperty("partner_name")
         private final String partnerName;
+        @JsonProperty("partner_logo")
         private final String partnerLogo;
         private final String title;
         private final String discount;
+        @JsonProperty("validity_unit")
         private final String validityUnit;
         private final Integer month;
+        @JsonProperty("per_month_value")
         private final int perMonthValue;
         private final double price;
+        @JsonProperty("discounted_price")
         private final double discountedPrice;
+        @JsonProperty("free_trial_available")
         private final boolean freeTrialAvailable;
+        @JsonProperty("daily_amount")
         private final Double dailyAmount;
         private final Integer day;
+        @JsonProperty("trial_details")
         private final TrialPlanDetails trialDetails;
         private final String type = BaseConstants.PLAN;
         private final String currency;
         private Map<String, String> sku;
+        @JsonProperty("sub_type")
         private final String subType;
     }
     @SuperBuilder
@@ -86,6 +71,7 @@ public class PaymentOptionsDTO {
     public static class TrialPlanDetails implements IProductDetails {
         private final String id;
         private String title;
+        @JsonProperty("validity_unit")
         private final String validityUnit;
         private final String currency;
 
@@ -93,6 +79,7 @@ public class PaymentOptionsDTO {
 
         private final Integer day;
         private final Integer month;
+        @JsonProperty("time_unit")
         private final TimeUnit timeUnit;
         private final String type = BaseConstants.PLAN;
     }

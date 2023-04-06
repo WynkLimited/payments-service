@@ -18,6 +18,7 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 public class AddToBill extends AbstractPaymentMethodDTO {
 
+    @JsonProperty("supporting_details")
     private SupportingDetails supportingDetails;
 
     @AllArgsConstructor

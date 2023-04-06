@@ -21,4 +21,16 @@ public abstract class AbstractSavedInstrumentInfo {
     private boolean recommended;
     private boolean autoPayEnabled;
     private boolean expressCheckout;
+
+    @Override
+    public int hashCode() {
+        return this.getId().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!AbstractSavedInstrumentInfo.class.isAssignableFrom(obj.getClass())) return false;
+        final AbstractSavedInstrumentInfo savedInfo = ((AbstractSavedInstrumentInfo) obj);
+        return savedInfo.getId().equals(this.getId());
+    }
 }

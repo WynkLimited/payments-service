@@ -103,7 +103,7 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
         @Override
         public List<AbstractSavedInstrumentInfo> getSavedDetails(String userId) {
             if (Objects.nonNull(savedInstrumentCache)) return savedInstrumentCache;
-            final List<AbstractSavedInstrumentInfo> savedDetails = new ArrayList<>();
+            final Set<AbstractSavedInstrumentInfo> savedDetails = new TreeSet<>(Comparator.comparingInt(AbstractSavedInstrumentInfo::getOrder));
             if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && !CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
                 response.getSavedUserOptions().getPayOptions().forEach(savedOption -> {
                     final String paymentGroup = PAY_GROUP_MIGRATION_MAPPING.getOrDefault(savedOption.getType(), savedOption.getType());
@@ -150,26 +150,12 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                             break;
                         case UpiConstants.UPI:
                             final UpiSavedOptions savedUpiOption = ((UpiSavedOptions) savedOption);
-                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA())) break;
-                            final UpiSavedInfo upiInfo = UpiSavedInfo.builder()
-                                    .type(paymentGroup)
-                                    .group(paymentGroup)
-                                    .id(savedUpiOption.getId())
-                                    .iconUrl(savedUpiOption.getIconUrl())
-                                    .health(savedUpiOption.getHealth())
-                                    .order(savedUpiOption.getOrder())
-                                    .valid(savedUpiOption.isValid())
-                                    .enable(savedUpiOption.isEnable())
-                                    .title(savedUpiOption.getUpiApp())
-                                    .favourite(savedUpiOption.isFavourite())
-                                    .recommended(savedUpiOption.isPreferred())
-                                    .autoPayEnabled(Boolean.TRUE)
-                                    .preferred(savedUpiOption.isPreferred())
-                                    .expressCheckout(savedUpiOption.isShowOnQuickCheckout())
-                                    .vpa(savedUpiOption.getUserVPA())
-                                    .packageId(savedUpiOption.getAndroidCustomisationString())
-                                    .build();
-                            savedDetails.add(upiInfo);
+                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA()))
+                                if (!CollectionUtils.isEmpty(savedUpiOption.getVpaIds()))
+                                    for (String vpa : savedUpiOption.getVpaIds())
+                                        savedDetails.add(parseUpiSavedInfo(vpa, paymentGroup, savedUpiOption));
+                                else
+                                    savedDetails.add(parseUpiSavedInfo(savedUpiOption.getUserVPA(), paymentGroup, savedUpiOption));
                             break;
                         case WalletConstants.WALLETS:
                             final WalletSavedOptions savedWalletOption = ((WalletSavedOptions) savedOption);
@@ -214,8 +200,29 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                     }
                 });
             }
-            return savedDetails;
+            return new ArrayList<>(savedDetails);
         }
+    }
+
+    private UpiSavedInfo parseUpiSavedInfo(String vpa, String group, UpiSavedOptions savedUpiOption) {
+        return UpiSavedInfo.builder()
+                .type(group)
+                .group(group)
+                .vpa(vpa)
+                .id(savedUpiOption.getId())
+                .autoPayEnabled(Boolean.TRUE)
+                .valid(savedUpiOption.isValid())
+                .order(savedUpiOption.getOrder())
+                .enable(savedUpiOption.isEnable())
+                .title(savedUpiOption.getUpiApp())
+                .health(savedUpiOption.getHealth())
+                .iconUrl(savedUpiOption.getIconUrl())
+                .preferred(savedUpiOption.isPreferred())
+                .favourite(savedUpiOption.isFavourite())
+                .recommended(savedUpiOption.isPreferred())
+                .expressCheckout(savedUpiOption.isShowOnQuickCheckout())
+                .packageId(savedUpiOption.getAndroidCustomisationString())
+                .build();
     }
 
 

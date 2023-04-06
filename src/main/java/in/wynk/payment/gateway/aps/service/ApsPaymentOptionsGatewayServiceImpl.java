@@ -150,11 +150,11 @@ public class ApsPaymentOptionsGatewayServiceImpl implements IPaymentInstrumentsG
                             break;
                         case UpiConstants.UPI:
                             final UpiSavedOptions savedUpiOption = ((UpiSavedOptions) savedOption);
-                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA()))
+                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA())) {
                                 if (!CollectionUtils.isEmpty(savedUpiOption.getVpaIds()))
                                     for (String vpa : savedUpiOption.getVpaIds())
                                         savedDetails.add(parseUpiSavedInfo(vpa, paymentGroup, savedUpiOption));
-                            else
+                            } else
                                 savedDetails.add(parseUpiSavedInfo(savedUpiOption.getUserVPA(), paymentGroup, savedUpiOption));
                             break;
                         case WalletConstants.WALLETS:

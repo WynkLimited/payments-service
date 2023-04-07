@@ -1041,3 +1041,7 @@ lock:
 security:
   exempt:
     paths: /actuator/**,/wynk/v1/**,/wynk/v2/**
+
+event:
+  stream:
+    dp: wcf-data-science-prod-subscription-funnel

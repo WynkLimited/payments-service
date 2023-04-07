@@ -29,6 +29,6 @@ public interface ApbConstants {
     String PG_STATUS_FAILED = "PG_FAILED";
     String TXN_SUCCESS = "TXN_SUCCESS";
     String PRE_DEBIT_SI= "pre_debit_SI";
-    String LOB_AUTO_PAY_REGISTER = "AUTO_PAY_REGISTER";
+    String LOB_AUTO_PAY_REGISTER_WYNK = "AUTO_PAY_REGISTER_WYNK";
     String LOB_SI_WYNK = "SI_WYNK";
 }

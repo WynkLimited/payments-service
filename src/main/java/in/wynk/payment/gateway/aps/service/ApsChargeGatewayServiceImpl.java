@@ -49,7 +49,7 @@ import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
-import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER;
+import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER_WYNK;
 
 /**
  * @author Nishesh Pandey
@@ -159,7 +159,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString()).paymentEndDate(next10Year.toString());
+                        paymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER_WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli()).paymentEndDate(next10Year.toInstant().toEpochMilli());
                         apsChargingRequestBuilder.billPayment(false);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
@@ -308,8 +308,9 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             Date today = cal.getTime();
                             cal.add(Calendar.YEAR, 10);
                             Date next10Year = cal.getTime();
-                            abstractCardPaymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toString())
-                                    .paymentEndDate(next10Year.toString());
+                            abstractCardPaymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount())
+                                    .paymentStartDate(today.toInstant().toEpochMilli())
+                                    .paymentEndDate(next10Year.toInstant().toEpochMilli());
                         }
                         final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                         final String redirectUrl = request.getCallbackDetails().getCallbackUrl();

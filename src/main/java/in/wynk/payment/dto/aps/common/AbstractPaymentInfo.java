@@ -44,9 +44,9 @@ public abstract class AbstractPaymentInfo {
     /**
      * Mandate start date in epoch time format
      */
-    private String paymentStartDate;
+    private long paymentStartDate;
     /**
      * Mandate end date in epoch time format
      */
-    private String paymentEndDate;
+    private long paymentEndDate;
 }

@@ -621,7 +621,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     @SneakyThrows
     @Override
-    public WynkResponseEntity<IVerificationResponse> doVerify(VerificationRequest verificationRequest) {
+    public WynkResponseEntity<IVerificationResponse> doVerify(AbstractVerificationRequest verificationRequest) {
         switch (verificationRequest.getVerificationType()) {
             case VPA:
                 MultiValueMap<String, String> verifyVpaRequest = buildPayUInfoRequest(verificationRequest.getClient(), PayUCommand.VERIFY_VPA.getCode(), verificationRequest.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{

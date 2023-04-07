@@ -55,7 +55,7 @@ public class RevenuePaymentControllerV2 {
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public WynkResponseEntity<IVerificationResponse> verify (@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
+    public WynkResponseEntity<IVerificationResponse> verify (@PathVariable String sid, @Valid @RequestBody WebVerificationRequest request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());

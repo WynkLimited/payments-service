@@ -7,7 +7,11 @@ import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.session.context.SessionContextHolder;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -15,12 +19,12 @@ import javax.validation.constraints.NotNull;
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 
 @Getter
-@Builder
 @ToString
+@SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class VerificationRequest {
+public abstract class AbstractVerificationRequest {
 
     @NotBlank
     @Analysed
@@ -32,6 +36,8 @@ public class VerificationRequest {
     @NotNull
     @Analysed
     private VerificationType verificationType;
+
+    public abstract String getMsisdn();
 
     public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);

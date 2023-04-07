@@ -43,7 +43,7 @@ public class ApsGateway implements
         IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>,
         IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>,
-        IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>,
+        IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>,
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>,
@@ -58,7 +58,7 @@ public class ApsGateway implements
     private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
     private final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusGateway;
     private final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargeGateway;
-    private final IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> verificationGateway;
+    private final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
     private final IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> settlementGateway;
     private final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteGateway;
 
@@ -138,7 +138,7 @@ public class ApsGateway implements
     }
 
     @Override
-    public AbstractVerificationResponse verify(VerificationRequest request) {
+    public AbstractVerificationResponse verify(AbstractVerificationRequest request) {
         return verificationGateway.verify(request);
     }
 

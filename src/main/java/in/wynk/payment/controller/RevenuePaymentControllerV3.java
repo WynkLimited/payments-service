@@ -6,7 +6,8 @@ import in.wynk.common.dto.IWynkPresentation;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.AbstractVerificationRequest;
+import in.wynk.payment.dto.request.WebVerificationRequest;
 import in.wynk.payment.presentation.dto.verify.VerifyUserPaymentResponse;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.utils.LoadClientUtils;
@@ -27,7 +28,7 @@ public class RevenuePaymentControllerV3 {
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public WynkResponseEntity<VerifyUserPaymentResponse> verifyV2 (@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
+    public WynkResponseEntity<VerifyUserPaymentResponse> verify (@PathVariable String sid, @Valid @RequestBody WebVerificationRequest request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         final WynkResponseEntity<VerifyUserPaymentResponse> responseEntity =

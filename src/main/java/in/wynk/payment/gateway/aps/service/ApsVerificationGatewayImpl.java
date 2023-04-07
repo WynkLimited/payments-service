@@ -8,7 +8,7 @@ import in.wynk.payment.dto.aps.response.verify.BinVerificationResponse;
 import in.wynk.payment.dto.aps.response.verify.VpaVerificationResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.AbstractVerificationRequest;
 import in.wynk.payment.gateway.IPaymentAccountVerification;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFIC
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> {
+public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> {
 
     private final String VPA_VERIFY_ENDPOINT;
     private final String BIN_VERIFY_ENDPOINT;
@@ -44,12 +44,12 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
     }
 
     @Override
-    public AbstractVerificationResponse verify (VerificationRequest request) {
+    public AbstractVerificationResponse verify (AbstractVerificationRequest request) {
         return verification.verify(request);
     }
 
-    private class PaymentMethodEligibilityVerification implements IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> {
-        private final Map<VerificationType, IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>> verificationDelegate = new HashMap<>();
+    private class PaymentMethodEligibilityVerification implements IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> {
+        private final Map<VerificationType, IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>> verificationDelegate = new HashMap<>();
 
         public PaymentMethodEligibilityVerification () {
             verificationDelegate.put(VerificationType.VPA, new VpaVerification());
@@ -57,18 +57,17 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
         }
 
         @Override
-        public AbstractVerificationResponse verify (VerificationRequest request) {
+        public AbstractVerificationResponse verify (AbstractVerificationRequest request) {
             return verificationDelegate.get(request.getVerificationType()).verify(request);
         }
 
-        private class BinVerification implements IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> {
+        private class BinVerification implements IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> {
             @Override
-            public in.wynk.payment.dto.gateway.verify.BinVerificationResponse verify (VerificationRequest request) {
+            public in.wynk.payment.dto.gateway.verify.BinVerificationResponse verify (AbstractVerificationRequest request) {
                 final BinVerificationRequest binRequest = BinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
-                final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
                     BinVerificationResponse
-                            apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, common.getLoginId(sessionDTO.get("msisdn")), binRequest, BinVerificationResponse.class);
+                            apsBinVerificationResponseData = common.exchange(BIN_VERIFY_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getMsisdn()), binRequest, BinVerificationResponse.class);
                     return in.wynk.payment.dto.gateway.verify.BinVerificationResponse.fromAps(apsBinVerificationResponseData);
 
                 } catch (Exception e) {
@@ -78,14 +77,13 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
             }
         }
 
-        private class VpaVerification implements IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> {
+        private class VpaVerification implements IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> {
             @Override
-            public AbstractVerificationResponse verify (VerificationRequest request) {
+            public AbstractVerificationResponse verify (AbstractVerificationRequest request) {
                 String userVpa = request.getVerifyValue();
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, WYNK);
-                final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
-                    VpaVerificationResponse apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, common.getLoginId(sessionDTO.get("msisdn")), request, VpaVerificationResponse.class);
+                    VpaVerificationResponse apsVpaVerificationData = common.exchange(uri.toString(), HttpMethod.GET, common.getLoginId(request.getMsisdn()), request, VpaVerificationResponse.class);
                     return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);

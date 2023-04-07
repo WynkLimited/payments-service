@@ -13,7 +13,7 @@ import in.wynk.payment.dto.payu.PayUPaymentRefundResponse;
 import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.AbstractVerificationRequest;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.payu.service.*;
@@ -38,7 +38,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentRefund<PayUPaymentRefundResponse, PayUPaymentRefundRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload>,
-        IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>,
+        IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>,
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
 
@@ -96,7 +96,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     }
 
     @Override
-    public AbstractVerificationResponse verify(VerificationRequest verificationRequest) {
+    public AbstractVerificationResponse verify(AbstractVerificationRequest verificationRequest) {
         return verificationGateway.verify(verificationRequest);
     }
 

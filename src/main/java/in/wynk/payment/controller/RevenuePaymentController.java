@@ -11,7 +11,8 @@ import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.request.AbstractChargingRequest;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
-import in.wynk.payment.dto.request.VerificationRequest;
+import in.wynk.payment.dto.request.AbstractVerificationRequest;
+import in.wynk.payment.dto.request.WebVerificationRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.PaymentManager;
@@ -64,7 +65,7 @@ public class RevenuePaymentController {
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")
-    public ResponseEntity<IVerificationResponse> verify(@PathVariable String sid, @Valid @RequestBody VerificationRequest request) {
+    public ResponseEntity<IVerificationResponse> verify(@PathVariable String sid, @Valid @RequestBody WebVerificationRequest request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         AnalyticService.update(PAYMENT_METHOD, request.getPaymentCode().name());

@@ -70,7 +70,7 @@ public class PaymentGatewayManager
         IPreDebitNotificationService,
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentRefund<AbstractPaymentRefundResponse, PaymentRefundInitRequest>,
-        IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>,
+        IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>,
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
@@ -120,11 +120,11 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public AbstractVerificationResponse verify(VerificationRequest request) {
+    public AbstractVerificationResponse verify(AbstractVerificationRequest request) {
         String paymentCode = request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
-        final IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> verifyService =
-                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>>() {
+        final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verifyService =
+                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>>() {
                 });
         return verifyService.verify(request);
     }

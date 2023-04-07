@@ -8,6 +8,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.constant.FlowType;
+import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -351,6 +352,9 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                 final Map<String, String> form = PayUChargingGatewayImpl.this.buildPayUForm(request);
                 final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
                 form.put(PAYU_ENFORCE_PAY_METHOD, (String) method.getMeta().get(PaymentConstants.BANK_CODE));
+                form.put(PAYU_BANKCODE, (String) method.getMeta().get(PaymentConstants.BANK_CODE));
+                form.put(PAYU_ENFORCE_PAYMENT, NetBankingConstants.NETBANKING.toLowerCase());
+                form.put(PAYU_PG, PAYU_PG_NET_BANKING_VALUE);
                 return NetBankingKeyValueTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
             }
         }

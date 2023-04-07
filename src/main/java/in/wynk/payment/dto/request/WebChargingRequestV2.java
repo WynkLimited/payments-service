@@ -83,7 +83,7 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
         return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND +
                 BUILD_NO + EQUAL + appDetails.getBuildNo() + ((
                 StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "") +
-                (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : ""));
+                (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : "")) + AND + PLAN_ID + EQUAL+  getProductDetails().getId();
     }
 
     @Override

@@ -25,6 +25,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 
@@ -68,6 +70,10 @@ public class PayUGateway extends PayUMerchantPaymentService implements
         this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService);
     }
 
+    @Override
+    public PayUCallbackRequestPayload parse(Map<String, Object> payload) {
+        return callbackGateway.parse(payload);
+    }
 
     @Override
     public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest) {

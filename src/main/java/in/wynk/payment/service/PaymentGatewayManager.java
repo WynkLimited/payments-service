@@ -73,7 +73,7 @@ public class PaymentGatewayManager
         IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>,
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
-        IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest>,
+        IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>> {
 
     private final ICouponManager couponManager;
@@ -130,11 +130,11 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public AbstractPaymentAccountDeletionResponse delete(PaymentAccountDeletionRequest request) {
+    public AbstractPaymentAccountDeletionResponse delete(AbstractPaymentAccountDeletionRequest request) {
         String paymentCode = request.getPaymentCode().getCode();
         AnalyticService.update(PAYMENT_METHOD, paymentCode.toUpperCase());
-        final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest> deleteService =
-                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest>>() {
+        final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteService =
+                BeanLocatorFactory.getBean(paymentCode, new ParameterizedTypeReference<IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>>() {
                 });
         return deleteService.delete(request);
     }

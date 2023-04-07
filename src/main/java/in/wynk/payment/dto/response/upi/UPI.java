@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.response.AbstractPaymentMethodDTO;
 import in.wynk.payment.dto.response.SupportingDetails;
-import in.wynk.payment.dto.response.UiDetails;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -26,6 +25,8 @@ public class UPI extends AbstractPaymentMethodDTO {
     @AnalysedEntity
     public static class UpiSupportingDetails extends SupportingDetails {
         private boolean intent;
+        @JsonProperty("is_custom")
+        private boolean custom;
         private List<String> suffixes;
         @JsonProperty("payment_status_poll")
         private Double paymentStatusPoll;

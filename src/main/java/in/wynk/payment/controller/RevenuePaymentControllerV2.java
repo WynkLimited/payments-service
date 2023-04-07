@@ -168,7 +168,7 @@ public class RevenuePaymentControllerV2 {
     @PostMapping("/delete/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "deletePaymentMethod")
-    public WynkResponseEntity<AbstractPaymentAccountDeletionResponse> delete (@PathVariable String sid, @Valid @RequestBody PaymentAccountDeletionRequest request) {
+    public WynkResponseEntity<AbstractPaymentAccountDeletionResponse> delete (@PathVariable String sid, @Valid @RequestBody WebPaymentAccountDeletionRequest request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         return WynkResponseEntity.<AbstractPaymentAccountDeletionResponse>builder().data(manager.delete(request)).status(HttpStatus.OK).build();

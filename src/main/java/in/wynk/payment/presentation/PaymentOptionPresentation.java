@@ -151,6 +151,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         private class UPIPresentation implements IPaymentOptionInfoPresentation<UPI, UpiOptionInfo> {
             private static final String INTENT_SUPPORT = "intent";
+            private static final String IS_CUSTOM_UPI = "isCustom";
             @Override
             public UPI transform(Pair<PaymentMethodDTO, Optional<UpiOptionInfo>> payload) {
                 final PaymentMethodDTO methodDTO = payload.getFirst();
@@ -170,6 +171,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .supportingDetails(UPI.UpiSupportingDetails.builder()
                                 .suffixes(methodDTO.getSuffixes())
                                 .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .custom((Boolean) methodDTO.getMeta().get(IS_CUSTOM_UPI))
                                 .intent((Boolean) methodDTO.getMeta().get(INTENT_SUPPORT))
                                 .paymentTimer((Double) methodDTO.getMeta().get(POLLING_TIMER))
                                 .paymentStatusPoll((Double) methodDTO.getMeta().get(POLLING_FREQUENCY))

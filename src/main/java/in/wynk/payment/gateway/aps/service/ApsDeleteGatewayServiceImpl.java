@@ -1,6 +1,5 @@
 package in.wynk.payment.gateway.aps.service;
 
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.common.DeleteType;
@@ -9,9 +8,8 @@ import in.wynk.payment.dto.aps.request.delete.DeleteVpaRequest;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteCardResponse;
 import in.wynk.payment.dto.gateway.delete.DeleteVpaResponse;
-import in.wynk.payment.dto.request.PaymentAccountDeletionRequest;
+import in.wynk.payment.dto.request.AbstractPaymentAccountDeletionRequest;
 import in.wynk.payment.gateway.IPaymentAccountDeletion;
-import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 
@@ -27,7 +25,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_SAVED_VPA_D
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest> {
+public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> {
 
     private final String DELETE_CARD_ENDPOINT;
     private final String DELETE_VPA_ENDPOINT;
@@ -42,12 +40,12 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<Abst
     }
 
     @Override
-    public AbstractPaymentAccountDeletionResponse delete (PaymentAccountDeletionRequest request) {
+    public AbstractPaymentAccountDeletionResponse delete (AbstractPaymentAccountDeletionRequest request) {
         return verification.delete(request);
     }
 
-    private class PaymentMethodDeletion implements IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest> {
-        private final Map<DeleteType, IPaymentAccountDeletion<? extends AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest>> deletionDelegate = new HashMap<>();
+    private class PaymentMethodDeletion implements IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> {
+        private final Map<DeleteType, IPaymentAccountDeletion<? extends AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>> deletionDelegate = new HashMap<>();
 
         public PaymentMethodDeletion () {
             deletionDelegate.put(DeleteType.VPA, new VpaDeletion());
@@ -55,17 +53,16 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<Abst
         }
 
         @Override
-        public AbstractPaymentAccountDeletionResponse delete (PaymentAccountDeletionRequest request) {
+        public AbstractPaymentAccountDeletionResponse delete (AbstractPaymentAccountDeletionRequest request) {
             return deletionDelegate.get(request.getDeleteType()).delete(request);
         }
 
-        private class CardDeletion implements IPaymentAccountDeletion<DeleteCardResponse, PaymentAccountDeletionRequest> {
+        private class CardDeletion implements IPaymentAccountDeletion<DeleteCardResponse, AbstractPaymentAccountDeletionRequest> {
             @Override
-            public DeleteCardResponse delete (PaymentAccountDeletionRequest request) {
+            public DeleteCardResponse delete (AbstractPaymentAccountDeletionRequest request) {
                 final DeleteCardRequest deleteCardRequest = DeleteCardRequest.builder().referenceNumber(request.getDeleteValue()).build();
-                final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
-                    Boolean response = common.exchange(DELETE_CARD_ENDPOINT, HttpMethod.POST, common.getLoginId(sessionDTO.get("msisdn")), deleteCardRequest, Boolean.class);
+                    Boolean response = common.exchange(DELETE_CARD_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getMsisdn()), deleteCardRequest, Boolean.class);
                     return DeleteCardResponse.builder().deleted(response).build();
                 } catch (Exception e) {
                     if(e instanceof WynkRuntimeException) {
@@ -78,15 +75,14 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<Abst
             }
         }
 
-        private class VpaDeletion implements IPaymentAccountDeletion<DeleteVpaResponse, PaymentAccountDeletionRequest> {
+        private class VpaDeletion implements IPaymentAccountDeletion<DeleteVpaResponse, AbstractPaymentAccountDeletionRequest> {
             @Override
-            public DeleteVpaResponse delete (PaymentAccountDeletionRequest request) {
+            public DeleteVpaResponse delete (AbstractPaymentAccountDeletionRequest request) {
                 List<String> vpa= new ArrayList<>();
                 vpa.add(request.getDeleteValue());
                 final DeleteVpaRequest deleteVpaRequest = DeleteVpaRequest.builder().vpaIds(vpa).build();
-                final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 try {
-                    Boolean response = common.exchange(DELETE_VPA_ENDPOINT, HttpMethod.POST, common.getLoginId(sessionDTO.get("msisdn")), deleteVpaRequest, Boolean.class);
+                    Boolean response = common.exchange(DELETE_VPA_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getMsisdn()), deleteVpaRequest, Boolean.class);
                     return DeleteVpaResponse.builder().deleted(response).build();
                 } catch (Exception e) {
                     log.error(APS_SAVED_VPA_DELETION, "Vpa deletion failure due to ", e);

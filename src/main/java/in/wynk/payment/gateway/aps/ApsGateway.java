@@ -1,6 +1,7 @@
 package in.wynk.payment.gateway.aps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -31,6 +32,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
+import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
+
 @Slf4j
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
 public class ApsGateway implements
@@ -44,7 +47,7 @@ public class ApsGateway implements
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>,
-        IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest> {
+        IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> {
 
     private final IExternalPaymentEligibilityService eligibilityGateway;
     private final ApsPreDebitNotificationGatewayServiceImpl preDebitGateway;
@@ -57,7 +60,7 @@ public class ApsGateway implements
     private final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargeGateway;
     private final IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest> verificationGateway;
     private final IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> settlementGateway;
-    private final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest> deleteGateway;
+    private final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteGateway;
 
     public ApsGateway(@Value("${payment.merchant.aps.salt}") String salt,
                       @Value("${payment.merchant.aps.secret}") String secret,
@@ -119,7 +122,8 @@ public class ApsGateway implements
     }
 
     @Override
-    public AbstractPaymentAccountDeletionResponse delete(PaymentAccountDeletionRequest request) {
+    @CacheEvict(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#request.getMsisdn()", cacheManager = L2CACHE_MANAGER)
+    public AbstractPaymentAccountDeletionResponse delete(AbstractPaymentAccountDeletionRequest request) {
         return deleteGateway.delete(request);
     }
 

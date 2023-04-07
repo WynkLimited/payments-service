@@ -66,11 +66,15 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_
 @Service(BeanConstant.PAYMENT_MANAGER_V2)
 @RequiredArgsConstructor
 public class PaymentGatewayManager
-        implements IPaymentRenewal<PaymentRenewalChargingRequest>,
+        implements
+        IPreDebitNotificationService,
+        IPaymentRenewal<PaymentRenewalChargingRequest>,
+        IPaymentRefund<AbstractPaymentRefundResponse, PaymentRefundInitRequest>,
+        IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>,
+        IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
+        IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, PaymentAccountDeletionRequest>,
-        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
-        IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
-        IPaymentAccountVerification<AbstractVerificationResponse, VerificationRequest>, IPreDebitNotificationService, IMerchantPaymentRefundService<AbstractPaymentRefundResponse, PaymentRefundInitRequest> {
+        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -145,34 +149,6 @@ public class PaymentGatewayManager
                 }
             }
         }
-    }
-
-    private void publishEvent(Exception ex) {
-        final Transaction transaction = TransactionContext.get();
-        final PaymentErrorEvent.Builder eventBuilder = PaymentErrorEvent.builder(transaction.getIdStr()).clientAlias(transaction.getClientAlias());
-        if (ex instanceof WynkRuntimeException) {
-            final WynkRuntimeException original = (WynkRuntimeException) ex;
-            final IWynkErrorType errorType = original.getErrorType();
-            eventBuilder.code(errorType.getErrorCode());
-            eventBuilder.description(errorType.getErrorMessage());
-        } else {
-            eventBuilder.code(PaymentErrorType.PAY002.getErrorCode()).description(ex.getMessage());
-        }
-        log.error(CHARGING_API_FAILURE, ex.getMessage());
-        eventPublisher.publishEvent(eventBuilder.build());
-    }
-
-    private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
-        eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
-        if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
-            eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
-        }
-    }
-
-    private void reviseTransactionAndExhaustCoupon(Transaction transaction, TransactionStatus existingStatus,
-                                                   AbstractTransactionRevisionRequest abstractTransactionRevisionRequest) {
-        transactionManager.revision(abstractTransactionRevisionRequest);
-        exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
     }
 
     @Override
@@ -342,7 +318,7 @@ public class PaymentGatewayManager
             } finally {
                 final TransactionStatus finalStatus = transaction.getStatus();
                 AnalyticService.update(PAYMENT_METHOD, transaction.getPaymentChannel().name());
-                AsyncTransactionRevisionRequest.AsyncTransactionRevisionRequestBuilder<?,?> builder =
+                AsyncTransactionRevisionRequest.AsyncTransactionRevisionRequestBuilder<?, ?> builder =
                         AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus);
                 if (transaction.getType() == PaymentEvent.RENEW) {
                     RenewalChargingTransactionReconciliationStatusRequest renewalChargingTransactionReconciliationStatusRequest = (RenewalChargingTransactionReconciliationStatusRequest) request;
@@ -357,22 +333,20 @@ public class PaymentGatewayManager
 
     @Override
     @TransactionAware(txnId = "#request.originalTransactionId")
-    public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
+    public AbstractPaymentRefundResponse doRefund(PaymentRefundInitRequest request) {
         final Transaction originalTransaction = TransactionContext.get();
         try {
             final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
                     transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
-            final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
-                    new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
-                    });
             final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
-            final WynkResponseEntity<AbstractPaymentRefundResponse> refundInitResponse = refundService.refund(refundRequest);
-            if (Objects.nonNull(refundInitResponse.getBody())) {
-                final AbstractPaymentRefundResponse refundResponse = refundInitResponse.getBody().getData();
-                if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
+            final AbstractPaymentRefundResponse refundInitResponse = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
+                    new ParameterizedTypeReference<IPaymentRefund<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
+                    }).doRefund(refundRequest);
+            if (Objects.nonNull(refundInitResponse)) {
+                if (refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                     sqsManagerService.publishSQSMessage(
-                            PaymentReconciliationMessage.builder().paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundResponse.getExternalReferenceId())
+                            PaymentReconciliationMessage.builder().paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
                                     .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
                                     .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
                 }
@@ -383,5 +357,33 @@ public class PaymentGatewayManager
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
         }
+    }
+
+    private void publishEvent(Exception ex) {
+        final Transaction transaction = TransactionContext.get();
+        final PaymentErrorEvent.Builder eventBuilder = PaymentErrorEvent.builder(transaction.getIdStr()).clientAlias(transaction.getClientAlias());
+        if (ex instanceof WynkRuntimeException) {
+            final WynkRuntimeException original = (WynkRuntimeException) ex;
+            final IWynkErrorType errorType = original.getErrorType();
+            eventBuilder.code(errorType.getErrorCode());
+            eventBuilder.description(errorType.getErrorMessage());
+        } else {
+            eventBuilder.code(PaymentErrorType.PAY002.getErrorCode()).description(ex.getMessage());
+        }
+        log.error(CHARGING_API_FAILURE, ex.getMessage());
+        eventPublisher.publishEvent(eventBuilder.build());
+    }
+
+    private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
+        eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
+        if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
+            eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
+        }
+    }
+
+    private void reviseTransactionAndExhaustCoupon(Transaction transaction, TransactionStatus existingStatus,
+                                                   AbstractTransactionRevisionRequest abstractTransactionRevisionRequest) {
+        transactionManager.revision(abstractTransactionRevisionRequest);
+        exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
     }
 }

@@ -29,6 +29,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 @Slf4j
 @Service(PaymentConstants.AIRTEL_PAY_STACK)
 public class ApsGateway implements
@@ -89,6 +91,11 @@ public class ApsGateway implements
         this.preDebitGateway = new ApsPreDebitNotificationGatewayServiceImpl(preDebitEndpoint, transactionManager, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, payCache, merchantTransactionService, eventPublisher);
+    }
+
+    @Override
+    public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
+        return callbackGateway.parse(payload);
     }
 
     @Override

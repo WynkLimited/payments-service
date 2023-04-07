@@ -1,6 +1,5 @@
 package in.wynk.payment.gateway.aps.service;
 
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.request.verify.BinVerificationRequest;
@@ -10,7 +9,6 @@ import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.payu.VerificationType;
 import in.wynk.payment.dto.request.AbstractVerificationRequest;
 import in.wynk.payment.gateway.IPaymentAccountVerification;
-import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestTemplate;

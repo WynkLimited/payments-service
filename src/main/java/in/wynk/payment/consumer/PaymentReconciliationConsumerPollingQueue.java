@@ -8,6 +8,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.request.*;
@@ -17,6 +18,7 @@ import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 
@@ -35,6 +37,9 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     private long reconciliationPoolingDelay;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
+
+    @Autowired
+    private PaymentCodeCachingService codeCache;
 
     public PaymentReconciliationConsumerPollingQueue(String queueName,
                                                      AmazonSQS sqs,
@@ -74,7 +79,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
         }
 
         final InnerPaymentStatusDelegator delegate = (AbstractTransactionStatusRequest) -> {
-            final boolean canSupportRecon = BeanLocatorFactory.containsBeanOfType(message.getPaymentCode(), new ParameterizedTypeReference<IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
+            final boolean canSupportRecon = BeanLocatorFactory.containsBeanOfType(codeCache.get(message.getPaymentCode()).getCode(), new ParameterizedTypeReference<IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
             });
             if (canSupportRecon) BeanLocatorFactory.getBean(PaymentGatewayManager.class).reconcile(transactionStatusRequest);
             else BeanLocatorFactory.getBean(PaymentManager.class).status(transactionStatusRequest);

@@ -18,8 +18,11 @@ import in.wynk.payment.dto.payu.PayUConstants;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.PropertyResolverUtils;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -146,9 +149,10 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), String.valueOf(transaction.getPlanId()), transaction.getAmount(), callbackRequest.getResponseHash());
     }
 
+    @SneakyThrows
     private boolean validateCallbackChecksum(String payUMerchantKey, String payUSalt, String transactionId, String transactionStatus, String udf1, String email, String firstName, String planTitle, double amount, String payUResponseHash) {
-        final DecimalFormat df = new DecimalFormat("#.00");
-        final String generatedString = payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||" + udf1 + PIPE_SEPARATOR + email + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId + PIPE_SEPARATOR + payUMerchantKey;
+        final DecimalFormat df = new DecimalFormat("#0.00");
+        final String generatedString = payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||" + udf1 + PIPE_SEPARATOR + URLDecoder.decode(email, String.valueOf(StandardCharsets.UTF_8)) + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId + PIPE_SEPARATOR + payUMerchantKey;
         final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
         assert generatedHash != null;
         return generatedHash.equals(payUResponseHash);

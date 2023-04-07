@@ -102,9 +102,9 @@ public class RevenuePaymentS2SController {
     public WynkResponseEntity<AbstractPaymentRefundResponse> doRefundV2(@Valid @RequestBody PaymentRefundInitRequest request) {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(request);
-        WynkResponseEntity<AbstractPaymentRefundResponse> baseResponse = manager.refund(request);
-        AnalyticService.update(baseResponse.getBody());
-        return baseResponse;
+        AbstractPaymentRefundResponse response = manager.doRefund(request);
+        AnalyticService.update(response);
+        return WynkResponseEntity.<AbstractPaymentRefundResponse>builder().data(response).build();
     }
 
 

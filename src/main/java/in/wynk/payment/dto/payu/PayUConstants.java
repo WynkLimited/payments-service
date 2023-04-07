@@ -65,4 +65,6 @@ public interface PayUConstants {
     String PAYU_CARD_NUM = "ccnum";
     String PAYU_CARD_HOLDER_NAME = "ccname";
     String PAYU_CARD_CVV = "ccvv";
+
+    String PAYU_PG_NET_BANKING_VALUE = "NB";
 }

@@ -57,7 +57,7 @@ public class RevenueNotificationControllerV2 {
         AnalyticService.update(REQUEST_PAYLOAD, payload);
         if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentGateway.name())) {
             try {
-                return handleCallback(partner, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
+                return handleCallback(partner,clientAlias, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
                 }));
             } catch (JsonProcessingException e) {
                 throw new WynkRuntimeException("Malformed payload is posted", e);
@@ -69,17 +69,17 @@ public class RevenueNotificationControllerV2 {
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallback (@PathVariable String partner, @RequestParam Map<String, Object> payload) {
-        return handleCallback(partner, payload);
+        return handleCallback(partner, applicationAlias, payload);
     }
 
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias (@PathVariable String partner, @PathVariable String clientAlias, @RequestParam Map<String, Object> payload) {
-        return handleCallback(partner, payload);
+        return handleCallback(partner, clientAlias, payload);
     }
 
     @ClientAware(clientAlias = "#clientAlias")
-    private WynkResponseEntity<Void> handleCallback (String partner, Map<String, Object> payload) {
+    private WynkResponseEntity<Void> handleCallback (String partner, String clientAlias, Map<String, Object> payload) {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));

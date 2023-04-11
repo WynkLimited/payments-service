@@ -4,10 +4,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.io.Serializable;
+
 @Getter
 @ToString
 @NoArgsConstructor
-public class RefundInfo {
+public class RefundInfo implements Serializable {
     private String refundId;
     private String refundSystemId;
     private double refundAmount;

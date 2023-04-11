@@ -13,6 +13,7 @@ import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.ApsFailureResponse;
 import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.CardDetails;
@@ -109,9 +110,9 @@ public class ApsCommonGatewayService {
     }
 
     private String generateToken () {
-        final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
-        final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
-        final String password = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
+        final Transaction transaction = TransactionContext.get();
+        final String username = PropertyResolverUtils.resolve(transaction.getClientAlias(), PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
+        final String password = PropertyResolverUtils.resolve(transaction.getClientAlias(), PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
         return AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
     }
 

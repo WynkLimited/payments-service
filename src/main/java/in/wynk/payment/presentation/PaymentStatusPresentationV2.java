@@ -12,6 +12,7 @@ import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.presentation.dto.status.FailurePaymentStatusResponse;
@@ -48,6 +49,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
 
     private final IRuleEvaluator ruleEvaluator;
     private final PaymentCachingService cachingService;
+    private final PaymentMethodCachingService paymentMethodCachingService;
     private final IErrorCodesCacheService errorCodesCacheServiceImpl;
     private final Map<String, IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse>> delegate = new HashMap<>();
 
@@ -64,15 +66,17 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
             final Transaction transaction = TransactionContext.get();
             final IChargingDetails.IPageUrlDetails pageUrlDetails = getPageUrlDetails(transaction);
             final TransactionStatus txnStatus = transaction.getStatus();
+            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
             if (EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.FAILUREALREADYSUBSCRIBED).contains(txnStatus)) {
-                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl());
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl(), paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else if (txnStatus == TransactionStatus.INPROGRESS) {
-                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl());
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl(), paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else {
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
                         .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId()));
+                        .validity(cachingService.validTillDate(transaction.getPlanId()))
+                        .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
                     builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
@@ -112,15 +116,17 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
             final Transaction transaction = TransactionContext.get();
             final IChargingDetails.IPageUrlDetails pageUrlDetails = getPageUrlDetails(transaction);
             final TransactionStatus txnStatus = transaction.getStatus();
+            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
             if (EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.FAILUREALREADYSUBSCRIBED).contains(txnStatus)) {
-                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl());
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl(), paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else if (txnStatus == TransactionStatus.INPROGRESS) {
-                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl());
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl(), paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else {
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
                         .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId()));
+                        .validity(cachingService.validTillDate(transaction.getPlanId()))
+                        .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
                     builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
@@ -167,11 +173,11 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
         return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND + BUILD_NO + EQUAL + appDetails.getBuildNo();
     }
 
-    private PaymentStatusResponse failure (ErrorCode errorCode, Transaction transaction, String redirectUrl) {
+    private PaymentStatusResponse failure (ErrorCode errorCode, Transaction transaction, String redirectUrl, String paymentGroup) {
         final Optional<String> subtitle = errorCode.getMeta(SUBTITLE_TEXT);
         final Optional<String> buttonText = errorCode.getMeta(BUTTON_TEXT);
         final Optional<Boolean> buttonArrow = errorCode.getMeta(BUTTON_ARROW);
-        return FailurePaymentStatusResponse.populate(errorCode, subtitle.orElse(""),buttonText.orElse(""),buttonArrow.orElse(Boolean.FALSE), transaction.getIdStr(), transaction.getPlanId(), getPackDetails(transaction), transaction.getStatus(), redirectUrl);
+        return FailurePaymentStatusResponse.populate(errorCode, subtitle.orElse(""),buttonText.orElse(""),buttonArrow.orElse(Boolean.FALSE), transaction.getIdStr(), transaction.getPlanId(), getPackDetails(transaction), transaction.getStatus(), redirectUrl, paymentGroup);
     }
 
     private AbstractPack getPackDetails (Transaction transaction) {

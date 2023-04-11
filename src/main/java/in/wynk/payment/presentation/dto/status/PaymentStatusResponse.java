@@ -19,5 +19,5 @@ public abstract class PaymentStatusResponse {
     private final PaymentEvent transactionType;
     private final String redirectUrl;
     private final AbstractPack packDetails;
-    private final PaymentGroup paymentGroup;
+    private final String paymentGroup;
 }

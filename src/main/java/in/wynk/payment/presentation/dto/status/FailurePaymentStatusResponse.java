@@ -18,7 +18,7 @@ public class FailurePaymentStatusResponse extends PaymentStatusResponse {
     private boolean buttonArrow;
 
     public static FailurePaymentStatusResponse populate (ErrorCode errorCode, String subtitle, String buttonText, boolean buttonArrow, String tid, int planId,
-                                                                                       AbstractPack packDetails, TransactionStatus transactionStatus, String redirectUrl) {
+                                                                                       AbstractPack packDetails, TransactionStatus transactionStatus, String redirectUrl, String paymentGroup) {
         return FailurePaymentStatusResponse.builder().buttonArrow(buttonArrow)
                 .buttonText(buttonText)
                 .description(errorCode.getInternalMessage())
@@ -30,6 +30,7 @@ public class FailurePaymentStatusResponse extends PaymentStatusResponse {
                 .redirectUrl(redirectUrl)
                 .planId(planId)
                 .transactionStatus(transactionStatus)
+                .paymentGroup(paymentGroup)
                 .build();
     }
 }

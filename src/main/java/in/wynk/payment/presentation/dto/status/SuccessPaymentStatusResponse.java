@@ -12,6 +12,9 @@ import lombok.experimental.SuperBuilder;
 public class SuccessPaymentStatusResponse extends PaymentStatusResponse {
 
     private final long validity;
+    private final String title;
+    private final String subtitle;
+    private final String buttonText;
 
     public static ChargingStatusResponse success(String tid, Long validity, int planId) {
         return ChargingStatusResponse.builder().tid(tid).validity(validity).planId(planId).transactionStatus(TransactionStatus.SUCCESS).build();

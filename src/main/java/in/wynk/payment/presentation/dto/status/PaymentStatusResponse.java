@@ -3,6 +3,7 @@ package in.wynk.payment.presentation.dto.status;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.dto.AbstractPack;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -18,4 +19,5 @@ public abstract class PaymentStatusResponse {
     private final PaymentEvent transactionType;
     private final String redirectUrl;
     private final AbstractPack packDetails;
+    private final PaymentGroup paymentGroup;
 }

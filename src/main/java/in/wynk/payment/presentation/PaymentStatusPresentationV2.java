@@ -10,10 +10,8 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
-import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.presentation.dto.status.FailurePaymentStatusResponse;
@@ -22,20 +20,24 @@ import in.wynk.payment.presentation.dto.status.SuccessPaymentStatusResponse;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PresentationUtils;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.spel.IRuleEvaluator;
+import in.wynk.spel.builder.DefaultStandardExpressionContextBuilder;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.common.constant.BaseConstants.EQUAL;
-import static in.wynk.error.codes.core.constant.ErrorCodeConstants.FAIL001;
-import static in.wynk.error.codes.core.constant.ErrorCodeConstants.FAIL002;
+import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.BUTTON_ARROW;
 
@@ -44,13 +46,108 @@ import static in.wynk.payment.core.constant.PaymentConstants.BUTTON_ARROW;
 @RequiredArgsConstructor
 public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse> {
 
+    private final IRuleEvaluator ruleEvaluator;
     private final PaymentCachingService cachingService;
     private final IErrorCodesCacheService errorCodesCacheServiceImpl;
+    private final Map<String, IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse>> delegate = new HashMap<>();
+
+    @PostConstruct
+    public void init() {
+        delegate.put(ADD_TO_BILL, new AddToBillPaymentStatusHandler());
+        delegate.put("GENERIC", new GenericPaymentStatusHandler());
+    }
+
+    private class AddToBillPaymentStatusHandler implements IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse> {
+
+        @Override
+        public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {
+            final Transaction transaction = TransactionContext.get();
+            final IChargingDetails.IPageUrlDetails pageUrlDetails = getPageUrlDetails(transaction);
+            final TransactionStatus txnStatus = transaction.getStatus();
+            if (EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.FAILUREALREADYSUBSCRIBED).contains(txnStatus)) {
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl());
+            } else if (txnStatus == TransactionStatus.INPROGRESS) {
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl());
+            } else {
+                SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
+                        .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
+                        .tid(payload.getTid()).transactionType(payload.getTransactionType())
+                        .validity(cachingService.validTillDate(transaction.getPlanId()));
+                if (txnStatus == TransactionStatus.SUCCESS) {
+                    builder.packDetails(getPackDetails(transaction));
+                    builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
+                    return successATB(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(ATBSUCCESS001), builder, transaction);
+                }
+                return builder.build();
+            }
+        }
+
+        private PaymentStatusResponse successATB (ErrorCode errorCode, SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder, Transaction transaction) {
+            final Optional<String> subtitle = errorCode.getMeta(SUBTITLE_TEXT);
+            final Optional<String> buttonText = errorCode.getMeta(BUTTON_TEXT);
+            final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+            final String validityText = (plan.getPeriod().getValidity() <= 7) ?
+                    "weekly" : (plan.getPeriod().getValidity() <= 30) ?
+                    "monthly" : (plan.getPeriod().getValidity() <= 90) ?
+                    "quarterly" : (plan.getPeriod().getValidity() <= 365) ?
+                    "yearly" : "";
+            final StandardEvaluationContext seContext = DefaultStandardExpressionContextBuilder.builder()
+                    .variable(PLAN, plan)
+                    .variable("SI", transaction.getMsisdn())
+                    .variable("VALIDITY", validityText)
+                    .build();
+            final String evaluatedMessage = ruleEvaluator.evaluate(subtitle.orElse(errorCode.getExternalMessage()),
+                    () -> seContext, SMS_MESSAGE_TEMPLATE_CONTEXT, String.class);
+            builder.subtitle(evaluatedMessage);
+            builder.buttonText(buttonText.orElse(""));
+            builder.title(errorCode.getExternalMessage());
+            return builder.build();
+        }
+    }
+
+    private class GenericPaymentStatusHandler implements IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse> {
+
+        @Override
+        public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {
+            final Transaction transaction = TransactionContext.get();
+            final IChargingDetails.IPageUrlDetails pageUrlDetails = getPageUrlDetails(transaction);
+            final TransactionStatus txnStatus = transaction.getStatus();
+            if (EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.FAILUREALREADYSUBSCRIBED).contains(txnStatus)) {
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl());
+            } else if (txnStatus == TransactionStatus.INPROGRESS) {
+                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl());
+            } else {
+                SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
+                        .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
+                        .tid(payload.getTid()).transactionType(payload.getTransactionType())
+                        .validity(cachingService.validTillDate(transaction.getPlanId()));
+                if (txnStatus == TransactionStatus.SUCCESS) {
+                    builder.packDetails(getPackDetails(transaction));
+                    builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
+                    return success(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(SUCCESS001), builder);
+                }
+                return builder.build();
+            }
+        }
+
+        private PaymentStatusResponse success (ErrorCode errorCode, SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder) {
+            final Optional<String> subtitle = errorCode.getMeta(SUBTITLE_TEXT);
+            final Optional<String> buttonText = errorCode.getMeta(BUTTON_TEXT);
+            builder.subtitle(subtitle.orElse(""));
+            builder.buttonText(buttonText.orElse(""));
+            builder.title(errorCode.getExternalMessage());
+            return builder.build();
+        }
+    }
 
     @Override
+    @TransactionAware(txnId = "#payload.tid")
     public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {
-
         final Transaction transaction = TransactionContext.get();
+        return delegate.getOrDefault(transaction.getPaymentChannel().getId(), delegate.get("GENERIC")).transform(payload);
+    }
+
+    private IChargingDetails.IPageUrlDetails getPageUrlDetails (Transaction transaction) {
         final IChargingDetails.IPageUrlDetails pageUrlDetails = TransactionContext.getPurchaseDetails().map(details -> (IChargingDetails) details).map(IChargingDetails::getPageUrlDetails).orElseGet(() ->  {
             // NOTE: Added backward support to avoid failure for transaction created pre-payment refactoring build, once the build is live it has no significance
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(transaction.getClientAlias());
@@ -63,22 +160,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
             final String unknownPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "unknown"), "${payment.unknown.page}"), appDetails);
             return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
         });
-        final TransactionStatus txnStatus = transaction.getStatus();
-        if (EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.FAILUREALREADYSUBSCRIBED).contains(txnStatus)) {
-            return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL001), transaction, pageUrlDetails.getFailurePageUrl());
-        } else if (txnStatus == TransactionStatus.INPROGRESS) {
-            return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL002), transaction, pageUrlDetails.getPendingPageUrl());
-        } else {
-            SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
-                    .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
-                    .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                    .validity(cachingService.validTillDate(transaction.getPlanId()));
-            if (txnStatus == TransactionStatus.SUCCESS) {
-                builder.packDetails(getPackDetails(transaction));
-                builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
-            }
-            return builder.build();
-        }
+        return pageUrlDetails;
     }
 
     private String buildUrlFrom (String url, IAppDetails appDetails) {

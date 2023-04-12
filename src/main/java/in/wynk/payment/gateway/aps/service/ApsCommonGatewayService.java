@@ -3,8 +3,7 @@ package in.wynk.payment.gateway.aps.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import in.wynk.auth.dao.entity.Client;
-import in.wynk.client.context.ClientContext;
+import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
@@ -42,16 +41,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
 
+import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.constant.CardConstants.CARD;
 import static in.wynk.payment.constant.CardConstants.CARDS;
 import static in.wynk.payment.constant.NetBankingConstants.NETBANKING;
 import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
+import static in.wynk.payment.constant.WalletConstants.WALLETS;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY998;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
-import static in.wynk.payment.constant.WalletConstants.WALLET;
-import static in.wynk.payment.constant.WalletConstants.WALLETS;
 
 /**
  * @author Nishesh Pandey
@@ -166,6 +166,7 @@ public class ApsCommonGatewayService {
 
             if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+                evict(transaction.getMsisdn());
             } else if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
@@ -184,6 +185,9 @@ public class ApsCommonGatewayService {
             }
         }
     }
+
+    @CacheEvict(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#msisdn", cacheManager = L2CACHE_MANAGER)
+    private void evict(String msisdn) { }
 
     @SneakyThrows
     public String encryptCardData (CardDetails credentials) {

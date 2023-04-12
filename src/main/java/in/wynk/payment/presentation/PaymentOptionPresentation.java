@@ -16,12 +16,14 @@ import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.aps.common.HealthStatus;
 import in.wynk.payment.dto.common.*;
+import in.wynk.payment.dto.gpbs.GooglePlayConstant;
 import in.wynk.payment.dto.response.AbstractPaymentMethodDTO;
 import in.wynk.payment.dto.response.PaymentGroupsDTO;
 import in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO;
 import in.wynk.payment.dto.response.SupportingDetails;
 import in.wynk.payment.dto.response.UiDetails;
 import in.wynk.payment.dto.response.billing.AddToBill;
+import in.wynk.payment.dto.response.billing.GooglePlayBilling;
 import in.wynk.payment.dto.response.card.Card;
 import in.wynk.payment.dto.response.netbanking.NetBanking;
 import in.wynk.payment.dto.response.paymentoption.*;
@@ -134,6 +136,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             delegate.put(WalletConstants.WALLET, new WalletPresentation());
             delegate.put(AddToBillConstants.ADDTOBILL, new BillingPresentation());
             delegate.put(NetBankingConstants.NET_BANKING, new NetBankingPresentation());
+            delegate.put(GooglePlayConstant.BILLING, new GooglePlayBillingPresentation());
         }
 
         @Override
@@ -262,6 +265,14 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .build();
             }
 
+        }
+
+        //To be implemented Phase 2
+        private class GooglePlayBillingPresentation implements IPaymentOptionInfoPresentation<GooglePlayBilling, GooglePlayBillingOptionInfo> {
+            @Override
+            public GooglePlayBilling transform (Pair<PaymentMethodDTO, Optional<GooglePlayBillingOptionInfo>> payload) {
+                return GooglePlayBilling.builder().build();
+            }
         }
 
         private class BillingPresentation implements IPaymentOptionInfoPresentation<AddToBill, BillingOptionInfo> {

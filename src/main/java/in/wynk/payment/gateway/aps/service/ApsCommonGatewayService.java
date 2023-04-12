@@ -40,6 +40,7 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Objects;
 
 import static in.wynk.payment.constant.CardConstants.CARD;
 import static in.wynk.payment.constant.CardConstants.CARDS;
@@ -110,9 +111,15 @@ public class ApsCommonGatewayService {
     }
 
     private String generateToken () {
-        final Transaction transaction = TransactionContext.get();
-        final String username = PropertyResolverUtils.resolve(transaction.getClientAlias(), PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
-        final String password = PropertyResolverUtils.resolve(transaction.getClientAlias(), PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
+        String clientAlias;
+        try {
+            final Transaction transaction = TransactionContext.get();
+            clientAlias = transaction.getClientAlias();
+        } catch (NullPointerException e) {
+            clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
+        }
+        final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
+        final String password = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
         return AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
     }
 

@@ -18,7 +18,6 @@ import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -43,7 +42,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private final ObjectMapper objectMapper;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGatewayServiceImpl (String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper) {
+    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;
@@ -53,15 +52,15 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle (ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
+    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
         try {
-            final String callbackType = Optional.ofNullable(callbackRequest.getType().toString()).orElse(PAYMENT_STATUS_CALLBACK_TYPE);
+            final String callbackType = Optional.ofNullable(request.getType().toString()).orElse(PAYMENT_STATUS_CALLBACK_TYPE);
             final IPaymentCallback callbackService = delegator.get(callbackType);
-            if (isValid(callbackRequest, headers)) {
-                return callbackService.handle(callbackRequest, headers);
+            if (isValid(request)) {
+                return callbackService.handle(request);
             } else {
-                log.error(APS_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", callbackRequest.getStatus(), callbackRequest.getOrderId());
-                throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + callbackRequest.getOrderId());
+                log.error(APS_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());
+                throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + request.getOrderId());
             }
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
@@ -69,7 +68,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     }
 
     @Override
-    public ApsCallBackRequestPayload parse (Map<String, Object> payload) {
+    public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
         try {
             final String type = ((String) payload.getOrDefault("type", PAYMENT_STATUS_CALLBACK_TYPE));
             return delegator.get(type).parse(payload);
@@ -79,14 +78,14 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     }
 
     @SneakyThrows
-    public boolean isValid (ApsCallBackRequestPayload payload, HttpHeaders headers) {
-        return SignatureUtil.verifySignature(headers.get("signature").get(0), payload, secret, salt);
+    public boolean isValid(ApsCallBackRequestPayload payload) {
+        return SignatureUtil.verifySignature(payload.getChecksum(), payload, secret, salt);
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handle (ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
+        public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
             common.syncChargingTransactionFromSource(transaction);
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
@@ -112,7 +111,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         }
 
         @Override
-        public ApsCallBackRequestPayload parse (Map<String, Object> payload) {
+        public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsCallBackRequestPayload.class);
@@ -125,9 +124,9 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private class RefundApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsAutoRefundCallbackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handle (ApsAutoRefundCallbackRequestPayload callbackRequest, HttpHeaders headers) {
+        public AbstractPaymentCallbackResponse handle(ApsAutoRefundCallbackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncRefundTransactionFromSource(transaction, callbackRequest.getRefundId());
+            common.syncRefundTransactionFromSource(transaction, request.getRefundId());
             // if an auto refund transaction is successful after recon from aps then transaction status should be marked as auto refunded
             if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                 transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
@@ -136,7 +135,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         }
 
         @Override
-        public ApsAutoRefundCallbackRequestPayload parse (Map<String, Object> payload) {
+        public ApsAutoRefundCallbackRequestPayload parse(Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsAutoRefundCallbackRequestPayload.class);

@@ -20,7 +20,6 @@ import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -49,8 +48,8 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request, HttpHeaders headers) {
-        return callbackHandler.handle(request, headers);
+    public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
+        return callbackHandler.handle(request);
     }
 
     @Override
@@ -68,17 +67,17 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         }
 
         @Override
-        public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest, HttpHeaders headers) {
+        public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
             final String transactionId = transaction.getIdStr();
             try {
-                final String errorCode = callbackRequest.getError();
-                final String errorMessage = callbackRequest.getErrorMessage();
-                final IPaymentCallback callbackService = delegator.get(callbackRequest.getAction());
-                if (validate(callbackRequest)) {
-                    return callbackService.handle(callbackRequest, headers);
+                final String errorCode = request.getError();
+                final String errorMessage = request.getErrorMessage();
+                final IPaymentCallback callbackService = delegator.get(request.getAction());
+                if (validate(request)) {
+                    return callbackService.handle(request);
                 } else {
-                    log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}", callbackRequest.getStatus(), transactionId, callbackRequest.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
+                    log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}", request.getStatus(), transactionId, request.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + transactionId);
                 }
             } catch (Exception e) {
@@ -100,7 +99,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         private class GenericPayUCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
             @Override
-            public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest, HttpHeaders headers) {
+            public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
                 common.syncChargingTransactionFromSource(transaction);
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
@@ -129,9 +128,9 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         private class RefundPayUCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUAutoRefundCallbackRequestPayload> {
 
             @Override
-            public AbstractPaymentCallbackResponse handle(PayUAutoRefundCallbackRequestPayload callbackRequest, HttpHeaders headers) {
+            public AbstractPaymentCallbackResponse handle(PayUAutoRefundCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
+                common.syncRefundTransactionFromSource(transaction, request.getRequestId());
                 // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
                 if (transaction.getStatus() == TransactionStatus.SUCCESS)
                     transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());

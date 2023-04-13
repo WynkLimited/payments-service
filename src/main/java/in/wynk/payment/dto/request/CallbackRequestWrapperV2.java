@@ -3,11 +3,13 @@ package in.wynk.payment.dto.request;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.dto.ChecksumHeaderCallbackRequest;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.gateway.IPaymentCallback;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 
 import java.util.Map;
 import java.util.Objects;
@@ -55,6 +57,12 @@ public class CallbackRequestWrapperV2<T extends CallbackRequest> extends Callbac
                 throw new WynkRuntimeException("You must supply payment code first, before supplying payload");
             this.body = BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, T>>() {
             }).parse(payload);
+            return self();
+        }
+
+        public B headers(HttpHeaders headers) {
+            if (Objects.nonNull(this.body) && ChecksumHeaderCallbackRequest.class.isAssignableFrom(this.body.getClass()))
+                ((ChecksumHeaderCallbackRequest<?>) this.body).withHeader(headers);
             return self();
         }
 

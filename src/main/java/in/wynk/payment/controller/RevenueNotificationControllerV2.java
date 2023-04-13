@@ -86,7 +86,7 @@ public class RevenueNotificationControllerV2 {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        paymentGatewayManager.handle(CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).build(), headers);
+        paymentGatewayManager.handle(CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build());
         return WynkResponseEntity.<Void>builder().success(true).build();
     }
 }

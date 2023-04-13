@@ -103,8 +103,8 @@ public class ApsGateway implements
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
-        return callbackGateway.handle(callbackRequest, headers);
+    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
+        return callbackGateway.handle(callbackRequest);
     }
 
     @Override

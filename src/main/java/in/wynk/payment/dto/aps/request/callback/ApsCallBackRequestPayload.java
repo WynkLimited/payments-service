@@ -3,11 +3,12 @@ package in.wynk.payment.dto.aps.request.callback;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.ChecksumHeaderCallbackRequest;
 import in.wynk.payment.dto.aps.common.*;
-import in.wynk.payment.dto.request.CallbackRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.springframework.http.HttpHeaders;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -17,10 +18,10 @@ import java.math.BigDecimal;
  */
 @Getter
 @SuperBuilder
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor
-public class ApsCallBackRequestPayload extends CallbackRequest implements Serializable {
+public class ApsCallBackRequestPayload extends ChecksumHeaderCallbackRequest<ApsCallBackRequestPayload> implements Serializable {
     private static final long serialVersionUID = 7427670413183914778L;
     private String pgId;
     private String orderId;
@@ -40,9 +41,18 @@ public class ApsCallBackRequestPayload extends CallbackRequest implements Serial
     private String errorMsg;
     private Long timestamp;
     private String mandateId;
+    @JsonIgnore
+    private String checksum;
     private SiRegistrationStatus mandateStatus;
     @JsonIgnore
     public String getTransactionId() {
         return this.getOrderId();
+    }
+
+    @Override
+    @JsonIgnore
+    public ApsCallBackRequestPayload withHeader(HttpHeaders headers) {
+        this.checksum = headers.getFirst(ApsConstant.SIGNATURE);
+        return this;
     }
 }

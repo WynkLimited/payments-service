@@ -80,12 +80,12 @@ public class RevenuePaymentControllerV2 {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).build();
+        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handle(request, headers));
+                }).transform(manager.handle(request));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -105,12 +105,12 @@ public class RevenuePaymentControllerV2 {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(terraformed).build();
+        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(terraformed).headers(headers).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handle(request, headers));
+                }).transform(manager.handle(request));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -129,12 +129,12 @@ public class RevenuePaymentControllerV2 {
         } else {
             paymentGateway = PaymentCodeCachingService.getFromCode(pc);
         }
-        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).build();
+        final CallbackRequestWrapperV2<?> request = CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build();
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handle(request, headers));
+                }).transform(manager.handle(request));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }

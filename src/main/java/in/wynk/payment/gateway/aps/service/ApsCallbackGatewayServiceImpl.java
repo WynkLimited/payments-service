@@ -36,28 +36,28 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_S
 public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
     private final String REFUND_CALLBACK_TYPE = "REFUND_STATUS";
-    private final String CHARGE_CALLBACK_TYPE = "PAYMENT_STATUS";
+    private final String PAYMENT_STATUS_CALLBACK_TYPE = "PAYMENT_STATUS";
     private final String salt;
     private final String secret;
     private final ApsCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper) {
+    public ApsCallbackGatewayServiceImpl (String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;
         this.objectMapper = objectMapper;
-        this.delegator.put(CHARGE_CALLBACK_TYPE, new GenericApsCallbackHandler());
+        this.delegator.put(PAYMENT_STATUS_CALLBACK_TYPE, new GenericApsCallbackHandler());
         this.delegator.put(REFUND_CALLBACK_TYPE, new RefundApsCallBackHandler());
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
+    public AbstractPaymentCallbackResponse handle (ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
         try {
-            final String callbackType = Optional.ofNullable(callbackRequest.getType().toString()).orElse(CHARGE_CALLBACK_TYPE);
+            final String callbackType = Optional.ofNullable(callbackRequest.getType().toString()).orElse(PAYMENT_STATUS_CALLBACK_TYPE);
             final IPaymentCallback callbackService = delegator.get(callbackType);
-            if(isValid(callbackRequest, headers)) {
+            if (isValid(callbackRequest, headers)) {
                 return callbackService.handle(callbackRequest, headers);
             } else {
                 log.error(APS_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", callbackRequest.getStatus(), callbackRequest.getOrderId());
@@ -69,23 +69,24 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     }
 
     @Override
-    public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
+    public ApsCallBackRequestPayload parse (Map<String, Object> payload) {
         try {
-            final String type = ((String) payload.getOrDefault("type", CHARGE_CALLBACK_TYPE));
+            final String type = ((String) payload.getOrDefault("type", PAYMENT_STATUS_CALLBACK_TYPE));
             return delegator.get(type).parse(payload);
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY006, e);
         }
     }
+
     @SneakyThrows
-    public boolean isValid(ApsCallBackRequestPayload payload, HttpHeaders headers) {
+    public boolean isValid (ApsCallBackRequestPayload payload, HttpHeaders headers) {
         return SignatureUtil.verifySignature(headers.get("signature").get(0), payload, secret, salt);
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
+        public AbstractPaymentCallbackResponse handle (ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
             final Transaction transaction = TransactionContext.get();
             common.syncChargingTransactionFromSource(transaction);
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
@@ -111,7 +112,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         }
 
         @Override
-        public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
+        public ApsCallBackRequestPayload parse (Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsCallBackRequestPayload.class);
@@ -119,23 +120,23 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
                 throw new WynkRuntimeException(PAY006, e);
             }
         }
-
     }
 
     private class RefundApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsAutoRefundCallbackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handle(ApsAutoRefundCallbackRequestPayload callbackRequest, HttpHeaders headers) {
+        public AbstractPaymentCallbackResponse handle (ApsAutoRefundCallbackRequestPayload callbackRequest, HttpHeaders headers) {
             final Transaction transaction = TransactionContext.get();
             common.syncRefundTransactionFromSource(transaction, callbackRequest.getRefundId());
-            // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
-            if (transaction.getStatus() == TransactionStatus.SUCCESS)
+            // if an auto refund transaction is successful after recon from aps then transaction status should be marked as auto refunded
+            if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                 transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
+            }
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 
         @Override
-        public ApsAutoRefundCallbackRequestPayload parse(Map<String, Object> payload) {
+        public ApsAutoRefundCallbackRequestPayload parse (Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsAutoRefundCallbackRequestPayload.class);
@@ -143,7 +144,5 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
                 throw new WynkRuntimeException(PAY006, e);
             }
         }
-
     }
-
 }

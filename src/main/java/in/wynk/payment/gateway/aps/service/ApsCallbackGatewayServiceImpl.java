@@ -9,15 +9,17 @@ import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackSignaturePayLoad;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
-import in.wynk.payment.dto.payu.ApsAutoRefundCallbackRequestPayload;
-import in.wynk.payment.dto.payu.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -26,6 +28,7 @@ import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_CALLBACK_FAILURE;
 
 /**
  * @author Nishesh Pandey
@@ -51,11 +54,16 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
+    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
         try {
-            final String callbackType = Optional.ofNullable(callbackRequest.getType()).orElse(CHARGE_CALLBACK_TYPE);
+            final String callbackType = Optional.ofNullable(callbackRequest.getType().toString()).orElse(CHARGE_CALLBACK_TYPE);
             final IPaymentCallback callbackService = delegator.get(callbackType);
-            return callbackService.handle(callbackRequest);
+            if(isValid(callbackRequest, headers)) {
+                return callbackService.handle(callbackRequest, headers);
+            } else {
+                log.error(APS_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", callbackRequest.getStatus(), callbackRequest.getOrderId());
+                throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + callbackRequest.getOrderId());
+            }
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         }
@@ -71,14 +79,16 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         }
     }
     @SneakyThrows
-    public boolean isValid(ApsCallBackRequestPayload payload) {
-        return SignatureUtil.verifySignature(payload.getSignature(), payload, secret, salt);
+    public boolean isValid(ApsCallBackRequestPayload payload, HttpHeaders headers) {
+        //This mapping is to remove transaction id
+        ApsCallBackSignaturePayLoad request = objectMapper.convertValue(payload, ApsCallBackSignaturePayLoad.class);
+        return SignatureUtil.verifySignature(headers.get("signature").get(0), request, secret, salt);
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
+        public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
             final Transaction transaction = TransactionContext.get();
             common.syncChargingTransactionFromSource(transaction);
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
@@ -118,7 +128,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private class RefundApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsAutoRefundCallbackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handle(ApsAutoRefundCallbackRequestPayload callbackRequest) {
+        public AbstractPaymentCallbackResponse handle(ApsAutoRefundCallbackRequestPayload callbackRequest, HttpHeaders headers) {
             final Transaction transaction = TransactionContext.get();
             common.syncRefundTransactionFromSource(transaction, callbackRequest.getRefundId());
             // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded

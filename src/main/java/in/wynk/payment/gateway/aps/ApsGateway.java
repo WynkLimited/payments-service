@@ -14,7 +14,7 @@ import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionRespons
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
-import in.wynk.payment.dto.payu.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -102,8 +103,8 @@ public class ApsGateway implements
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
-        return callbackGateway.handle(callbackRequest);
+    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest, HttpHeaders headers) {
+        return callbackGateway.handle(callbackRequest, headers);
     }
 
     @Override

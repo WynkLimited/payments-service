@@ -1,6 +1,5 @@
-package in.wynk.payment.dto.payu;
+package in.wynk.payment.dto.aps.request.callback;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -16,5 +15,4 @@ public class ApsAutoRefundCallbackRequestPayload extends ApsCallBackRequestPaylo
     private String refundId;
     private String refundSystemId;
     private String refundOrderId;
-    private String bankRefId;
 }

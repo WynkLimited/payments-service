@@ -29,6 +29,7 @@ import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.util.Pair;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
@@ -68,7 +69,7 @@ public class RevenuePaymentControllerV2 {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public WynkResponseEntity<PaymentCallbackResponse> handleCallback (@PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) {
+    public WynkResponseEntity<PaymentCallbackResponse> handleCallback (@RequestHeader HttpHeaders headers, @PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) {
         LoadClientUtils.loadClient(false);
         final PaymentGateway paymentGateway;
         if (StringUtils.isEmpty(pc)) {
@@ -84,7 +85,7 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handle(request));
+                }).transform(manager.handle(request, headers));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -92,7 +93,7 @@ public class RevenuePaymentControllerV2 {
     @ManageSession(sessionId = "#sid")
     @GetMapping(path = "/callback/{sid}/{pc}")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<PaymentCallbackResponse> handleCallbackGet (@PathVariable String sid, @PathVariable String pc, @RequestParam MultiValueMap<String, String> payload) {
+    public WynkResponseEntity<PaymentCallbackResponse> handleCallbackGet (@RequestHeader HttpHeaders headers, @PathVariable String sid, @PathVariable String pc, @RequestParam MultiValueMap<String, String> payload) {
         LoadClientUtils.loadClient(false);
         final PaymentGateway paymentGateway;
         final Map<String, Object> terraformed = new HashMap<>(payload.toSingleValueMap());
@@ -109,7 +110,7 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handle(request));
+                }).transform(manager.handle(request, headers));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
@@ -117,7 +118,7 @@ public class RevenuePaymentControllerV2 {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public WynkResponseEntity<PaymentCallbackResponse> handleCallbackJSON (@PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
+    public WynkResponseEntity<PaymentCallbackResponse> handleCallbackJSON (@RequestHeader HttpHeaders headers, @PathVariable String sid, @PathVariable(required = false) String pc, @RequestBody Map<String, Object> payload) {
         LoadClientUtils.loadClient(false);
         final PaymentGateway paymentGateway;
         if (StringUtils.isEmpty(pc)) {
@@ -133,7 +134,7 @@ public class RevenuePaymentControllerV2 {
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
         final WynkResponseEntity<PaymentCallbackResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentation<PaymentCallbackResponse, CallbackResponseWrapper<?>>>() {
-                }).transform(manager.handle(request));
+                }).transform(manager.handle(request, headers));
         AnalyticService.update(responseEntity);
         return responseEntity;
     }

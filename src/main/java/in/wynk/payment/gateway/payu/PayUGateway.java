@@ -10,10 +10,7 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
 import in.wynk.payment.dto.payu.PayUPaymentRefundRequest;
 import in.wynk.payment.dto.payu.PayUPaymentRefundResponse;
-import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
-import in.wynk.payment.dto.request.AbstractVerificationRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.payu.service.*;
@@ -22,6 +19,7 @@ import in.wynk.payment.service.impl.PayUMerchantPaymentService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -76,8 +74,8 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest) {
-        return callbackGateway.handle(callbackRequest);
+    public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload callbackRequest, HttpHeaders headers) {
+        return callbackGateway.handle(callbackRequest, headers);
     }
 
     @Override

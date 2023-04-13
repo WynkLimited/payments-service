@@ -9,11 +9,10 @@ import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.request.callback.ApsCallBackSignaturePayLoad;
-import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
-import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
+import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.aps.SignatureUtil;
@@ -27,8 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_CALLBACK_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
 
 /**
  * @author Nishesh Pandey
@@ -80,9 +79,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     }
     @SneakyThrows
     public boolean isValid(ApsCallBackRequestPayload payload, HttpHeaders headers) {
-        //This mapping is to remove transaction id
-        ApsCallBackSignaturePayLoad request = objectMapper.convertValue(payload, ApsCallBackSignaturePayLoad.class);
-        return SignatureUtil.verifySignature(headers.get("signature").get(0), request, secret, salt);
+        return SignatureUtil.verifySignature(headers.get("signature").get(0), payload, secret, salt);
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {

@@ -1,8 +1,8 @@
 package in.wynk.payment.dto.aps.request.callback;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.aps.common.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import lombok.Getter;
@@ -41,7 +41,7 @@ public class ApsCallBackRequestPayload extends CallbackRequest implements Serial
     private Long timestamp;
     private String mandateId;
     private SiRegistrationStatus mandateStatus;
-
+    @JsonIgnore
     public String getTransactionId() {
         return this.getOrderId();
     }

@@ -13,7 +13,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class SiPaymentRecurringRequest<T extends SiPaymentInfo> {
     private T siPaymentInfo;
-    private UserInfo userInfo;
     @JsonProperty("orderId")
     private String transactionId;
 }

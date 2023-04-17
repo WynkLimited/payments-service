@@ -68,7 +68,7 @@ public class ApsGateway implements
                       @Value("${aps.payment.renewal.api}") String siPaymentApi,
                       @Value("${aps.payment.option.api}") String payOptionEndpoint,
                       @Value("${aps.payment.delete.vpa}") String deleteVpaEndpoint,
-                      @Value("${aps.payment.predebit.api}") String preDebitEndpoint,
+                     /* @Value("${aps.payment.predebit.api}") String preDebitEndpoint,*/
                       @Value("${aps.payment.init.refund.api}") String refundEndpoint,
                       @Value("${aps.payment.delete.card}") String deleteCardEndpoint,
                       @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
@@ -92,9 +92,9 @@ public class ApsGateway implements
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, payCache);
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
-        this.preDebitGateway = new ApsPreDebitNotificationGatewayServiceImpl(preDebitEndpoint, transactionManager, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, payCache, merchantTransactionService, eventPublisher);
+        this.preDebitGateway = new ApsPreDebitNotificationGatewayServiceImpl(siPaymentApi, mapper,payCache, merchantTransactionService, transactionManager, commonGateway, eventPublisher);
     }
 
     @Override
@@ -123,6 +123,11 @@ public class ApsGateway implements
     }
 
     @Override
+    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage request) {
+        return preDebitGateway.notify(request);
+    }
+
+    @Override
     @CacheEvict(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#request.getMsisdn()", cacheManager = L2CACHE_MANAGER)
     public AbstractPaymentAccountDeletionResponse delete(AbstractPaymentAccountDeletionRequest request) {
         return deleteGateway.delete(request);
@@ -131,11 +136,6 @@ public class ApsGateway implements
     @Override
     public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
         return statusGateway.reconcile(request);
-    }
-
-    @Override
-    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage request) {
-        return preDebitGateway.notify(request);
     }
 
     @Override

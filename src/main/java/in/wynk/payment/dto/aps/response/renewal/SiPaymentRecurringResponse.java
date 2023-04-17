@@ -15,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @NoArgsConstructor
 public class SiPaymentRecurringResponse extends AbstractExternalChargingResponse {
-    private ApsApiResponseWrapper<RenewalStatusResponse> body;
+    private ApsApiResponseWrapper<SiRecurringPaymentStatus> body;
     private String statusCode;
     private Integer statusCodeValue;
 }

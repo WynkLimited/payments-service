@@ -25,6 +25,7 @@ import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.apb.ApbConstants;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -286,7 +287,7 @@ public class PaymentGatewayManager
         log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
         AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
-        AnalyticService.update(ApbConstants.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
+        AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         return preDebitResponse;
     }
 

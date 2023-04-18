@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +16,7 @@ import java.math.BigDecimal;
 import static in.wynk.payment.constant.CardConstants.CARDS;
 import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.constant.WalletConstants.WALLETS;
+import static in.wynk.payment.dto.aps.common.ApsConstant.FIELD_TYPE;
 
 /**
  * @author Nishesh Pandey
@@ -28,7 +28,7 @@ import static in.wynk.payment.constant.WalletConstants.WALLETS;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = PaymentConstants.FIELD_TYPE, defaultImpl = NetBankingSavedPayOptions.class, visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = FIELD_TYPE, defaultImpl = NetBankingSavedPayOptions.class, visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = WalletSavedOptions.class, name = WALLETS),
         @JsonSubTypes.Type(value = UpiSavedOptions.class, name = UPI),

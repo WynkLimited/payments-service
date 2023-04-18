@@ -47,8 +47,8 @@ import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
-import static in.wynk.payment.dto.apb.ApbConstants.LOB_AUTO_PAY_REGISTER_WYNK;
+import static in.wynk.payment.dto.aps.common.ApsConstant.LOB_AUTO_PAY_REGISTER_WYNK;
+import static in.wynk.payment.dto.aps.common.ApsConstant.WYNK_LIMITED;
 
 /**
  * @author Nishesh Pandey
@@ -191,8 +191,8 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
                     return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
-                            .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
-                            .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
+                            .pa(map.get(PA)).pn(map.getOrDefault(PN, WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
+                            .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                             .build();
                 }
             }

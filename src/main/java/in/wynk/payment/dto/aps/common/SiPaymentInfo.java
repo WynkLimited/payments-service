@@ -1,8 +1,5 @@
 package in.wynk.payment.dto.aps.common;
 
-import in.wynk.common.constant.BaseConstants;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.dto.apb.ApbConstants;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -21,7 +18,7 @@ public class SiPaymentInfo extends AbstractPaymentInfo {
      * Static value SI_WYNK for renewal transactions
      */
     @Builder.Default
-    private String lob = ApbConstants.LOB_SI_WYNK;
+    private String lob = ApsConstant.LOB_SI_WYNK;
 
     private String paymentGateway;
 }

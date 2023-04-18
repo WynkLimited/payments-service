@@ -46,16 +46,15 @@ import org.springframework.util.MultiValueMap;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
 import static in.wynk.payment.constant.FlowType.COLLECT;
 import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
+import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
-import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.dto.apb.ApbConstants.CURRENCY_INR;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j

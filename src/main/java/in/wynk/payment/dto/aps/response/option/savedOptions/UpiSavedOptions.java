@@ -2,7 +2,6 @@ package in.wynk.payment.dto.aps.response.option.savedOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.constant.UpiConstants;
-import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.List;
+
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 
 /**
  * @author Nishesh Pandey
@@ -44,6 +45,6 @@ public class UpiSavedOptions extends AbstractSavedPayOptions implements Serializ
         return upiPspAppName;
     }
     public String getId() {
-        return PaymentConstants.APS.concat("_").concat(UpiConstants.UPI).concat("_").concat(getUpiPspAppName());
+        return APS.concat("_").concat(UpiConstants.UPI).concat("_").concat(getUpiPspAppName());
     }
 }

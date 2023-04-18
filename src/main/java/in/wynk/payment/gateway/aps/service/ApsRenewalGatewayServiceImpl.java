@@ -35,7 +35,7 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
-import static in.wynk.payment.dto.apb.ApbConstants.*;
+import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 
 /**
  * @author Nishesh Pandey

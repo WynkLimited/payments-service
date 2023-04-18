@@ -29,7 +29,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 
 @Slf4j
 public class ApsPaymentSettlementGateway implements IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> {
@@ -51,8 +51,8 @@ public class ApsPaymentSettlementGateway implements IPaymentSettlement<DefaultPa
     private void init() {
         this.httpTemplate.getInterceptors().add((request, body, execution) -> {
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
-            final String username = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
-            final String password = PropertyResolverUtils.resolve(clientAlias, PaymentConstants.AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
+            final String username = PropertyResolverUtils.resolve(clientAlias, AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
+            final String password = PropertyResolverUtils.resolve(clientAlias, AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
             final String token = AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
             request.getHeaders().add(HttpHeaders.AUTHORIZATION, token);
             request.getHeaders().add(CHANNEL_ID, AUTH_TYPE_WEB_UNAUTH);

@@ -17,7 +17,7 @@ import org.springframework.http.HttpMethod;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY032;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_PRE_DEBIT_NOTIFICATION_ERROR;
 import static in.wynk.payment.constant.UpiConstants.UPI;
-import static in.wynk.payment.dto.apb.ApbConstants.TXN_SUCCESS;
+import static in.wynk.payment.dto.aps.common.ApsConstant.TXN_SUCCESS;
 
 /**
  * @author Nishesh Pandey

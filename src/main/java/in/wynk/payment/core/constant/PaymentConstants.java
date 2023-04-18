@@ -71,15 +71,6 @@ public interface PaymentConstants extends BaseConstants {
 
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
-    String WYNK_LIMITED = "Wynk Limited";
-    String CHANNEL_ID = "channel-id";
-    String AUTH_TYPE_WEB_UNAUTH = "WEB_UNAUTH";
     String CONTENT_TYPE = "Content-Type";
-    String APPLICATION_JSON = "application/json";
-    String ORDER_ID = "orderId";
-    String AIRTEL_PAY_STACK = "aps";
-    String APS = "APS";
-    String PAYMENT_TIMER_KEY = "payment_timer";
-    String PAYMENT_STATUS_POLL_KEY = "payment_status_poll";
-    String FIELD_TYPE = "type";
+    String CURRENCY_INR="INR";
 }

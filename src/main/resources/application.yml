@@ -319,3 +319,8 @@ branch:
   onelink:
     key: ${onelink.key}
     url: ${onelink.url}
+
+
+event:
+  stream:
+    dp:  data-science-subscription-funnel-information

@@ -219,9 +219,9 @@ payment:
       salt: 4O6goRqeKvs=
       secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
-        base: https://paydigi.airtel.in
+        base: https://kongqa.airtel.com/preprod-84
       encryption:
-        key: classpath:/cryptography/aps/public.key
+        key: file:///opt/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr

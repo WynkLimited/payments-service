@@ -17,6 +17,6 @@ public class CardInfo implements Serializable {
     private String issuedBy;
     @Analysed
     private String bankCode;
-    @Analysed
+    
     private String cvv;
 }

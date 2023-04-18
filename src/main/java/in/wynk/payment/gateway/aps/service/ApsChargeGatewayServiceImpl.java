@@ -1,7 +1,6 @@
 package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.FlowType;
@@ -165,7 +164,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     UpiCollectChargingResponse response =
                             common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
-                    return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response)).build();
+                    return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                 }
             }
 
@@ -193,21 +192,13 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
                     //if mandate created, means transaction type is SUBSCRIBE else PURCHASE
-                    return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
+                    return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
                             .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
                             .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                             .build();
                 }
             }
         }
-    }
-
-    private String updateTransactionType (
-            UpiCollectChargingResponse response) {
-        if (Objects.isNull(response.getPgSystemId())) {
-            return PaymentEvent.PURCHASE.getValue();
-        }
-        return PaymentEvent.SUBSCRIBE.getValue();
     }
 
     private class CardCharging implements IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
@@ -319,7 +310,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                         .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                         CardChargingResponse cardChargingResponse =
                                 common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, CardChargingResponse.class);
-                        return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType("SUBSCRIBE")
+                        return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
                                 .html(cardChargingResponse.getHtml()).build();
                     } catch (Exception e) {
                         throw new WynkRuntimeException(PaymentErrorType.PAY041, e);

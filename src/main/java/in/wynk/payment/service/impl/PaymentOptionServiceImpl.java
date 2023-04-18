@@ -125,13 +125,15 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             List<PaymentMethodDTO> methodDTOS =
-                    availableMethods.get(group.getId()).stream().filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
+                    availableMethods.get(group.getId()).stream()
+                            .filter(paymentMethod -> !paymentMethod.getPaymentCode().getCode().equals("aps"))
+                            .filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO =
                         PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
                 if (GooglePlayConstant.BILLING.equalsIgnoreCase(groupsDTO.getPaymentGroup())) {
                     String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
-                    if (os.equalsIgnoreCase(ANDROID)&& !CollectionUtils.isEmpty(planDTO.getSku())) {
+                    if (os.equalsIgnoreCase(ANDROID) && !CollectionUtils.isEmpty(planDTO.getSku())) {
                         paymentGroupsDTOS.add(groupsDTO);
                     }
                 } else {

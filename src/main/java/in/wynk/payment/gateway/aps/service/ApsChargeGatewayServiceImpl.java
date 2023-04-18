@@ -162,8 +162,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         apsChargingRequestBuilder.billPayment(false);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
-                    UpiCollectChargingResponse response =
-                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
+                    common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                 }
             }
@@ -191,7 +190,6 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
-                    //if mandate created, means transaction type is SUBSCRIBE else PURCHASE
                     return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
                             .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
                             .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)

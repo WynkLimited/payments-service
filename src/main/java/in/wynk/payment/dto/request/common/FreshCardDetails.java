@@ -7,17 +7,13 @@ import lombok.Getter;
 import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
 
 @Getter
-@AnalysedEntity
 public class FreshCardDetails extends AbstractCardDetails {
-    @Analysed
     private String cardHolderName;
-    @Analysed
     private String cardNumber;
-    @Analysed
     private CardExpiryInfo expiryInfo;
 
     @Override
-    public String getType() {
+    public String getType () {
         return FRESH_CARD_TYPE;
     }
 }

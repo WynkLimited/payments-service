@@ -47,6 +47,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
+import static in.wynk.payment.constant.FlowType.CARD;
 import static in.wynk.payment.constant.FlowType.COLLECT;
 import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;

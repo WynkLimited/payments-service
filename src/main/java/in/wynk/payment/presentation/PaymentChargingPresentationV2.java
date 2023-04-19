@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.payment.constant.FlowType.*;
+import static in.wynk.payment.constant.FlowType.CARD;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;

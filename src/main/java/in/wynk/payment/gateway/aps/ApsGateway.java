@@ -2,19 +2,19 @@ package in.wynk.payment.gateway.aps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.cache.aspect.advice.CacheEvict;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.aps.common.ApsConstant;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
-import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
@@ -22,12 +22,10 @@ import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.*;
-import in.wynk.payment.gateway.aps.service.ApsPaymentSettlementGateway;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,7 +34,7 @@ import java.util.Map;
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 
 @Slf4j
-@Service(PaymentConstants.AIRTEL_PAY_STACK)
+@Service(ApsConstant.AIRTEL_PAY_STACK)
 public class ApsGateway implements
         IPreDebitNotificationService,
         IExternalPaymentEligibilityService,

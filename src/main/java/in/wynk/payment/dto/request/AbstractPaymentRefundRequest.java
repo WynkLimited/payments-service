@@ -13,9 +13,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.constant.WalletConstants.PAYTM_WALLET;
 import static in.wynk.payment.constant.WalletConstants.PHONEPE_WALLET;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYU;
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 
 @Getter
 @SuperBuilder

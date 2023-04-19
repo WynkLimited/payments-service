@@ -5,14 +5,15 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
-import static in.wynk.payment.constant.CardConstants.SAVED_CARD_TYPE;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
+
+import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
+import static in.wynk.payment.constant.CardConstants.SAVED_CARD_TYPE;
 
 @Getter
 @SuperBuilder

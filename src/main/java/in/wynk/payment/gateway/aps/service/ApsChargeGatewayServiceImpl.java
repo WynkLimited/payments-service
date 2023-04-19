@@ -1,7 +1,6 @@
 package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.FlowType;
@@ -47,8 +46,8 @@ import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.CURRENCY_INR;
 import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
+import static in.wynk.payment.dto.aps.common.ApsConstant.WYNK_LIMITED;
 
 /**
  * @author Nishesh Pandey
@@ -163,9 +162,8 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         apsChargingRequestBuilder.billPayment(false);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
-                    UpiCollectChargingResponse response =
-                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
-                    return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(updateTransactionType(response)).build();
+                    common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
+                    return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                 }
             }
 
@@ -192,22 +190,13 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
-                    //if mandate created, means transaction type is SUBSCRIBE else PURCHASE
-                    return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(PaymentEvent.SUBSCRIBE.getValue())
-                            .pa(map.get(PA)).pn(map.getOrDefault(PN, PaymentConstants.WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
-                            .cu(map.getOrDefault(CU, CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
+                    return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
+                            .pa(map.get(PA)).pn(map.getOrDefault(PN, WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
+                            .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                             .build();
                 }
             }
         }
-    }
-
-    private String updateTransactionType (
-            UpiCollectChargingResponse response) {
-        if (Objects.isNull(response.getPgSystemId())) {
-            return PaymentEvent.PURCHASE.getValue();
-        }
-        return PaymentEvent.SUBSCRIBE.getValue();
     }
 
     private class CardCharging implements IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
@@ -305,28 +294,28 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                     .paymentStartDate(today.toInstant().toEpochMilli())
                                     .paymentEndDate(next10Year.toInstant().toEpochMilli());
                         }
-
-                    } else {
+                    }else {
                         final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
                         final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
                         final String encCardInfo = common.encryptCardData(credentials);
                         abstractCardPaymentInfoBuilder =
                                 SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                     }
+                        final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                        final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
+                        ExternalChargingRequest<?> payRequest =
+                                ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
+                                        .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+                        CardChargingResponse cardChargingResponse =
+                                common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, CardChargingResponse.class);
+                        return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
+                                .html(cardChargingResponse.getHtml()).build();
 
-                    final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
-                    final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
-                    ExternalChargingRequest<?> payRequest =
-                            ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
-                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                    CardChargingResponse cardChargingResponse =
-                            common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, CardChargingResponse.class);
-                    return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType("SUBSCRIBE")
-                            .html(cardChargingResponse.getHtml()).build();
+                    }
+
                 }
             }
         }
-    }
 
     private class NetBankingCharging implements IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
 

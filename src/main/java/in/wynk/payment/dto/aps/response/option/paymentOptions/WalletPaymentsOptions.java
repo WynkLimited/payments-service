@@ -2,7 +2,6 @@ package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.constant.WalletConstants;
-import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +11,8 @@ import lombok.experimental.SuperBuilder;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
+
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 
 /**
  * @author Nishesh Pandey
@@ -47,7 +48,7 @@ public class WalletPaymentsOptions extends AbstractPaymentOptions implements Ser
 
         @Override
         public String getId() {
-            return PaymentConstants.APS.concat("_").concat(WalletConstants.WALLET).concat("_").concat(getSubType());
+            return APS.concat("_").concat(WalletConstants.WALLET).concat("_").concat(getSubType());
         }
 
     }

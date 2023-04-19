@@ -223,34 +223,34 @@ payment:
       salt: 4O6goRqeKvs=
       secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
-        base: https://paydigi.airtel.in
+        base: http://intpay.india.airtel.itm
       encryption:
-        key: classpath:/cryptography/aps/public.key
+        key: file:///opt/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: classpath:/cryptography/aps/public.key
+          key: file:///opt/public.key
       music:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: classpath:/cryptography/aps/public.key
+          key: file:///opt/public.key
       webviewclient:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: classpath:/cryptography/aps/public.key
+          key: file:///opt/public.key
       subscriptionApi:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: classpath:/cryptography/aps/public.key
+          key: file:///opt/public.key
       rajtv:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: classpath:/cryptography/aps/public.key
+          key: file:///opt/public.key
     payu:
       airtelxstream:
         id: aU2Uoi
@@ -1043,3 +1043,7 @@ lock:
 security:
   exempt:
     paths: /actuator/**,/wynk/v1/**,/wynk/v2/**,/wynk/v3/**
+
+event:
+  stream:
+    dp: wcf-data-science-prod-subscription-funnel

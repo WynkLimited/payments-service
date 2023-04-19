@@ -1061,3 +1061,7 @@ lock:
       maxTotal: 100
       minIdle: 25
       maxIdle: 50
+
+event:
+  stream:
+    dp: data-science-subscription-funnel-information

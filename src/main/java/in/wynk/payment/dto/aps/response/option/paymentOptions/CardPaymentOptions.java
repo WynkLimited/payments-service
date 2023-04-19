@@ -2,7 +2,6 @@ package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.constant.CardConstants;
-import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -11,6 +10,8 @@ import lombok.experimental.SuperBuilder;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 
 /**
  * @author Nishesh Pandey
@@ -30,7 +31,7 @@ public class CardPaymentOptions extends AbstractPaymentOptions implements Serial
     public static class CardSubOption implements ISubOption, Serializable {
         @Override
         public String getId() {
-            return PaymentConstants.APS.concat("_").concat(CardConstants.CARD);
+            return APS.concat("_").concat(CardConstants.CARD);
         }
 
     }

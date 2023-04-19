@@ -59,10 +59,10 @@ import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.common.constant.BaseConstants.SLASH;
 import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
 import static in.wynk.payment.core.constant.BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.constant.WalletConstants.WALLET;
 import static in.wynk.payment.dto.phonepe.PhonePeConstants.*;
 
 @Slf4j

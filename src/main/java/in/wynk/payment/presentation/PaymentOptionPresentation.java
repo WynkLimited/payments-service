@@ -369,7 +369,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .expiryMonth(payload.getExpiryMonth())
                         .code(method.getPaymentCode().getCode())
                         .cardNumber(payload.getMaskedCardNumber())
-                        .autoPayEnabled(payload.isAutoPayEnabled())
+                        .autoPayEnabled(!method.getPaymentCode().getCode().equals("aps") && payload.isAutoPayEnabled())
                         .expressCheckout(payload.isExpressCheckout())
                         .cardCategory(payload.getCardCategory())
                         .build();

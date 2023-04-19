@@ -17,7 +17,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 @AnalysedEntity
 @Document("payment_codes")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class PaymentCode extends MongoBaseEntity<String> {
+public class PaymentGateway extends MongoBaseEntity<String> {
 
     @Field("bean_name")
     @Analysed(name = PAYMENT_GATEWAY)
@@ -46,7 +46,7 @@ public class PaymentCode extends MongoBaseEntity<String> {
 
     @Override
     public boolean equals(Object obj) {
-        if (!PaymentCode.class.isAssignableFrom(obj.getClass())) return false;
-        return this.getId().equals(((PaymentCode) obj).getId());
+        if (!PaymentGateway.class.isAssignableFrom(obj.getClass())) return false;
+        return this.getId().equals(((PaymentGateway) obj).getId());
     }
 }

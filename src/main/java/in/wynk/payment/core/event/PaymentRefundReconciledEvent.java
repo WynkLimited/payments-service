@@ -17,7 +17,7 @@ public class PaymentRefundReconciledEvent extends PaymentReconciledEvent {
 
     public static PaymentRefundReconciledEvent from(Transaction transaction) {
         return PaymentRefundReconciledEvent.builder()
-                .paymentCode(transaction.getPaymentChannel())
+                .paymentGateway(transaction.getPaymentChannel())
                 .transactionStatus(transaction.getStatus())
                 .clientAlias(transaction.getClientAlias())
                 .transactionId(transaction.getIdStr())

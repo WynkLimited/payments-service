@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -20,21 +21,34 @@ public class PaymentMethod extends MongoBaseEntity<String> {
     private int hierarchy;
 
     private boolean trialSupported;
+    private boolean saveDetailsSupported;
     private boolean autoRenewSupported;
+    private boolean inAppOtpSupport;
+    private boolean otpLessSupport;
 
+    private String alias;
     private String group;
+    private String flowType;
     private String iconUrl;
     private String subtitle;
     private String displayName;
     private String paymentCode;
     private String ruleExpression;
-    private String flowType;
 
+    private String tag;
     private List<String> suffixes;
     private Map<String, Object> meta;
 
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
+    }
+
+    public String getAlias() {
+        return StringUtils.isNotEmpty(alias) ? alias: getId();
+    }
+
+    public String getTag() {
+        return StringUtils.isEmpty(tag) ? getId(): tag;
     }
 
 }

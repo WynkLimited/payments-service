@@ -7,6 +7,19 @@ import org.slf4j.MarkerFactory;
 public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker APB_ERROR = MarkerFactory.getMarker("APB_ERROR");
+    Marker APS_PRE_DEBIT_NOTIFICATION_ERROR = MarkerFactory.getMarker("APS_PRE_DEBIT_NOTIFICATION_ERROR");
+    Marker RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("RENEWAL_STATUS_ERROR");
+    Marker RENEWAL_API_FAILURE = MarkerFactory.getMarker("RENEWAL_API_FAILURE");
+    Marker APS_API_FAILURE = MarkerFactory.getMarker("APS_API_FAILURE");
+    Marker APS_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("APS_CHARGING_CALLBACK_FAILURE");
+    Marker APS_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_CHARGING_STATUS_VERIFICATION");
+    Marker APS_VPA_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
+    Marker APS_BIN_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
+    Marker APS_SAVED_CARD_DELETION = MarkerFactory.getMarker("APS_SAVED_CARD_DELETION");
+    Marker APS_SAVED_VPA_DELETION = MarkerFactory.getMarker("APS_SAVED_VPA_DELETION");
+    Marker APS_REFUND_STATUS = MarkerFactory.getMarker("APS_REFUND_STATUS");
+    Marker APS_VALIDATION_FAILURE = MarkerFactory.getMarker("APS_VALIDATION_FAILURE");
+    Marker APS_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_REFUND_STATUS_VERIFICATION");
 
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
@@ -33,7 +46,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYMENT_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_FAILURE");
     Marker PAYMENT_CHARGING_CALLBACK_PENDING = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_PENDING");
-
     Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
     Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");
     Marker PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS= MarkerFactory.getMarker("PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS");
@@ -45,8 +57,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYU_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_REFUND_STATUS_VERIFICATION");
     Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
     Marker PAYU_API_FAILURE = MarkerFactory.getMarker("PAYU_API_FAILURE");
-    Marker APS_API_FAILURE = MarkerFactory.getMarker("APS_API_FAILURE");
-    Marker APS_OPERATION_FAILURE = MarkerFactory.getMarker("APS_OPERATION_FAILURE");
     Marker ADDTOBILL_API_FAILURE = MarkerFactory.getMarker("ADDTOBILL_API_FAILURE");
     Marker PAYU_UPI_INIT_TXN_FAILURE = MarkerFactory.getMarker("PAYU_UPI_INIT_TXN_FAILURE");
 
@@ -101,14 +111,12 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker ADDTOBILL_CHARGING_STATUS_VERIFICATION=MarkerFactory.getMarker("ADDTOBILL_CHARGING_STATUS_VERIFICATION");
     Marker CALLBACK_PAYLOAD_PARSING_FAILURE = MarkerFactory.getMarker("CALLBACK_PAYLOAD_PARSING_FAILURE");
 
-    Marker APS_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_CHARGING_STATUS_VERIFICATION");
-    Marker APS_VPA_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
-    Marker APS_BIN_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
-    Marker APS_REFUND_STATUS = MarkerFactory.getMarker("APS_REFUND_STATUS");
-
-
     Marker PAYMENT_OPTIONS_FAILURE = MarkerFactory.getMarker("PAYMENT_OPTIONS_FAILURE");
     Marker VAS_ERROR = MarkerFactory.getMarker("VAS_ERROR");
     Marker PAYMENT_ELIGIBILITY_INFO = MarkerFactory.getMarker("PAYMENT_ELIGIBILITY_INFO");
+
+    Marker CHARGING_API_FAILURE = MarkerFactory.getMarker("CHARGING_API_FAILURE");
+
+    Marker EXTERNAL_ELIGIBILITY_FAILURE = MarkerFactory.getMarker("EXTERNAL_ELIGIBILITY_FAILURE");
 
 }

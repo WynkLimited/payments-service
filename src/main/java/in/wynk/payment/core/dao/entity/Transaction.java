@@ -91,7 +91,7 @@ public class Transaction {
         return id;
     }
 
-    public PaymentCode getPaymentChannel() {
+    public PaymentGateway getPaymentChannel() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentChannel);
     }
 

@@ -34,6 +34,7 @@ public class PaymentErrorEvent {
         private final String transactionId;
         private String code;
         private String description;
+        private String clientAlias;
 
         private Builder(String transactionId) {
             this.transactionId = transactionId;
@@ -50,6 +51,11 @@ public class PaymentErrorEvent {
 
         public Builder description(String description) {
             this.description = description;
+            return this;
+        }
+
+        public Builder clientAlias(String clientAlias) {
+            this.clientAlias = clientAlias;
             return this;
         }
     }

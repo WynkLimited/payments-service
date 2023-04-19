@@ -1,7 +1,6 @@
 package in.wynk.payment.core.constant;
 
 import in.wynk.common.constant.BaseConstants;
-import io.vavr.collection.Array;
 
 import java.util.Arrays;
 import java.util.List;
@@ -9,27 +8,17 @@ import java.util.List;
 public interface PaymentConstants extends BaseConstants {
 
     String SKU_ID = "skuId";
-
     String SAVED = "SAVED";
-
-    String INTENT = "INTENT";
-
-    String UPI = "UPI";
-    String CARD = "CARD";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
     String ERROR = "error";
-    String WALLET = "WALLET";
-    String SUBSID = "subsId";
-    String STATUS = "status";
+    String VERSION_2 = "V2";
     String FAILED = "failed";
     String QUEUED = "queued";
     String PROD_ENV = "PROD";
     String ITUNES = "ITUNES";
     String MERCHANT_ID = "id";
     String FAILURE = "failure";
-    String AUTO_REFUND = "autoRefund";
-    String RENEWAL = "renewal";
     String REQUEST = "request";
     String PENDING = "pending";
     String SUCCESS = "success";
@@ -41,47 +30,36 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_TOKEN = "token";
     String SE_BILLING = "SE_BILLING";
     String AMAZON_IAP = "AMAZON_IAP";
-    String GOOGLE_IAP ="GOOGLE_IAP";
+    String GOOGLE_IAP = "GOOGLE_IAP";
     String SUBTITLE_TEXT = "subtitle";
     String BUTTON_TEXT = "buttonText";
     String MERCHANT_SECRET = "secret";
     String APB_GATEWAY = "APB_GATEWAY";
+    String DEFAULT_PN = "Wynk Limited";
     String ADD_TO_BILL = "ADD_TO_BILL";
-    String SEAMLESS = "SEAMLESS";
-    String NON_SEAMLESS = "NON_SEAMLESS";
-    String DEFAULT_COUNTRY_CODE = "IN";
-    String DEBIT_CARD = "DEBIT_CARD";
+    String APP_PACKAGE = "package_name";
     String APP_NAME = "APP_NAME";
     String BASE_USER_EMAIL = "@wynk.in";
-    String CREDIT_CARD = "CREDIT_CARD";
-    String NET_BANKING = "NET_BANKING";
     String PAYMENT_CODE = "paymentCode";
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
-    String PAYTM_WALLET = "PAYTM_WALLET";
-    String WALLET_USER_ID = "walletUserId";
     String MERCHANT_CLIENT_ID = "clientId";
-    String GOOGLE_WALLET = "GOOGLE_WALLET";
-    String CLIENT_ALIAS = "client";
     String PAYMENT_METHOD = "paymentMethod";
-    String TDR ="tdr";
+    String TDR = "tdr";
     String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
-    String PHONEPE_WALLET = "PHONEPE_WALLET";
     String PAYMENT_API_CLIENT = "paymentApi";
-    String AIRTEL_PAY_STACK = "aps";
-    String APS = "APS";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
     String ATTEMPT_SEQUENCE = "attemptSequence";
     String WINBACK_CAMPAIGN = "winback_campaign";
-    String APB_PAYTM_WALLET = "APB_PAYTM_WALLET";
     String PHONEPE_AUTO_DEBIT = "PHONEPE_AUTO_DEBIT";
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
     String PAYMENT_DETAILS_KEY = "PAYMENT_DETAILS_KEY:";
     String MERCHANT_TRANSACTION = "merchantTransaction";
     String PAYMENT_PAGE_PLACE_HOLDER = "${payment.%c.%p.page}";
+    String PAYMENT_PAGE_PLACE_HOLDER_V2 = "${payment.%c.%p.v2.page}";
     String ORIGINAL_TRANSACTION_ID = "ORIGINAL_TRANSACTION_ID";
     String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
@@ -93,4 +71,6 @@ public interface PaymentConstants extends BaseConstants {
 
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
+    String CONTENT_TYPE = "Content-Type";
+    String CURRENCY_INR="INR";
 }

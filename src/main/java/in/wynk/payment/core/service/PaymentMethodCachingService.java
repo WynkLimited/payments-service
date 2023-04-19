@@ -69,6 +69,17 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
         return delegate.get(cacheBean).get(key);
     }
 
+    public PaymentMethod getByAlias(String alias) {
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentMethodDao.class.getName();
+        return ((PaymentMethodClientCaching) delegate.get(cacheBean)).getByAlias(alias);
+    }
+
+    public boolean containsByAlias(String alias) {
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentMethodDao.class.getName();
+        return ((PaymentMethodClientCaching) delegate.get(cacheBean)).containsByAlias(alias);
+    }
+
+
     @Override
     public PaymentMethod save(PaymentMethod method) {
         final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IPaymentMethodDao.class.getName();
@@ -97,6 +108,7 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
     private static class PaymentMethodClientCaching  implements IEntityCacheService<PaymentMethod, String> {
 
         private final Map<String, PaymentMethod> paymentMethodMap = new ConcurrentHashMap<>();
+        private final Map<String, String> aliasToIdMap = new ConcurrentHashMap<>();
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
         private final Lock writeLock = lock.writeLock();
         private final IPaymentMethodDao dao;
@@ -113,8 +125,11 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
             if (CollectionUtils.isNotEmpty(allMethods) && writeLock.tryLock()) {
                 try {
                     Map<String, PaymentMethod> temp = allMethods.stream().collect(Collectors.toMap(PaymentMethod::getId, Function.identity()));
+                    Map<String, String> aliasToIdsLocal =temp.values().stream().collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1));
+                    aliasToIdMap.clear();
                     paymentMethodMap.clear();
                     paymentMethodMap.putAll(temp);
+                    aliasToIdMap.putAll(aliasToIdsLocal);
                 } catch (Throwable th) {
                     log.error(APPLICATION_ERROR, "Exception occurred while refreshing paymentMethod cache. Exception: {}", th.getMessage(), th);
                     throw th;
@@ -132,6 +147,16 @@ public class PaymentMethodCachingService implements IEntityCacheService<PaymentM
         @Override
         public PaymentMethod get(String key) {
             return paymentMethodMap.get(key);
+        }
+
+        public PaymentMethod getByAlias(String alias) {
+            final String id = aliasToIdMap.getOrDefault(alias, alias);
+            return get(id);
+        }
+
+        public boolean containsByAlias(String alias) {
+            final String id = aliasToIdMap.getOrDefault(alias, alias);
+            return containsKey(id);
         }
 
         @Override

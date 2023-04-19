@@ -9,7 +9,7 @@ import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.data.enums.State;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.repository.IPaymentCodeDao;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,19 +42,19 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @Slf4j
 @RequiredArgsConstructor
 @Service(value = PAYMENT_CODE)
-public class PaymentCodeCachingService implements IEntityCacheService<PaymentCode, String> {
+public class PaymentCodeCachingService implements IEntityCacheService<PaymentGateway, String> {
 
     private final ApplicationContext context;
-    private final Map<String, IEntityCacheService<PaymentCode, String>> delegate = new HashMap<>();
+    private final Map<String, IEntityCacheService<PaymentGateway, String>> delegate = new HashMap<>();
 
-    public static PaymentCode getFromCode(String codeStr) {
-        for (PaymentCode paymentCode : (BeanLocatorFactory.getBean(PaymentCodeCachingService.class)).getAll())
-            if (StringUtils.equalsIgnoreCase(codeStr, paymentCode.getCode())) return paymentCode;
+    public static PaymentGateway getFromCode(String codeStr) {
+        for (PaymentGateway paymentGateway : (BeanLocatorFactory.getBean(PaymentCodeCachingService.class)).getAll())
+            if (StringUtils.equalsIgnoreCase(codeStr, paymentGateway.getCode())) return paymentGateway;
         throw new WynkRuntimeException(PaymentErrorType.PAY001);
     }
 
-    public static PaymentCode getFromPaymentCode(String paymentCode) {
-        for (PaymentCode code : (BeanLocatorFactory.getBean(PaymentCodeCachingService.class)).getAll())
+    public static PaymentGateway getFromPaymentCode(String paymentCode) {
+        for (PaymentGateway code : (BeanLocatorFactory.getBean(PaymentCodeCachingService.class)).getAll())
             if (StringUtils.equalsIgnoreCase(paymentCode, code.getId())) return code;
         throw new WynkRuntimeException(PaymentErrorType.PAY001);
     }
@@ -71,19 +71,19 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
     }
 
     @Override
-    public PaymentCode get(String key) {
+    public PaymentGateway get(String key) {
         final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).get(key);
     }
 
     @Override
-    public PaymentCode save(PaymentCode item) {
+    public PaymentGateway save(PaymentGateway item) {
         final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).save(item);
     }
 
     @Override
-    public Collection<PaymentCode> getAll() {
+    public Collection<PaymentGateway> getAll() {
         final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).getAll();
     }
@@ -95,7 +95,7 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
     }
 
     @Override
-    public Collection<PaymentCode> getAllByState(State state) {
+    public Collection<PaymentGateway> getAllByState(State state) {
         final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT) + COLON + IPaymentCodeDao.class.getName();
         return delegate.get(cacheBean).getAllByState(state);
     }
@@ -110,9 +110,9 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
     }
 
     @RequiredArgsConstructor
-    private static class PaymentCodeClientCaching implements IEntityCacheService<PaymentCode, String> {
+    private static class PaymentCodeClientCaching implements IEntityCacheService<PaymentGateway, String> {
 
-        private final Map<String, PaymentCode> paymentCodeMap = new ConcurrentHashMap<>();
+        private final Map<String, PaymentGateway> paymentCodeMap = new ConcurrentHashMap<>();
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
         private final Lock writeLock = lock.writeLock();
         private final IPaymentCodeDao dao;
@@ -125,10 +125,10 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
         }
 
         private void load() {
-            Collection<PaymentCode> paymentCodeCollection = this.getAllByState(State.ACTIVE);
-            if (CollectionUtils.isNotEmpty(paymentCodeCollection) && writeLock.tryLock()) {
+            Collection<PaymentGateway> paymentGatewayCollection = this.getAllByState(State.ACTIVE);
+            if (CollectionUtils.isNotEmpty(paymentGatewayCollection) && writeLock.tryLock()) {
                 try {
-                    Map<String, PaymentCode> temp = paymentCodeCollection.stream().collect(Collectors.toMap(PaymentCode::getId, Function.identity()));
+                    Map<String, PaymentGateway> temp = paymentGatewayCollection.stream().collect(Collectors.toMap(PaymentGateway::getId, Function.identity()));
                     paymentCodeMap.clear();
                     paymentCodeMap.putAll(temp);
                 } catch (Throwable th) {
@@ -141,17 +141,17 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
         }
 
         @Override
-        public PaymentCode get(String key) {
+        public PaymentGateway get(String key) {
             return paymentCodeMap.get(key);
         }
 
         @Override
-        public PaymentCode save(PaymentCode item) {
+        public PaymentGateway save(PaymentGateway item) {
             return dao.save(item);
         }
 
         @Override
-        public Collection<PaymentCode> getAll() {
+        public Collection<PaymentGateway> getAll() {
             return paymentCodeMap.values();
         }
 
@@ -161,7 +161,7 @@ public class PaymentCodeCachingService implements IEntityCacheService<PaymentCod
         }
 
         @Override
-        public Collection<PaymentCode> getAllByState(State state) {
+        public Collection<PaymentGateway> getAllByState(State state) {
             return dao.findAllByState(state);
         }
     }

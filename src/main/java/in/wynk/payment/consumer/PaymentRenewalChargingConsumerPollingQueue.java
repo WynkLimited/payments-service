@@ -80,7 +80,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
                 .msisdn(message.getMsisdn())
                 .attemptSequence(message.getAttemptSequence())
                 .clientAlias(message.getClientAlias())
-                .paymentCode(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
+                .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
                 .build());
     }
 

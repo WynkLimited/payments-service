@@ -13,15 +13,13 @@ import in.wynk.common.utils.Utils;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.SavedDetailsKey;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.phonepe.PhonePeResponse;
@@ -39,7 +37,6 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.DiscountUtils;
 import in.wynk.payment.utils.PropertyResolverUtils;
-import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -62,6 +59,7 @@ import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.common.constant.BaseConstants.SLASH;
 import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
 import static in.wynk.payment.core.constant.BeanConstant.PHONEPE_MERCHANT_PAYMENT_AUTO_DEBIT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
@@ -479,7 +477,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
             String xVerifyHeader = DigestUtils.sha256Hex(apiPath + salt) + X_VERIFY_SUFFIX;
             HttpHeaders headers = new HttpHeaders();
             headers.add(X_VERIFY, xVerifyHeader);
-            headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+            headers.add(PaymentConstants.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
             merchantTransactionEventBuilder.request(entity);
             ResponseEntity<PhonePeResponse<PhonePeTransactionResponseWrapper>> responseEntity = restTemplate.exchange(phonePeBaseUrl + apiPath, HttpMethod.GET, entity, new ParameterizedTypeReference<PhonePeResponse<PhonePeTransactionResponseWrapper>>() {
@@ -589,7 +587,7 @@ public class PhonePeWalletAutoDebitService extends AbstractMerchantPaymentStatus
         HttpHeaders headers = new HttpHeaders();
         headers.add(X_DEVICE_ID, deviceId);
         headers.add(X_VERIFY, xVerifyHeader);
-        headers.add(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.add(PaymentConstants.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         return new HttpEntity<>(requestMap, headers);
     }
 

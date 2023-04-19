@@ -22,7 +22,7 @@ public class PayUUpiIntentInitResponse extends AbstractPayUUpiResponse<PayUUpiIn
 
     @Getter
     @NoArgsConstructor
-    protected final class IntentResult extends AbstractPayUUpiResponse.Result {
+    public final class IntentResult extends AbstractPayUUpiResponse.Result {
         private String amount;
         private String paymentId;
         private String merchantVpa;

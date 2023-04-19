@@ -4,10 +4,12 @@ import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.PaymentGroup;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.SavedDetailsKey;
+import in.wynk.payment.core.dao.entity.UserPreferredPayment;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
-import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.gpbs.GooglePlayConstant;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
@@ -123,13 +125,15 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             List<PaymentMethodDTO> methodDTOS =
-                    availableMethods.get(group.getId()).stream().filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
+                    availableMethods.get(group.getId()).stream()
+                            .filter(paymentMethod -> !paymentMethod.getPaymentCode().getCode().equals("aps"))
+                            .filter(filterPredicate).map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             if (!CollectionUtils.isEmpty(methodDTOS)) {
                 PaymentOptionsDTO.PaymentGroupsDTO groupsDTO =
                         PaymentOptionsDTO.PaymentGroupsDTO.builder().paymentMethods(methodDTOS).paymentGroup(group.getId()).displayName(group.getDisplayName()).hierarchy(group.getHierarchy()).build();
                 if (GooglePlayConstant.BILLING.equalsIgnoreCase(groupsDTO.getPaymentGroup())) {
                     String os = SessionContextHolder.<SessionDTO>getBody().get(OS);
-                    if (os.equalsIgnoreCase(ANDROID)&& !CollectionUtils.isEmpty(planDTO.getSku())) {
+                    if (os.equalsIgnoreCase(ANDROID) && !CollectionUtils.isEmpty(planDTO.getSku())) {
                         paymentGroupsDTOS.add(groupsDTO);
                     }
                 } else {

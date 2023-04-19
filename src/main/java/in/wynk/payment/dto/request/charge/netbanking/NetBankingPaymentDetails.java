@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
 
 @Getter
 @SuperBuilder
@@ -21,6 +22,6 @@ public class NetBankingPaymentDetails extends AbstractPaymentDetails {
 
     @Override
     public String getPaymentMode() {
-        return PaymentConstants.NET_BANKING;
+        return NET_BANKING;
     }
 }

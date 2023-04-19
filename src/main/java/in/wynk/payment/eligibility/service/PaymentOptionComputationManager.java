@@ -36,7 +36,7 @@ public class PaymentOptionComputationManager<R extends PaymentOptionsComputation
     public PaymentOptionsComputationResponse compute(PaymentOptionsEligibilityRequest request) {
         final String group = request.getGroup();
         final List<PaymentMethod> paymentMethodsInGroup = cachingService.getGroupedPaymentMethods().get(group);
-        final List<EligibilityResult<PaymentMethod>> eligibilityResults = paymentMethodsInGroup.stream().map(paymentMethod -> (AbstractEligibilityEvaluation<PaymentMethod, T>)((request instanceof PaymentOptionsPlanEligibilityRequest)?PaymentMethodsPlanEligibilityEvaluation.builder().root(request).entity(paymentMethod).build():PaymentMethodsItemEligibilityEvaluation.builder().root(request).entity(paymentMethod).build())).map(this::evaluate).collect(Collectors.toList());
+        final List<EligibilityResult<PaymentMethod>> eligibilityResults = paymentMethodsInGroup.stream().map(paymentMethod -> (AbstractEligibilityEvaluation<PaymentMethod, T>)((request instanceof PaymentOptionsPlanEligibilityRequest)?PaymentMethodsPlanEligibilityEvaluation.builder().root((PaymentOptionsPlanEligibilityRequest) request).entity(paymentMethod).build():PaymentMethodsItemEligibilityEvaluation.builder().root(request).entity(paymentMethod).build())).map(this::evaluate).collect(Collectors.toList());
         final Set<PaymentMethod> eligiblePaymentMethods = eligibilityResults.stream().filter(EligibilityResult::isEligible).map(EligibilityResult::getEntity).collect(Collectors.toSet());
         return PaymentOptionsComputationResponse.builder().paymentMethods(eligiblePaymentMethods).build();
     }

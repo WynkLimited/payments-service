@@ -3,8 +3,7 @@ package in.wynk.payment.dto.amazonIap;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import lombok.Getter;
@@ -31,7 +30,7 @@ public class AmazonIapVerificationRequest extends IapVerificationRequest {
     private UserData userData;
 
     @Override
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(AMAZON_IAP);
     }
 

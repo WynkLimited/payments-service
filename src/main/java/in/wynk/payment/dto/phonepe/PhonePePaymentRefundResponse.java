@@ -2,13 +2,13 @@ package in.wynk.payment.dto.phonepe;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
-import static in.wynk.payment.core.constant.PaymentConstants.PHONEPE_WALLET;
+import static in.wynk.payment.constant.WalletConstants.PHONEPE_WALLET;
 
 @Getter
 @SuperBuilder
@@ -19,7 +19,7 @@ public class PhonePePaymentRefundResponse extends AbstractPaymentRefundResponse 
     private final String providerReferenceId;
 
     @Override
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(PHONEPE_WALLET);
     }
 

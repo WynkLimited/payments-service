@@ -52,7 +52,7 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     @Analysed
     private String paymentCode;
 
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 

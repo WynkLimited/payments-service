@@ -221,8 +221,10 @@ payment:
   merchant:
     ####### payu props #########
     aps:
+      salt: 4O6goRqeKvs=
+      secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
-        base: https://kongqa.airtel.com/preprod-236
+        base: http://intpay.india.airtel.itm
       encryption:
         key: classpath:/cryptography/aps/public.key
       airtelxstream:
@@ -1108,7 +1110,7 @@ wynk:
 ######## lib-auth props #######
 security:
   exempt:
-    paths: /wynk/v1/**,/wynk/v2/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
+    paths: /wynk/v1/**,/wynk/v2/**,/wynk/v3/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
 
 cache:
   caffeine:

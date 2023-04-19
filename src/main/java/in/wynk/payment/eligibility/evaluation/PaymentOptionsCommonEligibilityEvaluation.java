@@ -253,25 +253,4 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         }
     }
 
-    public boolean isExternalEligible() {
-        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
-        try {
-            final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
-            if (StringUtils.isBlank(root.getSi())) {
-                resultBuilder.reason(CommonEligibilityStatusReason.SI_REQUIRED);
-            } else {
-                final boolean isExternalEligible = BeanLocatorFactory.getBean(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE, new ParameterizedTypeReference<IExternalPaymentEligibilityService>() {
-                }).isEligible(root);
-                if (isExternalEligible) {
-                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
-                } else {
-                    resultBuilder.reason(CommonEligibilityStatusReason.NOT_ELIGIBLE_FOR_ADDTOBILL);
-                }
-            }
-            return resultBuilder.build().isEligible();
-        } finally {
-            result = resultBuilder.build();
-        }
-    }
-
 }

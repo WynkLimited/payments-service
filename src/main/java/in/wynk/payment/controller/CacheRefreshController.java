@@ -5,6 +5,7 @@ import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.error.codes.core.service.impl.ErrorCodesCacheServiceImpl;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.service.ItemDtoCachingService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -27,6 +28,7 @@ public class CacheRefreshController {
 
     private final OsCachingService osCachingService;
     private final AppIdCachingService appIdCachingService;
+    private final PaymentGroupCachingService payGroupCache;
     private final CouponCachingService couponCachingService;
     private final PlanDtoCachingService planDtoCachingService;
     private final ItemDtoCachingService itemDtoCachingService;
@@ -41,6 +43,7 @@ public class CacheRefreshController {
     @GetMapping("/cache/refresh")
     public void refreshCache() {
         LoadClientUtils.loadClient(true);
+        payGroupCache.init();
         osCachingService.init();
         appIdCachingService.init();
         couponCachingService.init();

@@ -174,7 +174,7 @@ public class SeRenewalService {
                             .msisdn(msisdn)
                             .id(extTransactionId)
                             .planId(planDTO.getId())
-                            .paymentCode(PaymentCodeCachingService.getFromPaymentCode(SE_BILLING))
+                            .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(SE_BILLING))
                             .clientAlias(wynkApplicationContext.getClientAlias())
                             .build();
                     paymentManager.doRenewal(request);

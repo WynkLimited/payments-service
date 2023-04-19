@@ -13,12 +13,12 @@ import in.wynk.common.utils.WynkResponseUtils;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.apb.paytm.*;
@@ -30,7 +30,6 @@ import in.wynk.payment.dto.response.phonepe.auto.AutoDebitWalletCallbackResponse
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.DiscountUtils;
 import in.wynk.payment.utils.PropertyResolverUtils;
-import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,8 +49,8 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.payment.core.constant.PaymentConstants.MERCHANT_TOKEN;
-import static in.wynk.payment.core.constant.PaymentConstants.WALLET;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
 import static in.wynk.payment.dto.apb.paytm.APBPaytmConstants.*;
 
 @Slf4j

@@ -55,7 +55,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     }
 
     @Override
-    public void start() {
+    public void start () {
         if (renewalPollingEnabled) {
             log.info("Starting PaymentRenewalConsumerPollingQueue...");
             pollingThreadPool.scheduleWithFixedDelay(

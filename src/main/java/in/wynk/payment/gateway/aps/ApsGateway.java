@@ -1,0 +1,159 @@
+package in.wynk.payment.gateway.aps;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import in.wynk.cache.aspect.advice.CacheEvict;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
+import in.wynk.payment.dto.ApsPaymentRefundRequest;
+import in.wynk.payment.dto.ApsPaymentRefundResponse;
+import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.aps.common.ApsConstant;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
+import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
+import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
+import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
+import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
+import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
+import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
+import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
+import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
+import in.wynk.payment.gateway.*;
+import in.wynk.payment.gateway.aps.service.*;
+import in.wynk.payment.service.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
+
+import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
+
+@Slf4j
+@Service(ApsConstant.AIRTEL_PAY_STACK)
+public class ApsGateway implements
+        IPreDebitNotificationService,
+        IExternalPaymentEligibilityService,
+        IPaymentRenewal<PaymentRenewalChargingRequest>,
+        IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>,
+        IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest>,
+        IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>,
+        IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>,
+        IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
+        IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
+        IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>,
+        IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> {
+
+    private final IExternalPaymentEligibilityService eligibilityGateway;
+    private final ApsPreDebitNotificationGatewayServiceImpl preDebitGateway;
+    private final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
+
+    private final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
+    private final IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest> payOptionsGateway;
+    private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
+    private final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusGateway;
+    private final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargeGateway;
+    private final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
+    private final IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> settlementGateway;
+    private final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteGateway;
+
+    public ApsGateway(@Value("${payment.merchant.aps.salt}") String salt,
+                      @Value("${payment.merchant.aps.secret}") String secret,
+                      @Value("${aps.payment.renewal.api}") String siPaymentApi,
+                      @Value("${aps.payment.option.api}") String payOptionEndpoint,
+                      @Value("${aps.payment.delete.vpa}") String deleteVpaEndpoint,
+                      @Value("${aps.payment.predebit.api}") String preDebitEndpoint,
+                      @Value("${aps.payment.init.refund.api}") String refundEndpoint,
+                      @Value("${aps.payment.delete.card}") String deleteCardEndpoint,
+                      @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
+                      @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint,
+                      @Value("${aps.payment.init.charge.api}") String commonChargeEndpoint,
+                      @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint,
+                      @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
+                      ObjectMapper mapper,
+                      ApsCommonGatewayService commonGateway,
+                      PaymentCachingService payCache,
+                      PaymentMethodCachingService cache,
+                      ApplicationEventPublisher eventPublisher,
+                      ITransactionManagerService transactionManager,
+                      IMerchantTransactionService merchantTransactionService,
+                      @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
+        this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
+        this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
+        this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
+        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper);
+        this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
+        this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, payCache);
+        this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
+        this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
+        this.preDebitGateway = new ApsPreDebitNotificationGatewayServiceImpl(preDebitEndpoint, transactionManager, commonGateway);
+        this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
+        this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, payCache, merchantTransactionService, eventPublisher);
+    }
+
+    @Override
+    public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
+        return callbackGateway.parse(payload);
+    }
+
+    @Override
+    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
+        return callbackGateway.handle(callbackRequest);
+    }
+
+    @Override
+    public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
+        return chargeGateway.charge(request);
+    }
+
+    @Override
+    public ApsPaymentRefundResponse doRefund(ApsPaymentRefundRequest request) {
+        return refundGateway.doRefund(request);
+    }
+
+    @Override
+    public void renew(PaymentRenewalChargingRequest request) {
+        renewalGateway.renew(request);
+    }
+
+    @Override
+    @CacheEvict(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#request.getMsisdn()", cacheManager = L2CACHE_MANAGER)
+    public AbstractPaymentAccountDeletionResponse delete(AbstractPaymentAccountDeletionRequest request) {
+        return deleteGateway.delete(request);
+    }
+
+    @Override
+    public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
+        return statusGateway.reconcile(request);
+    }
+
+    @Override
+    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage request) {
+        return preDebitGateway.notify(request);
+    }
+
+    @Override
+    public AbstractVerificationResponse verify(AbstractVerificationRequest request) {
+        return verificationGateway.verify(request);
+    }
+
+    @Override
+    public DefaultPaymentSettlementResponse settle(ApsGatewaySettlementRequest request) {
+        return settlementGateway.settle(request);
+    }
+
+    @Override
+    public AbstractPaymentInstrumentsProxy<?, ?> load(PaymentOptionsPlanEligibilityRequest request) {
+        return payOptionsGateway.load(request);
+    }
+
+    @Override
+    public boolean isEligible(PaymentMethod entity, PaymentOptionsPlanEligibilityRequest request) {
+        return eligibilityGateway.isEligible(entity, request);
+    }
+
+}

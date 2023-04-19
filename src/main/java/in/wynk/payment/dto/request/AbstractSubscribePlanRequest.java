@@ -6,7 +6,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.subscription.common.request.TriggerDataRequest;
 import lombok.Getter;
@@ -25,7 +25,7 @@ public class AbstractSubscribePlanRequest implements IObjectMapper {
     private final String subscriberId;
     private final String transactionId;
 
-    private final PaymentCode paymentCode;
+    private final PaymentGateway paymentGateway;
     private final PaymentEvent paymentEvent;
     private final TransactionStatus transactionStatus;
 

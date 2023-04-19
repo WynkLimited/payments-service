@@ -9,4 +9,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class FreshCardPaymentInfo extends AbstractCardPaymentInfo {
     private String cardDetails;
+    private boolean favouriteCard;
+    private boolean tokenizeConsent;
+    private boolean saveCard;
 }

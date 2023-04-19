@@ -97,15 +97,15 @@ public class PaymentManager
     @Override
     public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> request) {
         BeanLocatorFactory.getBean(CHARGING_FRAUD_DETECTION_CHAIN, IHandler.class).handle(request);
-        final PaymentCode paymentCode = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
+        final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()), request.getPurchaseDetails());
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>> chargingService =
-                BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>>() {
+                BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IMerchantPaymentChargingService<AbstractChargingResponse, AbstractChargingRequest<?>>>() {
                 });
         try {
             final WynkResponseEntity<AbstractChargingResponse> response = chargingService.charge(request);
-            if (paymentCode.isPreDebit()) {
+            if (paymentGateway.isPreDebit()) {
                 final WynkResponseEntity.WynkBaseResponse<?, ?> body = response.getBody();
                 if (Objects.nonNull(body) && !body.isSuccess()) {
                     final AbstractErrorDetails errorDetails = (AbstractErrorDetails) body.getError();
@@ -131,16 +131,16 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequestWrapper<?> request) {
-        final PaymentCode paymentCode = request.getPaymentCode();
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
+        final PaymentGateway paymentGateway = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         final IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest> callbackService =
-                BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>>() {
+                BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IMerchantPaymentCallbackService<AbstractCallbackResponse, CallbackRequest>>() {
                 });
         try {
             final WynkResponseEntity<AbstractCallbackResponse> response = callbackService.handleCallback(request.getBody());
-            if (paymentCode.isPreDebit()) {
+            if (paymentGateway.isPreDebit()) {
                 final WynkResponseEntity.WynkBaseResponse<?, ?> body = response.getBody();
                 if (Objects.nonNull(body) && !body.isSuccess()) {
                     final AbstractErrorDetails errorDetails = (AbstractErrorDetails) body.getError();
@@ -163,7 +163,7 @@ public class PaymentManager
     @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
         final IReceiptDetailService<?, IAPNotification> receiptDetailService =
-                BeanLocatorFactory.getBean(request.getPaymentCode().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
+                BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
                 });
         DecodedNotificationWrapper<IAPNotification> wrapper = receiptDetailService.isNotificationEligible(request.getPayload());
         AnalyticService.update(wrapper.getDecodedNotification());
@@ -172,7 +172,7 @@ public class PaymentManager
             if (mapping != null) {
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentCode(request.getPaymentCode())
+                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
                                 .clientAlias(request.getClientAlias()).build());
                 transactionInitRequest.setEvent(event);
                 final Transaction transaction = transactionManager.init(transactionInitRequest);
@@ -265,9 +265,9 @@ public class PaymentManager
     }
 
     @ClientAware(clientId = "#clientId")
-    public BaseResponse<?> doVerifyIap(String clientId, IapVerificationRequest request) {
-        final PaymentCode paymentCode = request.getPaymentCode();
-        final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentCode.getCode(), IMerchantIapPaymentVerificationService.class);
+    public BaseResponse<?> doVerifyIap (String clientId, IapVerificationRequest request) {
+        final PaymentGateway paymentGateway = request.getPaymentGateway();
+        final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
         BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, request, null));
         final AbstractTransactionInitRequest transactionInitRequest =
@@ -336,7 +336,7 @@ public class PaymentManager
                     .productDetails(googleRequest.getProductDetails())
                     .appDetails(googleRequest.getAppDetails())
                     .paymentDetails(googleRequest.getPaymentDetails())
-                    .paymentCode(request.getPaymentCode())
+                    .paymentGateway(request.getPaymentCode())
                     .build();
         }
         return null;
@@ -345,7 +345,7 @@ public class PaymentManager
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentCode(request.getPaymentCode()).clientAlias(request.getClientAlias())
+                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
                         .build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -383,20 +383,20 @@ public class PaymentManager
 
     public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> request) {
         BeanLocatorFactory.getBean(CHARGING_FRAUD_DETECTION_CHAIN, IHandler.class).handle(request);
-        final PaymentCode paymentCode = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
+        final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()));
         sqsManagerService.publishSQSMessage(
                 PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType())
                         .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
-        return BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {
+        return BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {
         }).topUp(request);
     }
 
     private WynkResponseEntity<AbstractChargingStatusResponse> internalStatus(AbstractTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
-        final PaymentCode paymentCode = transaction.getPaymentChannel();
+        final PaymentGateway paymentGateway = transaction.getPaymentChannel();
         final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService =
-                BeanLocatorFactory.getBean(paymentCode.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
+                BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
                 });
         request.setPlanId(
                 transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
@@ -432,8 +432,8 @@ public class PaymentManager
         final Transaction transaction = TransactionContext.get();
         final String pgId = merchantTransactionService.getPartnerReferenceId(request.getTid());
         return BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
-                new ParameterizedTypeReference<IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, PaymentGatewaySettlementRequest>>() {
-                }).settle(PaymentGatewaySettlementRequest.builder().pgId(pgId).tid(transaction.getIdStr()).build());
+                new ParameterizedTypeReference<IMerchantPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>>() {
+                }).settle(ApsGatewaySettlementRequest.builder().pgId(pgId).tid(transaction.getIdStr()).build());
     }
 
     @Override
@@ -447,14 +447,14 @@ public class PaymentManager
     @Override
     public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
-                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 
     @Override
     public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
-                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.publishAsync(abstractPaymentAcknowledgementRequest);
     }
 }

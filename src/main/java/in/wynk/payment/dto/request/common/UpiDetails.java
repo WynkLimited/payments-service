@@ -9,8 +9,9 @@ import java.io.Serializable;
 @Getter
 @AnalysedEntity
 public class UpiDetails implements Serializable {
-    @Analysed
+
     private String vpa;
+
     @Analysed
     private boolean intent;
 }

@@ -21,6 +21,11 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
+import static in.wynk.payment.constant.UpiConstants.*;
+import static in.wynk.payment.constant.CardConstants.CARD;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
+
 import javax.validation.constraints.NotNull;
 
 @Getter
@@ -28,10 +33,10 @@ import javax.validation.constraints.NotNull;
 @AnalysedEntity
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = UpiPaymentDetails.class, name =  PaymentConstants.UPI),
-        @JsonSubTypes.Type(value = CardPaymentDetails.class, name = PaymentConstants.CARD),
-        @JsonSubTypes.Type(value = WalletPaymentDetails.class, name = PaymentConstants.WALLET),
-        @JsonSubTypes.Type(value = NetBankingPaymentDetails.class, name =  PaymentConstants.NET_BANKING)
+        @JsonSubTypes.Type(value = UpiPaymentDetails.class, name =  UPI),
+        @JsonSubTypes.Type(value = CardPaymentDetails.class, name = CARD),
+        @JsonSubTypes.Type(value = WalletPaymentDetails.class, name = WALLET),
+        @JsonSubTypes.Type(value = NetBankingPaymentDetails.class, name =  NET_BANKING)
 })
 public abstract class AbstractPaymentDetails implements IPaymentDetails {
 
@@ -73,5 +78,4 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
         return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         }).get(paymentId).isTrialSupported() && trialOpted;
     }
-
 }

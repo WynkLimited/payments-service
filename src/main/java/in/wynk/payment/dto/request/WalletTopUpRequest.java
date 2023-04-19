@@ -45,7 +45,7 @@ public class WalletTopUpRequest<T extends IPurchaseDetails> implements IPaymentM
     @Analysed
     private String paymentCode;
 
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
 

@@ -10,7 +10,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.NotificationRequest;
@@ -53,10 +53,10 @@ public class RevenueNotificationController {
     }
 
     private WynkResponseEntity<Void> getVoidWynkResponseEntity(String partner, String clientAlias, String payload) {
-        final PaymentCode paymentCode = PaymentCodeCachingService.getFromCode(partner);
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
+        final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
+        AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
-        if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentCode.name())) {
+        if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentGateway.name())) {
             try {
                 return handleCallback(partner, clientAlias, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
                 }));
@@ -64,7 +64,7 @@ public class RevenueNotificationController {
                 throw new WynkRuntimeException("Malformed payload is posted", e);
             }
         }
-        return paymentManager.handleNotification(NotificationRequest.builder().paymentCode(paymentCode).payload(payload).clientAlias(clientAlias).build());
+        return paymentManager.handleNotification(NotificationRequest.builder().paymentGateway(paymentGateway).payload(payload).clientAlias(clientAlias).build());
     }
 
     @AnalyseTransaction(name = "paymentCallback")
@@ -81,10 +81,10 @@ public class RevenueNotificationController {
 
     @ClientAware(clientAlias = "#clientAlias")
     private WynkResponseEntity<Void> handleCallback(String partner, String clientAlias, Map<String, Object> payload) {
-        final PaymentCode paymentCode = PaymentCodeCachingService.getFromCode(partner);
-        AnalyticService.update(PAYMENT_METHOD, paymentCode.name());
+        final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
+        AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));
-        paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentCode(paymentCode).payload(payload).build());
+        paymentManager.handleCallback(CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build());
         return WynkResponseEntity.<Void>builder().success(true).build();
     }
 

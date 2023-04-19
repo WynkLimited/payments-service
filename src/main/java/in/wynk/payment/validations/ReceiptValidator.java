@@ -7,7 +7,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
@@ -39,7 +39,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
 
     @Override
     public void handle(IReceiptValidatorRequest<LatestReceiptResponse> request) {
-        final PaymentCode code = request.getPaymentCode();
+        final PaymentGateway code = request.getPaymentCode();
         delegate.get(code.getId()).handle(request);
     }
 

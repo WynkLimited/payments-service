@@ -2,7 +2,8 @@ package in.wynk.payment.dto.payu;
 
 public interface PayUConstants {
 
-    String GENERIC_CALLBACK = "genericCallback";
+    String GENERIC_CALLBACK_ACTION = "generic";
+    String REFUND_CALLBACK_ACTION = "refund";
     String PAYU_PG = "pg";
     String PAYU_SI = "SI";
     String PAYU_UPI = "UPI";
@@ -37,6 +38,8 @@ public interface PayUConstants {
     String PAYU_PAYMENT_SOURCE_SIST = "sist";
     String PAYU_TRANSACTION_AMOUNT = "amount";
     String PAYU_TXN_S2S_FLOW = "txn_s2s_flow";
+
+    String PAYU_TXN_S2S_FLOW_VALUE = "4";
     String PAYU_NETBANKING_MODE = "netbanking";
     String PAYU_STATUS_NOT_FOUND = "Not Found";
     String PAYU_CUSTOMER_FIRSTNAME = "firstname";
@@ -56,4 +59,12 @@ public interface PayUConstants {
     String PAYU_DECODED_S2S_RESPONSE = "decoded_s2s_response";
     String PAYU_INVOICE_DISPLAY_NUMBER = "invoiceDisplayNumber";
     String PAYU_MERCHANT_CODE = "5815";
+    String PAYU_STORE_CARD = "store_card";
+    String PAYU_CARD_EXP_MON = "ccexpmon";
+    String PAYU_CARD_EXP_YEAR = "ccexpyr";
+    String PAYU_CARD_NUM = "ccnum";
+    String PAYU_CARD_HOLDER_NAME = "ccname";
+    String PAYU_CARD_CVV = "ccvv";
+
+    String PAYU_PG_NET_BANKING_VALUE = "NB";
 }

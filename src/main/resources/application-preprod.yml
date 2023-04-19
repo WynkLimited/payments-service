@@ -216,10 +216,12 @@ payment:
   merchant:
     ####### payu props #########
     aps:
+      salt: 4O6goRqeKvs=
+      secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
-        base: https://paydigi.airtel.in
+        base: http://intpay.india.airtel.itm
       encryption:
-        key: classpath:/cryptography/aps/public.key
+        key: file:///opt/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr
@@ -1152,7 +1154,7 @@ lock:
 ######## lib-auth props #######
 security:
   exempt:
-    paths: /wynk/v1/**,/wynk/v2/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**
+    paths: /wynk/v1/**,/wynk/v2/**,/wynk/v3/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**
 
 event:
   stream:

@@ -2,7 +2,7 @@ package in.wynk.payment.dto.payu;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import lombok.Getter;
@@ -21,7 +21,7 @@ public class PayUPaymentRefundResponse extends AbstractPaymentRefundResponse {
     private final String authPayUId;
 
     @Override
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(PAYU);
     }
 

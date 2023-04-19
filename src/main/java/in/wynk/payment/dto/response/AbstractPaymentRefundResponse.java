@@ -5,7 +5,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -38,7 +38,7 @@ public abstract class AbstractPaymentRefundResponse {
     private final TransactionStatus transactionStatus;
 
     @Analysed
-    public abstract PaymentCode getPaymentCode();
+    public abstract PaymentGateway getPaymentGateway();
 
     public abstract String getExternalReferenceId();
 

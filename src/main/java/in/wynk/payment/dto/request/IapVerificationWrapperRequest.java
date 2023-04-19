@@ -4,7 +4,7 @@ import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
-import in.wynk.payment.core.dao.entity.PaymentCode;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.IapVerificationRequestV2;
 import in.wynk.payment.dto.PlanDetails;
@@ -49,9 +49,9 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     }
 
     @Override
-    public PaymentCode getPaymentCode() {
+    public PaymentGateway getPaymentCode() {
         if(iapVerificationRequest != null) {
-            return this.iapVerificationRequest.getPaymentCode();
+            return this.iapVerificationRequest.getPaymentGateway();
         }
         return this.iapVerificationRequestV2.getPaymentCode();
     }
@@ -69,7 +69,7 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     @Override
     public IAppDetails getAppDetails() {
         return AppDetails.builder()
-                .appId(StringUtils.isNotBlank(this.iapVerificationRequest.getAppId()) ? this.iapVerificationRequest.getAppId() : (this.iapVerificationRequest.getPaymentCode().getId().equalsIgnoreCase("ITUNES") ? "MOBILITY" : "FIRESTICK"))
+                .appId(StringUtils.isNotBlank(this.iapVerificationRequest.getAppId()) ? this.iapVerificationRequest.getAppId() : (this.iapVerificationRequest.getPaymentGateway().getId().equalsIgnoreCase("ITUNES") ? "MOBILITY" : "FIRESTICK"))
                 .deviceId(this.iapVerificationRequest.getDeviceId())
                 .buildNo(this.iapVerificationRequest.getBuildNo())
                 .service(this.iapVerificationRequest.getService())

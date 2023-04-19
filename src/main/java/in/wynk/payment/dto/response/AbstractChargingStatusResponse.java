@@ -11,7 +11,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
-public abstract class AbstractChargingStatusResponse {
+public abstract class AbstractChargingStatusResponse{
 
     private int planId;
     private String tid;

@@ -214,10 +214,12 @@ payment:
   merchant:
     ####### payu props #########
     aps:
+      salt: 4O6goRqeKvs=
+      secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
-        base: https://kongqa.airtel.com/preprod-236
+        base: https://kongqa.airtel.com/preprod-84
       encryption:
-        key: file:/data/logs/public.key
+        key: file:///opt/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr
@@ -1159,7 +1161,7 @@ lock:
 ######## lib-auth props #######
 security:
   exempt:
-    paths: /wynk/v1/**,/wynk/v2/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
+      paths: /wynk/v1/**,/wynk/v2/**,/wynk/v3/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**
 
 logging:
   profile: staging

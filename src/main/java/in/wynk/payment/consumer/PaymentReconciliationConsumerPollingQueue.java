@@ -6,18 +6,21 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.RenewalChargingTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
+import in.wynk.payment.dto.request.*;
+import in.wynk.payment.gateway.IPaymentStatus;
+import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,8 +37,9 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     private long reconciliationPoolingDelay;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delayTimeUnit}")
     private TimeUnit reconciliationPoolingDelayTimeUnit;
+
     @Autowired
-    private PaymentManager paymentManager;
+    private PaymentCodeCachingService codeCache;
 
     public PaymentReconciliationConsumerPollingQueue(String queueName,
                                                      AmazonSQS sqs,
@@ -73,7 +77,21 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                     .transactionId(message.getTransactionId())
                     .build();
         }
-        paymentManager.status(transactionStatusRequest);
+
+        final InnerPaymentStatusDelegator delegate = (AbstractTransactionStatusRequest) -> {
+            final boolean canSupportRecon = BeanLocatorFactory.containsBeanOfType(codeCache.get(message.getPaymentCode()).getCode(), new ParameterizedTypeReference<IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
+            });
+            if (canSupportRecon) BeanLocatorFactory.getBean(PaymentGatewayManager.class).reconcile(transactionStatusRequest);
+            else BeanLocatorFactory.getBean(PaymentManager.class).status(transactionStatusRequest);
+        };
+        delegate.reconcile(transactionStatusRequest);
+    }
+
+    /**
+    * TODO: Remove once you move all the gateway over new interfaces
+    */
+    private interface InnerPaymentStatusDelegator {
+        void reconcile(AbstractTransactionStatusRequest request);
     }
 
     @Override

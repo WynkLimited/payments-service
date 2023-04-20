@@ -49,6 +49,7 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.ATBOrderStatus.COMPLETED;
+import static in.wynk.payment.dto.addtobill.ATBOrderStatus.DEFERRED_COMPLETED;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
 
 @Slf4j
@@ -218,7 +219,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
-                        if (order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
+                        if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
+                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))) {
                             finalTransactionStatus = TransactionStatus.SUCCESS;
                             transaction.setStatus(finalTransactionStatus.getValue());
                             log.info("ATB order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
@@ -251,10 +253,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
-                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getSi()) && order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE)) {
-                        status = true;
-                        log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
-                        break;
+                    if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getSi())) {
+                        if((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
+                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))){
+                            status = true;
+                            log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
+                            break;
+                        }
                     } else if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getSi()) && order.getOrderStatus().equalsIgnoreCase(ATBOrderStatus.FAILED.name())) {
                         status = false;
                         log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} and service: {}", false, order.getSi(), order.getLoggedInSi(), order.getServiceId());

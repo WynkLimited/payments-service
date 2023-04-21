@@ -146,7 +146,7 @@ payment:
           producer:
             delayInSecond: 5
           consumer:
-            delay: 5
+            delay: 1
             delayTimeUnit: SECONDS
       renewal:
         enabled: true

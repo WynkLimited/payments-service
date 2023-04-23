@@ -65,7 +65,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
     @PostConstruct
     public void init() {
         delegate.put(UPI, new UpiChargingPresentation());
-        delegate.put(CARD, new CardChargingPresentation());
+        delegate.put(FlowType.CARD, new CardChargingPresentation());
         delegate.put(NET_BANKING, new NetBankingChargingPresentation());
         delegate.put(WALLET, new WalletChargingPresentation());
     }

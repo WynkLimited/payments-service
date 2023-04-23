@@ -71,7 +71,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
         this.PAYMENT_API = paymentApi;
         this.methodCache = methodCache;
         this.delegate.put(UPI, new PayUUpiCharging());
-        this.delegate.put(CARD, new PayUCardCharging());
+        this.delegate.put(FlowType.CARD, new PayUCardCharging());
         this.delegate.put(NET_BANKING, new PayUNetBankingCharging());
     }
 

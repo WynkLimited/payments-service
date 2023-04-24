@@ -184,7 +184,7 @@ public class PaymentGatewayManager
             return CallbackResponseWrapper.builder().callbackResponse(response).transaction(transaction).build();
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
-            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+            throw new PaymentRuntimeException(e.getErrorCode(), e.getMessage(), e.getErrorTitle());
         } finally {
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());

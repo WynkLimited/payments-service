@@ -53,17 +53,13 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
 
     @Override
     public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
-        try {
-            final String callbackType = Optional.ofNullable(request.getType().toString()).orElse(PAYMENT_STATUS_CALLBACK_TYPE);
-            final IPaymentCallback callbackService = delegator.get(callbackType);
-            if (isValid(request)) {
-                return callbackService.handle(request);
-            } else {
-                log.error(APS_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());
-                throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + request.getOrderId());
-            }
-        } catch (Exception e) {
-            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+        final String callbackType = Optional.ofNullable(request.getType().toString()).orElse(PAYMENT_STATUS_CALLBACK_TYPE);
+        final IPaymentCallback callbackService = delegator.get(callbackType);
+        if (isValid(request)) {
+            return callbackService.handle(request);
+        } else {
+            log.error(APS_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + request.getOrderId());
         }
     }
 

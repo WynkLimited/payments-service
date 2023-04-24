@@ -15,4 +15,5 @@ public class ApsAutoRefundCallbackRequestPayload extends ApsCallBackRequestPaylo
     private String refundId;
     private String refundSystemId;
     private String refundOrderId;
+    private boolean autoRefund;
 }

@@ -161,8 +161,6 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli());
                         apsChargingRequestBuilder.billPayment(false);
                     }
-
-                    checkForAutoRenew(paymentDetails.getUpiDetails().isIntent(), paymentDetails.isAutoRenew(), apsChargingRequestBuilder, transaction);
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
@@ -180,11 +178,27 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+                    ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
+                            ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr())
+                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
+                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(transaction.getAmount());
+
+                    //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
+                    if (paymentDetails.isAutoRenew()) {
+                        Calendar cal = Calendar.getInstance();
+                        cal.add(Calendar.HOUR, 24);
+                        Date today = cal.getTime();
+                        cal.add(Calendar.YEAR, 10); // 10 yrs from now
+                        Date next10Year = cal.getTime();
+                        upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                                .paymentEndDate(next10Year.toInstant().toEpochMilli());
+                        apsChargingRequestBuilder.billPayment(false);
+                    }
+
+                    ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
+
                     final IntentUpiPaymentInfo upiIntentDetails = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(transaction.getAmount()).build();
-                    //TODO: Update request for UPI Intent once done from APS and call mandate creation
-                    final ExternalChargingRequest<IntentUpiPaymentInfo> payRequest =
-                            ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails)
-                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
                             common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiIntentChargingChargingResponse.class);
                     Map<String, String> map =
@@ -198,20 +212,6 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                             .build();
                 }
-            }
-        }
-
-        private void checkForAutoRenew ( boolean intent, boolean isAutoRenew,ExternalChargingRequest.ExternalChargingRequestBuilder<?> apsChargingRequestBuilder, Transaction transaction) {
-            apsChargingRequestBuilder.
-            if (isAutoRenew) {
-                Calendar cal = Calendar.getInstance();
-                cal.add(Calendar.HOUR, 24);
-                Date today = cal.getTime();
-                cal.add(Calendar.YEAR, 10); // 10 yrs from now
-                Date next10Year = cal.getTime();
-                paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
-                        .paymentEndDate(next10Year.toInstant().toEpochMilli());
-                apsChargingRequestBuilder.billPayment(false);
             }
         }
     }

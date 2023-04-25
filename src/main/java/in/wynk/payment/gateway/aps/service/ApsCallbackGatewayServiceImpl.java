@@ -8,9 +8,11 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -18,6 +20,8 @@ import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.util.StringUtils;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -40,13 +44,15 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private final String secret;
     private final ApsCommonGatewayService common;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper) {
+    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;
         this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
         this.delegator.put(PAYMENT_STATUS_CALLBACK_TYPE, new GenericApsCallbackHandler());
         this.delegator.put(REFUND_CALLBACK_TYPE, new RefundApsCallBackHandler());
     }
@@ -120,18 +126,43 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private class RefundApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsAutoRefundCallbackRequestPayload> {
 
         @Override
-        public AbstractPaymentCallbackResponse handle(ApsAutoRefundCallbackRequestPayload request) {
+        public AbstractPaymentCallbackResponse handle (ApsAutoRefundCallbackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncRefundTransactionFromSource(transaction, request.getRefundId());
-            // if an auto refund transaction is successful after recon from aps then transaction status should be marked as auto refunded
-            if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
+            if (request.isAutoRefund()) {
+                updateTransaction(request, transaction);
+                if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+                    transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
+                }
+            } else {
+                common.syncRefundTransactionFromSource(transaction, request.getRefundId());
+                if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+                    transaction.setStatus(TransactionStatus.REFUNDED.getValue());
+                }
             }
+
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 
+        private void updateTransaction (ApsAutoRefundCallbackRequestPayload request, Transaction transaction) {
+            TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
+            final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+            try {
+                final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(request.getRefundId()).build();
+                mBuilder.request(refundStatusRequest);
+                mBuilder.externalTransactionId(request.getRefundId());
+                if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("SUCCESS")) {
+                    finalTransactionStatus = TransactionStatus.SUCCESS;
+                } else if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("FAILED")) {
+                    finalTransactionStatus = TransactionStatus.FAILURE;
+                }
+            } finally {
+                transaction.setStatus(finalTransactionStatus.name());
+                eventPublisher.publishEvent(mBuilder.build());
+            }
+        }
+
         @Override
-        public ApsAutoRefundCallbackRequestPayload parse(Map<String, Object> payload) {
+        public ApsAutoRefundCallbackRequestPayload parse (Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsAutoRefundCallbackRequestPayload.class);

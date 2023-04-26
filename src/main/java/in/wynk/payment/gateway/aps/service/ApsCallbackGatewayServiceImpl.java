@@ -13,7 +13,7 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
-import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
@@ -87,7 +87,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     @SneakyThrows
     public boolean isValid(ApsCallBackRequestPayload payload) {
         return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
-                Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackPayload.class), secret, salt);
+                Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {

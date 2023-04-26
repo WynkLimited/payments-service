@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ApsRedirectCallBackPayload {
+public class ApsRedirectCallBackCheckSumPayload {
     private String orderId;
     private String pgId;
     private String lob;

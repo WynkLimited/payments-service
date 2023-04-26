@@ -3,6 +3,7 @@ package in.wynk.payment.dto.aps.request.callback;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.ChecksumHeaderCallbackRequest;
 import in.wynk.payment.dto.aps.common.*;
 import lombok.Getter;
@@ -44,6 +45,15 @@ public class ApsCallBackRequestPayload extends ChecksumHeaderCallbackRequest<Aps
     @JsonIgnore
     private String checksum;
     private SiRegistrationStatus mandateStatus;
+    //parameters for redirection callback
+    private String paymentStatus;
+    private String start;
+    private String end;
+    private String interval;
+    private String redirectionDestination;
+    @JsonProperty("Signature")
+    private String signature;
+
     @JsonIgnore
     public String getTransactionId() {
         return this.getOrderId();

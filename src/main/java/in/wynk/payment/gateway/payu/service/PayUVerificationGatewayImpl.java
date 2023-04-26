@@ -70,9 +70,14 @@ public class PayUVerificationGatewayImpl implements IPaymentAccountVerification<
             final MultiValueMap<String, String> verifyVpaRequest = common.buildPayUInfoRequest(request.getClient(), PayUCommand.VERIFY_VPA.getCode(), request.getVerifyValue(), objectMapper.writeValueAsString(new HashMap<String, String>() {{
                 put("validateAutoPayVPA", "1");
             }}));
-            final PayUVpaVerificationResponse response = common.exchange(common.INFO_API, verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
-            });
-            return VpaVerificationResponse.from(response);
+            try {
+                final PayUVpaVerificationResponse response = common.exchange(common.INFO_API, verifyVpaRequest, new TypeReference<PayUVpaVerificationResponse>() {
+                });
+                return VpaVerificationResponse.from(response);
+            }catch(Exception e) {
+                log.error("Exception occurred while verifying vpa with payU {}", e.getMessage());
+               throw new WynkRuntimeException("Exception occurred while verifying vpa with payU", e);
+            }
         }
     }
 }

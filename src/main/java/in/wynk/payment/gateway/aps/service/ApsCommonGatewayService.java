@@ -98,7 +98,7 @@ public class ApsCommonGatewayService {
                     return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
                 ApsFailureResponse failureResponse = objectMapper.readValue((String) apsVasResponse.getBody(), ApsFailureResponse.class);
-                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), "APS API Error");
+                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), "APS Api error response");
             } catch (JsonProcessingException ex) {
                 throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
             }
@@ -139,6 +139,10 @@ public class ApsCommonGatewayService {
             mBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PAY998, e);
         } catch (Exception e) {
+            if(e instanceof WynkRuntimeException) {
+                log.error(APS_REFUND_STATUS,e.getMessage());
+                throw new WynkRuntimeException(((WynkRuntimeException) e).getErrorCode(), ((WynkRuntimeException) e).getErrorTitle(),e.getMessage());
+            }
             log.error(APS_REFUND_STATUS, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PAY998, e);
         } finally {

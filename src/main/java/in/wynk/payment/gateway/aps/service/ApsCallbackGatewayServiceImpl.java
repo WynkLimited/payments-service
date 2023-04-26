@@ -10,6 +10,7 @@ import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
@@ -59,7 +60,13 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
 
     @Override
     public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
-        final String callbackType = Optional.ofNullable(request.getType().toString()).orElse(PAYMENT_STATUS_CALLBACK_TYPE);
+        Optional<WebhookConfigType> webhookConfigType = Optional.ofNullable(request.getType());
+        final String callbackType;
+        if (webhookConfigType.isPresent()) {
+            callbackType = request.getType().toString();
+        } else {
+            callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
+        }
         final IPaymentCallback callbackService = delegator.get(callbackType);
         if (isValid(request)) {
             return callbackService.handle(request);

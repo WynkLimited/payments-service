@@ -19,3 +19,4 @@ public class ApsRedirectCallBackCheckSumPayload {
     private String pgId;
     private String lob;
 }
+

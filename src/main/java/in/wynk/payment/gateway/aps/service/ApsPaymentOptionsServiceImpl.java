@@ -150,12 +150,12 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
                             break;
                         case UpiConstants.UPI:
                             final UpiSavedOptions savedUpiOption = ((UpiSavedOptions) savedOption);
-                            if (StringUtils.isEmpty(savedUpiOption.getUserVPA())) {
-                                if (!CollectionUtils.isEmpty(savedUpiOption.getVpaIds()))
-                                    for (String vpa : savedUpiOption.getVpaIds())
+                                if (!CollectionUtils.isEmpty(savedUpiOption.getVpaIds())) {
+                                    for (String vpa : savedUpiOption.getVpaIds()) {
                                         savedDetails.add(parseUpiSavedInfo(vpa, paymentGroup, savedUpiOption));
-                            } else
-                                savedDetails.add(parseUpiSavedInfo(savedUpiOption.getUserVPA(), paymentGroup, savedUpiOption));
+                                    }
+                                }
+
                             break;
                         case WalletConstants.WALLETS:
                             final WalletSavedOptions savedWalletOption = ((WalletSavedOptions) savedOption);

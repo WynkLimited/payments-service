@@ -142,11 +142,11 @@ payment:
           messages:
             extractor:
               batchSize: 10
-              waitTimeInSeconds: 5
+              waitTimeInSeconds: 1
           producer:
-            delayInSecond: 5
+            delayInSecond: 0
           consumer:
-            delay: 5
+            delay: 1
             delayTimeUnit: SECONDS
       renewal:
         enabled: true

@@ -10,8 +10,10 @@ import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
@@ -23,10 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.StringUtils;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_CALLBACK_FAILURE;
@@ -59,7 +58,13 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
 
     @Override
     public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
-        final String callbackType = Optional.ofNullable(request.getType().toString()).orElse(PAYMENT_STATUS_CALLBACK_TYPE);
+        Optional<WebhookConfigType> webhookConfigType = Optional.ofNullable(request.getType());
+        final String callbackType;
+        if (webhookConfigType.isPresent()) {
+            callbackType = request.getType().toString();
+        } else {
+            callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
+        }
         final IPaymentCallback callbackService = delegator.get(callbackType);
         if (isValid(request)) {
             return callbackService.handle(request);
@@ -81,7 +86,8 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
 
     @SneakyThrows
     public boolean isValid(ApsCallBackRequestPayload payload) {
-        return SignatureUtil.verifySignature(payload.getChecksum(), payload, secret, salt);
+        return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
+                Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {

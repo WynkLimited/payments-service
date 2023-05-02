@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 public enum ATBOrderStatus {
     COMPLETED("COMPLETED"),
-    FAILED("FAILED");
+    FAILED("FAILED"),
+    DEFERRED_COMPLETED("DEFERRED_COMPLETED");
     private final String OrderStatus;
 }

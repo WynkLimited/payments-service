@@ -36,7 +36,6 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 @Slf4j
 @Service(ApsConstant.AIRTEL_PAY_STACK)
 public class ApsGateway implements
-        IPreDebitNotificationService,
         IExternalPaymentEligibilityService,
         IPaymentRenewal<PaymentRenewalChargingRequest>,
         IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>,
@@ -49,7 +48,6 @@ public class ApsGateway implements
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> {
 
     private final IExternalPaymentEligibilityService eligibilityGateway;
-    private final ApsPreDebitNotificationGatewayServiceImpl preDebitGateway;
     private final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
 
     private final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
@@ -66,7 +64,6 @@ public class ApsGateway implements
                       @Value("${aps.payment.renewal.api}") String siPaymentApi,
                       @Value("${aps.payment.option.api}") String payOptionEndpoint,
                       @Value("${aps.payment.delete.vpa}") String deleteVpaEndpoint,
-                     /* @Value("${aps.payment.predebit.api}") String preDebitEndpoint,*/
                       @Value("${aps.payment.init.refund.api}") String refundEndpoint,
                       @Value("${aps.payment.delete.card}") String deleteCardEndpoint,
                       @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
@@ -92,7 +89,6 @@ public class ApsGateway implements
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, payCache, merchantTransactionService, eventPublisher);
-        this.preDebitGateway = new ApsPreDebitNotificationGatewayServiceImpl(siPaymentApi, mapper,payCache, merchantTransactionService, transactionManager, commonGateway, eventPublisher);
     }
 
     @Override
@@ -118,11 +114,6 @@ public class ApsGateway implements
     @Override
     public void renew(PaymentRenewalChargingRequest request) {
         renewalGateway.renew(request);
-    }
-
-    @Override
-    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage request) {
-        return preDebitGateway.notify(request);
     }
 
     @Override

@@ -14,6 +14,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
@@ -26,9 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.EnumSet;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
@@ -51,6 +50,10 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     private int duePreDebitNotificationOffsetDay;
     @Value("${payment.preDebitNotification.offset.hour}")
     private int duePreDebitNotificationOffsetTime;
+
+    private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>(){{
+        put(ApsConstant.APS, -4);
+    }};
 
     private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
         try {

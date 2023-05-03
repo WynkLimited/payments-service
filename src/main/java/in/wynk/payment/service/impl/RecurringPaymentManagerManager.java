@@ -52,7 +52,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     private int duePreDebitNotificationOffsetTime;
 
     private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>(){{
-        put(ApsConstant.APS, -4);
+        put(ApsConstant.APS, -2);
     }};
 
     private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
@@ -92,6 +92,9 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                     return;
                 }
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
+                if(CODE_TO_RENEW_OFFSET.containsKey(request.getTransaction().getPaymentChannel().getCode())){
+                    nextRecurringDateTime.add(Calendar.DAY_OF_MONTH,CODE_TO_RENEW_OFFSET.get(request.getTransaction().getPaymentChannel()));
+                }
                 scheduleRecurringPayment(request.getTransactionId(), nextRecurringDateTime, request.getAttemptSequence());
             }
         }

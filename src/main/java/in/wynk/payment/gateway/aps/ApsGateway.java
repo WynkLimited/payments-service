@@ -45,11 +45,12 @@ public class ApsGateway implements
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>,
-        IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> {
+        IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
+        IPaymentMandateCancellation<AbstractCancelMandateRequest> {
 
     private final IExternalPaymentEligibilityService eligibilityGateway;
     private final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
-
+    private final IPaymentMandateCancellation<AbstractCancelMandateRequest> mandateCancellationGateway;
     private final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
     private final IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest> payOptionsGateway;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
@@ -71,6 +72,7 @@ public class ApsGateway implements
                       @Value("${aps.payment.init.charge.api}") String commonChargeEndpoint,
                       @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint,
                       @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
+                      @Value("${aps.payment.cancel.mandate.api}") String cancelMandateEndpoint,
                       ObjectMapper mapper,
                       ApsCommonGatewayService commonGateway,
                       PaymentCachingService payCache,
@@ -89,6 +91,7 @@ public class ApsGateway implements
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, payCache, merchantTransactionService, eventPublisher);
+        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(cancelMandateEndpoint, commonGateway);
     }
 
     @Override
@@ -147,4 +150,8 @@ public class ApsGateway implements
         return eligibilityGateway.isEligible(entity, request);
     }
 
+    @Override
+    public void cancel (AbstractCancelMandateRequest request) {
+        mandateCancellationGateway.cancel(request);
+    }
 }

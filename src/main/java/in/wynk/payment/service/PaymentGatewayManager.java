@@ -24,7 +24,6 @@ import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
@@ -75,7 +74,8 @@ public class PaymentGatewayManager
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
-        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>> {
+        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
+        IPaymentMandateCancellation<AbstractCancelMandateRequest> {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -289,6 +289,21 @@ public class PaymentGatewayManager
         AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
         AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         return preDebitResponse;
+    }
+
+    @Override
+    public void cancel (AbstractCancelMandateRequest request) {
+        Transaction transaction = transactionManager.get(request.getTid());
+        final IPaymentMandateCancellation<AbstractCancelMandateRequest> mandateCancellationRequest =
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
+                        new ParameterizedTypeReference<IPaymentMandateCancellation<AbstractCancelMandateRequest>>() {
+                        });
+        try{
+           mandateCancellationRequest.cancel(request);
+        }catch (Exception e) {
+            //
+        }
+
     }
 
     private static class ChargingTransactionStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {

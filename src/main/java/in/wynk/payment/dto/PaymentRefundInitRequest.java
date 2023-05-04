@@ -16,7 +16,8 @@ import javax.validation.constraints.NotBlank;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentRefundInitRequest extends AbstractPaymentRefundRequest {
-
+    @Analysed
+    private Double amount;
     @NotBlank
     @Analysed
     private String reason;

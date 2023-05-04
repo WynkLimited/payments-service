@@ -26,6 +26,8 @@ import in.wynk.identity.client.utils.IdentityUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Optional;
+
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 
 public class DefaultTransactionInitRequestMapper implements IObjectMapper {
@@ -52,10 +54,12 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
 
     public static AbstractTransactionInitRequest from(RefundTransactionRequestWrapper wrapper) {
         final Transaction originalTransaction = wrapper.getOriginalTransaction();
+        final PaymentRefundInitRequest refundInitRequest=wrapper.getRequest();
+        final double amountToRefunded= Optional.ofNullable(refundInitRequest.getAmount()).orElse(originalTransaction.getAmount());
         if (originalTransaction.getType() == PaymentEvent.POINT_PURCHASE) {
-            return PointTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
+            return PointTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(amountToRefunded).itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
         } else {
-            return PlanTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).planId(originalTransaction.getPlanId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
+            return PlanTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(amountToRefunded).planId(originalTransaction.getPlanId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
         }
     }
 

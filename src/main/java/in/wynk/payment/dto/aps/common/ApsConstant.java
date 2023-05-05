@@ -22,4 +22,5 @@ public interface ApsConstant {
     String LOB_SI_WYNK = "SI_WYNK";
     String APS_LOB_AUTO_PAY_REGISTER_WYNK = "AUTO_PAY_REGISTER_WYNK";
     String APS_LOB_WYNK = "WYNK";
+    String APS_CARD_TYPE = "cardType";
 }

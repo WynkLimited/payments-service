@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.response.renewal;
 
-import in.wynk.payment.dto.aps.common.ApsApiResponseWrapper;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -12,9 +13,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor
-public class SiPaymentRecurringResponse {
-    private ApsApiResponseWrapper<SiRecurringData> body;
-    private String statusCode;
-    private Integer statusCodeValue;
+public class SiRecurringData extends ApsChargeStatusResponse {
 }

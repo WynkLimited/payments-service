@@ -43,7 +43,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
                 .entity(paymentMethod)
                 .build();
         EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
-        if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
+        /*if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);*/
         super.handle(request);
     }
 }

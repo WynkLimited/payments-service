@@ -47,7 +47,6 @@ import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
-import static in.wynk.payment.dto.aps.common.ApsConstant.WYNK_LIMITED;
 
 /**
  * @author Nishesh Pandey
@@ -153,11 +152,10 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
                         Calendar cal = Calendar.getInstance();
-                        cal.add(Calendar.HOUR, 24);
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli());
                         apsChargingRequestBuilder.billPayment(false);
                     }
@@ -186,19 +184,18 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
                         Calendar cal = Calendar.getInstance();
-                        cal.add(Calendar.HOUR, 24);
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                        upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
+                                .productCategory(BaseConstants.WYNK)
+                                .mandateAmount(transaction.getAmount())
+                                .paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli());
                         apsChargingRequestBuilder.billPayment(false);
                     }
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
-
-                    final IntentUpiPaymentInfo upiIntentDetails = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(transaction.getAmount()).build();
-
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
                             common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiIntentChargingChargingResponse.class);
                     Map<String, String> map =
@@ -207,9 +204,30 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
-                    return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
-                            .pa(map.get(PA)).pn(map.getOrDefault(PN, WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
-                            .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
+                    return UpiIntentChargingResponse.builder()
+                            .mn(map.get(MN))
+                            .rev(map.get(REV))
+                            .mode(map.get(MODE))
+                            .recur(map.get(RECUR))
+                            .block(map.get(BLOCK))
+                            .orgId(map.get(ORG_ID))
+                            .amRule(map.get(AM_RULE))
+                            .purpose(map.get(PURPOSE))
+                            .txnType(map.get(TXN_TYPE))
+                            .pa(map.get(PA))
+                            .tid(transaction.getIdStr())
+                            .recurType(map.get(RECUR_TYPE))
+                            .pn(PaymentConstants.DEFAULT_PN)
+                            .recurValue(map.get(RECUR_VALUE))
+                            .validityEnd(map.get(VALIDITY_END))
+                            .validityStart(map.get(VALIDITY_START))
+                            .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR))
+                            .transactionStatus(transaction.getStatus())
+                            .tr(map.get(TR))
+                            .am(map.get(AM))
+                            .transactionType(transaction.getType().getValue())
+                            .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN))
+                            .mc(PayUConstants.PAYU_MERCHANT_CODE)
                             .build();
                 }
             }
@@ -301,7 +319,6 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
                         if (paymentDetails.isAutoRenew()) {
                             Calendar cal = Calendar.getInstance();
-                            cal.add(Calendar.HOUR, 24);
                             Date today = cal.getTime();
                             cal.add(Calendar.YEAR, 10);
                             Date next10Year = cal.getTime();

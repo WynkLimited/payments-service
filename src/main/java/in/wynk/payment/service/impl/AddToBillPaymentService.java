@@ -116,12 +116,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userAddToBillDetails.getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
                     .orderMeta(null).build();
-            //final AddToBillCheckOutResponse response = catalogueVasClientService.checkout(checkOutRequest);
-            final AddToBillCheckOutResponse response = AddToBillCheckOutResponse.builder()
-                    .success(true)
-                    .body(AddToBillCheckOutResponse.CheckOutResponse.builder().orderId("bb41cf23-da83-44a7-a510-1841e5dd05bb").build())
-                    .errors(null)
-                    .build();
+            final AddToBillCheckOutResponse response = catalogueVasClientService.checkout(checkOutRequest);
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                 log.info("ATB checkout success: {}, txnId: {} and OrderId: {}", true, transaction.getIdStr(), response.getBody().getOrderId());
@@ -324,13 +319,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
                         if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
-                            return true;
+                            return false;
                         }
                     }
                     return true;
                 }
             }
-            return true;
+            return false;
         } catch (Exception e) {
             log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return false;

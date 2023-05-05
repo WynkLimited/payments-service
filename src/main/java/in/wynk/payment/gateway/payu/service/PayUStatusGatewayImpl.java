@@ -3,8 +3,11 @@ package in.wynk.payment.gateway.payu.service;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.PaymentMode;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -50,7 +53,11 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         @Override
         public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
+            final IPurchaseDetails purchaseDetails =TransactionContext.getPurchaseDetails().get();
             common.syncChargingTransactionFromSource(transaction);
+            if(purchaseDetails.getPaymentDetails().isAutoRenew() && purchaseDetails.getPaymentDetails().getPaymentMode()== String.valueOf(PaymentMode.UPI) && transaction.getInitTime().getTimeInMillis()+ 15*60*1000 >= System.currentTimeMillis()){
+                transaction.setStatus(String.valueOf(TransactionStatus.INPROGRESS));
+            }
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY004);

@@ -5,6 +5,8 @@ import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.constant.WalletConstants;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.option.PaymentOptionRequest;
 import in.wynk.payment.dto.aps.response.option.PaymentOptionsResponse;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.CardPaymentOptions;
@@ -52,7 +54,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
 
     @Override
     public AbstractPaymentInstrumentsProxy load(PaymentOptionsPlanEligibilityRequest request) {
-        return new ApsPaymentInstrumentsProxy(request.getMsisdn());
+        return new ApsPaymentInstrumentsProxy(request.getMsisdn(), request.getClient());
     }
 
     @Getter
@@ -62,11 +64,11 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
         private final List<AbstractPaymentOptionInfo> payOptionsCache;
         private final List<AbstractSavedInstrumentInfo> savedInstrumentCache;
 
-        public ApsPaymentInstrumentsProxy(String userId) {
+        public ApsPaymentInstrumentsProxy (String msisdn, String clientAlias) {
             super();
-            this.response = payOption(userId);
-            this.payOptionsCache = getPaymentInstruments(userId);
-            this.savedInstrumentCache = getSavedDetails(userId);
+            this.response = payOption(msisdn, clientAlias);
+            this.payOptionsCache = getPaymentInstruments(msisdn);
+            this.savedInstrumentCache = getSavedDetails(msisdn);
         }
 
         @Override
@@ -227,9 +229,9 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
 
 
     @Cacheable(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#msisdn", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
-    private PaymentOptionsResponse payOption(String msisdn) {
+    private PaymentOptionsResponse payOption(String msisdn, String clientAlias) {
         final PaymentOptionRequest request = PaymentOptionRequest.builder().build();
-        return common.exchange(PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
+        return common.exchange(clientAlias, PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
     }
 }
 

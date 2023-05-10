@@ -46,7 +46,7 @@ public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseK
     private IPageUrlDetails pageUrlDetails;
 
     @Analysed
-    private GeoLocation geoLocation;
+    private IGeolocation geoLocation;
 
     @Override
     @JsonIgnore

@@ -20,7 +20,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class PurchaseDetails extends MongoBaseEntity<String> implements IChargingDetails {
 
     @Analysed
-    private GeoLocation geoLocation;
+    private IGeolocation geoLocation;
 
     @Field("callback_url")
     private String callbackUrl;

@@ -69,7 +69,7 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
                     return in.wynk.payment.dto.gateway.verify.BinVerificationResponse.fromAps(apsBinVerificationResponseData);
 
                 } catch (Exception e) {
-                    log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to ", e);
+                    log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to "+ e.getMessage());
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
                 }
             }

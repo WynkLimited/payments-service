@@ -89,6 +89,9 @@ public class ApsCommonGatewayService {
     }
 
     public <T> T exchange (String clientAlias, String url, HttpMethod method, String loginId, Object body, Class<T> target) {
+        if(StringUtils.isEmpty(clientAlias)) {
+            log.error("client is not loaded for url {}", clientAlias);
+        }
         ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(clientAlias), url, method, body);
         if (responseEntity.getStatusCode() == HttpStatus.OK) {
             try {

@@ -54,6 +54,7 @@ public class EventsWrapper {
     private IUserDetails userDetails;
     private IPaymentDetails paymentDetails;
     private IProductDetails productDetails;
+    private IGeolocation geolocation;
     private Transaction transaction;
     private CallbackRequest callbackRequest;
     private PaymentReconciliationMessage paymentReconciliationMessage;

@@ -36,4 +36,8 @@ public class ChargingDetails implements IChargingDetails {
     }
 
 
+    @Override
+    public IGeolocation getGeoLocation() {
+        return getGeoLocation();
+    }
 }

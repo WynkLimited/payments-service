@@ -9,6 +9,7 @@ import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IGeolocation;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import lombok.AllArgsConstructor;
@@ -38,7 +39,7 @@ public class S2SPurchaseDetails implements IChargingDetails {
 
     @Valid
     @Analysed
-    private GeoLocation geoLocation;
+    private IGeolocation geoLocation;
 
     @Valid
     @Analysed

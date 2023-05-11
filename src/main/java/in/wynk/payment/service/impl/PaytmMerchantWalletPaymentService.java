@@ -303,10 +303,10 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
             throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
         }
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-            log.error(PaymentLoggingMarker.PAYTM_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at paytm end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PaymentLoggingMarker.PAYTM_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at paytm end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY104);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-            log.error(PaymentLoggingMarker.PAYTM_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at paytm end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PaymentLoggingMarker.PAYTM_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at paytm end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY103);
         }
         ChargingStatusResponse.ChargingStatusResponseBuilder responseBuilder = ChargingStatusResponse.builder()

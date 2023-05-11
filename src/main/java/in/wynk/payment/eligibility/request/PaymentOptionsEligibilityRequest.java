@@ -27,6 +27,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     private final String uid;
     private final String appId;
     private final String msisdn;
+    private final String client;
     private final String service;
     private final String couponCode;
     private final String countryCode;
@@ -38,10 +39,6 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
 
     @Setter
     private String group;
-
-    public String getClient() {
-       return WynkServiceUtils.fromServiceId(getService()).getLinkedClient();
-    }
 
     public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode) {
         if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))
@@ -55,7 +52,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
         final PlanDTO planDTO = computationDTO.getPlanDTO();
         final ItemDTO itemDTO = computationDTO.getItemDTO();
         if (Objects.nonNull(planDTO)) {
-            PaymentOptionsPlanEligibilityRequest.PaymentOptionsPlanEligibilityRequestBuilder builder = PaymentOptionsPlanEligibilityRequest.builder();
+            PaymentOptionsPlanEligibilityRequest.PaymentOptionsPlanEligibilityRequestBuilder builder = PaymentOptionsPlanEligibilityRequest.builder().client(computationDTO.getClient());
             builder.planId(String.valueOf(planDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(planDTO.getService()).os(computationDTO.getOs());
             if (StringUtils.isNotEmpty(computationDTO.getMsisdn())) builder.msisdn(computationDTO.getMsisdn());
             if (computationDTO.getCountryCode() == null) {
@@ -63,7 +60,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
             }
             return builder.planId(String.valueOf(planDTO.getId())).si(computationDTO.getSi()).paymentOptionsEligibilityRequestProxy(BeanLocatorFactory.getBean(PaymentOptionsEligibilityRequestProxy.class)).build();
         } else {
-            PaymentOptionsItemEligibilityRequest.PaymentOptionsItemEligibilityRequestBuilder builder = PaymentOptionsItemEligibilityRequest.builder();
+            PaymentOptionsItemEligibilityRequest.PaymentOptionsItemEligibilityRequestBuilder builder = PaymentOptionsItemEligibilityRequest.builder().client(computationDTO.getClient());
             builder.itemId(String.valueOf(itemDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(itemDTO.getService()).os(computationDTO.getOs());
             if (StringUtils.isNotEmpty(computationDTO.getMsisdn())) builder.msisdn(computationDTO.getMsisdn());
             if (computationDTO.getCountryCode() == null) {

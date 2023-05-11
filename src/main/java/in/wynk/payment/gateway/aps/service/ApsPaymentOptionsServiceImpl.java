@@ -59,8 +59,8 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
     private class ApsPaymentInstrumentsProxy extends AbstractPaymentInstrumentsProxy {
 
         private final PaymentOptionsResponse response;
-        private final List<AbstractPaymentOptionInfo> payOptionsCache;
-        private final List<AbstractSavedInstrumentInfo> savedInstrumentCache;
+        private List<AbstractPaymentOptionInfo> payOptionsCache;
+        private List<AbstractSavedInstrumentInfo> savedInstrumentCache;
 
         public ApsPaymentInstrumentsProxy(String msisdn, String clientAlias) {
             super();
@@ -97,7 +97,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
                     }
                 });
             }
-            return payInfoList;
+            return payOptionsCache = payInfoList;
         }
 
         @Override
@@ -200,7 +200,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
                     }
                 });
             }
-            return savedDetails;
+            return savedInstrumentCache = savedDetails;
         }
     }
 

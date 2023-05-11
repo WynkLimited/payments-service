@@ -11,7 +11,4 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 @SuperBuilder
 public class PaymentOptionsPlanEligibilityRequest extends PaymentOptionsEligibilityRequest {
     private final String planId;
-    public String getClient() {
-        return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
-    }
 }

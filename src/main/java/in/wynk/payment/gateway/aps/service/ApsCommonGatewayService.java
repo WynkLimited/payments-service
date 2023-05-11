@@ -43,6 +43,7 @@ import java.util.Base64;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY044;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY998;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
@@ -91,6 +92,7 @@ public class ApsCommonGatewayService {
     public <T> T exchange (String clientAlias, String url, HttpMethod method, String loginId, Object body, Class<T> target) {
         if(StringUtils.isEmpty(clientAlias)) {
             log.error("client is not loaded for url {}", clientAlias);
+            throw new WynkRuntimeException(PAY044);
         }
         ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(clientAlias), url, method, body);
         if (responseEntity.getStatusCode() == HttpStatus.OK) {

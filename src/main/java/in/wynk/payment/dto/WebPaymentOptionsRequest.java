@@ -50,6 +50,7 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     }
 
     @Override
+    @JsonIgnore
     public String getClient() {
         return ClientContext.getClient().map(Client::getAlias).orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
     }

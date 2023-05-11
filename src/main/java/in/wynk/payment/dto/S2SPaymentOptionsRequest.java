@@ -1,5 +1,6 @@
 package in.wynk.payment.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.core.dao.entity.ClientDetails;
@@ -31,6 +32,7 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
     private GeoLocation geoLocation;
 
     @Override
+    @JsonIgnore
     public String getClient() {
         return BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()).getAlias();
     }

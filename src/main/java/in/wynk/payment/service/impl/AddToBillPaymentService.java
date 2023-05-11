@@ -141,7 +141,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
-                log.error("plan serviceIds or offer serviceGroup is not present");
+                log.warn("plan serviceIds or offer serviceGroup is not present");
                 return null;
             } else {
                 final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).isBundle(offer.isThanksBundle()).build();
@@ -149,7 +149,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return response;
             }
         } catch (Exception e) {
-            log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -186,7 +185,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             }
             return null;
         } catch (Exception ex) {
-            log.error("Error in AddToBill Eligibility check: {}", ex.getMessage(), ex);
             return null;
         }
     }
@@ -313,7 +311,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final PlanDTO plan = cachingService.getPlan(proxy.getPlanId());
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
-                log.error("plan serviceIds or offer serviceGroup is not present");
+                log.warn("plan serviceIds or offer serviceGroup is not present");
             } else {
                 final CatalogueEligibilityAndPricingResponse response = proxy.getResponse();
                 if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
@@ -327,7 +325,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             }
             return false;
         } catch (Exception e) {
-            log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return false;
         }
     }

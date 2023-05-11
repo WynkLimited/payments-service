@@ -239,10 +239,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction, String extTxnId) {
         syncRefundTransactionFromSource(transaction, extTxnId);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-            log.error(PAYU_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PAYU_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-            log.error(PAYU_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PAYU_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
@@ -280,10 +280,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private ChargingStatusResponse fetchChargingStatusFromPayUSource(Transaction transaction) {
         syncChargingTransactionFromSource(transaction, Optional.empty());
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY004);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY003);
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
@@ -841,10 +841,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                         final String redirectionUrl;
                         IChargingDetails chargingDetails = (IChargingDetails) optionalDetails.get();
                         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                            log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                             redirectionUrl = chargingDetails.getPageUrlDetails().getPendingPageUrl();
                         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                            log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                            log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                             redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
                         } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();

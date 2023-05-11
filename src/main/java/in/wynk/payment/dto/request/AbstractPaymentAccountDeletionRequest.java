@@ -40,4 +40,6 @@ public abstract class AbstractPaymentAccountDeletionRequest {
     public PaymentGateway getPaymentCode() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
+
+    public abstract String getClient();
 }

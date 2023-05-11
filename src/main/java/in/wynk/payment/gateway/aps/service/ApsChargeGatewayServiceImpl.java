@@ -162,7 +162,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         apsChargingRequestBuilder.billPayment(false);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
-                    common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
+                    common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                 }
             }
@@ -183,7 +183,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
-                            common.exchange(UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiIntentChargingChargingResponse.class);
+                            common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiIntentChargingChargingResponse.class);
                     Map<String, String> map =
                             Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                                     .collect(Collectors.toMap(x -> x[0], x -> x[1]));
@@ -307,7 +307,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                 ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
                                         .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                         CardChargingResponse cardChargingResponse =
-                                common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, CardChargingResponse.class);
+                                common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, CardChargingResponse.class);
                         return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
                                 .html(cardChargingResponse.getHtml()).build();
                     } catch (Exception e) {
@@ -347,7 +347,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         ExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                 NetBankingChargingResponse apsNetBankingChargingResponse =
-                        common.exchange(CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, NetBankingChargingResponse.class);
+                        common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, NetBankingChargingResponse.class);
                 return NetBankingHtmlTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }

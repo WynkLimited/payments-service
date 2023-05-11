@@ -47,7 +47,7 @@ public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRef
             final ExternalPaymentRefundRequest refundRequest =
                     ExternalPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).build();
             ExternalPaymentRefundStatusResponse body =
-                    common.exchange(REFUND_ENDPOINT, HttpMethod.POST, common.getLoginId(refundTransaction.getMsisdn()), refundRequest, ExternalPaymentRefundStatusResponse.class);
+                    common.exchange(refundTransaction.getClientAlias(), REFUND_ENDPOINT, HttpMethod.POST, common.getLoginId(refundTransaction.getMsisdn()), refundRequest, ExternalPaymentRefundStatusResponse.class);
 
             mBuilder.request(refundRequest);
             mBuilder.response(body);

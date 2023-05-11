@@ -29,7 +29,7 @@ import java.util.*;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_CALLBACK_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 
 /**
  * @author Nishesh Pandey
@@ -102,10 +102,10 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
                     final String redirectionUrl;
                     IChargingDetails chargingDetails = (IChargingDetails) optionalDetails.get();
                     if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                        log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                        log.warn(APS_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at aps end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                         redirectionUrl = chargingDetails.getPageUrlDetails().getPendingPageUrl();
                     } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                        log.error(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                        log.warn(APS_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at aps end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                         redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
                     } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                         redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();

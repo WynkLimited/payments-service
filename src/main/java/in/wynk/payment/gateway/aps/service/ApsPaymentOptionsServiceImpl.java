@@ -54,7 +54,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
 
     @Override
     public AbstractPaymentInstrumentsProxy load(PaymentOptionsPlanEligibilityRequest request) {
-        return new ApsPaymentInstrumentsProxy(request.getMsisdn(), request.getService());
+        return new ApsPaymentInstrumentsProxy(request.getMsisdn(), request.getClient());
     }
 
     @Getter

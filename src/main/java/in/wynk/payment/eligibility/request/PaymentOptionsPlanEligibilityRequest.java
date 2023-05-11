@@ -11,4 +11,8 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 @SuperBuilder
 public class PaymentOptionsPlanEligibilityRequest extends PaymentOptionsEligibilityRequest {
     private final String planId;
+    //TODO: When class for S2S is written get client from session for Web request and load client in S2S endpoint
+    public String getClient () {
+        return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
+    }
 }

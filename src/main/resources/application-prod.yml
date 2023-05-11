@@ -458,7 +458,7 @@ http:
           closeIdleWaitTime: 1000
           validateAfterInActivity: 100
           socket:
-            timeout: 3000
+            timeout: 8000
             factory:
               type: both
           request:

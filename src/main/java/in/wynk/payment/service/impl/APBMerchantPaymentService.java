@@ -102,10 +102,10 @@ public class APBMerchantPaymentService extends AbstractMerchantPaymentStatusServ
                 if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
                     return WynkResponseUtils.redirectResponse(((IChargingDetails) TransactionContext.getPurchaseDetails().get()).getPageUrlDetails().getSuccessPageUrl());
                 } else if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                    log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    log.warn(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY300);
                 } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                    log.error(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    log.warn(PaymentLoggingMarker.APB_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at airtel payment bank end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY301);
                 } else {
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302);

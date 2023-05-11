@@ -60,7 +60,7 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
                 log.warn(APS_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY038);
             } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                log.error(APS_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                log.warn(APS_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY025);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
@@ -75,15 +75,13 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
             RefundTransactionReconciliationStatusRequest refundRequest = (RefundTransactionReconciliationStatusRequest) request;
             common.syncRefundTransactionFromSource(transaction, refundRequest.getExtTxnId());
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                log.error(APS_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                log.warn(APS_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY038);
             } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                log.error(APS_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                log.warn(APS_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY025);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }
     }
-
-
 }

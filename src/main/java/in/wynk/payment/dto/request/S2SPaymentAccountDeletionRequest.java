@@ -2,6 +2,7 @@ package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.client.context.ClientContext;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,10 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public class S2SPaymentAccountDeletionRequest extends AbstractPaymentAccountDeletionRequest {
     private String msisdn;
-    @JsonProperty("service")
-    private String client;
+
+    //TODO: Load client using loadUtils when endpoint for S2S is written/required
+    @Override
+    public String getClient () {
+        return ClientContext.getClient().toString();
+    }
 }

@@ -5,6 +5,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.PurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.PaymentMode;
@@ -14,6 +15,8 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
+import in.wynk.payment.dto.request.common.UpiDetails;
 import in.wynk.payment.gateway.IPaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,9 +56,13 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         @Override
         public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            final IPurchaseDetails purchaseDetails =TransactionContext.getPurchaseDetails().get();
+            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
+            UpiPaymentDetails upiPaymentDetails = null;
+            if (purchaseDetails.getPaymentDetails().getPaymentMode() == String.valueOf(PaymentMode.UPI)) {
+                upiPaymentDetails = (UpiPaymentDetails) purchaseDetails.getPaymentDetails();
+            }
             common.syncChargingTransactionFromSource(transaction);
-            if(purchaseDetails.getPaymentDetails().isAutoRenew() && purchaseDetails.getPaymentDetails().getPaymentMode()== String.valueOf(PaymentMode.UPI) && transaction.getInitTime().getTimeInMillis()+ 15*60*1000 >= System.currentTimeMillis()){
+            if (purchaseDetails.getPaymentDetails().isAutoRenew() && purchaseDetails.getPaymentDetails().getPaymentMode() == String.valueOf(PaymentMode.UPI) && upiPaymentDetails.isIntent() && transaction.getInitTime().getTimeInMillis() + 15 * 60 * 1000 >= System.currentTimeMillis()) {
                 transaction.setStatus(String.valueOf(TransactionStatus.INPROGRESS));
             }
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {

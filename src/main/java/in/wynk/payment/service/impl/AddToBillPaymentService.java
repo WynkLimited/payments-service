@@ -149,7 +149,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return response;
             }
         } catch (Exception e) {
-            log.warn("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -186,7 +185,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             }
             return null;
         } catch (Exception ex) {
-            log.warn("Error in AddToBill Eligibility check: {}", ex.getMessage(), ex);
             return null;
         }
     }
@@ -327,7 +325,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             }
             return false;
         } catch (Exception e) {
-            log.warn("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return false;
         }
     }

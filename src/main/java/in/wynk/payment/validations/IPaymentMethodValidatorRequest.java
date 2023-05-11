@@ -1,5 +1,6 @@
 package in.wynk.payment.validations;
 
+import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.validations.IBaseRequest;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 
@@ -26,5 +27,7 @@ public interface IPaymentMethodValidatorRequest extends IBaseRequest {
     }
 
     IProductDetails getProductDetails();
+
+    ClientDetails getClientDetails();
 
 }

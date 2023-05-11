@@ -5,8 +5,7 @@ import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.constant.WalletConstants;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.aps.request.option.PaymentOptionRequest;
 import in.wynk.payment.dto.aps.response.option.PaymentOptionsResponse;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.CardPaymentOptions;
@@ -22,7 +21,6 @@ import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.util.CollectionUtils;
 
@@ -64,7 +62,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
         private final List<AbstractPaymentOptionInfo> payOptionsCache;
         private final List<AbstractSavedInstrumentInfo> savedInstrumentCache;
 
-        public ApsPaymentInstrumentsProxy (String msisdn, String clientAlias) {
+        public ApsPaymentInstrumentsProxy(String msisdn, String clientAlias) {
             super();
             this.response = payOption(msisdn, clientAlias);
             this.payOptionsCache = getPaymentInstruments(msisdn);
@@ -75,7 +73,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
         public List<AbstractPaymentOptionInfo> getPaymentInstruments(String userId) {
             if (Objects.nonNull(payOptionsCache)) return payOptionsCache;
             final List<AbstractPaymentOptionInfo> payInfoList = new ArrayList<>();
-            if (!CollectionUtils.isEmpty(response.getPayOptions())) {
+            if (Objects.nonNull(response) && !CollectionUtils.isEmpty(response.getPayOptions())) {
                 response.getPayOptions().forEach(option -> {
                     if (Objects.nonNull(option.getOption())) {
                         switch (option.getType()) {
@@ -152,11 +150,11 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
                             break;
                         case UpiConstants.UPI:
                             final UpiSavedOptions savedUpiOption = ((UpiSavedOptions) savedOption);
-                                if (!CollectionUtils.isEmpty(savedUpiOption.getVpaIds())) {
-                                    for (String vpa : savedUpiOption.getVpaIds()) {
-                                        savedDetails.add(parseUpiSavedInfo(vpa, paymentGroup, savedUpiOption));
-                                    }
+                            if (!CollectionUtils.isEmpty(savedUpiOption.getVpaIds())) {
+                                for (String vpa : savedUpiOption.getVpaIds()) {
+                                    savedDetails.add(parseUpiSavedInfo(vpa, paymentGroup, savedUpiOption));
                                 }
+                            }
 
                             break;
                         case WalletConstants.WALLETS:
@@ -231,7 +229,12 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
     @Cacheable(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#msisdn", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
     private PaymentOptionsResponse payOption(String msisdn, String clientAlias) {
         final PaymentOptionRequest request = PaymentOptionRequest.builder().build();
-        return common.exchange(clientAlias, PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
+        try {
+            return common.exchange(clientAlias, PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.APS_API_FAILURE, "Unable to fetch eligibility from APS", e);
+            return new PaymentOptionsResponse();
+        }
     }
 }
 

@@ -39,6 +39,10 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
     @Setter
     private String group;
 
+    public String getClient() {
+       return WynkServiceUtils.fromServiceId(getService()).getLinkedClient();
+    }
+
     public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode) {
         if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))
             return payInstrumentProxyMap.get(payCode);

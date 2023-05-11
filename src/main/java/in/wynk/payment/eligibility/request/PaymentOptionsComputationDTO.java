@@ -18,4 +18,5 @@ public class PaymentOptionsComputationDTO {
     private final int buildNo;
     private final String os;
     private final String si;
+    private final String client;
 }

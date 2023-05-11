@@ -279,6 +279,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder builder = PaymentOptionsDTO.builder();
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder()
                 .planDTO(paidPlan)
+                .client(request.getClient())
                 .couponCode(request.getCouponId())
                 .os(request.getAppDetails().getOs())
                 .appId(request.getAppDetails().getAppId())
@@ -304,6 +305,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         final WynkResponseEntity.WynkResponseEntityBuilder<PaymentOptionsDTO> responseEntityBuilder = WynkResponseEntity.<PaymentOptionsDTO>builder();
         final ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item)
+                .client(request.getClient())
                 .couponCode(request.getCouponId())
                 .os(request.getAppDetails().getOs())
                 .appId(request.getAppDetails().getAppId())

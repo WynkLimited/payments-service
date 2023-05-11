@@ -2,11 +2,15 @@ package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Getter
 @Builder
@@ -26,4 +30,8 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
     @Analysed
     private GeoLocation geoLocation;
 
+    @Override
+    public String getClient() {
+        return BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()).getAlias();
+    }
 }

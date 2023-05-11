@@ -3,8 +3,12 @@ package in.wynk.payment.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.session.context.SessionContextHolder;
@@ -43,6 +47,11 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     public IUserDetails getUserDetails() {
         final SessionDTO session = SessionContextHolder.getBody();
         return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).si(session.get(SI)).build();
+    }
+
+    @Override
+    public String getClient() {
+        return ClientContext.getClient().map(Client::getAlias).orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
     }
 
 }

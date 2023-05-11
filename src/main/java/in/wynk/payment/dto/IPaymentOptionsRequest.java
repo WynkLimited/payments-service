@@ -14,4 +14,6 @@ public interface IPaymentOptionsRequest {
 
     IProductDetails getProductDetails();
 
+    String getClient();
+
 }

@@ -2,6 +2,7 @@ package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -95,5 +96,7 @@ public abstract class AbstractPaymentChargingRequest implements IChargingDetails
     public boolean isTrialOpted () {
         return this.getPaymentDetails().isTrialOpted();
     }
+
+    public abstract ClientDetails getClientDetails();
 
 }

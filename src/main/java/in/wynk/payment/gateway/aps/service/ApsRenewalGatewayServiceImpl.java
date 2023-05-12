@@ -108,7 +108,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
                         SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentGateway()).build())
                 .build();
         try {
-            return common.exchange(SI_PAYMENT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
+            return common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(e);

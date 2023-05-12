@@ -23,10 +23,10 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
     @Override
     public void handle(T request) {
         PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(request.getPaymentId());
-
         PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (Objects.equals(request.getProductDetails().getType(), PLAN) ?
                 PaymentOptionsPlanEligibilityRequest.builder().planId(request.getProductDetails().getId()) :
                 PaymentOptionsItemEligibilityRequest.builder().itemId(request.getProductDetails().getId()))
+                .client(request.getClientDetails().getAlias())
                 .countryCode(request.getCountryCode())
                 .couponCode(request.getCouponCode())
                 .service(request.getService())

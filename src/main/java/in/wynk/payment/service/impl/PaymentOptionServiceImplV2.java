@@ -62,7 +62,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         final PlanDTO paidPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest =
                 PaymentOptionsEligibilityRequest.from(
-                        PaymentOptionsComputationDTO.builder().planDTO(paidPlan).couponCode(request.getCouponId()).os(request.getAppDetails().getOs()).appId(request.getAppDetails().getAppId())
+                        PaymentOptionsComputationDTO.builder().client(request.getClient()).planDTO(paidPlan).couponCode(request.getCouponId()).os(request.getAppDetails().getOs()).appId(request.getAppDetails().getAppId())
                                 .msisdn(request.getUserDetails().getMsisdn()).buildNo(request.getAppDetails().getBuildNo()).countryCode(request.getUserDetails().getCountryCode())
                                 .si(request.getUserDetails().getSi())
                                 .build());
@@ -84,6 +84,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private FilteredPaymentOptionsResult getPaymentOptionsDetailsForPoint(IPaymentOptionsRequest request) {
         final ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item)
+                .client(request.getClient())
                 .couponCode(request.getCouponId())
                 .os(request.getAppDetails().getOs())
                 .appId(request.getAppDetails().getAppId())
@@ -106,7 +107,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
             List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredDTO = filterMethods.stream().map((pm) -> new in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             finalMethods.addAll(filteredDTO);
         }
-        return new ArrayList<>(finalMethods.stream().collect(Collectors.toMap(PaymentOptionsDTO.PaymentMethodDTO::getTag, Function.identity(), (pm1, pm2) -> pm1.getHierarchy() < pm2.getHierarchy() ? pm1: pm2)).values());
+        return new ArrayList<>(finalMethods.stream().collect(Collectors.toMap(PaymentOptionsDTO.PaymentMethodDTO::getTag, Function.identity(), (pm1, pm2) -> pm1.getHierarchy() < pm2.getHierarchy() ? pm1 : pm2)).values());
     }
 
     private List<PaymentMethod> filterPaymentMethodsBasedOnEligibility(PaymentOptionsComputationResponse response, List<PaymentMethod> methods) {

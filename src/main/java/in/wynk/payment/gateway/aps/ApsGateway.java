@@ -7,6 +7,7 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
@@ -91,7 +92,7 @@ public class ApsGateway implements
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, payCache, merchantTransactionService, eventPublisher);
-        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(cancelMandateEndpoint, commonGateway);
+        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(transactionManager, cancelMandateEndpoint, commonGateway);
     }
 
     @Override

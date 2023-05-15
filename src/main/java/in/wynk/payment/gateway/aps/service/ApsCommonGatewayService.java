@@ -175,6 +175,7 @@ public class ApsCommonGatewayService {
                 } else if (apsChargeStatusResponses[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
                 }
+                builder.request(uri);
                 builder.response(apsChargeStatusResponses);
                 builder.externalTransactionId(apsChargeStatusResponses[0].getPgId());
             } catch(HttpStatusCodeException e){

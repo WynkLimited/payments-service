@@ -57,11 +57,11 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
             final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
+            common.syncChargingTransactionFromSource(transaction);
             UpiPaymentDetails upiPaymentDetails = null;
             if (purchaseDetails.getPaymentDetails().getPaymentMode() == String.valueOf(PaymentMode.UPI)) {
                 upiPaymentDetails = (UpiPaymentDetails) purchaseDetails.getPaymentDetails();
             }
-            common.syncChargingTransactionFromSource(transaction);
             if (purchaseDetails.getPaymentDetails().isAutoRenew() && purchaseDetails.getPaymentDetails().getPaymentMode() == String.valueOf(PaymentMode.UPI) && upiPaymentDetails.isIntent() && transaction.getInitTime().getTimeInMillis() + 15 * 60 * 1000 >= System.currentTimeMillis()) {
                 transaction.setStatus(String.valueOf(TransactionStatus.INPROGRESS));
             }

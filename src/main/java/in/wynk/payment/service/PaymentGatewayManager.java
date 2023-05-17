@@ -75,7 +75,7 @@ public class PaymentGatewayManager
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
-        IPaymentMandateCancellation<AbstractCancelMandateRequest> {
+        ICancellingRecurringService {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -291,7 +291,7 @@ public class PaymentGatewayManager
         return preDebitResponse;
     }
 
-    @Override
+   /* @Override
     public void cancel (AbstractCancelMandateRequest request) {
         Transaction transaction = transactionManager.get(request.getTid());
         final IPaymentMandateCancellation<AbstractCancelMandateRequest> mandateCancellationRequest =
@@ -303,6 +303,13 @@ public class PaymentGatewayManager
         }catch (Exception e) {
             //
         }
+
+    }*/
+
+    @Override
+    public void cancelRecurring (String transactionId) {
+        BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)
+                .cancelRecurring(transactionId);
 
     }
 

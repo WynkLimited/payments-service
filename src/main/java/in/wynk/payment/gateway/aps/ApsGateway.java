@@ -1,6 +1,7 @@
 package in.wynk.payment.gateway.aps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -47,11 +48,11 @@ public class ApsGateway implements
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
-        IPaymentMandateCancellation<AbstractCancelMandateRequest> {
+        ICancellingRecurringService {
 
     private final IExternalPaymentEligibilityService eligibilityGateway;
     private final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
-    private final IPaymentMandateCancellation<AbstractCancelMandateRequest> mandateCancellationGateway;
+    private final ICancellingRecurringService mandateCancellationGateway;
     private final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
     private final IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest> payOptionsGateway;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
@@ -74,6 +75,7 @@ public class ApsGateway implements
                       @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint,
                       @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
                       @Value("${aps.payment.cancel.mandate.api}") String cancelMandateEndpoint,
+                      Gson gson,
                       ObjectMapper mapper,
                       ApsCommonGatewayService commonGateway,
                       PaymentCachingService payCache,
@@ -92,7 +94,7 @@ public class ApsGateway implements
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, cache, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, payCache, merchantTransactionService, eventPublisher);
-        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(transactionManager, cancelMandateEndpoint, commonGateway);
+        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson);
     }
 
     @Override
@@ -152,7 +154,7 @@ public class ApsGateway implements
     }
 
     @Override
-    public void cancel (AbstractCancelMandateRequest request) {
-        mandateCancellationGateway.cancel(request);
+    public void cancelRecurring (String transactionId) {
+        mandateCancellationGateway.cancelRecurring(transactionId);
     }
 }

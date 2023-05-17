@@ -9,4 +9,5 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 public class ExternalPaymentRefundStatusResponse extends RefundInfo {
+    
 }

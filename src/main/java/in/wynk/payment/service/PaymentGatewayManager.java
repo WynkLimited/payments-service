@@ -291,21 +291,6 @@ public class PaymentGatewayManager
         return preDebitResponse;
     }
 
-   /* @Override
-    public void cancel (AbstractCancelMandateRequest request) {
-        Transaction transaction = transactionManager.get(request.getTid());
-        final IPaymentMandateCancellation<AbstractCancelMandateRequest> mandateCancellationRequest =
-                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
-                        new ParameterizedTypeReference<IPaymentMandateCancellation<AbstractCancelMandateRequest>>() {
-                        });
-        try{
-           mandateCancellationRequest.cancel(request);
-        }catch (Exception e) {
-            //
-        }
-
-    }*/
-
     @Override
     public void cancelRecurring (String transactionId) {
         BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)

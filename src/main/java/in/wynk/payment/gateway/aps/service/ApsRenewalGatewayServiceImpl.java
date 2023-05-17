@@ -75,9 +75,9 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
         }
         try {
-            ApsChargeStatusResponse merchantData = objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse.class);
+            ApsChargeStatusResponse[] apsChargeStatusResponses = objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
+            ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
             AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
-
             if(Objects.nonNull(merchantData.getMandateId())) {
                 SiPaymentRecurringResponse  apsRenewalResponse = doChargingForRenewal(merchantData);
                 if (Objects.nonNull(apsRenewalResponse)) {
@@ -94,11 +94,6 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             }
             throw e;
         }
-    }
-
-
-    private boolean isMandateExisting() {
-        return true;
     }
 
     private SiPaymentRecurringResponse doChargingForRenewal(ApsChargeStatusResponse response) {

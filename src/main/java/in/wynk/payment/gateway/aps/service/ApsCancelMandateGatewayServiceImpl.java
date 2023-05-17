@@ -65,7 +65,5 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
             log.error(APS_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY040, e);
         }
-
-
     }
 }

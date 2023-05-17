@@ -72,6 +72,7 @@ public class PaymentEventListener {
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
+    private final PaymentGatewayManager manager;
     private final ITaskScheduler taskScheduler;
     private final ISqsManagerService sqsManagerService;
     private final IPaymentErrorService paymentErrorService;
@@ -125,9 +126,17 @@ public class PaymentEventListener {
     public void onRecurringPaymentEvent(RecurringPaymentEvent event) {
         try {
             AnalyticService.update(event);
-            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE)
-                BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class)
-                        .cancelRecurring(event.getTransactionId());
+            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
+                String code = transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode();
+                //TODO: remove this if else after refactoring ATB and payU for cancel mandate/recurring
+                if ("aps".equals(code)) {
+                    manager.cancelRecurring(event.getTransactionId());
+                } else {
+                    BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class)
+                            .cancelRecurring(event.getTransactionId());
+                }
+            }
+
         } catch (Exception e) {
             throw new WynkRuntimeException(UT025, e);
         }

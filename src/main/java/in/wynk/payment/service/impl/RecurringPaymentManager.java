@@ -52,7 +52,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     private int duePreDebitNotificationOffsetTime;
 
     private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>(){{
-        put(ApsConstant.APS, -2);
+        put(ApsConstant.AIRTEL_PAY_STACK, -2);
     }};
 
     @Override
@@ -123,13 +123,14 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     private void scheduleRecurringPayment(AbstractTransactionRevisionRequest request, Calendar nextRecurringDateTime, int attemptSequence) {
+        String transactionId = request.getTransaction().getIdStr();
         if (CODE_TO_RENEW_OFFSET.containsKey(request.getTransaction().getPaymentChannel().getCode())) {
-            nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(request.getTransaction().getPaymentChannel()));
+            nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(request.getTransaction().getPaymentChannel().getCode()));
         }
         try {
             RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
                     .day(nextRecurringDateTime)
-                    .transactionId(request.getTransactionId())
+                    .transactionId(transactionId)
                     .hour(nextRecurringDateTime.getTime())
                     .createdTimestamp(Calendar.getInstance())
                     .transactionEvent(PaymentEvent.SUBSCRIBE.name())
@@ -172,7 +173,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 }
             });
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
         }
     }
 }

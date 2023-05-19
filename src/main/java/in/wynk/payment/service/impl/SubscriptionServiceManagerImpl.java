@@ -12,6 +12,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
@@ -143,7 +144,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
 
     @Override
-    public boolean renewalPlanEligibility(int planId, String transactionId, String uid) {
+    public boolean renewalPlanEligibility(int planId, String transactionId, String uid, String paymentMethod) {
         try {
             RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).countryCode(CurrencyCountryUtils.findCountryCodeByPlanId(planId)).build();
             RequestEntity<RenewalPlanEligibilityRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest, HttpMethod.POST);
@@ -153,7 +154,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 long today = System.currentTimeMillis();
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
                 long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if (furtherDefer > hour * 60 * 60 * 1000) {
+                if ((furtherDefer > hour * 60 * 60 * 1000 || (furtherDefer >  2 * 24 * 60 * 60 * 1000 && Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK)))) {
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }

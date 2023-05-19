@@ -52,8 +52,8 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
             }
             ApsChargeStatusResponse apsChargeStatusResponse = apsChargeStatusResponses[0];
             CancelMandateRequest mandateCancellationRequest = CancelMandateRequest.builder()
-                    .mandateTransactionId(transactionId).cancellationRequestId(transactionId)
-                    .paymentGateway(apsChargeStatusResponse.getPaymentGateway()).paymentMode(apsChargeStatusResponse.getPaymentMode())
+                    .mandateTransactionId(apsChargeStatusResponse.getMandateId()).cancellationRequestId(transactionId)
+                    .paymentGateway(apsChargeStatusResponse.getPaymentRoutedThrough()).paymentMode(apsChargeStatusResponse.getPaymentMode())
                     .build();
             final Transaction transaction = transactionManager.get(transactionId);
             MandateCancellationResponse mandateCancellationResponse =
@@ -61,6 +61,9 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
                             MandateCancellationResponse.class);
             log.info("Mandate Cancellation Response from APS {}", mandateCancellationResponse);
             AnalyticService.update(ApsConstant.UPI_MANDATE_REVOKE, gson.toJson(mandateCancellationResponse));
+        } catch (WynkRuntimeException ex) {
+            log.error(APS_MANDATE_REVOKE_ERROR, ex.getMessage());
+            throw ex;
         } catch (Exception e) {
             log.error(APS_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY040, e);

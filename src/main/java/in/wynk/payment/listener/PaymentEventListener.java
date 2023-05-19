@@ -36,9 +36,7 @@ import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
-import in.wynk.stream.producer.IEventPublisher;
 import in.wynk.stream.producer.IKinesisEventPublisher;
-import in.wynk.stream.producer.impl.KinesisEventPublisher;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.tinylytics.utils.AppUtils;
@@ -46,12 +44,11 @@ import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.SimpleScheduleBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
-
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +69,6 @@ public class PaymentEventListener {
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
-    private final PaymentGatewayManager manager;
     private final ITaskScheduler taskScheduler;
     private final ISqsManagerService sqsManagerService;
     private final IPaymentErrorService paymentErrorService;
@@ -126,17 +122,9 @@ public class PaymentEventListener {
     public void onRecurringPaymentEvent(RecurringPaymentEvent event) {
         try {
             AnalyticService.update(event);
-            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
-                String code = transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode();
-                //TODO: remove this if else after refactoring ATB and payU for cancel mandate/recurring
-                if ("aps".equals(code)) {
-                    manager.cancelRecurring(event.getTransactionId());
-                } else {
-                    BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class)
-                            .cancelRecurring(event.getTransactionId());
-                }
-            }
-
+            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE)
+                BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class)
+                        .cancelRecurring(event.getTransactionId());
         } catch (Exception e) {
             throw new WynkRuntimeException(UT025, e);
         }

@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.request.renewal;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
@@ -11,8 +12,8 @@ import lombok.experimental.SuperBuilder;
  */
 @Getter
 @SuperBuilder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SiPaymentRecurringRequest<T extends SiPaymentInfo> {
     private T siPaymentInfo;
-    @JsonProperty("orderId")
-    private String transactionId;
+    private String orderId;
 }

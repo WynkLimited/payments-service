@@ -9,6 +9,7 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.request.renewal.SiPaymentRecurringRequest;
 import in.wynk.payment.dto.aps.response.renewal.SiPaymentRecurringResponse;
@@ -99,8 +100,9 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
     private SiPaymentRecurringResponse doChargingForRenewal(ApsChargeStatusResponse response) {
         Transaction transaction = TransactionContext.get();
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
-        SiPaymentRecurringRequest apsSiPaymentRecurringRequest = SiPaymentRecurringRequest.builder().transactionId(transaction.getIdStr()).siPaymentInfo(
-                        SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentGateway()).build())
+        SiPaymentRecurringRequest apsSiPaymentRecurringRequest = SiPaymentRecurringRequest.builder().orderId(transaction.getIdStr()).siPaymentInfo(
+                        SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentRoutedThrough()).lob(
+                                LOB_SI_WYNK).build())
                 .build();
         try {
             return common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);

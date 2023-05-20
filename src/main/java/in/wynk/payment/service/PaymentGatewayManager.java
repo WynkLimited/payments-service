@@ -233,7 +233,7 @@ public class PaymentGatewayManager
 
     @Override
     public void renew(PaymentRenewalChargingRequest request) {
-        PaymentGateway paymentGateway = PaymentCodeCachingService.getFromPaymentCode(request.getPaymentCode());
+        PaymentGateway paymentGateway = request.getPaymentGateway();
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
@@ -243,7 +243,6 @@ public class PaymentGatewayManager
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
                         new ParameterizedTypeReference<IPaymentRenewal<PaymentRenewalChargingRequest>>() {
                         });
-        final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
         } catch (RestClientException e) {
@@ -262,7 +261,6 @@ public class PaymentGatewayManager
                 handleException(errorEventBuilder, paymentGateway, e);
             }
         } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
                         PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())

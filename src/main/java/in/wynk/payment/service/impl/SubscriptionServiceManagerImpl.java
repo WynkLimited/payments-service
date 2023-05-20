@@ -154,7 +154,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 long today = System.currentTimeMillis();
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
                 long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if ((furtherDefer > hour * 60 * 60 * 1000 || (furtherDefer >  2 * 24 * 60 * 60 * 1000 && Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK)))) {
+                if ((furtherDefer > hour * 60 * 60 * 1000 && !Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK)) || (furtherDefer >  2 * 24 * 60 * 60 * 1000 && Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK))) {
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }

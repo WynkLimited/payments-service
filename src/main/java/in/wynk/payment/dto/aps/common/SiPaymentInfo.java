@@ -13,11 +13,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class SiPaymentInfo extends AbstractPaymentInfo {
     private String mandateTransactionId;
-    /**
-     * Static value SI_WYNK for renewal transactions
-     */
-    @Builder.Default
-    private String lob = ApsConstant.LOB_SI_WYNK;
-
     private String paymentGateway;
 }

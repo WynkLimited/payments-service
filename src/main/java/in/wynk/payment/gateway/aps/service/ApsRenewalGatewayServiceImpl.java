@@ -102,8 +102,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         SiPaymentRecurringRequest apsSiPaymentRecurringRequest = SiPaymentRecurringRequest.builder().orderId(transaction.getIdStr()).siPaymentInfo(
                         SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentRoutedThrough()).lob(
-                                LOB_SI_WYNK).build())
-                .build();
+                                LOB_SI_WYNK).build()).build();
         try {
             return common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
         } catch (RestClientException e) {
@@ -114,22 +113,19 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
 
     private void updateTransactionStatus(PlanPeriodDTO planPeriodDTO, SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
         int retryInterval = planPeriodDTO.getRetryInterval();
-        if (apsRenewalResponse.getStatusCodeValue() == HttpStatus.OK.value()) {
-            SiRecurringData renewalResponse = apsRenewalResponse.getBody().getData();
-            if (PG_STATUS_SUCCESS.equalsIgnoreCase(renewalResponse.getPgStatus())) {
-                transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-            } else if (PG_STATUS_FAILED.equalsIgnoreCase(renewalResponse.getPgStatus())) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
-                    StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, renewalResponse.getPgStatus())) {
-                transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
-            } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
-                    StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, renewalResponse.getPgStatus())) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            }
-        } else {
+        log.info("aps renewal response -----------> {}", apsRenewalResponse);
+        SiRecurringData renewalResponse = apsRenewalResponse.getBody().getData();
+        if (PG_STATUS_SUCCESS.equalsIgnoreCase(renewalResponse.getPgStatus())) {
+            transaction.setStatus(TransactionStatus.SUCCESS.getValue());
+        } else if (PG_STATUS_FAILED.equalsIgnoreCase(renewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsRenewalResponse.getStatusCode()).build());
+        } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
+                StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, renewalResponse.getPgStatus())) {
+            transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
+        } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
+                StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, renewalResponse.getPgStatus())) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
         }
+        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsRenewalResponse.getStatusCode()).build());
     }
 }

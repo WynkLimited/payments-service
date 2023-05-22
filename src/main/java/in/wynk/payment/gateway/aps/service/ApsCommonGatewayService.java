@@ -126,7 +126,7 @@ public class ApsCommonGatewayService {
 
     public void syncRefundTransactionFromSource (Transaction transaction, String refundId) {
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
-        TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
+        TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         try {
             final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(refundId).build();
             mBuilder.request(refundStatusRequest);

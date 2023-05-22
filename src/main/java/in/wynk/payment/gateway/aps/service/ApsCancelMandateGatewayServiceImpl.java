@@ -59,7 +59,6 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
             MandateCancellationResponse mandateCancellationResponse =
                     common.exchange(transaction.getClientAlias(), CANCEL_MANDATE_ENDPOINT, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()), mandateCancellationRequest,
                             MandateCancellationResponse.class);
-            log.info("Mandate Cancellation Response from APS {}", mandateCancellationResponse);
             AnalyticService.update(ApsConstant.UPI_MANDATE_REVOKE, gson.toJson(mandateCancellationResponse));
         } catch (WynkRuntimeException ex) {
             log.error(APS_MANDATE_REVOKE_ERROR, ex.getMessage());

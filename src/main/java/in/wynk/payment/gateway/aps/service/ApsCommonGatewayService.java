@@ -102,20 +102,22 @@ public class ApsCommonGatewayService {
             log.error("client is not loaded for url {}", clientAlias);
             throw new WynkRuntimeException(PAY044);
         }
-        ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(clientAlias), url, method, body);
-        if (responseEntity.getStatusCode() == HttpStatus.OK) {
-            try {
+        try {
+            ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(clientAlias), url, method, body);
+            if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
                     return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
                 ApsFailureResponse failureResponse = objectMapper.readValue((String) apsVasResponse.getBody(), ApsFailureResponse.class);
-                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), "APS Api error response");
-            } catch (JsonProcessingException ex) {
-                throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
+                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), failureResponse.getErrorMessage());
             }
+            throw new WynkRuntimeException(PAY041, responseEntity.getStatusCode().name());
+        } catch (JsonProcessingException ex) {
+            throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PAY041, e);
         }
-        throw new WynkRuntimeException(PAY041);
     }
 
     private String generateToken (String clientAlias) {

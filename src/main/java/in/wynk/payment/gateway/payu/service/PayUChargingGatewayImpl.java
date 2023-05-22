@@ -166,7 +166,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                                 .recurValue(map.get(RECUR_VALUE))
                                 .validityEnd(map.get(VALIDITY_END))
                                 .validityStart(map.get(VALIDITY_START))
-                                .cu(map.getOrDefault(CU, CURRENCY_INR))
+                                .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR))
                                 .transactionStatus(transaction.getStatus())
                                 .tr(result.getPaymentId()).am(result.getAmount())
                                 .transactionType(transaction.getType().getValue())

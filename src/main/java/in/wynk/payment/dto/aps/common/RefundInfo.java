@@ -14,4 +14,7 @@ public class RefundInfo implements Serializable {
     private String refundSystemId;
     private double refundAmount;
     private String refundStatus;
+    private boolean history;
+    private String arn;
+    private long refundDate;
 }

@@ -24,7 +24,6 @@ import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
@@ -75,7 +74,8 @@ public class PaymentGatewayManager
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
-        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>> {
+        IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
+        ICancellingRecurringService {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -233,7 +233,7 @@ public class PaymentGatewayManager
 
     @Override
     public void renew(PaymentRenewalChargingRequest request) {
-        PaymentGateway paymentGateway = PaymentCodeCachingService.getFromPaymentCode(request.getPaymentCode());
+        PaymentGateway paymentGateway = request.getPaymentGateway();
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
@@ -243,7 +243,6 @@ public class PaymentGatewayManager
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
                         new ParameterizedTypeReference<IPaymentRenewal<PaymentRenewalChargingRequest>>() {
                         });
-        final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
         } catch (RestClientException e) {
@@ -262,7 +261,6 @@ public class PaymentGatewayManager
                 handleException(errorEventBuilder, paymentGateway, e);
             }
         } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
                         PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
@@ -289,6 +287,13 @@ public class PaymentGatewayManager
         AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
         AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         return preDebitResponse;
+    }
+
+    @Override
+    public void cancelRecurring (String transactionId) {
+        BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)
+                .cancelRecurring(transactionId);
+
     }
 
     private static class ChargingTransactionStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {

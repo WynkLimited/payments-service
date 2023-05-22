@@ -36,9 +36,7 @@ import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
-import in.wynk.stream.producer.IEventPublisher;
 import in.wynk.stream.producer.IKinesisEventPublisher;
-import in.wynk.stream.producer.impl.KinesisEventPublisher;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.tinylytics.utils.AppUtils;
@@ -46,12 +44,11 @@ import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.SimpleScheduleBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
-
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;

@@ -2,8 +2,10 @@ package in.wynk.payment.gateway.aps.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.cache.aspect.advice.CacheEvict;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
@@ -12,16 +14,21 @@ import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.ApsFailureResponse;
 import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
 import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.config.AuthSchemes;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +39,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -42,9 +48,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY041;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY044;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY998;
+import static in.wynk.payment.core.constant.PaymentConstants.BANK_CODE;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_MODE;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
 import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
@@ -64,22 +70,24 @@ public class ApsCommonGatewayService {
     private String CHARGING_STATUS_ENDPOINT;
 
     private final Gson gson;
+    private EncryptionUtils.RSA rsa;
     private final ObjectMapper objectMapper;
     private final RestTemplate httpTemplate;
-    private EncryptionUtils.RSA rsa;
     private final ResourceLoader resourceLoader;
     private final ApsClientService apsClientService;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentCachingService cachingService;
 
 
     public ApsCommonGatewayService (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
-                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper) {
+                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper, PaymentCachingService cachingService) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;
         this.resourceLoader = resourceLoader;
         this.apsClientService = apsClientService;
         this.eventPublisher = eventPublisher;
+        this.cachingService = cachingService;
     }
 
     @SneakyThrows
@@ -90,7 +98,7 @@ public class ApsCommonGatewayService {
     }
 
     public <T> T exchange (String clientAlias, String url, HttpMethod method, String loginId, Object body, Class<T> target) {
-        if(StringUtils.isEmpty(clientAlias)) {
+        if (StringUtils.isEmpty(clientAlias)) {
             log.error("client is not loaded for url {}", clientAlias);
             throw new WynkRuntimeException(PAY044);
         }
@@ -117,28 +125,28 @@ public class ApsCommonGatewayService {
     }
 
     public void syncRefundTransactionFromSource (Transaction transaction, String refundId) {
-        TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         try {
             final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(refundId).build();
-            ExternalPaymentRefundStatusResponse body =
-                    exchange(transaction.getClientAlias(),REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ExternalPaymentRefundStatusResponse.class);
             mBuilder.request(refundStatusRequest);
-            mBuilder.response(body);
-            mBuilder.externalTransactionId(body.getRefundId());
-            if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_SUCCESS")) {
+            ExternalPaymentRefundStatusResponse externalPaymentRefundStatusResponse = exchange(transaction.getClientAlias(), REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ExternalPaymentRefundStatusResponse.class);
+            mBuilder.response(externalPaymentRefundStatusResponse);
+            mBuilder.externalTransactionId(externalPaymentRefundStatusResponse.getRefundId());
+            AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, externalPaymentRefundStatusResponse.getRefundId());
+
+            if (!StringUtils.isEmpty(externalPaymentRefundStatusResponse.getRefundStatus()) && externalPaymentRefundStatusResponse.getRefundStatus().equalsIgnoreCase("REFUND_SUCCESS")) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
+            } else if (!StringUtils.isEmpty(externalPaymentRefundStatusResponse.getRefundStatus()) && externalPaymentRefundStatusResponse.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
-
         } catch (HttpStatusCodeException e) {
             mBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PAY998, e);
         } catch (Exception e) {
-            if(e instanceof WynkRuntimeException) {
-                log.error(APS_REFUND_STATUS,e.getMessage());
-                throw new WynkRuntimeException(((WynkRuntimeException) e).getErrorCode(), ((WynkRuntimeException) e).getErrorTitle(),e.getMessage());
+            if (e instanceof WynkRuntimeException) {
+                log.error(APS_REFUND_STATUS, e.getMessage());
+                throw new WynkRuntimeException(((WynkRuntimeException) e).getErrorCode(), ((WynkRuntimeException) e).getErrorTitle(), e.getMessage());
             }
             log.error(APS_REFUND_STATUS, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PAY998, e);
@@ -155,16 +163,26 @@ public class ApsCommonGatewayService {
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
-            ApsChargeStatusResponse[] status = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
-
-            if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_SUCCESS")) {
-                transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-                evict(transaction.getMsisdn());
-            } else if (status[0].getPaymentStatus().equalsIgnoreCase("PAYMENT_FAILED")) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            builder.request(uri);
+            ApsChargeStatusResponse[] apsChargeStatusResponses = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
+            builder.response(apsChargeStatusResponses);
+            if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getPaymentMode())) {
+                AnalyticService.update(PAYMENT_MODE, apsChargeStatusResponses[0].getPaymentMode());
             }
-            builder.request(status).response(status);
-            builder.externalTransactionId(status[0].getPgId());
+            if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getBankCode())) {
+                AnalyticService.update(BANK_CODE, apsChargeStatusResponses[0].getBankCode());
+            }
+            if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getCardNetwork())) {
+                AnalyticService.update(ApsConstant.APS_CARD_TYPE, apsChargeStatusResponses[0].getCardNetwork());
+            }
+            builder.externalTransactionId(apsChargeStatusResponses[0].getPgId());
+            AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, apsChargeStatusResponses[0].getPgId());
+            syncTransactionWithSourceResponse(apsChargeStatusResponses[0]);
+            if (transaction.getStatus() == TransactionStatus.FAILURE) {
+                if (!StringUtils.isEmpty(apsChargeStatusResponses[0].getErrorCode()) || !StringUtils.isEmpty(apsChargeStatusResponses[0].getErrorDescription())) {
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponses[0].getErrorCode()).description(apsChargeStatusResponses[0].getErrorDescription()).build());
+                }
+            }
 
         } catch (HttpStatusCodeException e) {
             builder.request(e.getResponseBodyAsString()).response(e.getResponseBodyAsString());
@@ -179,8 +197,29 @@ public class ApsCommonGatewayService {
         }
     }
 
+    private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
+        TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
+        final Transaction transaction = TransactionContext.get();
+        int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
+        if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
+            finalTransactionStatus = TransactionStatus.SUCCESS;
+            evict(transaction.getMsisdn());
+        } else if ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+            finalTransactionStatus = TransactionStatus.FAILURE;
+        } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (BaseConstants.ONE_DAY_IN_MILLI * retryInterval)) &&
+                (StringUtils.equalsIgnoreCase("PAYMENT_PENDING", apsChargeStatusResponse.getPaymentStatus()) ||
+                        (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase("PAYMENT_QUEUED", apsChargeStatusResponse.getPaymentStatus())))) {
+            finalTransactionStatus = TransactionStatus.INPROGRESS;
+        } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (BaseConstants.ONE_DAY_IN_MILLI * retryInterval)) &&
+                StringUtils.equalsIgnoreCase("PAYMENT_PENDING", apsChargeStatusResponse.getPaymentStatus())) {
+            finalTransactionStatus = TransactionStatus.INPROGRESS;
+        }
+        transaction.setStatus(finalTransactionStatus.getValue());
+    }
+
     @CacheEvict(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#msisdn", cacheManager = L2CACHE_MANAGER)
-    private void evict(String msisdn) { }
+    private void evict (String msisdn) {
+    }
 
     @SneakyThrows
     public String encryptCardData (CardDetails credentials) {

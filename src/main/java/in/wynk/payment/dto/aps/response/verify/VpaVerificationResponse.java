@@ -1,9 +1,7 @@
 package in.wynk.payment.dto.aps.response.verify;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 
 @Getter
 @ToString
@@ -14,7 +12,8 @@ public class VpaVerificationResponse {
     private String vpa;
     private String payeeAccountName;
     private boolean vpaValid;
-    private boolean isAutoPayHandleValid;
+    @JsonProperty("isAutoPayHandleValid")
+    private boolean autoPayHandleValid;
 
     @Getter
     @ToString

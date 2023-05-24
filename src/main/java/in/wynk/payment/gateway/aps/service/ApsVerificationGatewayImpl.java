@@ -1,7 +1,5 @@
 package in.wynk.payment.gateway.aps.service;
 
-import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.request.verify.BinVerificationRequest;
 import in.wynk.payment.dto.aps.response.verify.BinVerificationResponse;
 import in.wynk.payment.dto.aps.response.verify.VpaVerificationResponse;
@@ -70,7 +68,7 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
 
                 } catch (Exception e) {
                     log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to "+ e.getMessage());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
+                    throw e;
                 }
             }
         }
@@ -85,7 +83,7 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
                     return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to "+ e.getMessage());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
+                    throw e;
                 }
             }
         }

@@ -111,12 +111,16 @@ public class ApsCommonGatewayService {
                     return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
                 ApsFailureResponse failureResponse = objectMapper.readValue((String) apsVasResponse.getBody(), ApsFailureResponse.class);
-                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), failureResponse.getErrorMessage());
+                failureResponse.setStatusCode(apsVasResponse.getStatusCode());
+                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), failureResponse.getStatusCode());
             }
             throw new WynkRuntimeException(PAY041, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {
             throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
         } catch (Exception e) {
+            if (e instanceof WynkRuntimeException) {
+                throw e;
+            }
             throw new WynkRuntimeException(PAY041, e);
         }
     }

@@ -428,6 +428,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY040.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
                 }
             }
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY045.name()).description(PaymentErrorType.PAY045.getErrorMessage()).build());
             throw new WynkRuntimeException(PaymentErrorType.PAY045);
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY045, e);

@@ -18,10 +18,7 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.AmazonReceiptDetails;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.entity.WynkUserExtUserMapping;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -29,6 +26,7 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.amazonIap.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
+import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
@@ -62,7 +60,7 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERI
 
 @Slf4j
 @Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentPreVerificationService, IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentVerificationService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse> {
+public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentPreVerificationService, IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentVerificationService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
 
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_PURCHASED");
     private static final List<String> RENEW_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID");
@@ -70,8 +68,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private static final List<String> FIRST_TIME_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED", "SUBSCRIPTION_PURCHASED");
     private static final List<String> UNSUBSCRIBE_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_AUTO_RENEWAL_OFF", "SUBSCRIPTION_EXPIRED");
     private static final List<String> CANCELLED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_CANCELLED", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
-    private static final List<String> SUB_MODIFICATION_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID", "SUBSCRIPTION_CANCELLED","SUBSCRIPTION_AUTO_RENEWAL_OFF","SUBSCRIPTION_EXPIRED", "SUBSCRIPTION_MODIFIED_IMMEDIATE", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
+    private static final List<String> SUB_MODIFICATION_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID", "SUBSCRIPTION_CANCELLED", "SUBSCRIPTION_AUTO_RENEWAL_OFF", "SUBSCRIPTION_EXPIRED", "SUBSCRIPTION_MODIFIED_IMMEDIATE", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
     private static final List<String> AMAZON_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
+
+    private static final Map<Integer, String> CANCELLATION_REASON = new HashMap<Integer, String>() {{
+        put(0, "The cancel reason is currently unavailable and will render at a later time.");
+        put(1, "Your customer canceled the order.");
+        put(2, "The purchase was canceled by Amazon's system.");
+    }};
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
     @Value("${payment.merchant.AmazonIap.secret}")
@@ -178,10 +182,10 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             fetchAndUpdateTransaction(transaction, response);
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
-                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"),"${payment.success.page}");
+                final String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
                 builder.url(success_url + sid + BaseConstants.SLASH + os);
             } else {
-                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"),"${payment.success.page}");
+                final String failure_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.success.page}");
                 builder.url(failure_url + sid + BaseConstants.SLASH + os);
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
@@ -196,7 +200,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         boolean autoRenewal = false;
         AmazonIapVerificationRequest amazonIapVerificationRequest = (AmazonIapVerificationRequest) iapVerificationRequest;
         AmazonIapReceiptResponse amazonIapReceiptResponse = getReceiptStatus(amazonIapVerificationRequest.getReceipt().getReceiptId(), amazonIapVerificationRequest.getUserData().getUserId());
-        if(amazonIapReceiptResponse.getRenewalDate() != null && amazonIapReceiptResponse.getRenewalDate() > System.currentTimeMillis()) {
+        if (amazonIapReceiptResponse.getRenewalDate() != null && amazonIapReceiptResponse.getRenewalDate() > System.currentTimeMillis()) {
             autoRenewal = true;
         }
         String skuId = amazonIapReceiptResponse.getTermSku();
@@ -215,7 +219,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     //Needs to be implemented for v2 request
     @Override
-    public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
+    public LatestReceiptResponse getLatestReceiptResponse(IapVerificationRequestV2 iapVerificationRequest) {
         return null;
     }
 
@@ -223,7 +227,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
             fetchAndUpdateTransaction(transaction, AmazonLatestReceiptResponse.builder().extTxnId(extTxnId).build());
         }
-        ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
+        ChargingStatusResponse.ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
         }
@@ -348,7 +352,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                     //TODO: check for eligibility cases.
                     final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
                     if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
-                    || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
+                            || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
                         return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
                     }
                 } catch (Exception e) {
@@ -382,7 +386,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr());
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         AmazonIapReceiptResponse amazonIapReceipt = mapping.getMessage();
-        if(amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED ) {
+        if (amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
         transaction.setStatus(finalTransactionStatus.name());
@@ -401,23 +405,54 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             return PaymentEvent.UNSUBSCRIBE;
         } else if (RENEW_NOTIFICATIONS.contains(message.getNotificationType())) {
             return PaymentEvent.RENEW;
-        }  else {
+        } else {
             throw new WynkRuntimeException(WynkErrorType.UT001);
         }
     }
 
-
     @Override
-    public void verifyRequest (IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+        TransactionStatus status = TransactionStatus.FAILURE;
+        final Transaction transaction = TransactionContext.get();
+        try {
+            final AmazonReceiptDetails receipt = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+            final AmazonIapReceiptResponse response = getReceiptStatus(receipt.getId(), receipt.getAmazonUserId());
+            if (Objects.nonNull(response)) {
+                if (Objects.isNull(response.getCancelDate())) {
+                    if (response.getRenewalDate() > System.currentTimeMillis()) {
+                        status = TransactionStatus.SUCCESS;
+                        return WynkResponseEntity.<Void>builder().build();
+                    }
+                }
+                if (Objects.nonNull(response.getCancelDate())) {
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY040.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
+                }
+            }
+            throw new WynkRuntimeException(PaymentErrorType.PAY045);
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
+        } finally {
+            transaction.setStatus(status.getValue());
+        }
+    }
+
+    public boolean supportsRenewalReconciliation() {
+        return false;
     }
 
     @Override
-    public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
-
+    public void verifyRequest(IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
 
     @Override
-    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
-
+    public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
+
+    @Override
+    public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        throw new WynkRuntimeException("Method is not implemented");
+    }
+
 }

@@ -203,10 +203,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         try {
             final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
-            if(Objects.isNull(response) || !response.isSuccess() || response.getBody().getOrdersList().isEmpty()){
+            if(Objects.isNull(response)) {
                 finalTransactionStatus= TransactionStatus.FAILURE;
-            }
-            else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
+            } else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
                         if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
@@ -305,7 +304,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         try {
             return catalogueVasClientService.ordersStatus(si);
         } catch (Exception e) {
-            log.error("Failed to get orderList from AddToBill: {} ", e.getMessage(), e);
+            log.error(ADDTOBILL_API_FAILURE, "recon is failed due to {} ", e);
             return null;
         }
     }

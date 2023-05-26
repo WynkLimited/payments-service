@@ -282,10 +282,10 @@ public class APBPaytmMerchantWalletPaymentService extends AbstractMerchantPaymen
         Transaction transaction = TransactionContext.get();
         this.fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(APB_PAYTM_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY304);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-            log.error(APB_PAYTM_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(APB_PAYTM_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APBPaytm end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY303);
         }
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().status(HttpStatus.OK).data(ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).build()).build();

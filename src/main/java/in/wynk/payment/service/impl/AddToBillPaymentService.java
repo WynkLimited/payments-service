@@ -85,7 +85,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         Transaction transaction = TransactionContext.get();
         this.fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-            log.error(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at addToBill end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at addToBill end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.ATB02);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
             log.error(ADDTOBILL_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at addToBill end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
@@ -141,7 +141,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
-                log.error("plan serviceIds or offer serviceGroup is not present");
+                log.warn("plan serviceIds or offer serviceGroup is not present");
                 return null;
             } else {
                 final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).isBundle(offer.isThanksBundle()).build();
@@ -149,7 +149,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return response;
             }
         } catch (Exception e) {
-            log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -186,7 +185,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             }
             return null;
         } catch (Exception ex) {
-            log.error("Error in AddToBill Eligibility check: {}", ex.getMessage(), ex);
             return null;
         }
     }
@@ -198,7 +196,10 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         try {
             final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
-            if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
+            if(Objects.isNull(response) || !response.isSuccess() || response.getBody().getOrdersList().isEmpty()){
+                finalTransactionStatus= TransactionStatus.FAILURE;
+            }
+            else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
                         if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
@@ -310,7 +311,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             final PlanDTO plan = cachingService.getPlan(proxy.getPlanId());
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             if (MapUtils.isEmpty(plan.getSku()) || !plan.getSku().containsKey(ATB) || StringUtils.isBlank(offer.getServiceGroupId())) {
-                log.error("plan serviceIds or offer serviceGroup is not present");
+                log.warn("plan serviceIds or offer serviceGroup is not present");
             } else {
                 final CatalogueEligibilityAndPricingResponse response = proxy.getResponse();
                 if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
@@ -324,7 +325,6 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             }
             return false;
         } catch (Exception e) {
-            log.error("Error in AddToBill Eligibility check: {}", e.getMessage(), e);
             return false;
         }
     }

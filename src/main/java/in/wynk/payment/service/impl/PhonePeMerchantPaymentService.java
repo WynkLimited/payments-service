@@ -92,10 +92,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
                 final String redirectionUrl;
                 IChargingDetails chargingDetails = (IChargingDetails) optionalDetails.get();
                 if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                    log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    log.warn(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     redirectionUrl = chargingDetails.getPageUrlDetails().getPendingPageUrl();
                 } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-                    log.error(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                    log.warn(PaymentLoggingMarker.PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                     redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
                 } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
@@ -173,10 +173,10 @@ public class PhonePeMerchantPaymentService extends AbstractMerchantPaymentStatus
     private ChargingStatusResponse getStatusFromPhonePe(Transaction transaction) {
         this.fetchAndUpdateTransactionFromSource(transaction);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-            log.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PHONEPE_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY018, "Transaction is still pending at phonepe");
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
-            log.error(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+            log.warn(PHONEPE_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at phonePe end for uid: {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
             throw new WynkRuntimeException(PaymentErrorType.PAY019, PHONEPE_CHARGING_STATUS_VERIFICATION_FAILURE);
         }
 

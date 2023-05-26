@@ -119,7 +119,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
 
         try {
             //fix login id as msisdn
-            return common.exchange(SI_PAYMENT_API, HttpMethod.POST, "", apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
+            return common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, "", apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
 
         } catch (RestClientException e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());

@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import static in.wynk.common.constant.BaseConstants.CLIENT;
+
 @Getter
 @ToString
 @SuperBuilder
@@ -18,5 +20,10 @@ public class WebPaymentAccountDeletionRequest extends AbstractPaymentAccountDele
     @Override
     public String getMsisdn() {
         return ((SessionDTO) SessionContextHolder.getBody()).get("msisdn");
+    }
+
+    @Override
+    public String getClient () {
+        return SessionContextHolder.<SessionDTO>getBody().get(CLIENT);
     }
 }

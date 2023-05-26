@@ -3,6 +3,7 @@ package in.wynk.payment.gateway.payu.service;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -11,12 +12,14 @@ import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusReques
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.gateway.IPaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
@@ -34,12 +37,13 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
         this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());
     }
+
     @Override
-    public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
+    public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
         final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> reconStatusService =
                 statusDelegate.get(request.getClass());
-        if (Objects.isNull(reconStatusService)){
+        if (Objects.isNull(reconStatusService)) {
             throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
         }
         return reconStatusService.reconcile(request);
@@ -48,9 +52,20 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
     private class ChargingTransactionReconciliationStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
         @Override
-        public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
+        public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
+            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
+            if (UpiPaymentDetails.class.isAssignableFrom(purchaseDetails.getPaymentDetails().getClass())) {
+                final UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) purchaseDetails.getPaymentDetails();
+                if (purchaseDetails.getPaymentDetails().isAutoRenew() && upiPaymentDetails.isIntent() && transaction.getInitTime().getTimeInMillis() + TimeUnit.MINUTES.toMillis(15) >= System.currentTimeMillis()) {
+                    return reconcileInternal(transaction);
+                }
+            }
             common.syncChargingTransactionFromSource(transaction);
+            return reconcileInternal(transaction);
+        }
+
+        private AbstractPaymentStatusResponse reconcileInternal(Transaction transaction) {
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY004);
@@ -62,10 +77,12 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         }
     }
 
+
+
     private class RefundTransactionReconciliationStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
         @Override
-        public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
+        public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
             RefundTransactionReconciliationStatusRequest refundRequest = (RefundTransactionReconciliationStatusRequest) request;
             common.syncRefundTransactionFromSource(transaction, refundRequest.getExtTxnId());

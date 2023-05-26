@@ -131,7 +131,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
                 final WynkRuntimeException wynkException = (WynkRuntimeException) e;
-                if (ConnectException.class.isAssignableFrom(wynkException.getCause().getClass()) {
+                if (ConnectException.class.isAssignableFrom(wynkException.getCause().getClass())) {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
                     final PaymentErrorType errorType = ATB01;
                     builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build()).success(false);

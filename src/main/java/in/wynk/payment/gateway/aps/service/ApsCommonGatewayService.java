@@ -47,6 +47,7 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Objects;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentConstants.BANK_CODE;
@@ -55,6 +56,7 @@ import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS;
 import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
 
 /**
  * @author Nishesh Pandey
@@ -209,7 +211,9 @@ public class ApsCommonGatewayService {
         final Transaction transaction = TransactionContext.get();
         if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
-            if (!MandateStatus.ACTIVE.equals(apsChargeStatusResponse.getMandateStatus())) {
+            if (APS_LOB_AUTO_PAY_REGISTER_WYNK.equals(apsChargeStatusResponse.getLob()) && Objects.equals(PaymentEvent.SUBSCRIBE.getValue(), transaction.getType().getValue())
+                    && !MandateStatus.ACTIVE.equals(apsChargeStatusResponse.getMandateStatus())) {
+                log.info("Updating payment Event to PURCHASE from SUBSCRIBE as mandate status is not active");
                 transaction.setType(PaymentEvent.PURCHASE.getValue());
             }
             evict(transaction.getMsisdn());

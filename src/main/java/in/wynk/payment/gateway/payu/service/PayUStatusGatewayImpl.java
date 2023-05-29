@@ -58,6 +58,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
             if (UpiPaymentDetails.class.isAssignableFrom(purchaseDetails.getPaymentDetails().getClass())) {
                 final UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) purchaseDetails.getPaymentDetails();
                 if (purchaseDetails.getPaymentDetails().isAutoRenew() && upiPaymentDetails.isIntent() && transaction.getInitTime().getTimeInMillis() + TimeUnit.MINUTES.toMillis(15) >= System.currentTimeMillis()) {
+                    transaction.setStatus(String.valueOf(TransactionStatus.INPROGRESS));
                     return reconcileInternal(transaction);
                 }
             }

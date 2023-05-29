@@ -7,13 +7,12 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.request.renewal.SiPaymentRecurringRequest;
 import in.wynk.payment.dto.aps.response.renewal.SiPaymentRecurringResponse;
-import in.wynk.payment.dto.aps.response.renewal.SiRecurringData;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.gateway.IPaymentRenewal;
@@ -24,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Objects;
@@ -99,33 +97,44 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
 
     private SiPaymentRecurringResponse doChargingForRenewal(ApsChargeStatusResponse response) {
         Transaction transaction = TransactionContext.get();
+        MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         SiPaymentRecurringRequest apsSiPaymentRecurringRequest = SiPaymentRecurringRequest.builder().orderId(transaction.getIdStr()).siPaymentInfo(
                         SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentRoutedThrough()).lob(
                                 LOB_SI_WYNK).build()).build();
+        merchantTransactionEventBuilder.request(apsSiPaymentRecurringRequest);
+
         try {
-            return common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
-        } catch (RestClientException e) {
+            SiPaymentRecurringResponse siResponse = common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
+            merchantTransactionEventBuilder.response(siResponse);
+            if (siResponse == null) {
+                siResponse = new SiPaymentRecurringResponse();
+            } else {
+                String newPgId = siResponse.getPgId();
+                merchantTransactionEventBuilder.externalTransactionId(StringUtils.isNotEmpty(newPgId) ? newPgId : response.getPgId());
+            }
+            return siResponse;
+        } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException(e);
+            throw e;
+        }finally {
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }
 
     private void updateTransactionStatus(PlanPeriodDTO planPeriodDTO, SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
         int retryInterval = planPeriodDTO.getRetryInterval();
-        log.info("aps renewal response -----------> {}", apsRenewalResponse);
-        SiRecurringData renewalResponse = apsRenewalResponse.getBody().getData();
-        if (PG_STATUS_SUCCESS.equalsIgnoreCase(renewalResponse.getPgStatus())) {
+        if (PG_STATUS_SUCCESS.equalsIgnoreCase(apsRenewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.SUCCESS.getValue());
-        } else if (PG_STATUS_FAILED.equalsIgnoreCase(renewalResponse.getPgStatus())) {
+        } else if (PG_STATUS_FAILED.equalsIgnoreCase(apsRenewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsRenewalResponse.getPgStatus()).build());
         } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
-                StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, renewalResponse.getPgStatus())) {
+                StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, apsRenewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
         } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
-                StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, renewalResponse.getPgStatus())) {
+                StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, apsRenewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
         }
-        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsRenewalResponse.getStatusCode()).build());
     }
 }

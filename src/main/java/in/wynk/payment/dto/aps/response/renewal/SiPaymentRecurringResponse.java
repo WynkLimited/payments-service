@@ -14,7 +14,10 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @NoArgsConstructor
 public class SiPaymentRecurringResponse {
-    private ApsApiResponseWrapper<SiRecurringData> body;
-    private String statusCode;
-    private Integer statusCodeValue;
+    private String orderId;
+    private String pgId;
+    private String pgSystemId;
+    private String pgStatus;
+    private String paymentGateway;
+    private String paymentMode;
 }

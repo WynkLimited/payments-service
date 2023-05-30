@@ -55,13 +55,12 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
             final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
-            if (UpiPaymentDetails.class.isAssignableFrom(purchaseDetails.getPaymentDetails().getClass())) {
-                final UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) purchaseDetails.getPaymentDetails();
-                if (purchaseDetails.getPaymentDetails().isAutoRenew() && upiPaymentDetails.isIntent() && transaction.getInitTime().getTimeInMillis() + TimeUnit.MINUTES.toMillis(15) >= System.currentTimeMillis()) {
-                    transaction.setStatus(String.valueOf(TransactionStatus.INPROGRESS));
-                    return reconcileInternal(transaction);
+                if (TransactionStatus.INPROGRESS.equals(transaction.getStatus()) && UpiPaymentDetails.class.isAssignableFrom(purchaseDetails.getPaymentDetails().getClass())) {
+                    final UpiPaymentDetails upiPaymentDetails = (UpiPaymentDetails) purchaseDetails.getPaymentDetails();
+                    if (purchaseDetails.getPaymentDetails().isAutoRenew() && upiPaymentDetails.isIntent() && transaction.getInitTime().getTimeInMillis() + TimeUnit.MINUTES.toMillis(15) >= System.currentTimeMillis()) {
+                        return reconcileInternal(transaction);
+                    }
                 }
-            }
             common.syncChargingTransactionFromSource(transaction);
             return reconcileInternal(transaction);
         }

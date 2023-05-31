@@ -9,15 +9,18 @@ import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.properties.CorsProperties;
+import in.wynk.payment.filter.TransactionContextCleanUpFilter;
 import in.wynk.payment.mapper.WinBackTokenMapper;
 import in.wynk.payment.provider.WinBackAuthenticationProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.core.Ordered;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -94,6 +97,14 @@ public class PaymentConfig implements WebMvcConfigurer {
     @Bean
     public AuthenticationProvider winBackAuthenticationProvider(ClientDetailsCachingService cachingService) {
         return new WinBackAuthenticationProvider(cachingService);
+    }
+
+    @Bean
+    public FilterRegistrationBean<TransactionContextCleanUpFilter> requestResponseLoggingFilter() {
+        FilterRegistrationBean<TransactionContextCleanUpFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new TransactionContextCleanUpFilter());
+        registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registrationBean;
     }
 
 }

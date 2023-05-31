@@ -67,15 +67,16 @@ public class RevenueNotificationController {
         return handleCallbackInternal(partner, clientAlias, payload);
     }
 
+    @Async
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
+    public <T> void handleCallbackAsync(String partner, String clientAlias, T payload) {
+        if (String.class.isAssignableFrom(payload.getClass())) handleCallback(partner, clientAlias, (String) payload);
+        else handleCallback(partner, clientAlias, (Map<String, Object>) payload);
+    }
+
     private <T> WynkResponseEntity<Void> handleCallbackInternal(String partner, String clientAlias, T payload) {
         handleCallbackAsync(partner, clientAlias, payload);
         return WynkResponseEntity.<Void>builder().success(true).build();
-    }
-    @Async
-    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
-    private <T> void handleCallbackAsync(String partner, String clientAlias, T payload) {
-        if (String.class.isAssignableFrom(payload.getClass())) handleCallback(partner, clientAlias, (String) payload);
-        else handleCallback(partner, clientAlias, (Map<String, Object>) payload);
     }
 
     private void handleCallback(String partner, String clientAlias, String payload) {

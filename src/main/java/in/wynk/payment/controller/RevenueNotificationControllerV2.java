@@ -45,61 +45,61 @@ public class RevenueNotificationControllerV2 {
 
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<Void> handlePartnerCallback (@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestBody String payload) {
-        return handleCallback(headers, partner, applicationAlias, payload);
+    public WynkResponseEntity<Void> handlePartnerCallback(@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestBody String payload) {
+        return handleCallbackInternal(headers, partner, applicationAlias, payload);
     }
 
     @PostMapping("/{partner}/{clientAlias}")
     @AnalyseTransaction(name = "paymentCallback")
-    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias (@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
-                                                                          @RequestBody String payload) {
-        return handleCallback(headers, partner, clientAlias, payload);
+    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
+                                                                         @RequestBody String payload) {
+        return handleCallbackInternal(headers, partner, clientAlias, payload);
     }
+
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public WynkResponseEntity<Void> handlePartnerCallback (@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestParam Map<String, Object> payload) {
+    public WynkResponseEntity<Void> handlePartnerCallback(@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestParam Map<String, Object> payload) {
         return handleCallbackInternal(headers, partner, applicationAlias, payload);
     }
 
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias (@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
-                                                                          @RequestParam Map<String, Object> payload) {
+    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
+                                                                         @RequestParam Map<String, Object> payload) {
         return handleCallbackInternal(headers, partner, clientAlias, payload);
+    }
+
+    @Async
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
+    public <T> void handleCallbackAsync(HttpHeaders headers, String partner, String clientAlias, T payload) {
+        if (String.class.isAssignableFrom(payload.getClass()))
+            handleCallback(headers, partner, clientAlias, (String) payload);
+        else handleCallback(headers, partner, clientAlias, (Map<String, Object>) payload);
     }
 
     private <T> WynkResponseEntity<Void> handleCallbackInternal(HttpHeaders headers, String partner, String clientAlias, T payload) {
         handleCallbackAsync(headers, partner, clientAlias, payload);
         return WynkResponseEntity.<Void>builder().success(true).build();
     }
-    @Async
-    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
-    private <T> void handleCallbackAsync(HttpHeaders headers, String partner, String clientAlias, T payload) {
-        if (String.class.isAssignableFrom(payload.getClass())) handleCallback(headers, partner, clientAlias, (String) payload);
-        else handleCallback(headers, partner, clientAlias, (Map<String, Object>) payload);
-    }
 
-    @Async
-    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
-    private WynkResponseEntity<Void> handleCallback(HttpHeaders headers, String partner, String clientAlias, String payload) {
+    private void handleCallback(HttpHeaders headers, String partner, String clientAlias, String payload) {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
         if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentGateway.name())) {
             try {
-                return handleCallback(headers, partner, clientAlias, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
+                handleCallback(headers, partner, clientAlias, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
                 }));
+                return;
             } catch (JsonProcessingException e) {
                 throw new WynkRuntimeException("Malformed payload is posted", e);
             }
         }
-        return paymentGatewayManager.handleNotification(NotificationRequest.builder().paymentGateway(paymentGateway).payload(payload).clientAlias(clientAlias).build());
+        paymentGatewayManager.handleNotification(NotificationRequest.builder().paymentGateway(paymentGateway).payload(payload).clientAlias(clientAlias).build());
     }
 
-    @Async
     @ClientAware(clientAlias = "#clientAlias")
-    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
-    private WynkResponseEntity<Void> handleCallback (HttpHeaders headers, String partner, String clientAlias, Map<String, Object> payload) {
+    private WynkResponseEntity<Void> handleCallback(HttpHeaders headers, String partner, String clientAlias, Map<String, Object> payload) {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, gson.toJson(payload));

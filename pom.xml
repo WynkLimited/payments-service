@@ -262,6 +262,12 @@
                     <Xlint>ignore</Xlint>
                     <sources/>
                     <testSources/>
+                    <weaveDependencies>
+                        <weaveDependency>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-starter-aop</artifactId>
+                        </weaveDependency>
+                    </weaveDependencies>
                     <aspectLibraries>
                         <aspectLibrary>
                             <groupId>com.github</groupId>

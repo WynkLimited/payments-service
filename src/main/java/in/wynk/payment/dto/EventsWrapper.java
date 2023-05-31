@@ -1,5 +1,6 @@
 package in.wynk.payment.dto;
 
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.request.CallbackRequest;
 import lombok.Builder;
@@ -54,7 +55,7 @@ public class EventsWrapper {
     private IUserDetails userDetails;
     private IPaymentDetails paymentDetails;
     private IProductDetails productDetails;
-    private IGeolocation geolocation;
+    private IGeoLocation geolocation;
     private Transaction transaction;
     private CallbackRequest callbackRequest;
     private PaymentReconciliationMessage paymentReconciliationMessage;

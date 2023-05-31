@@ -3,8 +3,8 @@ package in.wynk.payment.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,7 +37,7 @@ public class ChargingDetails implements IChargingDetails {
 
 
     @Override
-    public IGeolocation getGeoLocation() {
+    public IGeoLocation getGeoLocation() {
         return getGeoLocation();
     }
 }

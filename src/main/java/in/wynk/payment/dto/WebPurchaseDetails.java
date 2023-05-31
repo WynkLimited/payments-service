@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
@@ -12,7 +13,6 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.payment.core.dao.entity.IGeolocation;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -66,7 +66,7 @@ public class WebPurchaseDetails implements IChargingDetails {
     }
 
     @Override
-    public IGeolocation getGeoLocation() {
+    public IGeoLocation getGeoLocation() {
         return getGeoLocation();
     }
 

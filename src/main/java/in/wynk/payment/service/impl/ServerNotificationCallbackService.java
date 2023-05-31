@@ -7,6 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
@@ -19,6 +20,7 @@ import in.wynk.payment.service.IAsyncCallbackService;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.retry.annotation.Backoff;
@@ -35,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ServerNotificationCallbackService implements IAsyncCallbackService<Object> {
@@ -59,6 +62,7 @@ public class ServerNotificationCallbackService implements IAsyncCallbackService<
             final AbstractCallbackResponse response = handleInternal(rid, clientAlias, partner, payload);
             return CompletableFuture.completedFuture(response);
         } catch (Exception e) {
+            log.error(PaymentLoggingMarker.S2S_PAYMENT_CALLBACK_FAILURE, "Unable to process callback for client " + clientAlias + "for pg " + partner, e);
             future.completeExceptionally(e);
         }
         return future;
@@ -72,6 +76,7 @@ public class ServerNotificationCallbackService implements IAsyncCallbackService<
             final CallbackResponseWrapper<AbstractPaymentCallbackResponse> response = handleInternal(rid, clientAlias, partner, headers, payload);
             return CompletableFuture.completedFuture(response);
         } catch (Exception e) {
+            log.error(PaymentLoggingMarker.S2S_PAYMENT_CALLBACK_FAILURE, "Unable to process callback for client " + clientAlias + "for pg " + partner, e);
             future.completeExceptionally(e);
         }
         return future;
@@ -98,10 +103,9 @@ public class ServerNotificationCallbackService implements IAsyncCallbackService<
     private class StringBasedCallback implements ICallbackService<String> {
 
         @Override
+        @ClientAware(clientAlias = "#clientAlias")
         public AbstractCallbackResponse handle(String clientAlias, String partner, String payload) {
             final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
-            AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
-            AnalyticService.update(REQUEST_PAYLOAD, payload);
             if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentGateway.name())) {
                 try {
                     return delegate.get(Map.class).handle(clientAlias, partner, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
@@ -115,6 +119,7 @@ public class ServerNotificationCallbackService implements IAsyncCallbackService<
         }
 
         @Override
+        @ClientAware(clientAlias = "#clientAlias")
         public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handle(String clientAlias, String partner, HttpHeaders headers, String payload) {
             final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
             AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
@@ -135,14 +140,12 @@ public class ServerNotificationCallbackService implements IAsyncCallbackService<
     private class MapBasedCallback implements ICallbackService<Map<String, Object>> {
 
         @Override
-        @ClientAware(clientAlias = "#clientAlias")
         public AbstractCallbackResponse handle(String clientAlias, String partner, Map<String, Object> payload) {
             final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
             return oldManager.handleCallback(CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build()).getBody().getData();
         }
 
         @Override
-        @ClientAware(clientAlias = "#clientAlias")
         public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handle(String clientAlias, String partner, HttpHeaders headers, Map<String, Object> payload) {
             final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
             return newManager.handle(CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build());

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.data.entity.MongoBaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -20,7 +21,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class PurchaseDetails extends MongoBaseEntity<String> implements IChargingDetails {
 
     @Analysed
-    private IGeolocation geoLocation;
+    private IGeoLocation geoLocation;
 
     @Field("callback_url")
     private String callbackUrl;

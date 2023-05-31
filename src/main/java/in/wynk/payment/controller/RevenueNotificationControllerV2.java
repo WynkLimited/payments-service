@@ -19,6 +19,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -43,17 +46,31 @@ public class RevenueNotificationControllerV2 {
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<Void> handlePartnerCallback (@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestBody String payload) {
-        return getVoidWynkResponseEntity(headers, partner, applicationAlias, payload);
+        return handleCallback(headers, partner, applicationAlias, payload);
     }
 
     @PostMapping("/{partner}/{clientAlias}")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias (@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
                                                                           @RequestBody String payload) {
-        return getVoidWynkResponseEntity(headers, partner, clientAlias, payload);
+        return handleCallback(headers, partner, clientAlias, payload);
+    }
+    @AnalyseTransaction(name = "paymentCallback")
+    @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public WynkResponseEntity<Void> handlePartnerCallback (@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestParam Map<String, Object> payload) {
+        return handleCallback(headers, partner, applicationAlias, payload);
     }
 
-    private WynkResponseEntity<Void> getVoidWynkResponseEntity (HttpHeaders headers, String partner, String clientAlias, String payload) {
+    @AnalyseTransaction(name = "paymentCallback")
+    @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias (@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
+                                                                          @RequestParam Map<String, Object> payload) {
+        return handleCallback(headers, partner, clientAlias, payload);
+    }
+
+    @Async
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
+    private WynkResponseEntity<Void> handleCallback(HttpHeaders headers, String partner, String clientAlias, String payload) {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
         AnalyticService.update(REQUEST_PAYLOAD, payload);
@@ -68,20 +85,9 @@ public class RevenueNotificationControllerV2 {
         return paymentGatewayManager.handleNotification(NotificationRequest.builder().paymentGateway(paymentGateway).payload(payload).clientAlias(clientAlias).build());
     }
 
-    @AnalyseTransaction(name = "paymentCallback")
-    @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public WynkResponseEntity<Void> handlePartnerCallback (@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestParam Map<String, Object> payload) {
-        return handleCallback(headers, partner, applicationAlias, payload);
-    }
-
-    @AnalyseTransaction(name = "paymentCallback")
-    @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias (@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
-                                                                          @RequestParam Map<String, Object> payload) {
-        return handleCallback(headers, partner, clientAlias, payload);
-    }
-
+    @Async
     @ClientAware(clientAlias = "#clientAlias")
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
     private WynkResponseEntity<Void> handleCallback (HttpHeaders headers, String partner, String clientAlias, Map<String, Object> payload) {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
@@ -89,4 +95,5 @@ public class RevenueNotificationControllerV2 {
         paymentGatewayManager.handle(CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build());
         return WynkResponseEntity.<Void>builder().success(true).build();
     }
+
 }

@@ -18,6 +18,9 @@ import in.wynk.payment.service.PaymentManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -43,28 +46,13 @@ public class RevenueNotificationController {
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<Void> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
-        return getVoidWynkResponseEntity(partner, applicationAlias, payload);
+        return handleCallback(partner, applicationAlias, payload);
     }
 
     @PostMapping("/{partner}/{clientAlias}")
     @AnalyseTransaction(name = "paymentCallback")
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody String payload) {
-        return getVoidWynkResponseEntity(partner, clientAlias, payload);
-    }
-
-    private WynkResponseEntity<Void> getVoidWynkResponseEntity(String partner, String clientAlias, String payload) {
-        final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
-        AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
-        AnalyticService.update(REQUEST_PAYLOAD, payload);
-        if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentGateway.name())) {
-            try {
-                return handleCallback(partner, clientAlias, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
-                }));
-            } catch (JsonProcessingException e) {
-                throw new WynkRuntimeException("Malformed payload is posted", e);
-            }
-        }
-        return paymentManager.handleNotification(NotificationRequest.builder().paymentGateway(paymentGateway).payload(payload).clientAlias(clientAlias).build());
+        return handleCallback(partner, clientAlias, payload);
     }
 
     @AnalyseTransaction(name = "paymentCallback")
@@ -79,7 +67,26 @@ public class RevenueNotificationController {
         return handleCallback(partner, clientAlias, payload);
     }
 
+    @Async
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
+    private WynkResponseEntity<Void> handleCallback(String partner, String clientAlias, String payload) {
+        final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
+        AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
+        AnalyticService.update(REQUEST_PAYLOAD, payload);
+        if (!RECEIPT_PROCESSING_PAYMENT_CODE.contains(paymentGateway.name())) {
+            try {
+                return handleCallback(partner, clientAlias, BeanLocatorFactory.getBean(ObjectMapper.class).readValue(payload, new TypeReference<HashMap<String, Object>>() {
+                }));
+            } catch (JsonProcessingException e) {
+                throw new WynkRuntimeException("Malformed payload is posted", e);
+            }
+        }
+        return paymentManager.handleNotification(NotificationRequest.builder().paymentGateway(paymentGateway).payload(payload).clientAlias(clientAlias).build());
+    }
+
+    @Async
     @ClientAware(clientAlias = "#clientAlias")
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
     private WynkResponseEntity<Void> handleCallback(String partner, String clientAlias, Map<String, Object> payload) {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());

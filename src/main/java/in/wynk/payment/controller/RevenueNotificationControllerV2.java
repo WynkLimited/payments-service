@@ -58,14 +58,25 @@ public class RevenueNotificationControllerV2 {
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallback (@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestParam Map<String, Object> payload) {
-        return handleCallback(headers, partner, applicationAlias, payload);
+        return handleCallbackInternal(headers, partner, applicationAlias, payload);
     }
 
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias (@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
                                                                           @RequestParam Map<String, Object> payload) {
-        return handleCallback(headers, partner, clientAlias, payload);
+        return handleCallbackInternal(headers, partner, clientAlias, payload);
+    }
+
+    private <T> WynkResponseEntity<Void> handleCallbackInternal(HttpHeaders headers, String partner, String clientAlias, T payload) {
+        handleCallbackAsync(headers, partner, clientAlias, payload);
+        return WynkResponseEntity.<Void>builder().success(true).build();
+    }
+    @Async
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 200))
+    private <T> void handleCallbackAsync(HttpHeaders headers, String partner, String clientAlias, T payload) {
+        if (String.class.isAssignableFrom(payload.getClass())) handleCallback(headers, partner, clientAlias, (String) payload);
+        else handleCallback(headers, partner, clientAlias, (Map<String, Object>) payload);
     }
 
     @Async

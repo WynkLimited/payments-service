@@ -48,6 +48,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYMENT_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_FAILURE");
     Marker PAYMENT_CHARGING_CALLBACK_PENDING = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_PENDING");
+    Marker S2S_PAYMENT_CALLBACK_FAILURE = MarkerFactory.getMarker("S2S_PAYMENT_CALLBACK_FAILURE");
     Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
     Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");
     Marker PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS= MarkerFactory.getMarker("PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS");

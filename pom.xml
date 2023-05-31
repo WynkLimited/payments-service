@@ -55,6 +55,10 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
             <groupId>in.wynk</groupId>
             <artifactId>lib-session</artifactId>
             <version>${project.version}</version>
@@ -98,6 +102,10 @@
             <groupId>in.wynk</groupId>
             <artifactId>payment-common</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
         </dependency>
         <dependency>
             <groupId>in.wynk</groupId>
@@ -262,13 +270,15 @@
                     <Xlint>ignore</Xlint>
                     <sources/>
                     <testSources/>
-                    <weaveDependencies>
-                        <weaveDependency>
+                    <aspectLibraries>
+                        <aspectLibrary>
+                            <groupId>org.springframework.retry</groupId>
+                            <artifactId>spring-retry</artifactId>
+                        </aspectLibrary>
+                        <aspectLibrary>
                             <groupId>org.springframework.boot</groupId>
                             <artifactId>spring-boot-starter-aop</artifactId>
-                        </weaveDependency>
-                    </weaveDependencies>
-                    <aspectLibraries>
+                        </aspectLibrary>
                         <aspectLibrary>
                             <groupId>com.github</groupId>
                             <artifactId>annotation-analytic-core</artifactId>

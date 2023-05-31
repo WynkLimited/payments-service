@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -27,6 +28,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@EnableAsync
 @Configuration
 @EnableScheduling
 @EnableConfigurationProperties({CorsProperties.class})
@@ -64,7 +66,7 @@ public class PaymentConfig implements WebMvcConfigurer {
         return eventMulticaster;
     }
 
-    @Bean(destroyMethod = "shutdown")
+    @Bean(name = "taskExecutor", destroyMethod = "shutdown")
     public ExecutorService executorService() {
         return Executors.newWorkStealingPool();
     }

@@ -100,7 +100,7 @@ public class PaymentConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public FilterRegistrationBean<TransactionContextCleanUpFilter> requestResponseLoggingFilter() {
+    public FilterRegistrationBean<TransactionContextCleanUpFilter> transactionContextCleanUpFilter() {
         FilterRegistrationBean<TransactionContextCleanUpFilter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(new TransactionContextCleanUpFilter());
         registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);

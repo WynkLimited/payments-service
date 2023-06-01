@@ -28,7 +28,7 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_CALLBACK_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CALLBACK_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
 
 /**
@@ -69,8 +69,8 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         if (isValid(request)) {
             return callbackService.handle(request);
         } else {
-            log.error(APS_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());
-            throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + request.getOrderId());
+            log.error(APS_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY046, "Invalid checksum found with transaction id:" + request.getOrderId());
         }
     }
 
@@ -86,8 +86,13 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
 
     @SneakyThrows
     public boolean isValid(ApsCallBackRequestPayload payload) {
-        return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
-                Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);
+        try {
+            return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
+                    Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);
+        } catch (Exception ex) {
+            log.error(APS_CALLBACK_FAILURE, "There is some issue in checksum for callbackStatus: {}, APS transactionId: {}", payload.getStatus(), payload.getOrderId());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY046, "Exception occurred due to checksum from aps with transaction id:" + payload.getOrderId());
+        }
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {

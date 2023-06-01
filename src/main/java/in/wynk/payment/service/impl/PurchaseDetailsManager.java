@@ -5,6 +5,7 @@ import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.data.entity.MongoBaseEntity;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
@@ -54,6 +55,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 .userDetails(details.getUserDetails())
                 .productDetails(details.getProductDetails())
                 .paymentDetails(details.getPaymentDetails())
+                .geoLocation(((IPurchaseDetails) details).getGeoLocation())
                 .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
                 .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
                 .build());

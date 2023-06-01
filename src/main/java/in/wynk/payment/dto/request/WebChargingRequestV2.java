@@ -6,6 +6,8 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
@@ -37,6 +39,16 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
         SessionDTO session = SessionContextHolder.getBody();
         return AppDetails.builder().deviceType(session.get(DEVICE_TYPE)).deviceId(session.get(DEVICE_ID)).buildNo(session.get(BUILD_NO)).service(session.get(SERVICE)).appId(session.get(APP_ID))
                 .appVersion(session.get(APP_VERSION)).os(session.get(OS)).build();
+    }
+
+    @Override
+    @Analysed
+    @JsonIgnore
+    public IGeoLocation getGeoLocation () {
+        SessionDTO session = SessionContextHolder.getBody();
+        GeoLocation geoLocation= session.get(GEO_LOCATION);
+        return GeoLocation.builder().countryCode(geoLocation.getCountryCode()).stateCode(geoLocation.getStateCode())
+                .ip(geoLocation.getIp()).build();
     }
 
     @Override

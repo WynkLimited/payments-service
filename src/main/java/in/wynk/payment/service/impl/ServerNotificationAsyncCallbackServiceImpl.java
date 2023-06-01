@@ -31,7 +31,6 @@ public class ServerNotificationAsyncCallbackServiceImpl implements IAsyncCallbac
         MDC.put(REQUEST_ID, rid);
         final CompletableFuture<AbstractCallbackResponse> future = new CompletableFuture<>();
         try {
-            log.info("ServerNotificationCallbackService CompletableFuture<CallbackResponseWrapper<AbstractPaymentCallbackResponse>> handle({}, {}, {}, {}) using thread " + Thread.currentThread(), rid, clientAlias, partner, payload);
             final AbstractCallbackResponse response = handle(clientAlias, partner, payload);
             return CompletableFuture.completedFuture(response);
         } catch (Exception e) {
@@ -47,7 +46,6 @@ public class ServerNotificationAsyncCallbackServiceImpl implements IAsyncCallbac
         MDC.put(REQUEST_ID, rid);
         final CompletableFuture<AbstractPaymentCallbackResponse> future = new CompletableFuture<>();
         try {
-            log.info("ServerNotificationCallbackService CompletableFuture<CallbackResponseWrapper<AbstractPaymentCallbackResponse>> handle({}, {}, {}, {}, {}) using thread " + Thread.currentThread(), rid, clientAlias, partner, headers, payload);
             final AbstractPaymentCallbackResponse response = handle(clientAlias, partner, headers, payload);
             return CompletableFuture.completedFuture(response);
         } catch (Exception e) {

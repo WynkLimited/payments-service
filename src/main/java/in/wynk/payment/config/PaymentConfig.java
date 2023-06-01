@@ -22,14 +22,21 @@ import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
 import org.springframework.core.Ordered;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@EnableAsync
+@EnableRetry
 @Configuration
 @EnableScheduling
 @EnableConfigurationProperties({CorsProperties.class})
@@ -67,10 +74,28 @@ public class PaymentConfig implements WebMvcConfigurer {
         return eventMulticaster;
     }
 
+    @Bean
+    public ThreadPoolTaskExecutor taskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(100);
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean
+    public RetryTemplate retryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+        // Configure the retry policy, backoff policy, etc.
+        return retryTemplate;
+    }
+
     @Bean(destroyMethod = "shutdown")
     public ExecutorService executorService() {
         return Executors.newWorkStealingPool();
     }
+
 
     @Bean
     public WynkApplicationContext myApplicationContext(ClientDetailsCachingService cachingService) {

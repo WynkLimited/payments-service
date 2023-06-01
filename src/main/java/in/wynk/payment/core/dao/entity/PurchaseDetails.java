@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class PurchaseDetails extends MongoBaseEntity<String> implements IChargingDetails {
 
     @Analysed
+    @Field("geoLocation")
     private IGeoLocation geoLocation;
 
     @Field("callback_url")

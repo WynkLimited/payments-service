@@ -32,25 +32,25 @@ public class RevenueNotificationControllerV2 {
     private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList(ITUNES, AMAZON_IAP, GOOGLE_IAP);
 
     @PostMapping("/{partner}")
-    @AnalyseTransaction(name = "paymentCallback")
+    @AnalyseTransaction(name = "paymentSyncCallback")
     public WynkResponseEntity<Void> handlePartnerCallback(@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestBody String payload) {
         return handleCallbackAsync(partner, applicationAlias, headers, payload);
     }
 
     @PostMapping("/{partner}/{clientAlias}")
-    @AnalyseTransaction(name = "paymentCallback")
+    @AnalyseTransaction(name = "paymentSyncCallback")
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
                                                                          @RequestBody String payload) {
         return handleCallbackAsync(partner, clientAlias, headers, payload);
     }
 
-    @AnalyseTransaction(name = "paymentCallback")
+    @AnalyseTransaction(name = "paymentSyncCallback")
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallback(@RequestHeader HttpHeaders headers, @PathVariable String partner, @RequestParam Map<String, Object> payload) {
         return handleCallbackAsync(partner, applicationAlias, headers, payload);
     }
 
-    @AnalyseTransaction(name = "paymentCallback")
+    @AnalyseTransaction(name = "paymentSyncCallback")
     @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@RequestHeader HttpHeaders headers, @PathVariable String partner, @PathVariable String clientAlias,
                                                                          @RequestParam Map<String, Object> payload) {

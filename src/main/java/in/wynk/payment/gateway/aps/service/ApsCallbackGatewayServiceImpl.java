@@ -90,7 +90,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
                     Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);
         } catch (Exception ex) {
-            log.error(APS_CALLBACK_FAILURE, "There is some issue in checksum for callbackStatus: {}, APS transactionId: {}", payload.getStatus(), payload.getOrderId());
+            log.error(APS_CALLBACK_FAILURE, "There is some issue in checksum for callbackStatus: {}, APS transactionId: {}", payload.getStatus(), payload.getOrderId(), ex);
             throw new PaymentRuntimeException(PaymentErrorType.PAY046, "Exception occurred due to checksum from aps with transaction id:" + payload.getOrderId());
         }
     }

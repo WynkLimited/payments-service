@@ -28,24 +28,24 @@ public class RevenueNotificationController {
     private String applicationAlias;
 
     @PostMapping("/{partner}")
-    @AnalyseTransaction(name = "paymentSyncCallback")
+    @AnalyseTransaction(name = "paymentServerSyncCallback")
     public WynkResponseEntity<Void> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
         return handleCallbackAsync(partner, applicationAlias, payload);
     }
 
     @PostMapping("/{partner}/{clientAlias}")
-    @AnalyseTransaction(name = "paymentSyncCallback")
+    @AnalyseTransaction(name = "paymentServerSyncCallback")
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@PathVariable String partner, @PathVariable String clientAlias, @RequestBody String payload) {
         return handleCallbackAsync(partner, clientAlias, payload);
     }
 
-    @AnalyseTransaction(name = "paymentSyncCallback")
+    @AnalyseTransaction(name = "paymentServerSyncCallback")
     @PostMapping(path = "/{partner}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallback(@PathVariable String partner, @RequestParam Map<String, Object> payload) {
         return handleCallbackAsync(partner, applicationAlias, payload);
     }
 
-    @AnalyseTransaction(name = "paymentSyncCallback")
+    @AnalyseTransaction(name = "paymentServerSyncCallback")
     @PostMapping(path = "/{partner}/{clientAlias}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public WynkResponseEntity<Void> handlePartnerCallbackWithClientAlias(@PathVariable String partner, @PathVariable String clientAlias, @RequestParam Map<String, Object> payload) {
         return handleCallbackAsync(partner, clientAlias, payload);

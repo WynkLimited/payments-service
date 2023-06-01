@@ -93,8 +93,8 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
-    <logger name="paymentSyncCallback" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    <logger name="paymentServerSyncCallback" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
     <logger name="verifyUserPaymentBin" additivity="false" level="INFO">

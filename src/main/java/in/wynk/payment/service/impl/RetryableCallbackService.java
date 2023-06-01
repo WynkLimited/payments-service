@@ -60,14 +60,12 @@ public class RetryableCallbackService implements ICallbackService<Object, Abstra
     @Override
     @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 100, multiplier = 2))
     public AbstractCallbackResponse handle(String clientAlias, String partner, Object payload) {
-        log.info("retry...");
         return bodyDelegate.get(payload.getClass()).handle(clientAlias, partner, payload);
     }
 
     @Override
     @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 100, multiplier = 2))
     public AbstractPaymentCallbackResponse handle(String clientAlias, String partner, HttpHeaders headers, Object payload) {
-        log.info("retry...");
         return headerDelegate.get(payload.getClass()).handle(clientAlias, partner, headers, payload);
     }
 

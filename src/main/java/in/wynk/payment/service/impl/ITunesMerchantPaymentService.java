@@ -68,7 +68,8 @@ import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.PAYMENT_ERROR;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY011;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY026;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
 
 @Slf4j
@@ -544,27 +545,20 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
-            final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                            .findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
-            if (Objects.isNull(receiptDetails)) {
-                log.info(ITUNES_RENEWAL_ERROR, "Itunes receipt is not found for renewal for transaction id {}", paymentRenewalChargingRequest.getId());
-            } else {
-                final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
-                final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
-                final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-                final List<LatestReceiptInfo> filteredReceiptResponse =
-                        latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId() == details.getOriginalTransactionId())
-                                .sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
-                latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
-                fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
-            }
+            final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+            final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
+            final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
+            final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
+            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId() == details.getOriginalTransactionId()).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
+            latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
+            fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
             return WynkResponseEntity.<Void>builder().success(true).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
                 final WynkRuntimeException exception = (WynkRuntimeException) e;
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
             }
-            log.error("Unable to do renewal for the transaction {}, error message {}", transaction.getId(), e.getMessage(), e);
+            log.error("Unable to do renewal for the transaction {}, error message {}",transaction.getId(), e.getMessage(), e);
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(PaymentErrorType.PAY026, e);
         }

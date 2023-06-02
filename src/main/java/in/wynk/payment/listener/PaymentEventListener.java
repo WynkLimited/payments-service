@@ -261,6 +261,11 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        if(Objects.nonNull(event) && Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
+            AnalyticService.update(COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getCountryCode());
+            AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
+            AnalyticService.update(IP, event.getPurchaseDetails().getGeoLocation().getIp());
+        }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
         }

@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
@@ -62,6 +63,11 @@ public class WebPurchaseDetails implements IChargingDetails {
             return UserBillingDetail.builder().billingSiDetail(billingSiDetail).msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).si(session.get(SI)).build();
         }
         return UserDetails.builder().msisdn(MsisdnUtils.normalizePhoneNumber(session.get(MSISDN))).dslId(session.get(DSL_ID)).subscriberId(session.get(SUBSCRIBER_ID)).countryCode(session.get(COUNTRY_CODE)).build();
+    }
+
+    @Override
+    public IGeoLocation getGeoLocation() {
+        return getGeoLocation();
     }
 
     @Override

@@ -61,6 +61,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.constant.UpiConstants.INTENT;
@@ -293,13 +294,13 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return responseBuilder.build();
     }
 
-    public void syncChargingTransactionFromSource(Transaction transaction, Optional<String> failureReasonOption) {
+    public void syncChargingTransactionFromSource(Transaction transaction, Optional<PayUVerificationResponse<PayUChargingTransactionDetails>> verifyOption) {
         final Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             final MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
-            });
+            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = verifyOption.orElse(this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            }));
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))
@@ -313,7 +314,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getTransactionFailureReason())) {
-                    final String failureReason = failureReasonOption.orElse(payUChargingTransactionDetails.getTransactionFailureReason());
+                    final String failureReason = payUChargingTransactionDetails.getTransactionFailureReason();
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(failureReason).build());
                 }
             }
@@ -834,7 +835,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             @Override
             public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PayUCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
-                syncChargingTransactionFromSource(transaction, Optional.ofNullable(callbackRequest.getTransactionFailureReason()));
+                syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(0).transactionDetails(Collections.singletonMap(transaction.getIdStr(),AbstractPayUTransactionDetails.from(callbackRequest))).build());
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                     Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                     if (optionalDetails.isPresent()) {

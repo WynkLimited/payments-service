@@ -3,9 +3,14 @@ package in.wynk.payment.dto.payu;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Getter
+@SuperBuilder
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -14,6 +19,8 @@ import lombok.Getter;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PayURefundTransactionDetails.class, name = "refund")
 })
+@NoArgsConstructor
+@AllArgsConstructor
 public abstract class AbstractPayUTransactionDetails {
 
     @JsonProperty("mode")
@@ -30,5 +37,10 @@ public abstract class AbstractPayUTransactionDetails {
 
     @JsonProperty("bank_ref_num")
     private String bankReferenceNum;
+
+    public static <T extends PayUCallbackRequestPayload, R extends AbstractPayUTransactionDetails> PayUVerificationResponse<R> from(T payload) {
+        return PayUAutoRefundCallbackRequestPayload.class.isAssignableFrom(payload.getClass()) ? PayURefundTransactionDetails.from(payload): PayUChargingTransactionDetails.from(payload);
+    }
+
 
 }

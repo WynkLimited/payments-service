@@ -12,8 +12,6 @@ public class PayUAutoRefundCallbackRequestPayload extends PayUCallbackRequestPay
 
     @JsonProperty("bank_arn")
     private String bankArn;
-    @JsonProperty("bank_ref_num")
-    private String bankReference;
     @JsonProperty("request_id")
     private String requestId;
     private String token;

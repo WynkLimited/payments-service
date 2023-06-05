@@ -23,6 +23,8 @@ import in.wynk.payment.dto.UserDetails;
 import in.wynk.session.context.SessionContextHolder;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Objects;
+
 import static in.wynk.common.constant.BaseConstants.*;
 
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
@@ -47,11 +49,15 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
     public IGeoLocation getGeoLocation () {
         SessionDTO session = SessionContextHolder.getBody();
         GeoLocation geoLocation= session.get(GEO_LOCATION);
-        return GeoLocation.builder().countryCode(geoLocation.getCountryCode())
-                .stateCode(geoLocation.getStateCode())
-                .ip(geoLocation.getIp())
-                .accessCountryCode(geoLocation.getAccessCountryCode())
-                .build();
+        if (Objects.nonNull(geoLocation)) {
+            return GeoLocation.builder()
+                    .accessCountryCode(geoLocation.getAccessCountryCode())
+                    .stateCode(geoLocation.getStateCode())
+                    .ip(geoLocation.getIp())
+                    .build();
+        } else {
+            return null;
+        }
     }
 
     @Override

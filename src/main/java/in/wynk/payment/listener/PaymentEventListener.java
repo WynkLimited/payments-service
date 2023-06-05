@@ -265,7 +265,7 @@ public class PaymentEventListener {
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
         if(Objects.nonNull(event) && Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
-            AnalyticService.update(COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getCountryCode());
+            AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
             AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
             AnalyticService.update(IP, event.getPurchaseDetails().getGeoLocation().getIp());
         }

@@ -70,6 +70,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
 
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
+    List<String> PRE_DEBIT_UNSUPPORTED_PAYMENT_METHODS = Arrays.asList(ITUNES, AMAZON_IAP, GOOGLE_IAP, ADDTOBILL, "APS");
 
     String CONTENT_TYPE = "Content-Type";
     String CURRENCY_INR="INR";

@@ -15,14 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
+import static in.wynk.payment.core.constant.PaymentConstants.PRE_DEBIT_UNSUPPORTED_PAYMENT_METHODS;
 
 @Service
 public class PaymentRenewalsScheduler {

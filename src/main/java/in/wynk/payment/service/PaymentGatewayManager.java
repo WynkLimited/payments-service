@@ -17,14 +17,10 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.ClientCallbackEvent;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
@@ -228,6 +224,9 @@ public class PaymentGatewayManager
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            // removing old transaction from renewal table, if we keep it then its renewal will bound to fail due to receipt is linked with new transaction id
+            if (transaction.getStatus() == TransactionStatus.SUCCESS && !StringUtils.isEmpty(mapping.getLinkedTransactionId()))
+                eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(mapping.getLinkedTransactionId()).clientAlias(transaction.getClientAlias()).reason("Transaction id " + transaction.getIdStr() + " is scheduled in renewal via payment callback therefore old transaction " + mapping.getLinkedTransactionId() + " is not required").build());
         }
     }
 

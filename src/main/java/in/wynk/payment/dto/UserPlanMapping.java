@@ -12,6 +12,7 @@ public class UserPlanMapping<T> {
     private int planId = -1;
     private final String uid;
     private final String msisdn;
+    private final String linkedTransactionId;
     @Setter
     private T message;
 }

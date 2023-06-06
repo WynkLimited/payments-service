@@ -8,6 +8,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.data.aspect.advice.Transactional;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -19,6 +20,7 @@ import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
@@ -79,6 +81,7 @@ public class PaymentEventListener {
     private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManagerService;
     private final IMerchantTransactionService merchantTransactionService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
     @Value("${event.stream.dp}")
     private String dpStream;
 
@@ -307,6 +310,14 @@ public class PaymentEventListener {
             map.putAll(branchMeta((EventsWrapper) event.getData()));
             publishBranchEvent(map, event.getEventName());
         }
+    }
+
+
+    @ClientAware(clientAlias = "#clientAlias")
+    @EventListener(UnScheduleRecurringPaymentEvent.class)
+    private void unScheduleTransactionRecurring(UnScheduleRecurringPaymentEvent event) {
+        AnalyticService.update(event);
+        recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);
     }
 
     private void publishBranchEvent(Map<String, Object> meta, String event) {

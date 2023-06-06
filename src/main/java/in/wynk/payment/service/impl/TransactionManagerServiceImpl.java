@@ -217,7 +217,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
-                    recurringPaymentManagerService.scheduleRecurringPayment(request);
+                    try {
+                        recurringPaymentManagerService.scheduleRecurringPayment(request);
+                    } catch (WynkRuntimeException e) {} // reattempt to schedule subscription in async manner
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) || (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
                         subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
                         if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT)
@@ -225,9 +227,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
                 }
             }
-        } catch (WynkRuntimeException e) {
-            request.getTransaction().setStatus(TransactionStatus.FAILURE.getValue());
-            throw e;
         } finally {
             if (request.getTransaction().getStatus() != TransactionStatus.INPROGRESS && request.getTransaction().getStatus() != TransactionStatus.UNKNOWN) {
                 request.getTransaction().setExitTime(Calendar.getInstance());

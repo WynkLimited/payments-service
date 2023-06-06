@@ -51,7 +51,7 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
         GeoLocation geoLocation= session.get(GEO_LOCATION);
         if (Objects.nonNull(geoLocation)) {
             return GeoLocation.builder()
-                    .countryCode(geoLocation.getCountryCode())
+                    .accessCountryCode(geoLocation.getAccessCountryCode())
                     .stateCode(geoLocation.getStateCode())
                     .ip(geoLocation.getIp())
                     .build();

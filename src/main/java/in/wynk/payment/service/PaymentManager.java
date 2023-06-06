@@ -14,12 +14,10 @@ import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.event.ClientCallbackEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.core.event.PaymentsBranchEvent;
+import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
@@ -196,6 +194,11 @@ public class PaymentManager
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            if(finalStatus == TransactionStatus.SUCCESS) {
+                //unsubscribe existing transaction plan id/transaction id
+                ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage();
+                eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(receiptDetails.getPaymentTransactionId()).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
+            }
         }
     }
 
@@ -364,6 +367,9 @@ public class PaymentManager
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
                     .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
+            if(PaymentConstants.IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().getId())) {
+                eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(request.getId()).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
+            }
         }
     }
 

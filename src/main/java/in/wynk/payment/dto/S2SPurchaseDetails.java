@@ -3,6 +3,7 @@ package in.wynk.payment.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
@@ -38,7 +39,7 @@ public class S2SPurchaseDetails implements IChargingDetails {
 
     @Valid
     @Analysed
-    private IGeoLocation geoLocation;
+    private GeoLocation geoLocation;
 
     @Valid
     @Analysed

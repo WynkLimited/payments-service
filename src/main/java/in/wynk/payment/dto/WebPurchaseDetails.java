@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -24,6 +25,8 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.Valid;
+
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -67,7 +70,18 @@ public class WebPurchaseDetails implements IChargingDetails {
 
     @Override
     public IGeoLocation getGeoLocation() {
-        return getGeoLocation();
+        SessionDTO session = SessionContextHolder.getBody();
+        GeoLocation geoLocation= session.get(GEO_LOCATION);
+        if (Objects.nonNull(geoLocation)) {
+            return GeoLocation.builder()
+                    .accessCountryCode(geoLocation.getAccessCountryCode())
+                    .stateCode(geoLocation.getStateCode())
+                    .ip(geoLocation.getIp())
+                    .build();
+        } else {
+            return null;
+        }
+
     }
 
     @Override

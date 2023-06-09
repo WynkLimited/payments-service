@@ -347,6 +347,7 @@ public class PaymentEventListener {
                         .paymentDetails(event.getPurchaseDetails().getPaymentDetails())
                         .productDetails(event.getPurchaseDetails().getProductDetails())
                         .userDetails(event.getPurchaseDetails().getUserDetails())
+                        .geolocation(event.getPurchaseDetails().getGeoLocation())
                         .paymentMode(event.getPurchaseDetails().getPaymentDetails().getPaymentMode())
                         .optForAutoRenew(event.getPurchaseDetails().getPaymentDetails().isAutoRenew())
                         .os(event.getPurchaseDetails().getAppDetails().getOs())

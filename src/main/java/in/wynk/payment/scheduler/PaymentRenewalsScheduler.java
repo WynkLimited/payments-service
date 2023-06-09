@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
-import static in.wynk.payment.core.constant.PaymentConstants.PRE_DEBIT_UNSUPPORTED_PAYMENT_METHODS;
 
 @Service
 public class PaymentRenewalsScheduler {

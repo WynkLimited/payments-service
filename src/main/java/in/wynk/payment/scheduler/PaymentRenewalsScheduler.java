@@ -12,9 +12,11 @@ import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,6 +35,9 @@ public class PaymentRenewalsScheduler {
     private SeRenewalService seRenewalService;
     @Autowired
     private ITransactionManagerService transactionManager;
+
+    @Value("${aps.payment.predebit.unsupported}")
+    private String[] PRE_DEBIT_UNSUPPORTED_PG;
 
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "paymentRenewals")
@@ -57,8 +62,9 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("renewNotificationsInit", true);
+        List<String> unSupportedPGs = Arrays.asList(PRE_DEBIT_UNSUPPORTED_PG);
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(clientAlias)
-                .filter(paymentRenewal -> !PRE_DEBIT_UNSUPPORTED_PAYMENT_METHODS.contains(transactionManager.get(paymentRenewal.getTransactionId()).getPaymentChannel().getId()) &&
+                .filter(paymentRenewal -> !unSupportedPGs.contains(transactionManager.get(paymentRenewal.getTransactionId()).getPaymentChannel().getId()) &&
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");

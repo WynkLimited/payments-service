@@ -36,7 +36,7 @@ public class PaymentRenewalsScheduler {
     private ITransactionManagerService transactionManager;
 
     @Value("${aps.payment.predebit.unsupported}")
-    private String[] PRE_DEBIT_UNSUPPORTED_PG;
+    private List<String> PRE_DEBIT_UNSUPPORTED_PG;
 
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "paymentRenewals")
@@ -61,9 +61,8 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("renewNotificationsInit", true);
-        List<String> unSupportedPGs = Arrays.asList(PRE_DEBIT_UNSUPPORTED_PG);
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(clientAlias)
-                .filter(paymentRenewal -> !unSupportedPGs.contains(transactionManager.get(paymentRenewal.getTransactionId()).getPaymentChannel().getId()) &&
+                .filter(paymentRenewal -> !PRE_DEBIT_UNSUPPORTED_PG.contains(transactionManager.get(paymentRenewal.getTransactionId()).getPaymentChannel().getId()) &&
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");

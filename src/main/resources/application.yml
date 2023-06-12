@@ -224,7 +224,7 @@ payment:
       #  clientEmail: dangal-play-serviceaccount@dangal-play.iam.gserviceaccount.com
       #  key: AIzaSyAmcEfR4deGkGgfmwoehfB_UnWfF7nkjRU
   predebit:
-    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADDTOBILL, APS
+    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADDTOBILL, AddToBill, APS
 cors:
   maxAge: 3600
   allowed:

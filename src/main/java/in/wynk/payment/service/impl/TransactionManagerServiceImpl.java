@@ -86,7 +86,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     //Update new uid in all transactions & update uid in receipt_details
-    public void migrateOldTransactions(String userId, String uid, String oldUid, String service){
+    public void migrateOldTransactions(String userId, String uid, String oldUid, String service) {
         final List<ReceiptDetails> allReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
         //update new uid in all transactions
         updateTransactions(userId, uid, allReceiptDetails);
@@ -98,7 +98,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     private void updateCouponData(String uid, String oldUid) {
-        try{
+        try {
             AvailedCouponsDao availedCouponsRepository = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), AvailedCouponsDao.class);
             availedCouponsRepository.findById(oldUid).ifPresent(userCouponAvailedRecord -> availedCouponsRepository
                     .save(UserCouponAvailedRecord.builder()
@@ -106,34 +106,34 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                             .couponPairs(userCouponAvailedRecord.getCouponPairs())
                             .build()));
             log.info(PaymentLoggingMarker.USER_DEACTIVATION_COUPON_MIGRATION_INFO, "Coupon data migrated from old uid : {} to new uid : {}", oldUid, uid);
-        } catch(Exception e){
+        } catch (Exception e) {
             log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to migrate Coupon data from old uid : {} to new uid : {} due to {}", oldUid, uid, e.getMessage());
             throw e;
         }
     }
 
     private void updateReceiptDetails(String uid, String service, List<ReceiptDetails> allReceiptDetails) {
-        try{
-            if(!CollectionUtils.isEmpty(allReceiptDetails)){
+        try {
+            if (!CollectionUtils.isEmpty(allReceiptDetails)) {
                 allReceiptDetails.forEach(receiptDetails -> {
                     PlanDTO plan = cachingService.getPlan(receiptDetails.getPlanId());
-                    if(plan.getService().equalsIgnoreCase(service)){
+                    if (plan.getService().equalsIgnoreCase(service)) {
                         receiptDetails.setUid(uid);
                     }
                 });
                 RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
                 log.info(PaymentLoggingMarker.USER_DEACTIVATION_RECEIPT_MIGRATION_INFO, "Receipt data updated to new uid : {} ", uid);
             }
-        } catch(Exception e){
+        } catch (Exception e) {
             log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to update Receipt data to new uid : {} due to {}", uid, e.getMessage());
             throw e;
         }
     }
 
     private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
-        try{
+        try {
             List<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
-            if(Objects.nonNull(transactionIds)){
+            if (Objects.nonNull(transactionIds)) {
                 transactionIds.addAll(allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toList()));
             } else {
                 transactionIds = allReceiptDetails.stream().map(ReceiptDetails::getPaymentTransactionId).collect(Collectors.toList());
@@ -147,7 +147,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             });
             saveAll(transactionsList);
             log.info(PaymentLoggingMarker.USER_DEACTIVATION_TRANSACTION_MIGRATION_INFO, "Transaction data updated to new uid : {} for user : {}", uid, userId);
-        } catch(Exception e){
+        } catch (Exception e) {
             log.info(PaymentLoggingMarker.USER_DEACTIVATION_MIGRATION_ERROR, "Unable to update transactions data to new uid : {} for user : {} due to {}", uid, userId, e.getMessage());
             throw e;
         }
@@ -188,7 +188,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction init (AbstractTransactionInitRequest transactionInitRequest, AbstractPaymentChargingRequest request) {
+    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, AbstractPaymentChargingRequest request) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
             purchaseDetailsManger.save(transaction, request);
@@ -217,9 +217,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
-                    try {
-                        recurringPaymentManagerService.scheduleRecurringPayment(request);
-                    } catch (WynkRuntimeException e) {} // reattempt to schedule subscription in async manner
+                    recurringPaymentManagerService.scheduleRecurringPayment(request);
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) || (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
                         subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
                         if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT)

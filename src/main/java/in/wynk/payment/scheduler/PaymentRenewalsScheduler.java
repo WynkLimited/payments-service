@@ -34,7 +34,7 @@ public class PaymentRenewalsScheduler {
     @Autowired
     private ITransactionManagerService transactionManager;
 
-    @Value("${aps.payment.predebit.unsupported}")
+    @Value("${payment.predebit.unsupported}")
     private List<String> PRE_DEBIT_UNSUPPORTED_PG;
 
     @ClientAware(clientAlias = "#clientAlias")

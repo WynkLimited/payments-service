@@ -224,6 +224,8 @@ payment:
       #  privateKeyId: fc40a9ca21615f2ba753a1afcac80d98a818d033
       #  clientEmail: dangal-play-serviceaccount@dangal-play.iam.gserviceaccount.com
       #  key: AIzaSyAmcEfR4deGkGgfmwoehfB_UnWfF7nkjRU
+  predebit:
+    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADDTOBILL, APS
 cors:
   maxAge: 3600
   allowed:
@@ -312,7 +314,6 @@ aps:
          api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/cancel-mandate
     predebit:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/pre-debit/initiate
-        unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADDTOBILL, APS
     delete:
       card: ${payment.merchant.aps.api.base}/pg-service/v1/saved-options/cards/delete
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa

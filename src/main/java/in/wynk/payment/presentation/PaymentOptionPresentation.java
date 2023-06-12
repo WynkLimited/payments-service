@@ -271,7 +271,22 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         private class GooglePlayBillingPresentation implements IPaymentOptionInfoPresentation<GooglePlayBilling, GooglePlayBillingOptionInfo> {
             @Override
             public GooglePlayBilling transform (Pair<PaymentMethodDTO, Optional<GooglePlayBillingOptionInfo>> payload) {
-                return GooglePlayBilling.builder().build();
+
+                final PaymentMethodDTO methodDTO = payload.getFirst();
+                return GooglePlayBilling.builder().id(methodDTO.getPaymentId())
+                        .order(methodDTO.getHierarchy())
+                        .code(methodDTO.getPaymentCode())
+                        .description(methodDTO.getSubtitle())
+                        .health(HealthStatus.UP.name())
+                        .title(methodDTO.getDisplayName())
+                        .group(methodDTO.getGroup())
+                        .description(methodDTO.getSubtitle())
+                        .uiDetails(UiDetails.builder()
+                                .icon(methodDTO.getIconUrl()).build())
+                        .supportingDetails(SupportingDetails.builder()
+                                .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
+                                .build()).build();
             }
         }
 

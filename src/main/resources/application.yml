@@ -310,6 +310,9 @@ aps:
     cancel:
         mandate:
          api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/cancel-mandate
+    predebit:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/pre-debit/initiate
+        unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADDTOBILL, APS
     delete:
       card: ${payment.merchant.aps.api.base}/pg-service/v1/saved-options/cards/delete
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa

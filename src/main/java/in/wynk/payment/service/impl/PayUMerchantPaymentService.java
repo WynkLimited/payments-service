@@ -862,7 +862,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 final String transactionId = transaction.getIdStr();
                 final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
                 final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
-                String productInfo =  Objects.nonNull(callbackRequest.getProductinfo()) ? callbackRequest.getProductinfo() : String.valueOf(transaction.getPlanId());
+                String productInfo =  Objects.nonNull(callbackRequest.getProductInfo()) ? callbackRequest.getProductInfo() : String.valueOf(transaction.getPlanId());
                 return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), productInfo, transaction.getAmount(), callbackRequest.getResponseHash());
             }
 

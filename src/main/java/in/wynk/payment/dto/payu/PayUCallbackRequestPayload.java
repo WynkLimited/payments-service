@@ -68,7 +68,7 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     private String externalTransactionId;
 
     @JsonProperty("productinfo")
-    private String productinfo;
+    private String productInfo;
 
     public String getTransactionFailureReason() {
         final StringBuilder reason = new StringBuilder();

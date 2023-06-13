@@ -79,7 +79,9 @@ public class WebPurchaseDetails implements IChargingDetails {
                     .ip(geoLocation.getIp())
                     .build();
         } else {
-            return null;
+            return GeoLocation.builder()
+                    .countryCode(DEFAULT_COUNTRY_CODE)
+                    .build();
         }
 
     }

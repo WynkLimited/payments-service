@@ -71,19 +71,9 @@ public class WebPurchaseDetails implements IChargingDetails {
     @Override
     public IGeoLocation getGeoLocation() {
         SessionDTO session = SessionContextHolder.getBody();
-        GeoLocation geoLocation= session.get(GEO_LOCATION);
-        if (Objects.nonNull(geoLocation)) {
-            return GeoLocation.builder()
-                    .accessCountryCode(geoLocation.getAccessCountryCode())
-                    .stateCode(geoLocation.getStateCode())
-                    .ip(geoLocation.getIp())
-                    .build();
-        } else {
-            return GeoLocation.builder()
-                    .countryCode(DEFAULT_COUNTRY_CODE)
-                    .build();
-        }
-
+        GeoLocation geoLocation = session.get(GEO_LOCATION);
+        return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
+                GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
     }
 
     @Override

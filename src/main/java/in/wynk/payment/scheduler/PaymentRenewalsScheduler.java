@@ -61,7 +61,7 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("renewNotificationsInit", true);
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(clientAlias)
-                .filter(paymentRenewal -> !PRE_DEBIT_UNSUPPORTED_PG.contains(transactionManager.get(paymentRenewal.getTransactionId()).getPaymentChannel().getId()) &&
+                .filter(paymentRenewal -> checkEligibility(paymentRenewal.getTransactionId()) &&
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
@@ -89,7 +89,13 @@ public class PaymentRenewalsScheduler {
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
     private void publishPreDebitNotificationMessage(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
-        sqsManagerService.publishSQSMessage(message);
+        if(checkEligibility(message.getTransactionId())) {
+            sqsManagerService.publishSQSMessage(message);
+        }
+    }
+
+    private boolean checkEligibility (String transactionId) {
+        return !PRE_DEBIT_UNSUPPORTED_PG.contains(transactionManager.get(transactionId).getPaymentChannel().getId());
     }
 
     @ClientAware(clientId = "#clientId")

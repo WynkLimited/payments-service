@@ -24,7 +24,6 @@ import in.wynk.payment.core.event.PaymentReconciledEvent;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.apb.ApbConstants;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
@@ -111,8 +110,18 @@ public class PaymentGatewayManager
             }
             return response;
         } catch (Exception ex) {
-            this.publishEvent(ex);
-            throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex);
+            log.error(CHARGING_API_FAILURE, ex.getMessage());
+            final PaymentErrorEvent.Builder eventBuilder = PaymentErrorEvent.builder(transaction.getIdStr()).clientAlias(transaction.getClientAlias());
+            if (ex instanceof WynkRuntimeException) {
+                final WynkRuntimeException original = (WynkRuntimeException) ex;
+                final IWynkErrorType errorType = original.getErrorType();
+                eventBuilder.code(Objects.nonNull(errorType) ? errorType.getErrorCode() : original.getErrorCode());
+                eventBuilder.description(Objects.nonNull(errorType) ? errorType.getErrorMessage() : original.getMessage());
+            } else {
+                eventBuilder.code(PaymentErrorType.PAY007.getErrorCode()).description(ex.getMessage());
+            }
+            eventPublisher.publishEvent(eventBuilder.build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
             sqsManagerService.publishSQSMessage(
                     PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
@@ -358,21 +367,6 @@ public class PaymentGatewayManager
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
         }
-    }
-
-    private void publishEvent(Exception ex) {
-        final Transaction transaction = TransactionContext.get();
-        final PaymentErrorEvent.Builder eventBuilder = PaymentErrorEvent.builder(transaction.getIdStr()).clientAlias(transaction.getClientAlias());
-        if (ex instanceof WynkRuntimeException) {
-            final WynkRuntimeException original = (WynkRuntimeException) ex;
-            final IWynkErrorType errorType = original.getErrorType();
-            eventBuilder.code(errorType.getErrorCode());
-            eventBuilder.description(errorType.getErrorMessage());
-        } else {
-            eventBuilder.code(PaymentErrorType.PAY002.getErrorCode()).description(ex.getMessage());
-        }
-        log.error(CHARGING_API_FAILURE, ex.getMessage());
-        eventPublisher.publishEvent(eventBuilder.build());
     }
 
     private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {

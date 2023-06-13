@@ -15,4 +15,8 @@ public class ApsFailureResponse {
     private String errorCode;
     private String  errorMessage;
     private String statusCode;
+
+    public void setStatusCode (String statusCode) {
+        this.statusCode = statusCode;
+    }
 }

@@ -154,8 +154,8 @@ public class PaymentEventListener {
         AnalyticService.update(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
                 .id(event.getId())
-                .code(event.getCode())
-                .description(event.getDescription())
+                .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
+                .description(Objects.nonNull(event.getDescription()) && event.getDescription().length() > 255 ? event.getDescription().substring(0, Math.min(event.getDescription().length(), 255)) : "No description found")
                 .build()));
     }
 

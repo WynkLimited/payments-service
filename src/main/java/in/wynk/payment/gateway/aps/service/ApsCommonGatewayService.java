@@ -211,11 +211,6 @@ public class ApsCommonGatewayService {
         final Transaction transaction = TransactionContext.get();
         if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
-            if (APS_LOB_AUTO_PAY_REGISTER_WYNK.equals(apsChargeStatusResponse.getLob()) && Objects.equals(PaymentEvent.SUBSCRIBE.getValue(), transaction.getType().getValue())
-                    && !MandateStatus.ACTIVE.equals(apsChargeStatusResponse.getMandateStatus())) {
-                log.info("Updating payment Event to PURCHASE from SUBSCRIBE as mandate status is not active");
-                transaction.setType(PaymentEvent.PURCHASE.getValue());
-            }
             evict(transaction.getMsisdn());
         } else if ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
             finalTransactionStatus = TransactionStatus.FAILURE;

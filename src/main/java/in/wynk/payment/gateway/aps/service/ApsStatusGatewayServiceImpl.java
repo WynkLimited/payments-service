@@ -16,9 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY888;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_RENEWAL_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 /**
  * @author Nishesh Pandey

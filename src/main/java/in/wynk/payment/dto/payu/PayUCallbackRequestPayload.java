@@ -1,9 +1,6 @@
 package in.wynk.payment.dto.payu;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.request.CallbackRequest;
 import lombok.Builder;
@@ -17,6 +14,7 @@ import java.io.Serializable;
 @Getter
 @SuperBuilder
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "action", defaultImpl = PayUCallbackRequestPayload.class, visible = true)
 @JsonSubTypes(@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = PayUConstants.REFUND_CALLBACK_ACTION))
 public class PayUCallbackRequestPayload extends CallbackRequest implements Serializable {
@@ -68,6 +66,9 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
 
     @JsonProperty("mihpayid")
     private String externalTransactionId;
+
+    @JsonProperty("productinfo")
+    private String productInfo;
 
     public String getTransactionFailureReason() {
         final StringBuilder reason = new StringBuilder();

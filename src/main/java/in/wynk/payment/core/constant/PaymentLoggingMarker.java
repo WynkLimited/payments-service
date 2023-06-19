@@ -11,7 +11,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("RENEWAL_STATUS_ERROR");
     Marker RENEWAL_API_FAILURE = MarkerFactory.getMarker("RENEWAL_API_FAILURE");
     Marker APS_API_FAILURE = MarkerFactory.getMarker("APS_API_FAILURE");
-    Marker APS_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("APS_CHARGING_CALLBACK_FAILURE");
+    Marker APS_CALLBACK_FAILURE = MarkerFactory.getMarker("APS_CALLBACK_FAILURE");
     Marker APS_CHARGING_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_CHARGING_STATUS_VERIFICATION");
     Marker APS_RENEWAL_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_RENEWAL_STATUS_VERIFICATION");
     Marker APS_VPA_VERIFICATION = MarkerFactory.getMarker("APS_VPA_VERIFICATION");
@@ -48,6 +48,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker PAYMENT_CHARGING_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_FAILURE");
     Marker PAYMENT_CHARGING_CALLBACK_PENDING = MarkerFactory.getMarker("PAYMENT_CHARGING_CALLBACK_PENDING");
+    Marker S2S_PAYMENT_CALLBACK_FAILURE = MarkerFactory.getMarker("S2S_PAYMENT_CALLBACK_FAILURE");
     Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
     Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");
     Marker PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS= MarkerFactory.getMarker("PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS");

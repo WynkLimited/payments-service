@@ -16,6 +16,10 @@ public class TransactionContext {
         return transactionThreadLocal.get().getTransaction();
     }
 
+    public static void clear() {
+        transactionThreadLocal.remove();
+    }
+
     public static Optional<IPurchaseDetails> getPurchaseDetails() {
         return Optional.ofNullable(transactionThreadLocal.get().getPurchaseDetails());
     }

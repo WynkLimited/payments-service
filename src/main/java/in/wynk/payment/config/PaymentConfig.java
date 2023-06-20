@@ -9,24 +9,34 @@ import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.properties.CorsProperties;
+import in.wynk.payment.filter.TransactionContextCleanUpFilter;
 import in.wynk.payment.mapper.WinBackTokenMapper;
 import in.wynk.payment.provider.WinBackAuthenticationProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.core.Ordered;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@EnableAsync
+@EnableRetry
 @Configuration
 @EnableScheduling
 @EnableConfigurationProperties({CorsProperties.class})
@@ -64,10 +74,28 @@ public class PaymentConfig implements WebMvcConfigurer {
         return eventMulticaster;
     }
 
+    @Bean
+    public ThreadPoolTaskExecutor taskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(100);
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean
+    public RetryTemplate retryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+        // Configure the retry policy, backoff policy, etc.
+        return retryTemplate;
+    }
+
     @Bean(destroyMethod = "shutdown")
     public ExecutorService executorService() {
         return Executors.newWorkStealingPool();
     }
+
 
     @Bean
     public WynkApplicationContext myApplicationContext(ClientDetailsCachingService cachingService) {
@@ -94,6 +122,14 @@ public class PaymentConfig implements WebMvcConfigurer {
     @Bean
     public AuthenticationProvider winBackAuthenticationProvider(ClientDetailsCachingService cachingService) {
         return new WinBackAuthenticationProvider(cachingService);
+    }
+
+    @Bean
+    public FilterRegistrationBean<TransactionContextCleanUpFilter> transactionContextCleanUpFilter() {
+        FilterRegistrationBean<TransactionContextCleanUpFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new TransactionContextCleanUpFilter());
+        registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registrationBean;
     }
 
 }

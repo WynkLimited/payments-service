@@ -84,7 +84,7 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
                     VpaVerificationResponse apsVpaVerificationData = common.exchange(request.getClient(), uri.toString(), HttpMethod.GET, common.getLoginId(request.getMsisdn()), request, VpaVerificationResponse.class);
                     return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
-                    log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to ", e);
+                    log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to "+ e.getMessage());
                     throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
                 }
             }

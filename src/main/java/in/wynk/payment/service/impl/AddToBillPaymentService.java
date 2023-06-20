@@ -75,7 +75,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     private final ATBClient atbClient;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher,     @Qualifier(ATB_CLIENT) ATBClient atbClient) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, @Qualifier(ATB_CLIENT) ATBClient atbClient) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.payCache = payCache;
         this.cachingService = cachingService;
@@ -148,8 +148,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return null;
             } else {
                 final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).isBundle(offer.isThanksBundle()).build();
-                final CatalogueEligibilityAndPricingResponse response = atbClient.getEligibility(request);
-                return response;
+                return atbClient.getEligibility(request);
             }
         } catch (Exception e) {
             return null;
@@ -199,10 +198,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         try {
             final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
-            if(Objects.isNull(response) || !response.isSuccess() || response.getBody().getOrdersList().isEmpty()){
-                finalTransactionStatus= TransactionStatus.FAILURE;
-            }
-            else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
+            if (Objects.isNull(response) || !response.isSuccess() || response.getBody().getOrdersList().isEmpty()) {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+            } else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
                         if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
@@ -240,8 +238,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getSi())) {
-                        if((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
-                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))){
+                        if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
+                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))) {
                             status = true;
                             log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
                             break;

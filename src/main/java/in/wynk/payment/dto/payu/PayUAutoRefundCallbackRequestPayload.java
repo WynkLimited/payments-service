@@ -17,7 +17,7 @@ public class PayUAutoRefundCallbackRequestPayload extends PayUCallbackRequestPay
     private String token;
     private String action;
     @JsonProperty("amt")
-    private String amount;
+    private double amount;
     private String key;
     private String remark;
     private String additionalValue1;

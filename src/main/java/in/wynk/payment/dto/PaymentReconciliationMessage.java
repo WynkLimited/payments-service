@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
+import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 
 @Getter
 @SuperBuilder
@@ -50,6 +50,7 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
     @Override
     public PaymentReconciliationThresholdExceedEvent map() {
         return PaymentReconciliationThresholdExceedEvent.builder()
+                .paymentMethodId(getPaymentMethodId())
                 .uid(getUid())
                 .planId(getPlanId())
                 .itemId(getItemId())

@@ -146,10 +146,8 @@ public class ApsCommonGatewayService {
             } else if (!StringUtils.isEmpty(externalPaymentRefundStatusResponse.getRefundStatus()) && externalPaymentRefundStatusResponse.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
-        } catch (HttpStatusCodeException e) {
-            mBuilder.response(e.getResponseBodyAsString());
-            throw new WynkRuntimeException(PAY998, e);
         } catch (Exception e) {
+            mBuilder.response(e.getMessage());
             if (e instanceof WynkRuntimeException) {
                 log.error(APS_REFUND_STATUS, e.getMessage());
                 throw new WynkRuntimeException(((WynkRuntimeException) e).getErrorCode(), ((WynkRuntimeException) e).getErrorTitle(), e.getMessage());
@@ -160,7 +158,6 @@ public class ApsCommonGatewayService {
             transaction.setStatus(finalTransactionStatus.name());
             eventPublisher.publishEvent(mBuilder.build());
         }
-
     }
 
     public void syncChargingTransactionFromSource (Transaction transaction) {
@@ -189,12 +186,9 @@ public class ApsCommonGatewayService {
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponses[0].getErrorCode()).description(apsChargeStatusResponses[0].getErrorDescription()).build());
                 }
             }
-
-        } catch (HttpStatusCodeException e) {
-            builder.request(e.getResponseBodyAsString()).response(e.getResponseBodyAsString());
-            throw new WynkRuntimeException(PAY998, e);
         } catch (Exception e) {
-            log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+            log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to "+ e.getMessage());
+            builder.response(e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
         } finally {
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {

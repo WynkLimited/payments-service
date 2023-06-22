@@ -41,7 +41,7 @@ public class PayURefundTransactionDetails extends AbstractPayUTransactionDetails
                 .mode(payload.getMode())
                 .token(payload.getToken())
                 .status(payload.getStatus())
-                .amount(Double.parseDouble(payload.getAmount()))
+                .amount(payload.getAmount())
                 .action(payload.getAction())
                 .bankArn(payload.getBankArn())
                 .requestId(payload.getRequestId())

@@ -3,15 +3,12 @@ package in.wynk.payment.dto.payu;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.Collections;
 
 @Getter
 @SuperBuilder
@@ -82,28 +79,25 @@ public class PayUChargingTransactionDetails extends AbstractPayUTransactionDetai
         return reason.toString();
     }
 
-    public static PayUVerificationResponse<PayUChargingTransactionDetails> from(PayUCallbackRequestPayload payload) {
-        return PayUVerificationResponse.<PayUChargingTransactionDetails>builder()
-                .status(1)
-                .transactionDetails(Collections.singletonMap(payload.getTransactionId(), PayUChargingTransactionDetails.builder()
-                        .mode(payload.getMode())
-                        .status(payload.getStatus())
-                        .amount(payload.getAmount())
-                        .payUUdf1(payload.getUdf1())
-                        .errorCode(payload.getError())
-                        .bankCode(payload.getBankCode())
-                        .errorMessage(payload.getErrorMessage())
-                        .transactionId(payload.getTransactionId())
-                        .paymentSource(payload.getPaymentSource())
-                        .payuId(payload.getExternalTransactionId())
-                        .responseCardNumber(payload.getCardNumber())
-                        .unMappedStatus(payload.getUnmappedStatus())
-                        .bankReferenceNum(payload.getBankReference())
-                        .payUExternalTxnId(payload.getExternalTransactionId())
-                        .payUResponseFailureMessage(payload.getFailureReason())
-                        .specificFailureReason(payload.getSpecificFailureReason())
-                        .mostSpecificFailureReason(payload.getMostSpecificFailureReason())
-                        .build()))
+    public static PayUChargingTransactionDetails from(PayUCallbackRequestPayload payload) {
+        return PayUChargingTransactionDetails.builder()
+                .mode(payload.getMode())
+                .status(payload.getStatus())
+                .amount(payload.getAmount())
+                .payUUdf1(payload.getUdf1())
+                .errorCode(payload.getError())
+                .bankCode(payload.getBankCode())
+                .errorMessage(payload.getErrorMessage())
+                .transactionId(payload.getTransactionId())
+                .paymentSource(payload.getPaymentSource())
+                .payuId(payload.getExternalTransactionId())
+                .responseCardNumber(payload.getCardNumber())
+                .unMappedStatus(payload.getUnmappedStatus())
+                .bankReferenceNum(payload.getBankReference())
+                .payUExternalTxnId(payload.getExternalTransactionId())
+                .payUResponseFailureMessage(payload.getFailureReason())
+                .specificFailureReason(payload.getSpecificFailureReason())
+                .mostSpecificFailureReason(payload.getMostSpecificFailureReason())
                 .build();
     }
 

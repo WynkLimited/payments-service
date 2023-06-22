@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,7 +36,7 @@ public class PayURefundTransactionDetails extends AbstractPayUTransactionDetails
     @JsonProperty("value_date")
     private String valueDate;
 
-    public static PayUVerificationResponse<PayURefundTransactionDetails> from(PayUAutoRefundCallbackRequestPayload payload) {
+    public static PayURefundTransactionDetails from(PayUAutoRefundCallbackRequestPayload payload) {
         return PayURefundTransactionDetails.builder()
                 .mode(payload.getMode())
                 .token(payload.getToken())
@@ -45,13 +44,7 @@ public class PayURefundTransactionDetails extends AbstractPayUTransactionDetails
                 .amount(Double.parseDouble(payload.getAmount()))
                 .action(payload.getAction())
                 .bankArn(payload.getBankArn())
-                .utrNumber(payload.getUtrNumber())
-                .valueDate(payload.getValueDate())
                 .requestId(payload.getRequestId())
-                .settlementId(payload.getSettlementId())
-                .amountSettled(payload.getAmountSettled())
-                .bankReferenceNum(payload.getBankReferenceNum())
-                .payUExternalTxnId(payload.getPayUExternalTxnId())
                 .build();
     }
 

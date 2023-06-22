@@ -61,7 +61,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.function.Supplier;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.constant.UpiConstants.INTENT;
@@ -835,7 +834,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             @Override
             public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PayUCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
-                syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(0).transactionDetails(Collections.singletonMap(transaction.getIdStr(),AbstractPayUTransactionDetails.from(callbackRequest))).build());
+                syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(0).transactionDetails(Collections.singletonMap(transaction.getIdStr(),AbstractPayUTransactionDetails.from(callbackRequest))).build()));
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                     Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                     if (optionalDetails.isPresent()) {

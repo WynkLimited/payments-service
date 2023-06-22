@@ -3,7 +3,6 @@ package in.wynk.payment.dto.payu;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,8 +37,8 @@ public abstract class AbstractPayUTransactionDetails {
     @JsonProperty("bank_ref_num")
     private String bankReferenceNum;
 
-    public static <T extends PayUCallbackRequestPayload, R extends AbstractPayUTransactionDetails> PayUVerificationResponse<R> from(T payload) {
-        return PayUAutoRefundCallbackRequestPayload.class.isAssignableFrom(payload.getClass()) ? PayURefundTransactionDetails.from(payload): PayUChargingTransactionDetails.from(payload);
+    public static <R extends AbstractPayUTransactionDetails, T extends PayUCallbackRequestPayload> R from(T payload) {
+        return PayUAutoRefundCallbackRequestPayload.class.isAssignableFrom(payload.getClass()) ? (R) PayURefundTransactionDetails.from((PayUAutoRefundCallbackRequestPayload) payload) : (R) PayUChargingTransactionDetails.from(payload);
     }
 
 

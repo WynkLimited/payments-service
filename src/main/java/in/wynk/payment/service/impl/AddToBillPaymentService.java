@@ -53,11 +53,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.net.ConnectException;
 import java.util.*;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentErrorType.ATB01;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY201;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_API_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.addtobill.ATBOrderStatus.COMPLETED;
 import static in.wynk.payment.dto.addtobill.ATBOrderStatus.DEFERRED_COMPLETED;
@@ -127,10 +129,15 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             }
 
         } catch (Exception e) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            final PaymentErrorType errorType = ATB01;
-            builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build()).success(false);
-            log.error(errorType.getMarker(), e.getMessage(), e);
+            if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
+                final WynkRuntimeException wynkException = (WynkRuntimeException) e;
+                if (ConnectException.class.isAssignableFrom(wynkException.getCause().getClass())) {
+                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                    final PaymentErrorType errorType = ATB01;
+                    builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).data(AddToBillChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).build()).success(false);
+                }
+            }
+            log.error(ADDTOBILL_API_FAILURE, "add to bill charging is failed", e);
         }
         return builder.build();
     }
@@ -196,10 +203,9 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         try {
             final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
-            if(Objects.isNull(response) || !response.isSuccess() || response.getBody().getOrdersList().isEmpty()){
+            if(Objects.isNull(response)) {
                 finalTransactionStatus= TransactionStatus.FAILURE;
-            }
-            else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
+            } else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
                         if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
@@ -298,7 +304,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         try {
             return catalogueVasClientService.ordersStatus(si);
         } catch (Exception e) {
-            log.error("Failed to get orderList from AddToBill: {} ", e.getMessage(), e);
+            log.error(ADDTOBILL_API_FAILURE, "recon is failed due to {} ", e);
             return null;
         }
     }

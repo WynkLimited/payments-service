@@ -8,9 +8,11 @@ import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
@@ -19,7 +21,6 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
-import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
 
 @Service
 public class PaymentRenewalsScheduler {
@@ -30,6 +31,11 @@ public class PaymentRenewalsScheduler {
     private ISqsManagerService sqsManagerService;
     @Autowired
     private SeRenewalService seRenewalService;
+    @Autowired
+    private ITransactionManagerService transactionManager;
+
+    @Value("${payment.predebit.unsupported}")
+    private List<String> PRE_DEBIT_UNSUPPORTED_PG;
 
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "paymentRenewals")
@@ -55,10 +61,12 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("renewNotificationsInit", true);
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(clientAlias)
-                .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
+                .filter(paymentRenewal -> checkEligibility(paymentRenewal.getTransactionId()) &&
+                        (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-        paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).date(format.format(paymentRenewal.getDay().getTime())).build()));
+        paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
+                PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).date(format.format(paymentRenewal.getDay().getTime())).build()));
         AnalyticService.update("renewNotificationsCompleted", true);
     }
 
@@ -81,7 +89,13 @@ public class PaymentRenewalsScheduler {
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
     private void publishPreDebitNotificationMessage(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
-        sqsManagerService.publishSQSMessage(message);
+        if(checkEligibility(message.getTransactionId())) {
+            sqsManagerService.publishSQSMessage(message);
+        }
+    }
+
+    private boolean checkEligibility (String transactionId) {
+        return !PRE_DEBIT_UNSUPPORTED_PG.contains(transactionManager.get(transactionId).getPaymentChannel().getId());
     }
 
     @ClientAware(clientId = "#clientId")

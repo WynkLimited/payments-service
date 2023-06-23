@@ -92,7 +92,7 @@ public class PaymentGatewayManager
         this.statusDelegator.put(AbstractTransactionReconciliationStatusRequest.class, new ReconciliationTransactionStatusService());
     }
 
-   // @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
+    @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
     public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
         PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);

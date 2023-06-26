@@ -8,6 +8,7 @@ import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.queue.dto.MessageToEventMapper;
 import in.wynk.queue.dto.ProducerType;
 import in.wynk.queue.dto.WynkQueue;
+import in.wynk.scheduler.queue.dto.IQueueMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,14 +18,18 @@ import lombok.experimental.SuperBuilder;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 
 @Getter
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(10, 50, 60, 60, 120, 300, 300, 300, 890, 890, 2400, 3600, 79200, 172800, 179800).get(#n)", publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
-public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent> {
+@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
+public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent>, IQueueMessage<String> {
+
+   @Analysed
+   private String paymentMethodId;
 
     @Analysed
     private String extTxnId;
@@ -38,8 +43,14 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
     private int originalAttemptSequence;
 
     @Override
+    public String getEntityId () {
+        return getPaymentMethodId();
+    }
+
+    @Override
     public PaymentReconciliationThresholdExceedEvent map() {
         return PaymentReconciliationThresholdExceedEvent.builder()
+                .paymentMethodId(getPaymentMethodId())
                 .uid(getUid())
                 .planId(getPlanId())
                 .itemId(getItemId())
@@ -51,5 +62,4 @@ public class PaymentReconciliationMessage extends AbstractTransactionMessage imp
                 .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(getPaymentCode()))
                 .build();
     }
-
 }

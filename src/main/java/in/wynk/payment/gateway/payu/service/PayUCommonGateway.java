@@ -124,6 +124,9 @@ public class PayUCommonGateway {
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
             final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
+            if (Objects.isNull(payUChargingVerificationResponse.getTransactionDetails())) {
+                throw new WynkRuntimeException("Failed to sync transaction from payu with error: " + payUChargingVerificationResponse.getMessage());
+            }
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))

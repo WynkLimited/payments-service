@@ -51,7 +51,7 @@ public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRef
 
             mBuilder.request(refundRequest);
             mBuilder.response(body);
-            mBuilder.externalTransactionId(body.getRefundId());
+            mBuilder.externalTransactionId(body.getPgId());
             refundResponseBuilder.requestId(body.getRefundId());
             if (!StringUtils.isEmpty(body.getRefundStatus()) && body.getRefundStatus().equalsIgnoreCase("REFUND_SUCCESS")) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;

@@ -25,7 +25,7 @@ import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
+@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkQueue.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
 public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent>, IQueueMessage<String> {
 
    @Analysed

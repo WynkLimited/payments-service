@@ -97,13 +97,13 @@ public class ApsCommonGatewayService {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange (String clientAlias, String url, HttpMethod method, String loginId, Object body, Class<T> target) {
+    public <T> T exchange (String clientAlias, String url, HttpMethod method, String msisdn, Object body, Class<T> target) {
         if (StringUtils.isEmpty(clientAlias)) {
             log.error("client is not loaded for url {}", clientAlias);
             throw new WynkRuntimeException(PAY044);
         }
         try {
-            ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(clientAlias), url, method, body);
+            ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(clientAlias), url, method, body);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
@@ -232,7 +232,7 @@ public class ApsCommonGatewayService {
         return rsa.encrypt(gson.toJson(credentials));
     }
 
-    public String getLoginId (String msisdn) {
+    private String getLoginId (String msisdn) {
         return msisdn.replace("+91", "");
     }
 }

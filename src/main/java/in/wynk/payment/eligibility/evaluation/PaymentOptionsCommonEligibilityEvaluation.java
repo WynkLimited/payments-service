@@ -16,6 +16,7 @@ import in.wynk.payment.eligibility.enums.PaymentsEligibilityReason;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
+import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.VasClientService;
@@ -263,8 +264,8 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
             if (StringUtils.isBlank(root.getMsisdn())) {
                 resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
             }
-            int sum = findSumOfDigits(Integer.parseInt(root.getMsisdn()));
-            int remainder = sum % 10;
+            long sum = findSumOfDigits(Long.valueOf(root.getMsisdn().replace("+91", "")));
+            int remainder = ((int)sum) % 10;
             if (start <= remainder && remainder <= end) {
                 resultBuilder.status(EligibilityStatus.ELIGIBLE);
             } else {
@@ -276,7 +277,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         }
     }
 
-    private int findSumOfDigits (int msisdn) {
+    private long findSumOfDigits (Long msisdn) {
         return msisdn == 0 ? 0 : msisdn % 10 + findSumOfDigits(msisdn / 10);
     }
 }

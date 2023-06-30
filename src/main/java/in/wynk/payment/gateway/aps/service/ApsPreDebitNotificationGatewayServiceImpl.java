@@ -43,7 +43,7 @@ public class ApsPreDebitNotificationGatewayServiceImpl implements IPreDebitNotif
             Transaction transaction = transactionManager.get(message.getTransactionId());
             String invoiceNumber = RecurringTransactionUtils.generateInvoiceNumber();
             PreDebitNotificationRequest request = buildApsPreDebitInfoRequest(message.getTransactionId(), message.getDate(), UPI, transaction.getAmount(), invoiceNumber);
-            PreDebitNotification apsPreDebitNotification = common.exchange(transaction.getClientAlias(), PRE_DEBIT_API, HttpMethod.POST, common.getLoginId(transaction.getMsisdn()),request, PreDebitNotification.class);
+            PreDebitNotification apsPreDebitNotification = common.exchange(transaction.getClientAlias(), PRE_DEBIT_API, HttpMethod.POST, transaction.getMsisdn(),request, PreDebitNotification.class);
             TransactionStatus transactionStatus = TXN_SUCCESS.equals(apsPreDebitNotification.getNotificationStatus().getTxnStatus()) ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
             return PreDebitNotification.builder().requestId(request.getPreDebitRequestId()).tid(message.getTransactionId()).transactionStatus(transactionStatus)
                     .notificationStatus(apsPreDebitNotification.getNotificationStatus()).build();

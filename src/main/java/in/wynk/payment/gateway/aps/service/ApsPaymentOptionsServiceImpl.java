@@ -230,7 +230,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
     private PaymentOptionsResponse payOption(String msisdn, String clientAlias) {
         final PaymentOptionRequest request = PaymentOptionRequest.builder().build();
         try {
-            return common.exchange(clientAlias, PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
+            return common.exchange(clientAlias, PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, msisdn, request, PaymentOptionsResponse.class);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.APS_API_FAILURE, "Unable to fetch eligibility from APS", e);
             return new PaymentOptionsResponse();

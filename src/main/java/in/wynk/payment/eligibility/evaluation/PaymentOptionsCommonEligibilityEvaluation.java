@@ -253,4 +253,30 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         }
     }
 
+    public boolean isMsisdnInRange (int start, int end) {
+        final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
+        if (start < 0 || end > 9) {
+            resultBuilder.reason(CommonEligibilityStatusReason.UNSUPPORTED_RANGE);
+        }
+        try {
+            final PaymentOptionsEligibilityRequest root = getRoot();
+            if (StringUtils.isBlank(root.getMsisdn())) {
+                resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
+            }
+            int sum = findSumOfDigits(Integer.parseInt(root.getMsisdn()));
+            int remainder = sum % 10;
+            if (start <= remainder && remainder <= end) {
+                resultBuilder.status(EligibilityStatus.ELIGIBLE);
+            } else {
+                resultBuilder.reason(PaymentsEligibilityReason.MSISDN_NOT_IN_RANGE);
+            }
+            return resultBuilder.build().isEligible();
+        } finally {
+            result = resultBuilder.build();
+        }
+    }
+
+    private int findSumOfDigits (int msisdn) {
+        return msisdn == 0 ? 0 : msisdn % 10 + findSumOfDigits(msisdn / 10);
+    }
 }

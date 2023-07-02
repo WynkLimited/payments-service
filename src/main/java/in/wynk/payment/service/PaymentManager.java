@@ -16,10 +16,7 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.event.ClientCallbackEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
-import in.wynk.payment.core.event.PaymentsBranchEvent;
+import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
@@ -118,10 +115,9 @@ public class PaymentManager
             }
             return response;
         } finally {
-            /** TODO:: Uncomment to make it part of of subsequent release for dropout notification
-             eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
-             .getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
-             .getId())).build());**/
+            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+                    .getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
+                    .getId())).build());
             sqsManagerService.publishSQSMessage(
                     PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());

@@ -72,8 +72,8 @@ public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .exceptionHandling().authenticationEntryPoint(authenticationFailureEntryPoint)
                 .and()
-                .addFilter(new S2SDetailsAuthenticationFilter(authenticationManagerBean(), preAuthS2SDetailsTokenMapper))
-                .addFilter(new CustomerWinBackAuthFilter(winBackUrl, authenticationManagerBean(), winBackTokenMapper));
+                .addFilter(new S2SDetailsAuthenticationFilter(authenticationManagerBean(), preAuthS2SDetailsTokenMapper));
+                //.addFilter(new CustomerWinBackAuthFilter(winBackUrl, authenticationManagerBean(), winBackTokenMapper));
     }
 
     @Override

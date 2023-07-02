@@ -61,7 +61,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_PAGE_PLACE_HOLDER = "${payment.%c.%p.page}";
     String PAYMENT_PAGE_PLACE_HOLDER_V2 = "${payment.%c.%p.v2.page}";
     String ORIGINAL_TRANSACTION_ID = "ORIGINAL_TRANSACTION_ID";
-    String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
+    String PAYMENT_DROPOUT_TRACKER_IN_SECONDS = "PAYMENT_DROPOUT_TRACKER_IN_SECONDS";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
     String PAYMENT_CLIENT_PLACE_HOLDER = "payment.merchant.%p.%c.%f";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";

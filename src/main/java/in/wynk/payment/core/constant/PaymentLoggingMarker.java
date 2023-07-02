@@ -122,4 +122,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
 
     Marker EXTERNAL_ELIGIBILITY_FAILURE = MarkerFactory.getMarker("EXTERNAL_ELIGIBILITY_FAILURE");
 
+    Marker PAYMENT_DROP_OUT_NOTIFICATION_FAILURE = MarkerFactory.getMarker("PAYMENT_DROP_OUT_NOTIFICATION_FAILURE");
+
 }

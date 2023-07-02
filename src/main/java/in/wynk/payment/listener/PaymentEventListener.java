@@ -210,7 +210,7 @@ public class PaymentEventListener {
             if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
                 taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
             }
-            final long delayedBy = clientDetails.<Long>getMeta(PaymentConstants.PAYMENT_DROPOUT_DELAY_KEY).orElse(3600L);
+            final long delayedBy = (clientDetails.<Double>getMeta(PaymentConstants.PAYMENT_DROPOUT_TRACKER_IN_SECONDS).orElse(3600D)).longValue();
             final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy));
             taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder()
                     .entity(purchaseRecord)
@@ -254,7 +254,6 @@ public class PaymentEventListener {
                     .messageId(message.getMessageId())
                     .msisdn(event.getMsisdn())
                     .service(service)
-                    .priority(message.getPriority())
                     .contextMap(contextMap)
                     .build();
             sqsManagerService.publishSQSMessage(notificationMessage);

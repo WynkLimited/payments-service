@@ -44,12 +44,11 @@ import in.wynk.payment.service.*;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.atb.*;
-import in.wynk.vas.client.service.ATBClient;
+import in.wynk.vas.client.service.CatalogueVasClientService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -65,7 +64,6 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.ADDTOBILL_CHARG
 import static in.wynk.payment.dto.addtobill.ATBOrderStatus.COMPLETED;
 import static in.wynk.payment.dto.addtobill.ATBOrderStatus.DEFERRED_COMPLETED;
 import static in.wynk.payment.dto.addtobill.AddToBillConstants.*;
-import static in.wynk.vas.client.constant.VasConstants.ATB_CLIENT;
 
 @Slf4j
 @Service(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE)
@@ -74,15 +72,14 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private final PaymentMethodCachingService payCache;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
+    private final CatalogueVasClientService catalogueVasClientService;
 
-    private final ATBClient atbClient;
-
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, @Qualifier(ATB_CLIENT) ATBClient atbClient) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.payCache = payCache;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
-        this.atbClient = atbClient;
+        this.catalogueVasClientService = catalogueVasClientService;
     }
 
     @Override
@@ -121,7 +118,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                     .orderPaymentDetails(OrderPaymentDetails.builder().addToBill(true).orderPaymentAmount(userAddToBillDetails.getAmount()).paymentTransactionId(userBillingDetail.getBillingSiDetail().getBillingSi()).optedPaymentMode(OptedPaymentMode.builder().modeId(modeId).modeType(BILL).build()).build())
                     .serviceOrderItems(serviceOrderItems)
                     .orderMeta(null).build();
-            final AddToBillCheckOutResponse response = atbClient.checkout(checkOutRequest);
+            final AddToBillCheckOutResponse response = catalogueVasClientService.checkout(checkOutRequest);
             if (response.isSuccess()) {
                 transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                 log.info("ATB checkout success: {}, txnId: {} and OrderId: {}", true, transaction.getIdStr(), response.getBody().getOrderId());
@@ -155,7 +152,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return null;
             } else {
                 final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).isBundle(offer.isThanksBundle()).build();
-                return atbClient.getEligibility(request);
+                final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request, Boolean.TRUE);
+                return response;
             }
         } catch (Exception e) {
             return null;
@@ -205,8 +203,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final PlanDTO plan = cachingService.getPlan(purchaseDetails.getProductDetails().getId());
         try {
             final OrderStatusResponse response = getOrderList(userBillingDetail.getSi());
-            if (Objects.isNull(response)) {
-                finalTransactionStatus = TransactionStatus.FAILURE;
+            if(Objects.isNull(response)) {
+                finalTransactionStatus= TransactionStatus.FAILURE;
             } else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
@@ -245,8 +243,8 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getSi().equalsIgnoreCase(userBillingDetail.getSi())) {
-                        if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
-                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))) {
+                        if((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
+                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))){
                             status = true;
                             log.info("ATB renewal order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
                             break;
@@ -286,7 +284,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (purchaseDetails.isPresent()) {
                 final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();
                 final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(plan.getSku().get(ATB)).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
-                final AddToBillUnsubscribeResponse response = atbClient.unsubscribe(unsubscribeRequest);
+                final AddToBillUnsubscribeResponse response = catalogueVasClientService.unsubscribe(unsubscribeRequest);
                 if (plan.getSku().get(ATB).equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
                     finalTransactionStatus = TransactionStatus.SUCCESS;
                     log.info("unsubscribe order details si: {},service :{}, markedForCanceled {} :", response.getSi(), response.getProductCode(), response.isIsMarkedForCancel());
@@ -304,7 +302,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     private OrderStatusResponse getOrderList(String si) {
         try {
-            return atbClient.ordersStatus(si);
+            return catalogueVasClientService.ordersStatus(si);
         } catch (Exception e) {
             log.error(ADDTOBILL_API_FAILURE, "recon is failed due to {} ", e);
             return null;

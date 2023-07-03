@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.extern.slf4j.Slf4j;
@@ -22,12 +23,12 @@ public class PaymentGatewayCommon {
     }
 
     public String getPaymentId (Transaction transaction) {
-        if(!IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().name())) {
+        if (!IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().name()) && (PaymentEvent.RENEW != transaction.getType())) {
             IPurchaseDetails purchaseDetails = purchaseDetailsManger.get(transaction);
-            if(Objects.nonNull(purchaseDetails)){
+            if (Objects.nonNull(purchaseDetails)) {
                 return purchaseDetails.getPaymentDetails().getPaymentId();
             }
-            log.error("No purchase data found for the transaction Id"+ transaction.getIdStr());
+            log.error("No purchase data found for the transaction Id" + transaction.getIdStr());
         }
         return null;
     }

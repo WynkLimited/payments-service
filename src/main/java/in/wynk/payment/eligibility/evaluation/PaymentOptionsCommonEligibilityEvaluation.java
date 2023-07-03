@@ -261,12 +261,7 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         }
         try {
             final PaymentOptionsEligibilityRequest root = getRoot();
-            if (StringUtils.isBlank(root.getMsisdn())) {
-                resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
-            }
-            long sum = findSumOfDigits(Long.valueOf(root.getMsisdn().replace("+91", "")));
-            int remainder = ((int)sum) % 10;
-            if (start <= remainder && remainder <= end) {
+            if (start <= root.getMsisdnRangeProbability() && root.getMsisdnRangeProbability() <= end) {
                 resultBuilder.status(EligibilityStatus.ELIGIBLE);
             } else {
                 resultBuilder.reason(PaymentsEligibilityReason.MSISDN_NOT_IN_RANGE);
@@ -275,9 +270,5 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
         } finally {
             result = resultBuilder.build();
         }
-    }
-
-    private long findSumOfDigits (Long msisdn) {
-        return msisdn == 0 ? 0 : msisdn % 10 + findSumOfDigits(msisdn / 10);
     }
 }

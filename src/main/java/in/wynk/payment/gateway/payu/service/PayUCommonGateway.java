@@ -82,6 +82,9 @@ public class PayUCommonGateway {
     public  <T> T exchange(String uri, MultiValueMap<String, String> request, HttpHeaders headers, TypeReference<T> target) {
         try {
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(uri)).body(request), String.class).getBody();
+            if (StringUtils.isNotEmpty(response) && response.contains("Record not found")) {
+                throw new WynkRuntimeException("Record not found");
+            }
             return mapper.readValue(response, target);
         } catch (Exception ex) {
             throw new WynkRuntimeException(PAY015, ex);

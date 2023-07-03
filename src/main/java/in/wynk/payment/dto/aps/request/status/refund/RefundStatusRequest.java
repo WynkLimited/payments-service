@@ -10,7 +10,6 @@ import java.io.Serializable;
 @Getter
 @Builder
 @ToString
-@NoArgsConstructor
 public class RefundStatusRequest implements Serializable {
     /**
     * Refund Id for which refund status details needs to be fetched.

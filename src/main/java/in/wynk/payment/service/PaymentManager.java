@@ -82,7 +82,7 @@ public class PaymentManager
                 final AbstractPaymentRefundResponse refundResponse = refundInitResponse.getBody().getData();
                 if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                     sqsManagerService.publishSQSMessage(
-                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(originalTransaction)).paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundResponse.getExternalReferenceId())
+                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId()))).paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundResponse.getExternalReferenceId())
                                     .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
                                     .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
                 }
@@ -275,7 +275,7 @@ public class PaymentManager
                 DefaultTransactionInitRequestMapper.from(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequest(request).receiptResponse(latestReceiptResponse).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         sqsManagerService.publishSQSMessage(
-                PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transaction)).extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
+                PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
                         .paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, transaction.getId());
@@ -309,7 +309,7 @@ public class PaymentManager
                         cachingService);
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         sqsManagerService.publishSQSMessage(
-                PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transaction)).extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
+                PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
                         .paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         final TransactionStatus initialStatus = transaction.getStatus();
         SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, transaction.getId());
@@ -358,7 +358,7 @@ public class PaymentManager
         } finally {
             if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
-                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transaction)).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
                                 .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
@@ -387,7 +387,7 @@ public class PaymentManager
         final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()));
         sqsManagerService.publishSQSMessage(
-                PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transaction)).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType())
+                PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType())
                         .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         return BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {
         }).topUp(request);

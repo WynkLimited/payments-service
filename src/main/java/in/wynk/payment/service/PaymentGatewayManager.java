@@ -272,7 +272,7 @@ public class PaymentGatewayManager
         } finally {
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
-                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transaction)).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
                                 .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
@@ -361,7 +361,7 @@ public class PaymentGatewayManager
             if (Objects.nonNull(refundInitResponse)) {
                 if (refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                     sqsManagerService.publishSQSMessage(
-                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(originalTransaction)).paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
+                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId()))).paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
                                     .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
                                     .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
                 }

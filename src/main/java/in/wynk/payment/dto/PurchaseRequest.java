@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.validations.IClientValidatorRequest;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.identity.client.utils.IdentityUtils;
-import in.wynk.subscription.common.dto.GeoLocation;
 import in.wynk.wynkservice.api.validations.IWynkServiceValidatorRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -67,6 +67,7 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .deviceId(getAppDetails().getDeviceId())
                 .deviceType(getAppDetails().getDeviceType())
                 .os(getAppDetails().getOs())
+                .geoLocation(getGeoLocation())
                 .service(getAppDetails().getService())
                 .countryCode(getUserDetails().getCountryCode())
                 .msisdn(getUserDetails().getMsisdn())

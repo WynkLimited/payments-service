@@ -139,7 +139,7 @@ public class PaymentGatewayManager
                 });
         return verifyService.verify(request);
     }
-    AddToBillPaymentService.java
+
     @Override
     public AbstractPaymentAccountDeletionResponse delete(AbstractPaymentAccountDeletionRequest request) {
         String paymentCode = request.getPaymentCode().getCode();

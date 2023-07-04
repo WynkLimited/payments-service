@@ -23,7 +23,7 @@ public class PaymentGatewayCommon {
     }
 
     public String getPaymentId (Transaction transaction) {
-        if (!IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().name()) && (PaymentEvent.RENEW != transaction.getType())) {
+        if (!IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().name())) {
             IPurchaseDetails purchaseDetails = purchaseDetailsManger.get(transaction);
             if (Objects.nonNull(purchaseDetails)) {
                 return purchaseDetails.getPaymentDetails().getPaymentId();

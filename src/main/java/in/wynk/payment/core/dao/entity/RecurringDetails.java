@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.data.entity.MongoBaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -46,7 +47,7 @@ public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseK
     private IPageUrlDetails pageUrlDetails;
 
     @Analysed
-    private GeoLocation geoLocation;
+    private IGeoLocation geoLocation;
 
     @Override
     @JsonIgnore

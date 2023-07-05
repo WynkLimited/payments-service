@@ -30,7 +30,6 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static in.wynk.payment.core.constant.BeanConstant.TRANSACTION_MANAGER;
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
@@ -83,6 +82,17 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
             }
         }
+    }
+
+    @Override
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public void unScheduleRecurringPayment(String clientAlias, String transactionId, PaymentEvent paymentEvent) {
+        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
+        paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
+            recurringPayment.setTransactionEvent(paymentEvent.name());
+            recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
+            paymentRenewalDao.save(recurringPayment);
+        });
     }
 
     @Override

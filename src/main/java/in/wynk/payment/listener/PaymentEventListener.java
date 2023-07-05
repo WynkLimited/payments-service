@@ -18,7 +18,6 @@ import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
-import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -39,8 +38,8 @@ import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
-import in.wynk.stream.producer.IKinesisEventPublisher;
 import in.wynk.sms.common.message.SmsNotificationMessage;
+import in.wynk.stream.producer.IKinesisEventPublisher;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
@@ -65,7 +64,6 @@ import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPShOT_EVENT;
@@ -86,6 +84,7 @@ public class PaymentEventListener {
     private final IMerchantTransactionService merchantTransactionService;
     private final PaymentCachingService cachingService;
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
     @Value("${event.stream.dp}")
     private String dpStream;
 
@@ -359,6 +358,14 @@ public class PaymentEventListener {
             map.putAll(branchMeta((EventsWrapper) event.getData()));
             publishBranchEvent(map, event.getEventName());
         }
+    }
+
+
+    @ClientAware(clientAlias = "#clientAlias")
+    @EventListener(UnScheduleRecurringPaymentEvent.class)
+    private void unScheduleTransactionRecurring(UnScheduleRecurringPaymentEvent event) {
+        AnalyticService.update(event);
+        recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);
     }
 
     private void publishBranchEvent(Map<String, Object> meta, String event) {

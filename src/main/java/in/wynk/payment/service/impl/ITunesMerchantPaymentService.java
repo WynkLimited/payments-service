@@ -114,7 +114,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
 
-                if(latestReceiptResponse.getSuccessUrl() != null){
+                if (latestReceiptResponse.getSuccessUrl() != null) {
                     builder.url(new StringBuilder(latestReceiptResponse.getSuccessUrl()).toString());
                 } else {
                     String success_url = EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.page}");
@@ -136,7 +136,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
             } else {
 
-                if(latestReceiptResponse.getFailureUrl() != null){
+                if (latestReceiptResponse.getFailureUrl() != null) {
                     builder.url(new StringBuilder(latestReceiptResponse.getFailureUrl()).toString());
 
                 } else {
@@ -153,7 +153,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                             .append(EQUAL)
                             .append(sessionDTO.<Integer>get(BUILD_NO))
                             .toString());
-                  }
+                }
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
@@ -181,7 +181,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         final ItunesVerificationRequest request = (ItunesVerificationRequest) iapVerificationRequest;
         final ItunesReceiptType receiptType = ItunesReceiptType.getReceiptType(request.getReceipt());
         final ItunesReceipt itunesReceipt = getReceiptObjForUser(request.getReceipt(), receiptType, request.getMsisdn());
-        LatestReceiptResponse response =  getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
+        LatestReceiptResponse response = getLatestReceiptResponseInternal(request.getReceipt(), itunesReceipt, receiptType);
         response.setSuccessUrl(request.getSuccessUrl());
         response.setFailureUrl(request.getFailureUrl());
         return response;
@@ -189,7 +189,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
 
     //Needs to be completed for v2 request
     @Override
-    public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
+    public LatestReceiptResponse getLatestReceiptResponse(IapVerificationRequestV2 iapVerificationRequest) {
         return null;
     }
 
@@ -230,15 +230,16 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     @Override
     public void handleNotification(Transaction transaction, UserPlanMapping<Pair<LatestReceiptInfo, ReceiptDetails>> mapping) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
-        LatestReceiptInfo receiptInfo = mapping.getMessage().getFirst();
-        ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage().getSecond();
-        ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
+        final LatestReceiptInfo receiptInfo = mapping.getMessage().getFirst();
+        final ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage().getSecond();
+        final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
         //Need to add check for itunes txn Id in merchant transaction table to achieve idempotency
         final long expireTimestamp = NumberUtils.toLong(receiptInfo.getExpiresDateMs());
         final long cancellationTimestamp = NumberUtils.toLong(receiptInfo.getCancellationDateMs());
         if (expireTimestamp > System.currentTimeMillis() || (transaction.getType() == PaymentEvent.CANCELLED && cancellationTimestamp <= System.currentTimeMillis())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
+        final String oldTransactionId = receiptDetails.getPaymentTransactionId();
         transaction.setStatus(finalTransactionStatus.name());
         final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
                 .type(receiptType.name())
@@ -488,14 +489,14 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                             boolean isFreeTrial = Boolean.parseBoolean(latestReceiptInfo.getIsTrialPeriod()) || Boolean.parseBoolean(latestReceiptInfo.getIsInIntroOfferPeriod());
                             if (isFreeTrial) {
                                 if (planDTO.getLinkedFreePlanId() != -1) {
-                                    return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(details.getMsisdn()).uid(details.getUid())
+                                    return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(details.getMsisdn()).uid(details.getUid()).linkedTransactionId(details.getPaymentTransactionId())
                                             .message(Pair.of(latestReceiptInfo, details)).build();
                                 } else {
                                     log.error("No Free Trial mapping present for planId {}", planDTO.getId());
                                     throw new WynkRuntimeException(PaymentErrorType.PAY034);
                                 }
                             }
-                            return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid())
+                            return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid()).linkedTransactionId(details.getPaymentTransactionId())
                                     .message(Pair.of(latestReceiptInfo, details)).build();
                         }
                     }
@@ -559,7 +560,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 final WynkRuntimeException exception = (WynkRuntimeException) e;
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
             }
-            log.error("Unable to do renewal for the transaction {}, error message {}",transaction.getId(), e.getMessage(), e);
+            log.error("Unable to do renewal for the transaction {}, error message {}", transaction.getId(), e.getMessage(), e);
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(PaymentErrorType.PAY026, e);
         }
@@ -570,16 +571,16 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public void verifyRequest (IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+    public void verifyRequest(IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
     }
 
     @Override
-    public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+    public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
 
     }
 
     @Override
-    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+    public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
 
     }
 }

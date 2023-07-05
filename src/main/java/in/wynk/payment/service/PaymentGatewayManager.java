@@ -81,6 +81,7 @@ public class PaymentGatewayManager
     private final IMerchantTransactionService merchantTransactionService;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
+    private final PaymentGatewayCommon common;
 
     @PostConstruct
     public void init() {
@@ -107,11 +108,21 @@ public class PaymentGatewayManager
             }
             return response;
         } catch (Exception ex) {
-            this.publishEvent(ex);
-            throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex);
+            log.error(CHARGING_API_FAILURE, ex.getMessage());
+            final PaymentErrorEvent.Builder eventBuilder = PaymentErrorEvent.builder(transaction.getIdStr()).clientAlias(transaction.getClientAlias());
+            if (ex instanceof WynkRuntimeException) {
+                final WynkRuntimeException original = (WynkRuntimeException) ex;
+                final IWynkErrorType errorType = original.getErrorType();
+                eventBuilder.code(Objects.nonNull(errorType) ? errorType.getErrorCode() : original.getErrorCode());
+                eventBuilder.description(Objects.nonNull(errorType) ? errorType.getErrorMessage() : original.getMessage());
+            } else {
+                eventBuilder.code(PaymentErrorType.PAY007.getErrorCode()).description(ex.getMessage());
+            }
+            eventPublisher.publishEvent(eventBuilder.build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
             sqsManagerService.publishSQSMessage(
-                    PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
@@ -264,7 +275,7 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
-                        PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
                                 .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
@@ -346,7 +357,7 @@ public class PaymentGatewayManager
             if (Objects.nonNull(refundInitResponse)) {
                 if (refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                     sqsManagerService.publishSQSMessage(
-                            PaymentReconciliationMessage.builder().paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
+                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId()))).paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
                                     .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
                                     .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
                 }
@@ -357,21 +368,6 @@ public class PaymentGatewayManager
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
         }
-    }
-
-    private void publishEvent(Exception ex) {
-        final Transaction transaction = TransactionContext.get();
-        final PaymentErrorEvent.Builder eventBuilder = PaymentErrorEvent.builder(transaction.getIdStr()).clientAlias(transaction.getClientAlias());
-        if (ex instanceof WynkRuntimeException) {
-            final WynkRuntimeException original = (WynkRuntimeException) ex;
-            final IWynkErrorType errorType = original.getErrorType();
-            eventBuilder.code(errorType.getErrorCode());
-            eventBuilder.description(errorType.getErrorMessage());
-        } else {
-            eventBuilder.code(PaymentErrorType.PAY002.getErrorCode()).description(ex.getMessage());
-        }
-        log.error(CHARGING_API_FAILURE, ex.getMessage());
-        eventPublisher.publishEvent(eventBuilder.build());
     }
 
     private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {

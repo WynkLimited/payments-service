@@ -34,11 +34,27 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
 
     private final int buildNo;
 
+    private final Map<String, Integer> msisdnRangeProbability = new HashMap<>();
+
     private final PaymentOptionsEligibilityRequestProxy paymentOptionsEligibilityRequestProxy;
     private final Map<String, AbstractPaymentInstrumentsProxy<AbstractPaymentOptionInfo, AbstractSavedInstrumentInfo>> payInstrumentProxyMap = new HashMap<>();
 
     @Setter
     private String group;
+
+    public Integer getMsisdnRangeProbability () {
+        if (msisdnRangeProbability.containsKey(msisdn)) {
+            return msisdnRangeProbability.get(msisdn);
+        }
+        long sum = findSumOfDigits(Long.valueOf(msisdn.replace("+91", "")));
+        int probability = ((int) sum) % 10;
+        msisdnRangeProbability.put(msisdn, probability);
+        return probability;
+    }
+
+    private long findSumOfDigits (Long msisdn) {
+        return msisdn == 0 ? 0 : msisdn % 10 + findSumOfDigits(msisdn / 10);
+    }
 
     public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode) {
         if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))

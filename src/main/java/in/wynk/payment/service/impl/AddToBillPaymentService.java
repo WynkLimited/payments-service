@@ -208,13 +208,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             } else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
-                        if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
-                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))) {
+                        if (Objects.nonNull(order.getEndDate()) && ((COMPLETED.name().equalsIgnoreCase(order.getOrderStatus()) && order.getEndDate().after(new Date()) && ACTIVE.equalsIgnoreCase(order.getServiceStatus()))
+                                || (DEFERRED_COMPLETED.name().equalsIgnoreCase(order.getOrderStatus()) && order.getEndDate().after(new Date())))) {
                             finalTransactionStatus = TransactionStatus.SUCCESS;
                             transaction.setStatus(finalTransactionStatus.getValue());
                             log.info("ATB order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
                             return;
-                        } else if (order.getOrderStatus().equalsIgnoreCase(ATBOrderStatus.FAILED.name())) {
+                        } else if (ATBOrderStatus.FAILED.name().equalsIgnoreCase(order.getOrderStatus())) {
                             finalTransactionStatus = TransactionStatus.FAILURE;
                             transaction.setStatus(finalTransactionStatus.getValue());
                             log.info("ATB order status success: {}, for provisionSi: {}, loggedInSi: {} and service: {}", false, order.getSi(), order.getLoggedInSi(), order.getServiceId());

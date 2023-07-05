@@ -15,6 +15,8 @@ import lombok.experimental.SuperBuilder;
 public class PaymentReconciliationThresholdExceedEvent extends MessageThresholdExceedEvent {
 
     @Analysed
+    private String paymentMethodId;
+    @Analysed
     private String uid;
     @Analysed
     private String msisdn;

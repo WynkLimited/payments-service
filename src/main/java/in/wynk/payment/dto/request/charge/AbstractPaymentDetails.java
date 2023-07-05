@@ -8,7 +8,6 @@ import in.wynk.common.constant.CacheBeanNameConstants;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.data.dto.IEntityCacheService;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.PaymentDetails;
@@ -21,12 +20,12 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
-import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.constant.CardConstants.CARD;
-import static in.wynk.payment.constant.WalletConstants.WALLET;
-import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
-
 import javax.validation.constraints.NotNull;
+
+import static in.wynk.payment.constant.CardConstants.CARD;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.constant.UpiConstants.UPI;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
 
 @Getter
 @SuperBuilder

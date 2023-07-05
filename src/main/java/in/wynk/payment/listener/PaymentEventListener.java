@@ -157,8 +157,8 @@ public class PaymentEventListener {
         AnalyticService.update(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
                 .id(event.getId())
-                .code(event.getCode())
-                .description(event.getDescription())
+                .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
+                .description(Objects.nonNull(event.getDescription()) && event.getDescription().length() > 255 ? event.getDescription().substring(0, Math.min(event.getDescription().length(), 255)) : "No description found")
                 .build()));
     }
 
@@ -267,6 +267,11 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        if( Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
+            AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
+            AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
+            AnalyticService.update(IP, event.getPurchaseDetails().getGeoLocation().getIp());
+        }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
         }
@@ -353,6 +358,7 @@ public class PaymentEventListener {
                         .paymentDetails(event.getPurchaseDetails().getPaymentDetails())
                         .productDetails(event.getPurchaseDetails().getProductDetails())
                         .userDetails(event.getPurchaseDetails().getUserDetails())
+                        .geolocation(event.getPurchaseDetails().getGeoLocation())
                         .paymentMode(event.getPurchaseDetails().getPaymentDetails().getPaymentMode())
                         .optForAutoRenew(event.getPurchaseDetails().getPaymentDetails().isAutoRenew())
                         .os(event.getPurchaseDetails().getAppDetails().getOs())

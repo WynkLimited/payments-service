@@ -2,8 +2,10 @@ package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 public class PayUBinWrapper<T> {
 
     private int status;
@@ -14,6 +16,7 @@ public class PayUBinWrapper<T> {
     }
 
     @Getter
+    @NoArgsConstructor
     public static class PayUBinData<T> {
         @JsonProperty(value = "bins_data")
         private T binInfo;

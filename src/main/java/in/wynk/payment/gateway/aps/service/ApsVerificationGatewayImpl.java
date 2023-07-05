@@ -1,7 +1,5 @@
 package in.wynk.payment.gateway.aps.service;
 
-import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.aps.request.verify.BinVerificationRequest;
 import in.wynk.payment.dto.aps.response.verify.BinVerificationResponse;
 import in.wynk.payment.dto.aps.response.verify.VpaVerificationResponse;
@@ -65,12 +63,12 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
                 final BinVerificationRequest binRequest = BinVerificationRequest.builder().cardBin(request.getVerifyValue()).build();
                 try {
                     BinVerificationResponse
-                            apsBinVerificationResponseData = common.exchange(request.getClient(), BIN_VERIFY_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getMsisdn()), binRequest, BinVerificationResponse.class);
+                            apsBinVerificationResponseData = common.exchange(request.getClient(), BIN_VERIFY_ENDPOINT, HttpMethod.POST, request.getMsisdn(), binRequest, BinVerificationResponse.class);
                     return in.wynk.payment.dto.gateway.verify.BinVerificationResponse.fromAps(apsBinVerificationResponseData);
 
                 } catch (Exception e) {
                     log.error(APS_BIN_VERIFICATION, "Bin Verification Request failure due to "+ e.getMessage());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
+                    throw e;
                 }
             }
         }
@@ -81,11 +79,11 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
                 String userVpa = request.getVerifyValue();
                 final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, WYNK);
                 try {
-                    VpaVerificationResponse apsVpaVerificationData = common.exchange(request.getClient(), uri.toString(), HttpMethod.GET, common.getLoginId(request.getMsisdn()), request, VpaVerificationResponse.class);
+                    VpaVerificationResponse apsVpaVerificationData = common.exchange(request.getClient(), uri.toString(), HttpMethod.GET, request.getMsisdn(), request, VpaVerificationResponse.class);
                     return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.fromAps(apsVpaVerificationData);
                 } catch (Exception e) {
                     log.error(APS_VPA_VERIFICATION, "Vpa verification failure due to "+ e.getMessage());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY039, e);
+                    throw e;
                 }
             }
         }

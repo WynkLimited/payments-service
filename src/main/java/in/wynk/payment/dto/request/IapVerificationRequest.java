@@ -1,17 +1,22 @@
 package in.wynk.payment.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.session.context.SessionContextHolder;
+import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IGeoLocation;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
+import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.PurchaseDetails;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.dto.AppDetails;
+import in.wynk.payment.dto.PaymentDetails;
+import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
-import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,7 +27,12 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
+import java.util.Objects;
+
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.constant.CacheBeanNameConstants.OS;
+
 
 @Getter
 @SuperBuilder
@@ -84,9 +94,22 @@ public abstract class IapVerificationRequest {
     private String countryCode;
 
     private String paymentCode;
+    @Analysed
+    private String paymentId;
+    @Analysed
+    private String paymentMode;
 
     @Analysed
     private GeoLocation geoLocation;
+
+    @Analysed
+    @JsonIgnore
+    public IGeoLocation getGeoLocation () {
+        SessionDTO session = SessionContextHolder.getBody();
+        GeoLocation geoLocation = session.get(GEO_LOCATION);
+        return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
+                GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
+    }
 
     public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
@@ -96,6 +119,16 @@ public abstract class IapVerificationRequest {
 
     public void setOriginalSid() {
         this.originalSid = StringUtils.isNotBlank(this.sid);
+    }
+
+    public PurchaseDetails getPurchaseDetails(){
+        return PurchaseDetails.builder()
+                .appDetails(AppDetails.builder().os(getOs()).appId(getAppId()).deviceId(getDeviceId()).buildNo(getBuildNo()).service(getService()).build())
+                .paymentDetails(PaymentDetails.builder().paymentId(getPaymentId()).paymentMode(getPaymentMode()).build())
+                .userDetails(UserDetails.builder().msisdn(getMsisdn()).countryCode(getCountryCode()).build())
+                .geoLocation(getGeoLocation())
+                .build();
+
     }
 
 }

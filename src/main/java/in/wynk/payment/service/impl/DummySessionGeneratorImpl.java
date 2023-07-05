@@ -1,12 +1,14 @@
 package in.wynk.payment.service.impl;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.subscription.common.adapter.SessionDTOAdapter;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.subscription.common.request.SessionRequest;
@@ -65,6 +67,7 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
             map.put(SERVICE, request.getService());
         }
         SessionDTO sessionDTO = SessionDTO.builder().sessionPayload(map).build();
+        sessionDTO.put(GEO_LOCATION, request.getGeoLocation());
         final String id = UUIDs.timeBased().toString();
         sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, 5, TimeUnit.MINUTES);
         AnalyticService.update(SESSION_ID, id);

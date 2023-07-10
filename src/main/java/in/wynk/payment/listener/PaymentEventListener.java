@@ -23,6 +23,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -240,26 +241,47 @@ public class PaymentEventListener {
                 return;
             }
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransactionId(), event.getClientAlias(), event.getSid(), event.getAppDetails(), event.getProductDetails());
+            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), TransactionStatus.SUCCESS);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to trigger the drop out notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
+        }
+    }
 
-            final PlanDTO plan = cachingService.getPlan(event.getProductDetails().getId());
-            final String service = event.getProductDetails().getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(event.getProductDetails().getId()).getService();
-            final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
-            final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "paymentAutoRefundEvent")
+    public void onPaymentAutoRefundEvent(PaymentAutoRefundEvent event) {
+        try{
+            AnalyticService.update(event);
+            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
+            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), TransactionStatus.AUTO_REFUND);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY048, e);
+        }
+    }
+
+    private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
+        final PlanDTO plan = cachingService.getPlan(productDetails.getId());
+        final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
+        final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
+        final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
+        if(message.isEnabled()){
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);
                 put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
-                put("LINK", tinyUrl);
+                put(WINBACK_NOTIFICATION_URL, tinyUrl);
             }};
             SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
                     .messageId(message.getMessageId())
-                    .msisdn(event.getMsisdn())
+                    .msisdn(msisdn)
                     .service(service)
                     .contextMap(contextMap)
                     .build();
             sqsManagerService.publishSQSMessage(notificationMessage);
-        } catch (Exception e) {
-            log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to trigger the drop out notification due to {}", e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
+        } else {
+            log.info("Skipping to send drop out notification for msisdn {} as it has been disabled", msisdn);
         }
     }
 
@@ -352,6 +374,13 @@ public class PaymentEventListener {
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
+        if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
+            eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
+                    .transaction(event.getTransaction())
+                    .clientAlias(event.getTransaction().getClientAlias())
+                    .purchaseDetails(event.getPurchaseDetails())
+                    .build());
+        }
         publishBranchEvent(event);
     }
 

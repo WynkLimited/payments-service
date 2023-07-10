@@ -307,7 +307,7 @@ public class PaymentManager
         final AbstractTransactionInitRequest transactionInitRequest =
                 DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build(),
                         cachingService);
-        final Transaction transaction = transactionManager.init(transactionInitRequest);
+        final Transaction transaction = transactionManager.init(transactionInitRequest, request.getPurchaseDetails());
         sqsManagerService.publishSQSMessage(
                 PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
                         .paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());

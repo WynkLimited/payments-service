@@ -78,7 +78,7 @@
     </logger>
 
     <logger name="subscriptionAcknowledgement" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentStatus" additivity="false" level="INFO">

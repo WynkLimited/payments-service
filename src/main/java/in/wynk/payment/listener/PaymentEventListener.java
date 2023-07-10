@@ -318,7 +318,7 @@ public class PaymentEventListener {
     }
 
 
-    @ClientAware(clientAlias = "#clientAlias")
+    @ClientAware(clientAlias = "#event.clientAlias")
     @EventListener(UnScheduleRecurringPaymentEvent.class)
     private void unScheduleTransactionRecurring(UnScheduleRecurringPaymentEvent event) {
         AnalyticService.update(event);

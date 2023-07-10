@@ -6,11 +6,10 @@ import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.presentation.dto.verify.BinVerifyUserPaymentResponse;
-import in.wynk.payment.presentation.dto.verify.VpaVerifyUserPaymentResponse;
 import in.wynk.payment.presentation.dto.verify.VerifyUserPaymentResponse;
+import in.wynk.payment.presentation.dto.verify.VpaVerifyUserPaymentResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Slf4j

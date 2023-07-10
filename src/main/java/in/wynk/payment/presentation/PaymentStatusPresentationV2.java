@@ -11,7 +11,10 @@ import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.payment.aspect.advice.TransactionAware;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -36,11 +39,10 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
+
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.common.constant.BaseConstants.EQUAL;
 import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.BUTTON_ARROW;
 
 @Slf4j
 @Service

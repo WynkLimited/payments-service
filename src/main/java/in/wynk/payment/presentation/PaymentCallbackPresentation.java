@@ -2,7 +2,6 @@ package in.wynk.payment.presentation;
 
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.WynkResponseUtils;
-import in.wynk.payment.dto.gateway.IRedirectSpec;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;

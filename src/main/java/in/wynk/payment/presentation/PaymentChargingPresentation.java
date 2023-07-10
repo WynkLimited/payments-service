@@ -41,12 +41,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
+import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_PN;
-import static in.wynk.payment.constant.UpiConstants.UPI_MERCHANT_CODE;
-import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
-import static in.wynk.payment.constant.UpiConstants.UPI_PAYEE_NAME;
 
 /**
  * @author Nishesh Pandey

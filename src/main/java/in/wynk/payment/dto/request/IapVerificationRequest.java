@@ -47,8 +47,6 @@ import static in.wynk.common.constant.CacheBeanNameConstants.OS;
 public abstract class IapVerificationRequest {
 
 
-
-
     @Analysed
     @Setter
     private String successUrl;
@@ -100,14 +98,6 @@ public abstract class IapVerificationRequest {
     @Analysed
     private GeoLocation geoLocation;
 
-//    @Analysed
-//    @JsonIgnore
-//    public IGeoLocation getGeoLocation () {
-//        SessionDTO session = SessionContextHolder.getBody();
-//        GeoLocation geoLocation = session.get(GEO_LOCATION);
-//        return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
-//                GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
-//    }
 
     public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
@@ -119,7 +109,7 @@ public abstract class IapVerificationRequest {
         this.originalSid = StringUtils.isNotBlank(this.sid);
     }
 
-    public PurchaseDetails getPurchaseDetails(){
+    public PurchaseDetails getPurchaseDetails() {
         return PurchaseDetails.builder()
                 .appDetails(AppDetails.builder().os(getOs()).appId(getAppId()).deviceId(getDeviceId()).buildNo(getBuildNo()).service(getService()).build())
                 .userDetails(UserDetails.builder().msisdn(getMsisdn()).countryCode(getCountryCode()).build())

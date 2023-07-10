@@ -301,8 +301,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final Transaction transaction = TransactionContext.get();
                     final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
                     String paymentMode = "DEBIT_CARD";
-                    if (Objects.nonNull(paymentDetails.getCardDetails().getCardInfo().getCategory()) &&
-                            (paymentDetails.getCardDetails().getCardInfo().getCategory().equals("CREDIT") || paymentDetails.getCardDetails().getCardInfo().getCategory().equals("creditcard"))) {
+                    if ("CC".equals(paymentDetails.getCardDetails().getCardInfo().getCategory())) {
                         paymentMode = "CREDIT_CARD";
                     }
                     AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;

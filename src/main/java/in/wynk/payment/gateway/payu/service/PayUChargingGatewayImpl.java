@@ -312,9 +312,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         form.put(PAYU_CARD_TOKEN, cardDetails.getCardToken());
                         form.put(PAYU_CARD_CVV, cardDetails.getCardInfo().getCvv());
                     }
-                    final String pg = (paymentDetails.getCardDetails().getCardInfo().getCategory().equalsIgnoreCase("creditcard") ||
-                            paymentDetails.getCardDetails().getCardInfo().getCategory().equalsIgnoreCase("CREDIT")) ? "CC" : "DC";
-                    form.put(PAYU_PG, pg);
+                    form.put(PAYU_PG, paymentDetails.getCardDetails().getCardInfo().getCategory());
                     return CardKeyValueTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
                 }
             }

@@ -44,6 +44,8 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
+    String WINBACK_NOTIFICATION_URL = "WINBACK_URL";
+    String PLAN_ID_PLACEHOLDER = "<PLAN_ID>";
     String MERCHANT_CLIENT_ID = "clientId";
     String PAYMENT_METHOD = "paymentMethod";
     String TDR = "tdr";

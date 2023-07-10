@@ -35,12 +35,25 @@ public class PaymentMethodVerificationPresentation implements IWynkPresentation<
                         .autoRenewSupported(binVerificationResponse.isAutoRenewSupported())
                         .verificationType(binVerificationResponse.getVerificationType())
                         .inAppOtpSupport(binVerificationResponse.isInAppOtpSupport())
-                        .cardCategory(binVerificationResponse.getCardCategory())
+                        .cardCategory(mapCardCategory(binVerificationResponse))
                         .cardType(binVerificationResponse.getCardType())
                         .isDomestic(binVerificationResponse.isDomestic()? "Y" : "N").build();
                 return WynkResponseEntity.<VerifyUserPaymentResponse>builder().data(verifyResponse).build();
             default:
                 return WynkResponseEntity.<VerifyUserPaymentResponse>builder().build();
+        }
+    }
+
+    private String mapCardCategory (BinVerificationResponse binVerificationResponse) {
+        switch(binVerificationResponse.getCardCategory()) {
+            case "creditcard":
+            case "CREDIT":
+                return "CC";
+            case "DEBIT":
+            case "debitcard":
+                return "DC";
+            default:
+                return "UNKNOWN";
         }
     }
 }

@@ -68,7 +68,7 @@ public abstract class IapVerificationRequestV2 {
         return PurchaseDetails.builder()
                 .appDetails(getAppDetails())
                 .userDetails(getUserDetails())
-                .productDetails((IProductDetails) getProductDetails())
+                .productDetails(getProductDetails())
                 .pageUrlDetails(getPageDetails())
                 .geoLocation(getGeoLocation())
                 .build();

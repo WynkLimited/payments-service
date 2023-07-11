@@ -6,11 +6,10 @@ import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.BinVerificationResponse;
 import in.wynk.payment.dto.gateway.verify.VpaVerificationResponse;
 import in.wynk.payment.presentation.dto.verify.BinVerifyUserPaymentResponse;
-import in.wynk.payment.presentation.dto.verify.VpaVerifyUserPaymentResponse;
 import in.wynk.payment.presentation.dto.verify.VerifyUserPaymentResponse;
+import in.wynk.payment.presentation.dto.verify.VpaVerifyUserPaymentResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -35,12 +34,25 @@ public class PaymentMethodVerificationPresentation implements IWynkPresentation<
                         .autoRenewSupported(binVerificationResponse.isAutoRenewSupported())
                         .verificationType(binVerificationResponse.getVerificationType())
                         .inAppOtpSupport(binVerificationResponse.isInAppOtpSupport())
-                        .cardCategory(binVerificationResponse.getCardCategory())
+                        .cardCategory(mapCardCategory(binVerificationResponse))
                         .cardType(binVerificationResponse.getCardType())
                         .isDomestic(binVerificationResponse.isDomestic()? "Y" : "N").build();
                 return WynkResponseEntity.<VerifyUserPaymentResponse>builder().data(verifyResponse).build();
             default:
                 return WynkResponseEntity.<VerifyUserPaymentResponse>builder().build();
+        }
+    }
+
+    private String mapCardCategory (BinVerificationResponse binVerificationResponse) {
+        switch(binVerificationResponse.getCardCategory()) {
+            case "creditcard":
+            case "CREDIT":
+                return "CC";
+            case "DEBIT":
+            case "debitcard":
+                return "DC";
+            default:
+                return "UNKNOWN";
         }
     }
 }

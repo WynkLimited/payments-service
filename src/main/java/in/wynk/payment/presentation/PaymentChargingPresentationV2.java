@@ -43,9 +43,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.payment.constant.FlowType.*;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.dto.aps.common.ApsConstant.PAYMENT_STATUS_POLL_KEY;
+import static in.wynk.payment.dto.aps.common.ApsConstant.PAYMENT_TIMER_KEY;
 
 @Slf4j
 @Service

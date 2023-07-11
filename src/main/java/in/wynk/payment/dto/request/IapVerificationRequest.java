@@ -1,15 +1,16 @@
 package in.wynk.payment.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.dto.PageUrlDetails;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.PurchaseDetails;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.dto.AppDetails;
+import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
 import lombok.Getter;
@@ -23,6 +24,8 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
+import static in.wynk.common.constant.CacheBeanNameConstants.OS;
+
 
 @Getter
 @SuperBuilder
@@ -33,8 +36,6 @@ import static in.wynk.common.constant.CacheBeanNameConstants.*;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
 @JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")})
 public abstract class IapVerificationRequest {
-
-
 
 
     @Analysed
@@ -88,6 +89,7 @@ public abstract class IapVerificationRequest {
     @Analysed
     private GeoLocation geoLocation;
 
+
     public PaymentGateway getPaymentGateway() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode);
     }
@@ -96,6 +98,15 @@ public abstract class IapVerificationRequest {
 
     public void setOriginalSid() {
         this.originalSid = StringUtils.isNotBlank(this.sid);
+    }
+
+    public PurchaseDetails getPurchaseDetails() {
+        return PurchaseDetails.builder()
+                .appDetails(AppDetails.builder().os(getOs()).appId(getAppId()).deviceId(getDeviceId()).buildNo(getBuildNo()).service(getService()).build())
+                .userDetails(UserDetails.builder().msisdn(getMsisdn()).countryCode(getCountryCode()).build())
+                .geoLocation(getGeoLocation())
+                .pageUrlDetails(PageUrlDetails.builder().successPageUrl(getSuccessUrl()).failurePageUrl(getFailureUrl()).build())
+                .build();
     }
 
 }

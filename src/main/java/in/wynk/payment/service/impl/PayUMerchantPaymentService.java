@@ -565,6 +565,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, TypeReference<T> target) {
         try {
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUInfoApiUrl)).body(request), String.class).getBody();
+            if (StringUtils.isNotEmpty(response) && response.contains("Record not found")) {
+                throw new WynkRuntimeException("Record not found");
+            }
             return objectMapper.readValue(response, target);
         } catch (HttpStatusCodeException ex) {
             log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);

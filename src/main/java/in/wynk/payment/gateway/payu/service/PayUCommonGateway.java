@@ -46,6 +46,7 @@ import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_S
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -87,6 +88,7 @@ public class PayUCommonGateway {
             }
             return mapper.readValue(response, target);
         } catch (Exception ex) {
+            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
         }
     }

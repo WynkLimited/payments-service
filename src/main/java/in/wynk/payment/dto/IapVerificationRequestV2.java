@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.*;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
-import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PurchaseDetails;
 import in.wynk.payment.core.service.PaymentCodeCachingService;

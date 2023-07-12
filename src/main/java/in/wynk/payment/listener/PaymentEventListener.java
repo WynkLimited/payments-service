@@ -203,6 +203,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "purchaseInitEvent")
     public void onPurchaseInitEvent(PurchaseInitEvent event) {
         try {
+            AnalyticService.update(event);
             PurchaseRecord purchaseRecord = PurchaseRecord.from(event);
             final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
             if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {

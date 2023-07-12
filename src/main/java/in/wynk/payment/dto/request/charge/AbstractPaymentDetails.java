@@ -16,6 +16,7 @@ import in.wynk.payment.dto.request.charge.netbanking.NetBankingPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.charge.wallet.WalletPaymentDetails;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
@@ -28,6 +29,7 @@ import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.constant.WalletConstants.WALLET;
 
 @Getter
+@Setter
 @SuperBuilder
 @AnalysedEntity
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)

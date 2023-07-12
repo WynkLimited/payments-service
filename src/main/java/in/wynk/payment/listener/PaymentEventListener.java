@@ -241,7 +241,8 @@ public class PaymentEventListener {
                 return;
             }
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransactionId(), event.getClientAlias(), event.getSid(), event.getAppDetails(), event.getProductDetails());
-            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), TransactionStatus.SUCCESS);
+            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
+            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), lastTransaction.getStatus());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to trigger the drop out notification due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
@@ -255,7 +256,8 @@ public class PaymentEventListener {
         try{
             AnalyticService.update(event);
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
-            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), TransactionStatus.AUTO_REFUND);
+            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
+            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY048, e);

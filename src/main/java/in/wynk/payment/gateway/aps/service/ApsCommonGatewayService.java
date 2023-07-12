@@ -170,7 +170,7 @@ public class ApsCommonGatewayService {
             ApsChargeStatusResponse[] apsChargeStatusResponses = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
             builder.response(apsChargeStatusResponses);
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getPaymentMode())) {
-                AnalyticService.update(PAYMENT_MODE, apsChargeStatusResponses[0].getPaymentMode());
+                AnalyticService.update(PAYMENT_MODE, "CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) ? "CC" : "DC");
             }
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getBankCode())) {
                 AnalyticService.update(BANK_CODE, apsChargeStatusResponses[0].getBankCode());

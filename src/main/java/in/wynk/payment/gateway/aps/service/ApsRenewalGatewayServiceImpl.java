@@ -82,10 +82,9 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         }
         try {
             SiPaymentRecurringResponse apsRenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), SiPaymentRecurringResponse.class);
-            String mode = apsRenewalResponse.getBody().getData().getPaymentMode();
-            AnalyticService.update(PaymentConstants.PAYMENT_MODE, mode);
+            AnalyticService.update(PaymentConstants.PAYMENT_MODE, "CREDIT_CARD".equals(apsRenewalResponse.getBody().getData().getPaymentMode()) ? "CC" : "DC");
             if (isMandateExisting()) {
-                apsRenewalResponse = doChargingForRenewal(merchantTransaction, mode);
+                apsRenewalResponse = doChargingForRenewal(merchantTransaction, apsRenewalResponse.getBody().getData().getPaymentMode());
             }
 
             if (Objects.nonNull(apsRenewalResponse)) {

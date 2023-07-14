@@ -57,7 +57,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
         if(CardPaymentDetails.class.isAssignableFrom(abstractPaymentDetails.getClass())) {
             if (CardConstants.CARD.equals(abstractPaymentDetails.getPaymentMode())) {
                 String mode = ((CardPaymentDetails) abstractPaymentDetails).getCardDetails().getCardInfo().getCategory();
-                abstractPaymentDetails.setPaymentMode(!(mode.equals("CC") || mode.equals("DC")) ? "UNKNOWN": mode);
+                abstractPaymentDetails.setPaymentMode((mode.equals("CC") || mode.equals("DC")) ? mode :  "UNKNOWN");
             }
         }
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()

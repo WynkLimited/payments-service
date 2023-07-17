@@ -254,6 +254,7 @@ public class PaymentGatewayManager
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
                         new ParameterizedTypeReference<IPaymentRenewal<PaymentRenewalChargingRequest>>() {
                         });
+        final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
         } catch (RestClientException e) {
@@ -272,6 +273,7 @@ public class PaymentGatewayManager
                 handleException(errorEventBuilder, paymentGateway, e);
             }
         } finally {
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
                         PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())

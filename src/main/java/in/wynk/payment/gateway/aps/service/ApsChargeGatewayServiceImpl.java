@@ -327,25 +327,24 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                     .paymentStartDate(today.toInstant().toEpochMilli())
                                     .paymentEndDate(next10Year.toInstant().toEpochMilli());
                         }
-                    }else {
+                    } else {
                         final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
                         final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
                         final String encCardInfo = common.encryptCardData(credentials);
                         abstractCardPaymentInfoBuilder =
                                 SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                     }
-                        final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
-                        final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
-                        ExternalChargingRequest<?> payRequest =
-                                ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
-                                        .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                        CardChargingResponse cardChargingResponse =
-                                common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
-                        return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
-                                .html(cardChargingResponse.getHtml()).build();
+                    final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                    final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
+                    ExternalChargingRequest<?> payRequest =
+                            ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
+                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+                    CardChargingResponse cardChargingResponse =
+                            common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
+                    return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
+                            .html(cardChargingResponse.getHtml()).build();
 
-                    }
-
+                }
                 }
             }
         }

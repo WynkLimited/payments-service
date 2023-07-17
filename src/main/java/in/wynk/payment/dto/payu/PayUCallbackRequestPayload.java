@@ -32,6 +32,9 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     private String email;
     private String status;
     private String cardToken;
+    @JsonProperty("bank_ref_num")
+    private String bankReference;
+    private double amount;
 
     @JsonProperty("Error")
     private String error;
@@ -63,6 +66,12 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     @JsonAlias("merchantTxnId")
     @JsonProperty(value = "txnid")
     private String transactionId;
+
+    @JsonProperty(value = "payment_source")
+    private String paymentSource;
+
+    @JsonProperty(value = "unmappedstatus")
+    private String unmappedStatus;
 
     @JsonProperty("mihpayid")
     private String externalTransactionId;

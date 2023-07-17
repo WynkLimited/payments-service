@@ -77,7 +77,7 @@ public class QuickPayLinkGeneratorImpl implements IQuickPayLinkGenerator {
             //final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + EncodingUtil.encodeURIComponent(payUrl)).orElse(EncodingUtil.encodeURIComponent((payUrl)));
             final String finalPayUrl = wynkService.<String>get(PaymentConstants.PAY_OPTION_DEEPLINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
             AnalyticService.update(PaymentConstants.PAY_OPTION_DEEPLINK, finalPayUrl);
-            final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
+            final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().key(wynkService.getBranchKey()).campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
             return shortenResponse.getTinyUrl();
         } catch (Exception ex) {
             throw new WynkRuntimeException("Unable to generate quick pay link", ex);

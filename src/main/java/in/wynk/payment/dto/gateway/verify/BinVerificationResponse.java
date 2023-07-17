@@ -27,7 +27,7 @@ public class BinVerificationResponse extends AbstractVerificationResponse {
                 .valid(binVerificationResponse.isValid())
                 .verificationType(VerificationType.BIN)
                 .cardType(binVerificationResponse.getCardType())
-                .isDomestic("1".equals(binVerificationResponse.getIsDomestic()))
+                .isDomestic("Y".equals(binVerificationResponse.getIsDomestic()))
                 .issuingBank(binVerificationResponse.getIssuingBank())
                 .cardCategory(binVerificationResponse.getCardCategory())
                 .siSupport(binVerificationResponse.getSiSupport())

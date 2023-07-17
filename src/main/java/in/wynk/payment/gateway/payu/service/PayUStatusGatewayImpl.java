@@ -8,17 +8,18 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
+import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
+import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.gateway.IPaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
@@ -61,7 +62,8 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
                         return reconcileInternal(transaction);
                     }
                 }
-            common.syncChargingTransactionFromSource(transaction);
+            common.syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(),
+                    AbstractPayUTransactionDetails.from(request))).build()));
             return reconcileInternal(transaction);
         }
 

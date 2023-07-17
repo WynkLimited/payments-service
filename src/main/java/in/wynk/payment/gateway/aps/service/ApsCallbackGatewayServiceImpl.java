@@ -15,6 +15,7 @@ import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayl
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
+import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -100,7 +101,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         @Override
         public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction);
+            common.syncChargingTransactionFromSource(transaction, Optional.of(ApsChargeStatusResponse.builder().pgStatus().transactionDetails().build()));
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                 Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                 if (optionalDetails.isPresent()) {

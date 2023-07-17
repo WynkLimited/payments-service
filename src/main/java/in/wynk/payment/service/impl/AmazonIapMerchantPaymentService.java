@@ -328,7 +328,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
         if (optionalReceiptDetails.isPresent()) {
             final ReceiptDetails details = optionalReceiptDetails.get();
-            builder.uid(details.getUid()).msisdn(details.getMsisdn());
+            builder.uid(details.getUid()).msisdn(details.getMsisdn()).linkedTransactionId(details.getPaymentTransactionId());
             return builder.build();
         }
         WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class)

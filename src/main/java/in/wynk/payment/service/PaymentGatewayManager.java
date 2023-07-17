@@ -17,10 +17,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.ClientCallbackEvent;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
-import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentReconciledEvent;
+import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
@@ -84,6 +81,7 @@ public class PaymentGatewayManager
     private final IMerchantTransactionService merchantTransactionService;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
+    private final PaymentGatewayCommon common;
 
     @PostConstruct
     public void init() {
@@ -124,7 +122,7 @@ public class PaymentGatewayManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
             sqsManagerService.publishSQSMessage(
-                    PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         }
     }
@@ -237,6 +235,9 @@ public class PaymentGatewayManager
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            // removing old transaction from renewal table, if we keep it then its renewal will bound to fail due to receipt is linked with new transaction id
+            if (transaction.getStatus() == TransactionStatus.SUCCESS && !StringUtils.isEmpty(mapping.getLinkedTransactionId()))
+                eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(mapping.getLinkedTransactionId()).clientAlias(transaction.getClientAlias()).reason("Transaction id " + transaction.getIdStr() + " is scheduled in renewal via payment callback therefore old transaction " + mapping.getLinkedTransactionId() + " is not required").build());
         }
     }
 
@@ -274,7 +275,7 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
-                        PaymentReconciliationMessage.builder().paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
                                 .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
@@ -356,7 +357,7 @@ public class PaymentGatewayManager
             if (Objects.nonNull(refundInitResponse)) {
                 if (refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                     sqsManagerService.publishSQSMessage(
-                            PaymentReconciliationMessage.builder().paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
+                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId()))).paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
                                     .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
                                     .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
                 }

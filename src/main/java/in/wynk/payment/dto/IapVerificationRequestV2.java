@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.PurchaseDetails;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
@@ -60,5 +61,15 @@ public abstract class IapVerificationRequestV2 {
     }
     public void setOriginalSid() {
         this.originalSid = StringUtils.isNotBlank(this.sessionDetails.getSessionId());
+    }
+
+    public PurchaseDetails getPurchaseDetails(){
+        return PurchaseDetails.builder()
+                .appDetails(getAppDetails())
+                .userDetails(getUserDetails())
+                .productDetails(getProductDetails())
+                .pageUrlDetails(getPageDetails())
+                .geoLocation(getGeoLocation())
+                .build();
     }
 }

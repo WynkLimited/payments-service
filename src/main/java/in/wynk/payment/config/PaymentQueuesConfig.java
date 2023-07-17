@@ -24,13 +24,13 @@ public class PaymentQueuesConfig {
     public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                                ObjectMapper objectMapper,
-                                                                                               PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor) {
+                                                                                               PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor, ITransactionManagerService transactionManager) {
         return new PaymentReconciliationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 paymentReconciliationSQSMessageExtractor,
                 threadPoolExecutor(4),
-                scheduledThreadPoolExecutor());
+                scheduledThreadPoolExecutor(), transactionManager);
     }
 
     @Bean

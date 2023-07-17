@@ -97,13 +97,13 @@ public class ApsCommonGatewayService {
         rsa = new EncryptionUtils.RSA(EncryptionUtils.RSA.KeyReader.readPublicKey(resource.getFile()));
     }
 
-    public <T> T exchange (String clientAlias, String url, HttpMethod method, String loginId, Object body, Class<T> target) {
+    public <T> T exchange (String clientAlias, String url, HttpMethod method, String msisdn, Object body, Class<T> target) {
         if (StringUtils.isEmpty(clientAlias)) {
             log.error("client is not loaded for url {}", clientAlias);
             throw new WynkRuntimeException(PAY044);
         }
         try {
-            ResponseEntity<String> responseEntity = apsClientService.apsOperations(loginId, generateToken(clientAlias), url, method, body);
+            ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(clientAlias), url, method, body);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
@@ -146,10 +146,8 @@ public class ApsCommonGatewayService {
             } else if (!StringUtils.isEmpty(externalPaymentRefundStatusResponse.getRefundStatus()) && externalPaymentRefundStatusResponse.getRefundStatus().equalsIgnoreCase("REFUND_FAILED")) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
-        } catch (HttpStatusCodeException e) {
-            mBuilder.response(e.getResponseBodyAsString());
-            throw new WynkRuntimeException(PAY998, e);
         } catch (Exception e) {
+            mBuilder.response(e.getMessage());
             if (e instanceof WynkRuntimeException) {
                 log.error(APS_REFUND_STATUS, e.getMessage());
                 throw new WynkRuntimeException(((WynkRuntimeException) e).getErrorCode(), ((WynkRuntimeException) e).getErrorTitle(), e.getMessage());
@@ -160,7 +158,6 @@ public class ApsCommonGatewayService {
             transaction.setStatus(finalTransactionStatus.name());
             eventPublisher.publishEvent(mBuilder.build());
         }
-
     }
 
     public void syncChargingTransactionFromSource (Transaction transaction) {
@@ -173,7 +170,7 @@ public class ApsCommonGatewayService {
             ApsChargeStatusResponse[] apsChargeStatusResponses = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
             builder.response(apsChargeStatusResponses);
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getPaymentMode())) {
-                AnalyticService.update(PAYMENT_MODE, apsChargeStatusResponses[0].getPaymentMode());
+                AnalyticService.update(PAYMENT_MODE, "CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) ? "CC" : "DC");
             }
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getBankCode())) {
                 AnalyticService.update(BANK_CODE, apsChargeStatusResponses[0].getBankCode());
@@ -189,12 +186,9 @@ public class ApsCommonGatewayService {
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponses[0].getErrorCode()).description(apsChargeStatusResponses[0].getErrorDescription()).build());
                 }
             }
-
-        } catch (HttpStatusCodeException e) {
-            builder.request(e.getResponseBodyAsString()).response(e.getResponseBodyAsString());
-            throw new WynkRuntimeException(PAY998, e);
         } catch (Exception e) {
-            log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+            log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to "+ e.getMessage());
+            builder.response(e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
         } finally {
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
@@ -226,7 +220,7 @@ public class ApsCommonGatewayService {
         return rsa.encrypt(gson.toJson(credentials));
     }
 
-    public String getLoginId (String msisdn) {
+    private String getLoginId (String msisdn) {
         return msisdn.replace("+91", "");
     }
 }

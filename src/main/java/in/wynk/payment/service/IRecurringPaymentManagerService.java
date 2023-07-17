@@ -14,6 +14,8 @@ public interface IRecurringPaymentManagerService {
 
     void scheduleRecurringPayment(AbstractTransactionRevisionRequest request);
 
+    void unScheduleRecurringPayment(String clientAlias, String transactionId, PaymentEvent paymentEvent);
+
     void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil);
 
 }

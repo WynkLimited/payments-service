@@ -62,7 +62,7 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<Abst
             public DeleteCardResponse delete (AbstractPaymentAccountDeletionRequest request) {
                 final DeleteCardRequest deleteCardRequest = DeleteCardRequest.builder().referenceNumber(request.getDeleteValue()).build();
                 try {
-                    Boolean response = common.exchange(request.getClient(), DELETE_CARD_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getMsisdn()), deleteCardRequest, Boolean.class);
+                    Boolean response = common.exchange(request.getClient(), DELETE_CARD_ENDPOINT, HttpMethod.POST, request.getMsisdn(), deleteCardRequest, Boolean.class);
                     return DeleteCardResponse.builder().deleted(response).build();
                 } catch (Exception e) {
                     if(e instanceof WynkRuntimeException) {
@@ -82,7 +82,7 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<Abst
                 vpa.add(request.getDeleteValue());
                 final DeleteVpaRequest deleteVpaRequest = DeleteVpaRequest.builder().vpaIds(vpa).build();
                 try {
-                    Boolean response = common.exchange(request.getClient(), DELETE_VPA_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getMsisdn()), deleteVpaRequest, Boolean.class);
+                    Boolean response = common.exchange(request.getClient(), DELETE_VPA_ENDPOINT, HttpMethod.POST, request.getMsisdn(), deleteVpaRequest, Boolean.class);
                     return DeleteVpaResponse.builder().deleted(response).build();
                 } catch (Exception e) {
                     log.error(APS_SAVED_VPA_DELETION, "Vpa deletion failure due to ", e);

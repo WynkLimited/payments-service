@@ -65,6 +65,7 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
             map.put(SERVICE, request.getService());
         }
         SessionDTO sessionDTO = SessionDTO.builder().sessionPayload(map).build();
+        sessionDTO.put(GEO_LOCATION, request.getGeoLocation());
         final String id = UUIDs.timeBased().toString();
         sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, 5, TimeUnit.MINUTES);
         AnalyticService.update(SESSION_ID, id);
@@ -109,6 +110,7 @@ public class DummySessionGeneratorImpl implements IDummySessionGenerator {
             map.put(SERVICE, gRequest.getAppDetails().getService());
         }
         SessionDTO sessionDTO = SessionDTO.builder().sessionPayload(map).build();
+        sessionDTO.put(GEO_LOCATION, request.getGeoLocation());
         final String id = UUIDs.timeBased().toString();
         sessionManager.init(SessionConstant.SESSION_KEY + SessionConstant.COLON_DELIMITER + id, sessionDTO, 5, TimeUnit.MINUTES);
         AnalyticService.update(SESSION_ID, id);

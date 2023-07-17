@@ -160,7 +160,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         apsChargingRequestBuilder.billPayment(false);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
-                    common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiCollectChargingResponse.class);
+                    common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                 }
             }
@@ -197,7 +197,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
-                            common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, UpiIntentChargingChargingResponse.class);
+                            common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiIntentChargingChargingResponse.class);
                     Map<String, String> map =
                             Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                                     .collect(Collectors.toMap(x -> x[0], x -> x[1]));
@@ -301,47 +301,65 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final Transaction transaction = TransactionContext.get();
                     final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
                     String paymentMode = "DEBIT_CARD";
-                    if (Objects.nonNull(paymentDetails.getCardDetails().getCardInfo().getCategory()) &&
-                            (paymentDetails.getCardDetails().getCardInfo().getCategory().equals("CREDIT") || paymentDetails.getCardDetails().getCardInfo().getCategory().equals("creditcard"))) {
+                    if ("CC".equals(paymentDetails.getCardDetails().getCardInfo().getCategory())) {
                         paymentMode = "CREDIT_CARD";
                     }
-                    AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
-                    if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
-                        final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
-                        final CardDetails credentials =
-                                CardDetails.builder().nameOnCard(((FreshCardDetails) paymentDetails.getCardDetails()).getCardHolderName()).cardNumber(cardDetails.getCardNumber())
-                                        .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
-                        final String encCardInfo = common.encryptCardData(credentials);
-                        abstractCardPaymentInfoBuilder =
-                                FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
-                                        .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
-                                        .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
-                        //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
-                        if (paymentDetails.isAutoRenew()) {
-                            Calendar cal = Calendar.getInstance();
-                            Date today = cal.getTime();
-                            cal.add(Calendar.YEAR, 10);
-                            Date next10Year = cal.getTime();
-                            abstractCardPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
-                                    .productCategory(BaseConstants.WYNK)
-                                    .mandateAmount(transaction.getAmount())
-                                    .paymentStartDate(today.toInstant().toEpochMilli())
-                                    .paymentEndDate(next10Year.toInstant().toEpochMilli());
+                    AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder;
+                        if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
+                            final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
+                            final CardDetails credentials =
+                                    CardDetails.builder().nameOnCard(((FreshCardDetails) paymentDetails.getCardDetails()).getCardHolderName()).cardNumber(cardDetails.getCardNumber())
+                                            .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
+                            final String encCardInfo = common.encryptCardData(credentials);
+                            abstractCardPaymentInfoBuilder =
+                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
+                                            .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
+                                            .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
+                        } else {
+                            final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
+                            final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
+                            final String encCardInfo = common.encryptCardData(credentials);
+                            abstractCardPaymentInfoBuilder =
+                                    SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                         }
-                    }else {
-                        final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
-                        final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
-                        final String encCardInfo = common.encryptCardData(credentials);
-                        abstractCardPaymentInfoBuilder =
-                                SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
-                    }
+                        assert abstractCardPaymentInfoBuilder != null;
+                        AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
+                        if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
+                            final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
+                            final CardDetails credentials =
+                                    CardDetails.builder().nameOnCard(((FreshCardDetails) paymentDetails.getCardDetails()).getCardHolderName()).cardNumber(cardDetails.getCardNumber())
+                                            .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
+                            final String encCardInfo = common.encryptCardData(credentials);
+                            abstractCardPaymentInfoBuilder =
+                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
+                                            .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
+                                            .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
+                            //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
+                            if (paymentDetails.isAutoRenew()) {
+                                Calendar cal = Calendar.getInstance();
+                                Date today = cal.getTime();
+                                cal.add(Calendar.YEAR, 10);
+                                Date next10Year = cal.getTime();
+                                abstractCardPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
+                                        .productCategory(BaseConstants.WYNK)
+                                        .mandateAmount(transaction.getAmount())
+                                        .paymentStartDate(today.toInstant().toEpochMilli())
+                                        .paymentEndDate(next10Year.toInstant().toEpochMilli());
+                            }
+                        } else {
+                            final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
+                            final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
+                            final String encCardInfo = common.encryptCardData(credentials);
+                            abstractCardPaymentInfoBuilder =
+                                    SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
+                        }
                         final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                         final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                         ExternalChargingRequest<?> payRequest =
                                 ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
                                         .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                         CardChargingResponse cardChargingResponse =
-                                common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, CardChargingResponse.class);
+                                common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
                         return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
                                 .html(cardChargingResponse.getHtml()).build();
 
@@ -379,7 +397,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         ExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                 NetBankingChargingResponse apsNetBankingChargingResponse =
-                        common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, common.getLoginId(request.getUserDetails().getMsisdn()), payRequest, NetBankingChargingResponse.class);
+                        common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, NetBankingChargingResponse.class);
                 return NetBankingHtmlTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }

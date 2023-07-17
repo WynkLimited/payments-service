@@ -1,7 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.data.entity.MongoBaseEntity;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.scheduler.queue.dto.MongoBaseEntityMessage;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +16,7 @@ import java.util.Map;
 @SuperBuilder
 @Document("payment_methods")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class PaymentMethod extends MongoBaseEntity<String> {
+public class PaymentMethod extends MongoBaseEntityMessage<String> {
 
     private int hierarchy;
 

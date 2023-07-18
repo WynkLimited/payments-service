@@ -7,6 +7,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
@@ -20,6 +21,7 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
+import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -45,14 +47,16 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private final ApsCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final IMerchantTransactionService merchantTransactionService;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
+    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, IMerchantTransactionService merchantTransactionService, ApplicationEventPublisher eventPublisher) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
+        this.merchantTransactionService = merchantTransactionService;
         this.delegator.put(PAYMENT_STATUS_CALLBACK_TYPE, new GenericApsCallbackHandler());
         this.delegator.put(REFUND_CALLBACK_TYPE, new RefundApsCallBackHandler());
     }
@@ -101,7 +105,8 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         @Override
         public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction, Optional.of(ApsChargeStatusResponse.builder().pgStatus().transactionDetails().build()));
+            String bankCode = StringUtils.isEmpty(request.getBankCode()) ? getBankCode(transaction) : request.getBankCode();
+            common.syncChargingTransactionFromSource(transaction, Optional.of(ApsChargeStatusResponse.from(request, bankCode)));
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                 Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                 if (optionalDetails.isPresent()) {
@@ -132,6 +137,16 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             } catch (Exception e) {
                 throw new WynkRuntimeException(PAY006, e);
             }
+        }
+    }
+
+    private String getBankCode (Transaction transaction) {
+        try {
+            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+            ApsChargeStatusResponse[] apsChargeStatusResponses = objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
+            return apsChargeStatusResponses[0].getBankCode();
+        } catch (Exception e) {
+            return null;
         }
     }
 

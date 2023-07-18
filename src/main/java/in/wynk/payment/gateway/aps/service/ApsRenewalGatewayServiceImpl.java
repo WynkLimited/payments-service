@@ -13,8 +13,8 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.SiPaymentInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.aps.request.renewal.SiPaymentRecurringRequest;
-import in.wynk.payment.dto.aps.response.renewal.RenewalStatusResponse;
 import in.wynk.payment.dto.aps.response.renewal.SiPaymentRecurringResponse;
+import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.gateway.IPaymentRenewal;
 import in.wynk.payment.service.IMerchantTransactionService;
@@ -129,7 +129,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
     private void updateTransactionStatus(PlanPeriodDTO planPeriodDTO, SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
         int retryInterval = planPeriodDTO.getRetryInterval();
         if (apsRenewalResponse.getStatusCodeValue() == HttpStatus.OK.value()) {
-            RenewalStatusResponse renewalResponse = apsRenewalResponse.getBody().getData();
+            ApsChargeStatusResponse renewalResponse = apsRenewalResponse.getBody().getData();
             if (PG_STATUS_SUCCESS.equalsIgnoreCase(renewalResponse.getPgStatus())) {
                 transaction.setStatus(TransactionStatus.SUCCESS.getValue());
             } else if (PG_STATUS_FAILED.equalsIgnoreCase(renewalResponse.getPgStatus())) {

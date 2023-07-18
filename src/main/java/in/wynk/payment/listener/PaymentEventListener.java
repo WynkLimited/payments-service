@@ -275,7 +275,7 @@ public class PaymentEventListener {
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
         }
-        if (Objects.nonNull(event.getTransaction().getCoupon())) {
+        if (!event.getTransaction().getCoupon().isEmpty()) {
             String couponCode = event.getTransaction().getCoupon();
             CouponCodeLink couponLinkOption = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode.toUpperCase(Locale.ROOT));
             if (couponLinkOption != null) {

@@ -62,13 +62,17 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     @Analysed
     private boolean trialOpted;
 
-    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted) {
+    @Analysed
+    private boolean pennyDrop;
+
+    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted,boolean pennyDrop) {
         this.couponId = couponId;
         this.paymentId = paymentId;
         this.paymentMode = paymentMode;
         this.merchantName = merchantName;
         this.autoRenew = autoRenew;
         this.trialOpted = trialOpted;
+        this.pennyDrop = pennyDrop;
     }
 
     @PersistenceConstructor
@@ -78,5 +82,10 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     public boolean isTrialOpted() {
         return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         }).get(paymentId).isTrialSupported() && trialOpted;
+    }
+
+    @Override
+    public boolean isPennyDrop () {
+        return this.pennyDrop;
     }
 }

@@ -106,6 +106,10 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
     }
 
+    private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails, boolean isPennyDrop) {
+        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(isPennyDrop ? PaymentEvent.MANDATE : PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
+    }
+
     private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PointDetails pointDetails) {
         return PointTransactionInitRequest.builder().paymentGateway(paymentGateway).event(PaymentEvent.POINT_PURCHASE).couponId(paymentDetails.getCouponId()).itemId(pointDetails.getItemId()).clientAlias(clientDetails.getAlias()).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
     }
@@ -117,7 +121,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final Client client = clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT));
         final AbstractTransactionInitRequest transactionInitRequest;
         if (PlanDetails.class.isAssignableFrom(request.getProductDetails().getClass())) {
-            transactionInitRequest = planInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PlanDetails) request.getProductDetails());
+            transactionInitRequest = planInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PlanDetails) request.getProductDetails(), request.getPaymentDetails().isPennyDrop());
         } else if (PointDetails.class.isAssignableFrom(request.getProductDetails().getClass())) {
             transactionInitRequest = pointInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PointDetails) request.getProductDetails());
         } else {

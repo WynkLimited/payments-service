@@ -6,6 +6,8 @@ public interface IPaymentDetails extends Serializable {
 
     boolean isTrialOpted();
 
+    boolean isPennyDrop();
+
     boolean isAutoRenew();
 
     String getCouponId();

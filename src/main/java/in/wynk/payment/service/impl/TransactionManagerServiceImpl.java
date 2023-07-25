@@ -211,6 +211,10 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public void revision(AbstractTransactionRevisionRequest request) {
         try {
+            if(request.getTransaction().getPaymentChannel().equals(PaymentConstants.ADD_TO_BILL)){
+                log.info("plan {} has to be provision externally for uid {}, stopping subscription flow", request.getTransaction().getPlanId(), request.getTransaction().getUid());
+                return;
+            }
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(request.getTransaction().getType())) {
                 if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(request.getTransaction().getType())) {
                     if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) {

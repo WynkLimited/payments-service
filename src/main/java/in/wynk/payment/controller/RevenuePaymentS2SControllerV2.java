@@ -44,8 +44,8 @@ public class RevenuePaymentS2SControllerV2 {
     @PostMapping("/charge")
     @AnalyseTransaction(name = "paymentCharging")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_CHARGING_WRITE\")")
-    public WynkResponseEntity<PaymentChargingResponse> doCharging (@PathVariable String sid, @RequestBody S2SChargingRequestV2 request) {
-        LoadClientUtils.loadClient(false);
+    public WynkResponseEntity<PaymentChargingResponse> doCharging (@Valid @RequestBody S2SChargingRequestV2 request) {
+        LoadClientUtils.loadClient(true);
         AnalyticService.update(PAYMENT_METHOD, paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode().name());
         AnalyticService.update(request);
         final WynkResponseEntity<PaymentChargingResponse> responseEntity =
@@ -56,9 +56,9 @@ public class RevenuePaymentS2SControllerV2 {
     }
 
     @GetMapping("/status/{tid}")
-    @AnalyseTransaction(name = "paymentStatusV2")
+    @AnalyseTransaction(name = "paymentStatus")
     public WynkResponseEntity<PaymentStatusResponse> status (@PathVariable String tid) {
-        LoadClientUtils.loadClient(false);
+        LoadClientUtils.loadClient(true);
         final WynkResponseEntity<PaymentStatusResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse>>() {
                 }).transform(() -> manager.reconcile(ChargingTransactionStatusRequest.builder().transactionId(tid).build()));

@@ -96,6 +96,8 @@ service:
         v2:
           poll: ${service.payment.api.root}/wynk/v2/payment/status/
           pollS2S: ${service.payment.api.root}/wynk/s2s/v2/payment/status/
+        v3:
+          pollS2S: ${service.payment.api.root}/wynk/v2/s2s/payment/status/
 
 ####### payment props #######session-out
 payment:

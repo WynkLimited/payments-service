@@ -73,7 +73,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
     private class ProductPresentation implements IPresentation<IProductDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
         private final Map<String, IPresentation<? extends IProductDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>>> delegate = new HashMap<>();
-        payments/src/main/java/in/wynk/payment/validations/PaymentMethodValidator.java
+
         public ProductPresentation() {
             delegate.put(BaseConstants.PLAN, new PlanProductPresentation());
             delegate.put(BaseConstants.POINT, new ItemProductPresentation());

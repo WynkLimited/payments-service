@@ -2,6 +2,7 @@ package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -11,7 +12,10 @@ import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.PageUrlDetails;
 import in.wynk.payment.dto.UserBillingDetail;
 import in.wynk.payment.dto.UserDetails;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.validation.Valid;
@@ -19,6 +23,10 @@ import javax.validation.Valid;
 import static in.wynk.common.constant.BaseConstants.SLASH;
 
 @Getter
+@SuperBuilder
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
 public class S2SChargingRequestV2 extends AbstractPaymentChargingRequest {
 
     @Valid

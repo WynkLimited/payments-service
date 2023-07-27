@@ -63,16 +63,16 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     private boolean trialOpted;
 
     @Analysed
-    private boolean pennyDrop;
+    private boolean mandate;
 
-    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted,boolean pennyDrop) {
+    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted,boolean mandate) {
         this.couponId = couponId;
         this.paymentId = paymentId;
         this.paymentMode = paymentMode;
         this.merchantName = merchantName;
         this.autoRenew = autoRenew;
         this.trialOpted = trialOpted;
-        this.pennyDrop = pennyDrop;
+        this.mandate = mandate;
     }
 
     @PersistenceConstructor
@@ -85,7 +85,7 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     }
 
     @Override
-    public boolean isPennyDrop () {
-        return this.pennyDrop;
+    public boolean isMandate () {
+        return this.mandate;
     }
 }

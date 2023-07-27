@@ -53,4 +53,8 @@ public class PurchaseRecord implements ITaskEntity {
                 .build();
     }
 
+    public PurchaseRecordEvent fromSelf() {
+        return new PurchaseRecordEvent(sid, uid, msisdn, clientAlias, transactionId, appDetails, productDetails);
+    }
+
 }

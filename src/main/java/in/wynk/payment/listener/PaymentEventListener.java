@@ -9,6 +9,7 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.data.aspect.advice.Transactional;
+import in.wynk.common.dto.Message;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -22,6 +23,9 @@ import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentError;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -38,12 +42,16 @@ import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
+import in.wynk.sms.common.message.SmsNotificationMessage;
 import in.wynk.stream.producer.IEventPublisher;
 import in.wynk.stream.producer.IKinesisEventPublisher;
 import in.wynk.stream.producer.impl.KinesisEventPublisher;
+import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.tinylytics.utils.AppUtils;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,14 +82,16 @@ public class PaymentEventListener {
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
-    private final ITaskScheduler taskScheduler;
-    private final ISqsManagerService sqsManagerService;
+    private final ITaskScheduler<TaskDefinition<?>> taskScheduler;
+    private final ISqsManagerService<Object> sqsManagerService;
     private final IPaymentErrorService paymentErrorService;
     private final ApplicationEventPublisher eventPublisher;
     private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManagerService;
     private final IMerchantTransactionService merchantTransactionService;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final PaymentCachingService cachingService;
+    private final IQuickPayLinkGenerator quickPayLinkGenerator;
     @Value("${event.stream.dp}")
     private String dpStream;
 
@@ -196,8 +206,89 @@ public class PaymentEventListener {
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onPurchaseInit(PurchaseInitEvent purchaseInitEvent) {
-        dropOutTracker(PurchaseRecord.from(purchaseInitEvent));
+    @AnalyseTransaction(name = "purchaseInitEvent")
+    public void onPurchaseInitEvent(PurchaseInitEvent event) {
+        try {
+            AnalyticService.update(event);
+            PurchaseRecord purchaseRecord = PurchaseRecord.from(event);
+            final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+            if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
+                taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
+            }
+            final long delayedBy = (clientDetails.<Double>getMeta(PaymentConstants.PAYMENT_DROPOUT_TRACKER_IN_SECONDS).orElse(3600D)).longValue();
+            final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy));
+            taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder()
+                    .entity(purchaseRecord)
+                    .handler(CustomerWinBackHandler.class)
+                    .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
+                            .durable(false)
+                            .startAt(taskScheduleTime)
+                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0))
+                            .build())
+                    .build());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to schedule the drop out notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
+        }
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "purchaseRecordEvent")
+    public void onPurchaseRecordEvent(PurchaseRecordEvent event) {
+        try{
+            AnalyticService.update(event);
+            final Transaction lastTransaction = transactionManagerService.get(event.getTransactionId());
+            final boolean sendDropOutNotification = lastTransaction.getStatus() != TransactionStatus.SUCCESS;
+            if (!sendDropOutNotification){
+                log.info("Skipping to send drop out notification as user has completed transaction for {}", event);
+                return;
+            }
+            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransactionId(), event.getClientAlias(), event.getSid(), event.getAppDetails(), event.getProductDetails());
+            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
+            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), lastTransaction.getStatus());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to trigger the drop out notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
+        }
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "paymentAutoRefundEvent")
+    public void onPaymentAutoRefundEvent(PaymentAutoRefundEvent event) {
+        try{
+            AnalyticService.update(event);
+            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
+            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
+            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY048, e);
+        }
+    }
+
+    private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
+        final PlanDTO plan = cachingService.getPlan(productDetails.getId());
+        final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
+        final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
+        final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
+        if(message.isEnabled()){
+            Map<String, Object> contextMap = new HashMap<String, Object>() {{
+                put(PLAN, plan);
+                put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
+                put(WINBACK_NOTIFICATION_URL, tinyUrl);
+            }};
+            SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
+                    .messageId(message.getMessageId())
+                    .msisdn(msisdn)
+                    .service(service)
+                    .contextMap(contextMap)
+                    .build();
+            sqsManagerService.publishSQSMessage(notificationMessage);
+        } else {
+            log.info("Skipping to send drop out notification for msisdn {} as it has been disabled", msisdn);
+        }
     }
 
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
@@ -211,22 +302,6 @@ public class PaymentEventListener {
                     .reason("trial plan amount refund")
                     .originalTransactionId(event.getTransactionId())
                     .build());
-        }
-    }
-
-    @ClientAware(clientAlias = "#purchaseRecord.clientAlias")
-    private void dropOutTracker(PurchaseRecord purchaseRecord) {
-        try {
-            final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
-            if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
-                taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
-            }
-            final long delayedBy = clientDetails.<Long>getMeta(PaymentConstants.PAYMENT_DROPOUT_DELAY_KEY).orElse(3600L);
-            taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder().entity(purchaseRecord).handler(CustomerWinBackHandler.class).triggerConfiguration(
-                    TaskDefinition.TriggerConfiguration.builder().startAt(new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy)))
-                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0)).build()).build());
-        } catch (Exception e) {
-            log.error(WynkErrorType.UT999.getMarker(), "something went wrong while scheduling task due to {}", e.getMessage(), e);
         }
     }
 
@@ -305,6 +380,13 @@ public class PaymentEventListener {
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
+        if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
+            eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
+                    .transaction(event.getTransaction())
+                    .clientAlias(event.getTransaction().getClientAlias())
+                    .purchaseDetails(event.getPurchaseDetails())
+                    .build());
+        }
         publishBranchEvent(event);
     }
 

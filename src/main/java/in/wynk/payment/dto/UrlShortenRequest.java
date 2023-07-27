@@ -56,6 +56,11 @@ public class UrlShortenRequest {
             return this;
         }
 
+        public UrlShortenRequestBuilder key(String key) {
+            this.key = key;
+            return this;
+        }
+
         public UrlShortenRequest build() {
             return new UrlShortenRequest(key, campaign, channel, data);
         }

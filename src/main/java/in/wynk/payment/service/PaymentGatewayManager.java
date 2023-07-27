@@ -36,6 +36,7 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.session.context.SessionContextHolder;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,10 +48,7 @@ import org.springframework.web.client.RestClientException;
 
 import javax.annotation.PostConstruct;
 import java.net.SocketTimeoutException;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
@@ -124,6 +122,9 @@ public class PaymentGatewayManager
             sqsManagerService.publishSQSMessage(
                     PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
+            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+                    .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
+                    .getId())).build());
         }
     }
 

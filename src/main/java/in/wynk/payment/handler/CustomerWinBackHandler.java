@@ -18,23 +18,20 @@ import in.wynk.sms.common.message.SmsNotificationMessage;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
 
 @Slf4j
 public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
 
-    private final PaymentCachingService cachingService;
-    private final IQuickPayLinkGenerator quickPayLinkGenerator;
-    private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public CustomerWinBackHandler(ObjectMapper mapper, IQuickPayLinkGenerator quickPayLinkGenerator, ISqsManagerService<Object> sqsManagerService, PaymentCachingService cachingService, ITransactionManagerService transactionManager) {
+    public CustomerWinBackHandler(ObjectMapper mapper, ITransactionManagerService transactionManager, ApplicationEventPublisher applicationEventPublisher) {
         super(mapper);
-        this.cachingService = cachingService;
-        this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
-        this.quickPayLinkGenerator = quickPayLinkGenerator;
+        this.eventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -59,13 +56,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     @Override
     @AnalyseTransaction(name = "userChurnLocator")
     public void execute(PurchaseRecord task) {
-        AnalyticService.update(task);
-        final String service = task.getProductDetails().getType().equalsIgnoreCase(PLAN) ? cachingService.getPlan(task.getProductDetails().getId()).getService() : cachingService.getItem(task.getProductDetails().getId()).getService();
-        final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
-        final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK);
-        final String tinyUrl = quickPayLinkGenerator.generate(task.getTransactionId(), task.getClientAlias(), task.getSid(), task.getAppDetails(), task.getProductDetails());
-        final String terraformed = message.getMessage().replace("<link>", tinyUrl);
-        sqsManagerService.publishSQSMessage(SmsNotificationMessage.builder().message(terraformed).msisdn(task.getMsisdn()).priority(message.getPriority()).service(wynkService.getId()).build());
+        eventPublisher.publishEvent(task.fromSelf());
     }
 
 }

@@ -6,7 +6,7 @@ public interface IPaymentDetails extends Serializable {
 
     boolean isTrialOpted();
 
-    boolean isPennyDrop();
+    boolean isMandate();
 
     boolean isAutoRenew();
 

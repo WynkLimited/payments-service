@@ -3,7 +3,7 @@ package in.wynk.payment.dto.payu;
 public interface PayUConstants {
 
     String GENERIC_CALLBACK_ACTION = "generic";
-    String REFUND_CALLBACK_ACTION = "refund";
+    String REFUND_CALLBACK_ACTION = "autoRefund";
     String PAYU_PG = "pg";
     String PAYU_SI = "SI";
     String PAYU_UPI = "UPI";

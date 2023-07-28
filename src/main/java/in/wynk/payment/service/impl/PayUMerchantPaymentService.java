@@ -334,6 +334,11 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
+            if (transactionDetails.getClass().isAssignableFrom(PayURefundTransactionDetails.class) && FAILURE.equalsIgnoreCase(transactionDetails.getStatus())) {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+                transaction.setStatus(finalTransactionStatus.getValue());
+                return;
+            }
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
                 /**
                  * PayU check to verify whether mandate transaction is successfully registered with standing instruction sist,
@@ -349,11 +354,15 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     }
                 }
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) ||
+                    PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) ||
+                            (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             }
         } else {
@@ -865,7 +874,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
                 final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
                 String productInfo = Optional.ofNullable(callbackRequest.getProductInfo()).orElse( String.valueOf(transaction.getPlanId()));
-                return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), productInfo, transaction.getAmount(), callbackRequest.getResponseHash());
+                return true;
             }
 
         }

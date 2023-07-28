@@ -106,10 +106,9 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                 }
             }
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PaymentErrorType.PAY014.getErrorCode()))
-                transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
-            else if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode()))
+            if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            }
             throw e;
         }
     }

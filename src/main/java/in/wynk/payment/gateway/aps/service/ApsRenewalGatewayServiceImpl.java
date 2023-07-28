@@ -85,9 +85,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
                 log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
             }
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PAY014.getErrorCode())) {
-                transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
-            } else if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {
+            if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
             throw e;

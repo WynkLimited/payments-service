@@ -2,7 +2,6 @@ package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.paytm.PaytmPaymentRefundRequest;
@@ -39,7 +38,7 @@ public abstract class AbstractPaymentRefundRequest {
             case APS:
                 return ApsPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             default:
-                throw new WynkRuntimeException(PaymentErrorType.PAY889);
+                throw new WynkRuntimeException("Invalid Payment Channel Id");
         }
     }
 

@@ -83,9 +83,9 @@ public class PaymentEventListener {
     private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManagerService;
     private final IMerchantTransactionService merchantTransactionService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final PaymentCachingService cachingService;
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
-    private final IRecurringPaymentManagerService recurringPaymentManagerService;
     @Value("${event.stream.dp}")
     private String dpStream;
 

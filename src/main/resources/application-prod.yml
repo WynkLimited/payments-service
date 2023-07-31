@@ -468,7 +468,7 @@ http:
         connection:
           max: 20
           maxPerHost: 20
-          timeout: 1000
+          timeout: 2000
           defaultKeepAliveTime: 30000
           closeIdleWaitTime: 1000
           validateAfterInActivity: 100

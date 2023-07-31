@@ -15,7 +15,7 @@ import java.io.Serializable;
 @SuperBuilder
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "unmappedstatus", defaultImpl = PayUCallbackRequestPayload.class, visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "action", defaultImpl = PayUCallbackRequestPayload.class, visible = true)
 @JsonSubTypes(@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = PayUConstants.REFUND_CALLBACK_ACTION))
 public class PayUCallbackRequestPayload extends CallbackRequest implements Serializable {
 
@@ -70,8 +70,6 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
     @JsonProperty("productinfo")
     private String productInfo;
 
-    private String unmappedstatus;
-
     public String getTransactionFailureReason() {
         final StringBuilder reason = new StringBuilder();
         if (StringUtils.isNotEmpty(mostSpecificFailureReason))
@@ -85,7 +83,7 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
         return reason.toString();
     }
 
-    public String getAction () {
+    public String getAction() {
         return PayUConstants.GENERIC_CALLBACK_ACTION;
     }
 

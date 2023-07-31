@@ -17,7 +17,6 @@ public class PayUAutoRefundCallbackRequestPayload extends PayUCallbackRequestPay
     @JsonProperty("request_id")
     private String requestId;
     private String token;
-    @JsonProperty("unmappedstatus")
     private String action;
     @JsonProperty("amt")
     private String amount;
@@ -27,4 +26,5 @@ public class PayUAutoRefundCallbackRequestPayload extends PayUCallbackRequestPay
     private String additionalValue2;
     @JsonProperty("refund_mode")
     private String refundMode;
+
 }

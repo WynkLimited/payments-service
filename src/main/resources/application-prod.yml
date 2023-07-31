@@ -453,7 +453,7 @@ http:
         connection:
           max: 500
           maxPerHost: 200
-          timeout: 1500
+          timeout: 2500
           defaultKeepAliveTime: 30000
           closeIdleWaitTime: 1000
           validateAfterInActivity: 100
@@ -462,7 +462,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 2000
     externalServiceTemplate:
       pool:
         connection:
@@ -473,11 +473,11 @@ http:
           closeIdleWaitTime: 1000
           validateAfterInActivity: 100
           socket:
-            timeout: 300
+            timeout: 1000
             factory:
               type: both
           request:
-            timeout: 500
+            timeout: 1000
 
 service:
   subscription:

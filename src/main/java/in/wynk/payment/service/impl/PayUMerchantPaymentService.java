@@ -353,7 +353,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 if("autoRefund".equals(((PayUChargingTransactionDetails) transactionDetails).getUnMappedStatus())){
                     finalTransactionStatus = TransactionStatus.AUTO_REFUND;
-                    transaction.setType(PaymentEvent.REFUND.getValue());
                 } else {
                     finalTransactionStatus= TransactionStatus.FAILURE;
                 }

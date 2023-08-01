@@ -27,6 +27,7 @@ public interface BeanConstant {
     String APB_PAYTM_PAYMENT_CLIENT_S2S_TEMPLATE = "apbPaytmHttpTemplate";
     String SUBSCRIPTION_SERVICE_S2S_TEMPLATE = "subscriptionHttpTemplate";
     String CHARGING_FRAUD_DETECTION_CHAIN = "chargingFraudDetectionChain";
+    String OPTION_FRAUD_DETECTION_CHAIN = "OptionFraudDetectionChain";
     String VERIFY_IAP_FRAUD_DETECTION_CHAIN = "verifyIAPFraudDetectionChain";
     String EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE = "paymentClientHttpTemplate";
     String EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE = "paymentGatewayHttpTemplate";

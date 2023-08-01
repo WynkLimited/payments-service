@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
@@ -32,6 +33,7 @@ import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.common.constant.BaseConstants.POINT;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
+import static in.wynk.payment.core.constant.BeanConstant.OPTION_FRAUD_DETECTION_CHAIN;
 
 /**
  * @author Nishesh Pandey
@@ -46,6 +48,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @Override
+    @FraudAware(name = OPTION_FRAUD_DETECTION_CHAIN)
     public FilteredPaymentOptionsResult getPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         if (request.getPaymentOptionRequest().getProductDetails().getType().equalsIgnoreCase(PLAN)) {
             return getPaymentOptionsDetailsForPlan(request.getPaymentOptionRequest());

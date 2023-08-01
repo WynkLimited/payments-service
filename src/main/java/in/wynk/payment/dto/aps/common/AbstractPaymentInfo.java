@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.common.constant.BaseConstants;
 import lombok.Builder;
 import lombok.Getter;
@@ -49,4 +50,11 @@ public abstract class AbstractPaymentInfo {
      * Mandate end date in epoch time format
      */
     private long paymentEndDate;
+
+    /**
+     * Send this flag as true in case of bill payment otherwise false for other/dummy transactions.
+     */
+    @Builder.Default
+    @JsonProperty("isBillPayment")
+    private boolean billPayment = false;
 }

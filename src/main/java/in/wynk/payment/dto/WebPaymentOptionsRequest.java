@@ -28,6 +28,7 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
 
     private String couponId;
+    private boolean mandate;
     private AbstractProductDetails productDetails;
 
     @Analysed

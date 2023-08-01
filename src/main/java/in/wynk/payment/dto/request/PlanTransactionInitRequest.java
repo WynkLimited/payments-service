@@ -12,6 +12,7 @@ public class PlanTransactionInitRequest extends AbstractTransactionInitRequest {
     private int planId;
     private boolean trialOpted;
     private boolean autoRenewOpted;
+    private boolean mandate;
 
     private IAppDetails appDetails;
     private IUserDetails userDetails;

@@ -5,12 +5,13 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.common.dto.GeoLocation;
-import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
-import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.AbstractProductDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
@@ -38,7 +39,7 @@ public abstract class AbstractPaymentChargingRequest implements IChargingDetails
 
     @Valid
     @Analysed
-    private IGeoLocation geoLocation;
+    private GeoLocation geoLocation;
 
     @Valid
     @Analysed

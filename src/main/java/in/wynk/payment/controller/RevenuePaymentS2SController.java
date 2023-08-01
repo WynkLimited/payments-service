@@ -96,18 +96,6 @@ public class RevenuePaymentS2SController {
         return baseResponse;
     }
 
-    @PostMapping("/v2/payment/refund")
-    @AnalyseTransaction(name = "initRefund")
-    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
-    public WynkResponseEntity<AbstractPaymentRefundResponse> doRefundV2(@Valid @RequestBody PaymentRefundInitRequest request) {
-        LoadClientUtils.loadClient(true);
-        AnalyticService.update(request);
-        AbstractPaymentRefundResponse response = manager.doRefund(request);
-        AnalyticService.update(response);
-        return WynkResponseEntity.<AbstractPaymentRefundResponse>builder().data(response).build();
-    }
-
-
     @GetMapping("/v1/customer/winback/{tid}")
     @AnalyseTransaction(name = "customerWinBack")
     public WynkResponseEntity<Void> winBack(@PathVariable String tid, @RequestParam Map<String, Object> params) {

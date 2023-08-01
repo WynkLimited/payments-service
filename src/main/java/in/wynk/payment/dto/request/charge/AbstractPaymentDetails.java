@@ -22,6 +22,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 
 import static in.wynk.payment.constant.CardConstants.CARD;
 import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
@@ -39,7 +40,7 @@ import static in.wynk.payment.constant.WalletConstants.WALLET;
         @JsonSubTypes.Type(value = WalletPaymentDetails.class, name = WALLET),
         @JsonSubTypes.Type(value = NetBankingPaymentDetails.class, name =  NET_BANKING)
 })
-public abstract class AbstractPaymentDetails implements IPaymentDetails {
+public abstract class AbstractPaymentDetails implements IPaymentDetails, Serializable {
 
     @Analysed
     @MongoBaseEntityConstraint(beanName = CacheBeanNameConstants.COUPON)

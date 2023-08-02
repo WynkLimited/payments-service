@@ -111,7 +111,6 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     }
 
     public static AbstractTransactionInitRequest from (AbstractPaymentChargingRequest request) {
-
         final PaymentGateway paymentGateway = paymentMethodCaching.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Client client = request.getClientDetails();
         final AbstractTransactionInitRequest transactionInitRequest;

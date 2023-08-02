@@ -1,6 +1,7 @@
 package in.wynk.payment.dto;
 
 import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 
@@ -15,5 +16,7 @@ public interface IPaymentOptionsRequest {
     IProductDetails getProductDetails();
 
     String getClient();
+
+    IPaymentDetails getPaymentDetails();
 
 }

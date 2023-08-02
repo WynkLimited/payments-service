@@ -12,6 +12,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
@@ -44,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,6 +89,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Value("${service.subscription.api.endpoint.renewalPlanEligibility}")
     private String renewalPlanEligibilityEndpoint;
+
+    @Value("${service.subscription.api.endpoint.status}")
+    private String subscriptionStatusEndpoint;
 
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
@@ -139,6 +144,14 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         RequestEntity<Void> allProductRequest = ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return  Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
         }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SubscriptionStatus> getSubscriptionStatus (String uid, String service) {
+        final URI uri = restTemplate.getUriTemplateHandler().expand(subscriptionStatusEndpoint, uid, service);
+        RequestEntity<Void> subscriptionStatusRequest = ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        return restTemplate.exchange(subscriptionStatusRequest, new ParameterizedTypeReference<List<SubscriptionStatus>>() {
+        }).getBody();
     }
 
 

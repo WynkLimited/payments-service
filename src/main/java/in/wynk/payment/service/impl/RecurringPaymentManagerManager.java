@@ -14,9 +14,11 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
+import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
@@ -40,6 +43,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 public class RecurringPaymentManagerManager implements IRecurringPaymentManagerService {
 
     private final ApplicationEventPublisher eventPublisher;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
     @Value("${payment.recurring.offset.day}")
     private int dueRecurringOffsetDay;
     @Value("${payment.recurring.offset.hour}")
@@ -80,6 +84,13 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                 } else if (request.getTransaction().getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
                     scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
+                } else if(request.getTransaction().getType() == PaymentEvent.MANDATE) {
+                    Optional<SubscriptionStatus> subscriptionStatusOptional = subscriptionServiceManager.getSubscriptionStatus(request.getTransaction().getUid(), planDTO.getService()).stream()
+                            .filter(status -> status.getPlanId() == request.getTransaction().getPlanId()).findAny();
+                    if(subscriptionStatusOptional.isPresent()) {
+                        nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + subscriptionStatusOptional.get().getValidity());
+                        scheduleRecurringPayment(request.getTransactionId(), nextRecurringDateTime, request.getAttemptSequence());
+                    }
                 }
             } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE && request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();

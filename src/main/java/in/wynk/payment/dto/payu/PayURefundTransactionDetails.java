@@ -47,5 +47,4 @@ public class PayURefundTransactionDetails extends AbstractPayUTransactionDetails
                 .requestId(payload.getRequestId())
                 .build();
     }
-
 }

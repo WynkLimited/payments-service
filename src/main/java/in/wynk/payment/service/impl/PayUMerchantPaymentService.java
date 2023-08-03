@@ -297,8 +297,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         try {
             final MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = verifyOption.orElse(this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
-            }));
+            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse =
+                    verifyOption.orElseGet(() -> getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+                    }));
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))

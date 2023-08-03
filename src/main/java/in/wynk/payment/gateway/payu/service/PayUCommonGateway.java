@@ -41,6 +41,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -122,30 +123,37 @@ public class PayUCommonGateway {
         return EncryptionUtils.generateSHA512Hash(builder);
     }
 
-    public void syncChargingTransactionFromSource(Transaction transaction) {
+    public void syncChargingTransactionFromSource(Transaction transaction, Optional<PayUVerificationResponse<PayUChargingTransactionDetails>> verifyOption) {
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
-            final MultiValueMap<String, String> payUChargingVerificationRequest = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
+            final MultiValueMap<String, String> payUChargingVerificationRequest =
+                    buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
-            });
+            PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse =
+                    verifyOption.orElseGet(() -> exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+                    }));
             if (Objects.isNull(payUChargingVerificationResponse.getTransactionDetails())) {
                 throw new WynkRuntimeException("Failed to sync transaction from payu with error: " + payUChargingVerificationResponse.getMessage());
             }
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode())) {
                 AnalyticService.update(PAYMENT_MODE, payUChargingTransactionDetails.getMode());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode()))
+            }
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode())) {
                 AnalyticService.update(BANK_CODE, payUChargingTransactionDetails.getBankCode());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType()))
+            }
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType())) {
                 AnalyticService.update(PAYU_CARD_TYPE, payUChargingTransactionDetails.getCardType());
+            }
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN").description(payUChargingTransactionDetails.getErrorMessage()).build());
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr())
+                            .code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN")
+                            .description(payUChargingTransactionDetails.getErrorMessage()).build());
                 }
             }
         } catch (HttpStatusCodeException e) {

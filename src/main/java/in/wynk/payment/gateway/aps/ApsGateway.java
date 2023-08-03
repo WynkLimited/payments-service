@@ -86,7 +86,7 @@ public class ApsGateway implements
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
-        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper, merchantTransactionService, eventPublisher);
+        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper, eventPublisher);
         this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, payCache);
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);

@@ -18,7 +18,7 @@ public interface ISubscriptionServiceManager {
         }
     }
 
-    boolean renewalPlanEligibility(int planId, String transactionId, String uid);
+    boolean renewalPlanEligibility(int planId, String transactionId, String uid, String paymentMethod);
 
     default void unSubscribePlan(AbstractUnSubscribePlanRequest request) {
         if (UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {

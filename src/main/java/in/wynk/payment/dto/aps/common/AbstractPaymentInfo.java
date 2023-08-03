@@ -20,7 +20,7 @@ public abstract class AbstractPaymentInfo {
      * LOB_AUTO_PAY_REGISTER for mandate creation and SI_WYNK for renewal
      */
     @Builder.Default
-    private String lob = BaseConstants.WYNK;
+    private String lob = ApsConstant.APS_LOB_WYNK;
     /**
      * Static Value - INR
      */

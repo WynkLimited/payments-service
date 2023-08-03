@@ -310,13 +310,11 @@ aps:
     charge:
       status:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
-    payment:
-      status:
-        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchFromDB=true
     renewal:
         api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/si
-    predebit:
-        api: ${payment.merchant.aps.api.base}/pg-service/v1/pre-debit/initiate
+    cancel:
+        mandate:
+         api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/cancel-mandate
     delete:
       card: ${payment.merchant.aps.api.base}/pg-service/v1/saved-options/cards/delete
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa

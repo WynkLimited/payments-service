@@ -80,7 +80,7 @@ public class QuickPayLinkGeneratorImpl implements IQuickPayLinkGenerator {
             final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().key(wynkService.getBranchKey()).campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
             return shortenResponse.getTinyUrl();
         } catch (Exception ex) {
-            throw new WynkRuntimeException("Unable to generate quick pay link", ex);
+            throw new WynkRuntimeException(ex);
         }
     }
 

@@ -39,7 +39,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
@@ -200,18 +199,12 @@ public class ApsCommonGatewayService {
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
-        int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
         if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());
         } else if ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
             finalTransactionStatus = TransactionStatus.FAILURE;
-        } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (BaseConstants.ONE_DAY_IN_MILLI * retryInterval)) &&
-                (StringUtils.equalsIgnoreCase("PAYMENT_PENDING", apsChargeStatusResponse.getPaymentStatus()) ||
-                        (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase("PAYMENT_QUEUED", apsChargeStatusResponse.getPaymentStatus())))) {
-            finalTransactionStatus = TransactionStatus.INPROGRESS;
-        } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (BaseConstants.ONE_DAY_IN_MILLI * retryInterval)) &&
-                StringUtils.equalsIgnoreCase("PAYMENT_PENDING", apsChargeStatusResponse.getPaymentStatus())) {
+        } else if("PAYMENT_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
             finalTransactionStatus = TransactionStatus.INPROGRESS;
         }
         transaction.setStatus(finalTransactionStatus.getValue());

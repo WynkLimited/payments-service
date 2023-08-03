@@ -37,7 +37,7 @@ public abstract class AbstractPayUTransactionDetails {
     @JsonProperty("bank_ref_num")
     private String bankReferenceNum;
 
-    public static <R extends AbstractPayUTransactionDetails, T> R from(T payload) {
+    public static <R extends AbstractPayUTransactionDetails, T extends PayUCallbackRequestPayload> R from(T payload) {
         return PayUAutoRefundCallbackRequestPayload.class.isAssignableFrom(payload.getClass()) ? (R) PayURefundTransactionDetails.from((PayUAutoRefundCallbackRequestPayload) payload) : (R) PayUChargingTransactionDetails.from(payload);
     }
 

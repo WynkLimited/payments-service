@@ -11,7 +11,6 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
@@ -25,6 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.MANDATE;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER_V2;
 
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
 
@@ -72,16 +73,20 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
         final IAppDetails appDetails = getAppDetails();
         final SessionDTO session = SessionContextHolder.getBody();
         final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(appDetails.getService());
-        final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER_V2.replace("%c", clientAlias);
-        final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? session.get(SUCCESS_WEB_URL) :
+        final String clientPagePlaceHolder = PAYMENT_PAGE_PLACE_HOLDER_V2.replace("%c", clientAlias);
+        final String successPage = session.getSessionPayload().containsKey(SUCCESS_WEB_URL) ? getWebUrl(session, SUCCESS_WEB_URL) :
                 buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"), "${payment.success.v2.page}"), appDetails);
-        final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? session.get(FAILURE_WEB_URL) :
+        final String failurePage = session.getSessionPayload().containsKey(FAILURE_WEB_URL) ? getWebUrl(session, FAILURE_WEB_URL) :
                 buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "failure"), "${payment.failure.v2.page}"), appDetails);
-        final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? session.get(PENDING_WEB_URL) :
+        final String pendingPage = session.getSessionPayload().containsKey(PENDING_WEB_URL) ? getWebUrl(session, PENDING_WEB_URL) :
                 buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "pending"), "${payment.pending.v2.page}"), appDetails);
-        final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? session.get(UNKNOWN_WEB_URL) :
+        final String unknownPage = session.getSessionPayload().containsKey(UNKNOWN_WEB_URL) ? getWebUrl(session, UNKNOWN_WEB_URL) :
                 buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "unknown"), "${payment.unknown.v2.page}"), appDetails);
         return PageUrlDetails.builder().successPageUrl(successPage).failurePageUrl(failurePage).pendingPageUrl(pendingPage).unknownPageUrl(unknownPage).build();
+    }
+
+    private String getWebUrl (SessionDTO session, String webUrl) {
+        return session.get(webUrl) + (getPaymentDetails().isMandate() ? AND + FLOW + EQUAL + MANDATE : "");
     }
 
     @Override
@@ -97,7 +102,8 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
         return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND +
                 BUILD_NO + EQUAL + appDetails.getBuildNo() + ((
                 StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "") +
-                (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : "")) + AND + PLAN_ID + EQUAL+  getProductDetails().getId();
+                (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : "")) + AND + PLAN_ID + EQUAL + getProductDetails().getId() +
+                (getPaymentDetails().isMandate() ? AND + FLOW + EQUAL + MANDATE : "");
     }
 
     @Override

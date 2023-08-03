@@ -92,9 +92,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             }
 
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PAY014.getErrorCode())) {
-                transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
-            } else if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {
+            if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
             throw e;

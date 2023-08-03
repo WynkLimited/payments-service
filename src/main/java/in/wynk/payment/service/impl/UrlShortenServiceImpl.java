@@ -29,7 +29,6 @@ public class UrlShortenServiceImpl implements IUrlShortenService {
         try {
             return template.postForObject(branchUri, request, UrlShortenResponse.class);
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.EXTERNAL_SERVICE_FAILURE, "unable to generate onLink due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         }
     }

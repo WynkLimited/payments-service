@@ -10,10 +10,7 @@ import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
-import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.gateway.IPaymentStatus;
@@ -22,9 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_REFUND_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY003;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
 public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
@@ -37,6 +33,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         this.common = common;
         this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
         this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());
+        this.statusDelegate.put(RenewalChargingTransactionReconciliationStatusRequest.class, new RenewalChargingTransactionReconciliationStatusService());
     }
 
     @Override
@@ -45,7 +42,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> reconStatusService =
                 statusDelegate.get(request.getClass());
         if (Objects.isNull(reconStatusService)) {
-            throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
+            throw new WynkRuntimeException(PAY003, "Unknown transaction status request to process for uid: " + transaction.getUid() +" and transaction id: "+transaction.getIdStr());
         }
         return reconStatusService.reconcile(request);
     }
@@ -93,6 +90,23 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
                 throw new WynkRuntimeException(PaymentErrorType.PAY004);
             } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                 log.warn(PAYU_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                throw new WynkRuntimeException(PaymentErrorType.PAY003);
+            }
+            return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
+        }
+    }
+
+    private class RenewalChargingTransactionReconciliationStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+
+        @Override
+        public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
+            final Transaction transaction = TransactionContext.get();
+            common.syncChargingTransactionFromSource(transaction, Optional.empty());
+            if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                log.warn(PAYU_RENEWAL_CHARGING_STATUS_VERIFICATION, "Renewal transaction is still pending at PAYU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                throw new WynkRuntimeException(PaymentErrorType.PAY004);
+            } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+                log.warn(PAYU_RENEWAL_CHARGING_STATUS_VERIFICATION, "Unknown renewal transaction status at PAYU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY003);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();

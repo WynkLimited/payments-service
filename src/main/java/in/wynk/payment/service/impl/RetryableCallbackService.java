@@ -113,12 +113,14 @@ public class RetryableCallbackService implements ICallbackService<Object, Abstra
     private class MapBasedCallback implements ICallbackService<Map<String, Object>, AbstractCallbackResponse>, IHeaderCallbackService<Map<String, Object>, AbstractPaymentCallbackResponse> {
 
         @Override
+        @ClientAware(clientAlias = "#clientAlias")
         public AbstractCallbackResponse handle(String clientAlias, String partner, Map<String, Object> payload) {
             final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
             return oldManager.handleCallback(CallbackRequestWrapper.builder().paymentGateway(paymentGateway).payload(payload).build()).getBody().getData();
         }
 
         @Override
+        @ClientAware(clientAlias = "#clientAlias")
         public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handle(String clientAlias, String partner, HttpHeaders headers, Map<String, Object> payload) {
             final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
             return newManager.handle(CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build());

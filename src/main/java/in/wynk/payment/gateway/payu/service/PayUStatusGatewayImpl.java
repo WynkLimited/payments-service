@@ -8,15 +8,15 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
-import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
-import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
-import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.gateway.IPaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY003;
@@ -59,8 +59,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
                         return reconcileInternal(transaction);
                     }
                 }
-            common.syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(),
-                    AbstractPayUTransactionDetails.from(request))).build()));
+            common.syncChargingTransactionFromSource(transaction);
             return reconcileInternal(transaction);
         }
 
@@ -101,8 +100,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         @Override
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(),
-                    AbstractPayUTransactionDetails.from(request))).build()));
+            common.syncChargingTransactionFromSource(transaction);
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(PAYU_RENEWAL_CHARGING_STATUS_VERIFICATION, "Renewal transaction is still pending at PAYU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY004);

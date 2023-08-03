@@ -210,10 +210,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 }
             }
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PaymentErrorType.PAY014.getErrorCode()))
-                transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
-            else if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode()))
+            if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            }
             throw e;
         }
         return WynkResponseEntity.<Void>builder().build();
@@ -232,7 +231,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } else if (transactionStatusRequest instanceof RefundTransactionReconciliationStatusRequest) {
             return fetchRefundStatusFromPayUSource(transaction, extTxnId);
         } else {
-            throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
+            throw new WynkRuntimeException("Unknown transaction request class for transaction Id: " + transaction.getIdStr());
         }
     }
 
@@ -350,11 +349,19 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     }
                 }
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
-                finalTransactionStatus = TransactionStatus.FAILURE;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
+            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) ||
+                    PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+                if(AUTO_REFUND.equals(((PayUChargingTransactionDetails) transactionDetails).getUnMappedStatus())){
+                    finalTransactionStatus = TransactionStatus.AUTO_REFUND;
+                } else {
+                    finalTransactionStatus= TransactionStatus.FAILURE;
+                }
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) ||
+                            (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             }
         } else {
@@ -860,6 +867,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
             }
 
+            @Override
             public boolean validate(PayUCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
                 final String transactionId = transaction.getIdStr();
@@ -879,10 +887,19 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
                 // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
                 if (transaction.getStatus() == TransactionStatus.SUCCESS)
-                    transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
+                    transaction.setStatus(TransactionStatus.REFUNDED.getValue());
                 return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
             }
 
+            @Override
+            public boolean validate(PayUAutoRefundCallbackRequestPayload callbackRequest) {
+                final Transaction transaction = TransactionContext.get();
+                final String transactionId = transaction.getIdStr();
+                final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
+                final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
+                String productInfo = Optional.ofNullable(callbackRequest.getProductInfo()).orElse( String.valueOf(transaction.getPlanId()));
+                return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), productInfo, transaction.getAmount(), callbackRequest.getResponseHash());
+            }
         }
     }
 

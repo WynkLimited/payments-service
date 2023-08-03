@@ -67,5 +67,6 @@ public interface PayUConstants {
     String PAYU_CARD_CVV = "ccvv";
 
     String PAYU_PG_NET_BANKING_VALUE = "NB";
+    String AUTO_REFUND = "autoRefund";
     String CURRENCY_INR="INR";
 }

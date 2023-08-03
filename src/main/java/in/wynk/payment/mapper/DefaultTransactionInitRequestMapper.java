@@ -113,8 +113,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     public static AbstractTransactionInitRequest from (AbstractPaymentChargingRequest request) {
 
         final PaymentGateway paymentGateway = paymentMethodCaching.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
-        final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
-        final Client client = clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT));
+        final Client client = request.getClientDetails();
         final AbstractTransactionInitRequest transactionInitRequest;
         if (PlanDetails.class.isAssignableFrom(request.getProductDetails().getClass())) {
             transactionInitRequest = planInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PlanDetails) request.getProductDetails());

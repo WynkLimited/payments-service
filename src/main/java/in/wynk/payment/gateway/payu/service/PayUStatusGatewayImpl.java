@@ -101,7 +101,8 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         @Override
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction, Optional.empty());
+            common.syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(),
+                    AbstractPayUTransactionDetails.from(request))).build()));
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(PAYU_RENEWAL_CHARGING_STATUS_VERIFICATION, "Renewal transaction is still pending at PAYU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY004);

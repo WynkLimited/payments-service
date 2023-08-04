@@ -157,7 +157,6 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date next10Year = cal.getTime();
                         paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli());
-                        apsChargingRequestBuilder.billPayment(false);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
@@ -192,7 +191,6 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                 .mandateAmount(transaction.getAmount())
                                 .paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli());
-                        apsChargingRequestBuilder.billPayment(false);
                     }
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();

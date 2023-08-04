@@ -83,6 +83,7 @@ service:
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
         selectivePlanComputationV2: ${service.subscription.api.root}/wynk/s2s/v2/plans/selective/eligible
+        status: ${service.subscription.api.root}/wynk/s2s/v1/subscription/status/{uid}/{service}
 
 
   ####### payment props #######

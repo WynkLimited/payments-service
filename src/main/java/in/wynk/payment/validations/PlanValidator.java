@@ -25,8 +25,8 @@ public class PlanValidator<T extends IPlanValidatorRequest> extends BaseHandler<
             final SelectivePlansComputationResponse selectivePlansComputationResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(SelectivePlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
             if(Objects.nonNull(selectivePlansComputationResponse)) {
                 if (request.isTrialOpted() && !request.isAutoRenewOpted()) throw new WynkRuntimeException(PAY603);
-                if(request.getPaymentDetails().isMandate() && !(selectivePlansComputationResponse.getEligiblePlans().contains(planId) || selectivePlansComputationResponse.getActivePlans().contains(planId))) throw new WynkRuntimeException(PAY604);
-                if(!request.getPaymentDetails().isMandate() && (!selectivePlansComputationResponse.getEligiblePlans().contains(planId) && (request.isTrialOpted() || !selectivePlansComputationResponse.getActivePlans().contains(planId)))) throw new WynkRuntimeException(PAY605);
+                if(Objects.nonNull(request.getPaymentDetails()) && request.getPaymentDetails().isMandate() && !(selectivePlansComputationResponse.getEligiblePlans().contains(planId) || selectivePlansComputationResponse.getActivePlans().contains(planId))) throw new WynkRuntimeException(PAY604);
+                if((Objects.isNull(request.getPaymentDetails()) || !request.getPaymentDetails().isMandate()) && (!selectivePlansComputationResponse.getEligiblePlans().contains(planId) && (request.isTrialOpted() || !selectivePlansComputationResponse.getActivePlans().contains(planId)))) throw new WynkRuntimeException(PAY605);
             } else {
                 throw new WynkRuntimeException(PAY606);
             }

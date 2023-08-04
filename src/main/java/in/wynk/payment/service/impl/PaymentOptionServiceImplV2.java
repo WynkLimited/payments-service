@@ -81,7 +81,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         final FilteredPaymentOptionsResult.FilteredPaymentOptionsResultBuilder builder = FilteredPaymentOptionsResult.builder().trialEligible(trialEligible).eligibilityRequest(eligibilityRequest);
         if (trialEligible)
             return builder.methods(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
-        if(request.getPaymentDetails().isMandate())
+        if(Objects.nonNull(request.getPaymentDetails()) && request.getPaymentDetails().isMandate())
             return builder.methods(getFilteredPaymentGroups((PaymentMethod::isAutoRenewSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
         return builder.methods(getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
     }

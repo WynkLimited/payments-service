@@ -149,15 +149,15 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             ExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(transaction.getIdStr()).userInfo(userInfo)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
+                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) : transaction.getAmount());
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew() || paymentDetails.isMandate()) {
                         Calendar cal = Calendar.getInstance();
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) :transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
-                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(paymentDetails.isMandate());
+                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getMandateAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!paymentDetails.isMandate());
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
@@ -179,7 +179,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
                             ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
-                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(transaction.getAmount());
+                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) : transaction.getAmount());
 
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew() || paymentDetails.isMandate()) {
@@ -189,9 +189,9 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date next10Year = cal.getTime();
                         upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
                                 .productCategory(BaseConstants.WYNK)
-                                .mandateAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) :transaction.getAmount())
+                                .mandateAmount(transaction.getMandateAmount())
                                 .paymentStartDate(today.toInstant().toEpochMilli())
-                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(paymentDetails.isMandate());
+                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!paymentDetails.isMandate());
                     }
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
@@ -313,7 +313,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         abstractCardPaymentInfoBuilder =
                                 FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
                                         .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
-                                        .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
+                                        .paymentMode(paymentMode).paymentAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) : transaction.getAmount());
                         //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
                         if (paymentDetails.isAutoRenew() || paymentDetails.isMandate()) {
                             Calendar cal = Calendar.getInstance();
@@ -322,9 +322,9 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             Date next10Year = cal.getTime();
                             abstractCardPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
                                     .productCategory(BaseConstants.WYNK)
-                                    .mandateAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) :transaction.getAmount())
+                                    .mandateAmount(transaction.getMandateAmount())
                                     .paymentStartDate(today.toInstant().toEpochMilli())
-                                    .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(paymentDetails.isMandate());
+                                    .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!paymentDetails.isMandate());
 
                         }
                     } else {

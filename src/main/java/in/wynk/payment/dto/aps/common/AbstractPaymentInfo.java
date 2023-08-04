@@ -56,5 +56,5 @@ public abstract class AbstractPaymentInfo {
      */
     @Builder.Default
     @JsonProperty("isBillPayment")
-    private boolean billPayment = false;
+    private boolean billPayment = true;
 }

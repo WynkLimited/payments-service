@@ -47,6 +47,7 @@ import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS_MANDATE_AMOUNT;
 
 /**
  * @author Nishesh Pandey
@@ -155,7 +156,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) :transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(paymentDetails.isMandate());
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
@@ -188,7 +189,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date next10Year = cal.getTime();
                         upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
                                 .productCategory(BaseConstants.WYNK)
-                                .mandateAmount(transaction.getMandateAmount())
+                                .mandateAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) :transaction.getAmount())
                                 .paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(paymentDetails.isMandate());
                     }
@@ -321,7 +322,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             Date next10Year = cal.getTime();
                             abstractCardPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
                                     .productCategory(BaseConstants.WYNK)
-                                    .mandateAmount(transaction.getMandateAmount())
+                                    .mandateAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) :transaction.getAmount())
                                     .paymentStartDate(today.toInstant().toEpochMilli())
                                     .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(paymentDetails.isMandate());
 

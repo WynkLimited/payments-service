@@ -29,10 +29,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Optional;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -76,13 +72,13 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
                 } else if (request.getTransaction().getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-                    scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
+                    scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
                 } else if(request.getTransaction().getType() == PaymentEvent.MANDATE) {
                     Optional<SubscriptionStatus> subscriptionStatusOptional = subscriptionServiceManager.getSubscriptionStatus(request.getTransaction().getUid(), planDTO.getService()).stream()
                             .filter(status -> status.getPlanId() == request.getTransaction().getPlanId()).findAny();
                     if(subscriptionStatusOptional.isPresent()) {
                         nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + subscriptionStatusOptional.get().getValidity());
-                        scheduleRecurringPayment(request.getTransactionId(), nextRecurringDateTime, request.getAttemptSequence());
+                        scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
                     }
                 }
             } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE &&

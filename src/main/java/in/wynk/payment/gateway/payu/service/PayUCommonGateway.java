@@ -40,11 +40,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -81,8 +83,12 @@ public class PayUCommonGateway {
     public  <T> T exchange(String uri, MultiValueMap<String, String> request, HttpHeaders headers, TypeReference<T> target) {
         try {
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(uri)).body(request), String.class).getBody();
+            if (StringUtils.isNotEmpty(response) && response.contains("Record not found")) {
+                throw new WynkRuntimeException("Record not found");
+            }
             return mapper.readValue(response, target);
         } catch (Exception ex) {
+            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
         }
     }
@@ -123,6 +129,9 @@ public class PayUCommonGateway {
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
             final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
+            if (Objects.isNull(payUChargingVerificationResponse.getTransactionDetails())) {
+                throw new WynkRuntimeException("Failed to sync transaction from payu with error: " + payUChargingVerificationResponse.getMessage());
+            }
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))
@@ -136,7 +145,7 @@ public class PayUCommonGateway {
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage()).build());
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN").description(payUChargingTransactionDetails.getErrorMessage()).build());
                 }
             }
         } catch (HttpStatusCodeException e) {

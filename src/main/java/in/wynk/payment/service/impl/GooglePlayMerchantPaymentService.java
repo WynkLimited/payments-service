@@ -162,14 +162,14 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             //if free trial plan applied, perform events on that plan
             if (isFreeTrial) {
                 if (planDTO.getLinkedFreePlanId() != -1) {
-                    return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(details.getMsisdn()).uid(details.getUid())
+                    return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(details.getMsisdn()).uid(details.getUid()).linkedTransactionId(details.getPaymentTransactionId())
                             .message(Pair.of(latestReceipt, details)).build();
                 } else {
                     log.error("No Free Trial mapping present for planId {}", planDTO.getId());
                     throw new WynkRuntimeException(PaymentErrorType.PAY033);
                 }
             }
-            return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid())
+            return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid()).linkedTransactionId(details.getPaymentTransactionId())
                     .message(Pair.of(latestReceipt, details)).build();
         }
         return null;

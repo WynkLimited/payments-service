@@ -43,9 +43,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.payment.constant.FlowType.*;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.dto.aps.common.ApsConstant.PAYMENT_STATUS_POLL_KEY;
+import static in.wynk.payment.dto.aps.common.ApsConstant.PAYMENT_TIMER_KEY;
 
 @Slf4j
 @Service
@@ -373,7 +374,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         if (!isS2S)
             pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v2.poll}")).append(SessionContextHolder.getId());
         else
-            pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v2.pollS2S}")).append(TransactionContext.get().getIdStr());
+            pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v3.pollS2S}")).append(TransactionContext.get().getIdStr());
         return PollingConfig.builder().interval(interval).frequency(timer / interval).timeout(timer).endpoint(pollingEndpoint.toString()).build();
     }
 }

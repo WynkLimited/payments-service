@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
@@ -73,11 +74,13 @@ public class QuickPayLinkGeneratorImpl implements IQuickPayLinkGenerator {
             final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
             final long ttl = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(3);
             final String payUrl = buildUrlFromWithOption(winBackUrl + tid + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + Base64.getEncoder().encodeToString(clientDetails.getAlias().getBytes(StandardCharsets.UTF_8)) + AND + TTL + EQUAL + ttl + AND + TOKEN_ID + EQUAL + URLEncoder.encode(Objects.requireNonNull(EncryptionUtils.generateAppToken(tid + COLON + ttl, clientDetails.getClientSecret())), StandardCharsets.UTF_8.toString()), appDetails, oldSidOption);
-            final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + EncodingUtil.encodeURIComponent(payUrl)).orElse(EncodingUtil.encodeURIComponent((payUrl)));
-            final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
+            //final String finalPayUrl = wynkService.get(PaymentConstants.PAY_OPTION_DEEPLINK).map(deeplink -> deeplink + EncodingUtil.encodeURIComponent(payUrl)).orElse(EncodingUtil.encodeURIComponent((payUrl)));
+            final String finalPayUrl = wynkService.<String>get(PaymentConstants.PAY_OPTION_DEEPLINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
+            AnalyticService.update(PaymentConstants.PAY_OPTION_DEEPLINK, finalPayUrl);
+            final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().key(wynkService.getBranchKey()).campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(finalPayUrl).build());
             return shortenResponse.getTinyUrl();
         } catch (Exception ex) {
-            throw new WynkRuntimeException("Unable to generate quick pay link", ex);
+            throw new WynkRuntimeException(ex);
         }
     }
 

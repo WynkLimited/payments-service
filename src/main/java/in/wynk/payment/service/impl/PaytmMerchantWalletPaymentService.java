@@ -19,13 +19,9 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.SavedDetailsKey;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
-import in.wynk.payment.core.dao.entity.Wallet;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.PlanDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.paytm.*;
@@ -62,14 +58,13 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT022;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
+import static in.wynk.payment.constant.WalletConstants.WALLET_USER_ID;
 import static in.wynk.payment.core.constant.BeanConstant.PAYTM_MERCHANT_WALLET_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY889;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CALLBACK_PAYLOAD_PARSING_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYTM_ERROR;
 import static in.wynk.payment.dto.paytm.PayTmConstants.*;
-import static in.wynk.payment.constant.WalletConstants.WALLET;
-import static in.wynk.payment.constant.WalletConstants.WALLET_USER_ID;
 
 @Slf4j
 @Service(PAYTM_MERCHANT_WALLET_SERVICE)
@@ -300,7 +295,7 @@ public class PaytmMerchantWalletPaymentService extends AbstractMerchantPaymentSt
         } else if (transactionStatusRequest instanceof RefundTransactionReconciliationStatusRequest) {
             syncRefundTransactionFromSource(transaction, transactionStatusRequest.getExtTxnId());
         } else {
-            throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
+            throw new WynkRuntimeException("Invalid transaction request type: " + transactionStatusRequest.getClass());
         }
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.warn(PaymentLoggingMarker.PAYTM_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at paytm end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());

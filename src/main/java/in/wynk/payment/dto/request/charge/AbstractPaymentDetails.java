@@ -8,7 +8,6 @@ import in.wynk.common.constant.CacheBeanNameConstants;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.data.dto.IEntityCacheService;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.PaymentDetails;
@@ -17,18 +16,21 @@ import in.wynk.payment.dto.request.charge.netbanking.NetBankingPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.charge.wallet.WalletPaymentDetails;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
-import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.constant.CardConstants.CARD;
-import static in.wynk.payment.constant.WalletConstants.WALLET;
-import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
-
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
+
+import static in.wynk.payment.constant.CardConstants.CARD;
+import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
+import static in.wynk.payment.constant.UpiConstants.UPI;
+import static in.wynk.payment.constant.WalletConstants.WALLET;
 
 @Getter
+@Setter
 @SuperBuilder
 @AnalysedEntity
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)
@@ -38,7 +40,7 @@ import javax.validation.constraints.NotNull;
         @JsonSubTypes.Type(value = WalletPaymentDetails.class, name = WALLET),
         @JsonSubTypes.Type(value = NetBankingPaymentDetails.class, name =  NET_BANKING)
 })
-public abstract class AbstractPaymentDetails implements IPaymentDetails {
+public abstract class AbstractPaymentDetails implements IPaymentDetails, Serializable {
 
     @Analysed
     @MongoBaseEntityConstraint(beanName = CacheBeanNameConstants.COUPON)

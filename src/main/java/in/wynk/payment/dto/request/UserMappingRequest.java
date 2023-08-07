@@ -2,9 +2,9 @@ package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
-import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;

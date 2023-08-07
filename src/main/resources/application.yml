@@ -96,6 +96,8 @@ service:
         v2:
           poll: ${service.payment.api.root}/wynk/v2/payment/status/
           pollS2S: ${service.payment.api.root}/wynk/s2s/v2/payment/status/
+        v3:
+          pollS2S: ${service.payment.api.root}/wynk/v2/s2s/payment/status/
 
 ####### payment props #######session-out
 payment:
@@ -223,6 +225,10 @@ payment:
       #  privateKeyId: fc40a9ca21615f2ba753a1afcac80d98a818d033
       #  clientEmail: dangal-play-serviceaccount@dangal-play.iam.gserviceaccount.com
       #  key: AIzaSyAmcEfR4deGkGgfmwoehfB_UnWfF7nkjRU
+  predebit:
+    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADD_TO_BILL, APS
+  renewal:
+    unsupported: ADD_TO_BILL
 cors:
   maxAge: 3600
   allowed:

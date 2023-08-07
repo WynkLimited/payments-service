@@ -6,13 +6,16 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.gateway.IPaymentStatus;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
@@ -31,6 +34,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
 
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
+    private final ITransactionManagerService transactionManager;
     @Value("${payment.pooling.queue.reconciliation.enabled}")
     private boolean reconciliationPollingEnabled;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delay}")
@@ -46,16 +50,21 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                                                      ObjectMapper objectMapper,
                                                      ISQSMessageExtractor messagesExtractor,
                                                      ExecutorService messageHandlerThreadPool,
-                                                     ScheduledExecutorService pollingThreadPool) {
+                                                     ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
+        this.transactionManager = transactionManager;
     }
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentReconciliation")
     public void consume(PaymentReconciliationMessage message) {
+        Transaction transaction = transactionManager.get(message.getTransactionId());
+        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+            return;
+        }
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
         final AbstractTransactionReconciliationStatusRequest transactionStatusRequest;

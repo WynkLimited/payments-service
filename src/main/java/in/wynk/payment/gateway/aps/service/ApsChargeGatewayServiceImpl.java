@@ -6,7 +6,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.FlowType;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -47,8 +46,7 @@ import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.LOB_AUTO_PAY_REGISTER_WYNK;
-import static in.wynk.payment.dto.aps.common.ApsConstant.WYNK_LIMITED;
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
 
 /**
  * @author Nishesh Pandey
@@ -63,7 +61,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final Map<FlowType, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>> chargingDelegate = new HashMap<>();
 
-    public ApsChargeGatewayServiceImpl(String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
+    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
         this.common = common;
         this.UPI_CHARGING_ENDPOINT = upiChargeEndpoint;
         this.CHARGING_ENDPOINT = commonChargeEndpoint;
@@ -154,12 +152,11 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
                         Calendar cal = Calendar.getInstance();
-                        cal.add(Calendar.HOUR, 24);
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER_WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli()).paymentEndDate(next10Year.toInstant().toEpochMilli());
-                        apsChargingRequestBuilder.billPayment(false);
+                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                                .paymentEndDate(next10Year.toInstant().toEpochMilli());
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
@@ -177,11 +174,26 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
                     final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
-                    final IntentUpiPaymentInfo upiIntentDetails = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(transaction.getAmount()).build();
-                    //TODO: Update request for UPI Intent once done from APS and call mandate creation
-                    final ExternalChargingRequest<IntentUpiPaymentInfo> payRequest =
-                            ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(upiIntentDetails)
-                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+                    final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+                    ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
+                            ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr())
+                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
+                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(transaction.getAmount());
+
+                    //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
+                    if (paymentDetails.isAutoRenew()) {
+                        Calendar cal = Calendar.getInstance();
+                        Date today = cal.getTime();
+                        cal.add(Calendar.YEAR, 10); // 10 yrs from now
+                        Date next10Year = cal.getTime();
+                        upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
+                                .productCategory(BaseConstants.WYNK)
+                                .mandateAmount(transaction.getAmount())
+                                .paymentStartDate(today.toInstant().toEpochMilli())
+                                .paymentEndDate(next10Year.toInstant().toEpochMilli());
+                    }
+
+                    ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
                             common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiIntentChargingChargingResponse.class);
                     Map<String, String> map =
@@ -190,9 +202,30 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
                     String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
 
-                    return UpiIntentChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
-                            .pa(map.get(PA)).pn(map.getOrDefault(PN, WYNK_LIMITED)).tr(map.get(TR)).am(map.get(AM))
-                            .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR)).tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
+                    return UpiIntentChargingResponse.builder()
+                            .mn(map.get(MN))
+                            .rev(map.get(REV))
+                            .mode(map.get(MODE))
+                            .recur(map.get(RECUR))
+                            .block(map.get(BLOCK))
+                            .orgId(map.get(ORG_ID))
+                            .amRule(map.get(AM_RULE))
+                            .purpose(map.get(PURPOSE))
+                            .txnType(map.get(TXN_TYPE))
+                            .pa(map.get(PA))
+                            .tid(transaction.getIdStr())
+                            .recurType(map.get(RECUR_TYPE))
+                            .pn(PaymentConstants.DEFAULT_PN)
+                            .recurValue(map.get(RECUR_VALUE))
+                            .validityEnd(map.get(VALIDITY_END))
+                            .validityStart(map.get(VALIDITY_START))
+                            .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR))
+                            .transactionStatus(transaction.getStatus())
+                            .tr(map.get(TR))
+                            .am(map.get(AM))
+                            .transactionType(transaction.getType().getValue())
+                            .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN))
+                            .mc(PayUConstants.PAYU_MERCHANT_CODE)
                             .build();
                 }
             }
@@ -263,60 +296,56 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
 
                 @Override
                 public AbstractNonSeamlessCardChargingResponse charge (AbstractPaymentChargingRequest request) {
-
                     final Transaction transaction = TransactionContext.get();
                     final CardPaymentDetails paymentDetails = (CardPaymentDetails) request.getPaymentDetails();
                     String paymentMode = "DEBIT_CARD";
                     if ("CC".equals(paymentDetails.getCardDetails().getCardInfo().getCategory())) {
                         paymentMode = "CREDIT_CARD";
                     }
-                    AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder;
-                    try {
-                        if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
-                            final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
-                            final CardDetails credentials =
-                                    CardDetails.builder().nameOnCard(((FreshCardDetails) paymentDetails.getCardDetails()).getCardHolderName()).cardNumber(cardDetails.getCardNumber())
-                                            .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
-                            final String encCardInfo = common.encryptCardData(credentials);
-                            abstractCardPaymentInfoBuilder =
-                                    FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
-                                            .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
-                                            .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
-                        } else {
-                            final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
-                            final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
-                            final String encCardInfo = common.encryptCardData(credentials);
-                            abstractCardPaymentInfoBuilder =
-                                    SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
-                        }
-                        assert abstractCardPaymentInfoBuilder != null;
+                    AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
+                    if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
+                        final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
+                        final CardDetails credentials =
+                                CardDetails.builder().nameOnCard(((FreshCardDetails) paymentDetails.getCardDetails()).getCardHolderName()).cardNumber(cardDetails.getCardNumber())
+                                        .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
+                        final String encCardInfo = common.encryptCardData(credentials);
+                        abstractCardPaymentInfoBuilder =
+                                FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
+                                        .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
+                                        .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
+                        //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
                         if (paymentDetails.isAutoRenew()) {
                             Calendar cal = Calendar.getInstance();
-                            cal.add(Calendar.HOUR, 24);
                             Date today = cal.getTime();
                             cal.add(Calendar.YEAR, 10);
                             Date next10Year = cal.getTime();
-                            abstractCardPaymentInfoBuilder.lob(LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount())
+                            abstractCardPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
+                                    .productCategory(BaseConstants.WYNK)
+                                    .mandateAmount(transaction.getAmount())
                                     .paymentStartDate(today.toInstant().toEpochMilli())
                                     .paymentEndDate(next10Year.toInstant().toEpochMilli());
                         }
-                        final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
-                        final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
-                        ExternalChargingRequest<?> payRequest =
-                                ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
-                                        .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
-                        CardChargingResponse cardChargingResponse =
-                                common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
-                        return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
-                                .html(cardChargingResponse.getHtml()).build();
-                    } catch (Exception e) {
-                        throw new WynkRuntimeException(PaymentErrorType.PAY041, e);
+                    } else {
+                        final SavedCardDetails cardDetails = (SavedCardDetails) paymentDetails.getCardDetails();
+                        final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
+                        final String encCardInfo = common.encryptCardData(credentials);
+                        abstractCardPaymentInfoBuilder =
+                                SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                     }
+                    final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                    final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
+                    ExternalChargingRequest<?> payRequest =
+                            ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
+                                    .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
+                    CardChargingResponse cardChargingResponse =
+                            common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
+                    return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
+                            .html(cardChargingResponse.getHtml()).build();
+
+                }
                 }
             }
         }
-    }
-
 
     private class NetBankingCharging implements IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
 

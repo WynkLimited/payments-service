@@ -8,7 +8,9 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -23,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRenewalChargingMessage> {
 
     private final PaymentManager paymentManager;
+    private final PaymentGatewayManager manager;
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
     @Value("${payment.pooling.queue.charging.enabled}")
@@ -38,8 +41,10 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
                                                       ISQSMessageExtractor messagesExtractor,
                                                       PaymentManager paymentManager,
                                                       ExecutorService messageHandlerThreadPool,
-                                                      ScheduledExecutorService pollingThreadPool) {
+                                                      ScheduledExecutorService pollingThreadPool,
+                                                      PaymentGatewayManager manager) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
+        this.manager = manager;
         this.paymentManager = paymentManager;
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
@@ -73,15 +78,28 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     public void consume(PaymentRenewalChargingMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
-        paymentManager.doRenewal(PaymentRenewalChargingRequest.builder()
-                .id(message.getId())
-                .uid(message.getUid())
-                .planId(message.getPlanId())
-                .msisdn(message.getMsisdn())
-                .attemptSequence(message.getAttemptSequence())
-                .clientAlias(message.getClientAlias())
-                .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
-                .build());
+        //TODO: move payu also to new version after testing and remove check
+        if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode())) {
+            manager.renew(PaymentRenewalChargingRequest.builder()
+                    .id(message.getId())
+                    .uid(message.getUid())
+                    .planId(message.getPlanId())
+                    .msisdn(message.getMsisdn())
+                    .attemptSequence(message.getAttemptSequence())
+                    .clientAlias(message.getClientAlias())
+                    .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
+                    .build());
+        } else {
+            paymentManager.doRenewal(PaymentRenewalChargingRequest.builder()
+                    .id(message.getId())
+                    .uid(message.getUid())
+                    .planId(message.getPlanId())
+                    .msisdn(message.getMsisdn())
+                    .attemptSequence(message.getAttemptSequence())
+                    .clientAlias(message.getClientAlias())
+                    .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
+                    .build());
+        }
     }
 
     @Override

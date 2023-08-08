@@ -14,6 +14,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
@@ -26,9 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.EnumSet;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
@@ -37,7 +36,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @Slf4j
 @RequiredArgsConstructor
 @Service(BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
-public class RecurringPaymentManagerManager implements IRecurringPaymentManagerService {
+public class RecurringPaymentManager implements IRecurringPaymentManagerService {
 
     private final ApplicationEventPublisher eventPublisher;
     @Value("${payment.recurring.offset.day}")
@@ -51,44 +50,36 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
     @Value("${payment.preDebitNotification.offset.hour}")
     private int duePreDebitNotificationOffsetTime;
 
-    private void scheduleRecurringPayment(String transactionId, Calendar nextRecurringDateTime, int attemptSequence) {
-        try {
-            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
-                    .day(nextRecurringDateTime)
-                    .transactionId(transactionId)
-                    .hour(nextRecurringDateTime.getTime())
-                    .createdTimestamp(Calendar.getInstance())
-                    .transactionEvent(PaymentEvent.SUBSCRIBE.name())
-                    .attemptSequence(attemptSequence)
-                    .build());
-        } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
-        }
-    }
+    private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>(){{
+        put(ApsConstant.AIRTEL_PAY_STACK, -2);
+    }};
 
     @Override
     public void scheduleRecurringPayment(AbstractTransactionRevisionRequest request) {
-        if (MigrationTransactionRevisionRequest.class.isAssignableFrom(request.getClass()) && request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED && request.getTransaction().getType() == PaymentEvent.SUBSCRIBE) {
-            scheduleRecurringPayment(request.getTransaction().getIdStr(), ((MigrationTransactionRevisionRequest) request).getNextChargingDate(), 0);
+        if (MigrationTransactionRevisionRequest.class.isAssignableFrom(request.getClass()) && request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
+                request.getFinalTransactionStatus() == TransactionStatus.MIGRATED && request.getTransaction().getType() == PaymentEvent.SUBSCRIBE) {
+            scheduleRecurringPayment(request, ((MigrationTransactionRevisionRequest) request).getNextChargingDate(), 0);
         } else {
             Calendar nextRecurringDateTime = Calendar.getInstance();
             PlanDTO planDTO = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(request.getTransaction().getPlanId());
-            if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
+            if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
+                    request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(request.getTransaction().getType())) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-                    scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
+                    scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
                 } else if (request.getTransaction().getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-                    scheduleRecurringPayment(request.getTransaction().getIdStr(), nextRecurringDateTime, request.getAttemptSequence());
+                    scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
                 }
-            } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE && request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
+            } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE &&
+                    request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
                 if (planPeriodDTO.getMaxRetryCount() < request.getAttemptSequence()) {
                     AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
                     return;
                 }
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
-                scheduleRecurringPayment(request.getTransactionId(), nextRecurringDateTime, request.getAttemptSequence());
+                scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
             }
         }
     }
@@ -141,6 +132,25 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 
+    private void scheduleRecurringPayment(AbstractTransactionRevisionRequest request, Calendar nextRecurringDateTime, int attemptSequence) {
+        String transactionId = request.getTransaction().getIdStr();
+        if (CODE_TO_RENEW_OFFSET.containsKey(request.getTransaction().getPaymentChannel().getCode())) {
+            nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(request.getTransaction().getPaymentChannel().getCode()));
+        }
+        try {
+            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
+                    .day(nextRecurringDateTime)
+                    .transactionId(transactionId)
+                    .hour(nextRecurringDateTime.getTime())
+                    .createdTimestamp(Calendar.getInstance())
+                    .transactionEvent(PaymentEvent.SUBSCRIBE.name())
+                    .attemptSequence(attemptSequence)
+                    .build());
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
+        }
+    }
+
     @Override
     public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
         try {
@@ -173,7 +183,7 @@ public class RecurringPaymentManagerManager implements IRecurringPaymentManagerS
                 }
             });
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
         }
     }
 }

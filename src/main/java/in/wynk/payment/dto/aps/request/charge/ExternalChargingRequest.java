@@ -35,9 +35,9 @@ public class ExternalChargingRequest<T extends AbstractPaymentInfo> {
     private ChannelInfo channelInfo;
 
     /**
-     * Send this flag as false in case of bill payment otherwise false for other/dummy transactions.
+     * Send this flag as true in case of bill payment(AUTO Pay case) otherwise false for penny drop and paymentAmount will be refunded in case of penny drop.
      */
     @Builder.Default
     @JsonProperty("isBillPayment")
-    private boolean billPayment = false;
+    private boolean billPayment = true;
 }

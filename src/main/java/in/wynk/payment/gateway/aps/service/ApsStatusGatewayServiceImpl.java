@@ -7,10 +7,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
-import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
-import in.wynk.payment.dto.request.RefundTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.gateway.IPaymentStatus;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,8 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY888;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_REFUND_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 /**
  * @author Nishesh Pandey
@@ -37,6 +33,7 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
         this.common = common;
         this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
         this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());
+        this.statusDelegate.put(RenewalChargingTransactionReconciliationStatusRequest.class, new RenewalChargingTransactionReconciliationStatusService());
     }
 
     @Override
@@ -79,6 +76,23 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
                 throw new WynkRuntimeException(PaymentErrorType.PAY038);
             } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                 log.warn(APS_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                throw new WynkRuntimeException(PaymentErrorType.PAY025);
+            }
+            return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
+        }
+    }
+
+    private class RenewalChargingTransactionReconciliationStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+
+        @Override
+        public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
+            final Transaction transaction = TransactionContext.get();
+            common.syncChargingTransactionFromSource(transaction);
+            if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                log.warn(APS_RENEWAL_STATUS_VERIFICATION, "Renewal transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                throw new WynkRuntimeException(PaymentErrorType.PAY038);
+            } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
+                log.warn(APS_RENEWAL_STATUS_VERIFICATION, "Unknown renewal transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY025);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();

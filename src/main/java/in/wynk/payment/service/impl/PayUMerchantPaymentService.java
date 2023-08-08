@@ -755,13 +755,14 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (response.getStatus() == 1) {
                 log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
             } else {
-                log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, response.getMessage());
-                throw new WynkRuntimeException(PAY111);
+                throw new WynkRuntimeException(PAY111, response.getMessage());
             }
-            TransactionStatus transactionStatus= response.getStatus()==1 ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
-            return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(transactionStatus).build();
+            return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
         } catch (Exception e) {
             log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
+            if (e instanceof WynkRuntimeException) {
+                throw e;
+            }
             throw new WynkRuntimeException(PAY111);
         }
     }

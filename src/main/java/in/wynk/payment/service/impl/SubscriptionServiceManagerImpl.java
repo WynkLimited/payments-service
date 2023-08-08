@@ -7,7 +7,6 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
@@ -123,8 +122,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public List<OfferDTO> getOffers() {
         RequestEntity<Void> allPlanRequest = ChecksumUtils.buildEntityWithAuthHeaders(allOfferApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-      return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
-      }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
+        return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
+        }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
     }
 
 
@@ -138,7 +137,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public List<ProductDTO> getProducts() {
         RequestEntity<Void> allProductRequest = ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-        return  Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
+        return Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
         }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
     }
 
@@ -167,10 +166,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanAsync(SubscribePlanAsyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
-            log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanAsync flow", request.getPlanId(), request.getUid());
-            return;
-        }
         try {
             this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
         } catch (Exception e) {
@@ -189,7 +184,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             final IAppDetails appDetails = request.getAppDetails();
             final IUserDetails userDetails = request.getUserDetails();
             final SelectivePlansComputationRequest selectivePlansComputationRequest = SelectivePlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(userDetails.getMsisdn(), request.getService())).service(request.getService()).appId(appDetails.getAppId()).appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType()).createdTimestamp(System.currentTimeMillis()).countryCode(userDetails.getCountryCode()).build();
-            final RequestEntity<SelectivePlansComputationRequest> requestEntity = BeanLocatorFactory.getBean(PaymentCachingService.class).isV2SubscriptionJourney(request.getPlanId())?ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPointV2, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST):ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST);
+            final RequestEntity<SelectivePlansComputationRequest> requestEntity = BeanLocatorFactory.getBean(PaymentCachingService.class).isV2SubscriptionJourney(request.getPlanId()) ? ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPointV2, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST) : ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest, HttpMethod.POST);
             final ResponseEntity<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>>() {
             });
             return response.getBody().getData();
@@ -203,10 +198,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanSync(SubscribePlanSyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
-            log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanSync flow", request.getPlanId(), request.getUid());
-            return;
-        }
         try {
             PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).paymentCode(request.getPaymentGateway().getCode()).referenceId(request.getTransactionId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).eventType(request.getPaymentEvent()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).triggerDataRequest(request.getTriggerDataRequest()).build();
             RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
@@ -262,7 +253,4 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).getLinkedFreePlanId() : planId;
     }
 
-    private boolean isExternallyProvisionablePlan(int planId){
-        return BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).isProvisionNotRequired();
-    }
 }

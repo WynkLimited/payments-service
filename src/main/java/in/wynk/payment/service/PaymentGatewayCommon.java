@@ -28,7 +28,6 @@ public class PaymentGatewayCommon {
             if (Objects.nonNull(purchaseDetails)) {
                 return purchaseDetails.getPaymentDetails().getPaymentId();
             }
-            log.error("No purchase data found for the transaction Id" + transaction.getIdStr());
         }
         return null;
     }

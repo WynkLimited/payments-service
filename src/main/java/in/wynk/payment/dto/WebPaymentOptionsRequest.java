@@ -11,7 +11,9 @@ import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +30,9 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
 
     private String couponId;
+    private boolean mandate;
     private AbstractProductDetails productDetails;
+    private AbstractPaymentDetails paymentDetails;
 
     @Analysed
     private GeoLocation geoLocation;
@@ -55,4 +59,8 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
         return ClientContext.getClient().map(Client::getAlias).orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
     }
 
+    @Override
+    public IPaymentDetails getPaymentDetails () {
+        return this.paymentDetails;
+    }
 }

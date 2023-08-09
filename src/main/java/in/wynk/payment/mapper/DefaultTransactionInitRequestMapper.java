@@ -107,7 +107,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     }
 
     private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails) {
-        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
+        return PlanTransactionInitRequest.builder().mandate(paymentDetails.isMandate()).autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(paymentDetails.isMandate() ? PaymentEvent.MANDATE : PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
     }
 
     private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PointDetails pointDetails) {
@@ -115,7 +115,6 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     }
 
     public static AbstractTransactionInitRequest from (AbstractPaymentChargingRequest request) {
-
         final PaymentGateway paymentGateway = paymentMethodCaching.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Client client = request.getClientDetails();
         final AbstractTransactionInitRequest transactionInitRequest;

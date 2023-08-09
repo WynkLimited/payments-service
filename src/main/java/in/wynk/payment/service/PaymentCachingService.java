@@ -7,6 +7,7 @@ import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.identity.client.utils.IdentityUtils;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
@@ -18,12 +19,14 @@ import in.wynk.subscription.common.enums.Category;
 import in.wynk.payment.dto.SubscriptionStatus;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -47,11 +50,11 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
+import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
 
 @Slf4j
 @Getter
 @Service
-@RequiredArgsConstructor
 public class PaymentCachingService {
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -71,8 +74,15 @@ public class PaymentCachingService {
     private final ItemDtoCachingService itemDtoCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private RestTemplate restTemplate;
-    @Autowired
     private WynkApplicationContext myApplicationContext;
+
+    public PaymentCachingService(PlanDtoCachingService planDtoCachingService,ItemDtoCachingService itemDtoCachingService,ISubscriptionServiceManager subscriptionServiceManager,@Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)RestTemplate restTemplate,WynkApplicationContext myApplicationContext ){
+        this.planDtoCachingService= planDtoCachingService;
+        this.itemDtoCachingService= itemDtoCachingService;
+        this.subscriptionServiceManager=subscriptionServiceManager;
+        this.restTemplate= restTemplate;
+        this.myApplicationContext=myApplicationContext;
+    }
 
     @Value("${api.get.endPoint}")
     private String subscriptionEndPoint;
@@ -228,27 +238,23 @@ public class PaymentCachingService {
         return skuToPlan.get(sku);
     }
 
-    public Long validTillDate(int planId, String msisdn) throws URISyntaxException {
+    @SneakyThrows
+    public Long validTillDate(int planId, String msisdn) {
         PlanDTO planDTO = getPlan(planId);
-        try {
-            URI uri = new URIBuilder(subscriptionEndPoint + SLASH + "wynk/s2s/v1/subscription/status" + SLASH + IdentityUtils.getUidFromUserName(msisdn, planDTO.getService()) + SLASH + planDTO.getService()).build();
-            final RequestEntity<Void> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-            ResponseEntity<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>>() {
-            });
-            if (Objects.nonNull(response.getBody())) {
-                List<SubscriptionStatus> status = response.getBody().getData();
-                for (SubscriptionStatus subscriptionStatus : status) {
-                    if (subscriptionStatus.getPlanId() == planId) {
-                        return subscriptionStatus.getValidity();
-                    }
+        final URI uri = new URIBuilder(subscriptionEndPoint + SLASH + "wynk/s2s/v1/subscription/status" + SLASH + IdentityUtils.getUidFromUserName(msisdn, planDTO.getService()) + SLASH + planDTO.getService()).build();
+        final RequestEntity<Void> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        List<SubscriptionStatus> response= restTemplate.exchange(requestEntity, new ParameterizedTypeReference<List<SubscriptionStatus>>() {
+        }).getBody();
+        if (Objects.nonNull(response)) {
+            for (SubscriptionStatus subscriptionStatus : response) {
+                if (subscriptionStatus.getPlanId() == planId) {
+                    return subscriptionStatus.getValidity();
                 }
-            } else {
-                int validity = planDTO.getPeriod().getValidity();
-                TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
-                return System.currentTimeMillis() + timeUnit.toMillis(validity);
             }
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+        } else {
+            int validity = planDTO.getPeriod().getValidity();
+            TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
+            return System.currentTimeMillis() + timeUnit.toMillis(validity);
         }
         return null;
     }

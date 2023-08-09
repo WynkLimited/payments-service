@@ -1043,4 +1043,4 @@ event:
   stream:
     dp: wcf-data-science-prod-subscription-funnel
 
-api.get.endpoint: https://subscription.wynk.in
+api.get.endPoint: https://subscription.wynk.in

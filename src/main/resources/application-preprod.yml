@@ -1005,4 +1005,4 @@ event:
   stream:
     dp: data-science-subscription-funnel-information
 
-api.get.endpoint: https://subscription-preprod.wynk.in
+api.get.endPoint: https://subscription-preprod.wynk.in/wynk/s2s/v1/subscription/status/

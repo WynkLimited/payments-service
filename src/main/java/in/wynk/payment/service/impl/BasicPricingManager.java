@@ -43,7 +43,7 @@ public class BasicPricingManager implements IPricingManager {
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
             final PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
-            if (nativeRequest.isAutoRenewOpted()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
+            if (nativeRequest.isAutoRenewOpted() || nativeRequest.isMandate()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
                 if (nativeRequest.isMandate()) {
                     nativeRequest.setEvent(PaymentEvent.MANDATE);

@@ -71,6 +71,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         delegate.put(NET_BANKING, new NetBankingChargingPresentation());
     }
 
+    @SneakyThrows
     @Override
     public WynkResponseEntity<AbstractChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -94,6 +95,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractUpiChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -159,6 +161,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractNetBankingChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -195,6 +198,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractCardChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -239,6 +243,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractWalletChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());

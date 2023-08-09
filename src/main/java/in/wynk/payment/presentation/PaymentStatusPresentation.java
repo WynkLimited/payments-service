@@ -30,10 +30,12 @@ import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -66,7 +68,7 @@ public class PaymentStatusPresentation implements IPaymentPresentation<AbstractC
     }
 
     @Override
-    public WynkResponseEntity<AbstractChargingStatusResponseV2> transform (PaymentStatusWrapper payload) {
+    public WynkResponseEntity<AbstractChargingStatusResponseV2> transform (PaymentStatusWrapper payload) throws URISyntaxException {
         final PaymentMethod method = paymentMethodCachingService.get(payload.getPaymentId());
         return (WynkResponseEntity<AbstractChargingStatusResponseV2>) delegate.get(method.getGroup()).transform(payload);
     }
@@ -165,6 +167,7 @@ public class PaymentStatusPresentation implements IPaymentPresentation<AbstractC
 
     private class PayUPaymentStatus implements IPaymentPresentation<AbstractPayUPaymentStatus, PaymentStatusWrapper> {
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractPayUPaymentStatus> transform (PaymentStatusWrapper payload) {
             final Transaction transaction = payload.getTransaction();
@@ -183,7 +186,7 @@ public class PaymentStatusPresentation implements IPaymentPresentation<AbstractC
             } else {
                 ChargingStatusResponseV2.ChargingStatusResponseV2Builder<?, ?> builder =
                         ChargingStatusResponseV2.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(payload.getPlanId())
-                                .validity(cachingService.validTillDate(payload.getPlanId()));
+                                .validity(cachingService.validTillDate(payload.getPlanId(),payload.getTransaction().getMsisdn()));
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction, payload.getPlanId()));
                     builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
@@ -206,11 +209,12 @@ public class PaymentStatusPresentation implements IPaymentPresentation<AbstractC
 
     private class APSPaymentStatus implements IPaymentPresentation<AbstractAirtelPaymentStatus, PaymentStatusWrapper> {
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractAirtelPaymentStatus> transform (PaymentStatusWrapper payload) {
             final Transaction transaction = payload.getTransaction();
             if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                return WynkResponseEntity.<AbstractAirtelPaymentStatus>builder().data(ChargingStatusResponseV3.success(transaction.getIdStr(), cachingService.validTillDate(transaction.getPlanId()), transaction.getPlanId())).build();
+                return WynkResponseEntity.<AbstractAirtelPaymentStatus>builder().data(ChargingStatusResponseV3.success(transaction.getIdStr(), cachingService.validTillDate(transaction.getPlanId(),payload.getTransaction().getMsisdn()), transaction.getPlanId())).build();
             } else if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 return WynkResponseEntity.<AbstractAirtelPaymentStatus>builder().data(ChargingStatusResponseV3.failure(transaction.getIdStr(), transaction.getPlanId())).build();
             }

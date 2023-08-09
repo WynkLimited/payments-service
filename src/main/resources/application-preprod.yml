@@ -1004,3 +1004,5 @@ security:
 event:
   stream:
     dp: data-science-subscription-funnel-information
+
+api.get.endpoint: https://subscription-preprod.wynk.in

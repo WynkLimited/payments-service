@@ -235,6 +235,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
     }
 
+    @SneakyThrows
     private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction, String extTxnId) {
         syncRefundTransactionFromSource(transaction, extTxnId);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
@@ -246,7 +247,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }
@@ -276,6 +277,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
     }
 
+    @SneakyThrows
     private ChargingStatusResponse fetchChargingStatusFromPayUSource(Transaction transaction) {
         syncChargingTransactionFromSource(transaction, Optional.empty());
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
@@ -287,7 +289,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }

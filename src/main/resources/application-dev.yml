@@ -1064,3 +1064,5 @@ logging:
 event:
   stream:
     dp: data-science-subscription-funnel-information
+
+api.get.endpoint: https://subscription-staging.wynk.in

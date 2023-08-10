@@ -7,7 +7,6 @@ import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.identity.client.utils.IdentityUtils;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
@@ -18,14 +17,12 @@ import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.Category;
 import in.wynk.payment.dto.SubscriptionStatus;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.http.client.utils.URIBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -38,7 +35,6 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -243,20 +239,21 @@ public class PaymentCachingService {
         PlanDTO planDTO = getPlan(planId);
         final URI uri = new URIBuilder(subscriptionEndPoint + SLASH + "wynk/s2s/v1/subscription/status" + SLASH + IdentityUtils.getUidFromUserName(msisdn, planDTO.getService()) + SLASH + planDTO.getService()).build();
         final RequestEntity<Void> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-        List<SubscriptionStatus> response= restTemplate.exchange(requestEntity, new ParameterizedTypeReference<List<SubscriptionStatus>>() {
-        }).getBody();
-        if (Objects.nonNull(response)) {
-            for (SubscriptionStatus subscriptionStatus : response) {
+        ResponseEntity<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>>() {
+        });
+        if (Objects.nonNull(response.getBody())) {
+            List<SubscriptionStatus> status = response.getBody().getData();
+            for (SubscriptionStatus subscriptionStatus : status) {
                 if (subscriptionStatus.getPlanId() == planId) {
                     return subscriptionStatus.getValidity();
                 }
             }
+            return Long.valueOf(0);
         } else {
             int validity = planDTO.getPeriod().getValidity();
             TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
             return System.currentTimeMillis() + timeUnit.toMillis(validity);
         }
-        return null;
     }
 
 

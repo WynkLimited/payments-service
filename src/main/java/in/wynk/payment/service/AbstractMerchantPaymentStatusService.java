@@ -29,6 +29,7 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
+import lombok.SneakyThrows;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -61,6 +62,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
 
     public abstract WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest);
 
+    @SneakyThrows
     public WynkResponseEntity<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
         final IChargingDetails.IPageUrlDetails pageUrlDetails = TransactionContext.getPurchaseDetails().map(details -> (IChargingDetails) details).map(IChargingDetails::getPageUrlDetails).orElseGet(() ->  {
@@ -82,7 +84,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
             return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL002), transaction, request, pageUrlDetails.getPendingPageUrl());
         } else {
-            ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
+            ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId(),transaction.getMsisdn()));
             if (txnStatus == TransactionStatus.SUCCESS) {
                 builder.packDetails(getPackDetails(transaction, request));
                 builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());

@@ -45,6 +45,7 @@ import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.PlanDTO;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.math.NumberUtils;
@@ -446,6 +447,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
+    @SneakyThrows
     private ChargingStatusResponse fetchChargingStatusFromGooglePlaySource (Transaction transaction, String extTxnId, int planId) {
         if (transaction.getStatus() == TransactionStatus.FAILURE) {
             Optional<ReceiptDetails> receiptDetailsOptional =
@@ -461,7 +463,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         ChargingStatusResponse.ChargingStatusResponseBuilder<?, ?> responseBuilder =
                 ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(planId));
+            responseBuilder.validity(cachingService.validTillDate(planId,transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }

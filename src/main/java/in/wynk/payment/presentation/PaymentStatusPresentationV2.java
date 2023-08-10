@@ -31,6 +31,7 @@ import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
 
     private class AddToBillPaymentStatusHandler implements IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse> {
 
+        @SneakyThrows
         @Override
         public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {
             final Transaction transaction = TransactionContext.get();
@@ -77,7 +79,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
                         .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId()))
+                        .validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()))
                         .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
@@ -113,6 +115,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
 
     private class GenericPaymentStatusHandler implements IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse> {
 
+        @SneakyThrows
         @Override
         public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {
             final Transaction transaction = TransactionContext.get();
@@ -127,7 +130,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
                         .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId()))
+                        .validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()))
                         .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
@@ -148,6 +151,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
         }
     }
 
+    @SneakyThrows
     @Override
     @TransactionAware(txnId = "#payload.tid")
     public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {

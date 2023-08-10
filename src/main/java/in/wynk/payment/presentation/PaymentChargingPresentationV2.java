@@ -70,6 +70,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         delegate.put(WALLET, new WalletChargingPresentation());
     }
 
+    @SneakyThrows
     @Override
     public PaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
@@ -90,6 +91,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             upiDelegate.put(NON_SEAMLESS, new UpiNonSeamless());
         }
 
+        @SneakyThrows
         @Override
         public UpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             String flowType = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId()).getFlowType();
@@ -105,6 +107,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 upiSeamlessDelegate.put(INAPP, new UpiSeamlessCollectInApp());
             }
 
+            @SneakyThrows
             @Override
             public SeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -193,6 +196,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 upiNonSeamlessDelegate.put(COLLECT, new UpiNonSeamlessCollect());
             }
 
+            @SneakyThrows
             @Override
             public NonSeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -221,6 +225,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             cardDelegate.put(NON_SEAMLESS, new CardNonSeamless());
         }
 
+        @SneakyThrows
         @Override
         public CardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
@@ -240,6 +245,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 cardSeamlessDelegate.put(INAPP, new CardSeamlessInApp());
             }
 
+            @SneakyThrows
             @Override
             public SeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -270,6 +276,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 cardNonSeamlessDelegate.put(HTML, new CardNonSeamlessHtmlType());
             }
 
+            @SneakyThrows
             @Override
             public NonSeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -306,6 +313,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             nbDelegate.put(NON_SEAMLESS, new NetBankingNonSeamless());
         }
 
+        @SneakyThrows
         @Override
         public NetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
@@ -332,6 +340,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                netBankingNonSeamlessDelegate.put(HTML, new NetBankingNonSeamlessHtmlType());
             }
 
+            @SneakyThrows
             @Override
             public NonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);

@@ -13,6 +13,7 @@ import in.wynk.payment.service.IPurchaseSessionService;
 import in.wynk.payment.utils.LoadClientUtils;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.util.Pair;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,6 +42,7 @@ public class PurchaseS2SController {
         return response;
     }
 
+    @SneakyThrows
     @PostMapping( value = {"/v2/plan/purchase", "/v2/point/purchase"})
     @AnalyseTransaction(name = "purchaseRequest")
     @ApiOperation("Provides session Id and the webview URL for plan/point purchase")

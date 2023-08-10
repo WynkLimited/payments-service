@@ -2,7 +2,11 @@ package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.context.WynkApplicationContext;
+import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.common.utils.ChecksumUtils;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
@@ -11,16 +15,26 @@ import in.wynk.payment.core.service.SkuToSkuCachingService;
 import in.wynk.payment.dto.aps.response.option.PaymentOptionsResponse;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.Category;
+import in.wynk.payment.dto.SubscriptionStatus;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -30,12 +44,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
+import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
 
 @Slf4j
 @Getter
 @Service
-@RequiredArgsConstructor
 public class PaymentCachingService {
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -54,6 +69,19 @@ public class PaymentCachingService {
     private final PlanDtoCachingService planDtoCachingService;
     private final ItemDtoCachingService itemDtoCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private RestTemplate restTemplate;
+    private WynkApplicationContext myApplicationContext;
+
+    public PaymentCachingService(PlanDtoCachingService planDtoCachingService,ItemDtoCachingService itemDtoCachingService,ISubscriptionServiceManager subscriptionServiceManager,@Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)RestTemplate restTemplate,WynkApplicationContext myApplicationContext ){
+        this.planDtoCachingService= planDtoCachingService;
+        this.itemDtoCachingService= itemDtoCachingService;
+        this.subscriptionServiceManager=subscriptionServiceManager;
+        this.restTemplate= restTemplate;
+        this.myApplicationContext=myApplicationContext;
+    }
+
+    @Value("${api.get.endPoint}")
+    private String subscriptionEndPoint;
 
     @PostConstruct
     @AnalyseTransaction(name = "refreshInMemoryCache")
@@ -206,12 +234,28 @@ public class PaymentCachingService {
         return skuToPlan.get(sku);
     }
 
-    public Long validTillDate(int planId) {
+    @SneakyThrows
+    public Long validTillDate(int planId, String msisdn) {
         PlanDTO planDTO = getPlan(planId);
-        int validity = planDTO.getPeriod().getValidity();
-        TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
-        return System.currentTimeMillis() + timeUnit.toMillis(validity);
+        final URI uri = new URIBuilder(subscriptionEndPoint + SLASH + "wynk/s2s/v1/subscription/status" + SLASH + IdentityUtils.getUidFromUserName(msisdn, planDTO.getService()) + SLASH + planDTO.getService()).build();
+        final RequestEntity<Void> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        ResponseEntity<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>>() {
+        });
+        if (Objects.nonNull(response.getBody())) {
+            List<SubscriptionStatus> status = response.getBody().getData();
+            for (SubscriptionStatus subscriptionStatus : status) {
+                if (subscriptionStatus.getPlanId() == planId) {
+                    return subscriptionStatus.getValidity();
+                }
+            }
+            return Long.valueOf(0);
+        } else {
+            int validity = planDTO.getPeriod().getValidity();
+            TimeUnit timeUnit = planDTO.getPeriod().getTimeUnit();
+            return System.currentTimeMillis() + timeUnit.toMillis(validity);
+        }
     }
+
 
     public Map<String, PaymentGroup> getPaymentGroups() {
         return BeanLocatorFactory.getBean(PaymentGroupCachingService.class).getAll().stream().collect(Collectors.toMap(PaymentGroup::getId, Function.identity()));

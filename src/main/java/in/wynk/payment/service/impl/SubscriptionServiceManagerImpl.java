@@ -150,8 +150,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     public List<SubscriptionStatus> getSubscriptionStatus (String uid, String service) {
         final URI uri = restTemplate.getUriTemplateHandler().expand(subscriptionStatusEndpoint, uid, service);
         RequestEntity<Void> subscriptionStatusRequest = ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-        return restTemplate.exchange(subscriptionStatusRequest, new ParameterizedTypeReference<List<SubscriptionStatus>>() {
-        }).getBody();
+        return restTemplate.exchange(subscriptionStatusRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>>() {
+        }).getBody().getData();
     }
 
 

@@ -77,7 +77,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     Optional<SubscriptionStatus> subscriptionStatusOptional = subscriptionServiceManager.getSubscriptionStatus(request.getTransaction().getUid(), planDTO.getService()).stream()
                             .filter(status -> status.getPlanId() == request.getTransaction().getPlanId()).findAny();
                     if(subscriptionStatusOptional.isPresent()) {
-                        nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + subscriptionStatusOptional.get().getValidity());
+                        nextRecurringDateTime.setTimeInMillis(subscriptionStatusOptional.get().getValidity());
                         scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
                     }
                 }

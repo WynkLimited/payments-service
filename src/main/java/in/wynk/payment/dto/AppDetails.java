@@ -15,6 +15,7 @@ import lombok.experimental.SuperBuilder;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.util.Objects;
 
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
@@ -56,6 +57,9 @@ public class AppDetails implements IAppDetails, Serializable {
     @Analysed
     private String deviceId;
 
+    @Analysed
+    private String device;
+
     @JsonIgnore
     public WynkService getServiceObj() {
         return WynkServiceUtils.fromServiceId(service);
@@ -73,6 +77,13 @@ public class AppDetails implements IAppDetails, Serializable {
 
     public String getService() {
         return getServiceObj().getId();
+    }
+
+    public String getDeviceId() {
+        if(Objects.isNull(deviceId) && Objects.nonNull(device)){
+            return device;
+        }
+        return deviceId;
     }
 
     public String getOs() {

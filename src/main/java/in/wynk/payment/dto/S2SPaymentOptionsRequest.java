@@ -6,6 +6,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.Objects;
 
 @Getter
 @Builder

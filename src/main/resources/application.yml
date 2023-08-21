@@ -20,7 +20,7 @@ spring:
 debug: false
 
 server:
-  port: 8083
+  port: 8081
 
 ########## Management Config ##########
 management:

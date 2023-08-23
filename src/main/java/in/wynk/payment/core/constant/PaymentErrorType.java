@@ -78,6 +78,11 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY400("Invalid Request", "Invalid request", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY401("Lock Can not be acquired over given id", "Lock Can not be acquired over given id", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
+    PAY440("Invalid Invoice Event Received", "Invoice Event payload is not correct", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVALID_INVOICE_EVENT_RECEIVED),
+    PAY441("GST State Code Failure", "Unable to find GST State Code from Optimus", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GST_STATE_CODE_FAILURE),
+    PAY442("Invoice Details Not Found", "Invoice details not found in DB for the client", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_DETAILS_NOT_FOUND),
+    PAY443("Operator Details Not Found", "Operator details not found for the user", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.OPERATOR_DETAILS_NOT_FOUND),
+    PAY444("Kafka Events Consumption Failure", "Event not consumed due to error, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.KAFKA_CONSUMPTION_HANDLING_ERROR),
     PAY501("Invalid Request", "Mandatory data in request is missing.", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),

@@ -262,6 +262,21 @@ public class PaymentEventListener {
         }
     }
 
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "generateInvoiceEvent")
+    public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
+        try{
+            AnalyticService.update(event);
+            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
+            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
+            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY048, e);
+        }
+    }
+
     private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
@@ -371,6 +386,11 @@ public class PaymentEventListener {
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
             final BaseTDRResponse tdr = paymentManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
+            eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                    .transaction(event.getTransaction())
+                    .purchaseDetails(event.getPurchaseDetails())
+                    .clientAlias(event.getTransaction().getClientAlias())
+                    .build());
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());

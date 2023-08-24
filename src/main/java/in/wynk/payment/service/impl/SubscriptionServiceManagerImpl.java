@@ -58,7 +58,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.allProducts}")
     private String allProductApiEndPoint;
 
-    @Value("${service.subscription.api.endpoint.plan.personalised}")
+    @Value("${service.subscription.api.endpoint.personalisedPlan}")
     private String personalisedPlanApiEndPoint;
 
     @Value("${service.subscription.api.endpoint.allPlans}")
@@ -145,7 +145,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     public PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan) {
         if (!defaultPlan.isPersonalize()) return defaultPlan;
         try {
-            RequestEntity<UserPersonalisedPlanRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), request, HttpMethod.POST);
+            RequestEntity<UserPersonalisedPlanRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(personalisedPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), request, HttpMethod.POST);
             return Objects.requireNonNull(restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanDTO>>() {
             }).getBody()).getData();
         } catch (Exception e) {

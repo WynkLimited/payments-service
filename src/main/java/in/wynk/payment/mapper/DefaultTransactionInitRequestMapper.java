@@ -3,6 +3,7 @@ package in.wynk.payment.mapper;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.IObjectMapper;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
@@ -40,7 +41,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final Client client = WebPurchaseDetails.class.isAssignableFrom(purchaseDetails.getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)) : clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
         final AbstractTransactionInitRequest transactionInitRequest;
         if (PlanDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
-            transactionInitRequest = planInit(client, paymentGateway, purchaseDetails.getUserDetails(), purchaseDetails.getAppDetails(), purchaseDetails.getPaymentDetails(), (PlanDetails) purchaseDetails.getProductDetails());
+            transactionInitRequest = planInit(client, paymentGateway, purchaseDetails.getUserDetails(), purchaseDetails.getAppDetails(), purchaseDetails.getPaymentDetails(), (PlanDetails) purchaseDetails.getProductDetails(), purchaseDetails.getGeoLocation());
         } else if (PointDetails.class.isAssignableFrom(purchaseDetails.getProductDetails().getClass())) {
             transactionInitRequest = pointInit(client, paymentGateway, purchaseDetails.getUserDetails(), purchaseDetails.getAppDetails(), purchaseDetails.getPaymentDetails(), (PointDetails) purchaseDetails.getProductDetails());
         } else {
@@ -102,8 +103,8 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         return initRequest;
     }
 
-    private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails) {
-        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).build();
+    private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails, IGeoLocation geoLocation) {
+        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).geoDetails(geoLocation).build();
     }
 
     private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PointDetails pointDetails) {
@@ -116,7 +117,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final Client client = request.getClientDetails();
         final AbstractTransactionInitRequest transactionInitRequest;
         if (PlanDetails.class.isAssignableFrom(request.getProductDetails().getClass())) {
-            transactionInitRequest = planInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PlanDetails) request.getProductDetails());
+            transactionInitRequest = planInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PlanDetails) request.getProductDetails(), request.getGeoLocation());
         } else if (PointDetails.class.isAssignableFrom(request.getProductDetails().getClass())) {
             transactionInitRequest = pointInit(client, paymentGateway, request.getUserDetails(), request.getAppDetails(), request.getPaymentDetails(), (PointDetails) request.getProductDetails());
         } else {

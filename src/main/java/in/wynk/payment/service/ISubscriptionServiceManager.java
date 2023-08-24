@@ -2,6 +2,7 @@ package in.wynk.payment.service;
 
 import in.wynk.payment.dto.request.*;
 import in.wynk.subscription.common.dto.*;
+import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 
 import java.util.Collection;
@@ -46,5 +47,7 @@ public interface ISubscriptionServiceManager {
     List<PartnerDTO> getPartners();
 
     List<ProductDTO> getProducts();
+
+    PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan);
 
 }

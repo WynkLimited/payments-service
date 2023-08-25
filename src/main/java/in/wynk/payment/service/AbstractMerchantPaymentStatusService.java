@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -102,7 +103,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     }
 
     private AbstractPack getPackDetails(Transaction transaction,ChargingTransactionStatusRequest request) {
-        final PlanDTO plan = TransactionContext.getPurchaseDetails().map(details -> BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().appDetails((in.wynk.common.dto.AppDetails) details.getAppDetails()).userDetails((in.wynk.common.dto.UserDetails) details.getUserDetails()).geoDetails((in.wynk.common.dto.GeoLocation) details.getGeoLocation()).build(), cachingService.getPlan(request.getPlanId()))).orElse(cachingService.getPlan(request.getPlanId()));
+        final PlanDTO plan = TransactionContext.getPurchaseDetails().map(details -> BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().appDetails(((AppDetails) details.getAppDetails()).toAppDetails()).userDetails(((UserDetails) details.getUserDetails()).toUserDetails(transaction.getUid())).geoDetails((GeoLocation) details.getGeoLocation()).build(), cachingService.getPlan(request.getPlanId()))).orElse(cachingService.getPlan(request.getPlanId()));
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
         AbstractPack abstractPack= null;

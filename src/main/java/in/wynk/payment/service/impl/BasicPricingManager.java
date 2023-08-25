@@ -1,8 +1,6 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.common.dto.AppDetails;
 import in.wynk.common.dto.GeoLocation;
-import in.wynk.common.dto.UserDetails;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dao.entity.CouponCodeLink;
@@ -13,6 +11,8 @@ import in.wynk.coupon.core.service.impl.CouponCodeLinkServiceImpl;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.dto.AppDetails;
+import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
 import in.wynk.payment.dto.request.PointTransactionInitRequest;
@@ -48,7 +48,7 @@ public class BasicPricingManager implements IPricingManager {
     public void computePriceAndApplyDiscount(AbstractTransactionInitRequest request) {
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
-            final PlanDTO selectedPlan = subscriptionManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails((UserDetails) nativeRequest.getUserDetails()).appDetails((AppDetails) nativeRequest.getAppDetails()).geoDetails((GeoLocation) nativeRequest.getGeoDetails()).build(),cachingService.getPlan(nativeRequest.getPlanId()));
+            final PlanDTO selectedPlan = subscriptionManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((UserDetails) nativeRequest.getUserDetails()).toUserDetails(request.getUid())).appDetails(((AppDetails) nativeRequest.getAppDetails()).toAppDetails()).geoDetails((GeoLocation) nativeRequest.getGeoDetails()).build(),cachingService.getPlan(nativeRequest.getPlanId()));
             if (nativeRequest.isAutoRenewOpted()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
                 if (nativeRequest.isAutoRenewOpted()) {

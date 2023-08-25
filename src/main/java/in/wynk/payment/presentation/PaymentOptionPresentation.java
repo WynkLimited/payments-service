@@ -12,6 +12,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.aps.common.HealthStatus;
 import in.wynk.payment.dto.common.*;
@@ -93,7 +94,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                 final boolean trialEligible = payload.getSecond().isTrialEligible();
                 final String planId = payload.getFirst().getProductDetails().getId();
                 final PlanDTO fallback = payCache.getPlan(planId);
-                final UserPersonalisedPlanRequest request = UserPersonalisedPlanRequest.builder().appDetails((AppDetails) payload.getFirst().getAppDetails()).userDetails((UserDetails) payload.getFirst().getUserDetails()).geoDetails((GeoLocation) payload.getFirst().getGeoLocation()).planId(fallback.getId()).build();
+                final UserPersonalisedPlanRequest request = UserPersonalisedPlanRequest.builder().appDetails(((in.wynk.payment.dto.AppDetails) payload.getFirst().getAppDetails()).toAppDetails()).userDetails(((UserDetails) payload.getFirst().getUserDetails()).toUserDetails(payload.getSecond().getEligibilityRequest().getUid())).geoDetails((GeoLocation) payload.getFirst().getGeoLocation()).planId(fallback.getId()).build();
                 PlanDTO plan = serviceManager.getUserPersonalisedPlanOrDefault(request, fallback);
                 OfferDTO offer = payCache.getOffer(plan.getLinkedOfferId());
                 PartnerDTO partner = payCache.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : BaseConstants.DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));

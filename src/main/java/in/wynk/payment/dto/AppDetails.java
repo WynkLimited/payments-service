@@ -84,4 +84,8 @@ public class AppDetails implements IAppDetails, Serializable {
         return getAppObj().getId();
     }
 
+    public in.wynk.common.dto.AppDetails toAppDetails() {
+        return in.wynk.common.dto.AppDetails.builder().deviceType(deviceType).deviceId(deviceId).buildNo(buildNo).service(service).appId(appId).appVersion(appVersion).os(os).build();
+    }
+
 }

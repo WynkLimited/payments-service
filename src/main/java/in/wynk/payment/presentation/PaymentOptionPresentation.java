@@ -1,8 +1,7 @@
 package in.wynk.payment.presentation;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.IPresentation;
-import in.wynk.common.dto.IWynkPresentation;
+import in.wynk.common.dto.*;
 import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
@@ -29,11 +28,13 @@ import in.wynk.payment.dto.response.netbanking.NetBanking;
 import in.wynk.payment.dto.response.paymentoption.*;
 import in.wynk.payment.dto.response.upi.UPI;
 import in.wynk.payment.dto.response.wallet.Wallet;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
@@ -57,6 +58,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
     private final PaymentCachingService payCache;
     private final PaymentGroupCachingService groupCache;
     private final PaymentMethodCachingService methodCache;
+    private final ISubscriptionServiceManager serviceManager;
 
     private final IPresentation<IProductDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> productPresentation = new ProductPresentation();
     private final IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> detailsPresentation = new SavedDetailsPresentation();
@@ -90,7 +92,9 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             public PaymentOptionsDTO.PlanDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
                 final boolean trialEligible = payload.getSecond().isTrialEligible();
                 final String planId = payload.getFirst().getProductDetails().getId();
-                PlanDTO plan = payCache.getPlan(planId);
+                final PlanDTO fallback = payCache.getPlan(planId);
+                final UserPersonalisedPlanRequest request = UserPersonalisedPlanRequest.builder().appDetails((AppDetails) payload.getFirst().getAppDetails()).userDetails((UserDetails) payload.getFirst().getUserDetails()).geoDetails((GeoLocation) payload.getFirst().getGeoLocation()).planId(fallback.getId()).build();
+                PlanDTO plan = serviceManager.getUserPersonalisedPlanOrDefault(request, fallback);
                 OfferDTO offer = payCache.getOffer(plan.getLinkedOfferId());
                 PartnerDTO partner = payCache.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : BaseConstants.DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
                 PaymentOptionsDTO.PlanDetails.PlanDetailsBuilder<?, ?> planDetailsBuilder =

@@ -103,7 +103,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     }
 
     private AbstractPack getPackDetails(Transaction transaction,ChargingTransactionStatusRequest request) {
-        final PlanDTO plan = TransactionContext.getPurchaseDetails().map(details -> BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().appDetails(((AppDetails) details.getAppDetails()).toAppDetails()).userDetails(((UserDetails) details.getUserDetails()).toUserDetails(transaction.getUid())).geoDetails((GeoLocation) details.getGeoLocation()).build(), cachingService.getPlan(request.getPlanId()))).orElse(cachingService.getPlan(request.getPlanId()));
+        final PlanDTO plan = TransactionContext.getPurchaseDetails().map(details -> BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().appDetails(((AppDetails) details.getAppDetails()).toAppDetails()).userDetails(((UserDetails) details.getUserDetails()).toUserDetails(transaction.getUid())).geoDetails((GeoLocation) details.getGeoLocation()).planId(request.getPlanId()).build(), cachingService.getPlan(request.getPlanId()))).orElse(cachingService.getPlan(request.getPlanId()));
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
         AbstractPack abstractPack= null;

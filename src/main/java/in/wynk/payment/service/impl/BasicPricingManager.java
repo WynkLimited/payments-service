@@ -48,7 +48,7 @@ public class BasicPricingManager implements IPricingManager {
     public void computePriceAndApplyDiscount(AbstractTransactionInitRequest request) {
         if (request instanceof PlanTransactionInitRequest) {
             final PlanTransactionInitRequest nativeRequest = (PlanTransactionInitRequest) request;
-            final PlanDTO selectedPlan = subscriptionManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((UserDetails) nativeRequest.getUserDetails()).toUserDetails(request.getUid())).appDetails(((AppDetails) nativeRequest.getAppDetails()).toAppDetails()).geoDetails((GeoLocation) nativeRequest.getGeoDetails()).build(),cachingService.getPlan(nativeRequest.getPlanId()));
+            final PlanDTO selectedPlan = subscriptionManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((UserDetails) nativeRequest.getUserDetails()).toUserDetails(request.getUid())).appDetails(((AppDetails) nativeRequest.getAppDetails()).toAppDetails()).geoDetails((GeoLocation) nativeRequest.getGeoDetails()).planId(nativeRequest.getPlanId()).build(),cachingService.getPlan(nativeRequest.getPlanId()));
             if (nativeRequest.isAutoRenewOpted()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
                 if (nativeRequest.isAutoRenewOpted()) {

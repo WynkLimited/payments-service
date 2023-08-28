@@ -21,5 +21,5 @@ public interface ApsConstant {
     String APS_LOB_AUTO_PAY_REGISTER_WYNK = "AUTO_PAY_REGISTER_WYNK";
     String APS_CARD_TYPE = "cardType";
     String UPI_MANDATE_REVOKE = "upi_mandate_revoke";
-    String APS_MANDATE_AMOUNT = "2";
+    String APS_MANDATE_AMOUNT = "1";
 }

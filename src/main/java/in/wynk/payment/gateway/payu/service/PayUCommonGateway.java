@@ -186,7 +186,7 @@ public class PayUCommonGateway {
         }
     }
 
-    private void syncTransactionWithSourceResponse(PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
+    public void syncTransactionWithSourceResponse(PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
         int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();

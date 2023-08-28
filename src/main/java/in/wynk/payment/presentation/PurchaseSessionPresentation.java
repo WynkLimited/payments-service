@@ -50,6 +50,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
             queryBuilder.addParameter(DEVICE_ID_SHORT, String.valueOf(request.getAppDetails().getDeviceId()));
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
+            queryBuilder.addParameter(INGRESS_INTENT,String.valueOf(request.getMiscellaneousDetails().getIngressIntent()));
             String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
             return WynkResponseEntity.<SessionResponse.SessionData>builder().data(response).build();

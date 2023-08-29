@@ -99,6 +99,9 @@ payment:
     offset:
       day: 0
       hour: 1
+    retry:
+      day: 0
+      hour: 1
   preDebitNotification:
     preOffsetDays: 2
     offset:

@@ -69,6 +69,14 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
+    String INVOICE_UPSERT_RETRY_KEY = "invoiceUpsertRetry";
+    String INVOICE_RETRY = "invoiceRetry";
+    String INVOICE_SEQUENCE_LOCK_KEY = "invoiceSequenceLockKey";
+    String INVOICE_SEQUENCE_PREFIX = "ADL";
+    String TAXABLE_REQUEST = "taxableRequest";
+    String TAXABLE_RESPONSE = "taxableResponse";
+    String INFORM_INVOICE_MESSAGE = "informInvoiceMessage";
+    String INVOICE_CATEGORY = "ONLINE CONTENT SERVICES";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
 
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);

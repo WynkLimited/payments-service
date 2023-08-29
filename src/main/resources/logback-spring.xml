@@ -333,6 +333,38 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
+    <!-- invoice loggers start -->
+
+    <logger name="generateInvoiceEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="generateInvoiceKafkaListener" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="callbackInvoiceKafkaListener" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="generateInvoice" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="publishInvoiceKafka" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="invoiceEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="scheduleInvoiceRetryEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="triggerInvoiceRetryEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="callbackInvoice" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <!-- invoice loggers end -->
+
     <springProfile name="local">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>

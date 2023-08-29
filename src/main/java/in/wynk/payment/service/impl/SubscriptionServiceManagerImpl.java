@@ -151,10 +151,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
             });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-                long today = System.currentTimeMillis();
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+                long today = System.currentTimeMillis();
                 long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if ((furtherDefer > hour * 60 * 60 * 1000 && !Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK)) || (furtherDefer >  2 * 24 * 60 * 60 * 1000 && Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK))) {
+                if (checkDeferred(paymentMethod, furtherDefer)) {
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }
@@ -163,6 +163,12 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY105);
         }
+    }
+
+    private boolean checkDeferred (String paymentMethod, long furtherDefer) {
+        long oneHourWindow = (long) hour * 60 * 60 * 1000;
+        long twoDayPlusOneHourWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneHourWindow;
+        return Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);
     }
 
     @Override

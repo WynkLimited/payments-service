@@ -22,17 +22,18 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.IProductDetails;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.PaymentError;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.InvoiceRetryTask;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.dto.request.PaymentSettlementRequest;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
 import in.wynk.payment.handler.CustomerWinBackHandler;
+import in.wynk.payment.handler.InvoiceRetryTaskHandler;
 import in.wynk.payment.service.*;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
@@ -40,6 +41,7 @@ import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
 import in.wynk.sms.common.message.SmsNotificationMessage;
+import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.stream.producer.IKinesisEventPublisher;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
@@ -86,6 +88,8 @@ public class PaymentEventListener {
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final PaymentCachingService cachingService;
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
+    private final InvoiceService invoiceService;
+    private final IKafkaEventPublisher<String, InvoiceKafkaMessage> kafkaPublisher;
     @Value("${event.stream.dp}")
     private String dpStream;
 
@@ -164,6 +168,81 @@ public class PaymentEventListener {
                 .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
                 .description(Objects.nonNull(event.getDescription()) && event.getDescription().length() > 255 ? event.getDescription().substring(0, Math.min(event.getDescription().length(), 255)) : "No description found")
                 .build()));
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "invoiceEvent")
+    @ClientAware(clientAlias = "#event.clientAlias")
+    public void onInvoiceEvent(InvoiceEvent event) {
+        AnalyticService.update(event);
+        retryRegistry.retry(PaymentConstants.INVOICE_UPSERT_RETRY_KEY).executeRunnable(() -> invoiceService.upsert(
+                Invoice.builder()
+                        .id(event.getInvoiceId())
+                        .transactionId(event.getTransactionId())
+                        .invoiceExternalId(event.getInvoiceExternalId())
+                        .amount(event.getAmount())
+                        .taxAmount(event.getTaxAmount())
+                        .taxableValue(event.getTaxableValue())
+                        .cgst(event.getCgst())
+                        .sgst(event.getSgst())
+                        .igst(event.getIgst())
+                        .createdOn(Calendar.getInstance())
+                        .retryCount(event.getRetryCount())
+                        .build()));
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "scheduleInvoiceRetryEvent")
+    public void onInvoiceRetryEvent(InvoiceRetryEvent event) {
+        try {
+            AnalyticService.update(event);
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
+            final int retryCount = invoice.getRetryCount();
+            if(retryCount < event.getRetries().size()){
+                InvoiceRetryTask invoiceRetryTask = InvoiceRetryTask.from(event);
+                final long attemptDelayedBy = event.getRetries().get(retryCount);
+                final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toSeconds(attemptDelayedBy));
+                taskScheduler.schedule(TaskDefinition.<InvoiceRetryTask>builder()
+                        .entity(invoiceRetryTask)
+                        .handler(InvoiceRetryTaskHandler.class)
+                        .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
+                                .durable(false)
+                                .startAt(taskScheduleTime)
+                                .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0))
+                                .build())
+                        .build());
+            }
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.INVOICE_SCHEDULE_RETRY_FAILURE, "Unable to schedule the invoice retry due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY448, e);
+        }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "triggerInvoiceRetryEvent")
+    public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
+        try{
+            AnalyticService.update(event);
+            //final Transaction transaction = transactionManagerService.get(event.getTransactionId());
+            //final PurchaseDetails purchaseDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findById(transaction.getIdStr()).orElse(null);
+            //final IPurchaseDetails purchaseDetails = purchaseDetailsManger.get(transaction);
+            final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
+                    .invoiceId(event.getInvoiceId())
+                    .msisdn(event.getMsisdn())
+                    .txnId(event.getTransactionId())
+                    //.transaction(TransactionDTO.from(transaction))
+                    //.purchaseDetails(purchaseDetails)
+                    .clientAlias(event.getClientAlias())
+                    .build();
+            kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent));
+
+            final Invoice invoice = invoiceService.getInvoice(event.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
+            invoice.setRetryCount(invoice.getRetryCount() + 1);
+            invoiceService.upsert(invoice);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.INVOICE_TRIGGER_RETRY_FAILURE, "Unable to trigger the invoice retry due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY449, e);
+        }
     }
 
     @EventListener
@@ -268,12 +347,10 @@ public class PaymentEventListener {
     public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
         try{
             AnalyticService.update(event);
-            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
-            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
-            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
+            kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event));
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY048, e);
+            log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the generate invoice event in kafka due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
         }
     }
 
@@ -326,7 +403,6 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
         try {
-            //AnalyticService.update(event); //todo: can be removed as PaymentUserDeactivationMessage is already updated earlier
             transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid(), event.getService());
         } catch (Exception e) {
             throw new WynkRuntimeException(UT999, e);
@@ -387,8 +463,8 @@ public class PaymentEventListener {
             final BaseTDRResponse tdr = paymentManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
             eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
-                    .transaction(event.getTransaction())
-                    .purchaseDetails(event.getPurchaseDetails())
+                    .msisdn(event.getTransaction().getMsisdn())
+                    .txnId(event.getTransaction().getIdStr())
                     .clientAlias(event.getTransaction().getClientAlias())
                     .build());
         }

@@ -18,7 +18,7 @@ import java.util.List;
 public class TaxManagerService implements ITaxManager {
 
     @Override
-    public TaxableResponse calculate (TaxableRequest request) {
+    public TaxableResponse calculate(TaxableRequest request) {
         final double totalTaxAmount = getTotalTaxAmount(request.getAmount(), request.getGstPercentage());
         final List<TaxDetailsDTO> taxDetailsList = new ArrayList<>();
         if(request.getConsumerStateCode().equalsIgnoreCase(request.getSupplierStateCode())){
@@ -32,18 +32,30 @@ public class TaxManagerService implements ITaxManager {
                     .amount(halfTaxAmount)
                     .rate(halfTaxRate)
                     .taxType(InvoiceTaxType.SGST).build());
+            taxDetailsList.add(TaxDetailsDTO.builder()
+                    .amount(0)
+                    .rate(0)
+                    .taxType(InvoiceTaxType.IGST).build());
             return TaxableResponse.builder()
                     .taxAmount(totalTaxAmount)
-                    .taxableAmount(request.getAmount())
+                    .taxableAmount(Math.round((request.getAmount() - totalTaxAmount) * 100.0) / 100.0)
                     .taxDetails(taxDetailsList).build();
         }
+        taxDetailsList.add(TaxDetailsDTO.builder()
+                .amount(0)
+                .rate(0)
+                .taxType(InvoiceTaxType.CGST).build());
+        taxDetailsList.add(TaxDetailsDTO.builder()
+                .amount(0)
+                .rate(0)
+                .taxType(InvoiceTaxType.SGST).build());
         taxDetailsList.add(TaxDetailsDTO.builder()
                 .amount(totalTaxAmount)
                 .rate(request.getGstPercentage())
                 .taxType(InvoiceTaxType.IGST).build());
         return TaxableResponse.builder()
                 .taxAmount(totalTaxAmount)
-                .taxableAmount(request.getAmount())
+                .taxableAmount(Math.round((request.getAmount() - totalTaxAmount) * 100.0) / 100.0)
                 .taxDetails(taxDetailsList).build();
     }
 

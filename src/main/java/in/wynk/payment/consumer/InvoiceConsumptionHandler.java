@@ -5,10 +5,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.dto.invoice.GenerateInvoiceEvent;
-import in.wynk.payment.dto.invoice.GenerateInvoiceRequest;
-import in.wynk.payment.dto.invoice.InvoiceCallbackEvent;
-import in.wynk.payment.dto.invoice.InvoiceEvent;
+import in.wynk.payment.dto.invoice.*;
 import in.wynk.payment.service.InvoiceManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,7 +14,7 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceEvent> {
+public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMessage> {
 
     private final InvoiceManagerService invoiceManager;
 
@@ -26,36 +23,42 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceEvent> {
     }
 
     @Override
-    @AnalyseTransaction(name="generateInvoice")
-    public void generateInvoice(InvoiceEvent event) {
+    @AnalyseTransaction(name = "generateInvoice")
+    public void generateInvoice(InvoiceKafkaMessage message) {
         try {
-            GenerateInvoiceEvent dto = (GenerateInvoiceEvent) event;
+            GenerateInvoiceKafkaMessage dto = (GenerateInvoiceKafkaMessage) message;
             AnalyticService.update(dto);
-            if (ObjectUtils.isEmpty(dto) || Objects.isNull(dto.getTransaction()) || Objects.isNull(dto.getPurchaseDetails())) {
+            if (ObjectUtils.isEmpty(dto) || Objects.isNull(dto.getTxnId()) || Objects.isNull(dto.getMsisdn())) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY440);
             }
             invoiceManager.generate(GenerateInvoiceRequest.builder()
-                    .transaction(dto.getTransaction())
-                    .purchaseDetails(dto.getPurchaseDetails())
+                    .invoiceId(dto.getInvoiceId())
+                    .msisdn(dto.getMsisdn())
+                    .clientAlias(dto.getClientAlias())
+                    .txnId(dto.getTxnId())
                     .build());
-        } catch (WynkRuntimeException ex) {
-            throw ex;
         } catch (Exception ex) {
-            log.error(PaymentLoggingMarker.KAFKA_CONSUMPTION_HANDLING_ERROR, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY444, ex);
+            log.error(PaymentLoggingMarker.INVOICE_GENERATION_FAILED, ex.getMessage(), ex);
         }
     }
 
     @Override
-    @AnalyseTransaction(name="invoiceCallback")
-    public void processCallback(InvoiceEvent event) {
+    @AnalyseTransaction(name = "callbackInvoice")
+    public void processCallback(InvoiceKafkaMessage message) {
         try{
-            InvoiceCallbackEvent dto = (InvoiceCallbackEvent) event;
+            CallbackInvoiceKafkaMessage dto = (CallbackInvoiceKafkaMessage) message;
             AnalyticService.update(dto);
-
+            if (ObjectUtils.isEmpty(dto) || Objects.isNull(dto.getLob()) || Objects.isNull(dto.getStatus())) {
+                throw new WynkRuntimeException(PaymentErrorType.PAY444);
+            }
+            invoiceManager.processCallback(InvoiceCallbackRequest.builder()
+                    .lob(dto.getLob())
+                    .customerAccountNumber(dto.getCustomerAccountNumber())
+                    .invoiceId(dto.getInvoiceId())
+                    .status(dto.getStatus())
+                    .description(dto.getDescription()).build());
         } catch(Exception ex){
-            log.error(PaymentLoggingMarker.KAFKA_CONSUMPTION_HANDLING_ERROR, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY444, ex);
+            log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
         }
     }
 }

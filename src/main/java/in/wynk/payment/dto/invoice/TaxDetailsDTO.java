@@ -24,4 +24,13 @@ public class TaxDetailsDTO {
     private double rate;
     @Analysed
     private double amount;
+
+    @Override
+    public String toString () {
+        return "TaxDetailsDTO{" +
+                "taxType=" + taxType +
+                ", rate=" + rate +
+                ", amount=" + amount +
+                '}';
+    }
 }

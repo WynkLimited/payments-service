@@ -1,95 +1,220 @@
 package in.wynk.payment.service;
 
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.advice.TimeIt;
-import in.wynk.cache.aspect.advice.CacheEvict;
-import in.wynk.cache.aspect.advice.Cacheable;
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.Invoice;
-import in.wynk.payment.core.dao.entity.InvoiceDetails;
-import in.wynk.payment.core.dao.repository.InvoiceDao;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.event.GenerateInvoiceEvent;
+import in.wynk.payment.core.event.InvoiceEvent;
+import in.wynk.payment.core.event.InvoiceRetryEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.invoice.*;
-import in.wynk.stream.producer.IEventPublisher;
+import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
+import in.wynk.vas.client.service.InvoiceVasClientService;
 import in.wynk.vas.client.service.VasClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
-import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.common.constant.BaseConstants.DEFAULT_GST_STATE_CODE;
-import static in.wynk.common.constant.BaseConstants.UNKNOWN_GST_STATE_CODE;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Slf4j
 @Service(BeanConstant.INVOICE_MANAGER)
 @RequiredArgsConstructor
 public class InvoiceManagerService implements InvoiceManager {
 
-    private final InvoiceDao invoiceDao;
+    private final Gson gson;
+    private final InvoiceService invoiceService;
     private final VasClientService vasClientService;
+    private final InvoiceVasClientService invoiceVasClientService;
+    private final ITransactionManagerService transactionManagerService;
+    private final PaymentCachingService cachingService;
     private final ITaxManager taxManager;
     private final GSTStateCodesCachingService stateCodesCachingService;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final InvoiceNumberGeneratorService invoiceNumberGenerator;
-    private final IEventPublisher<InformInvoiceMessage> eventPublisher;
+    private final IKafkaEventPublisher<String, InvoiceKafkaMessage> kafkaEventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
+    @TransactionAware(txnId = "#request.txnId")
+    @ClientAware(clientAlias = "#request.clientAlias")
     public void generate(GenerateInvoiceRequest request) {
-        log.info("generate invoice request received");
-        AnalyticService.update(request);
-        final MsisdnOperatorDetails operatorDetails = getOperatorDetails(request.getMsisdn());
-        final String accessStateCode = getAccessStateCode(operatorDetails);
-        final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getTransaction().getClientAlias());
-        if(Objects.nonNull(invoiceDetails)){
+        try{
+            final Transaction transaction = TransactionContext.get();
+            final MsisdnOperatorDetails operatorDetails = getOperatorDetails(request.getMsisdn());
+            final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
+            final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails);
+
             TaxableRequest taxableRequest = TaxableRequest.builder()
                     .consumerStateCode(accessStateCode)
                     .supplierStateCode(DEFAULT_GST_STATE_CODE)
                     .consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
                     .supplierStateName(stateCodesCachingService.get(DEFAULT_GST_STATE_CODE).getStateName())
-                    .amount(request.getTransaction().getAmount())
+                    .amount(transaction.getAmount())
                     .gstPercentage(invoiceDetails.getGstPercentage())
                     .build();
-            AnalyticService.update(taxableRequest);
+            AnalyticService.update(TAXABLE_REQUEST, taxableRequest.toString());
             final TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-            AnalyticService.update(taxableResponse);
-            final InformInvoiceMessage informInvoiceMessage = generateInformInvoiceEvent(operatorDetails, taxableResponse, invoiceDetails, request);
-            AnalyticService.update(informInvoiceMessage);
-            eventPublisher.publish(informInvoiceMessage);
+            AnalyticService.update(TAXABLE_RESPONSE, taxableResponse.toString());
+
+            if(Objects.isNull(request.getInvoiceId())){
+                final String invoiceID = invoiceNumberGenerator.generateInvoiceNumber(request.getClientAlias());
+                //publish invoice message to kafka
+                publishInvoiceMessage(operatorDetails, taxableResponse, invoiceDetails, request, invoiceID);
+                //save invoice details in DB
+                saveInvoiceDetails(transaction, invoiceID, taxableResponse);
+            } else {
+                final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
+                //publish invoice message to kafka
+                publishInvoiceMessage(operatorDetails, taxableResponse, invoiceDetails, request, request.getInvoiceId());
+                //update the retry count
+                invoice.setRetryCount(invoice.getRetryCount() + 1);
+                invoiceService.upsert(invoice);
+            }
+            //throw new WynkRuntimeException(PaymentErrorType.PAY442);
+        } catch(Exception ex){
+            scheduleInvoiceGenerationRetry(request.getInvoiceId(), request.getMsisdn(), request.getClientAlias(), request.getTxnId());
+            throw new WynkRuntimeException(PaymentErrorType.PAY446, ex);
         }
-        throw new WynkRuntimeException(PaymentErrorType.PAY442);
+    }
+
+    private void scheduleInvoiceGenerationRetry(String invoiceId, String msisdn, String clientAlias, String txnId) {
+        final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(clientAlias);
+        final List<Long> retries = invoiceDetails.getRetries();
+        if(Objects.nonNull(retries)){
+            applicationEventPublisher.publishEvent(InvoiceRetryEvent.builder()
+                    .invoiceId(invoiceId)
+                    .msisdn(msisdn)
+                    .clientAlias(clientAlias)
+                    .txnId(txnId)
+                    .retries(retries).build());
+        } else {
+            log.info(PaymentLoggingMarker.INVOICE_RETRIES_NOT_CONFIGURED, "Won't retry invoice generation as retries not configured for the client");
+        }
+    }
+
+    @AnalyseTransaction(name = "publishInvoiceKafka")
+    private void publishInvoiceMessage(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, GenerateInvoiceRequest request, String invoiceNumber){
+        try{
+            final Transaction transaction = TransactionContext.get();
+            final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(operatorDetails, taxableResponse, invoiceDetails, transaction, invoiceNumber, plan);
+            AnalyticService.update(INFORM_INVOICE_MESSAGE, gson.toJson(informInvoiceKafkaMessage));
+            AnalyticService.update(informInvoiceKafkaMessage);
+            kafkaEventPublisher.publish(informInvoiceKafkaMessage);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the inform invoice event in kafka due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
+        }
+    }
+
+    private void saveInvoiceDetails(Transaction transaction, String invoiceNumber, TaxableResponse taxableResponse){
+        final InvoiceEvent.InvoiceEventBuilder builder = InvoiceEvent.builder()
+                .clientAlias(transaction.getClientAlias())
+                .invoiceId(invoiceNumber)
+                .transactionId(transaction.getIdStr())
+                .amount(transaction.getAmount())
+                .taxAmount(taxableResponse.getTaxAmount())
+                .taxableValue(taxableResponse.getTaxableAmount())
+                .retryCount(0);
+        final List<TaxDetailsDTO> list = taxableResponse.getTaxDetails();
+        for(TaxDetailsDTO dto : list){
+            switch (dto.getTaxType()) {
+                case CGST:
+                    builder.cgst(dto.getAmount());
+                    break;
+                case SGST:
+                    builder.sgst(dto.getAmount());
+                    break;
+                case IGST:
+                    builder.igst(dto.getAmount());
+                    break;
+            }
+        }
+        builder.createdOn(Calendar.getInstance());
+        applicationEventPublisher.publishEvent(builder.build());
+    }
+    @Override
+    @TransactionAware(txnId = "#tid")
+    public byte[] download(String txnId) {
+        final Transaction transaction = TransactionContext.get();
+        //final Transaction transaction = transactionManagerService.get(txnId);
+        //final PurchaseDetails purchaseDetails =RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findById(txnId).orElse(null);
+        //final IPurchaseDetails purchaseDetails = purchaseDetailsManger.get(transaction);
+        final Optional<Invoice> invoiceOptional = invoiceService.getInvoiceByTransactionId(txnId);
+        if(!invoiceOptional.isPresent()){
+            applicationEventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                    .msisdn(transaction.getMsisdn())
+                    .txnId(txnId)
+                    //.transaction(TransactionDTO.from(transaction))
+                    //.purchaseDetails(purchaseDetails)
+                    .clientAlias(transaction.getClientAlias())
+                    .build());
+            throw new WynkRuntimeException(PaymentErrorType.PAY445);
+        }
+        try{
+            final Invoice invoice = invoiceOptional.get();
+            if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+                applicationEventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                        .invoiceId(invoice.getId())
+                        .msisdn(transaction.getMsisdn())
+                        .txnId(txnId)
+                        //.transaction(TransactionDTO.from(transaction))
+                        //.purchaseDetails(purchaseDetails)
+                        .clientAlias(transaction.getClientAlias())
+                        .build());
+                throw new WynkRuntimeException(PaymentErrorType.PAY446);
+                //todo : handle failure exceptions
+            }
+            //final byte[] data = invoiceVasClientService.download(invoice.getCustomerAccountNumber(), invoice.getId(), invoice.getLob());
+            /*return CoreInvoiceDownloadResponse.builder()
+                    .invoice(invoice)
+                    .data(data)
+                    .build();*/
+            final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(transaction.getClientAlias());
+            return invoiceVasClientService.download(invoice.getCustomerAccountNumber(), invoice.getId(), invoiceDetails.getLob());
+        } catch(Exception ex){
+            log.error(PaymentLoggingMarker.DOWNLOAD_INVOICE_ERROR, ex.getMessage(), ex);
+            throw new WynkRuntimeException(PaymentErrorType.PAY451, ex);
+        }
     }
 
     @Override
-    public byte[] download (String txnId) {
-        return new byte[0];
-    }
+    public void processCallback(InvoiceCallbackRequest request) {
+        try{
+            final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
+            invoice.setUpdatedOn(Calendar.getInstance());
+            invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
+            invoice.setDescription(request.getDescription());
+            invoice.setStatus(request.getStatus());
+            invoice.setRetryCount(invoice.getRetryCount());
+            invoiceService.upsert(invoice);
 
-    @Override
-    @TimeIt
-    @Transactional(readOnly = true, timeout = 1)
-    @Cacheable(cacheName = "Invoice", cacheKey = "'id:'+ #invoiceId", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
-    public Invoice getInvoice(String invoiceId) {
-        return invoiceDao.findById(invoiceId).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY442));
-    }
-
-    @Override
-    @TimeIt
-    @Transactional(rollbackFor = Exception.class, timeout = 1)
-    @CacheEvict(cacheName = "Invoice", cacheKey = "'id:'+ #invoice.getId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
-    public void save(Invoice invoice) {
-        invoiceDao.save(invoice);
+            if(!request.getStatus().equalsIgnoreCase("SUCCESS")){
+                final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
+                scheduleInvoiceGenerationRetry(request.getInvoiceId(), transaction.getMsisdn(), transaction.getClientAlias(), transaction.getIdStr());
+            }
+        } catch(Exception ex){
+            log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
+            throw new WynkRuntimeException(PaymentErrorType.PAY447, ex);
+        }
     }
 
     private MsisdnOperatorDetails getOperatorDetails(String msisdn) {
@@ -107,13 +232,20 @@ public class InvoiceManagerService implements InvoiceManager {
         }
     }
 
-    private String getAccessStateCode(MsisdnOperatorDetails operatorDetails) {
-        String gstStateCode = UNKNOWN_GST_STATE_CODE;
+    private String getAccessStateCode(MsisdnOperatorDetails operatorDetails, InvoiceDetails invoiceDetails) {
+        String gstStateCode = (Strings.isNullOrEmpty(invoiceDetails.getDefaultGSTStateCode())) ? DEFAULT_GST_STATE_CODE: invoiceDetails.getDefaultGSTStateCode();
         try {
             if (Objects.nonNull(operatorDetails) &&
                     Objects.nonNull(operatorDetails.getUserMobilityInfo()) &&
                     Objects.nonNull(operatorDetails.getUserMobilityInfo().getGstStateCode())) {
                 gstStateCode = operatorDetails.getUserMobilityInfo().getGstStateCode().trim();
+            } else {
+                final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
+                if(Objects.nonNull(purchaseDetails) &&
+                        Objects.nonNull(purchaseDetails.getGeoLocation()) &&
+                        Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode())){
+                    gstStateCode = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getId();
+                }
             }
         } catch (Exception ex) {
             log.error(PaymentLoggingMarker.GST_STATE_CODE_FAILURE, ex.getMessage(), ex);
@@ -121,77 +253,4 @@ public class InvoiceManagerService implements InvoiceManager {
         }
         return gstStateCode;
     }
-
-    private InformInvoiceMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, GenerateInvoiceRequest request){
-        final InformInvoiceMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails);
-        final InformInvoiceMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request);
-        final List<InformInvoiceMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(taxableResponse, invoiceDetails);
-        final InformInvoiceMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(taxableResponse);
-        return InformInvoiceMessage.builder()
-                .lobInvoice(InformInvoiceMessage.LobInvoice.builder()
-                        .customerDetails(customerDetails)
-                        .customerInvoiceDetails(customerInvoiceDetails)
-                        .customerRechargeRates(customerRechargeRates)
-                        .taxDetails(taxDetails)
-                        .build())
-                .build();
-    }
-
-    private InformInvoiceMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails (GenerateInvoiceRequest request) {
-        final String invoiceNumber = invoiceNumberGenerator.generateInvoiceNo(request);
-        return InformInvoiceMessage.LobInvoice.CustomerInvoiceDetails.builder()
-                .invoiceDate(new Date().toString())
-                .paymentTransactionId(request.getTransaction().getIdStr())
-                .invoiceNumber(invoiceNumber)
-                .invoiceAmount(request.getTransaction().getAmount())
-                .paymentDate(request.getTransaction().getInitTime().toString())
-                .paymentMode(request.getTransaction().getPaymentChannel().getCode())
-                .build();
-    }
-
-    private InformInvoiceMessage.LobInvoice.CustomerDetails generateCustomerDetails (MsisdnOperatorDetails operatorDetails) {
-        final InformInvoiceMessage.LobInvoice.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = InformInvoiceMessage.LobInvoice.CustomerDetails.builder();
-        if(Objects.nonNull(operatorDetails) && Objects.nonNull(operatorDetails.getUserMobilityInfo())){
-            customerDetailsBuilder.address(operatorDetails.getUserMobilityInfo().getAddress())
-                    .alternateNumber(Long.parseLong(operatorDetails.getUserMobilityInfo().getAlternateContactNumber()))
-                    .customerAccountNo(operatorDetails.getUserMobilityInfo().getCustomerID())
-                    .customerClassification(operatorDetails.getUserMobilityInfo().getCustomerClassification())
-                    .customerType(operatorDetails.getUserMobilityInfo().getCustomerType())
-                    .gstn(operatorDetails.getUserMobilityInfo().getGstNumber())
-                    .emailId(operatorDetails.getUserMobilityInfo().getEmailID())
-                    .pinCode(operatorDetails.getUserMobilityInfo().getPincode())
-                    .panNumber(operatorDetails.getUserMobilityInfo().getPanNumber())
-                    .name(operatorDetails.getUserMobilityInfo().getFirstName() + " " + operatorDetails.getUserMobilityInfo().getLastName())
-                    .stateCode(operatorDetails.getUserMobilityInfo().getGstStateCode())
-                    .stateName(operatorDetails.getUserMobilityInfo().getCircle());
-        }
-        return customerDetailsBuilder.build();
-    }
-
-    private List<InformInvoiceMessage.LobInvoice.CustomerRechargeRate> generateCustomerRechargeRate (TaxableResponse taxableResponse, InvoiceDetails invoiceDetails) {
-        final List<InformInvoiceMessage.LobInvoice.CustomerRechargeRate> customerRechargeRatesList = new ArrayList<>();
-        customerRechargeRatesList.add(InformInvoiceMessage.LobInvoice.CustomerRechargeRate.builder()
-                .rate(taxableResponse.getTaxableAmount())
-                .hsnCodeNo(invoiceDetails.getSACCode())
-                .category("Prepaid")
-                .unit(1)
-                .build());
-        return customerRechargeRatesList;
-    }
-    private InformInvoiceMessage.LobInvoice.TaxDetails generateTaxDetails (TaxableResponse taxableResponse) {
-        final List<InformInvoiceMessage.LobInvoice.TaxDetails.SubRow> taxDetailsList = new ArrayList<>();
-        for(TaxDetailsDTO dto : taxableResponse.getTaxDetails()){
-            taxDetailsList.add(InformInvoiceMessage.LobInvoice.TaxDetails.SubRow.builder()
-                    .amount(String.valueOf(dto.getAmount()))
-                    .taxType(dto.getTaxType().getType())
-                    .rate(String.valueOf(dto.getRate()))
-                    .build());
-        }
-        return InformInvoiceMessage.LobInvoice.TaxDetails.builder()
-                .taxAmount(String.valueOf(taxableResponse.getTaxAmount()))
-                .taxableValue(String.valueOf(taxableResponse.getTaxableAmount()))
-                .subRow(taxDetailsList)
-                .build();
-    }
-
 }

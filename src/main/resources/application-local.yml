@@ -509,11 +509,18 @@ webview:
 
 wynk:
   kafka:
-    enabled: false
+    enabled: true
+    nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+    producers:
+      invoice:
+        generate:
+          topic: wcf_local.generate_invoice
+        inform:
+          topic: wcf_local.inform_invoice
     consumers:
       enabled: true
       listenerFactory:
-        discovery:
+        invoice:
           - concurrency: 3
             enabled: true
             factoryDetails:
@@ -541,7 +548,7 @@ wynk:
               maxPollInterval: 600000
               maxPollRecords: 50
               sessionTimeout: 180000
-              topic: wcf_local.invoice_callback
+              topic: wcf_local.callback_invoice
               valueDeserializer: in.wynk.payment.consumer.InvoiceCallbackKafkaSerializer
             name: INVOICE_CALLBACK_BEAN
   multi:

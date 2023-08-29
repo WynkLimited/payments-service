@@ -2,9 +2,9 @@ package in.wynk.payment.consumer;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.dto.invoice.GenerateInvoiceEvent;
-import in.wynk.payment.dto.invoice.InvoiceCallbackEvent;
-import in.wynk.payment.dto.invoice.InvoiceEvent;
+import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.CallbackInvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.stream.constant.StreamMarker;
 import in.wynk.stream.consumer.impl.AbstractKafkaEventConsumer;
 import lombok.extern.slf4j.Slf4j;
@@ -18,33 +18,33 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @DependsOn("kafkaConsumerConfig")
-public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, InvoiceEvent> {
+public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, InvoiceKafkaMessage> {
 
-    private final InvoiceHandler<InvoiceEvent> invoiceHandler;
+    private final InvoiceHandler<InvoiceKafkaMessage> invoiceHandler;
 
     @Value("${wynk.kafka.consumers.enabled}")
     private boolean enabled;
 
     private final KafkaListenerEndpointRegistry endpointRegistry;
 
-    public InvoiceKafkaConsumer (InvoiceHandler<InvoiceEvent> invoiceHandler, KafkaListenerEndpointRegistry endpointRegistry) {
+    public InvoiceKafkaConsumer (InvoiceHandler<InvoiceKafkaMessage> invoiceHandler, KafkaListenerEndpointRegistry endpointRegistry) {
         super();
         this.invoiceHandler = invoiceHandler;
         this.endpointRegistry = endpointRegistry;
     }
 
     @Override
-    public void consume(InvoiceEvent event) throws WynkRuntimeException {
-        if(GenerateInvoiceEvent.class.isAssignableFrom(event.getClass())){
-            invoiceHandler.generateInvoice(event);
-        } else if (InvoiceCallbackEvent.class.isAssignableFrom(event.getClass())) {
-            invoiceHandler.processCallback(event);
+    public void consume(InvoiceKafkaMessage message) throws WynkRuntimeException {
+        if(GenerateInvoiceKafkaMessage.class.isAssignableFrom(message.getClass())){
+            invoiceHandler.generateInvoice(message);
+        } else if (CallbackInvoiceKafkaMessage.class.isAssignableFrom(message.getClass())) {
+            invoiceHandler.processCallback(message);
         }
     }
 
-    @KafkaListener(id = "invoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.discovery[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.discovery[0].name}")
+    @KafkaListener(id = "generateInvoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.invoice[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.invoice[0].name}")
     @AnalyseTransaction(name = "generateInvoiceKafkaListener")
-    protected void listenGenerateInvoice(ConsumerRecord<String, GenerateInvoiceEvent> consumerRecord) {
+    protected void listenGenerateInvoice(ConsumerRecord<String, GenerateInvoiceKafkaMessage> consumerRecord) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
             consume(consumerRecord.value());
@@ -53,9 +53,9 @@ public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, Inv
         }
     }
 
-    @KafkaListener(id = "invoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.discovery[1].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.discovery[1].name}")
-    @AnalyseTransaction(name = "invoiceCallbackKafkaListener")
-    protected void listenInvoiceCallback(ConsumerRecord<String, InvoiceCallbackEvent> consumerRecord) {
+    @KafkaListener(id = "callbackInvoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.invoice[1].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.invoice[1].name}")
+    @AnalyseTransaction(name = "callbackInvoiceKafkaListener")
+    protected void listenInvoiceCallback(ConsumerRecord<String, CallbackInvoiceKafkaMessage> consumerRecord) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
             consume(consumerRecord.value());

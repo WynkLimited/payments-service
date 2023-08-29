@@ -8,13 +8,15 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class GenerateInvoiceRequest {
+public class InvoiceCallbackRequest {
     @Analysed
-    private final String invoiceId;
+    private String lob;
     @Analysed
-    private final String msisdn;
+    private String customerAccountNumber;
     @Analysed
-    private final String clientAlias;
+    private String invoiceId;
     @Analysed
-    private final String txnId;
+    private String status;
+    @Analysed
+    private String description;
 }

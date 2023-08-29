@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -13,13 +14,14 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AnalysedEntity
-public class InvoiceCallbackEvent extends InvoiceEvent {
+@RequiredArgsConstructor
+public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage {
     @Analysed
     @Field("LOB")
     private String lob;
     @Analysed
     @Field("customerAccountNo")
-    private long customerAccountNumber;
+    private String customerAccountNumber;
     @Analysed
     @Field("invoiceNumber")
     private String invoiceId;
@@ -27,9 +29,4 @@ public class InvoiceCallbackEvent extends InvoiceEvent {
     private String status;
     @Analysed
     private String description;
-
-    public static enum State {
-        FAILED,
-        SUCCESS
-    }
 }

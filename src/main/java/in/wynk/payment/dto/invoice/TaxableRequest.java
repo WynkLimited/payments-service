@@ -21,4 +21,16 @@ public class TaxableRequest {
     private final double amount;
     @Analysed
     private final double gstPercentage;
+
+    @Override
+    public String toString () {
+        return "TaxableRequest{" +
+                "supplierStateCode='" + supplierStateCode + '\'' +
+                ", consumerStateCode='" + consumerStateCode + '\'' +
+                ", supplierStateName='" + supplierStateName + '\'' +
+                ", consumerStateName='" + consumerStateName + '\'' +
+                ", amount=" + amount +
+                ", gstPercentage=" + gstPercentage +
+                '}';
+    }
 }

@@ -18,5 +18,6 @@ public class SupportingDetails {
     private boolean saveSupported;
     @JsonProperty("auto_renew_supported")
     private boolean autoRenewSupported;
-
+    @JsonProperty("is_mandate_supported")
+    private boolean mandateSupported;
 }

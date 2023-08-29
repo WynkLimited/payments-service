@@ -47,7 +47,6 @@ import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
-import static in.wynk.payment.dto.aps.common.ApsConstant.APS_MANDATE_AMOUNT;
 
 /**
  * @author Nishesh Pandey
@@ -57,12 +56,13 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
 
     private final String CHARGING_ENDPOINT;
     private final String UPI_CHARGING_ENDPOINT;
+    private final String APS_MANDATE_AMOUNT;
 
     private final ApsCommonGatewayService common;
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final Map<FlowType, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>> chargingDelegate = new HashMap<>();
 
-    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
+    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common, String mandateAmount) {
         this.common = common;
         this.UPI_CHARGING_ENDPOINT = upiChargeEndpoint;
         this.CHARGING_ENDPOINT = commonChargeEndpoint;
@@ -70,6 +70,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
         this.chargingDelegate.put(UPI, new UpiCharging());
         this.chargingDelegate.put(NET_BANKING, new NetBankingCharging());
         this.paymentMethodCachingService = paymentMethodCachingService;
+        this.APS_MANDATE_AMOUNT = mandateAmount;
     }
 
     @Override

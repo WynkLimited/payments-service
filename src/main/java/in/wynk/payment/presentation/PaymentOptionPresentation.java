@@ -174,6 +174,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .supportingDetails(UPI.UpiSupportingDetails.builder()
                                 .suffixes(methodDTO.getSuffixes())
                                 .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .mandateSupported(methodDTO.isMandateSupported())
                                 .custom(methodDTO.getMeta().containsKey(IS_CUSTOM_UPI) && (Boolean) methodDTO.getMeta().get(IS_CUSTOM_UPI))
                                 .intent(methodDTO.getMeta().containsKey(INTENT_SUPPORT) && (Boolean) methodDTO.getMeta().get(INTENT_SUPPORT))
                                 .paymentTimer((Double) methodDTO.getMeta().get(POLLING_TIMER))
@@ -207,6 +208,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .build())
                         .supportingDetails(SupportingDetails.builder()
                                 .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .mandateSupported(methodDTO.isMandateSupported())
                                 .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
                                 .build())
                         .build();
@@ -234,6 +236,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .build())
                         .supportingDetails(SupportingDetails.builder()
                                 .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .mandateSupported(methodDTO.isMandateSupported())
                                 .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
                                 .build())
                         .build();
@@ -260,6 +263,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .build())
                         .supportingDetails(SupportingDetails.builder()
                                 .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .mandateSupported(methodDTO.isMandateSupported())
                                 .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
                                 .build())
                         .build();
@@ -285,6 +289,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .icon(methodDTO.getIconUrl()).build())
                         .supportingDetails(SupportingDetails.builder()
                                 .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .mandateSupported(methodDTO.isMandateSupported())
                                 .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
                                 .build()).build();
             }
@@ -309,6 +314,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                                 .build())
                         .supportingDetails(SupportingDetails.builder()
                                 .autoRenewSupported(methodDTO.isAutoRenewSupported())
+                                .mandateSupported(methodDTO.isMandateSupported())
                                 .saveSupported(Objects.nonNull(methodDTO.getMeta().get(SAVE_SUPPORTED)) && (boolean) methodDTO.getMeta().get(SAVE_SUPPORTED))
                                 .build())
                         .build();

@@ -88,7 +88,6 @@ public class InvoiceManagerService implements InvoiceManager {
                 invoice.setRetryCount(invoice.getRetryCount() + 1);
                 invoiceService.upsert(invoice);
             }
-            //throw new WynkRuntimeException(PaymentErrorType.PAY442);
         } catch(Exception ex){
             scheduleInvoiceGenerationRetry(request.getInvoiceId(), request.getMsisdn(), request.getClientAlias(), request.getTxnId());
             throw new WynkRuntimeException(PaymentErrorType.PAY446, ex);

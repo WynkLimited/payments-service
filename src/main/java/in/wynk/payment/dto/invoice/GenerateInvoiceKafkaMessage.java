@@ -22,19 +22,13 @@ public class GenerateInvoiceKafkaMessage extends InvoiceKafkaMessage {
     private String clientAlias;
     @Analysed
     private String txnId;
-    /*@Analysed
-    private TransactionDTO transaction;
-    @Autowired
-    private PurchaseDetails purchaseDetails;*/
 
     public static GenerateInvoiceKafkaMessage from(GenerateInvoiceEvent event){
         return GenerateInvoiceKafkaMessage.builder()
                 .invoiceId(event.getInvoiceId())
                 .msisdn(event.getMsisdn())
                 .txnId(event.getTxnId())
-                //.transaction(event.getTransaction())
                 .clientAlias(event.getClientAlias())
-                //.purchaseDetails(event.getPurchaseDetails())
                 .build();
     }
 }

@@ -223,15 +223,10 @@ public class PaymentEventListener {
     public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
         try{
             AnalyticService.update(event);
-            //final Transaction transaction = transactionManagerService.get(event.getTransactionId());
-            //final PurchaseDetails purchaseDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findById(transaction.getIdStr()).orElse(null);
-            //final IPurchaseDetails purchaseDetails = purchaseDetailsManger.get(transaction);
             final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
                     .invoiceId(event.getInvoiceId())
                     .msisdn(event.getMsisdn())
                     .txnId(event.getTransactionId())
-                    //.transaction(TransactionDTO.from(transaction))
-                    //.purchaseDetails(purchaseDetails)
                     .clientAlias(event.getClientAlias())
                     .build();
             kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent));

@@ -8,6 +8,8 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.util.List;
+
 @Getter
 @SuperBuilder
 @Document("invoice_details")
@@ -16,6 +18,12 @@ public class InvoiceDetails extends MongoBaseEntity<String> {
 
     @Field("gst_percentage")
     private double gstPercentage;
+    @Field("default_gst_state_code")
+    private String defaultGSTStateCode;
+    @Field("lob")
+    private String lob;
+    @Field("retry_in_seconds")
+    private List<Long> retries;
     private String category;
 
     @Field("supplier_info")

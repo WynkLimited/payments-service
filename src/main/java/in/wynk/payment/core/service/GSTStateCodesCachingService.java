@@ -67,6 +67,11 @@ public class GSTStateCodesCachingService implements IEntityCacheService<GSTState
         return delegate.get(cacheBean).get(key);
     }
 
+    public GSTStateCodes getByISOStateCode(String key) {
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IGSTStateCodeDao.class.getName();
+        return delegate.get(cacheBean).getAll().stream().filter(sc -> sc.getStateCode().equalsIgnoreCase(key)).findAny().orElse(null);
+    }
+
     @Override
     public GSTStateCodes save(GSTStateCodes code) {
         final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IGSTStateCodeDao.class.getName();
@@ -107,7 +112,7 @@ public class GSTStateCodesCachingService implements IEntityCacheService<GSTState
         }
 
         private void load() {
-            Collection<GSTStateCodes> codes = getAllByState(State.ACTIVE);
+            Collection<GSTStateCodes> codes = getAll();
             if (CollectionUtils.isNotEmpty(codes) && writeLock.tryLock()) {
                 try {
                     Map<String, GSTStateCodes> temp = codes.stream().collect(Collectors.toMap(GSTStateCodes::getId, Function.identity()));
@@ -134,7 +139,7 @@ public class GSTStateCodesCachingService implements IEntityCacheService<GSTState
 
         @Override
         public Collection<GSTStateCodes> getAll() {
-            return gstStateCodesMap.values();
+            return dao.findAll();
         }
 
         @Override

@@ -5,10 +5,12 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @Builder
 @AnalysedEntity
-public class GenerateInvoiceEvent {
+public class InvoiceRetryEvent {
     @Analysed
     private String invoiceId;
     @Analysed
@@ -17,4 +19,6 @@ public class GenerateInvoiceEvent {
     private String txnId;
     @Analysed
     private String clientAlias;
+    @Analysed
+    private List<Long> retries;
 }

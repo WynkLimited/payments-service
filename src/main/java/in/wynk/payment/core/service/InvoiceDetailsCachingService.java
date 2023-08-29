@@ -53,7 +53,7 @@ public class InvoiceDetailsCachingService implements IEntityCacheService<Invoice
     }
 
     private void initDelegate() {
-        for (String bean : context.getBeanNamesForType(ResolvableType.forType(new ParameterizedTypeReference<InvoiceDetails>() {
+        for (String bean : context.getBeanNamesForType(ResolvableType.forType(new ParameterizedTypeReference<InvoiceDetailsDao>() {
         }))) {
             if (bean.equalsIgnoreCase(InvoiceDetails.class.getSimpleName())) continue;
             final InvoiceDetailsClientCaching cache = new InvoiceDetailsClientCaching(context.getBean(bean, InvoiceDetailsDao.class));

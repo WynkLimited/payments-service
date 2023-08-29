@@ -2,19 +2,19 @@ package in.wynk.payment.core.event;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
-@Builder
 @AnalysedEntity
-public class GenerateInvoiceEvent {
+@RequiredArgsConstructor
+public class InvoiceRetryTaskEvent {
     @Analysed
-    private String invoiceId;
+    private final String invoiceId;
     @Analysed
-    private String msisdn;
+    private final String msisdn;
     @Analysed
-    private String txnId;
+    private final String transactionId;
     @Analysed
-    private String clientAlias;
+    private final String clientAlias;
 }

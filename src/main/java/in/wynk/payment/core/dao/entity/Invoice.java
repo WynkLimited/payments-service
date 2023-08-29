@@ -1,6 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
-import in.wynk.payment.core.constant.InvoiceState;
+import com.github.annotation.analytic.core.annotations.Analysed;
+import in.wynk.common.constant.BaseConstants;
 import lombok.*;
 import org.springframework.data.domain.Persistable;
 
@@ -22,13 +23,14 @@ public class Invoice implements Serializable, Persistable<String> {
     private static final long serialVersionUID = 3241256359460367348L;
 
     @Id
+    @Analysed(name = BaseConstants.INVOICE_ID)
     @Setter(AccessLevel.NONE)
     private String id;
 
     @Column(name = "transaction_id", updatable = false, nullable = false)
     private String transactionId;
 
-    @Column(name = "invoice_external_id", updatable = false, nullable = false)
+    @Column(name = "invoice_external_id")
     private String invoiceExternalId;
 
     @Column(name = "amount", nullable = false)
@@ -50,8 +52,16 @@ public class Invoice implements Serializable, Persistable<String> {
     private double igst;
 
     @Setter
-    @Column(name = "state", nullable = false)
-    private String state;
+    @Column(name = "customer_account_no")
+    private String customerAccountNumber;
+
+    @Setter
+    @Column(name = "status")
+    private String status;
+
+    @Setter
+    @Column(name = "description")
+    private String description;
 
     @Column(name = "created_timestamp")
     @Temporal(TemporalType.TIMESTAMP)
@@ -61,6 +71,10 @@ public class Invoice implements Serializable, Persistable<String> {
     @Column(name = "updated_timestamp")
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar updatedOn;
+
+    @Setter
+    @Column(name = "retry_count")
+    private int retryCount;
 
     @Builder.Default
     private transient boolean persisted = false;
@@ -74,7 +88,4 @@ public class Invoice implements Serializable, Persistable<String> {
         this.persisted = true;
     }
 
-    public InvoiceState getState() {
-        return InvoiceState.valueOf(state);
-    }
 }

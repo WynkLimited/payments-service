@@ -135,7 +135,10 @@ public class InvoiceManagerService implements InvoiceManager {
         try{
             final Transaction transaction = TransactionContext.get();
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
-            final String stateName = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getStateName();
+            String stateName = null;
+            if(Objects.nonNull(purchaseDetails.getGeoLocation()) && Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode())){
+                stateName = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getStateName();
+            }
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(operatorDetails, taxableResponse, invoiceDetails, transaction, invoiceNumber, plan, stateName);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, gson.toJson(informInvoiceKafkaMessage));
             AnalyticService.update(informInvoiceKafkaMessage);

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.response.AbstractPaymentMethodDTO;
 import in.wynk.payment.dto.response.SupportingDetails;
-import in.wynk.payment.dto.response.UiDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

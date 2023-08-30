@@ -110,6 +110,7 @@ public class PaymentOptionsDTO {
         private final String iconUrl;
         private final String tag;
         private final boolean autoRenewSupported;
+        private final boolean mandateSupported;
         private final List<String> suffixes;
 
         public PaymentMethodDTO(PaymentMethod method, Supplier<Boolean> autoRenewSupplier) {
@@ -123,6 +124,7 @@ public class PaymentOptionsDTO {
             this.subtitle = method.getSubtitle();
             this.iconUrl = method.getIconUrl();
             this.autoRenewSupported = autoRenewSupplier.get() && method.isAutoRenewSupported();
+            this.mandateSupported = method.isMandateSupported();
             this.suffixes = method.getSuffixes();
         }
     }

@@ -92,6 +92,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY451("Download Invoice Failure", "Invoice not downloaded due to error, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.DOWNLOAD_INVOICE_ERROR),
     PAY452("Kafka Publisher Failure", "Event not published due to error, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE),
     PAY453("Invoice Sequence Details not found", "Unable to find invoice sequence details in mongo for the client", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_SEQUENCE_NOT_CONFIGURED_FOR_CLIENT),
+    PAY454("Invoice Number Generation Failed", "Unable to generate invoice number", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_NUMBER_GENERATION_FAILED),
     PAY501("Invalid Request", "Mandatory data in request is missing.", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),

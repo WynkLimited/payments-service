@@ -2,6 +2,7 @@ package in.wynk.payment.core.event;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.core.dao.entity.Invoice;
 import lombok.Builder;
 import lombok.Getter;
 import java.util.Calendar;
@@ -38,4 +39,23 @@ public class InvoiceEvent {
     private Calendar updatedOn;
     @Analysed
     private int retryCount;
+
+    public static InvoiceEvent from(Invoice invoice, String clientAlias){
+        return InvoiceEvent.builder()
+                .clientAlias(clientAlias)
+                .invoiceId(invoice.getId())
+                .transactionId(invoice.getTransactionId())
+                .invoiceExternalId(invoice.getInvoiceExternalId())
+                .amount(invoice.getAmount())
+                .taxAmount(invoice.getTaxAmount())
+                .taxableValue(invoice.getTaxableValue())
+                .cgst(invoice.getCgst())
+                .sgst(invoice.getSgst())
+                .igst(invoice.getIgst())
+                .state(invoice.getStatus())
+                .createdOn(invoice.getCreatedOn())
+                .updatedOn(Calendar.getInstance())
+                .retryCount(invoice.getRetryCount())
+                .build();
+    }
 }

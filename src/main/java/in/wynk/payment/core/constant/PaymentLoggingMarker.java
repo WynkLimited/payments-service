@@ -129,6 +129,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker INVALID_INVOICE_EVENT_RECEIVED = MarkerFactory.getMarker("INVALID_INVOICE_EVENT_RECEIVED");
     Marker KAFKA_CONSUMPTION_HANDLING_ERROR = MarkerFactory.getMarker("KAFKA_CONSUMPTION_HANDLING_ERROR");
     Marker KAFKA_PUBLISHER_FAILURE = MarkerFactory.getMarker("KAFKA_PUBLISHER_FAILURE");
+    Marker INVOICE_NUMBER_GENERATION_FAILED = MarkerFactory.getMarker("INVOICE_NUMBER_GENERATION_FAILED");
     Marker DOWNLOAD_INVOICE_ERROR = MarkerFactory.getMarker("DOWNLOAD_INVOICE_ERROR");
     Marker GST_STATE_CODE_FAILURE = MarkerFactory.getMarker("GST_STATE_CODE_FAILURE");
     Marker INVOICE_DETAILS_NOT_FOUND = MarkerFactory.getMarker("INVOICE_DETAILS_NOT_FOUND");

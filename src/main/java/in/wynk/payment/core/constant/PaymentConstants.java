@@ -73,8 +73,6 @@ public interface PaymentConstants extends BaseConstants {
     String INVOICE_RETRY = "invoiceRetry";
     String INVOICE_SEQUENCE_LOCK_KEY = "invoiceSequenceLockKey";
     String INVOICE_SEQUENCE_PREFIX = "ADL";
-    String TAXABLE_REQUEST = "taxableRequest";
-    String TAXABLE_RESPONSE = "taxableResponse";
     String INFORM_INVOICE_MESSAGE = "informInvoiceMessage";
     String INVOICE_CATEGORY = "ONLINE CONTENT SERVICES";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";

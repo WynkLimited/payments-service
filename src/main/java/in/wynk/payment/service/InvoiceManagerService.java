@@ -58,9 +58,10 @@ public class InvoiceManagerService implements InvoiceManager {
     public void generate(GenerateInvoiceRequest request) {
         try{
             final Transaction transaction = TransactionContext.get();
+            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
             final MsisdnOperatorDetails operatorDetails = getOperatorDetails(request.getMsisdn());
             final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
-            final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails);
+            final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails, purchaseDetails);
 
             TaxableRequest taxableRequest = TaxableRequest.builder()
                     .consumerStateCode(accessStateCode)
@@ -77,13 +78,13 @@ public class InvoiceManagerService implements InvoiceManager {
             if(Objects.isNull(request.getInvoiceId())){
                 final String invoiceID = invoiceNumberGenerator.generateInvoiceNumber(request.getClientAlias());
                 //publish invoice message to kafka
-                publishInvoiceMessage(operatorDetails, taxableResponse, invoiceDetails, request, invoiceID);
+                publishInvoiceMessage(operatorDetails, purchaseDetails, taxableResponse, invoiceDetails, request, invoiceID);
                 //save invoice details in DB
                 saveInvoiceDetails(transaction, invoiceID, taxableResponse);
             } else {
                 final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
                 //publish invoice message to kafka
-                publishInvoiceMessage(operatorDetails, taxableResponse, invoiceDetails, request, request.getInvoiceId());
+                publishInvoiceMessage(operatorDetails, purchaseDetails, taxableResponse, invoiceDetails, request, request.getInvoiceId());
                 //update the retry count
                 invoice.setRetryCount(invoice.getRetryCount() + 1);
                 invoiceService.upsert(invoice);
@@ -110,11 +111,12 @@ public class InvoiceManagerService implements InvoiceManager {
     }
 
     @AnalyseTransaction(name = "publishInvoiceKafka")
-    private void publishInvoiceMessage(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, GenerateInvoiceRequest request, String invoiceNumber){
+    private void publishInvoiceMessage(MsisdnOperatorDetails operatorDetails, IPurchaseDetails purchaseDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, GenerateInvoiceRequest request, String invoiceNumber){
         try{
             final Transaction transaction = TransactionContext.get();
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
-            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(operatorDetails, taxableResponse, invoiceDetails, transaction, invoiceNumber, plan);
+            final String stateName = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getStateName();
+            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(operatorDetails, taxableResponse, invoiceDetails, transaction, invoiceNumber, plan, stateName);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, gson.toJson(informInvoiceKafkaMessage));
             AnalyticService.update(informInvoiceKafkaMessage);
             kafkaEventPublisher.publish(informInvoiceKafkaMessage);
@@ -231,7 +233,7 @@ public class InvoiceManagerService implements InvoiceManager {
         }
     }
 
-    private String getAccessStateCode(MsisdnOperatorDetails operatorDetails, InvoiceDetails invoiceDetails) {
+    private String getAccessStateCode(MsisdnOperatorDetails operatorDetails, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
         String gstStateCode = (Strings.isNullOrEmpty(invoiceDetails.getDefaultGSTStateCode())) ? DEFAULT_GST_STATE_CODE: invoiceDetails.getDefaultGSTStateCode();
         try {
             if (Objects.nonNull(operatorDetails) &&
@@ -239,7 +241,6 @@ public class InvoiceManagerService implements InvoiceManager {
                     Objects.nonNull(operatorDetails.getUserMobilityInfo().getGstStateCode())) {
                 gstStateCode = operatorDetails.getUserMobilityInfo().getGstStateCode().trim();
             } else {
-                final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
                 if(Objects.nonNull(purchaseDetails) &&
                         Objects.nonNull(purchaseDetails.getGeoLocation()) &&
                         Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode())){

@@ -362,6 +362,9 @@
     <logger name="callbackInvoice" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
+    <logger name="downloadInvoice" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
 
     <!-- invoice loggers end -->
 

@@ -152,8 +152,8 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
     }
 
-    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, Transaction transaction, String invoiceNumber, PlanDTO plan){
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails, transaction.getMsisdn());
+    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, Transaction transaction, String invoiceNumber, PlanDTO plan, String stateName){
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails, transaction.getMsisdn(), stateName);
         final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(taxableResponse, transaction, invoiceNumber, plan, invoiceDetails);
         final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(taxableResponse, invoiceDetails);
         final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(taxableResponse);
@@ -231,7 +231,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         return value.trim();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, String msisdn) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, String msisdn, String stateName) {
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = InformInvoiceKafkaMessage.LobInvoice.CustomerDetails.builder();
         if(Objects.nonNull(operatorDetails) && Objects.nonNull(operatorDetails.getUserMobilityInfo())){
             final UserMobilityInfo userMobilityInfo = operatorDetails.getUserMobilityInfo();
@@ -243,8 +243,8 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                     sanitize(userMobilityInfo.getResCity() + " " +userMobilityInfo.getResDistrict() + " " +userMobilityInfo.getResState());
             final String pinCode = sanitize(userMobilityInfo.getResPinCode());
             final String stateCode = sanitize(userMobilityInfo.getGstStateCode());
-            final String stateName = (Strings.isNullOrEmpty(userMobilityInfo.getResState()))?
-                    sanitize(userMobilityInfo.getCircle()) :
+            final String state = (Strings.isNullOrEmpty(userMobilityInfo.getResState()))?
+                    sanitize(stateName) :
                     sanitize(userMobilityInfo.getResState());
             final String alternateNumber = sanitize(userMobilityInfo.getAlternateContactNumber());
             final String kciNumber = sanitize(msisdn);
@@ -254,7 +254,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
             final String customerType = sanitize(userMobilityInfo.getCustomerType());
             final String customerClassification = sanitize(userMobilityInfo.getCustomerClassification());
             final String customerAccountNo = (Strings.isNullOrEmpty(userMobilityInfo.getCustomerID()))? msisdn : sanitize(userMobilityInfo.getCustomerID());
-            return customerDetailsBuilder.name(name).address(address).pinCode(pinCode).stateCode(stateCode).stateName(stateName)
+            return customerDetailsBuilder.name(name).address(address).pinCode(pinCode).stateCode(stateCode).stateName(state)
                             .alternateNumber(alternateNumber).kciNumber(kciNumber).emailId(emailId).gstn(gstNumber).panNumber(panNumber)
                             .customerType(customerType).customerClassification(customerClassification).customerAccountNo(customerAccountNo).build();
         }

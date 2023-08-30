@@ -15,8 +15,6 @@ import lombok.experimental.SuperBuilder;
 @KafkaEvent(topic = "${wynk.kafka.producers.invoice.generate.topic}")
 public class GenerateInvoiceKafkaMessage extends InvoiceKafkaMessage {
     @Analysed
-    private String invoiceId;
-    @Analysed
     private String msisdn;
     @Analysed
     private String clientAlias;
@@ -25,7 +23,6 @@ public class GenerateInvoiceKafkaMessage extends InvoiceKafkaMessage {
 
     public static GenerateInvoiceKafkaMessage from(GenerateInvoiceEvent event){
         return GenerateInvoiceKafkaMessage.builder()
-                .invoiceId(event.getInvoiceId())
                 .msisdn(event.getMsisdn())
                 .txnId(event.getTxnId())
                 .clientAlias(event.getClientAlias())

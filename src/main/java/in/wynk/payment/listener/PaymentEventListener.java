@@ -24,6 +24,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
+import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
@@ -90,6 +91,7 @@ public class PaymentEventListener {
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> kafkaPublisher;
+    private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     @Value("${event.stream.dp}")
     private String dpStream;
 
@@ -175,20 +177,21 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onInvoiceEvent(InvoiceEvent event) {
         AnalyticService.update(event);
-        retryRegistry.retry(PaymentConstants.INVOICE_UPSERT_RETRY_KEY).executeRunnable(() -> invoiceService.upsert(
-                Invoice.builder()
-                        .id(event.getInvoiceId())
-                        .transactionId(event.getTransactionId())
-                        .invoiceExternalId(event.getInvoiceExternalId())
-                        .amount(event.getAmount())
-                        .taxAmount(event.getTaxAmount())
-                        .taxableValue(event.getTaxableValue())
-                        .cgst(event.getCgst())
-                        .sgst(event.getSgst())
-                        .igst(event.getIgst())
-                        .createdOn(Calendar.getInstance())
-                        .retryCount(event.getRetryCount())
-                        .build()));
+        retryRegistry.retry(PaymentConstants.INVOICE_UPSERT_RETRY_KEY).executeRunnable(() -> invoiceService.upsert(Invoice.builder()
+                .id(event.getInvoiceId())
+                .transactionId(event.getTransactionId())
+                .invoiceExternalId(event.getInvoiceExternalId())
+                .amount(event.getAmount())
+                .taxAmount(event.getTaxAmount())
+                .taxableValue(event.getTaxableValue())
+                .cgst(event.getCgst())
+                .sgst(event.getSgst())
+                .igst(event.getIgst())
+                .createdOn(event.getCreatedOn())
+                .updatedOn(event.getUpdatedOn())
+                .retryCount(event.getRetryCount())
+                .status(event.getState())
+                .build()));
     }
 
     @EventListener
@@ -196,14 +199,16 @@ public class PaymentEventListener {
     public void onInvoiceRetryEvent(InvoiceRetryEvent event) {
         try {
             AnalyticService.update(event);
-            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
-            final int retryCount = invoice.getRetryCount();
+            int retryCount = event.getRetryCount();
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId()).orElse(null);
+            if(Objects.nonNull(invoice)){
+                retryCount = invoice.getRetryCount();
+            }
             if(retryCount < event.getRetries().size()){
-                InvoiceRetryTask invoiceRetryTask = InvoiceRetryTask.from(event);
-                final long attemptDelayedBy = event.getRetries().get(retryCount);
+                final long attemptDelayedBy = event.getRetries().get(++retryCount);
                 final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toSeconds(attemptDelayedBy));
                 taskScheduler.schedule(TaskDefinition.<InvoiceRetryTask>builder()
-                        .entity(invoiceRetryTask)
+                        .entity(InvoiceRetryTask.from(event))
                         .handler(InvoiceRetryTaskHandler.class)
                         .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
                                 .durable(false)
@@ -223,17 +228,34 @@ public class PaymentEventListener {
     public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
         try{
             AnalyticService.update(event);
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId()).orElse(null);
+            if(Objects.nonNull(invoice) && invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+                invoice.setRetryCount(invoice.getRetryCount() + 1);
+                eventPublisher.publishEvent(InvoiceEvent.from(invoice, event.getClientAlias()));
+                if(invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+                    return;
+                }
+            }
             final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
-                    .invoiceId(event.getInvoiceId())
                     .msisdn(event.getMsisdn())
                     .txnId(event.getTransactionId())
                     .clientAlias(event.getClientAlias())
                     .build();
-            kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent));
+            eventPublisher.publishEvent(generateInvoiceEvent);
 
-            final Invoice invoice = invoiceService.getInvoice(event.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
-            invoice.setRetryCount(invoice.getRetryCount() + 1);
-            invoiceService.upsert(invoice);
+            if(Objects.nonNull(invoice)){
+                invoice.setRetryCount(invoice.getRetryCount() + 1);
+                eventPublisher.publishEvent(InvoiceEvent.from(invoice, event.getClientAlias()));
+            }
+            final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
+            if(event.getRetryCount() < invoiceDetails.getRetries().size() - 1){
+                eventPublisher.publishEvent(InvoiceRetryEvent.builder()
+                        .msisdn(event.getMsisdn())
+                        .clientAlias(event.getClientAlias())
+                        .txnId(event.getTransactionId())
+                        .retries(invoiceDetails.getRetries())
+                        .retryCount(event.getRetryCount()).build());
+            }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.INVOICE_TRIGGER_RETRY_FAILURE, "Unable to trigger the invoice retry due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY449, e);

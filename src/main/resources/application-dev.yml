@@ -515,7 +515,7 @@ wynk:
         generate:
           topic: wcf_dev.generate_invoice
         inform:
-          topic: wcf_dev.inform_invoice
+          topic: wcf_dev.inform_invoice_generate
     consumers:
       enabled: true
       listenerFactory:
@@ -547,7 +547,7 @@ wynk:
               maxPollInterval: 600000
               maxPollRecords: 50
               sessionTimeout: 180000
-              topic: wcf_dev.callback_invoice
+              topic: wcf_dev.inform_invoice_state
               valueDeserializer: in.wynk.payment.consumer.InvoiceCallbackKafkaSerializer
             name: INVOICE_CALLBACK_BEAN
   multi:

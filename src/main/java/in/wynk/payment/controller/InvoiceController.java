@@ -18,7 +18,7 @@ public class InvoiceController {
 
     private final InvoiceManagerService invoiceManagerService;
     @GetMapping(value = "/download/{tid}", produces = MediaType.APPLICATION_PDF_VALUE)
-    @AnalyseTransaction(name = "invoiceDownload")
+    @AnalyseTransaction(name = "downloadInvoice")
     public ResponseEntity<byte[]> invoiceDownload(@PathVariable String tid) {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(TXN_ID, tid);

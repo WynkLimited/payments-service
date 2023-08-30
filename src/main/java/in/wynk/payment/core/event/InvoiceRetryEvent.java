@@ -12,13 +12,14 @@ import java.util.List;
 @AnalysedEntity
 public class InvoiceRetryEvent {
     @Analysed
-    private String invoiceId;
-    @Analysed
     private String msisdn;
     @Analysed
     private String txnId;
     @Analysed
     private String clientAlias;
+    @Analysed
+    @Builder.Default
+    private int retryCount = -1;
     @Analysed
     private List<Long> retries;
 }

@@ -10,11 +10,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class InvoiceRetryTaskEvent {
     @Analysed
-    private final String invoiceId;
-    @Analysed
     private final String msisdn;
     @Analysed
     private final String transactionId;
     @Analysed
     private final String clientAlias;
+    @Analysed
+    private final int retryCount;
 }

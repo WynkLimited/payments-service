@@ -10,8 +10,6 @@ import lombok.Getter;
 @AnalysedEntity
 public class GenerateInvoiceEvent {
     @Analysed
-    private String invoiceId;
-    @Analysed
     private String msisdn;
     @Analysed
     private String txnId;

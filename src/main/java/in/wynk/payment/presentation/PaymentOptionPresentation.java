@@ -339,8 +339,15 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-            final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
-            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> aliasToIds.containsKey(details.getId()))).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details))).collect(Collectors.toList());
+            //add filter for Saved Card which doesn't support mandate(PennyDrop)/AutoRenewal
+            Map<String, String> aliasToIds = null;
+            if(Objects.isNull(payload.getFirst().getPaymentDetails()) || (Objects.nonNull(payload.getFirst().getPaymentDetails()) && !payload.getFirst().getPaymentDetails().isMandate())) {
+                aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
+            } else if(Objects.nonNull(payload.getFirst().getPaymentDetails()) && payload.getFirst().getPaymentDetails().isMandate()) {
+                aliasToIds = payload.getSecond().getMethods().stream().filter(paymentMethodDTO-> !paymentMethodDTO.getGroup().equals("CARD")).map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
+            }
+            final Map<String, String> finalAliasToIds = aliasToIds;
+            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> finalAliasToIds.containsKey(details.getId()))).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details))).collect(Collectors.toList());
         }
 
         private class UPIPresentation implements ISavedDetailsPresentation<UpiSavedDetails, UpiSavedInfo> {

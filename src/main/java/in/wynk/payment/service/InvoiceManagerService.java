@@ -8,6 +8,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.InvoiceState;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
@@ -28,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.DEFAULT_GST_STATE_CODE;
@@ -63,44 +63,64 @@ public class InvoiceManagerService implements InvoiceManager {
             final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
             final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails, purchaseDetails);
 
-            TaxableRequest taxableRequest = TaxableRequest.builder()
-                    .consumerStateCode(accessStateCode)
-                    .supplierStateCode(DEFAULT_GST_STATE_CODE)
-                    .consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
-                    .supplierStateName(stateCodesCachingService.get(DEFAULT_GST_STATE_CODE).getStateName())
-                    .amount(transaction.getAmount())
-                    .gstPercentage(invoiceDetails.getGstPercentage())
+            final TaxableRequest taxableRequest = TaxableRequest.builder()
+                    .consumerStateCode(accessStateCode).consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
+                    .supplierStateCode(DEFAULT_GST_STATE_CODE).supplierStateName(stateCodesCachingService.get(DEFAULT_GST_STATE_CODE).getStateName())
+                    .amount(transaction.getAmount()).gstPercentage(invoiceDetails.getGstPercentage())
                     .build();
-            AnalyticService.update(TAXABLE_REQUEST, taxableRequest.toString());
+            AnalyticService.update(taxableRequest.toString());
             final TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-            AnalyticService.update(TAXABLE_RESPONSE, taxableResponse.toString());
+            AnalyticService.update(taxableResponse.toString());
 
-            if(Objects.isNull(request.getInvoiceId())){
-                final String invoiceID = invoiceNumberGenerator.generateInvoiceNumber(request.getClientAlias());
-                //publish invoice message to kafka
-                publishInvoiceMessage(operatorDetails, purchaseDetails, taxableResponse, invoiceDetails, request, invoiceID);
-                //save invoice details in DB
-                saveInvoiceDetails(transaction, invoiceID, taxableResponse);
-            } else {
-                final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
-                //publish invoice message to kafka
-                publishInvoiceMessage(operatorDetails, purchaseDetails, taxableResponse, invoiceDetails, request, request.getInvoiceId());
-                //update the retry count
-                invoice.setRetryCount(invoice.getRetryCount() + 1);
-                invoiceService.upsert(invoice);
-            }
+            final String invoiceID = getInvoiceNumber(request.getTxnId(), request.getClientAlias());
+            saveInvoiceDetails(transaction, invoiceID, taxableResponse);
+            publishInvoiceMessage(operatorDetails, purchaseDetails, taxableResponse, invoiceDetails, invoiceID);
         } catch(Exception ex){
-            scheduleInvoiceGenerationRetry(request.getInvoiceId(), request.getMsisdn(), request.getClientAlias(), request.getTxnId());
+            retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId());
             throw new WynkRuntimeException(PaymentErrorType.PAY446, ex);
         }
     }
 
-    private void scheduleInvoiceGenerationRetry(String invoiceId, String msisdn, String clientAlias, String txnId) {
+    @Override
+    public void processCallback(InvoiceCallbackRequest request) {
+        try{
+            final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
+            invoice.setUpdatedOn(Calendar.getInstance());
+            invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
+            invoice.setDescription(request.getDescription());
+            invoice.setStatus(request.getStatus());
+
+            final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
+            final InvoiceEvent invoiceEvent = InvoiceEvent.from(invoice, transaction.getClientAlias());
+            applicationEventPublisher.publishEvent(invoiceEvent);
+
+            if(!request.getStatus().equalsIgnoreCase("SUCCESS")){
+                retryInvoiceGeneration(transaction.getMsisdn(), transaction.getClientAlias(), invoice.getTransactionId());
+            }
+        } catch(Exception ex){
+            log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
+            throw new WynkRuntimeException(PaymentErrorType.PAY447, ex);
+        }
+    }
+
+    private String getInvoiceNumber(String txnId, String clientAlias){
+        final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId).orElse(null);
+        if(Objects.nonNull(invoice)) return invoice.getId();
+        try{
+            final String invoiceID = invoiceNumberGenerator.generateInvoiceNumber(clientAlias);
+            AnalyticService.update(invoiceID);
+            return invoiceID;
+        } catch(Exception e){
+            log.error(PaymentLoggingMarker.INVOICE_NUMBER_GENERATION_FAILED, "Unable to generate the invoice number due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY454, e);
+        }
+    }
+
+    private void retryInvoiceGeneration (String msisdn, String clientAlias, String txnId) {
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(clientAlias);
         final List<Long> retries = invoiceDetails.getRetries();
         if(Objects.nonNull(retries)){
             applicationEventPublisher.publishEvent(InvoiceRetryEvent.builder()
-                    .invoiceId(invoiceId)
                     .msisdn(msisdn)
                     .clientAlias(clientAlias)
                     .txnId(txnId)
@@ -111,7 +131,7 @@ public class InvoiceManagerService implements InvoiceManager {
     }
 
     @AnalyseTransaction(name = "publishInvoiceKafka")
-    private void publishInvoiceMessage(MsisdnOperatorDetails operatorDetails, IPurchaseDetails purchaseDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, GenerateInvoiceRequest request, String invoiceNumber){
+    private void publishInvoiceMessage(MsisdnOperatorDetails operatorDetails, IPurchaseDetails purchaseDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, String invoiceNumber){
         try{
             final Transaction transaction = TransactionContext.get();
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
@@ -126,15 +146,20 @@ public class InvoiceManagerService implements InvoiceManager {
         }
     }
 
-    private void saveInvoiceDetails(Transaction transaction, String invoiceNumber, TaxableResponse taxableResponse){
+    private void saveInvoiceDetails(Transaction transaction, String invoiceID, TaxableResponse taxableResponse){
+        final Invoice invoice = invoiceService.getInvoiceByTransactionId(transaction.getIdStr()).orElse(null);
+        if(Objects.nonNull(invoice)) {
+            InvoiceEvent invoiceEvent = InvoiceEvent.from(invoice, transaction.getClientAlias());
+            applicationEventPublisher.publishEvent(invoiceEvent);
+            return;
+        }
         final InvoiceEvent.InvoiceEventBuilder builder = InvoiceEvent.builder()
                 .clientAlias(transaction.getClientAlias())
-                .invoiceId(invoiceNumber)
+                .invoiceId(invoiceID)
                 .transactionId(transaction.getIdStr())
                 .amount(transaction.getAmount())
                 .taxAmount(taxableResponse.getTaxAmount())
-                .taxableValue(taxableResponse.getTaxableAmount())
-                .retryCount(0);
+                .taxableValue(taxableResponse.getTaxableAmount());
         final List<TaxDetailsDTO> list = taxableResponse.getTaxDetails();
         for(TaxDetailsDTO dto : list){
             switch (dto.getTaxType()) {
@@ -149,6 +174,8 @@ public class InvoiceManagerService implements InvoiceManager {
                     break;
             }
         }
+        builder.state(InvoiceState.IN_PROGRESS.name());
+        builder.retryCount(0);
         builder.createdOn(Calendar.getInstance());
         applicationEventPublisher.publishEvent(builder.build());
     }
@@ -164,8 +191,6 @@ public class InvoiceManagerService implements InvoiceManager {
             applicationEventPublisher.publishEvent(GenerateInvoiceEvent.builder()
                     .msisdn(transaction.getMsisdn())
                     .txnId(txnId)
-                    //.transaction(TransactionDTO.from(transaction))
-                    //.purchaseDetails(purchaseDetails)
                     .clientAlias(transaction.getClientAlias())
                     .build());
             throw new WynkRuntimeException(PaymentErrorType.PAY445);
@@ -174,7 +199,6 @@ public class InvoiceManagerService implements InvoiceManager {
             final Invoice invoice = invoiceOptional.get();
             if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
                 applicationEventPublisher.publishEvent(GenerateInvoiceEvent.builder()
-                        .invoiceId(invoice.getId())
                         .msisdn(transaction.getMsisdn())
                         .txnId(txnId)
                         //.transaction(TransactionDTO.from(transaction))
@@ -194,27 +218,6 @@ public class InvoiceManagerService implements InvoiceManager {
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.DOWNLOAD_INVOICE_ERROR, ex.getMessage(), ex);
             throw new WynkRuntimeException(PaymentErrorType.PAY451, ex);
-        }
-    }
-
-    @Override
-    public void processCallback(InvoiceCallbackRequest request) {
-        try{
-            final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
-            invoice.setUpdatedOn(Calendar.getInstance());
-            invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
-            invoice.setDescription(request.getDescription());
-            invoice.setStatus(request.getStatus());
-            invoice.setRetryCount(invoice.getRetryCount());
-            invoiceService.upsert(invoice);
-
-            if(!request.getStatus().equalsIgnoreCase("SUCCESS")){
-                final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
-                scheduleInvoiceGenerationRetry(request.getInvoiceId(), transaction.getMsisdn(), transaction.getClientAlias(), transaction.getIdStr());
-            }
-        } catch(Exception ex){
-            log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY447, ex);
         }
     }
 

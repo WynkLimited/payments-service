@@ -18,17 +18,17 @@ import lombok.*;
 public class InvoiceRetryTask implements ITaskEntity {
 
     @Analysed
-    private String invoiceId;
-    @Analysed
     private String msisdn;
     @Analysed
     private String transactionId;
     @Analysed
     private String clientAlias;
+    @Analysed
+    private int retryCount = 0;
 
     @Override
     public String getTaskId() {
-        return msisdn + BaseConstants.DELIMITER + invoiceId;
+        return msisdn + BaseConstants.DELIMITER + clientAlias + BaseConstants.DELIMITER + transactionId;
     }
 
     @Override
@@ -38,15 +38,15 @@ public class InvoiceRetryTask implements ITaskEntity {
 
     public static InvoiceRetryTask from(InvoiceRetryEvent event) {
         return InvoiceRetryTask.builder()
-                .invoiceId(event.getInvoiceId())
                 .clientAlias(event.getClientAlias())
                 .msisdn(event.getMsisdn())
                 .transactionId(event.getTxnId())
+                .retryCount(event.getRetryCount())
                 .build();
     }
 
     public InvoiceRetryTaskEvent fromSelf() {
-        return new InvoiceRetryTaskEvent(invoiceId, msisdn, transactionId, clientAlias);
+        return new InvoiceRetryTaskEvent(msisdn, transactionId, clientAlias, retryCount);
     }
 
 }

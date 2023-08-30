@@ -10,8 +10,6 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 public class GenerateInvoiceRequest {
     @Analysed
-    private final String invoiceId;
-    @Analysed
     private final String msisdn;
     @Analysed
     private final String clientAlias;

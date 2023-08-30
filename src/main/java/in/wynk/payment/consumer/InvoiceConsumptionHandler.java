@@ -32,7 +32,6 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
                 throw new WynkRuntimeException(PaymentErrorType.PAY440);
             }
             invoiceManager.generate(GenerateInvoiceRequest.builder()
-                    .invoiceId(dto.getInvoiceId())
                     .msisdn(dto.getMsisdn())
                     .clientAlias(dto.getClientAlias())
                     .txnId(dto.getTxnId())

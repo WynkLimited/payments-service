@@ -177,26 +177,23 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onInvoiceEvent(InvoiceEvent event) {
         AnalyticService.update(event);
-        if(event.isPersisted()) return;
-        final Calendar createdOn = Calendar.getInstance();
-        createdOn.setTimeInMillis(event.getCreatedOn());
-        final Calendar updatedOn = Calendar.getInstance();
-        updatedOn.setTimeInMillis(event.getUpdatedOn());
-        retryRegistry.retry(PaymentConstants.INVOICE_UPSERT_RETRY_KEY).executeRunnable(() -> invoiceService.upsert(Invoice.builder()
-                .id(event.getInvoiceId())
-                .transactionId(event.getTransactionId())
-                .invoiceExternalId(event.getInvoiceExternalId())
-                .amount(event.getAmount())
-                .taxAmount(event.getTaxAmount())
-                .taxableValue(event.getTaxableValue())
-                .cgst(event.getCgst())
-                .sgst(event.getSgst())
-                .igst(event.getIgst())
-                .createdOn(createdOn)
-                .updatedOn(updatedOn)
-                .retryCount(event.getRetryCount())
-                .status(event.getState())
-                .build()));
+        AnalyticService.update(INVOICE_ID, event.getInvoice().getId());
+        AnalyticService.update(TRANSACTION_ID, event.getInvoice().getTransactionId());
+        AnalyticService.update("invoiceExternalId", event.getInvoice().getInvoiceExternalId());
+        AnalyticService.update("amount", event.getInvoice().getAmount());
+        AnalyticService.update("taxAmount", event.getInvoice().getTaxAmount());
+        AnalyticService.update("taxableValue", event.getInvoice().getTaxableValue());
+        AnalyticService.update("cgst", event.getInvoice().getCgst());
+        AnalyticService.update("sgst", event.getInvoice().getSgst());
+        AnalyticService.update("igst", event.getInvoice().getIgst());
+        AnalyticService.update("customerAccountNo", event.getInvoice().getCustomerAccountNumber());
+        AnalyticService.update("status", event.getInvoice().getStatus());
+        AnalyticService.update("description", event.getInvoice().getDescription());
+        AnalyticService.update("createdOn", event.getInvoice().getCreatedOn().getTimeInMillis());
+        if (Objects.nonNull(event.getInvoice().getUpdatedOn())) {
+            AnalyticService.update("updatedOn", event.getInvoice().getUpdatedOn().getTime().getTime());
+        }
+        AnalyticService.update("retryCount", event.getInvoice().getRetryCount());
     }
 
     @EventListener
@@ -210,7 +207,7 @@ public class PaymentEventListener {
                 retryCount = invoice.getRetryCount();
             }
             if(retryCount < event.getRetries().size()){
-                final long attemptDelayedBy = event.getRetries().get(++retryCount);
+                final long attemptDelayedBy = event.getRetries().get(retryCount);
                 final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toSeconds(attemptDelayedBy));
                 taskScheduler.schedule(TaskDefinition.<InvoiceRetryTask>builder()
                         .entity(InvoiceRetryTask.from(event))
@@ -234,36 +231,44 @@ public class PaymentEventListener {
         try{
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId()).orElse(null);
-            if(Objects.nonNull(invoice) && invoice.getStatus().equalsIgnoreCase("SUCCESS")){
-                invoice.setRetryCount(invoice.getRetryCount() + 1);
-                invoiceService.upsert(invoice);
-                invoice.persisted();
-                eventPublisher.publishEvent(InvoiceEvent.from(invoice, event.getClientAlias()));
-                if(invoice.getStatus().equalsIgnoreCase("SUCCESS")){
-                    return;
-                }
-            }
-            final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
-                    .msisdn(event.getMsisdn())
-                    .txnId(event.getTransactionId())
-                    .clientAlias(event.getClientAlias())
-                    .build();
-            eventPublisher.publishEvent(generateInvoiceEvent);
+            if (Objects.nonNull(invoice)){
+                if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+                    final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
+                            .msisdn(event.getMsisdn())
+                            .txnId(event.getTransactionId())
+                            .clientAlias(event.getClientAlias())
+                            .build();
+                    eventPublisher.publishEvent(generateInvoiceEvent);
+                    invoice.setRetryCount(invoice.getRetryCount() + 1);
+                    invoiceService.upsert(invoice);
 
-            if(Objects.nonNull(invoice)){
-                invoice.setRetryCount(invoice.getRetryCount() + 1);
-                invoiceService.upsert(invoice);
-                invoice.persisted();
-                eventPublisher.publishEvent(InvoiceEvent.from(invoice, event.getClientAlias()));
-            }
-            final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
-            if(event.getRetryCount() < invoiceDetails.getRetries().size() - 1){
-                eventPublisher.publishEvent(InvoiceRetryEvent.builder()
+                    final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
+                    if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                        eventPublisher.publishEvent(InvoiceRetryEvent.builder()
+                                .msisdn(event.getMsisdn())
+                                .clientAlias(event.getClientAlias())
+                                .txnId(event.getTransactionId())
+                                .retries(invoiceDetails.getRetries())
+                                .retryCount(event.getRetryCount() + 1).build());
+                    };
+                }
+            } else {
+                final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
                         .msisdn(event.getMsisdn())
-                        .clientAlias(event.getClientAlias())
                         .txnId(event.getTransactionId())
-                        .retries(invoiceDetails.getRetries())
-                        .retryCount(event.getRetryCount()).build());
+                        .clientAlias(event.getClientAlias())
+                        .build();
+                eventPublisher.publishEvent(generateInvoiceEvent);
+
+                final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
+                if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                    eventPublisher.publishEvent(InvoiceRetryEvent.builder()
+                            .msisdn(event.getMsisdn())
+                            .clientAlias(event.getClientAlias())
+                            .txnId(event.getTransactionId())
+                            .retries(invoiceDetails.getRetries())
+                            .retryCount(event.getRetryCount() + 1).build());
+                }
             }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.INVOICE_TRIGGER_RETRY_FAILURE, "Unable to trigger the invoice retry due to {}", e.getMessage(), e);

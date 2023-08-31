@@ -52,15 +52,12 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
             if (ObjectUtils.isEmpty(dto) || Objects.isNull(dto.getLob()) || Objects.isNull(dto.getStatus())) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY444);
             }
-            final Calendar updatedOn = Calendar.getInstance();
-            updatedOn.setTimeInMillis(dto.getTimestamp());
             invoiceManager.processCallback(InvoiceCallbackRequest.builder()
                     .lob(dto.getLob())
                     .customerAccountNumber(dto.getCustomerAccountNumber())
                     .invoiceId(dto.getInvoiceId())
                     .status(dto.getStatus())
-                    .description(dto.getDescription())
-                    .updatedOn(updatedOn).build());
+                    .description(dto.getDescription()).build());
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
         }

@@ -9,22 +9,24 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
+
 @Getter
 @SuperBuilder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AnalysedEntity
 @RequiredArgsConstructor
-public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage {
+public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage implements Serializable {
 
     private String source;
     @Analysed
     private Long timestamp;
     @Analysed
-    @JsonProperty("LOB")
+    //@JsonProperty("LOB")
     private String lob;
     @Analysed
-    @JsonProperty("customerAccountNo")
+    //@JsonProperty("customerAccountNo")
     private String customerAccountNumber;
     @Analysed
     @JsonProperty("invoiceNumber")
@@ -32,5 +34,6 @@ public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage {
     @Analysed
     private String status;
     @Analysed
+    @JsonProperty("statusDescription")
     private String description;
 }

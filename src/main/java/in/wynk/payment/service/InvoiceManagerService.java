@@ -94,12 +94,13 @@ public class InvoiceManagerService implements InvoiceManager {
             invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
             invoice.setDescription(request.getDescription());
             invoice.setStatus(request.getStatus());
+            invoice.setUpdatedOn(request.getUpdatedOn());
 
             final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
             final InvoiceEvent invoiceEvent = InvoiceEvent.from(invoice, transaction.getClientAlias());
             applicationEventPublisher.publishEvent(invoiceEvent);
 
-            if(!request.getStatus().equalsIgnoreCase("SUCCESS")){
+            if(request.getStatus().equalsIgnoreCase("FAILED")){
                 retryInvoiceGeneration(transaction.getMsisdn(), transaction.getClientAlias(), invoice.getTransactionId());
             }
         } catch(Exception ex){
@@ -206,7 +207,7 @@ public class InvoiceManagerService implements InvoiceManager {
         }
         try{
             final Invoice invoice = invoiceOptional.get();
-            if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+            if(invoice.getStatus().equalsIgnoreCase("FAILED")){
                 applicationEventPublisher.publishEvent(GenerateInvoiceEvent.builder()
                         .msisdn(transaction.getMsisdn())
                         .txnId(txnId)

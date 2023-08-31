@@ -10,6 +10,8 @@ import in.wynk.payment.service.InvoiceManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+
+import java.util.Calendar;
 import java.util.Objects;
 
 @Service
@@ -50,12 +52,15 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
             if (ObjectUtils.isEmpty(dto) || Objects.isNull(dto.getLob()) || Objects.isNull(dto.getStatus())) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY444);
             }
+            final Calendar updatedOn = Calendar.getInstance();
+            updatedOn.setTimeInMillis(dto.getTimestamp());
             invoiceManager.processCallback(InvoiceCallbackRequest.builder()
                     .lob(dto.getLob())
                     .customerAccountNumber(dto.getCustomerAccountNumber())
                     .invoiceId(dto.getInvoiceId())
                     .status(dto.getStatus())
-                    .description(dto.getDescription()).build());
+                    .description(dto.getDescription())
+                    .updatedOn(updatedOn).build());
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
         }

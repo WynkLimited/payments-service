@@ -2,12 +2,12 @@ package in.wynk.payment.dto.invoice;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 @Getter
 @SuperBuilder
@@ -16,14 +16,18 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @AnalysedEntity
 @RequiredArgsConstructor
 public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage {
+
+    private String source;
     @Analysed
-    @Field("LOB")
+    private long timestamp;
+    @Analysed
+    @JsonProperty("LOB")
     private String lob;
     @Analysed
-    @Field("customerAccountNo")
+    @JsonProperty("customerAccountNo")
     private String customerAccountNumber;
     @Analysed
-    @Field("invoiceNumber")
+    @JsonProperty("invoiceNumber")
     private String invoiceId;
     @Analysed
     private String status;

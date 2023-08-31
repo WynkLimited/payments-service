@@ -21,6 +21,4 @@ public class InvoiceCallbackRequest {
     private String status;
     @Analysed
     private String description;
-    @Analysed
-    private Calendar updatedOn;
 }

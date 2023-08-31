@@ -28,7 +28,7 @@ public class InvoiceRetryTask implements ITaskEntity {
 
     @Override
     public String getTaskId() {
-        return msisdn + BaseConstants.DELIMITER + clientAlias + BaseConstants.DELIMITER + transactionId;
+        return msisdn + BaseConstants.DELIMITER + clientAlias + BaseConstants.DELIMITER + transactionId + BaseConstants.DELIMITER + retryCount;
     }
 
     @Override

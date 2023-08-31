@@ -2,6 +2,7 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.payment.dto.invoice.CoreInvoiceDownloadResponse;
 import in.wynk.payment.service.InvoiceManagerService;
 import in.wynk.payment.utils.LoadClientUtils;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +27,9 @@ public class InvoiceController {
                 }).transform(() -> invoiceManagerService.download(tid));
         responseEntity.getHeaders().add("invoiceID","");
         AnalyticService.update(responseEntity);*/
-
-        final ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(invoiceManagerService.download(tid));
-        //responseEntity.getHeaders().add("invoiceId", "123455");
+        final CoreInvoiceDownloadResponse response = invoiceManagerService.download(tid);
+        final ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(response.getData());
+        responseEntity.getHeaders().add("invoiceId", response.getInvoice().getId());
         AnalyticService.update(responseEntity);
         return responseEntity;
     }

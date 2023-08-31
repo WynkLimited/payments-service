@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public interface InvoiceService {
 
-    void upsert(Invoice invoice);
+    Invoice upsert(Invoice invoice);
 
     Optional<Invoice> getInvoice(String id);
 

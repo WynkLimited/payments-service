@@ -19,7 +19,7 @@ public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage {
 
     private String source;
     @Analysed
-    private long timestamp;
+    private Long timestamp;
     @Analysed
     @JsonProperty("LOB")
     private String lob;

@@ -145,7 +145,7 @@ public class InvoiceManagerService implements InvoiceManager {
                 stateName = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getStateName();
             }
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(operatorDetails, taxableResponse, invoiceDetails, transaction, invoiceNumber, plan, stateName);
-            final String informInvoiceKafkaMessageStr = objectMapper.convertValue(informInvoiceKafkaMessage, String.class);
+            final String informInvoiceKafkaMessageStr = objectMapper.writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
             //AnalyticService.update(informInvoiceKafkaMessage);
             kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);

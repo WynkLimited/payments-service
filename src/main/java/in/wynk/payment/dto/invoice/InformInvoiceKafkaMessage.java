@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.invoice;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import com.google.common.base.Strings;
@@ -14,7 +15,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -23,7 +23,6 @@ import java.util.*;
 @SuperBuilder
 @AnalysedEntity
 @RequiredArgsConstructor
-@KafkaEvent(topic = "${wynk.kafka.producers.invoice.inform.topic}")
 public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
 
     @Analysed
@@ -34,20 +33,20 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
     @AnalysedEntity
     public static class LobInvoice {
         @Analysed
-        @Field("EMAIL")
+        @JsonProperty("EMAIL")
         private boolean email;
         @Analysed
-        @Field("LOB")
+        @JsonProperty("LOB")
         private String lob;
         @Analysed
-        @Field("SMS")
+        @JsonProperty("SMS")
         private boolean sms;
         @Analysed
         private CustomerDetails customerDetails;
         @Analysed
         private CustomerInvoiceDetails customerInvoiceDetails;
         @Analysed
-        @Field("customerRechargeRate")
+        @JsonProperty("customerRechargeRate")
         private List<CustomerRechargeRate> customerRechargeRates;
         @Analysed
         private TaxDetails taxDetails;
@@ -57,7 +56,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         @AnalysedEntity
         public static class CustomerDetails {
             @Analysed
-            @Field("KCINumber")
+            @JsonProperty("KCINumber")
             private String kciNumber;
             @Analysed
             private String address;
@@ -90,7 +89,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         @AnalysedEntity
         public static class CustomerInvoiceDetails {
             @Analysed
-            @Field("PaymentTransactionID")
+            @JsonProperty("PaymentTransactionID")
             private String paymentTransactionId;
             @Analysed
             private double invoiceAmount;

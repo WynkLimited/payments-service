@@ -34,9 +34,9 @@ public class InvoiceEvent {
     @Analysed
     private String state;
     @Analysed
-    private Calendar createdOn;
+    private long createdOn;
     @Analysed
-    private Calendar updatedOn;
+    private long updatedOn;
     @Analysed
     private int retryCount;
 
@@ -53,8 +53,8 @@ public class InvoiceEvent {
                 .sgst(invoice.getSgst())
                 .igst(invoice.getIgst())
                 .state(invoice.getStatus())
-                .createdOn(invoice.getCreatedOn())
-                .updatedOn(Calendar.getInstance())
+                .createdOn(invoice.getCreatedOn().getTimeInMillis())
+                .updatedOn(invoice.getUpdatedOn().getTimeInMillis())
                 .retryCount(invoice.getRetryCount())
                 .build();
     }

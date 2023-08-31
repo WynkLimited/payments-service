@@ -5,6 +5,8 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Calendar;
+
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -19,4 +21,6 @@ public class InvoiceCallbackRequest {
     private String status;
     @Analysed
     private String description;
+    @Analysed
+    private Calendar updatedOn;
 }

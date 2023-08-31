@@ -39,6 +39,7 @@ public class InvoiceEvent {
     private long updatedOn;
     @Analysed
     private int retryCount;
+    private boolean persisted;
 
     public static InvoiceEvent from(Invoice invoice, String clientAlias){
         return InvoiceEvent.builder()
@@ -56,6 +57,7 @@ public class InvoiceEvent {
                 .createdOn(invoice.getCreatedOn().getTimeInMillis())
                 .updatedOn(invoice.getUpdatedOn().getTimeInMillis())
                 .retryCount(invoice.getRetryCount())
+                .persisted(invoice.isPersisted())
                 .build();
     }
 }

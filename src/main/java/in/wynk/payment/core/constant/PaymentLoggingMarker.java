@@ -133,7 +133,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker DOWNLOAD_INVOICE_ERROR = MarkerFactory.getMarker("DOWNLOAD_INVOICE_ERROR");
     Marker GST_STATE_CODE_FAILURE = MarkerFactory.getMarker("GST_STATE_CODE_FAILURE");
     Marker INVOICE_DETAILS_NOT_FOUND = MarkerFactory.getMarker("INVOICE_DETAILS_NOT_FOUND");
-    Marker INVOICE_NOT_CONFIGURED_FOR_CLIENT = MarkerFactory.getMarker("INVOICE_NOT_CONFIGURED_FOR_CLIENT");
     Marker INVOICE_SEQUENCE_NOT_CONFIGURED_FOR_CLIENT = MarkerFactory.getMarker("INVOICE_SEQUENCE_NOT_CONFIGURED_FOR_CLIENT");
     Marker OPERATOR_DETAILS_NOT_FOUND = MarkerFactory.getMarker("OPERATOR_DETAILS_NOT_FOUND");
     Marker INVOICE_GENERATION_FAILED = MarkerFactory.getMarker("INVOICE_GENERATION_FAILED");

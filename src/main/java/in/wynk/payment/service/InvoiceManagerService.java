@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.base.Strings;
@@ -27,6 +28,7 @@ import in.wynk.vas.client.service.VasClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import java.util.*;
@@ -39,7 +41,10 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 @RequiredArgsConstructor
 public class InvoiceManagerService implements InvoiceManager {
 
-    private final Gson gson;
+    @Value("${wynk.kafka.producers.invoice.inform.topic}")
+    private String informInvoiceTopic;
+
+    private final ObjectMapper objectMapper;
     private final InvoiceService invoiceService;
     private final VasClientService vasClientService;
     private final InvoiceVasClientService invoiceVasClientService;
@@ -49,7 +54,7 @@ public class InvoiceManagerService implements InvoiceManager {
     private final GSTStateCodesCachingService stateCodesCachingService;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final InvoiceNumberGeneratorService invoiceNumberGenerator;
-    private final IKafkaEventPublisher<String, InvoiceKafkaMessage> kafkaEventPublisher;
+    private final IKafkaEventPublisher<String, String> kafkaEventPublisher;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -140,9 +145,10 @@ public class InvoiceManagerService implements InvoiceManager {
                 stateName = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getStateName();
             }
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(operatorDetails, taxableResponse, invoiceDetails, transaction, invoiceNumber, plan, stateName);
-            AnalyticService.update(INFORM_INVOICE_MESSAGE, gson.toJson(informInvoiceKafkaMessage));
-            AnalyticService.update(informInvoiceKafkaMessage);
-            kafkaEventPublisher.publish(informInvoiceKafkaMessage);
+            final String informInvoiceKafkaMessageStr = objectMapper.convertValue(informInvoiceKafkaMessage, String.class);
+            AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
+            //AnalyticService.update(informInvoiceKafkaMessage);
+            kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the inform invoice event in kafka due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY452, e);

@@ -177,6 +177,10 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onInvoiceEvent(InvoiceEvent event) {
         AnalyticService.update(event);
+        final Calendar createdOn = Calendar.getInstance();
+        createdOn.setTimeInMillis(event.getCreatedOn());
+        final Calendar updatedOn = Calendar.getInstance();
+        updatedOn.setTimeInMillis(event.getUpdatedOn());
         retryRegistry.retry(PaymentConstants.INVOICE_UPSERT_RETRY_KEY).executeRunnable(() -> invoiceService.upsert(Invoice.builder()
                 .id(event.getInvoiceId())
                 .transactionId(event.getTransactionId())
@@ -187,8 +191,8 @@ public class PaymentEventListener {
                 .cgst(event.getCgst())
                 .sgst(event.getSgst())
                 .igst(event.getIgst())
-                .createdOn(event.getCreatedOn())
-                .updatedOn(event.getUpdatedOn())
+                .createdOn(createdOn)
+                .updatedOn(updatedOn)
                 .retryCount(event.getRetryCount())
                 .status(event.getState())
                 .build()));

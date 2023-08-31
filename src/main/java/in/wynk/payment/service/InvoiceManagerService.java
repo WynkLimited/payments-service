@@ -186,7 +186,8 @@ public class InvoiceManagerService implements InvoiceManager {
         }
         builder.state(InvoiceState.IN_PROGRESS.name());
         builder.retryCount(0);
-        builder.createdOn(Calendar.getInstance());
+        builder.createdOn(Calendar.getInstance().getTimeInMillis());
+        builder.updatedOn(Calendar.getInstance().getTimeInMillis());
         applicationEventPublisher.publishEvent(builder.build());
     }
     @Override

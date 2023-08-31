@@ -19,7 +19,7 @@ public class InvoiceRetryEvent {
     private String clientAlias;
     @Analysed
     @Builder.Default
-    private int retryCount = -1;
+    private int retryCount = 0;
     @Analysed
     private List<Long> retries;
 }

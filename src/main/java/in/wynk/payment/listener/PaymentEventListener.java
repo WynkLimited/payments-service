@@ -177,6 +177,7 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onInvoiceEvent(InvoiceEvent event) {
         AnalyticService.update(event);
+        if(event.isPersisted()) return;
         final Calendar createdOn = Calendar.getInstance();
         createdOn.setTimeInMillis(event.getCreatedOn());
         final Calendar updatedOn = Calendar.getInstance();
@@ -235,6 +236,8 @@ public class PaymentEventListener {
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId()).orElse(null);
             if(Objects.nonNull(invoice) && invoice.getStatus().equalsIgnoreCase("SUCCESS")){
                 invoice.setRetryCount(invoice.getRetryCount() + 1);
+                invoiceService.upsert(invoice);
+                invoice.persisted();
                 eventPublisher.publishEvent(InvoiceEvent.from(invoice, event.getClientAlias()));
                 if(invoice.getStatus().equalsIgnoreCase("SUCCESS")){
                     return;
@@ -249,6 +252,8 @@ public class PaymentEventListener {
 
             if(Objects.nonNull(invoice)){
                 invoice.setRetryCount(invoice.getRetryCount() + 1);
+                invoiceService.upsert(invoice);
+                invoice.persisted();
                 eventPublisher.publishEvent(InvoiceEvent.from(invoice, event.getClientAlias()));
             }
             final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());

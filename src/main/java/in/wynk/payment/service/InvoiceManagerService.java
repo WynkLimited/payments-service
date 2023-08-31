@@ -95,7 +95,8 @@ public class InvoiceManagerService implements InvoiceManager {
             invoice.setDescription(request.getDescription());
             invoice.setStatus(request.getStatus());
             invoice.setUpdatedOn(request.getUpdatedOn());
-
+            invoiceService.upsert(invoice);
+            invoice.persisted();
             final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
             final InvoiceEvent invoiceEvent = InvoiceEvent.from(invoice, transaction.getClientAlias());
             applicationEventPublisher.publishEvent(invoiceEvent);
@@ -159,6 +160,7 @@ public class InvoiceManagerService implements InvoiceManager {
     private void saveInvoiceDetails(Transaction transaction, String invoiceID, TaxableResponse taxableResponse){
         final Invoice invoice = invoiceService.getInvoiceByTransactionId(transaction.getIdStr()).orElse(null);
         if(Objects.nonNull(invoice)) {
+            invoice.persisted();
             InvoiceEvent invoiceEvent = InvoiceEvent.from(invoice, transaction.getClientAlias());
             applicationEventPublisher.publishEvent(invoiceEvent);
             return;

@@ -14,14 +14,9 @@ public class InvoiceCallbackKafkaSerializer implements Deserializer<CallbackInvo
     @Override
     public CallbackInvoiceKafkaMessage deserialize(String topic, byte[] bytes) {
         try {
-            log.info("Successfully getting bytes, parsing now");
-            try{
-                CallbackInvoiceKafkaMessage obj = objectMapper.readValue(objectMapper.writeValueAsString(bytes), CallbackInvoiceKafkaMessage.class);
-                log.info("parsed "+obj.getStatus());
-            } catch(Exception e){
-
-            }
-            return objectMapper.readValue(bytes, CallbackInvoiceKafkaMessage.class);
+            String message = objectMapper.readValue(bytes, String.class);
+            log.info("response received for invoice callback - " + message);
+            return objectMapper.readValue(message, CallbackInvoiceKafkaMessage.class);
         } catch (Exception e) {
             log.error(KAFKA_CONSUMPTION_ERROR, "Error in deserializing the payload {}", e.getMessage(), e);
         }

@@ -7,7 +7,6 @@ import com.google.common.base.Strings;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.InvoiceDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.stream.advice.KafkaEvent;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.dto.UserMobilityInfo;
@@ -16,7 +15,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Getter
@@ -151,16 +152,19 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
     }
 
-    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, Transaction transaction, String invoiceNumber, PlanDTO plan, String stateName){
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails, transaction.getMsisdn(), stateName);
+    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, Transaction transaction, String invoiceNumber, PlanDTO plan, String stateName, String uid){
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails, transaction.getMsisdn(), stateName, uid);
         final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(taxableResponse, transaction, invoiceNumber, plan, invoiceDetails);
         final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(taxableResponse, invoiceDetails);
         final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(taxableResponse);
+        boolean sendEmail = Objects.nonNull(operatorDetails) &&
+                Objects.nonNull(operatorDetails.getUserMobilityInfo()) &&
+                Objects.nonNull(operatorDetails.getUserMobilityInfo().getEmailID());
         return InformInvoiceKafkaMessage.builder()
                 .lobInvoice(LobInvoice.builder()
                         .lob(invoiceDetails.getLob())
                         .sms(true)
-                        .email(false)
+                        .email(sendEmail)
                         .customerDetails(customerDetails)
                         .customerInvoiceDetails(customerInvoiceDetails)
                         .customerRechargeRates(customerRechargeRates)
@@ -170,7 +174,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
     }
 
     private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, PlanDTO plan, InvoiceDetails invoiceDetails) {
-        double CGST = 0.0;
+        /*double CGST = 0.0;
         double SGST = 0.0;
         double IGST = 0.0;
         for(TaxDetailsDTO dto : taxableResponse.getTaxDetails()){
@@ -182,18 +186,19 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 case IGST:
                     IGST = dto.getAmount();
             }
-        }
+        }*/
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         return LobInvoice.CustomerInvoiceDetails.builder()
-                .invoiceDate(new Date().toString())
+                .invoiceDate(LocalDateTime.now().format(formatter))
                 .paymentTransactionId(transaction.getIdStr())
                 .invoiceNumber(invoiceNumber)
                 .invoiceAmount(plan.getPrice().getAmount())
-                .paymentDate(transaction.getInitTime().getTime().toString())
-                .paymentMode(transaction.getPaymentChannel().getCode())
+                .paymentDate(transaction.getInitTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(formatter))
+                /*.paymentMode(transaction.getPaymentChannel().getCode())*/
                 .typeOfService(plan.getTitle())
                 .discount(plan.getPrice().getAmount() - transaction.getAmount())
                 .discountedPrice(transaction.getAmount())
-                .qrCode("upi://pay?" +
+                /*.qrCode("upi://pay?" +
                         "pa=21000037032.FL@mairtel&" +
                         "pn=Bharti%20Airtel%20Ltd.&" +
                         "mc=4814&" +
@@ -217,7 +222,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                         "SGST="+SGST+"," +
                         "IGST="+IGST+"," +
                         "CESS=0.0," +
-                        "TotalInvAmt="+taxableResponse.getTaxableAmount())
+                        "TotalInvAmt="+taxableResponse.getTaxableAmount())*/
                 .build();
     }
 
@@ -230,7 +235,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         return value.trim();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, String msisdn, String stateName) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, String msisdn, String stateName, String uid) {
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = InformInvoiceKafkaMessage.LobInvoice.CustomerDetails.builder();
         if(Objects.nonNull(operatorDetails) && Objects.nonNull(operatorDetails.getUserMobilityInfo())){
             final UserMobilityInfo userMobilityInfo = operatorDetails.getUserMobilityInfo();
@@ -246,13 +251,14 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                     sanitize(stateName) :
                     sanitize(userMobilityInfo.getResState());
             final String alternateNumber = sanitize(userMobilityInfo.getAlternateContactNumber());
-            final String kciNumber = sanitize(msisdn);
+            final String kciNumber = sanitize(msisdn.replace("+91", ""));
             final String emailId = sanitize(userMobilityInfo.getEmailID());
             final String gstNumber = sanitize(userMobilityInfo.getGstNumber());
             final String panNumber = sanitize(userMobilityInfo.getPanNumber());
             final String customerType = sanitize(userMobilityInfo.getCustomerType());
             final String customerClassification = sanitize(userMobilityInfo.getCustomerClassification());
-            final String customerAccountNo = (Strings.isNullOrEmpty(userMobilityInfo.getCustomerID()))? msisdn : sanitize(userMobilityInfo.getCustomerID());
+            /*final String customerAccountNo = (Strings.isNullOrEmpty(userMobilityInfo.getCustomerID()))? msisdn.replace("+91", "") : sanitize(userMobilityInfo.getCustomerID());*/
+            final String customerAccountNo = sanitize(uid);
             return customerDetailsBuilder.name(name).address(address).pinCode(pinCode).stateCode(stateCode).stateName(state)
                             .alternateNumber(alternateNumber).kciNumber(kciNumber).emailId(emailId).gstn(gstNumber).panNumber(panNumber)
                             .customerType(customerType).customerClassification(customerClassification).customerAccountNo(customerAccountNo).build();

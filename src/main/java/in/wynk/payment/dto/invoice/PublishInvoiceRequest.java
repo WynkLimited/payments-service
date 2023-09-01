@@ -11,6 +11,7 @@ import lombok.experimental.SuperBuilder;
 public class PublishInvoiceRequest {
     private MsisdnOperatorDetails operatorDetails;
     private IPurchaseDetails purchaseDetails;
+    private TaxableRequest taxableRequest;
     private TaxableResponse taxableResponse;
     private InvoiceDetails invoiceDetails;
     private String invoiceId;

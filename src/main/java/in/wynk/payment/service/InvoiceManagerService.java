@@ -79,8 +79,8 @@ public class InvoiceManagerService implements InvoiceManager {
             final String invoiceID = getInvoiceNumber(request.getTxnId(), request.getClientAlias());
             saveInvoiceDetails(transaction, invoiceID, taxableResponse);
             publishInvoiceMessage(PublishInvoiceRequest.builder().operatorDetails(operatorDetails).purchaseDetails(purchaseDetails)
-                    .taxableResponse(taxableResponse).invoiceDetails(invoiceDetails).uid(transaction.getUid()).invoiceId(invoiceID)
-                    .build());
+                    .taxableRequest(taxableRequest).taxableResponse(taxableResponse).invoiceDetails(invoiceDetails).uid(transaction.getUid())
+                    .invoiceId(invoiceID).build());
         } catch(Exception ex){
             retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId());
             throw new WynkRuntimeException(PaymentErrorType.PAY446, ex);
@@ -138,12 +138,8 @@ public class InvoiceManagerService implements InvoiceManager {
         try{
             final Transaction transaction = TransactionContext.get();
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
-            String stateName = stateCodesCachingService.get(DEFAULT_GST_STATE_CODE).getStateName();
-            if(Objects.nonNull(request.getPurchaseDetails().getGeoLocation()) && Objects.nonNull(request.getPurchaseDetails().getGeoLocation().getStateCode())){
-                stateName = stateCodesCachingService.getByISOStateCode(request.getPurchaseDetails().getGeoLocation().getStateCode()).getStateName();
-            }
-            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request.getOperatorDetails(), request.getTaxableResponse(),
-                    request.getInvoiceDetails(), transaction, request.getInvoiceId(), plan, stateName, request.getUid());
+            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request.getOperatorDetails(), request.getTaxableRequest(), request.getTaxableResponse(),
+                    request.getInvoiceDetails(), transaction, request.getInvoiceId(), plan, request.getUid());
             final String informInvoiceKafkaMessageStr = objectMapper.writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
             //AnalyticService.update(informInvoiceKafkaMessage);

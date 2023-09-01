@@ -5,13 +5,13 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.InvoiceState;
-import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.GenerateInvoiceEvent;
 import in.wynk.payment.core.event.InvoiceRetryEvent;
@@ -180,15 +180,14 @@ public class InvoiceManagerService implements InvoiceManager {
         }
     }
     @Override
-    @TransactionAware(txnId = "#tid")
     public CoreInvoiceDownloadResponse download(String txnId) {
         try{
-            final Transaction transaction = TransactionContext.get();
+            final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId).orElse(null);
             if(Objects.isNull(invoice) || !invoice.getStatus().equalsIgnoreCase("SUCCESS")){
                 throw new WynkRuntimeException(PaymentErrorType.PAY442);
             } else {
-                final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(transaction.getClientAlias());
+                final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(clientAlias);
                 final byte[] data = invoiceVasClientService.download(invoice.getCustomerAccountNumber(), invoice.getId(), invoiceDetails.getLob());
                 return CoreInvoiceDownloadResponse.builder()
                         .invoice(invoice)

@@ -239,6 +239,7 @@ public class PaymentEventListener {
                             .build();
                     eventPublisher.publishEvent(generateInvoiceEvent);
                     invoice.setRetryCount(invoice.getRetryCount() + 1);
+                    invoice.persisted();
                     invoiceService.upsert(invoice);
 
                     final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());

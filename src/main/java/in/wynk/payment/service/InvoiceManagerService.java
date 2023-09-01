@@ -95,6 +95,7 @@ public class InvoiceManagerService implements InvoiceManager {
             invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
             invoice.setDescription(request.getDescription());
             invoice.setStatus(request.getStatus());
+            invoice.persisted();
             invoiceService.upsert(invoice);
             final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
             if(request.getStatus().equalsIgnoreCase("FAILED")){

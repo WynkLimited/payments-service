@@ -174,7 +174,6 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "invoiceEvent")
-    @ClientAware(clientAlias = "#event.clientAlias")
     public void onInvoiceEvent(InvoiceEvent event) {
         AnalyticService.update(event);
         AnalyticService.update(INVOICE_ID, event.getInvoice().getId());

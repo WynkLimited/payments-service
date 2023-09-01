@@ -6,6 +6,8 @@ import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Invoice;
 import in.wynk.payment.core.dao.repository.InvoiceDao;
 import in.wynk.payment.core.event.InvoiceEvent;
@@ -41,14 +43,14 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     @Cacheable(cacheName = "Invoice", cacheKey = "'id:'+ #id", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
-    public Optional<Invoice> getInvoice(String id) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), InvoiceDao.class).findById(id);
+    public Invoice getInvoice(String id) {
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), InvoiceDao.class).findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
     }
 
     @Override
     @Cacheable(cacheName = "Invoice", cacheKey = "'transactionId:'+ #transactionId", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
-    public Optional<Invoice> getInvoiceByTransactionId(String transactionId) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), InvoiceDao.class).findByTransactionId(transactionId);
+    public Invoice getInvoiceByTransactionId(String transactionId) {
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), InvoiceDao.class).findByTransactionId(transactionId).orElse(null);
     }
 
     private void publishAnalytics(Invoice invoice) {

@@ -201,7 +201,7 @@ public class PaymentEventListener {
         try {
             AnalyticService.update(event);
             int retryCount = event.getRetryCount();
-            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId()).orElse(null);
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
             if(Objects.nonNull(invoice)){
                 retryCount = invoice.getRetryCount();
             }
@@ -229,7 +229,7 @@ public class PaymentEventListener {
     public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
         try{
             AnalyticService.update(event);
-            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId()).orElse(null);
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId());
             if (Objects.nonNull(invoice)){
                 if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
                     final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()

@@ -152,8 +152,8 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
     }
 
-    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, Transaction transaction, String invoiceNumber, PlanDTO plan, String stateName, String uid){
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails, transaction.getMsisdn(), stateName, uid);
+    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableRequest taxableRequest, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, Transaction transaction, String invoiceNumber, PlanDTO plan, String uid){
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails, taxableRequest, transaction.getMsisdn(), uid);
         final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(taxableResponse, transaction, invoiceNumber, plan, invoiceDetails);
         final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(taxableResponse, invoiceDetails);
         final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(taxableResponse);
@@ -235,7 +235,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         return value.trim();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, String msisdn, String stateName, String uid) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, TaxableRequest taxableRequest, String msisdn, String uid) {
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = InformInvoiceKafkaMessage.LobInvoice.CustomerDetails.builder();
         if(Objects.nonNull(operatorDetails) && Objects.nonNull(operatorDetails.getUserMobilityInfo())){
             final UserMobilityInfo userMobilityInfo = operatorDetails.getUserMobilityInfo();
@@ -246,10 +246,8 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                     sanitize(userMobilityInfo.getResCity() + " " +userMobilityInfo.getResState()) :
                     sanitize(userMobilityInfo.getResCity() + " " +userMobilityInfo.getResDistrict() + " " +userMobilityInfo.getResState());
             final String pinCode = sanitize(userMobilityInfo.getResPinCode());
-            final String stateCode = sanitize(userMobilityInfo.getGstStateCode());
-            final String state = (Strings.isNullOrEmpty(userMobilityInfo.getResState()))?
-                    sanitize(stateName) :
-                    sanitize(userMobilityInfo.getResState());
+            final String stateCode = taxableRequest.getConsumerStateCode();
+            final String state = taxableRequest.getConsumerStateName();
             final String alternateNumber = sanitize(userMobilityInfo.getAlternateContactNumber());
             final String kciNumber = sanitize(msisdn.replace("+91", ""));
             final String emailId = sanitize(userMobilityInfo.getEmailID());

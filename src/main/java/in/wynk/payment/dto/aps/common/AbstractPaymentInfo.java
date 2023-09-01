@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import in.wynk.common.constant.BaseConstants;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;

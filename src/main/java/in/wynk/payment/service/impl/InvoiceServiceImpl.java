@@ -40,7 +40,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    @Cacheable(cacheName = "Invoice", cacheKey = "'id:'+ #invoiceId", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @Cacheable(cacheName = "Invoice", cacheKey = "'id:'+ #id", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public Optional<Invoice> getInvoice(String id) {
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), InvoiceDao.class).findById(id);
     }

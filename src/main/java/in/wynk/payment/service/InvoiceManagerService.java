@@ -90,7 +90,7 @@ public class InvoiceManagerService implements InvoiceManager {
     @Override
     public void processCallback(InvoiceCallbackRequest request) {
         try{
-            final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId()).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY445));
+            final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId());
             invoice.setUpdatedOn(Calendar.getInstance());
             invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
             invoice.setDescription(request.getDescription());
@@ -107,7 +107,7 @@ public class InvoiceManagerService implements InvoiceManager {
     }
 
     private String getInvoiceNumber(String txnId, String clientAlias){
-        final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId).orElse(null);
+        final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId);
         if(Objects.nonNull(invoice)) return invoice.getId();
         try{
             final String invoiceID = invoiceNumberGenerator.generateInvoiceNumber(clientAlias);
@@ -151,7 +151,7 @@ public class InvoiceManagerService implements InvoiceManager {
     }
 
     private void saveInvoiceDetails(Transaction transaction, String invoiceID, TaxableResponse taxableResponse){
-        final Invoice invoice = invoiceService.getInvoiceByTransactionId(transaction.getIdStr()).orElse(null);
+        final Invoice invoice = invoiceService.getInvoiceByTransactionId(transaction.getIdStr());
         if(Objects.isNull(invoice)) {
             final Invoice.InvoiceBuilder invoiceBuilder = Invoice.builder()
                     .id(invoiceID)
@@ -183,7 +183,7 @@ public class InvoiceManagerService implements InvoiceManager {
     public CoreInvoiceDownloadResponse download(String txnId) {
         try{
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
-            final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId).orElse(null);
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId);
             if(Objects.isNull(invoice) || !invoice.getStatus().equalsIgnoreCase("SUCCESS")){
                 throw new WynkRuntimeException(PaymentErrorType.PAY442);
             } else {

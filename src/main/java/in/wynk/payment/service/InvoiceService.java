@@ -8,7 +8,7 @@ public interface InvoiceService {
 
     Invoice upsert(Invoice invoice);
 
-    Optional<Invoice> getInvoice(String id);
+    Invoice getInvoice(String id);
 
-    Optional<Invoice> getInvoiceByTransactionId(String transactionId);
+    Invoice getInvoiceByTransactionId(String transactionId);
 }

@@ -138,7 +138,7 @@ public class InvoiceManagerService implements InvoiceManager {
         try{
             final Transaction transaction = TransactionContext.get();
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
-            String stateName = stateCodesCachingService.getByISOStateCode(DEFAULT_GST_STATE_CODE).getStateName();
+            String stateName = stateCodesCachingService.get(DEFAULT_GST_STATE_CODE).getStateName();
             if(Objects.nonNull(request.getPurchaseDetails().getGeoLocation()) && Objects.nonNull(request.getPurchaseDetails().getGeoLocation().getStateCode())){
                 stateName = stateCodesCachingService.getByISOStateCode(request.getPurchaseDetails().getGeoLocation().getStateCode()).getStateName();
             }

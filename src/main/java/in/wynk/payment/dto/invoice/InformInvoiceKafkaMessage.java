@@ -153,17 +153,19 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
     }
 
-    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(MsisdnOperatorDetails operatorDetails, TaxableRequest taxableRequest, TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, Transaction transaction, String invoiceNumber, PlanDTO plan, OfferDTO offer, String uid){
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(operatorDetails, taxableRequest, transaction.getMsisdn(), uid);
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(taxableResponse, transaction, invoiceNumber, plan, invoiceDetails);
-        final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(taxableResponse, invoiceDetails, offer);
-        final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(taxableResponse);
-        boolean sendEmail = Objects.nonNull(operatorDetails) &&
-                Objects.nonNull(operatorDetails.getUserMobilityInfo()) &&
-                Objects.nonNull(operatorDetails.getUserMobilityInfo().getEmailID());
+    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, PlanDTO plan, OfferDTO offer){
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
+                request.getUid());
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), plan,
+                request.getInvoiceDetails());
+        final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), offer);
+        final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(request.getTaxableResponse());
+        final boolean sendEmail = Objects.nonNull(request.getOperatorDetails()) &&
+                Objects.nonNull(request.getOperatorDetails().getUserMobilityInfo()) &&
+                Objects.nonNull(request.getOperatorDetails().getUserMobilityInfo().getEmailID());
         return InformInvoiceKafkaMessage.builder()
                 .lobInvoice(LobInvoice.builder()
-                        .lob(invoiceDetails.getLob())
+                        .lob(request.getInvoiceDetails().getLob())
                         .sms(true)
                         .email(sendEmail)
                         .customerDetails(customerDetails)
@@ -259,11 +261,12 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
             /*final String customerAccountNo = (Strings.isNullOrEmpty(userMobilityInfo.getCustomerID()))? msisdn.replace("+91", "") : sanitize(userMobilityInfo.getCustomerID());*/
             final String customerAccountNo = sanitize(uid);
             return customerDetailsBuilder.name(name).address(address).pinCode(pinCode).stateCode(stateCode).stateName(state)
-                            .alternateNumber(alternateNumber).kciNumber(kciNumber).emailId(emailId).gstn(gstNumber).panNumber(panNumber)
-                            .customerType(customerType).customerClassification(customerClassification).customerAccountNo(customerAccountNo).build();
+                    .alternateNumber(alternateNumber).kciNumber(kciNumber).emailId(emailId).gstn(gstNumber).panNumber(panNumber)
+                    .customerType(customerType).customerClassification(customerClassification).customerAccountNo(customerAccountNo).build();
         }
-        return customerDetailsBuilder.stateCode(stateCode).stateName(state).customerAccountNo(uid)
-                .kciNumber(sanitize(msisdn.replace("+91", ""))).build();
+        return customerDetailsBuilder.kciNumber(sanitize(msisdn.replace("+91", ""))).customerAccountNo(uid).stateCode(stateCode).stateName(state)
+                .name(PaymentConstants.BLANK).address(PaymentConstants.BLANK).pinCode(PaymentConstants.BLANK).alternateNumber(PaymentConstants.BLANK)
+                .emailId(PaymentConstants.BLANK).gstn(PaymentConstants.BLANK).panNumber(PaymentConstants.BLANK).customerType(PaymentConstants.BLANK).customerClassification(PaymentConstants.BLANK).build();
     }
 
     private static List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> generateCustomerRechargeRate(TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, OfferDTO offer) {

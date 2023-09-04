@@ -76,9 +76,9 @@ public class InvoiceManagerService implements InvoiceManager {
                     .supplierStateCode(DEFAULT_GST_STATE_CODE).supplierStateName(stateCodesCachingService.get(DEFAULT_GST_STATE_CODE).getStateName())
                     .amount(transaction.getAmount()).gstPercentage(invoiceDetails.getGstPercentage())
                     .build();
-            AnalyticService.update(taxableRequest.toString());
+            AnalyticService.update(TAXABLE_REQUEST, String.valueOf(taxableRequest));
             final TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-            AnalyticService.update(taxableResponse.toString());
+            AnalyticService.update(TAXABLE_RESPONSE, String.valueOf(taxableResponse));
 
             final String invoiceID = getInvoiceNumber(request.getTxnId(), request.getClientAlias());
             saveInvoiceDetails(transaction, invoiceID, taxableResponse);
@@ -145,8 +145,8 @@ public class InvoiceManagerService implements InvoiceManager {
             final Transaction transaction = TransactionContext.get();
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request.getOperatorDetails(), request.getTaxableRequest(), request.getTaxableResponse(),
-                    request.getInvoiceDetails(), transaction, request.getInvoiceId(), plan, offer, request.getUid());
+            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
+                    transaction, plan, offer);
             final String informInvoiceKafkaMessageStr = objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
             kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);

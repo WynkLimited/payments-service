@@ -43,7 +43,7 @@ public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, Inv
     }
 
     @KafkaListener(id = "generateInvoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.invoice[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.invoice[0].name}")
-    @AnalyseTransaction(name = "generateInvoiceKafkaListener")
+    @AnalyseTransaction(name = "generateInvoice")
     protected void listenGenerateInvoice(ConsumerRecord<String, GenerateInvoiceKafkaMessage> consumerRecord) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
@@ -54,7 +54,7 @@ public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, Inv
     }
 
     @KafkaListener(id = "callbackInvoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.invoice[1].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.invoice[1].name}")
-    @AnalyseTransaction(name = "callbackInvoiceKafkaListener")
+    @AnalyseTransaction(name = "callbackInvoice")
     protected void listenInvoiceCallback(ConsumerRecord<String, CallbackInvoiceKafkaMessage> consumerRecord) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());

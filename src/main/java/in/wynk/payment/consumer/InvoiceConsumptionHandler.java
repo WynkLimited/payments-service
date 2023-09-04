@@ -25,7 +25,6 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
     }
 
     @Override
-    @AnalyseTransaction(name = "generateInvoice")
     public void generateInvoice(InvoiceKafkaMessage message) {
         try {
             GenerateInvoiceKafkaMessage dto = (GenerateInvoiceKafkaMessage) message;
@@ -44,7 +43,6 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
     }
 
     @Override
-    @AnalyseTransaction(name = "callbackInvoice")
     public void processCallback(InvoiceKafkaMessage message) {
         try{
             CallbackInvoiceKafkaMessage dto = (CallbackInvoiceKafkaMessage) message;

@@ -338,12 +338,6 @@
     <logger name="generateInvoiceEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
-    <logger name="generateInvoiceKafkaListener" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
-    </logger>
-    <logger name="callbackInvoiceKafkaListener" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
-    </logger>
     <logger name="generateInvoice" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>

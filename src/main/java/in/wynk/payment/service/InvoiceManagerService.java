@@ -19,6 +19,7 @@ import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.invoice.*;
 import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.InvoiceVasClientService;
@@ -68,6 +69,7 @@ public class InvoiceManagerService implements InvoiceManager {
             final MsisdnOperatorDetails operatorDetails = getOperatorDetails(request.getMsisdn());
             final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
             final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails, purchaseDetails);
+            AnalyticService.update(ACCESS_STATE_CODE, accessStateCode);
 
             final TaxableRequest taxableRequest = TaxableRequest.builder()
                     .consumerStateCode(accessStateCode).consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
@@ -142,8 +144,9 @@ public class InvoiceManagerService implements InvoiceManager {
         try{
             final Transaction transaction = TransactionContext.get();
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+            final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request.getOperatorDetails(), request.getTaxableRequest(), request.getTaxableResponse(),
-                    request.getInvoiceDetails(), transaction, request.getInvoiceId(), plan, request.getUid());
+                    request.getInvoiceDetails(), transaction, request.getInvoiceId(), plan, offer, request.getUid());
             final String informInvoiceKafkaMessageStr = objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
             kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);
@@ -233,11 +236,13 @@ public class InvoiceManagerService implements InvoiceManager {
                     Objects.nonNull(operatorDetails.getUserMobilityInfo()) &&
                     Objects.nonNull(operatorDetails.getUserMobilityInfo().getGstStateCode())) {
                 gstStateCode = operatorDetails.getUserMobilityInfo().getGstStateCode().trim();
+                AnalyticService.update(OPTIMUS_GST_STATE_CODE, gstStateCode);
             } else {
                 if(Objects.nonNull(purchaseDetails) &&
                         Objects.nonNull(purchaseDetails.getGeoLocation()) &&
                         Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode())){
                     gstStateCode = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getId();
+                    AnalyticService.update(GEOLOCATION_GST_STATE_CODE, gstStateCode);
                 }
             }
         } catch (Exception ex) {

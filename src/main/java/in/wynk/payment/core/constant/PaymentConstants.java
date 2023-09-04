@@ -69,11 +69,13 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
-    String INVOICE_UPSERT_RETRY_KEY = "invoiceUpsertRetry";
     String INVOICE_RETRY = "invoiceRetry";
     String INVOICE_SEQUENCE_LOCK_KEY = "invoiceSequenceLockKey";
     String INVOICE_SEQUENCE_PREFIX = "ADL";
     String INFORM_INVOICE_MESSAGE = "informInvoiceMessage";
+    String OPTIMUS_GST_STATE_CODE = "optimusGSTStateCode";
+    String GEOLOCATION_GST_STATE_CODE = "geoLocationGSTStateCode";
+    String ACCESS_STATE_CODE = "accessStateCode";
     String INVOICE_CATEGORY = "ONLINE CONTENT SERVICES";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
 

@@ -56,13 +56,12 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
 
     private final String CHARGING_ENDPOINT;
     private final String UPI_CHARGING_ENDPOINT;
-    private final String APS_MANDATE_AMOUNT;
 
     private final ApsCommonGatewayService common;
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final Map<FlowType, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>> chargingDelegate = new HashMap<>();
 
-    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common, String mandateAmount) {
+    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String commonChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
         this.common = common;
         this.UPI_CHARGING_ENDPOINT = upiChargeEndpoint;
         this.CHARGING_ENDPOINT = commonChargeEndpoint;
@@ -70,7 +69,6 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
         this.chargingDelegate.put(UPI, new UpiCharging());
         this.chargingDelegate.put(NET_BANKING, new NetBankingCharging());
         this.paymentMethodCachingService = paymentMethodCachingService;
-        this.APS_MANDATE_AMOUNT = mandateAmount;
     }
 
     @Override
@@ -149,16 +147,17 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     ExternalChargingRequest.ExternalChargingRequestBuilder<CollectUpiPaymentInfo> apsChargingRequestBuilder =
                             ExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(transaction.getIdStr()).userInfo(userInfo)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
+                    boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) : transaction.getAmount());
+                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
-                    if (paymentDetails.isAutoRenew() || paymentDetails.isMandate()) {
+                    if (paymentDetails.isAutoRenew() || isMandateFlow ) {
                         Calendar cal = Calendar.getInstance();
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
                         paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getMandateAmount()).paymentStartDate(today.toInstant().toEpochMilli())
-                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!paymentDetails.isMandate());
+                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!isMandateFlow);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
                     common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
@@ -180,10 +179,11 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
                             ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
-                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) : transaction.getAmount());
+                    boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
+                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
 
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
-                    if (paymentDetails.isAutoRenew() || paymentDetails.isMandate()) {
+                    if (paymentDetails.isAutoRenew() || isMandateFlow) {
                         Calendar cal = Calendar.getInstance();
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
@@ -192,7 +192,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                 .productCategory(BaseConstants.WYNK)
                                 .mandateAmount(transaction.getMandateAmount())
                                 .paymentStartDate(today.toInstant().toEpochMilli())
-                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!paymentDetails.isMandate());
+                                .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!isMandateFlow);
                     }
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
@@ -311,12 +311,11 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                 CardDetails.builder().nameOnCard(((FreshCardDetails) paymentDetails.getCardDetails()).getCardHolderName()).cardNumber(cardDetails.getCardNumber())
                                         .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
                         final String encCardInfo = common.encryptCardData(credentials);
-                        abstractCardPaymentInfoBuilder =
-                                FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
-                                        .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
-                                        .paymentMode(paymentMode).paymentAmount(paymentDetails.isMandate() ? Double.parseDouble(APS_MANDATE_AMOUNT) : transaction.getAmount());
+                        boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
+                        abstractCardPaymentInfoBuilder = FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard()).favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard()).paymentMode(paymentMode)
+                                .paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
                         //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
-                        if (paymentDetails.isAutoRenew() || paymentDetails.isMandate()) {
+                        if (paymentDetails.isAutoRenew() || isMandateFlow) {
                             Calendar cal = Calendar.getInstance();
                             Date today = cal.getTime();
                             cal.add(Calendar.YEAR, 10);
@@ -325,7 +324,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                     .productCategory(BaseConstants.WYNK)
                                     .mandateAmount(transaction.getMandateAmount())
                                     .paymentStartDate(today.toInstant().toEpochMilli())
-                                    .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!paymentDetails.isMandate());
+                                    .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!isMandateFlow);
 
                         }
                     } else {

@@ -47,6 +47,7 @@ public class BasicPricingManager implements IPricingManager {
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
                 if (nativeRequest.isMandate()) {
                     nativeRequest.setEvent(PaymentEvent.MANDATE);
+                    nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                 } else if (nativeRequest.isAutoRenewOpted()) {
                     nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
                 }

@@ -4,16 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.base.Strings;
-import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
+import in.wynk.common.utils.MsisdnUtils;
+import in.wynk.common.utils.VigenereCipher;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.event.GenerateInvoiceEvent;
 import in.wynk.payment.core.event.InvoiceRetryEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
@@ -24,12 +24,16 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.InvoiceVasClientService;
 import in.wynk.vas.client.service.VasClientService;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.DEFAULT_GST_STATE_CODE;
@@ -197,6 +201,14 @@ public class InvoiceManagerService implements InvoiceManager {
             }
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.DOWNLOAD_INVOICE_ERROR, ex.getMessage(), ex);
+            if (HttpClientErrorException.class.isAssignableFrom(ex.getClass())) {
+                log.error("status code {}", ((HttpClientErrorException) ex).getStatusCode());
+                log.error("getMessage {}", ((HttpClientErrorException) ex).getMessage());
+                log.error("getResponseBodyAsString {}", ((HttpClientErrorException) ex).getResponseBodyAsString());
+                if(((HttpClientErrorException) ex).getStatusCode() == HttpStatus.NOT_FOUND){
+                    throw new WynkRuntimeException(PaymentErrorType.PAY451, ex);
+                }
+            }
             throw new WynkRuntimeException(PaymentErrorType.PAY451, ex);
         }
     }

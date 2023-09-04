@@ -92,6 +92,7 @@ public class InvoiceManagerService implements InvoiceManager {
     @Override
     public void processCallback(InvoiceCallbackRequest request) {
         try{
+            AnalyticService.update(INFORM_INVOICE_MESSAGE, objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValueAsString(request));
             final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId());
             invoice.setUpdatedOn(Calendar.getInstance());
             invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
@@ -143,10 +144,8 @@ public class InvoiceManagerService implements InvoiceManager {
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request.getOperatorDetails(), request.getTaxableRequest(), request.getTaxableResponse(),
                     request.getInvoiceDetails(), transaction, request.getInvoiceId(), plan, request.getUid());
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            final String informInvoiceKafkaMessageStr = objectMapper.writeValueAsString(informInvoiceKafkaMessage);
+            final String informInvoiceKafkaMessageStr = objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
-            //AnalyticService.update(informInvoiceKafkaMessage);
             kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the inform invoice event in kafka due to {}", e.getMessage(), e);

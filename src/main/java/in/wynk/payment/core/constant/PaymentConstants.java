@@ -73,10 +73,13 @@ public interface PaymentConstants extends BaseConstants {
     String INVOICE_SEQUENCE_LOCK_KEY = "invoiceSequenceLockKey";
     String INVOICE_SEQUENCE_PREFIX = "ADL";
     String INFORM_INVOICE_MESSAGE = "informInvoiceMessage";
+    String TAXABLE_REQUEST = "taxableRequest";
+    String TAXABLE_RESPONSE = "taxableResponse";
     String OPTIMUS_GST_STATE_CODE = "optimusGSTStateCode";
     String GEOLOCATION_GST_STATE_CODE = "geoLocationGSTStateCode";
     String ACCESS_STATE_CODE = "accessStateCode";
     String INVOICE_CATEGORY = "ONLINE CONTENT SERVICES";
+    String BLANK = "";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
 
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);

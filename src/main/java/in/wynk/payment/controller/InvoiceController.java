@@ -38,6 +38,7 @@ public class InvoiceController {
         final CoreInvoiceDownloadResponse response = invoiceManagerService.download(tid);
         final HttpHeaders headers = new HttpHeaders();
         headers.add(BaseConstants.INVOICE_ID, response.getInvoice().getId());
+        headers.add("Access-Control-Expose-Headers", BaseConstants.INVOICE_ID);
         final ResponseEntity<byte[]> responseEntity = ResponseEntity.ok().headers(headers).body(response.getData());
         AnalyticService.update(responseEntity);
         return responseEntity;

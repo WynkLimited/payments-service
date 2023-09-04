@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
@@ -8,8 +9,6 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
-import in.wynk.common.utils.MsisdnUtils;
-import in.wynk.common.utils.VigenereCipher;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.*;
@@ -24,7 +23,6 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.InvoiceVasClientService;
 import in.wynk.vas.client.service.VasClientService;
-import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -145,6 +143,7 @@ public class InvoiceManagerService implements InvoiceManager {
             final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request.getOperatorDetails(), request.getTaxableRequest(), request.getTaxableResponse(),
                     request.getInvoiceDetails(), transaction, request.getInvoiceId(), plan, request.getUid());
+            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             final String informInvoiceKafkaMessageStr = objectMapper.writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
             //AnalyticService.update(informInvoiceKafkaMessage);

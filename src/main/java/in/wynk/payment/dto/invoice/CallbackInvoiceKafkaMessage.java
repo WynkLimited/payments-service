@@ -19,17 +19,13 @@ import java.io.Serializable;
 @RequiredArgsConstructor
 public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage implements Serializable {
 
-    private String source;
     @Analysed
-    private Long timestamp;
-    @Analysed
-    //@JsonProperty("LOB")
     private String lob;
     @Analysed
-    //@JsonProperty("customerAccountNo")
+    @JsonProperty("accountNo")
     private String customerAccountNumber;
     @Analysed
-    @JsonProperty("invoiceNumber")
+    @JsonProperty("invoiceNo")
     private String invoiceId;
     @Analysed
     private String status;

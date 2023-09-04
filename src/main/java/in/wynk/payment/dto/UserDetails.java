@@ -56,4 +56,8 @@ public class UserDetails implements IUserDetails, Serializable {
         return UserDetails.class.getName();
     }
 
+    public in.wynk.common.dto.UserDetails toUserDetails(String uid) {
+        return in.wynk.common.dto.UserDetails.builder().uid(uid).msisdn(msisdn).subscriberId(subscriberId).dslId(dslId).subscriberId(si).build();
+    }
+
 }

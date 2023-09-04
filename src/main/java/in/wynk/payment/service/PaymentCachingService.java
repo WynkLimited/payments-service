@@ -210,6 +210,7 @@ public class PaymentCachingService {
     }
 
     public PlanDTO getPlan(String planId) {
+        PlanDTO plan = planDtoCachingService.get(NumberUtils.toInt(planId));
         return planDtoCachingService.get(NumberUtils.toInt(planId));
     }
 

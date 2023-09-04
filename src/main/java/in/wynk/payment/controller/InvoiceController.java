@@ -31,8 +31,8 @@ public class InvoiceController {
         LoadClientUtils.loadClient(false);
 
         final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String tid = "eb719093-48b6-11ee-ba71-b345982b922b";
-        //final String tid = sessionDTO.<String>get(TRANSACTION_ID);
+        //final String tid = "eb719093-48b6-11ee-ba71-b345982b922b";
+        final String tid = sessionDTO.<String>get(TRANSACTION_ID);
         AnalyticService.update(TXN_ID, tid);
 
         final CoreInvoiceDownloadResponse response = invoiceManagerService.download(tid);

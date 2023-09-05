@@ -75,7 +75,9 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
     @Override
     public WynkResponseEntity<AbstractChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
-        return (WynkResponseEntity<AbstractChargingResponse>) delegate.get(FlowType.valueOf(method.getGroup())).transform(payload);
+       return  WynkResponseEntity.<AbstractChargingResponse>builder()
+                .data(SeamlessUpiChargingResponse.builder().appPackage((String) method.getMeta().get(APP_PACKAGE)).deeplink("test").build()).build();
+        //return (WynkResponseEntity<AbstractChargingResponse>) delegate.get(FlowType.valueOf(method.getGroup())).transform(payload);
     }
 
     @SneakyThrows

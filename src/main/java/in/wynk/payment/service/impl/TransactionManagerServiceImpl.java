@@ -210,11 +210,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public void revision(AbstractTransactionRevisionRequest request) {
-
-
-        if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
             this.upsert(request.getTransaction());
-        }
 
         /*
         try {

@@ -210,6 +210,13 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public void revision(AbstractTransactionRevisionRequest request) {
+
+
+        if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
+            this.upsert(request.getTransaction());
+        }
+
+        /*
         try {
             if(request.getTransaction().getPaymentChannel().equals(PaymentConstants.ADD_TO_BILL)){
                 log.info("plan {} has to be provision externally for uid {}, stopping subscription flow", request.getTransaction().getPlanId(), request.getTransaction().getUid());
@@ -236,7 +243,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
                 this.upsert(request.getTransaction());
             }
-        }
+        }*/
     }
 
     private void publishAnalytics(Transaction transaction) {

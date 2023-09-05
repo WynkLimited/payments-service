@@ -119,6 +119,8 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(eventBuilder.build());
             throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
+            final TransactionStatus existingStatus = transaction.getStatus();
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(TransactionStatus.SUCCESS).build());
             sqsManagerService.publishSQSMessage(
                     PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());

@@ -107,7 +107,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 upiSeamlessDelegate.put(INAPP, new UpiSeamlessCollectInApp());
             }
 
-            @SneakyThrowspayments/src/main/java/in/wynk/payment/service/PaymentGatewayManager.java
+            @SneakyThrows
             @Override
             public SeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);

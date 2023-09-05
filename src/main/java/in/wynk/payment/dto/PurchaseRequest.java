@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.MiscellaneousDetails;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.identity.client.utils.IdentityUtils;
@@ -41,6 +42,9 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
     private PageUrlDetails pageUrlDetails;
 
     @Analysed
+    private MiscellaneousDetails miscellaneousDetails;
+
+    @Analysed
     private GeoLocation geoLocation;
 
     @Override
@@ -71,6 +75,7 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .service(getAppDetails().getService())
                 .countryCode(getUserDetails().getCountryCode())
                 .msisdn(getUserDetails().getMsisdn())
+                .miscellaneousDetails(getMiscellaneousDetails())
                 .uid(IdentityUtils.getUidFromUserName(getUserDetails().getMsisdn(), getAppDetails().getService()))
                 .failureUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getFailurePageUrl).orElse(null))
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))

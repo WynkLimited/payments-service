@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.aps.request.charge;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.aps.common.AbstractPaymentInfo;
 import in.wynk.payment.dto.aps.common.ChannelInfo;
 import in.wynk.payment.dto.aps.common.UserInfo;
@@ -33,11 +32,4 @@ public class ExternalChargingRequest<T extends AbstractPaymentInfo> {
      * Redirection info
      */
     private ChannelInfo channelInfo;
-
-    /**
-     * Send this flag as true in case of bill payment(AUTO Pay case) otherwise false for penny drop and paymentAmount will be refunded in case of penny drop.
-     */
-    @Builder.Default
-    @JsonProperty("isBillPayment")
-    private boolean billPayment = true;
 }

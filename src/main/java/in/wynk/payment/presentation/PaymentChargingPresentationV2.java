@@ -74,13 +74,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
     @Override
     public PaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
-        final CollectInAppSeamlessUpiPaymentChargingResponse.CollectInAppSeamlessUpiPaymentChargingResponseBuilder<?,?> builder = CollectInAppSeamlessUpiPaymentChargingResponse.builder().pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass())));
-        final SessionDTO sessionDTO = SessionContextHolder.getBody();
-        final String os = sessionDTO.get(OS);
-        final String sid = SessionContextHolder.getId();
-        final String url = CLIENT_POLLING_SCREEN_URL.concat(sid).concat(SLASH).concat(os);
-        return builder.url(url).action(PaymentChargingAction.REDIRECT.getAction()).build();
-        /* return delegate.get(FlowType.valueOf(method.getGroup().toUpperCase())).transform(payload);*/
+        return delegate.get(FlowType.valueOf(method.getGroup().toUpperCase())).transform(payload);
     }
 
     @SneakyThrows
@@ -113,7 +107,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 upiSeamlessDelegate.put(INAPP, new UpiSeamlessCollectInApp());
             }
 
-            @SneakyThrows
+            @SneakyThrowspayments/src/main/java/in/wynk/payment/service/PaymentGatewayManager.java
             @Override
             public SeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);

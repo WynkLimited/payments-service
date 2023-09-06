@@ -156,9 +156,9 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
     public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, PlanDTO plan, OfferDTO offer){
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
                 request.getUid());
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), plan,
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), offer, plan,
                 request.getInvoiceDetails());
-        final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), offer);
+        final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), plan);
         final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(request.getTaxableResponse());
         final boolean sendEmail = Objects.nonNull(request.getOperatorDetails()) &&
                 Objects.nonNull(request.getOperatorDetails().getUserMobilityInfo()) &&
@@ -176,7 +176,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .build();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, PlanDTO plan, InvoiceDetails invoiceDetails) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, OfferDTO offer, PlanDTO plan, InvoiceDetails invoiceDetails) {
         /*double CGST = 0.0;
         double SGST = 0.0;
         double IGST = 0.0;
@@ -198,7 +198,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .invoiceAmount(plan.getPrice().getAmount())
                 .paymentDate(transaction.getInitTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(formatter))
                 /*.paymentMode(transaction.getPaymentChannel().getCode())*/
-                .typeOfService(plan.getTitle())
+                .typeOfService(offer.getTitle())
                 .discount(plan.getPrice().getAmount() - transaction.getAmount())
                 .discountedPrice(transaction.getAmount())
                 /*.qrCode("upi://pay?" +
@@ -269,12 +269,12 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .emailId(PaymentConstants.BLANK).gstn(PaymentConstants.BLANK).panNumber(PaymentConstants.BLANK).customerType(PaymentConstants.BLANK).customerClassification(PaymentConstants.BLANK).build();
     }
 
-    private static List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> generateCustomerRechargeRate(TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, OfferDTO offer) {
+    private static List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> generateCustomerRechargeRate(TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, PlanDTO plan) {
         final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRatesList = new ArrayList<>();
         customerRechargeRatesList.add(LobInvoice.CustomerRechargeRate.builder()
                 .rate(taxableResponse.getTaxableAmount())
                 .hsnCodeNo(invoiceDetails.getSACCode())
-                .category((Objects.isNull(offer.getTitle()))? PaymentConstants.INVOICE_CATEGORY : offer.getTitle())
+                .category((Objects.isNull(plan.getTitle()))? PaymentConstants.INVOICE_CATEGORY : plan.getTitle())
                 .unit(1)
                 .build());
         return customerRechargeRatesList;

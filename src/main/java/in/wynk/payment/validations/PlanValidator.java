@@ -21,6 +21,7 @@ public class PlanValidator<T extends IPlanValidatorRequest> extends BaseHandler<
         if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
             final PlanDTO planDTO = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(request.getProductDetails().getId());
             final int planId = request.isTrialOpted() ? planDTO.getLinkedFreePlanId() : planDTO.getId();
+            if(planId == -1) throw new WynkRuntimeException(PAY607);
             if (planDTO.getPlanType() == FREE) throw new WynkRuntimeException(PAY605);
             final SelectivePlansComputationResponse selectivePlansComputationResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(SelectivePlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
             if(Objects.nonNull(selectivePlansComputationResponse)) {

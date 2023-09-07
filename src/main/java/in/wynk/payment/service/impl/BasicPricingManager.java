@@ -52,10 +52,13 @@ public class BasicPricingManager implements IPricingManager {
             if (nativeRequest.isAutoRenewOpted() || nativeRequest.isMandate()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
                 if (nativeRequest.isMandate()) {
+                    nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setEvent(PaymentEvent.MANDATE);
+                    return;
                 } else if (nativeRequest.isAutoRenewOpted()) {
                     nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
-                } else if (nativeRequest.isTrialOpted()) {
+                }
+                if (nativeRequest.isTrialOpted()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setAmount(cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice());
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);

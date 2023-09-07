@@ -29,13 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.*;
 
-import static in.wynk.common.constant.BaseConstants.DEFAULT_GST_STATE_CODE;
+import static in.wynk.common.constant.BaseConstants.DEFAULT_ACCESS_STATE_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Slf4j
@@ -73,7 +71,7 @@ public class InvoiceManagerService implements InvoiceManager {
 
             final TaxableRequest taxableRequest = TaxableRequest.builder()
                     .consumerStateCode(accessStateCode).consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
-                    .supplierStateCode(DEFAULT_GST_STATE_CODE).supplierStateName(stateCodesCachingService.get(DEFAULT_GST_STATE_CODE).getStateName())
+                    .supplierStateCode(DEFAULT_ACCESS_STATE_CODE).supplierStateName(stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName())
                     .amount(transaction.getAmount()).gstPercentage(invoiceDetails.getGstPercentage())
                     .build();
             AnalyticService.update(TAXABLE_REQUEST, String.valueOf(taxableRequest));
@@ -181,6 +179,7 @@ public class InvoiceManagerService implements InvoiceManager {
             }
             invoiceBuilder.createdOn(Calendar.getInstance());
             invoiceBuilder.retryCount(0);
+            invoiceBuilder.customerAccountNumber(transaction.getUid());
             invoiceBuilder.status(InvoiceState.IN_PROGRESS.name());
             invoiceService.upsert(invoiceBuilder.build());
         }
@@ -202,14 +201,6 @@ public class InvoiceManagerService implements InvoiceManager {
             }
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.DOWNLOAD_INVOICE_ERROR, ex.getMessage(), ex);
-            if (HttpClientErrorException.class.isAssignableFrom(ex.getClass())) {
-                log.error("status code {}", ((HttpClientErrorException) ex).getStatusCode());
-                log.error("getMessage {}", ((HttpClientErrorException) ex).getMessage());
-                log.error("getResponseBodyAsString {}", ((HttpClientErrorException) ex).getResponseBodyAsString());
-                if(((HttpClientErrorException) ex).getStatusCode() == HttpStatus.NOT_FOUND){
-                    throw new WynkRuntimeException(PaymentErrorType.PAY451, ex);
-                }
-            }
             throw new WynkRuntimeException(PaymentErrorType.PAY451, ex);
         }
     }
@@ -230,20 +221,25 @@ public class InvoiceManagerService implements InvoiceManager {
     }
 
     private String getAccessStateCode(MsisdnOperatorDetails operatorDetails, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
-        String gstStateCode = (Strings.isNullOrEmpty(invoiceDetails.getDefaultGSTStateCode())) ? DEFAULT_GST_STATE_CODE: invoiceDetails.getDefaultGSTStateCode();
+        String gstStateCode = (Strings.isNullOrEmpty(invoiceDetails.getDefaultGSTStateCode())) ? DEFAULT_ACCESS_STATE_CODE : invoiceDetails.getDefaultGSTStateCode();
+        AnalyticService.update(DEFAULT_GST_STATE_CODE, gstStateCode);
         try {
             if (Objects.nonNull(operatorDetails) &&
                     Objects.nonNull(operatorDetails.getUserMobilityInfo()) &&
                     Objects.nonNull(operatorDetails.getUserMobilityInfo().getGstStateCode())) {
                 gstStateCode = operatorDetails.getUserMobilityInfo().getGstStateCode().trim();
-                AnalyticService.update(OPTIMUS_GST_STATE_CODE, gstStateCode);
-            } else {
-                if(Objects.nonNull(purchaseDetails) &&
-                        Objects.nonNull(purchaseDetails.getGeoLocation()) &&
-                        Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode())){
+                if(stateCodesCachingService.containsKey(gstStateCode)){
+                    AnalyticService.update(OPTIMUS_GST_STATE_CODE, gstStateCode);
+                    return gstStateCode;
+                }
+            }
+            if(Objects.nonNull(purchaseDetails) &&
+                    Objects.nonNull(purchaseDetails.getGeoLocation()) &&
+                    Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode()) &&
+                    stateCodesCachingService.containsByISOStateCode(purchaseDetails.getGeoLocation().getStateCode())){
                     gstStateCode = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getId();
                     AnalyticService.update(GEOLOCATION_GST_STATE_CODE, gstStateCode);
-                }
+                    return gstStateCode;
             }
         } catch (Exception ex) {
             log.error(PaymentLoggingMarker.GST_STATE_CODE_FAILURE, ex.getMessage(), ex);

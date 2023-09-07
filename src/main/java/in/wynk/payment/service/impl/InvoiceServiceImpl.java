@@ -32,7 +32,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @CacheEvict(cacheName = "Invoice", cacheKey = "'id:'+ #invoice.getId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "Invoice", cacheKey = "'transactionId:'+ #invoice.getTransactionId()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public Invoice upsert(Invoice invoice) {
         Invoice persistedInvoice = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), InvoiceDao.class).save(invoice);
         final InvoiceEvent.InvoiceEventBuilder builder = InvoiceEvent.builder().invoice(invoice);

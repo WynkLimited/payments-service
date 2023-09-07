@@ -90,6 +90,11 @@ public class GSTStateCodesCachingService implements IEntityCacheService<GSTState
         return delegate.get(cacheBean).containsKey(key);
     }
 
+    public boolean containsByISOStateCode (String key) {
+        final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + BaseConstants.COLON + IGSTStateCodeDao.class.getName();
+        return delegate.get(cacheBean).getAll().stream().anyMatch(i-> i.getStateCode().equalsIgnoreCase(key));
+    }
+
     @Override
     public Collection<GSTStateCodes> getAllByState(State state) {
         final String cacheBean = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT) + IGSTStateCodeDao.class.getName();

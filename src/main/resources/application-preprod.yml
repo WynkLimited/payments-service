@@ -108,7 +108,7 @@ payment:
   pooling:
     queue:
       preDebitNotification:
-        enabled: false
+        enabled: true
         name: wcf-preprod-mandate-notification-sqs
         sqs:
           messages:
@@ -121,7 +121,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       acknowledgement:
-        enabled: false
+        enabled: true
         name: wcf-payment-receipt-ack-preprod-sqs
         sqs:
           messages:
@@ -134,7 +134,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       reconciliation:
-        enabled: false
+        enabled: true
         name: wcf-preprod-payment-reconciliation
         sqs:
           messages:
@@ -147,7 +147,7 @@ payment:
             delay: 3
             delayTimeUnit: SECONDS
       renewal:
-        enabled: false
+        enabled: true
         name: wcf-preprod-payment-renewal
         sqs:
           messages:
@@ -160,7 +160,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: false
+        enabled: true
         name: wcf-preprod-payment-charging.fifo
         sqs:
           messages:
@@ -173,7 +173,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       schedule:
-        enabled: false
+        enabled: true
         name: wcf-preprod-subscription-payment
         sqs:
           messages:
@@ -199,7 +199,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       userDeactivation:
-        enabled: false
+        enabled: true
         name: wcf-preprod-payment-user-deactivation
         sqs:
           messages:
@@ -224,7 +224,7 @@ payment:
       api:
         base: http://intpay.india.airtel.itm
       encryption:
-        key: classpath:/cryptography/aps/public.key
+        key: file:///opt/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr
@@ -370,7 +370,7 @@ subscription:
   pooling:
     queue:
       provisioning:
-        enabled: false
+        enabled: true
         name: wcf-preprod-subscription
         sqs:
           producer:

@@ -354,7 +354,6 @@
 
     <springProfile name="dev,preprod">
         <root level="INFO">
-            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
@@ -366,7 +365,6 @@
 
     <springProfile name="prod">
         <root level="INFO">
-            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>

@@ -493,11 +493,13 @@ public class PaymentEventListener {
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
             final BaseTDRResponse tdr = paymentManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
-            eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
-                    .msisdn(event.getTransaction().getMsisdn())
-                    .txnId(event.getTransaction().getIdStr())
-                    .clientAlias(event.getTransaction().getClientAlias())
-                    .build());
+            if(event.getTransaction().getPaymentChannel().isInvoiceSupported()){
+                eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                        .msisdn(event.getTransaction().getMsisdn())
+                        .txnId(event.getTransaction().getIdStr())
+                        .clientAlias(event.getTransaction().getClientAlias())
+                        .build());
+            }
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());

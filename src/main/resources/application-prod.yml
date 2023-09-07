@@ -113,7 +113,7 @@ payment:
   pooling:
     queue:
       preDebitNotification:
-        enabled: true
+        enabled: false
         name: wcf-production-mandate-notification-sqs-queue
         sqs:
           messages:
@@ -126,7 +126,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       acknowledgement:
-        enabled: true
+        enabled: false
         name: wcf-payment-receipt-ack-prod-sqs
         sqs:
           messages:
@@ -139,7 +139,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       reconciliation:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-payment-reconcilation
         sqs:
           messages:
@@ -152,7 +152,7 @@ payment:
             delay: 1
             delayTimeUnit: SECONDS
       renewal:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-renewal
         sqs:
           messages:
@@ -165,7 +165,7 @@ payment:
             delay: 1
             delayTimeUnit: SECONDS
       charging:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-payment-charging.fifo
         sqs:
           messages:
@@ -178,7 +178,7 @@ payment:
             delay: 10
             delayTimeUnit: SECONDS
       schedule:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-subscription-payment
         sqs:
           messages:
@@ -191,7 +191,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       unschedule:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-recurring
         sqs:
           messages:
@@ -204,7 +204,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       userDeactivation:
-        enabled: true
+        enabled: false
         name: wcf-prod-payment-user-deactivation
         sqs:
           messages:
@@ -228,27 +228,27 @@ payment:
       api:
         base: http://intpay.india.airtel.itm
       encryption:
-        key: file:///opt/public.key
+        key: classpath:/cryptography/aps/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: file:///opt/public.key
+          key: classpath:/cryptography/aps/public.key
       music:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: file:///opt/public.key
+          key: classpath:/cryptography/aps/public.key
       webviewclient:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: file:///opt/public.key
+          key: classpath:/cryptography/aps/public.key
       subscriptionApi:
         id: payment
         secret: pay@qckslvr
         encryption:
-          key: file:///opt/public.key
+          key: classpath:/cryptography/aps/public.key
     payu:
       airtelxstream:
         id: aU2Uoi
@@ -373,7 +373,7 @@ subscription:
   pooling:
     queue:
       provisioning:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-subscription
         sqs:
           producer:
@@ -485,7 +485,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription.wcf.internal
+      root: https://subscription.wynk.in
   payment:
     api:
       root: https://payments.wynk.in

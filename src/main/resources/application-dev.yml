@@ -222,7 +222,7 @@ payment:
       api:
         base: http://intpay.india.airtel.itm
       encryption:
-        key: file:///opt/public.key
+        key: classpath:/cryptography/aps/public.key
       airtelxstream:
         id: payment
         secret: pay@qckslvr

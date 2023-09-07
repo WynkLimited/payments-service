@@ -157,13 +157,12 @@ public class InvoiceManagerService implements InvoiceManager {
     }
 
     private void saveInvoiceDetails(Transaction transaction, String invoiceID, TaxableResponse taxableResponse){
-        final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         final Invoice invoice = invoiceService.getInvoiceByTransactionId(transaction.getIdStr());
         if(Objects.isNull(invoice)) {
             final Invoice.InvoiceBuilder invoiceBuilder = Invoice.builder()
                     .id(invoiceID)
                     .transactionId(transaction.getIdStr())
-                    .amount(plan.getPrice().getAmount())
+                    .amount(transaction.getAmount())
                     .taxAmount(taxableResponse.getTaxAmount())
                     .taxableValue(taxableResponse.getTaxableAmount());
             final List<TaxDetailsDTO> list = taxableResponse.getTaxDetails();

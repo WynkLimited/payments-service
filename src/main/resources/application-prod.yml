@@ -139,7 +139,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       reconciliation:
-        enabled: false
+        enabled: true
         name: wcf-production-revenue-payment-reconcilation
         sqs:
           messages:

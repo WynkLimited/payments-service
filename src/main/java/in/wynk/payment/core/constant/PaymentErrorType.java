@@ -86,6 +86,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY604("Validation Failure", "This plan is not eligible for mandate flow", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY605("Validation Failure", "Given plan id is not eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY606("Validation Failure", "Given plan id is not eligible as selective eligibility is null", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY607("Validation Failure", "Trial plan cannot be purchased as no Free trial plan present in db", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
     PAY701("Validation Failure", "Receipt is already processed", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY702("Validation Failure", "Invalid request with wrong receipt details", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),

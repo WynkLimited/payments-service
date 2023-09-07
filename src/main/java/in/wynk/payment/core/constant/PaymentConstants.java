@@ -77,6 +77,7 @@ public interface PaymentConstants extends BaseConstants {
     String TAXABLE_RESPONSE = "taxableResponse";
     String OPTIMUS_GST_STATE_CODE = "optimusGSTStateCode";
     String GEOLOCATION_GST_STATE_CODE = "geoLocationGSTStateCode";
+    String DEFAULT_GST_STATE_CODE = "defaultGSTStateCode";
     String ACCESS_STATE_CODE = "accessStateCode";
     String INVOICE_CATEGORY = "ONLINE CONTENT SERVICES";
     String BLANK = "";

@@ -43,6 +43,7 @@ public class ApsCallBackRequestPayload extends ChecksumHeaderCallbackRequest<Aps
     private Long timestamp;
     private String mandateId;
     private String upiFlow;
+    private String upiApp;
     private String cardNetwork;
     private Long paymentDate;
     @JsonIgnore

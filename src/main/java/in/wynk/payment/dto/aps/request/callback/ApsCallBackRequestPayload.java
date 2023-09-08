@@ -42,6 +42,8 @@ public class ApsCallBackRequestPayload extends ChecksumHeaderCallbackRequest<Aps
     private String errorMsg;
     private Long timestamp;
     private String mandateId;
+    private String upiFlow;
+    private Long paymentDate;
     @JsonIgnore
     private String checksum;
     private SiRegistrationStatus mandateStatus;

@@ -207,7 +207,7 @@ public class PaymentEventListener {
             }
             if(retryCount < event.getRetries().size()){
                 final long attemptDelayedBy = event.getRetries().get(retryCount);
-                final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toSeconds(attemptDelayedBy));
+                final Date taskScheduleTime = new Date(System.currentTimeMillis() + (attemptDelayedBy * 1000));
                 taskScheduler.schedule(TaskDefinition.<InvoiceRetryTask>builder()
                         .entity(InvoiceRetryTask.from(event))
                         .handler(InvoiceRetryTaskHandler.class)

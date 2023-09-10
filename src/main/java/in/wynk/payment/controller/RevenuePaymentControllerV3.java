@@ -13,6 +13,7 @@ import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ public class RevenuePaymentControllerV3 {
 
     private final PaymentGatewayManager paymentGatewayManager;
 
+    @SneakyThrows
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "verifyUserPaymentBin")

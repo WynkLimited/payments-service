@@ -36,7 +36,7 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 public class PurchaseDetailsManager implements IPurchaseDetailsManger {
 
     @Override
-    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save(Transaction transaction, IPurchaseDetails details) {
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
                 .id(transaction.getIdStr())
@@ -51,7 +51,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save (Transaction transaction, AbstractPaymentChargingRequest details) {
         AbstractPaymentDetails abstractPaymentDetails = details.getPaymentDetails();
         if(CardPaymentDetails.class.isAssignableFrom(abstractPaymentDetails.getClass())) {
@@ -75,7 +75,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @Cacheable(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public IPurchaseDetails get(Transaction transaction) {
         final Optional<? extends IPurchaseDetails> purchaseDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findById(transaction.getIdStr());
         if (purchaseDetails.isPresent()) return purchaseDetails.get();
@@ -83,7 +83,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    //@Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    //@Cacheable(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public List<String> getByUserId(String userId) {
         final List<PurchaseDetails> purchaseDetailsList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findByUserId(userId);
         if (CollectionUtils.isEmpty(purchaseDetailsList)) return null;

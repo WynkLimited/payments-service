@@ -188,7 +188,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date next10Year = cal.getTime();
                         upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
                                 .productCategory(BaseConstants.WYNK)
-                                .mandateAmount(transaction.getAmount())
+                                .mandateAmount(transaction.getMandateAmount())
                                 .paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli());
                     }

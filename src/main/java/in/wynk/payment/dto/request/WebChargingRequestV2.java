@@ -86,7 +86,7 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
     }
 
     private String getWebUrl (SessionDTO session, String webUrl) {
-        return session.get(webUrl) + (getPaymentDetails().isMandate() ? AND + FLOW + EQUAL + MANDATE : "");
+        return session.get(webUrl) + AND + MANDATE + EQUAL + getPaymentDetails().isMandate();
     }
 
     @Override
@@ -103,7 +103,7 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
                 BUILD_NO + EQUAL + appDetails.getBuildNo() + ((
                 StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "") +
                 (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : "")) + AND + PLAN_ID + EQUAL + getProductDetails().getId() +
-                (getPaymentDetails().isMandate() ? AND + FLOW + EQUAL + MANDATE : "");
+                AND + MANDATE + EQUAL + getPaymentDetails().isMandate();
     }
 
     @Override

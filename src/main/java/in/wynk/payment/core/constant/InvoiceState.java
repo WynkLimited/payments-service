@@ -11,7 +11,7 @@ public enum InvoiceState {
 
     IN_PROGRESS("IN_PROGRESS"),
     SUCCESS("SUCCESS"),
-    FAILURE("FAILURE"),
+    FAILED("FAILED"),
     UNKNOWN("UNKNOWN");
 
     @Analysed(name = BaseConstants.INVOICE_STATE)

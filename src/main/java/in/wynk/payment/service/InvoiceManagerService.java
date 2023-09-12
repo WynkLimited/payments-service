@@ -94,6 +94,9 @@ public class InvoiceManagerService implements InvoiceManager {
         try{
             AnalyticService.update(INFORM_INVOICE_MESSAGE, objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(request));
             final Invoice invoice = invoiceService.getInvoice(request.getInvoiceId());
+            if(invoice.getStatus().equalsIgnoreCase(InvoiceState.SUCCESS.name())){
+                return;
+            }
             invoice.setUpdatedOn(Calendar.getInstance());
             invoice.setCustomerAccountNumber(request.getCustomerAccountNumber());
             invoice.setDescription(request.getDescription());
@@ -101,7 +104,7 @@ public class InvoiceManagerService implements InvoiceManager {
             invoice.persisted();
             invoiceService.upsert(invoice);
             final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
-            if(request.getStatus().equalsIgnoreCase("FAILED")){
+            if(request.getStatus().equalsIgnoreCase(InvoiceState.FAILED.name())){
                 retryInvoiceGeneration(transaction.getMsisdn(), transaction.getClientAlias(), invoice.getTransactionId());
             }
         } catch(Exception ex){
@@ -189,7 +192,7 @@ public class InvoiceManagerService implements InvoiceManager {
         try{
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId);
-            if(Objects.isNull(invoice) || !invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+            if(Objects.isNull(invoice) || !invoice.getStatus().equalsIgnoreCase(InvoiceState.SUCCESS.name())){
                 throw new WynkRuntimeException(PaymentErrorType.PAY442);
             } else {
                 final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(clientAlias);

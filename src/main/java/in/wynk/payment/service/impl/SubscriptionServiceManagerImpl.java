@@ -23,10 +23,7 @@ import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
-import in.wynk.subscription.common.request.PlanProvisioningRequest;
-import in.wynk.subscription.common.request.PlanUnProvisioningRequest;
-import in.wynk.subscription.common.request.SelectivePlansComputationRequest;
-import in.wynk.subscription.common.request.SinglePlanProvisionRequest;
+import in.wynk.subscription.common.request.*;
 import in.wynk.subscription.common.response.AllItemsResponse;
 import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
@@ -61,6 +58,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.allProducts}")
     private String allProductApiEndPoint;
 
+    @Value("${service.subscription.api.endpoint.personalisedPlan}")
+    private String personalisedPlanApiEndPoint;
 
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
@@ -140,6 +139,19 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         RequestEntity<Void> allProductRequest = ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return  Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
         }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
+    }
+
+    @Override
+    public PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan) {
+        if (!defaultPlan.isPersonalize()) return defaultPlan;
+        try {
+            RequestEntity<UserPersonalisedPlanRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(personalisedPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), request, HttpMethod.POST);
+            return Objects.requireNonNull(restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanDTO>>() {
+            }).getBody()).getData();
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.EXTERNAL_SERVICE_FAILURE, "Exception occurred while getting user personalised plan. Exception: {}", e.getMessage(), e);
+            return defaultPlan;
+        }
     }
 
 

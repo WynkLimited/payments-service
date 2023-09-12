@@ -4,12 +4,11 @@ import in.wynk.common.dto.*;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.PaymentGroup;
-import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.SavedDetailsKey;
-import in.wynk.payment.core.dao.entity.UserPreferredPayment;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.WebPaymentOptionsRequest;
 import in.wynk.payment.dto.gpbs.GooglePlayConstant;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
@@ -32,9 +31,11 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
+import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.MDC;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
@@ -107,7 +108,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         if (trialEligible)
             builder.paymentGroups(getPaymentGroups((PaymentMethod::isTrialSupported), () -> paidPlan.supportAutoRenew(), paidPlan));
         else builder.paymentGroups(getPaymentGroups((paymentMethod -> true), () -> paidPlan.supportAutoRenew(), paidPlan));
-        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(planId, trialEligible)).build()).build();
+        final WebPaymentOptionsRequest request = WebPaymentOptionsRequest.builder().build();
+        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(sessionDTO.get(MSISDN)).productDetails(buildPlanDetails(request.getUserDetails(), request.getAppDetails(), request.getGeoLocation(), sessionDTO.get(UID), planId, trialEligible)).build()).build();
     }
 
     @Deprecated
@@ -167,8 +169,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
                 .build();
     }
 
-    private PaymentOptionsDTO.PlanDetails buildPlanDetails(String planId, boolean trialEligible) {
-        PlanDTO plan = paymentCachingService.getPlan(planId);
+    private PaymentOptionsDTO.PlanDetails buildPlanDetails(IUserDetails userDetails, IAppDetails appDetails, IGeoLocation geoDetails, String uid, String planId, boolean trialEligible) {
+        PlanDTO plan = subscriptionServiceManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((in.wynk.payment.dto.UserDetails) userDetails).toUserDetails(uid)).appDetails(((AppDetails) appDetails).toAppDetails()).geoDetails((GeoLocation) geoDetails).planId(NumberUtils.toInt(planId)).build(), paymentCachingService.getPlan(planId));
         OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());
         PartnerDTO partner = paymentCachingService.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
         PaymentOptionsDTO.PlanDetails.PlanDetailsBuilder<?, ?> planDetailsBuilder = PaymentOptionsDTO.PlanDetails.builder()
@@ -297,7 +299,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         if (trialEligible)
             builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan));
         else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan));
-        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(request.getProductDetails().getId(), trialEligible)).build()).build();
+        return responseEntityBuilder.status(httpStatus).data(builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(request.getUserDetails(), request.getAppDetails(), request.getGeoLocation(), eligibilityRequest.getUid() ,request.getProductDetails().getId(), trialEligible)).build()).build();
     }
 
     private WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentOptionsForItem(IPaymentOptionsRequest request) {

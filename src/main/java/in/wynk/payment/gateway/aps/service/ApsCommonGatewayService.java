@@ -168,12 +168,15 @@ public class ApsCommonGatewayService {
         try {
             final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
             builder.request(uri);
-           // ApsChargeStatusResponse[] apsChargeStatusResponses = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
             ApsChargeStatusResponse[] apsChargeStatusResponses =
                     verifyOption.orElseGet(() -> exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class));
             builder.response(apsChargeStatusResponses);
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getPaymentMode())) {
-                AnalyticService.update(PAYMENT_MODE, "CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) ? "CC" : "DC");
+                String paymentMode = apsChargeStatusResponses[0].getPaymentMode();
+                if("CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) ||"DEBIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode())) {
+                    paymentMode= "CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) ? "CC" : "DC";
+                }
+                AnalyticService.update(PAYMENT_MODE, paymentMode);
             }
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getBankCode())) {
                 AnalyticService.update(BANK_CODE, apsChargeStatusResponses[0].getBankCode());
@@ -194,7 +197,7 @@ public class ApsCommonGatewayService {
             builder.response(e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
         } finally {
-            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
+            if ((!verifyOption.isPresent()) && (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)) {
                 eventPublisher.publishEvent(builder.build());
             }
         }

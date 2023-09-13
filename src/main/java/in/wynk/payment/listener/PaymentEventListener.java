@@ -378,7 +378,10 @@ public class PaymentEventListener {
     public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
         try{
             AnalyticService.update(event);
-            kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event));
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
+            if(Objects.isNull(invoice)){
+                kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event));
+            }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the generate invoice event in kafka due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY452, e);

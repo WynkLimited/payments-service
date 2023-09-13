@@ -24,8 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.MANDATE;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER_V2;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
 
@@ -86,7 +85,7 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
     }
 
     private String getWebUrl (SessionDTO session, String webUrl) {
-        return session.get(webUrl) + (getPaymentDetails().isMandate() ? AND + FLOW + EQUAL + MANDATE : "");
+        return getPaymentDetails().isMandate() ? session.get(webUrl) + AND + PAYMENT_FLOW + EQUAL + MANDATE : session.get(webUrl);
     }
 
     @Override
@@ -97,13 +96,13 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
     }
 
 
-    private String buildUrlFrom (String url, IAppDetails appDetails) {
+    private String buildUrlFrom (String resolver, IAppDetails appDetails) {
         final SessionDTO session = SessionContextHolder.getBody();
-        return url + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND +
-                BUILD_NO + EQUAL + appDetails.getBuildNo() + ((
-                StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "") +
-                (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : "")) + AND + PLAN_ID + EQUAL + getProductDetails().getId() +
-                (getPaymentDetails().isMandate() ? AND + FLOW + EQUAL + MANDATE : "");
+        String url = resolver + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND +
+                        BUILD_NO + EQUAL + appDetails.getBuildNo() + ((
+                        StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "") +
+                        (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : "")) + AND + PLAN_ID + EQUAL + getProductDetails().getId();
+        return getPaymentDetails().isMandate() ? url + AND + PAYMENT_FLOW + EQUAL + MANDATE : url;
     }
 
     @Override

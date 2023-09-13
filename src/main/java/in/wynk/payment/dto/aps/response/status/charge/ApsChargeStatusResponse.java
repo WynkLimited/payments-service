@@ -2,6 +2,7 @@ package in.wynk.payment.dto.aps.response.status.charge;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.payment.dto.aps.common.RefundInfo;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -49,4 +50,22 @@ public class ApsChargeStatusResponse implements Serializable {
     private String nextRetry;
     private String redirectionUrl;
     private String paymentRoutedThrough;
+
+    public static ApsChargeStatusResponse[] from (ApsCallBackRequestPayload request) {
+        ApsChargeStatusResponse[] responses = new ApsChargeStatusResponse[1];
+        responses[0] = ApsChargeStatusResponse.builder().pgId(request.getPgId()).pgSystemId(request.getPgSystemId()).orderId(request.getOrderId())
+                .pgStatus("PG_".concat(request.getStatus().toString()))
+                .paymentStatus("PAYMENT_".concat(request.getStatus().toString()))
+                .paymentAmount(request.getAmount().doubleValue())
+                .currency(request.getCurrency().name())
+                /*.bankCode(bankCode)*/
+                .bankRefNo(request.getBankRefId())
+                .paymentMode(request.getPaymentMode().name())
+                .paymentDate(Long.toString(request.getTimestamp()))
+                .errorCode(request.getErrorCode())
+                .errorDescription(request.getErrorMsg())
+                .paymentGateway(request.getPg())
+                .merchantId(request.getMid()).build();
+        return responses;
+    }
 }

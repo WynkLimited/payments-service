@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY888;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
@@ -52,7 +53,7 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
         @Override
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction);
+            common.syncChargingTransactionFromSource(transaction, Optional.empty());
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(APS_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY038);
@@ -87,7 +88,7 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
         @Override
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction);
+            common.syncChargingTransactionFromSource(transaction, Optional.empty());
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(APS_RENEWAL_STATUS_VERIFICATION, "Renewal transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY038);

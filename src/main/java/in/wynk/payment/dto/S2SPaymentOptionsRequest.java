@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IMiscellaneousDetails;
 import in.wynk.common.utils.BeanLocatorFactory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,6 +30,11 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
     private AbstractProductDetails productDetails;
     @Analysed
     private GeoLocation geoLocation;
+
+    @Override
+    public IMiscellaneousDetails getMiscellaneousDetails() {
+        return null;
+    }
 
     @Override
     @JsonIgnore

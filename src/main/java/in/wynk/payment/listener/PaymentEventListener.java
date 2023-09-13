@@ -8,6 +8,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.Message;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
@@ -92,6 +93,8 @@ public class PaymentEventListener {
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> kafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
+    private final ClientDetailsCachingService clientDetailsCachingService;
+
     @Value("${event.stream.dp}")
     private String dpStream;
 
@@ -380,7 +383,10 @@ public class PaymentEventListener {
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
             if(Objects.isNull(invoice)){
-                kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event));
+                final Transaction transaction = transactionManagerService.get(event.getTxnId());
+                final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+                final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event, clientAlias));
             }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the generate invoice event in kafka due to {}", e.getMessage(), e);

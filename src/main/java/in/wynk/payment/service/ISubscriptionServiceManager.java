@@ -49,7 +49,8 @@ public interface ISubscriptionServiceManager {
 
     List<ProductDTO> getProducts();
 
-    List<SubscriptionStatus> getSubscriptionStatus(String uid, String service);
     PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan);
+
+    List<SubscriptionStatus> getSubscriptionStatus(String uid, String service);
 
 }

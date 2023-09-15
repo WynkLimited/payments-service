@@ -35,6 +35,7 @@ import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.MDC;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
@@ -169,7 +170,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
     }
 
     private PaymentOptionsDTO.PlanDetails buildPlanDetails(IUserDetails userDetails, IAppDetails appDetails, IGeoLocation geoDetails, String uid, String planId, boolean trialEligible) {
-        PlanDTO plan = subscriptionServiceManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((in.wynk.payment.dto.UserDetails) userDetails).toUserDetails(uid)).appDetails(((AppDetails) appDetails).toAppDetails()).geoDetails((GeoLocation) geoDetails).build(), paymentCachingService.getPlan(planId));
+        PlanDTO plan = subscriptionServiceManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((in.wynk.payment.dto.UserDetails) userDetails).toUserDetails(uid)).appDetails(((AppDetails) appDetails).toAppDetails()).geoDetails((GeoLocation) geoDetails).planId(NumberUtils.toInt(planId)).build(), paymentCachingService.getPlan(planId));
         OfferDTO offer = paymentCachingService.getOffer(plan.getLinkedOfferId());
         PartnerDTO partner = paymentCachingService.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
         PaymentOptionsDTO.PlanDetails.PlanDetailsBuilder<?, ?> planDetailsBuilder = PaymentOptionsDTO.PlanDetails.builder()

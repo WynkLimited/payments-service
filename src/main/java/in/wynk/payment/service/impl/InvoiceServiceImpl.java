@@ -38,7 +38,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         final InvoiceEvent.InvoiceEventBuilder builder = InvoiceEvent.builder().invoice(invoice);
         eventPublisher.publishEvent(builder.build());
         publishAnalytics(persistedInvoice);
+        evictInvoiceId(invoice.getId());
         return persistedInvoice;
+    }
+
+    @CacheEvict(cacheName = "Invoice", cacheKey = "'id:'+ #id", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    private void evictInvoiceId(String id){
     }
 
     @Override

@@ -21,11 +21,11 @@ public class GenerateInvoiceKafkaMessage extends InvoiceKafkaMessage {
     @Analysed
     private String txnId;
 
-    public static GenerateInvoiceKafkaMessage from(GenerateInvoiceEvent event){
+    public static GenerateInvoiceKafkaMessage from(GenerateInvoiceEvent event, String clientAlias){
         return GenerateInvoiceKafkaMessage.builder()
                 .msisdn(event.getMsisdn())
                 .txnId(event.getTxnId())
-                .clientAlias(event.getClientAlias())
+                .clientAlias(clientAlias)
                 .build();
     }
 }

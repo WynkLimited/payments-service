@@ -10,13 +10,12 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.lock.WynkRedisLockService;
 import in.wynk.payment.core.constant.*;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.InvoiceRetryEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
-import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.invoice.*;
 import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.subscription.common.dto.OfferDTO;
@@ -32,6 +31,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 import static in.wynk.common.constant.BaseConstants.DEFAULT_ACCESS_STATE_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -56,33 +57,45 @@ public class InvoiceManagerService implements InvoiceManager {
     private final InvoiceNumberGeneratorService invoiceNumberGenerator;
     private final IKafkaEventPublisher<String, String> kafkaEventPublisher;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final IPurchaseDetailsManger purchaseDetailsManager;
+    private final WynkRedisLockService wynkRedisLockService;
 
     @Override
-    @TransactionAware(txnId = "#request.txnId")
     @ClientAware(clientAlias = "#request.clientAlias")
     public void generate(GenerateInvoiceRequest request) {
         try{
-            final Transaction transaction = TransactionContext.get();
-            final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElseThrow(() -> new WynkRuntimeException("Purchase details is not found"));
-            final MsisdnOperatorDetails operatorDetails = getOperatorDetails(request.getMsisdn());
-            final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
-            final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails, purchaseDetails);
-            AnalyticService.update(ACCESS_STATE_CODE, accessStateCode);
+            Lock lock = wynkRedisLockService.getWynkRedisLock(request.getTxnId());
+            if (lock.tryLock(2, TimeUnit.SECONDS)) {
+                try {
+                    final Transaction transaction = transactionManagerService.get(request.getTxnId());
+                    final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(transaction);
+                    final MsisdnOperatorDetails operatorDetails = getOperatorDetails(request.getMsisdn());
+                    final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
+                    final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails, purchaseDetails);
+                    AnalyticService.update(ACCESS_STATE_CODE, accessStateCode);
 
-            final TaxableRequest taxableRequest = TaxableRequest.builder()
-                    .consumerStateCode(accessStateCode).consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
-                    .supplierStateCode(DEFAULT_ACCESS_STATE_CODE).supplierStateName(stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName())
-                    .amount(transaction.getAmount()).gstPercentage(invoiceDetails.getGstPercentage())
-                    .build();
-            AnalyticService.update(TAXABLE_REQUEST, String.valueOf(taxableRequest));
-            final TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-            AnalyticService.update(TAXABLE_RESPONSE, String.valueOf(taxableResponse));
+                    final TaxableRequest taxableRequest = TaxableRequest.builder()
+                            .consumerStateCode(accessStateCode).consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
+                            .supplierStateCode(DEFAULT_ACCESS_STATE_CODE).supplierStateName(stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName())
+                            .amount(transaction.getAmount()).gstPercentage(invoiceDetails.getGstPercentage())
+                            .build();
+                    AnalyticService.update(TAXABLE_REQUEST, String.valueOf(taxableRequest));
+                    final TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
+                    AnalyticService.update(TAXABLE_RESPONSE, String.valueOf(taxableResponse));
 
-            final String invoiceID = getInvoiceNumber(request.getTxnId(), request.getClientAlias());
-            saveInvoiceDetails(transaction, invoiceID, taxableResponse);
-            publishInvoiceMessage(PublishInvoiceRequest.builder().operatorDetails(operatorDetails).purchaseDetails(purchaseDetails)
-                    .taxableRequest(taxableRequest).taxableResponse(taxableResponse).invoiceDetails(invoiceDetails).uid(transaction.getUid())
-                    .invoiceId(invoiceID).build());
+                    final String invoiceID = getInvoiceNumber(request.getTxnId(), request.getClientAlias());
+                    saveInvoiceDetails(transaction, invoiceID, taxableResponse);
+                    publishInvoiceMessage(PublishInvoiceRequest.builder().transaction(transaction).operatorDetails(operatorDetails).purchaseDetails(purchaseDetails)
+                            .taxableRequest(taxableRequest).taxableResponse(taxableResponse).invoiceDetails(invoiceDetails).uid(transaction.getUid())
+                            .invoiceId(invoiceID).build());
+                } catch (WynkRuntimeException e) {
+                    throw e;
+                } finally {
+                    lock.unlock();
+                }
+            } else {
+                throw new WynkRuntimeException(PaymentErrorType.PAY455);
+            }
         } catch(Exception ex){
             retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId());
             throw new WynkRuntimeException(PaymentErrorType.PAY446, ex);
@@ -143,11 +156,10 @@ public class InvoiceManagerService implements InvoiceManager {
     @AnalyseTransaction(name = "publishInvoiceKafka")
     private void publishInvoiceMessage(PublishInvoiceRequest request){
         try{
-            final Transaction transaction = TransactionContext.get();
-            final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+            final PlanDTO plan = cachingService.getPlan(request.getTransaction().getPlanId());
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
-                    transaction, plan, offer);
+                    request.getTransaction(), plan, offer);
             final String informInvoiceKafkaMessageStr = objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
             kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);

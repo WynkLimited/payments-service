@@ -7,10 +7,12 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
@@ -19,6 +21,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -60,7 +64,16 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     }
 
     @Override
+    public IGeoLocation getGeoLocation() {
+        SessionDTO session = SessionContextHolder.getBody();
+        GeoLocation geoLocation = session.get(GEO_LOCATION);
+        return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
+                GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
+    }
+
+    @Override
     public IPaymentDetails getPaymentDetails () {
         return this.paymentDetails;
     }
+
 }

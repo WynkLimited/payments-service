@@ -1,5 +1,6 @@
 package in.wynk.payment.dto;
 
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
@@ -14,6 +15,7 @@ public interface IPaymentOptionsRequest {
     IUserDetails getUserDetails();
 
     IProductDetails getProductDetails();
+    IGeoLocation getGeoLocation();
 
     String getClient();
 

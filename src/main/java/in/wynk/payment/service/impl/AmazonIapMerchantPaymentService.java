@@ -35,6 +35,7 @@ import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
@@ -219,13 +220,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         return null;
     }
 
+    @SneakyThrows
     private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction, String extTxnId) {
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
             fetchAndUpdateTransaction(transaction, AmazonLatestReceiptResponse.builder().extTxnId(extTxnId).build());
         }
         ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }

@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import in.wynk.common.dto.IGeoLocation;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import lombok.Getter;
@@ -16,5 +17,6 @@ public class PlanTransactionInitRequest extends AbstractTransactionInitRequest {
 
     private IAppDetails appDetails;
     private IUserDetails userDetails;
+    private IGeoLocation geoDetails;
 
 }

@@ -76,6 +76,7 @@ service:
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
+        personalisedPlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/personalised
 
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
@@ -329,3 +330,5 @@ branch:
 event:
   stream:
     dp:  data-science-subscription-funnel-information
+
+api.get.endPoint: https://subscription-staging.wynk.in

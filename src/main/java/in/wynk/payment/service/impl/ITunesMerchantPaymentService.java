@@ -40,6 +40,7 @@ import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -263,6 +264,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 .build());
     }
 
+    @SneakyThrows
     @ClientAware(clientAlias = "#transaction.clientAlias")
     private ChargingStatusResponse fetchChargingStatusFromItunesSource(Transaction transaction, String extTxnId, int planId) {
         if (transaction.getStatus() == TransactionStatus.FAILURE) {
@@ -275,7 +277,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         }
         ChargingStatusResponse.ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(planId);
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(planId));
+            responseBuilder.validity(cachingService.validTillDate(planId,transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }

@@ -2,6 +2,7 @@ package in.wynk.payment.eligibility.request;
 
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.eligibility.dto.IEligibilityRequest;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.AbstractPaymentOptionInfo;
 import in.wynk.payment.dto.common.AbstractSavedInstrumentInfo;
@@ -69,7 +70,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
         final ItemDTO itemDTO = computationDTO.getItemDTO();
         if (Objects.nonNull(planDTO)) {
             PaymentOptionsPlanEligibilityRequest.PaymentOptionsPlanEligibilityRequestBuilder builder = PaymentOptionsPlanEligibilityRequest.builder().client(computationDTO.getClient());
-            builder.planId(String.valueOf(planDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(planDTO.getService()).os(computationDTO.getOs());
+            builder.planId(String.valueOf(planDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(planDTO.getService()).os(computationDTO.getOs()).uid(IdentityUtils.getUidFromUserName(computationDTO.getMsisdn(), computationDTO.getPlanDTO().getService()));
             if (StringUtils.isNotEmpty(computationDTO.getMsisdn())) builder.msisdn(computationDTO.getMsisdn());
             if (computationDTO.getCountryCode() == null) {
                 builder.countryCode(WynkServiceUtils.fromServiceId(planDTO.getService()).getDefaultCountryCode());

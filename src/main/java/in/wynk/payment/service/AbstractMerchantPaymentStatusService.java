@@ -4,9 +4,11 @@ import com.google.common.base.Strings;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -29,6 +31,8 @@ import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
+import lombok.SneakyThrows;
+import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -61,6 +65,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
 
     public abstract WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest);
 
+    @SneakyThrows
     public WynkResponseEntity<AbstractChargingStatusResponse> status(ChargingTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
         final IChargingDetails.IPageUrlDetails pageUrlDetails = TransactionContext.getPurchaseDetails().map(details -> (IChargingDetails) details).map(IChargingDetails::getPageUrlDetails).orElseGet(() ->  {
@@ -82,7 +87,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
         } else if (txnStatus == TransactionStatus.INPROGRESS) {
             return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL002), transaction, request, pageUrlDetails.getPendingPageUrl());
         } else {
-            ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId()));
+            ChargingStatusResponse.ChargingStatusResponseBuilder<?,?> builder = ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).planId(request.getPlanId()).validity(cachingService.validTillDate(request.getPlanId(),transaction.getMsisdn()));
             if (txnStatus == TransactionStatus.SUCCESS) {
                 builder.packDetails(getPackDetails(transaction, request));
                 builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
@@ -100,7 +105,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     }
 
     private AbstractPack getPackDetails(Transaction transaction,ChargingTransactionStatusRequest request) {
-        final PlanDTO plan = cachingService.getPlan(request.getPlanId());
+        final PlanDTO plan = TransactionContext.getPurchaseDetails().map(details -> BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().appDetails(((AppDetails) details.getAppDetails()).toAppDetails()).userDetails(((UserDetails) details.getUserDetails()).toUserDetails(transaction.getUid())).geoDetails((GeoLocation) details.getGeoLocation()).planId(request.getPlanId()).build(), cachingService.getPlan(request.getPlanId()))).orElse(cachingService.getPlan(request.getPlanId()));
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
         AbstractPack abstractPack= null;

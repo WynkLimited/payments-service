@@ -502,7 +502,8 @@ public class PaymentEventListener {
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
             final BaseTDRResponse tdr = paymentManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
-            if(event.getTransaction().getPaymentChannel().isInvoiceSupported()){
+            //Invoice should not be generated for Trial or mandate subscription WCF-4350
+            if((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) && event.getTransaction().getPaymentChannel().isInvoiceSupported()){
                 eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
                         .msisdn(event.getTransaction().getMsisdn())
                         .txnId(event.getTransaction().getIdStr())

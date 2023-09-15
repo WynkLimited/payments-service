@@ -6,9 +6,9 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.validations.MongoBaseEntityConstraint;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.WebPaymentOptionsRequest;
+import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
 import in.wynk.payment.dto.request.CombinedWebPaymentDetailsRequest;
-import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -44,7 +44,7 @@ public class PaymentOptionsController {
     @PostMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
-    public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethodsV2(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethodsV2(@PathVariable String sid, @RequestBody AbstractPaymentOptionsRequest<WebPaymentOptionsRequest> request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         return paymentMethodService.getFilteredPaymentOptions(request);

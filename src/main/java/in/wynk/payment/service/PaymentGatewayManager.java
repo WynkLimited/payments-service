@@ -92,13 +92,6 @@ public class PaymentGatewayManager
 
     @FraudAware(name = CHARGING_FRAUD_DETECTION_CHAIN)
     public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
-        SessionDTO sessionDTO= SessionContextHolder.getBody();
-        IMiscellaneousDetails miscellaneousDetails= sessionDTO.get(MISCELLANEOUS_DETAILS);
-        boolean originalAutorenew = (Objects.nonNull(miscellaneousDetails)) ? miscellaneousDetails.isAutoRenew() : false;
-        boolean requestedAutorenew= request.getPaymentDetails().isAutoRenew();
-        if(requestedAutorenew != originalAutorenew){
-            throw new PaymentRuntimeException(PAY999);
-        }
         PaymentGateway paymentGateway = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request), request);
         final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargingService =

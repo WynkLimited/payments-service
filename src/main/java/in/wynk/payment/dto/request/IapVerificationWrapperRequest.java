@@ -1,10 +1,7 @@
 package in.wynk.payment.dto.request;
 
 import in.wynk.client.validations.IClientValidatorRequest;
-import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IProductDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.IapVerificationRequestV2;
 import in.wynk.payment.dto.PlanDetails;
@@ -14,6 +11,8 @@ import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPlanValidatorRequest;
 import in.wynk.payment.validations.IReceiptValidatorRequest;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.Objects;
 
 public class IapVerificationWrapperRequest implements IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest, IReceiptValidatorRequest<LatestReceiptResponse> {
 
@@ -91,5 +90,15 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     @Override
     public LatestReceiptResponse getLatestReceiptInfo() {
         return latestReceiptResponse;
+    }
+
+    @Override
+    public IPaymentDetails getPaymentDetails () {
+        if(Objects.nonNull(iapVerificationRequest)){
+            return this.iapVerificationRequest.getPurchaseDetails().getPaymentDetails();
+        } else if(Objects.nonNull(iapVerificationRequestV2)){
+            return this.iapVerificationRequestV2.getPurchaseDetails().getPaymentDetails();
+        }
+        return null;
     }
 }

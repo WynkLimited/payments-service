@@ -131,4 +131,9 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
         return (ClientDetails) (WebPurchaseDetails.class.isAssignableFrom(purchaseDetails.getClass()) ? clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT)) : clientCachingService.getClientById(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString()));
     }
 
+    @Override
+    public IPaymentDetails getPaymentDetails () {
+        return this.purchaseDetails.getPaymentDetails();
+    }
+
 }

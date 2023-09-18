@@ -97,7 +97,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY501("Invalid Request", "Mandatory data in request is missing.", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
     PAY601("Validation Failure", "Given payment method is not eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
-    PAY602("Validation Failure", "Given payment method doesn't support auto renew. Hence, cannot create mandate", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY602("Validation Failure", "Given payment method doesn't support auto renew. Hence, charge cannot be done for mandate or trial ", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY603("Validation Failure", "Trial plan cannot be purchased without auto renew option", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY604("Validation Failure", "This plan is not eligible for mandate flow", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY605("Validation Failure", "Given plan id is not eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),

@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IMiscellaneousDetails;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
@@ -40,6 +41,11 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
 
     @Analysed
     private GeoLocation geoLocation;
+
+    @Override
+    public IMiscellaneousDetails getMiscellaneousDetails() {
+        return null;
+    }
 
     @Override
     @JsonIgnore

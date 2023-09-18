@@ -101,4 +101,5 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     public LatestReceiptResponse getLatestReceiptInfo() {
         return latestReceiptResponse;
     }
+
 }

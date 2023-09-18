@@ -6,9 +6,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
-import in.wynk.common.dto.GeoLocation;
-import in.wynk.common.dto.IGeoLocation;
-import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.*;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.IAppDetails;
@@ -73,6 +71,14 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     @Override
     public IPaymentDetails getPaymentDetails () {
         return this.paymentDetails;
+    }
+
+    @Override
+    public IMiscellaneousDetails getMiscellaneousDetails() {
+        SessionDTO sessionDTO= SessionContextHolder.getBody();
+        MiscellaneousDetails miscellaneousDetails= sessionDTO.get(MISCELLANEOUS_DETAILS);
+        return Objects.isNull(miscellaneousDetails) ? MiscellaneousDetails.builder().build() :
+                MiscellaneousDetails.builder().ingressIntent(miscellaneousDetails.getIngressIntent()).autoRenew(miscellaneousDetails.isAutoRenew()).build();
     }
 
 }

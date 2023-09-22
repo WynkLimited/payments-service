@@ -242,24 +242,38 @@ public class InvoiceManagerService implements InvoiceManager {
             if (Objects.nonNull(operatorDetails) &&
                     Objects.nonNull(operatorDetails.getUserMobilityInfo()) &&
                     Objects.nonNull(operatorDetails.getUserMobilityInfo().getGstStateCode())) {
-                gstStateCode = operatorDetails.getUserMobilityInfo().getGstStateCode().trim();
-                if(stateCodesCachingService.containsKey(gstStateCode)){
-                    AnalyticService.update(OPTIMUS_GST_STATE_CODE, gstStateCode);
-                    return gstStateCode;
+                String optimusGSTStateCode = operatorDetails.getUserMobilityInfo().getGstStateCode().trim();
+                if(isNumberFrom0To9(optimusGSTStateCode)){
+                    optimusGSTStateCode = "0" + optimusGSTStateCode;
+                }
+                AnalyticService.update(OPTIMUS_GST_STATE_CODE, optimusGSTStateCode);
+                if(stateCodesCachingService.containsKey(optimusGSTStateCode)){
+                    return optimusGSTStateCode;
                 }
             }
             if(Objects.nonNull(purchaseDetails) &&
                     Objects.nonNull(purchaseDetails.getGeoLocation()) &&
-                    Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode()) &&
-                    stateCodesCachingService.containsByISOStateCode(purchaseDetails.getGeoLocation().getStateCode())){
-                    gstStateCode = stateCodesCachingService.getByISOStateCode(purchaseDetails.getGeoLocation().getStateCode()).getId();
+                    Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode())){
+                final String geoLocationISOStateCode = purchaseDetails.getGeoLocation().getStateCode();
+                if(stateCodesCachingService.containsByISOStateCode(geoLocationISOStateCode)){
+                    gstStateCode = stateCodesCachingService.getByISOStateCode(geoLocationISOStateCode).getId();
                     AnalyticService.update(GEOLOCATION_GST_STATE_CODE, gstStateCode);
                     return gstStateCode;
+                }
             }
         } catch (Exception ex) {
             log.error(PaymentLoggingMarker.GST_STATE_CODE_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PaymentErrorType.PAY441, ex);
         }
         return gstStateCode;
+    }
+
+    private boolean isNumberFrom0To9(String input) {
+        try {
+            int number = Integer.parseInt(input);
+            return number >= 0 && number <= 9;
+        } catch (NumberFormatException e) {
+            return false; // Input is not a valid integer
+        }
     }
 }

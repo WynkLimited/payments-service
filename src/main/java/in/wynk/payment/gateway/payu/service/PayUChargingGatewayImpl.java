@@ -368,14 +368,14 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
         final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), transaction.getPaymentChannel().getCode().toLowerCase(), MERCHANT_ID);
         String userCredentials = payUMerchantKey + COLON + uid;
         Map<String, String> payload = new HashMap<>();
-        if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+        if (transaction.getType() == PaymentEvent.SUBSCRIBE || transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION || transaction.getType() == PaymentEvent.MANDATE) {
             String reqType = PaymentRequestType.SUBSCRIBE.name();
             String udf1 = PAYU_SI_KEY.toUpperCase();
             Calendar cal = Calendar.getInstance();
             Date today = cal.getTime();
             cal.add(Calendar.YEAR, 5); // 5 yrs from now
             Date next5Year = cal.getTime();
-            boolean isFreeTrial = transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION;
+            boolean isFreeTrial = (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION || transaction.getType() == PaymentEvent.MANDATE);
             BillingUtils billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
             String siDetails = common.getMapper().writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), transaction.getMandateAmount(), today, next5Year));
             String checksumHash = calculateChecksum(transaction.getClientAlias(), transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);

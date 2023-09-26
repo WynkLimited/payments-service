@@ -9,7 +9,7 @@ import lombok.ToString;
 @ToString
 public class UserInfo {
     /**
-    * LoginID where KCI being sent
-    */
+     * LoginID where KCI being sent
+     */
     private String loginId;
 }

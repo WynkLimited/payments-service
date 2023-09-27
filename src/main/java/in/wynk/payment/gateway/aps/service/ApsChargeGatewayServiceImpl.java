@@ -46,7 +46,6 @@ import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
 
 /**
  * @author Nishesh Pandey
@@ -156,7 +155,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getMandateAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                        paymentInfoBuilder.lob(LOB.AUTO_PAY_REGISTER_WYNK.toString()).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getMandateAmount()).paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!isMandateFlow);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
@@ -177,10 +176,10 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final UserInfo userInfo = UserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
                     ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
-                            ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr())
+                            ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getPaymentChannel().getCode().equals("aps_recharge") ? request.getOrderId() : transaction.getIdStr())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
-                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().upiApp(payAppName).paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
+                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().lob(transaction.getPaymentChannel().getCode().equals("aps_recharge") ? LOB.PREPAID.toString() : LOB.WYNK.toString()).upiApp(payAppName).paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
 
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew() || isMandateFlow) {
@@ -188,7 +187,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        upiPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
+                        upiPaymentInfoBuilder.lob(LOB.AUTO_PAY_REGISTER_WYNK.toString())
                                 .productCategory(BaseConstants.WYNK)
                                 .mandateAmount(transaction.getMandateAmount())
                                 .paymentStartDate(today.toInstant().toEpochMilli())
@@ -320,7 +319,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             Date today = cal.getTime();
                             cal.add(Calendar.YEAR, 10);
                             Date next10Year = cal.getTime();
-                            abstractCardPaymentInfoBuilder.lob(APS_LOB_AUTO_PAY_REGISTER_WYNK)
+                            abstractCardPaymentInfoBuilder.lob(LOB.AUTO_PAY_REGISTER_WYNK.toString())
                                     .productCategory(BaseConstants.WYNK)
                                     .mandateAmount(transaction.getMandateAmount())
                                     .paymentStartDate(today.toInstant().toEpochMilli())

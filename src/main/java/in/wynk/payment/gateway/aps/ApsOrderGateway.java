@@ -9,6 +9,7 @@ import in.wynk.payment.dto.request.AbstractRechargeOrderRequest;
 import in.wynk.payment.dto.request.RechargeOrderRequest;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.AbstractRechargeOrderResponse;
+import in.wynk.payment.dto.response.RechargeOrderResponse;
 import in.wynk.payment.gateway.IPaymentCharging;
 import in.wynk.payment.gateway.IRechargeOrder;
 import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
@@ -33,13 +34,13 @@ public class ApsOrderGateway implements IPaymentCharging<AbstractPaymentCharging
 
     @Override
     public AbstractPaymentChargingResponse charge (AbstractPaymentChargingRequest request) {
-        orderGateway.order(RechargeOrderRequest.builder().build());
+        RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
+        request.setOrderId(orderResponse.getOrderId());
         final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargingService =
                 BeanLocatorFactory.getBean("aps",
                         new ParameterizedTypeReference<IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>>() {
                         });
 
-        chargingService.charge(request);
-        return null;
+        return chargingService.charge(request);
     }
 }

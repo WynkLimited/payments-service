@@ -1,7 +1,6 @@
 package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.Currency;
 import in.wynk.payment.dto.aps.common.LOB;
@@ -30,7 +29,7 @@ public class ApsOrderGatewayServiceImpl implements IRechargeOrder<AbstractRechar
     private final VasClientService vasClientService;
     private final String ORDER_ENDPOINT;
 
-    public ApsOrderGatewayServiceImpl(String orderEndpoint, ApsCommonGatewayService common, VasClientService vasClientService ) {
+    public ApsOrderGatewayServiceImpl (String orderEndpoint, ApsCommonGatewayService common, VasClientService vasClientService) {
         this.common = common;
         this.vasClientService = vasClientService;
         this.ORDER_ENDPOINT = orderEndpoint;
@@ -49,13 +48,13 @@ public class ApsOrderGatewayServiceImpl implements IRechargeOrder<AbstractRechar
                 .items(items)
                 .userInfo(UserInfo.builder().communicationNo(transaction.getMsisdn()).build())
                 .channelInfo(ChannelInfo.builder().channelMeta(ChannelInfo.ChannelMeta.builder().text("Successful prepaid recharge").build()).build()).build();
-        return common.exchange(transaction.getClientAlias(), "url", HttpMethod.POST, transaction.getMsisdn(), apsOrderRequest, RechargeOrderResponse.class);
+        return common.exchange(transaction.getClientAlias(), ORDER_ENDPOINT, HttpMethod.POST, transaction.getMsisdn(), apsOrderRequest, RechargeOrderResponse.class);
 
     }
 
     private String createSku (String msisdn) {
         Random random = new Random();
         int num = random.nextInt(99) + 10;
-       return LOB.PREPAID + "_" + msisdn + "_" +num;
+        return LOB.PREPAID + "_" + msisdn + "_" + num;
     }
 }

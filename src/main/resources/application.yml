@@ -324,7 +324,7 @@ aps:
       card: ${payment.merchant.aps.api.base}/pg-service/v1/saved-options/cards/delete
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa
     order:
-      api: ${payment.merchant.aps.api.base}/order-service/v2/order
+      api: ${payment.merchant.aps.order.api.base}/order-service/v2/order
 
 branch:
   onelink:

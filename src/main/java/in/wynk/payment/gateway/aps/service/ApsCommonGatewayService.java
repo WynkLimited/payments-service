@@ -219,7 +219,7 @@ public class ApsCommonGatewayService {
         return rsa.encrypt(gson.toJson(credentials));
     }
 
-    public String getLoginId (String msisdn) {
-        return msisdn.replace("+91", "");
+    private String getLoginId (String msisdn) {
+        return msisdn != null ? msisdn.replace("+91", "") : null;
     }
 }

@@ -39,22 +39,23 @@ public class ApsOrderGatewayServiceImpl implements IRechargeOrder<AbstractRechar
     public AbstractRechargeOrderResponse order (AbstractRechargeOrderRequest request) {
         final Transaction transaction = TransactionContext.get();
         //vasClientService.allOperatorDetails(orderRequest.getMsisdn()); //for userinfo if required
+        String mobileNumber = transaction.getMsisdn().replace("+91", "");
         List<OrderItem> items = Collections.singletonList(
-                OrderItem.builder().sku(createSku(common.getLoginId(transaction.getMsisdn()))).description("unlimited_pack").lob(LOB.PREPAID).amount(transaction.getAmount())
-                        .meta(OrderItem.OrderMeta.builder().serviceInstance(common.getLoginId(transaction.getMsisdn())).build())
+                OrderItem.builder().sku(createSku(mobileNumber, transaction.getAmount())).description("unlimited_pack").lob(LOB.PREPAID).amount(transaction.getAmount())
+                        .meta(OrderItem.OrderMeta.builder().serviceInstance(mobileNumber).build())
                         .build());
         ApsOrderRequest apsOrderRequest = ApsOrderRequest.builder()
                 .orderInfo(OrderInfo.builder().orderAmount(transaction.getAmount()).currency(Currency.INR).build())
                 .items(items)
-                .userInfo(UserInfo.builder().communicationNo(transaction.getMsisdn()).build())
+                .userInfo(UserInfo.builder().communicationNo(mobileNumber).build())
                 .channelInfo(ChannelInfo.builder().channelMeta(ChannelInfo.ChannelMeta.builder().text("Successful prepaid recharge").build()).build()).build();
         return common.exchange(transaction.getClientAlias(), ORDER_ENDPOINT, HttpMethod.POST, transaction.getMsisdn(), apsOrderRequest, RechargeOrderResponse.class);
 
     }
 
-    private String createSku (String msisdn) {
+    private String createSku (String mobileNumber, double amount) {
         Random random = new Random();
         int num = random.nextInt(99) + 10;
-        return LOB.PREPAID + "_" + msisdn + "_" + num;
+        return LOB.PREPAID + "_" + amount + "_" + mobileNumber + "_" + num;
     }
 }

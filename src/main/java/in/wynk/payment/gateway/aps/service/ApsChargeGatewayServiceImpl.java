@@ -177,8 +177,8 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
                     final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
-                    final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(request.getUserDetails().getMsisdn()).build() :
-                            ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                    final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                            ChargeUserInfo.builder().loginId(common.getLoginId(request.getUserDetails().getMsisdn())).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
                     ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
                             ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr())

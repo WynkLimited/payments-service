@@ -1,12 +1,18 @@
 package in.wynk.payment.dto.aps.common;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+/**
+ * @author Nishesh Pandey
+ */
 @Getter
 @SuperBuilder
 @ToString
-public abstract class UserInfo {
+public class ChargeUserInfo extends UserInfo {
+    /**
+     * LoginID where KCI being sent
+     */
+    private String loginId;
 }

@@ -38,6 +38,7 @@ public class ApsOrderGatewayServiceImpl implements IRechargeOrder<AbstractRechar
     @Override
     public AbstractRechargeOrderResponse order (AbstractRechargeOrderRequest request) {
         final Transaction transaction = TransactionContext.get();
+        //final MsisdnOperatorDetails msisdnOperatorDetails = vasClientService.allOperatorDetails(transaction.getMsisdn());
         //vasClientService.allOperatorDetails(orderRequest.getMsisdn()); //for userinfo if required
         String mobileNumber = transaction.getMsisdn().replace("+91", "");
         List<OrderItem> items = Collections.singletonList(

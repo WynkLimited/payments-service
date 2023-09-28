@@ -220,7 +220,7 @@ public class ApsCommonGatewayService {
         return rsa.encrypt(gson.toJson(credentials));
     }
 
-    public String getLoginId (String msisdn) {
+    private String getLoginId (String msisdn) {
         return msisdn.replace("+91", "");
     }
 }

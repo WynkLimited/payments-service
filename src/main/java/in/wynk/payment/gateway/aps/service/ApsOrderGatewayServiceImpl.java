@@ -40,8 +40,8 @@ public class ApsOrderGatewayServiceImpl implements IRechargeOrder<AbstractRechar
         final Transaction transaction = TransactionContext.get();
         //vasClientService.allOperatorDetails(orderRequest.getMsisdn()); //for userinfo if required
         List<OrderItem> items = Collections.singletonList(
-                OrderItem.builder().sku(createSku(transaction.getMsisdn())).description("unlimited_pack").lob(LOB.PREPAID).amount(transaction.getAmount())
-                        .meta(OrderItem.OrderMeta.builder().serviceInstance(transaction.getMsisdn()).build())
+                OrderItem.builder().sku(createSku(common.getLoginId(transaction.getMsisdn()))).description("unlimited_pack").lob(LOB.PREPAID).amount(transaction.getAmount())
+                        .meta(OrderItem.OrderMeta.builder().serviceInstance(common.getLoginId(transaction.getMsisdn())).build())
                         .build());
         ApsOrderRequest apsOrderRequest = ApsOrderRequest.builder()
                 .orderInfo(OrderInfo.builder().orderAmount(transaction.getAmount()).currency(Currency.INR).build())

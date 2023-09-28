@@ -49,7 +49,7 @@ public class ApsOrderGatewayServiceImpl implements IRechargeOrder<AbstractRechar
                 .items(items)
                 .userInfo(UserInfo.builder().communicationNo(mobileNumber).build())
                 .channelInfo(ChannelInfo.builder().channelMeta(ChannelInfo.ChannelMeta.builder().text("Successful prepaid recharge").build()).build()).build();
-        return common.exchange(transaction.getClientAlias(), ORDER_ENDPOINT, HttpMethod.POST, transaction.getMsisdn(), apsOrderRequest, RechargeOrderResponse.class);
+        return common.exchange(transaction.getClientAlias(), ORDER_ENDPOINT, HttpMethod.POST, null, apsOrderRequest, RechargeOrderResponse.class);
 
     }
 

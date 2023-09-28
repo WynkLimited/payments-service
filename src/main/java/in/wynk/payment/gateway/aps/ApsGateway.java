@@ -70,6 +70,7 @@ public class ApsGateway implements
                       @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint,
                       @Value("${aps.payment.init.charge.api}") String commonChargeEndpoint,
                       @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint,
+                      @Value("${aps.payment.init.charge.upi.order.api}") String upiOrderChargeEndpoint,
                       @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
                       @Value("${aps.payment.cancel.mandate.api}") String cancelMandateEndpoint,
                       Gson gson,
@@ -88,7 +89,7 @@ public class ApsGateway implements
         this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, paymentCachingService);
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
-        this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, paymentMethodCachingService, commonGateway);
+        this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, commonChargeEndpoint, upiOrderChargeEndpoint, paymentMethodCachingService, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher);
         this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson);

@@ -291,6 +291,8 @@ aps:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate
         upi:
           api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate/upi
+          order:
+            api: ${payment.merchant.aps.order.api.base}/pg-service/v1/payment/initiate/upi
       refund:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund
     verify:

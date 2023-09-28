@@ -199,7 +199,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
-                            common.exchange(transaction.getClientAlias(), isRecharge ? UPI_ORDER_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(),
+                            common.exchange(transaction.getClientAlias(), isRecharge ? UPI_ORDER_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST, isRecharge ? null : request.getUserDetails().getMsisdn(),
                                     payRequest, UpiIntentChargingChargingResponse.class);
                     Map<String, String> map =
                             Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))

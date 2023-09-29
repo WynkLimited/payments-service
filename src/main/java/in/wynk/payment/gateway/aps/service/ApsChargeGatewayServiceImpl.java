@@ -54,19 +54,21 @@ import static in.wynk.payment.constant.UpiConstants.*;
 @Slf4j
 public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
 
-    private final String CHARGING_ENDPOINT;
+    private final String CARD_NETBANKING_CHARGING_ENDPOINT;
     private final String UPI_CHARGING_ENDPOINT;
-    private final String UPI_ORDER_CHARGING_ENDPOINT;
+    private final String UPI_PAYDIGI_CHARGING_ENDPOINT;
+    private final String CARD_NETBANKING_PAYDIGI_CHARGING_ENDPOINT;
 
     private final ApsCommonGatewayService common;
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final Map<FlowType, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>> chargingDelegate = new HashMap<>();
 
-    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String commonChargeEndpoint, String upiOrderChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
+    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String chargeEndpoint, String upiPayDigiChargeEndpoint, String payDigiChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
         this.common = common;
         this.UPI_CHARGING_ENDPOINT = upiChargeEndpoint;
-        this.CHARGING_ENDPOINT = commonChargeEndpoint;
-        this.UPI_ORDER_CHARGING_ENDPOINT = upiOrderChargeEndpoint;
+        this.CARD_NETBANKING_CHARGING_ENDPOINT = chargeEndpoint;
+        this.UPI_PAYDIGI_CHARGING_ENDPOINT = upiPayDigiChargeEndpoint;
+        this.CARD_NETBANKING_PAYDIGI_CHARGING_ENDPOINT = payDigiChargeEndpoint;
         this.chargingDelegate.put(CARD, new CardCharging());
         this.chargingDelegate.put(UPI, new UpiCharging());
         this.chargingDelegate.put(NET_BANKING, new NetBankingCharging());
@@ -144,10 +146,12 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                 public UpiCollectInAppChargingResponse charge (AbstractPaymentChargingRequest request) {
                     final Transaction transaction = TransactionContext.get();
                     final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
-                    final in.wynk.payment.dto.aps.common.UserInfo userInfo = ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
+                    final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                            ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
                     ExternalChargingRequest.ExternalChargingRequestBuilder<CollectUpiPaymentInfo> apsChargingRequestBuilder =
-                            ExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(transaction.getIdStr()).userInfo(userInfo)
+                            ExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).userInfo(userInfo)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
                             CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
@@ -157,11 +161,13 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
                         Date next10Year = cal.getTime();
-                        paymentInfoBuilder.lob(LOB.AUTO_PAY_REGISTER_WYNK.toString()).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount()).paymentStartDate(today.toInstant().toEpochMilli())
+                        paymentInfoBuilder.lob(LOB.AUTO_PAY_REGISTER_WYNK.toString()).productCategory(BaseConstants.WYNK).mandateAmount(transaction.getAmount())
+                                .paymentStartDate(today.toInstant().toEpochMilli())
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli());
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
-                    common.exchange(transaction.getClientAlias(), UPI_CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
+                    common.exchange(transaction.getClientAlias(), isRecharge ? UPI_PAYDIGI_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST,
+                            isRecharge ? null : request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                 }
             }
@@ -182,7 +188,9 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
                             ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
-                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder = IntentUpiPaymentInfo.builder().lob(transaction.getPaymentChannel().getCode().equals("aps_recharge") ? LOB.PREPAID.toString() : LOB.WYNK.toString()).upiApp(payAppName).paymentAmount(transaction.getAmount());
+                    IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder =
+                            IntentUpiPaymentInfo.builder().lob(transaction.getPaymentChannel().getCode().equals("aps_recharge") ? LOB.PREPAID.toString() : LOB.WYNK.toString()).upiApp(payAppName)
+                                    .paymentAmount(transaction.getAmount());
 
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
@@ -199,7 +207,8 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
-                            common.exchange(transaction.getClientAlias(), isRecharge ? UPI_ORDER_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST, isRecharge ? null : request.getUserDetails().getMsisdn(),
+                            common.exchange(transaction.getClientAlias(), isRecharge ? UPI_PAYDIGI_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST,
+                                    isRecharge ? null : request.getUserDetails().getMsisdn(),
                                     payRequest, UpiIntentChargingChargingResponse.class);
                     Map<String, String> map =
                             Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
@@ -307,6 +316,9 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     if ("CC".equals(paymentDetails.getCardDetails().getCardInfo().getCategory())) {
                         paymentMode = "CREDIT_CARD";
                     }
+                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
+                    final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                            ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
                     if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
                         final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
@@ -337,13 +349,13 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         abstractCardPaymentInfoBuilder =
                                 SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                     }
-                    final in.wynk.payment.dto.aps.common.UserInfo userInfo = ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                     ExternalChargingRequest<?> payRequest =
-                            ExternalChargingRequest.builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
+                            ExternalChargingRequest.builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                     CardChargingResponse cardChargingResponse =
-                            common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
+                            common.exchange(transaction.getClientAlias(), isRecharge ? CARD_NETBANKING_PAYDIGI_CHARGING_ENDPOINT : CARD_NETBANKING_CHARGING_ENDPOINT, HttpMethod.POST,
+                                    isRecharge ? null : request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
                     return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
                             .html(cardChargingResponse.getHtml()).build();
 
@@ -371,16 +383,19 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
             public AbstractCoreNetBankingChargingResponse charge (AbstractPaymentChargingRequest request) {
                 final Transaction transaction = TransactionContext.get();
                 final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
-                final in.wynk.payment.dto.aps.common.UserInfo userInfo = ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
+                boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
+                final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                        ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                 final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                 final NetBankingPaymentInfo netBankingInfo =
                         NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount())
                                 .paymentMode(NetBankingConstants.NET_BANKING).build();
                 final ExternalChargingRequest<NetBankingPaymentInfo> payRequest =
-                        ExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(transaction.getIdStr()).paymentInfo(netBankingInfo)
+                        ExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).paymentInfo(netBankingInfo)
                                 .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
                 NetBankingChargingResponse apsNetBankingChargingResponse =
-                        common.exchange(transaction.getClientAlias(), CHARGING_ENDPOINT, HttpMethod.POST, request.getUserDetails().getMsisdn(), payRequest, NetBankingChargingResponse.class);
+                        common.exchange(transaction.getClientAlias(), isRecharge ? CARD_NETBANKING_PAYDIGI_CHARGING_ENDPOINT : CARD_NETBANKING_CHARGING_ENDPOINT, HttpMethod.POST,
+                                isRecharge ? null : request.getUserDetails().getMsisdn(), payRequest, NetBankingChargingResponse.class);
                 return NetBankingHtmlTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }

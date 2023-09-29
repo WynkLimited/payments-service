@@ -224,7 +224,7 @@ payment:
       secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
         base: http://intpay.india.airtel.itm
-      order:
+      paydigi:
         api:
           base: https://paydigi.airtel.in
       encryption:

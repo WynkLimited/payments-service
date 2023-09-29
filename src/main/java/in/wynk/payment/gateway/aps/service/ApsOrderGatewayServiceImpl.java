@@ -26,20 +26,16 @@ import java.util.Random;
 public class ApsOrderGatewayServiceImpl implements IRechargeOrder<AbstractRechargeOrderResponse, AbstractRechargeOrderRequest> {
 
     private final ApsCommonGatewayService common;
-    private final VasClientService vasClientService;
     private final String ORDER_ENDPOINT;
 
-    public ApsOrderGatewayServiceImpl (String orderEndpoint, ApsCommonGatewayService common, VasClientService vasClientService) {
+    public ApsOrderGatewayServiceImpl (String orderEndpoint, ApsCommonGatewayService common) {
         this.common = common;
-        this.vasClientService = vasClientService;
         this.ORDER_ENDPOINT = orderEndpoint;
     }
 
     @Override
     public AbstractRechargeOrderResponse order (AbstractRechargeOrderRequest request) {
         final Transaction transaction = TransactionContext.get();
-        //final MsisdnOperatorDetails msisdnOperatorDetails = vasClientService.allOperatorDetails(transaction.getMsisdn());
-        //vasClientService.allOperatorDetails(orderRequest.getMsisdn()); //for userinfo if required
         String mobileNumber = transaction.getMsisdn().replace("+91", "");
         List<OrderItem> items = Collections.singletonList(
                 OrderItem.builder().sku(createSku(mobileNumber, transaction.getAmount())).description("unlimited_pack").lob(LOB.PREPAID).amount(transaction.getAmount())

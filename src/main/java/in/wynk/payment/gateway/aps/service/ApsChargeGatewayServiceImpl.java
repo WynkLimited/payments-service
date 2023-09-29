@@ -154,7 +154,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             ExternalChargingRequest.<CollectUpiPaymentInfo>builder().orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).userInfo(userInfo)
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
+                            CollectUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(transaction.getAmount());
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew()) {
                         Calendar cal = Calendar.getInstance();
@@ -189,7 +189,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             ExternalChargingRequest.<IntentUpiPaymentInfo>builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder =
-                            IntentUpiPaymentInfo.builder().lob(transaction.getPaymentChannel().getCode().equals("aps_recharge") ? LOB.PREPAID.toString() : LOB.WYNK.toString()).upiApp(payAppName)
+                            IntentUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).upiApp(payAppName)
                                     .paymentAmount(transaction.getAmount());
 
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
@@ -320,6 +320,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
+                    String lob = isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString();
                     if (FRESH_CARD_TYPE.equals(paymentDetails.getCardDetails().getType())) {
                         final FreshCardDetails cardDetails = (FreshCardDetails) paymentDetails.getCardDetails();
                         final CardDetails credentials =
@@ -327,7 +328,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                         .expiryMonth(cardDetails.getExpiryInfo().getMonth()).expiryYear(cardDetails.getExpiryInfo().getYear()).cvv(cardDetails.getCardInfo().getCvv()).build();
                         final String encCardInfo = common.encryptCardData(credentials);
                         abstractCardPaymentInfoBuilder =
-                                FreshCardPaymentInfo.builder().cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
+                                FreshCardPaymentInfo.builder().lob(lob).cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard())
                                         .favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard())
                                         .paymentMode(paymentMode).paymentAmount(transaction.getAmount());
                         //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
@@ -347,7 +348,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         final CardDetails credentials = CardDetails.builder().cvv(cardDetails.getCardInfo().getCvv()).cardRefNumber(cardDetails.getCardToken()).build();
                         final String encCardInfo = common.encryptCardData(credentials);
                         abstractCardPaymentInfoBuilder =
-                                SavedCardPaymentInfo.builder().savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
+                                SavedCardPaymentInfo.builder().lob(lob).savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                     }
                     final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                     ExternalChargingRequest<?> payRequest =
@@ -388,7 +389,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                 final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                 final NetBankingPaymentInfo netBankingInfo =
-                        NetBankingPaymentInfo.builder().bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount())
+                        NetBankingPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount())
                                 .paymentMode(NetBankingConstants.NET_BANKING).build();
                 final ExternalChargingRequest<NetBankingPaymentInfo> payRequest =
                         ExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).paymentInfo(netBankingInfo)

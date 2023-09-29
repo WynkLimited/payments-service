@@ -20,7 +20,8 @@ import javax.persistence.*;
 @Table(name = "merchant_transaction")
 @TypeDef(name = "json", typeClass = JsonStringType.class)
 @NamedQueries({
-        @NamedQuery(name = "MerchantTransaction.findPartnerReferenceById", query = "SELECT m.externalTransactionId FROM MerchantTransaction m WHERE m.id=:txnId", hints = @QueryHint(name = "javax.persistence.query.timeout", value = "300"))
+        @NamedQuery(name = "MerchantTransaction.findPartnerReferenceById", query = "SELECT m.externalTransactionId FROM MerchantTransaction m WHERE m.id=:txnId", hints = @QueryHint(name = "javax.persistence.query.timeout", value = "300")),
+        @NamedQuery(name = "MerchantTransaction.findTransactionIdByOrderId", query = "SELECT m.id FROM MerchantTransaction m WHERE m.orderId=:orderId", hints = @QueryHint(name = "javax.persistence.query.timeout", value = "300"))
 })
 public class MerchantTransaction {
 
@@ -29,13 +30,20 @@ public class MerchantTransaction {
     @Column(name = "transaction_id")
     @Setter(AccessLevel.NONE)
     private String id;
+
+    @Analysed
+    @Column(name = "order_id")
+    private String orderId;
+
     @Analysed
     @Column(name = "merchant_transaction_reference_id")
     private String externalTransactionId;
+
     @Type(type = "json")
     @Analysed
     @Column(name = "merchant_request", nullable = false, columnDefinition = "json")
     private Object request;
+
     @Type(type = "json")
     @Analysed
     @Column(name = "merchant_response", columnDefinition = "json")

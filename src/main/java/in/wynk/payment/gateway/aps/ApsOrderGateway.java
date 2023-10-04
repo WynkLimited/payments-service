@@ -1,6 +1,8 @@
 package in.wynk.payment.gateway.aps;
 
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
@@ -35,7 +37,7 @@ import java.util.Map;
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(ApsConstant.AIRTEL_PAY_STACK_RECHARGE)
+@Service(ApsConstant.AIRTEL_PAY_STACK_V2)
 public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
 
@@ -88,8 +90,13 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
                 });
 
         ApsCallBackRequestPayload response = (ApsCallBackRequestPayload) callbackService.parse(payload);
-        String txnId = merchantTransactionService.findTransactionId(response.getOrderId());
-        response.setOrderId(txnId);
+        try {
+            String txnId = merchantTransactionService.findTransactionId(response.getOrderId());
+            response.setOrderId(txnId);
+        } catch (Exception e) {
+            log.error("Exception occuerred while finding orderId in mercahnt table for order created with APS");
+            throw new WynkRuntimeException(PaymentErrorType.PAY049, e);
+        }
         return response;
     }
 }

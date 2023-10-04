@@ -7,7 +7,7 @@ public interface ApsConstant {
     String CONTENT_TYPE = "Content-Type";
     String APPLICATION_JSON = "application/json";
     String AIRTEL_PAY_STACK = "aps";
-    String AIRTEL_PAY_STACK_RECHARGE = "aps_recharge";
+    String AIRTEL_PAY_STACK_V2 = "aps_v2";
     String APS = "APS";
     String PAYMENT_TIMER_KEY = "payment_timer";
     String PAYMENT_STATUS_POLL_KEY = "payment_status_poll";

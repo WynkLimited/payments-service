@@ -12,6 +12,7 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -23,6 +24,7 @@ import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.vas.client.service.ApsClientService;
@@ -76,10 +78,11 @@ public class ApsCommonGatewayService {
     private final ApsClientService apsClientService;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
+    private final IMerchantTransactionService merchantTransactionService;
 
 
     public ApsCommonGatewayService (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
-                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper, PaymentCachingService cachingService) {
+                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;
@@ -87,6 +90,7 @@ public class ApsCommonGatewayService {
         this.apsClientService = apsClientService;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
+        this.merchantTransactionService =  merchantTransactionService;
     }
 
     @SneakyThrows
@@ -160,9 +164,13 @@ public class ApsCommonGatewayService {
     }
 
     public void syncChargingTransactionFromSource (Transaction transaction) {
-        final String txnId = transaction.getIdStr();
+        String txnId = transaction.getIdStr();
         final boolean fetchHistoryTransaction = false;
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        if(ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
+            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txnId);
+            txnId =merchantTransaction.getOrderId();
+        }
         try {
             final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
             builder.request(uri);

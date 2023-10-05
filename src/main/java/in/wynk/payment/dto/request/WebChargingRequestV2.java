@@ -2,7 +2,6 @@ package in.wynk.payment.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
-import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.dao.entity.ClientDetails;
@@ -20,11 +19,6 @@ import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.PageUrlDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.session.context.SessionContextHolder;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
@@ -32,11 +26,6 @@ import java.util.Objects;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
-@Getter
-@ToString
-@SuperBuilder
-@AnalysedEntity
-@NoArgsConstructor
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
 
     @Override

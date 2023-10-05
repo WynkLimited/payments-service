@@ -329,6 +329,8 @@ aps:
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa
     order:
       api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/order
+      status:
+        api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/status/{orderId}
 
 branch:
   onelink:

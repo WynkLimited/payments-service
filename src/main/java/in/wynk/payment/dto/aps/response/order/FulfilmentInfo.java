@@ -1,0 +1,43 @@
+package in.wynk.payment.dto.aps.response.order;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.dto.aps.common.LOB;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+
+/**
+ * @author Nishesh Pandey
+ */
+@Getter
+@SuperBuilder
+@ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
+public class FulfilmentInfo {
+    private String sku;
+    private String description;
+    private LOB lob;
+    private double amount;
+    private Meta meta;
+    private String fulfilmentId;
+    private String status;
+    private Integer postingTrialsAttempted;
+    private Integer refundTrialsAttempted;
+    private long createdAt;
+    private long updatedAt;
+
+
+    @Getter
+    @SuperBuilder
+    @ToString
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @NoArgsConstructor
+    public static class Meta {
+        private String transactionId;
+        private String serviceInstance;
+        private Integer accountNumber;
+        private Integer circleId;
+    }
+}

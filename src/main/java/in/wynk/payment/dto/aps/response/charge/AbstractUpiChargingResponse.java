@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.aps.response.charge;
 
-import in.wynk.payment.dto.aps.common.PollConfig;
+import in.wynk.payment.dto.aps.common.PollingConfig;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -11,5 +11,5 @@ import lombok.ToString;
 public class AbstractUpiChargingResponse extends AbstractExternalChargingResponse {
     private boolean hyperSdk;
     private boolean isApbDirectUpi;
-    private PollConfig pollingConfig;
+    private PollingConfig pollingConfig;
 }

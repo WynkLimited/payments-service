@@ -27,6 +27,8 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.aps.kafka.PaymentChargeKafkaMessage;
+import in.wynk.payment.dto.aps.kafka.PaymentStatusMessage;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
@@ -91,7 +93,8 @@ public class PaymentEventListener {
     private final PaymentCachingService cachingService;
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final InvoiceService invoiceService;
-    private final IKafkaEventPublisher<String, InvoiceKafkaMessage> kafkaPublisher;
+    private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
+    private final IKafkaEventPublisher<String, PaymentStatusMessage> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 
@@ -386,10 +389,26 @@ public class PaymentEventListener {
                 final Transaction transaction = transactionManagerService.get(event.getTxnId());
                 final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
                 final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
-                kafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event, clientAlias));
+                invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event, clientAlias));
             }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the generate invoice event in kafka due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
+        }
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "paymentChargeStatusEvent")
+    public void onPaymentStatusEvent(PaymentStatusEvent event) {
+        try {
+            AnalyticService.update(event);
+            final Transaction transaction = transactionManagerService.get(event.getId());
+            if (TransactionStatus.SUCCESS == transaction.getStatus() || TransactionStatus.FAILURE == transaction.getStatus()) {
+                paymentStatusKafkaPublisher.publish(PaymentChargeKafkaMessage.from(event, cachingService.getPlan(event.getPlanId())));
+            }
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish thepayment status event in kafka due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
         }
     }

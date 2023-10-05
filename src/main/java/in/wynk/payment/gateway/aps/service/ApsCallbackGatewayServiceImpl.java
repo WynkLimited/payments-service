@@ -10,6 +10,7 @@ import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
@@ -66,7 +67,8 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
         }
         final IPaymentCallback callbackService = delegator.get(callbackType);
-        if (isValid(request)) {
+        final Transaction transaction = TransactionContext.get();
+        if (ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode()) || isValid(request)) {
             return callbackService.handle(request);
         } else {
             log.error(APS_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());

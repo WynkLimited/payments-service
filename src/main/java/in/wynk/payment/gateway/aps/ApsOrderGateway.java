@@ -1,23 +1,21 @@
 package in.wynk.payment.gateway.aps;
 
 import in.wynk.common.utils.BeanLocatorFactory;
+import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.dto.aps.common.ApsConstant;
+import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
+import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK_V2;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
+import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
-import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
-import in.wynk.payment.dto.request.AbstractRechargeOrderRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.RechargeOrderRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.AbstractRechargeOrderResponse;
 import in.wynk.payment.dto.response.RechargeOrderResponse;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
-import in.wynk.payment.gateway.IPaymentCallback;
-import in.wynk.payment.gateway.IPaymentCharging;
-import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
-import in.wynk.payment.gateway.IRechargeOrder;
+import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.gateway.aps.service.ApsEligibilityGatewayServiceImpl;
 import in.wynk.payment.gateway.aps.service.ApsOrderGatewayServiceImpl;
@@ -35,9 +33,10 @@ import java.util.Map;
  * @author Nishesh Pandey
  */
 @Slf4j
-@Service(ApsConstant.AIRTEL_PAY_STACK_RECHARGE)
+@Service(AIRTEL_PAY_STACK_V2)
 public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>,
-        IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
+        IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
+        IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
     private final IRechargeOrder<AbstractRechargeOrderResponse, AbstractRechargeOrderRequest> orderGateway;
     private final IExternalPaymentEligibilityService eligibilityGateway;
@@ -56,7 +55,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
         request.setOrderId(orderResponse.getOrderId());
         final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargingService =
-                BeanLocatorFactory.getBean("aps",
+                BeanLocatorFactory.getBean(AIRTEL_PAY_STACK,
                         new ParameterizedTypeReference<IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>>() {
                         });
 
@@ -76,7 +75,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     @Override
     public AbstractPaymentCallbackResponse handle (ApsCallBackRequestPayload callbackRequest) {
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
-                BeanLocatorFactory.getBean("aps", new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
+                BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
         return callbackService.handle(callbackRequest);
     }
@@ -84,12 +83,25 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     @Override
     public ApsCallBackRequestPayload parse (Map<String, Object> payload) {
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
-                BeanLocatorFactory.getBean("aps", new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
+                BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
 
         ApsCallBackRequestPayload response = (ApsCallBackRequestPayload) callbackService.parse(payload);
-        String txnId = merchantTransactionService.findTransactionId(response.getOrderId());
-        response.setOrderId(txnId);
+        try {
+            String txnId = merchantTransactionService.findTransactionId(response.getOrderId());
+            response.setOrderId(txnId);
+        } catch (Exception e) {
+            log.error("Exception occurred while finding orderId in merchant table for order created with APS");
+            throw new WynkRuntimeException(PaymentErrorType.PAY049, e);
+        }
         return response;
+    }
+
+    @Override
+    public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
+        final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> reconcileService =
+                BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
+                });
+        return reconcileService.reconcile(request);
     }
 }

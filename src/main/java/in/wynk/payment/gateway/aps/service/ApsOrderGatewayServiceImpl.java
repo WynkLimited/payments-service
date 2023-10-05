@@ -6,14 +6,13 @@ import in.wynk.payment.dto.aps.common.Currency;
 import in.wynk.payment.dto.aps.common.LOB;
 import in.wynk.payment.dto.aps.common.OrderInfo;
 import in.wynk.payment.dto.aps.request.order.ApsOrderRequest;
-import in.wynk.payment.dto.aps.request.order.ChannelInfo;
+import in.wynk.payment.dto.aps.common.ChannelInfo;
 import in.wynk.payment.dto.aps.request.order.OrderItem;
-import in.wynk.payment.dto.aps.request.order.UserInfo;
+import in.wynk.payment.dto.aps.common.UserInfo;
 import in.wynk.payment.dto.request.AbstractRechargeOrderRequest;
 import in.wynk.payment.dto.response.AbstractRechargeOrderResponse;
 import in.wynk.payment.dto.response.RechargeOrderResponse;
 import in.wynk.payment.gateway.IRechargeOrder;
-import in.wynk.vas.client.service.VasClientService;
 import org.springframework.http.HttpMethod;
 
 import java.util.Collections;

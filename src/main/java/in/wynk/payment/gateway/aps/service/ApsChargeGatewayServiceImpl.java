@@ -11,8 +11,9 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.*;
+import in.wynk.payment.dto.aps.request.charge.ChannelInfo;
 import in.wynk.payment.dto.aps.request.charge.ExternalChargingRequest;
-import in.wynk.payment.dto.aps.common.UserInfo;
+import in.wynk.payment.dto.aps.common.AbstractUserInfo;
 import in.wynk.payment.dto.aps.response.charge.CardChargingResponse;
 import in.wynk.payment.dto.aps.response.charge.NetBankingChargingResponse;
 import in.wynk.payment.dto.aps.response.charge.UpiCollectChargingResponse;
@@ -147,7 +148,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final Transaction transaction = TransactionContext.get();
                     final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                     boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
-                    final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                    final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
                     ExternalChargingRequest.ExternalChargingRequestBuilder<CollectUpiPaymentInfo> apsChargingRequestBuilder =
@@ -183,7 +184,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
                     final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
-                    final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                    final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(common.getLoginId(request.getUserDetails().getMsisdn())).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
                     ExternalChargingRequest.ExternalChargingRequestBuilder<IntentUpiPaymentInfo> apsChargingRequestBuilder =
@@ -319,7 +320,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         paymentMode = "CREDIT_CARD";
                     }
                     boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
-                    final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                    final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
                     String lob = isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString();
@@ -387,7 +388,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                 final Transaction transaction = TransactionContext.get();
                 final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
                 boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
-                final UserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
+                final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                         ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                 final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                 final NetBankingPaymentInfo netBankingInfo =

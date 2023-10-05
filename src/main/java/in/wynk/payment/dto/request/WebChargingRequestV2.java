@@ -37,7 +37,6 @@ import static in.wynk.common.constant.BaseConstants.*;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
-@AllArgsConstructor
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
 
     @Override

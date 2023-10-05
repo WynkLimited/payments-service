@@ -67,7 +67,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
                         });
         AbstractPaymentChargingResponse chargeResponse = chargingService.charge(request);
         publishMerchantTransactionEvent(request, orderResponse, chargeResponse);
-        return chargingService.charge(request);
+        return chargeResponse;
     }
 
     private void publishMerchantTransactionEvent (AbstractPaymentChargingRequest request, RechargeOrderResponse orderResponse,

@@ -1,15 +1,17 @@
 package in.wynk.payment.dto.aps.common;
 
-import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@Builder
+@SuperBuilder
 @ToString
+@NoArgsConstructor
 public class UserInfo {
     private String emailId;
     private String communicationNo;

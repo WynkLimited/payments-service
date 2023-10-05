@@ -10,7 +10,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @ToString
-public class ChargeUserInfo extends UserInfo {
+public class ChargeUserInfo extends AbstractUserInfo {
     /**
      * LoginID where KCI being sent
      */

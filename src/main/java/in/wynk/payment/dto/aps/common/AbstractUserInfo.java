@@ -1,16 +1,12 @@
 package in.wynk.payment.dto.aps.common;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-/**
- * @author Nishesh Pandey
- */
 @Getter
 @SuperBuilder
 @ToString
-public class OrderUserInfo extends AbstractUserInfo {
-    private String serviceInstance;
+public abstract class AbstractUserInfo {
 }
-

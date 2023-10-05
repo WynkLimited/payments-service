@@ -1,12 +1,22 @@
 package in.wynk.payment.dto.aps.common;
 
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
+/**
+ * @author Nishesh Pandey
+ */
 @Getter
 @Builder
-@ToString
+@AnalysedEntity
 public class ChannelInfo {
-    private String redirectionUrl;
+    private ChannelMeta channelMeta;
+
+    @Getter
+    @Builder
+    public static class ChannelMeta {
+        private String text;
+    }
 }

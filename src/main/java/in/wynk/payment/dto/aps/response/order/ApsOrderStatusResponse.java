@@ -20,7 +20,7 @@ import lombok.ToString;
 public class ApsOrderStatusResponse {
     private String orderId;
     private OrderInfo orderInfo;
-    private ApsChargeStatusResponse paymentDetails;
+    private OrderPaymentDetails paymentDetails;
     private UserInfo userInfo;
     private ChannelInfo channelInfo;
     private FulfilmentInfo[] fulfilmentInfo;

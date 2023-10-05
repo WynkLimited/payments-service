@@ -241,8 +241,12 @@ public class ApsCommonGatewayService {
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txnId);
         String orderId = merchantTransaction.getOrderId();
+        if(StringUtils.isEmpty(orderId)) {
+            throw new WynkRuntimeException("Order Id is missing in merchant table which is mandatory for aps_v2");
+        }
         final URI uri = httpTemplate.getUriTemplateHandler().expand(ORDER_STATUS_ENDPOINT, orderId);
         builder.request(uri);
+        builder.orderId(orderId);
         ApsOrderStatusResponse apsChargeStatusResponse = null;
         try {
             apsChargeStatusResponse = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, null, null, ApsOrderStatusResponse.class);

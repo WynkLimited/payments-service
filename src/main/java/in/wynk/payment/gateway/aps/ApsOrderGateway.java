@@ -66,17 +66,16 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
                         new ParameterizedTypeReference<IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>>() {
                         });
         AbstractPaymentChargingResponse chargeResponse = chargingService.charge(request);
-        publishMerchantTransactionEvent(request, orderResponse, chargeResponse);
+        publishMerchantTransactionEvent(orderResponse);
         return chargeResponse;
     }
 
-    private void publishMerchantTransactionEvent (AbstractPaymentChargingRequest request, RechargeOrderResponse orderResponse,
-                                                  AbstractPaymentChargingResponse chargeResponse) {
+    private void publishMerchantTransactionEvent (RechargeOrderResponse orderResponse) {
         Transaction transaction = TransactionContext.get();
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
-        mBuilder.request(request);
+        mBuilder.request("Dummy Request");
         mBuilder.orderId(orderResponse.getOrderId());
-        mBuilder.response(request);//saving request as response might be html as well and db wants only Json Object
+        mBuilder.response("Dummy Response");
         eventPublisher.publishEvent(mBuilder.build());
     }
 

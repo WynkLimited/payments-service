@@ -147,7 +147,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                 public UpiCollectInAppChargingResponse charge (AbstractPaymentChargingRequest request) {
                     final Transaction transaction = TransactionContext.get();
                     final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
-                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
+                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals(ApsConstant.AIRTEL_PAY_STACK_V2);
                     final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
@@ -182,7 +182,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                     final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
                     final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
-                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
+                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals(ApsConstant.AIRTEL_PAY_STACK_V2);
                     final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(common.getLoginId(request.getUserDetails().getMsisdn())).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
@@ -317,7 +317,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     if ("CC".equals(paymentDetails.getCardDetails().getCardInfo().getCategory())) {
                         paymentMode = "CREDIT_CARD";
                     }
-                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
+                    boolean isRecharge = transaction.getPaymentChannel().getCode().equals(ApsConstant.AIRTEL_PAY_STACK_V2);
                     final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     AbstractCardPaymentInfo.AbstractCardPaymentInfoBuilder<?, ?> abstractCardPaymentInfoBuilder = null;
@@ -385,7 +385,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
             public AbstractCoreNetBankingChargingResponse charge (AbstractPaymentChargingRequest request) {
                 final Transaction transaction = TransactionContext.get();
                 final PaymentMethod method = paymentMethodCachingService.get(request.getPaymentDetails().getPaymentId());
-                boolean isRecharge = transaction.getPaymentChannel().getCode().equals("aps_recharge");
+                boolean isRecharge = transaction.getPaymentChannel().getCode().equals(ApsConstant.AIRTEL_PAY_STACK_V2);
                 final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                         ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                 final String redirectUrl = request.getCallbackDetails().getCallbackUrl();

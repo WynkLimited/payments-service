@@ -73,9 +73,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     private void publishMerchantTransactionEvent (RechargeOrderResponse orderResponse) {
         Transaction transaction = TransactionContext.get();
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
-        mBuilder.request("Dummy Request");
         mBuilder.orderId(orderResponse.getOrderId());
-        mBuilder.response("Dummy Response");
         eventPublisher.publishEvent(mBuilder.build());
     }
 

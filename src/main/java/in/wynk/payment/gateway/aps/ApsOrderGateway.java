@@ -6,6 +6,10 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
 import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK_V2;
+
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -24,6 +28,7 @@ import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
@@ -42,12 +47,14 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     private final IExternalPaymentEligibilityService eligibilityGateway;
     private final IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest> payOptionsGateway;
     private final IMerchantTransactionService merchantTransactionService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public ApsOrderGateway (@Value("${aps.payment.order.api}") String orderEndpoint, @Value("${aps.payment.option.api}") String payOptionEndpoint, ApsCommonGatewayService commonGateway, IMerchantTransactionService merchantTransactionService) {
+    public ApsOrderGateway (@Value("${aps.payment.order.api}") String orderEndpoint, @Value("${aps.payment.option.api}") String payOptionEndpoint, ApsCommonGatewayService commonGateway, IMerchantTransactionService merchantTransactionService, ApplicationEventPublisher eventPublisher) {
         this.orderGateway = new ApsOrderGatewayServiceImpl(orderEndpoint, commonGateway);
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
         this.merchantTransactionService = merchantTransactionService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -58,8 +65,19 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK,
                         new ParameterizedTypeReference<IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>>() {
                         });
-
+        AbstractPaymentChargingResponse chargeResponse = chargingService.charge(request);
+        publishMerchantTransactionEvent(request, orderResponse, chargeResponse);
         return chargingService.charge(request);
+    }
+
+    private void publishMerchantTransactionEvent (AbstractPaymentChargingRequest request, RechargeOrderResponse orderResponse,
+                                                  AbstractPaymentChargingResponse chargeResponse) {
+        Transaction transaction = TransactionContext.get();
+        final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        mBuilder.request(request);
+        mBuilder.orderId(orderResponse.getOrderId());
+        mBuilder.response(chargeResponse);
+        eventPublisher.publishEvent(mBuilder.build());
     }
 
     @Override

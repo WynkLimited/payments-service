@@ -161,6 +161,7 @@ public class PaymentEventListener {
                 .id(event.getId())
                 .externalTransactionId(event.getExternalTransactionId())
                 .request(event.getRequest())
+                .orderId(event.getOrderId())
                 .response(event.getResponse())
                 .build()
         ));

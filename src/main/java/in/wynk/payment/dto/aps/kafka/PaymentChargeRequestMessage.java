@@ -18,6 +18,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.validation.Valid;
@@ -26,13 +27,17 @@ import javax.validation.Valid;
  * @author Nishesh Pandey
  */
 @Getter
-@Builder
+@Setter
 @AnalysedEntity
 @NoArgsConstructor
 public class PaymentChargeRequestMessage implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest {
     private String from;
     private String to;
     private String campaignId;
+    private String orgId;
+    private String sessionId;
+    private String serviceId;
+    private String requestId;
 
     @Valid
     @Analysed
@@ -49,11 +54,6 @@ public class PaymentChargeRequestMessage implements IPaymentMethodValidatorReque
     @Valid
     @Analysed
     private UserDetails userDetails;
-
-    public static PaymentStatusResponseMessage from (PaymentStatusEvent event, PlanDTO planDto) {
-        return PaymentStatusResponseMessage.builder().transactionId(event.getId()).status(event.getTransactionStatus()).event(event.getTransactionType()).planId(event.getPlanId()).amount(planDto.getPrice().getDisplayAmount()).discountedAmount(planDto.getPrice().getAmount()).failureReason(
-                event.getFailureReason()).build();
-    }
 
     @Override
     @JsonIgnore
@@ -99,5 +99,14 @@ public class PaymentChargeRequestMessage implements IPaymentMethodValidatorReque
     @Override
     public boolean isTrialOpted () {
         return this.getPaymentDetails().isTrialOpted();
+    }
+
+    public boolean isMandateSupported () {
+        return this.getPaymentDetails().isMandate();
+    }
+
+    public static PaymentStatusResponseMessage from (PaymentStatusEvent event, PlanDTO planDto) {
+        return PaymentStatusResponseMessage.builder().transactionId(event.getId()).status(event.getTransactionStatus()).event(event.getTransactionType()).planId(event.getPlanId()).amount(planDto.getPrice().getDisplayAmount()).discountedAmount(planDto.getPrice().getAmount()).failureReason(
+                event.getFailureReason()).build();
     }
 }

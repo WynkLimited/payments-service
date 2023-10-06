@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PriceDetails {
     private String currency;
-    private long price;
-    private long discountPrice;
+    private int price;
+    private int discountPrice;
 }

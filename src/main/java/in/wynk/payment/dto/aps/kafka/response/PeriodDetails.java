@@ -16,5 +16,5 @@ import java.util.concurrent.TimeUnit;
 @AllArgsConstructor
 public class PeriodDetails {
     private long validity;
-    private TimeUnit validityUnit;
+    private String validityUnit;
 }

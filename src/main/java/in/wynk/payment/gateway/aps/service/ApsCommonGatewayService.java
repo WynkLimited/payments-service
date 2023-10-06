@@ -11,6 +11,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
+import static in.wynk.payment.constant.OrderStatus.*;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -226,12 +227,12 @@ public class ApsCommonGatewayService {
     private void syncTransactionWithSourceResponse (OrderInfo orderInfo) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
-        if ("ORDER_SUCCESS".equalsIgnoreCase(orderInfo.getOrderStatus())) {
+        if (ORDER_COMPLETE == orderInfo.getOrderStatus() || ORDER_PARTIAL_COMPLETE == orderInfo.getOrderStatus() || ORDER_MANUAL_COMPLETE == orderInfo.getOrderStatus()) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());
-        } else if ("ORDER_FAILED".equalsIgnoreCase(orderInfo.getOrderStatus())) {
+        } else if (ORDER_FAILED == orderInfo.getOrderStatus() || ORDER_CLOSED == orderInfo.getOrderStatus()) {
             finalTransactionStatus = TransactionStatus.FAILURE;
-        } else if("ORDER_PROCESSING".equalsIgnoreCase(orderInfo.getOrderStatus()) || ("ORDER_PENDING".equalsIgnoreCase(orderInfo.getOrderStatus()))) {
+        } else if (ORDER_PROCESSING == orderInfo.getOrderStatus() || ORDER_CREATED == orderInfo.getOrderStatus() || ORDER_AWAITING_EVENT == orderInfo.getOrderStatus()) {
             finalTransactionStatus = TransactionStatus.INPROGRESS;
         }
         transaction.setStatus(finalTransactionStatus.getValue());

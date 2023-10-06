@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.aps.response.order;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import in.wynk.payment.constant.PostingStatus;
 import in.wynk.payment.dto.aps.common.LOB;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,7 +23,7 @@ public class FulfilmentInfo {
     private double amount;
     private Meta meta;
     private String fulfilmentId;
-    private String status;
+    private PostingStatus status;
     private Integer postingTrialsAttempted;
     private Integer refundTrialsAttempted;
     private long createdAt;

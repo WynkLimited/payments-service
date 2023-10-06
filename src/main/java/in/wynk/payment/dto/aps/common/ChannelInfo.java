@@ -17,7 +17,9 @@ public class ChannelInfo {
     private ChannelMeta channelMeta;
 
     @Getter
-    @Builder
+    @SuperBuilder
+    @ToString
+    @NoArgsConstructor
     public static class ChannelMeta {
         private String text;
     }

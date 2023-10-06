@@ -2,8 +2,7 @@ package in.wynk.payment.consumer;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.dto.aps.kafka.PaymentChargeKafkaMessage;
-import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
+import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.stream.constant.StreamMarker;
 import in.wynk.stream.consumer.impl.AbstractKafkaEventConsumer;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @DependsOn("kafkaConsumerConfig")
-public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, PaymentChargeKafkaMessage> {
+public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, PaymentChargeRequestMessage> {
 
     private final PaymentChargeHandler paymentChargeHandler;
 
@@ -39,7 +38,7 @@ public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, Pa
     @KafkaListener(id = "paymentChargeListener", topics = "${wynk.kafka.consumers.listenerFactory.payment.charge[0].factoryDetails.topic}",
             containerFactory = "${wynk.kafka.consumers.listenerFactory.payment.charge[0].name}")
     @AnalyseTransaction(name = "paymentChargeConsumer")
-    protected void listenPaymentCharge (ConsumerRecord<String, PaymentChargeKafkaMessage> consumerRecord) {
+    protected void listenPaymentCharge (ConsumerRecord<String, PaymentChargeRequestMessage> consumerRecord) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
             consume(consumerRecord.value());
@@ -64,9 +63,7 @@ public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, Pa
     }
 
     @Override
-    public void consume (PaymentChargeKafkaMessage event) throws WynkRuntimeException {
-        if (AbstractPaymentChargingRequest.class.isAssignableFrom(event.getClass())) {
-            paymentChargeHandler.charge(event);
-        }
+    public void consume (PaymentChargeRequestMessage event) throws WynkRuntimeException {
+        paymentChargeHandler.charge(event);
     }
 }

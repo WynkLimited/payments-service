@@ -25,6 +25,7 @@ import in.wynk.payment.dto.aps.common.CardDetails;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.order.ApsOrderStatusResponse;
 import in.wynk.payment.dto.aps.response.order.OrderInfo;
+import in.wynk.payment.dto.aps.response.order.OrderPaymentDetails;
 import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
@@ -247,31 +248,33 @@ public class ApsCommonGatewayService {
         final URI uri = httpTemplate.getUriTemplateHandler().expand(ORDER_STATUS_ENDPOINT, orderId);
         builder.request(uri);
         builder.orderId(orderId);
-        ApsOrderStatusResponse apsChargeStatusResponse = null;
+        ApsOrderStatusResponse apsChargeStatusResponse;
+        OrderPaymentDetails paymentDetails =null;
         try {
             apsChargeStatusResponse = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, null, null, ApsOrderStatusResponse.class);
             builder.response(apsChargeStatusResponse);
-            if (StringUtils.isNotEmpty(apsChargeStatusResponse.getPaymentDetails().getPaymentMode())) {
-                String mode = apsChargeStatusResponse.getPaymentDetails().getPaymentMode();
-                if ("CREDIT_CARD".equals(apsChargeStatusResponse.getPaymentDetails().getPaymentMode()) || "DEBIT_CARD".equals(apsChargeStatusResponse.getPaymentDetails().getPaymentMode())) {
-                    mode = "CREDIT_CARD".equals(apsChargeStatusResponse.getPaymentDetails().getPaymentMode()) ? "CC" : "DC";
+            paymentDetails = apsChargeStatusResponse.getPaymentDetails()[0];
+            if (StringUtils.isNotEmpty(paymentDetails.getPaymentMode())) {
+                String mode = paymentDetails.getPaymentMode();
+                if ("CREDIT_CARD".equals(paymentDetails.getPaymentMode()) || "DEBIT_CARD".equals(paymentDetails.getPaymentMode())) {
+                    mode = "CREDIT_CARD".equals(paymentDetails.getPaymentMode()) ? "CC" : "DC";
                 }
                 AnalyticService.update(PAYMENT_MODE, mode);
             }
-            if (StringUtils.isNotEmpty(apsChargeStatusResponse.getPaymentDetails().getBankCode())) {
-                AnalyticService.update(BANK_CODE, apsChargeStatusResponse.getPaymentDetails().getBankCode());
+            if (StringUtils.isNotEmpty(paymentDetails.getBankCode())) {
+                AnalyticService.update(BANK_CODE, paymentDetails.getBankCode());
             }
-            if (StringUtils.isNotEmpty(apsChargeStatusResponse.getPaymentDetails().getCardNetwork())) {
-                AnalyticService.update(ApsConstant.APS_CARD_TYPE, apsChargeStatusResponse.getPaymentDetails().getCardNetwork());
+            if (StringUtils.isNotEmpty(paymentDetails.getCardNetwork())) {
+                AnalyticService.update(ApsConstant.APS_CARD_TYPE, paymentDetails.getCardNetwork());
             }
-            builder.externalTransactionId(apsChargeStatusResponse.getPaymentDetails().getPgId());
-            AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, apsChargeStatusResponse.getPaymentDetails().getPgId());
+            builder.externalTransactionId(paymentDetails.getPgId());
+            AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, paymentDetails.getPgId());
             syncTransactionWithSourceResponse(apsChargeStatusResponse.getOrderInfo());
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
-                if (!StringUtils.isEmpty(apsChargeStatusResponse.getPaymentDetails().getErrorCode()) || !StringUtils.isEmpty(apsChargeStatusResponse.getPaymentDetails().getErrorDescription())) {
+                if (!StringUtils.isEmpty(paymentDetails.getErrorCode()) || !StringUtils.isEmpty(paymentDetails.getErrorDescription())) {
                     eventPublisher.publishEvent(
-                            PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponse.getPaymentDetails().getErrorCode())
-                                    .description(apsChargeStatusResponse.getPaymentDetails().getErrorDescription()).build());
+                            PaymentErrorEvent.builder(transaction.getIdStr()).code(paymentDetails.getErrorCode())
+                                    .description(paymentDetails.getErrorDescription()).build());
                 }
             }
         } catch (Exception e) {
@@ -287,7 +290,7 @@ public class ApsCommonGatewayService {
                 PaymentStatusEvent.PaymentStatusEventBuilder paymentStatusEventBuilder =
                         PaymentStatusEvent.builder().id(transaction.getIdStr()).transactionType(transaction.getType()).transactionStatus(transaction.getStatus())
                                 .paymentCode(transaction.getPaymentChannel().getCode()).planId(transaction.getPlanId()).clientAlias(transaction.getClientAlias())
-                                .failureReason(apsChargeStatusResponse.getPaymentDetails().getErrorDescription());
+                                .failureReason(paymentDetails.getErrorDescription());
                 eventPublisher.publishEvent(paymentStatusEventBuilder.build());
             }
         }

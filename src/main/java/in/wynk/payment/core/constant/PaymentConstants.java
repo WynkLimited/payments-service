@@ -88,4 +88,5 @@ public interface PaymentConstants extends BaseConstants {
     String CONTENT_TYPE = "Content-Type";
     String CURRENCY_INR="INR";
     String MANDATE = "mandate";
+    String WHATSAPP = "WHATSAPP";
 }

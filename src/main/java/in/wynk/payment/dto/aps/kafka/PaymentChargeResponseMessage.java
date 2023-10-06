@@ -19,7 +19,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 @RequiredArgsConstructor
-@KafkaEvent(topic = "${wynk.kafka.producer.payment.charge.topic}")
+@KafkaEvent(topic = "${wynk.kafka.producers.payment.charge.topic}")
 public class PaymentChargeResponseMessage {
     private String to;
     private String from;

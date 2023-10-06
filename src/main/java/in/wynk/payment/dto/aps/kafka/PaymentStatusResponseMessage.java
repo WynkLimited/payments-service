@@ -15,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 @RequiredArgsConstructor
-@KafkaEvent(topic = "${wynk.kafka.producer.payment.status.topic}")
+@KafkaEvent(topic = "${wynk.kafka.producers.payment.status.topic}")
 public class PaymentStatusResponseMessage {
     private final String transactionId;
     private final TransactionStatus status;

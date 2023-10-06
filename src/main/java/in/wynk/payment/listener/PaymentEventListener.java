@@ -27,8 +27,7 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.aps.kafka.PaymentChargeKafkaMessage;
-import in.wynk.payment.dto.aps.kafka.PaymentStatusMessage;
+import in.wynk.payment.dto.aps.kafka.PaymentStatusResponseMessage;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
@@ -94,7 +93,7 @@ public class PaymentEventListener {
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
-    private final IKafkaEventPublisher<String, PaymentStatusMessage> paymentStatusKafkaPublisher;
+    private final IKafkaEventPublisher<String, PaymentStatusResponseMessage> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 

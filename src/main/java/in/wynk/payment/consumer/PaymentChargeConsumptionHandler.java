@@ -8,7 +8,7 @@ import in.wynk.payment.core.event.PaymentChargeEvent;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
-import in.wynk.payment.dto.request.WebChargingRequestV2;
+import in.wynk.payment.dto.request.WhatsAppChargeRequest;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.presentation.IPaymentPresentationV2;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
@@ -38,27 +38,34 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     }
 
     @Override
-    public void charge (PaymentChargeRequestMessage message) {
-        AbstractPaymentChargingRequest request = new WebChargingRequestV2();
+    public void charge (PaymentChargeRequestMessage requestMessage) {
+        WhatsAppChargeRequest request = new WhatsAppChargeRequest();
 
         try {
-            BeanUtils.copyProperties(message, request);
+            BeanUtils.copyProperties(requestMessage.getMessage(), request);
         } catch (Exception e) {
             throw new WynkRuntimeException("Exception Occurred while converting message to charge Object");
         }
+        request.setOrgId(requestMessage.getOrgId());
+        request.setSessionId(requestMessage.getSessionId());
+        request.setServiceId(requestMessage.getServiceId());
+        request.setRequestId(requestMessage.getRequestId());
+        //TODO: Integrate payment options and then get first eligible payment method id
+        //request.getPaymentDetails().setPaymentMode("UPI");
+        // request.getPaymentDetails().setPaymentId();
         final WynkResponseEntity<PaymentChargingResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>>() {
                 }).transform(() -> Pair.of(request, manager.charge(request)));
-        IntentSeamlessUpiPaymentChargingResponse intentResponse = (IntentSeamlessUpiPaymentChargingResponse)responseEntity.getBody().getData();
-        eventPublisher.publishEvent(toPaymentChargeEvent(message, intentResponse));
+        IntentSeamlessUpiPaymentChargingResponse intentResponse = (IntentSeamlessUpiPaymentChargingResponse) responseEntity.getBody().getData();
+        eventPublisher.publishEvent(toPaymentChargeEvent(requestMessage, intentResponse));
     }
 
-    private PaymentChargeEvent toPaymentChargeEvent (PaymentChargeRequestMessage message, IntentSeamlessUpiPaymentChargingResponse intentResponse) {
-        PaymentGateway paymentGateway = paymentMethodCachingService.get(message.getPaymentDetails().getPaymentId()).getPaymentCode();
+    private PaymentChargeEvent toPaymentChargeEvent (PaymentChargeRequestMessage requestMessage, IntentSeamlessUpiPaymentChargingResponse intentResponse) {
+        PaymentGateway paymentGateway = paymentMethodCachingService.get(requestMessage.getMessage().getPaymentDetails().getPaymentId()).getPaymentCode();
         return PaymentChargeEvent.builder().transactionId(intentResponse.getTid()).transactionType(intentResponse.getTransactionType()).transactionStatus(intentResponse.getTransactionStatus())
-                .paymentGatewayCode(paymentGateway.getCode()).to(message.getFrom()).from(message.getTo()).campaignId(message.getCampaignId()).orgId(message.getOrgId())
-                .serviceId(message.getServiceId()).sessionId(
-                        message.getSessionId()).requestId(message.getRequestId()).planId(message.getProductDetails().getId()).deeplink(intentResponse.getDeepLink()).trialOpted(message.isTrialOpted())
-                .mandate(message.isMandateSupported()).clientAlias(message.getClientDetails().getAlias()).build();
+                .paymentGatewayCode(paymentGateway.getCode()).to(requestMessage.getMessage().getFrom()).from(requestMessage.getMessage().getTo()).campaignId(requestMessage.getMessage().getCampaignId()).orgId(requestMessage.getOrgId())
+                .serviceId(requestMessage.getServiceId()).sessionId(
+                        requestMessage.getSessionId()).requestId(requestMessage.getRequestId()).planId(requestMessage.getMessage().getProductDetails().getId()).deeplink(intentResponse.getDeepLink()).trialOpted(requestMessage.getMessage().getPaymentDetails().isTrialOpted())
+                .mandate(requestMessage.getMessage().isMandateSupported()).clientAlias(requestMessage.getMessage().getClientDetails().getAlias()).build();
     }
 }

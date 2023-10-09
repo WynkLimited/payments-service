@@ -1,7 +1,9 @@
 package in.wynk.payment.consumer;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.dto.aps.kafka.Message;
 import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.stream.constant.StreamMarker;
 import in.wynk.stream.consumer.impl.AbstractKafkaEventConsumer;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 /**
@@ -38,10 +41,15 @@ public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, Pa
     @KafkaListener(id = "paymentChargeListener", topics = "${wynk.kafka.consumers.listenerFactory.payment.charge[0].factoryDetails.topic}",
             containerFactory = "${wynk.kafka.consumers.listenerFactory.payment.charge[0].name}")
     @AnalyseTransaction(name = "paymentChargeConsumer")
-    protected void listenPaymentCharge (ConsumerRecord<String, PaymentChargeRequestMessage> consumerRecord) {
+    protected void listenPaymentCharge (@Header(BaseConstants.X_ORG_ID) String orgId,@Header(BaseConstants.X_SERVICE_ID) String serviceId,@Header(BaseConstants.X_SESSION_ID) String sessionId,@Header(BaseConstants.X_REQUEST_ID) String requestId, ConsumerRecord<String, Message> consumerRecord) {
         try {
-            log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
-            consume(consumerRecord.value());
+            log.info("KAFKA RECORD -------->" + consumerRecord);
+            log.info("KAFKA RECORD VALUE-------->" + consumerRecord.value());
+            //log.info("KAFKA RECORD VALUE String-------->" + consumerRecord.value().toString());
+           // log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
+            PaymentChargeRequestMessage requestMessage = PaymentChargeRequestMessage.builder().message(consumerRecord.value())
+                            .requestId(requestId).orgId(orgId).serviceId(serviceId).sessionId(sessionId).build();
+            consume(requestMessage);
         } catch (Exception e) {
             log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Error occurred in polling/consuming kafka event", e);
         }
@@ -63,7 +71,7 @@ public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, Pa
     }
 
     @Override
-    public void consume (PaymentChargeRequestMessage event) throws WynkRuntimeException {
-        paymentChargeHandler.charge(event);
+    public void consume (PaymentChargeRequestMessage requestMessage) throws WynkRuntimeException {
+        paymentChargeHandler.charge(requestMessage);
     }
 }

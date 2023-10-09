@@ -17,9 +17,9 @@ public class PaymentChargeCallbackKafkaSerializer implements Deserializer<Messag
     @Override
     public Message deserialize(String topic, byte[] bytes) {
         try {
-            String message = objectMapper.readValue(bytes, String.class);
+            Message message = objectMapper.readValue(bytes, Message.class);
             log.info("response received for invoice callback - " + message);
-            return objectMapper.readValue(message, Message.class);
+            return message;
         } catch (Exception e) {
             log.error(KAFKA_CONSUMPTION_ERROR, "Error in deserializing the payload {}", e.getMessage(), e);
         }

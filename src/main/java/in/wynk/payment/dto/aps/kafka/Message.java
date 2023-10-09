@@ -21,7 +21,6 @@ import java.io.Serializable;
  */
 @Getter
 @ToString
-@Builder
 @AnalysedEntity
 @RequiredArgsConstructor
 public class Message implements Serializable {

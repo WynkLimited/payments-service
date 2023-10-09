@@ -9,13 +9,12 @@ import in.wynk.payment.dto.AbstractProductDetails;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.validation.Valid;
+import java.io.Serializable;
 
 /**
  * @author Nishesh Pandey
@@ -24,7 +23,8 @@ import javax.validation.Valid;
 @ToString
 @Builder
 @AnalysedEntity
-public class Message {
+@RequiredArgsConstructor
+public class Message implements Serializable {
     private String from;
     private String to;
     private String campaignId;

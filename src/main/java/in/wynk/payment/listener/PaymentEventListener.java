@@ -406,9 +406,7 @@ public class PaymentEventListener {
     public void onPaymentStatusEvent(PaymentStatusEvent event) {
         try {
             AnalyticService.update(event);
-            log.info("Transaction Status------>"+ event.getTransactionStatus());
             if (TransactionStatus.SUCCESS == event.getTransactionStatus() || TransactionStatus.FAILURE == event.getTransactionStatus()) {
-               log.info("Publishing to Kafka Payment status response------>");
                 paymentStatusKafkaPublisher.publish(PaymentStatusResponseMessage.from(event, cachingService.getPlan(event.getPlanId())));
             }
         } catch (Exception e) {

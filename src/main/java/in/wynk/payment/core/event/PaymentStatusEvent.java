@@ -7,16 +7,14 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
 @Builder
+@ToString
 @AnalysedEntity
 @JsonIgnoreProperties(ignoreUnknown = true)
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)

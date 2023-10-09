@@ -27,7 +27,6 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.payment.dto.aps.kafka.PaymentChargeResponseMessage;
 import in.wynk.payment.dto.aps.kafka.PaymentStatusResponseMessage;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;

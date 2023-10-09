@@ -104,9 +104,4 @@ public class PaymentChargeRequestMessage implements IPaymentMethodValidatorReque
     public boolean isMandateSupported () {
         return this.getPaymentDetails().isMandate();
     }
-
-    public static PaymentStatusResponseMessage from (PaymentStatusEvent event, PlanDTO planDto) {
-        return PaymentStatusResponseMessage.builder().transactionId(event.getId()).status(event.getTransactionStatus()).event(event.getTransactionType()).planId(event.getPlanId()).amount(planDto.getPrice().getDisplayAmount()).discountedAmount(planDto.getPrice().getAmount()).failureReason(
-                event.getFailureReason()).build();
-    }
 }

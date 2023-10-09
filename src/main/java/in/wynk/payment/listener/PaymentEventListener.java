@@ -407,8 +407,10 @@ public class PaymentEventListener {
         try {
             AnalyticService.update(event);
             final Transaction transaction = transactionManagerService.get(event.getId());
+            log.info("Transaction Status------>"+ transaction.getStatus());
             if (TransactionStatus.SUCCESS == transaction.getStatus() || TransactionStatus.FAILURE == transaction.getStatus()) {
-                paymentStatusKafkaPublisher.publish(PaymentChargeRequestMessage.from(event, cachingService.getPlan(event.getPlanId())));
+               log.info("Publishing to Kafka Payment status response------>");
+                paymentStatusKafkaPublisher.publish(PaymentStatusResponseMessage.from(event, cachingService.getPlan(event.getPlanId())));
             }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the payment status event in kafka due to {}", e.getMessage(), e);

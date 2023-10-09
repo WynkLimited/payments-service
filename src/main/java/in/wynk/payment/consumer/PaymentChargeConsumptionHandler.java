@@ -57,6 +57,9 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>>() {
                 }).transform(() -> Pair.of(request, manager.charge(request)));
         IntentSeamlessUpiPaymentChargingResponse intentResponse = (IntentSeamlessUpiPaymentChargingResponse) responseEntity.getBody().getData();
+        log.info("Request Message-------->"+ requestMessage);
+        log.info("Request -------->"+ request);
+       log.info("INtent Response-------->"+ intentResponse);
         eventPublisher.publishEvent(toPaymentChargeEvent(requestMessage, intentResponse));
     }
 

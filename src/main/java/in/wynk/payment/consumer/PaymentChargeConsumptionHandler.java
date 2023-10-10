@@ -4,8 +4,10 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentChargeEvent;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.kafka.Message;
 import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
@@ -49,20 +51,21 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     }
 
     @Override
-    public void charge (PaymentChargeRequestMessage requestMessage) {
-        Message request = requestMessage.getMessage();
+    public void charge (PaymentChargeRequestMessage requestMessage) {Message request = requestMessage.getMessage();
         //TODO: Integrate payment options and then get first eligible payment method id
         WynkService resp = wynkServiceDetailsCachingService.get(requestMessage.getServiceId());
-        WhatsAppChargeRequest chargingRequestV2 = getData(map.getOrDefault(requestMessage.getServiceId(), resp.getLinkedClient()), request);
-
-        final WynkResponseEntity<PaymentChargingResponse> responseEntity =
-                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>>() {
-                }).transform(() -> Pair.of(chargingRequestV2, manager.charge(chargingRequestV2)));
-        IntentSeamlessUpiPaymentChargingResponse intentResponse = (IntentSeamlessUpiPaymentChargingResponse) responseEntity.getBody().getData();
-        log.info("Request Message-------->"+ requestMessage);
-        log.info("Request -------->"+ request);
-       log.info("INtent Response-------->"+ intentResponse);
-        eventPublisher.publishEvent(toPaymentChargeEvent(requestMessage, intentResponse));
+        String clientAlias = map.getOrDefault(requestMessage.getServiceId(), resp.getLinkedClient());
+        WhatsAppChargeRequest chargingRequestV2 = getData(clientAlias, request);
+        try {
+            final WynkResponseEntity<PaymentChargingResponse> responseEntity =
+                    BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>>() {
+                    }).transform(() -> Pair.of(chargingRequestV2, manager.charge(chargingRequestV2)));
+            IntentSeamlessUpiPaymentChargingResponse intentResponse = (IntentSeamlessUpiPaymentChargingResponse) responseEntity.getBody().getData();
+            eventPublisher.publishEvent(toPaymentChargeEvent(requestMessage,clientAlias, intentResponse));
+        }catch (Exception e) {
+            e.printStackTrace();
+           // eventPublisher.publishEvent(toPaymentChargeEvent(requestMessage,clientAlias, intentResponse));
+        }
     }
 
     @ClientAware(clientAlias = "#clientAlias")
@@ -77,14 +80,15 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 .appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build();
     }
 
-    private PaymentChargeEvent toPaymentChargeEvent (PaymentChargeRequestMessage requestMessage, IntentSeamlessUpiPaymentChargingResponse intentResponse) {
+    private PaymentChargeEvent toPaymentChargeEvent (PaymentChargeRequestMessage requestMessage,String clientAlias, IntentSeamlessUpiPaymentChargingResponse intentResponse) {
         PaymentGateway paymentGateway = paymentMethodCachingService.get(requestMessage.getMessage().getPaymentDetails().getPaymentId()).getPaymentCode();
-        return PaymentChargeEvent.builder().transactionId(intentResponse.getTid()).transactionType(intentResponse.getTransactionType()).transactionStatus(intentResponse.getTransactionStatus())
+       final Transaction transaction = TransactionContext.get();
+        return PaymentChargeEvent.builder().transactionId(transaction.getIdStr()).transactionType(transaction.getType().toString()).transactionStatus(transaction.getStatus())
                 .paymentGatewayCode(paymentGateway.getCode()).to(requestMessage.getMessage().getFrom()).from(requestMessage.getMessage().getTo())
                 .campaignId(requestMessage.getMessage().getCampaignId()).orgId(requestMessage.getOrgId())
                 .serviceId(requestMessage.getServiceId()).sessionId(
                         requestMessage.getSessionId()).requestId(requestMessage.getRequestId()).planId(requestMessage.getMessage().getProductDetails().getId()).deeplink(intentResponse.getDeepLink())
                 .trialOpted(requestMessage.getMessage().getPaymentDetails().isTrialOpted())
-                .mandate(requestMessage.getMessage().isMandateSupported()).clientAlias(requestMessage.getMessage().getClientDetails().getAlias()).build();
+                .mandate(requestMessage.getMessage().isMandateSupported()).clientAlias(clientAlias).build();
     }
 }

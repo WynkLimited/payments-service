@@ -11,7 +11,7 @@ import lombok.*;
 @Builder
 @AnalysedEntity
 public class PaymentChargeRequestMessage {
-    private Message message;
+    private PayChargeReqMessage message;
     private String orgId;
     private String sessionId;
     private String serviceId;

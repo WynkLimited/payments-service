@@ -1,21 +1,18 @@
-package in.wynk.payment.dto.aps.kafka.response;
+package in.wynk.payment.event.common;
 
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-/**
- * @author Nishesh Pandey
- */
 @Getter
-@Builder
+@SuperBuilder
+@AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlanDetails {
+public class AbstractPlanDetails {
     private String id;
     private String title;
     private String description;
-    private PriceDetails priceDetails;
-    private PeriodDetails periodDetails;
 }

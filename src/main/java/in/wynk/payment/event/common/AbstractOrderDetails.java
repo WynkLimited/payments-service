@@ -1,17 +1,14 @@
-package in.wynk.payment.dto.aps.kafka.response;
+package in.wynk.payment.event.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.aps.kafka.FailedOrderDetails;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-/**
- * @author Nishesh Pandey
- */
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -20,13 +17,15 @@ import lombok.experimental.SuperBuilder;
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         property = "status",
-        visible = true
+        visible = true,
+        defaultImpl = OrderDetails.class
 )
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = OrderDetails.class, name = "in_progress"),
-        @JsonSubTypes.Type(value = FailedOrderDetails.class, name = "failure")
+        @JsonSubTypes.Type(value = OrderDetails.class, name = "SUCCESS"),
+        @JsonSubTypes.Type(value = FailedOrderDetails.class, name = "FAILURE")
 })
 public abstract class AbstractOrderDetails {
+    private String id;
     private String event;
     private String status;
 }

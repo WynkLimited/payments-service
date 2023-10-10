@@ -27,7 +27,6 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.aps.kafka.PaymentChargeResponseMessage;
 import in.wynk.payment.dto.aps.kafka.PaymentStatusResponseMessage;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
@@ -95,7 +94,6 @@ public class PaymentEventListener {
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
     private final IKafkaEventPublisher<String, PaymentStatusResponseMessage> paymentStatusKafkaPublisher;
-    private final IKafkaEventPublisher<String, PaymentChargeResponseMessage> paymentChargeResponseKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 
@@ -410,21 +408,6 @@ public class PaymentEventListener {
             }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the payment status event in kafka due to {}", e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
-        }
-    }
-
-    @EventListener
-    @ClientAware(clientAlias = "#event.clientAlias")
-    @AnalyseTransaction(name = "PaymentChargeEvent")
-    public void onPaymentChargeEvent(PaymentChargeEvent event) {
-        try {
-            AnalyticService.update(event);
-            if (TransactionStatus.INPROGRESS == event.getTransactionStatus()) {
-                paymentChargeResponseKafkaPublisher.publish(PaymentChargeResponseMessage.from(event, cachingService.getPlan(event.getPlanId())));
-            }
-        } catch (Exception e) {
-            log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the payment charge response event in kafka due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
         }
     }

@@ -10,10 +10,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 @Getter
-@Builder
+@SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,7 +1,7 @@
 package in.wynk.payment.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.wynk.payment.dto.aps.kafka.Message;
+import in.wynk.payment.dto.aps.kafka.PayChargeReqMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Deserializer;
 
@@ -11,13 +11,13 @@ import static in.wynk.stream.constant.StreamMarker.KAFKA_CONSUMPTION_ERROR;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class PaymentChargeCallbackKafkaSerializer implements Deserializer<Message> {
+public class PaymentChargeCallbackKafkaSerializer implements Deserializer<PayChargeReqMessage> {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public Message deserialize(String topic, byte[] bytes) {
+    public PayChargeReqMessage deserialize(String topic, byte[] bytes) {
         try {
-            Message message = objectMapper.readValue(bytes, Message.class);
+            PayChargeReqMessage message = objectMapper.readValue(bytes, PayChargeReqMessage.class);
             log.info("response received for invoice callback - " + message);
             return message;
         } catch (Exception e) {

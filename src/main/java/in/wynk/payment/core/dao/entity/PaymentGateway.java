@@ -35,6 +35,9 @@ public class PaymentGateway extends MongoBaseEntity<String> {
     @Field("external_activation_not_required")
     private boolean externalActivationNotRequired;
 
+    @Field("invoice_supported")
+    private boolean invoiceSupported;
+
     public String name() {
         return this.getId();
     }

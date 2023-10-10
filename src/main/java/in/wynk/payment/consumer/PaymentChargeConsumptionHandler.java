@@ -10,6 +10,7 @@ import in.wynk.payment.dto.aps.kafka.Message;
 import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
 import in.wynk.payment.dto.request.S2SChargingRequestV2;
+import in.wynk.payment.dto.request.WhatsAppChargeRequest;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.presentation.IPaymentPresentationV2;
 import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
@@ -51,7 +52,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         Message request = requestMessage.getMessage();
         //TODO: Integrate payment options and then get first eligible payment method id
         WynkService resp = wynkServiceDetailsCachingService.get(requestMessage.getServiceId());
-        S2SChargingRequestV2 chargingRequestV2 = getData(map.getOrDefault(requestMessage.getServiceId(), resp.getLinkedClient()), request);
+        WhatsAppChargeRequest chargingRequestV2 = getData(map.getOrDefault(requestMessage.getServiceId(), resp.getLinkedClient()), request);
 
         final WynkResponseEntity<PaymentChargingResponse> responseEntity =
                 BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<PaymentChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>>() {
@@ -61,8 +62,8 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     }
 
     @ClientAware(clientAlias = "#clientAlias")
-    private S2SChargingRequestV2 getData (String clientAlias, Message request) {
-        return S2SChargingRequestV2.builder().paymentDetails(request.getPaymentDetails()).productDetails(request.getProductDetails()).geoLocation(request.getGeoLocation())
+    private WhatsAppChargeRequest getData (String clientAlias, Message request) {
+        return WhatsAppChargeRequest.builder().clientAlias(clientAlias).paymentDetails(request.getPaymentDetails()).productDetails(request.getProductDetails()).geoLocation(request.getGeoLocation())
                 .appDetails(request.getAppDetails()).userDetails(request
                         .getUserDetails()).build();
     }

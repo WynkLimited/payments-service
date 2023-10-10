@@ -9,7 +9,6 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.aps.kafka.Message;
 import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
-import in.wynk.payment.dto.request.S2SChargingRequestV2;
 import in.wynk.payment.dto.request.WhatsAppChargeRequest;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.common.UpiDetails;
@@ -69,10 +68,12 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     @ClientAware(clientAlias = "#clientAlias")
     private WhatsAppChargeRequest getData (String clientAlias, Message request) {
         String paymentId = request.getPaymentDetails().getPaymentId();
+        UpiDetails upiDetails = new UpiDetails();
+        upiDetails.setIntent(true);
         return WhatsAppChargeRequest.builder()
                 .clientAlias(clientAlias)
                 .paymentDetails(UpiPaymentDetails.builder().paymentId(paymentId).paymentMode("UPI").trialOpted(request.getPaymentDetails().isTrialOpted()).mandate(request.isMandateSupported())
-                        .autoRenew(false).upiDetails(UpiDetails.builder().intent(true).build()).build()).productDetails(request.getProductDetails()).geoLocation(request.getGeoLocation())
+                        .autoRenew(false).upiDetails(upiDetails).build()).productDetails(request.getProductDetails()).geoLocation(request.getGeoLocation())
                 .appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build();
     }
 

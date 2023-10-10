@@ -38,11 +38,11 @@ public class PaymentChargeResponseMessage {
         return PaymentChargeResponseMessage.builder().from(event.getFrom()).to(event.getTo()).orgId(event.getOrgId()).serviceId(event.getServiceId())
                 .sessionId(event.getSessionId()).retailerId(WynkServiceUtils.fromAppId(PaymentConstants.WHATSAPP).getRetailerId()).deeplink(event.getDeeplink()).campaignId(event.getCampaignId())
                 .planDetails(PlanDetails.builder().id(event.getPlanId()).title(plan.getTitle()).description(plan.getDescription())
-                        .priceDetails(PriceDetails.builder().price(plan.getPrice().getDisplayAmount().intValue()).currency(plan.getPrice().getCurrency()).discountPrice((int) (long) plan.getPrice().getAmount()).build())
+                        .priceDetails(PriceDetails.builder().price(plan.getPrice().getDisplayAmount().intValue()).currency(plan.getPrice().getCurrency()).discountPrice((int) plan.getPrice().getAmount()).build())
                         .periodDetails(PeriodDetails.builder().validity(plan.getPeriod().getValidity()).validityUnit(plan.getPeriod().getValidityUnit()).build()).build())
-                .orderDetails(OrderDetails.builder().id(event.getTransactionId()).code(event.getPaymentGatewayCode()).amount((int) (long) plan.getPrice().getAmount())
-                                .discount((int) (long) plan.getPrice().getDisplayAmount() - (int) (long) plan.getPrice().getAmount())
-                                .mandate(event.isMandate()).trial(event.isTrialOpted()).mandateAmount((int) (long) plan.getPrice().getMandateAmount()).taxDetails(TaxDetails.builder().value(plan.getTaxValue()).build()).build())
+                .orderDetails(OrderDetails.builder().id(event.getTransactionId()).code(event.getPaymentGatewayCode()).amount((int) plan.getPrice().getAmount())
+                                .discount(plan.getPrice().getDisplayAmount().intValue() - (int)plan.getPrice().getAmount())
+                                .mandate(event.isMandate()).trial(event.isTrialOpted()).mandateAmount((int) (double) plan.getPrice().getMandateAmount()).taxDetails(TaxDetails.builder().value(plan.getTaxValue()).build()).build())
                 .build();
     }
 }

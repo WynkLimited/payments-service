@@ -9,8 +9,9 @@ import in.wynk.payment.dto.AbstractProductDetails;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.validation.Valid;
@@ -21,7 +22,6 @@ import java.io.Serializable;
  */
 @Getter
 @ToString
-@Builder
 @AnalysedEntity
 @RequiredArgsConstructor
 public class Message implements Serializable {

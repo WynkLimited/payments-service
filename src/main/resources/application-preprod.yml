@@ -579,7 +579,7 @@ wynk:
         payment:
           charge:
             - concurrency: 3
-              enabled: false
+              enabled: true
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
@@ -590,7 +590,7 @@ wynk:
                 maxPollInterval: 600000
                 maxPollRecords: 50
                 sessionTimeout: 180000
-                topic: wcf_preprod.pay_link_req
+                topic: wcf_preprod.test
                 valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
               name: PAYMENT_CHARGE_BEAN
   multi:

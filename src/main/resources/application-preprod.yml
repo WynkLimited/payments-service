@@ -579,7 +579,7 @@ wynk:
         payment:
           charge:
             - concurrency: 3
-              enabled: true
+              enabled: false
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest

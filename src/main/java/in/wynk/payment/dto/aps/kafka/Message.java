@@ -5,10 +5,8 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.dto.AbstractProductDetails;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.UserDetails;
-import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -24,18 +22,13 @@ import java.io.Serializable;
 @ToString
 @AnalysedEntity
 @RequiredArgsConstructor
-public class Message implements Serializable {
+public class Message extends AbstractMessage implements Serializable {
     private String from;
     private String to;
     private String campaignId;
-
-    @Valid
-    @Analysed
-    private AbstractProductDetails productDetails;
-
-    @Valid
-    @Analysed
-    private AbstractPaymentDetails paymentDetails;
+    private String state;
+    private String type;
+    private String channel;
 
     @Valid
     @Analysed

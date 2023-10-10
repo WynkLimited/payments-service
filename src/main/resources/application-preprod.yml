@@ -590,7 +590,7 @@ wynk:
                 maxPollInterval: 600000
                 maxPollRecords: 50
                 sessionTimeout: 180000
-                topic: wcf_preprod.test
+                topic: wcf_preprod.pay_link_req
                 valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
               name: PAYMENT_CHARGE_BEAN
   multi:

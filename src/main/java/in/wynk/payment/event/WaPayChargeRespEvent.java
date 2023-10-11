@@ -14,6 +14,5 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public class WaPayChargeRespEvent<T extends AbstractWaOrderDetails> extends AbstractWaPaymentEvent<T> {
     private String deeplink;
-    private String retailerId;
     private String payConfigId;
 }

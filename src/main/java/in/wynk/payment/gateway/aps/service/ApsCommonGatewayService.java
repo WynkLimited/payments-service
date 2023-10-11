@@ -17,7 +17,6 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentStatusEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.ApsFailureResponse;
@@ -285,14 +284,6 @@ public class ApsCommonGatewayService {
         } finally {
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
                 eventPublisher.publishEvent(builder.build());
-            }
-
-            if(TransactionStatus.SUCCESS == transaction.getStatus() || TransactionStatus.FAILURE == transaction.getStatus()) {
-                PaymentStatusEvent.PaymentStatusEventBuilder paymentStatusEventBuilder =
-                        PaymentStatusEvent.builder().id(transaction.getIdStr()).transactionType(transaction.getType()).transactionStatus(transaction.getStatus())
-                                .paymentCode(transaction.getPaymentChannel().getCode()).planId(transaction.getPlanId()).clientAlias(transaction.getClientAlias())
-                                .failureReason(paymentDetails.getErrorDescription());
-                eventPublisher.publishEvent(paymentStatusEventBuilder.build());
             }
         }
     }

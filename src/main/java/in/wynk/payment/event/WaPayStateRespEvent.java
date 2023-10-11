@@ -11,7 +11,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
-@AllArgsConstructor
 public class WaPayStateRespEvent<T extends AbstractWaOrderDetails> extends AbstractWaPaymentEvent<T> {
 
 }

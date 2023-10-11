@@ -43,10 +43,6 @@ public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, Pa
     @AnalyseTransaction(name = "paymentChargeConsumer")
     protected void listenPaymentCharge (@Header(BaseConstants.X_ORG_ID) String orgId,@Header(BaseConstants.X_SERVICE_ID) String serviceId,@Header(BaseConstants.X_SESSION_ID) String sessionId,@Header(BaseConstants.X_REQUEST_ID) String requestId, ConsumerRecord<String, PayChargeReqMessage> consumerRecord) {
         try {
-            log.info("KAFKA RECORD -------->" + consumerRecord);
-            log.info("KAFKA RECORD VALUE-------->" + consumerRecord.value());
-            //log.info("KAFKA RECORD VALUE String-------->" + consumerRecord.value().toString());
-           // log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
             PaymentChargeRequestMessage requestMessage = PaymentChargeRequestMessage.builder().message(consumerRecord.value())
                             .requestId(requestId).orgId(orgId).serviceId(serviceId).sessionId(sessionId).build();
             consume(requestMessage);

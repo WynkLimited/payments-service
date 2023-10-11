@@ -50,4 +50,9 @@ public class ChargingDetails implements IChargingDetails {
         return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
                 GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
     }
+
+    @Override
+    public ISessionDetails getSessionDetails () {
+        return null;
+    }
 }

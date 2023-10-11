@@ -557,7 +557,7 @@ public class PaymentEventListener {
                             .title(selectedPlan.getTitle())
                             .id(String.valueOf(selectedPlan.getId()))
                             .description(selectedPlan.getDescription())
-                            .priceDetails(PriceDetails.builder().price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
+                            .priceDetails(PriceDetails.builder().currency(selectedPlan.getPrice().getCurrency()).price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
                             .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
                             .build());
 

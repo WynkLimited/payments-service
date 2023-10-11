@@ -7,8 +7,10 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.UpiConstants;
+import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.WhatsappPaymentOptionsRequest;
@@ -43,6 +45,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
 
 /**
@@ -57,8 +60,8 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     private final PaymentGatewayManager manager;
     private final IPaymentOptionServiceV2 payOptionService;
     private final PaymentCachingService paymentCachingService;
+    private final PaymentGroupCachingService paymentGroupCachingService;
     private final PaymentMethodCachingService paymentMethodCachingService;
-
     private final IKafkaEventPublisher<String, WaPayChargeRespEvent> kafkaPublisher;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
 
@@ -71,15 +74,17 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                                     PaymentGatewayManager manager,
                                     IPaymentOptionServiceV2 payOptionService,
                                     PaymentCachingService paymentCachingService,
+                                    PaymentGroupCachingService paymentGroupCachingService,
                                     PaymentMethodCachingService paymentMethodCachingService,
                                     IKafkaEventPublisher<String, WaPayChargeRespEvent> kafkaPublisher,
                                     WynkServiceDetailsCachingService wynkServiceDetailsCachingService) {
         this.topic = topic;
         this.taxUtils = taxUtils;
         this.manager = manager;
-        this.paymentCachingService = paymentCachingService;
         this.kafkaPublisher = kafkaPublisher;
         this.payOptionService = payOptionService;
+        this.paymentCachingService = paymentCachingService;
+        this.paymentGroupCachingService = paymentGroupCachingService;
         this.paymentMethodCachingService = paymentMethodCachingService;
         this.wynkServiceDetailsCachingService = wynkServiceDetailsCachingService;
     }
@@ -159,10 +164,12 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     }
 
     private WaPayChargeRespEvent<WaOrderDetails> toPaymentChargeEvent(PaymentChargeRequestMessage requestMessage, WhatsAppChargeRequest chargeRequest, UpiIntentChargingResponse chargingResponse) {
+        final String vpa = chargingResponse.getPa();
         final Transaction transaction = TransactionContext.get();
         final PlanDTO selectedPlan = paymentCachingService.getPlan(transaction.getPlanId());
         final PaymentMethod method = paymentMethodCachingService.get(chargeRequest.getPaymentId());
-        final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
+        final PaymentGroup group = paymentGroupCachingService.get(method.getGroup());
+        final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, UPI.toLowerCase());
         return WaPayChargeRespEvent.<WaOrderDetails>builder()
                 .sessionId(requestMessage.getSessionId())
                 .to(requestMessage.getMessage().getFrom())
@@ -171,14 +178,14 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 .deeplink(chargingResponse.toDeeplink(requestMessage.getMessage().getPaymentDetails().isAutoRenew(), prefix))
                 .orderDetails(WaOrderDetails.builder()
                         .taxDetails(TaxDetails.builder().value(taxUtils.calculateTax(transaction)).build())
+                        .mandateAmount((int) Math.round(transaction.getMandateAmount()))
                         .mandate(chargeRequest.getPaymentDetails().isMandate())
-                        .mandateAmount((int) transaction.getMandateAmount())
-                        .status(transaction.getStatus().getValue())
-                        .discount((int) transaction.getDiscount())
-                        .event(transaction.getType().getValue())
                         .code(chargeRequest.getPaymentDetails().getPaymentId())
+                        .discount((int) Math.round(transaction.getDiscount()))
+                        .amount((int) Math.round(transaction.getAmount()))
+                        .status(transaction.getStatus().getValue())
+                        .event(transaction.getType().getValue())
                         .pgCode(method.getPaymentCode().getId())
-                        .amount((int) transaction.getAmount())
                         .trial(chargeRequest.isTrialOpted())
                         .id(transaction.getIdStr())
                         .build())
@@ -186,8 +193,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                         .priceDetails(PriceDetails.builder().currency(selectedPlan.getPrice().getCurrency()).price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
                         .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
                         .build())
-                .retailerId((String) method.getMeta().getOrDefault("retailerId", BaseConstants.UNKNOWN))
-                .payConfigId((String) method.getMeta().getOrDefault("payConfigId", BaseConstants.UNKNOWN))
+                .payConfigId((String) group.getMeta().getOrDefault(vpa, BaseConstants.UNKNOWN))
                 .build();
     }
 }

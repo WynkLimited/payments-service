@@ -7,6 +7,8 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.*;
 
 /**
@@ -19,20 +21,6 @@ import lombok.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentStatusEvent {
-    @Analysed
-    private final int planId;
-    @Analysed(name = BaseConstants.TRANSACTION_ID)
-    private final String id;
-    @Analysed
-    private final TransactionStatus transactionStatus;
-    @Analysed
-    private final PaymentEvent transactionType;
-    @Analysed
-    private final String redirectUrl;
-    @Analysed
-    private final String paymentCode;
-    @Analysed
-    private final String failureReason;
-    @Analysed
-    private final String clientAlias;
+    private Transaction transaction;
+    private IPurchaseDetails purchaseDetails;
 }

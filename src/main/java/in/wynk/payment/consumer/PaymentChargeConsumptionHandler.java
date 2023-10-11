@@ -61,7 +61,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
 
     public static Map<String, String> map = Collections.singletonMap("airteltv", "airtelxstream");
 
-    PaymentChargeConsumptionHandler(@Value("wynk.kafka.producers.payment.charge.topic") String topic,
+    PaymentChargeConsumptionHandler(@Value("${wynk.kafka.producers.payment.charge.topic}") String topic,
 
                                     TaxUtils taxUtils,
                                     PaymentGatewayManager manager,

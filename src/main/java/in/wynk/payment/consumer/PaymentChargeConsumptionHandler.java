@@ -36,6 +36,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -81,7 +84,9 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         this.wynkServiceDetailsCachingService = wynkServiceDetailsCachingService;
     }
 
+    @Async
     @Override
+    @Retryable(maxAttempts = 4, backoff = @Backoff(delay = 100, multiplier = 2))
     public void charge(PaymentChargeRequestMessage requestMessage) {
         final PayChargeReqMessage request = requestMessage.getMessage();
         final WynkService service = wynkServiceDetailsCachingService.get(requestMessage.getServiceId());

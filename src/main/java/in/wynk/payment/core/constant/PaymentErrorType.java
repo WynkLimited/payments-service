@@ -57,7 +57,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY046("APS Payment Callback Failure", "Aps payment callback failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.APS_CALLBACK_FAILURE),
     PAY047("Payment Drop Out Notification Failure", "Unable to schedule the drop out notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE),
     PAY048("Payment Auto Refund Notification Failure", "Unable to schedule the auto refund notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE),
-    PAY049("Aps callback parse failure", "Unable to order created in data base for APS", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_CALLBACK_ORDER_ERROR),
+    PAY049("Aps callback parse failure", "Unable to find order created in database for APS", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_CALLBACK_ORDER_ERROR),
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY105("Renewal Eligibility API Failure", "Renewal Eligibility API Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_ELIGIBILITY_API_ERROR),

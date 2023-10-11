@@ -46,6 +46,10 @@ public class PurchaseDetails extends MongoBaseEntity<String> implements IChargin
     @Field("page_url_details")
     private IPageUrlDetails pageUrlDetails;
 
+    @Analysed
+    @Field("session_details")
+    private ISessionDetails sessionDetails;
+
     @Override
     @JsonIgnore
     public ICallbackDetails getCallbackDetails() {

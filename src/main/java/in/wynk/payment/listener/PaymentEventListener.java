@@ -9,6 +9,7 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.Message;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
@@ -27,17 +28,20 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.aps.kafka.PaymentStatusResponseMessage;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.dto.request.PaymentSettlementRequest;
+import in.wynk.payment.dto.request.WhatsappSessionDetails;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
+import in.wynk.payment.event.WaPayStateRespEvent;
+import in.wynk.payment.event.common.*;
 import in.wynk.payment.handler.CustomerWinBackHandler;
 import in.wynk.payment.handler.InvoiceRetryTaskHandler;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.TaxUtils;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
@@ -55,6 +59,8 @@ import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -78,6 +84,7 @@ import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPS
 @Service
 @RequiredArgsConstructor
 public class PaymentEventListener {
+    private final TaxUtils taxUtils;
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
@@ -93,12 +100,15 @@ public class PaymentEventListener {
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
-    private final IKafkaEventPublisher<String, PaymentStatusResponseMessage> paymentStatusKafkaPublisher;
+    private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
 
     @Value("${event.stream.dp}")
     private String dpStream;
+
+    @Value("${wynk.kafka.producers.payment.status.topic}")
+    private String waPayStateRespEventTopic;
 
 
     @EventListener
@@ -397,21 +407,6 @@ public class PaymentEventListener {
         }
     }
 
-    @EventListener
-    @ClientAware(clientAlias = "#event.clientAlias")
-    @AnalyseTransaction(name = "PaymentStatusEvent")
-    public void onPaymentStatusEvent(PaymentStatusEvent event) {
-        try {
-            AnalyticService.update(event);
-            if (TransactionStatus.SUCCESS == event.getTransactionStatus() || TransactionStatus.FAILURE == event.getTransactionStatus()) {
-                paymentStatusKafkaPublisher.publish(PaymentStatusResponseMessage.from(event, cachingService.getPlan(event.getPlanId())));
-            }
-        } catch (Exception e) {
-            log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the payment status event in kafka due to {}", e.getMessage(), e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
-        }
-    }
-
     private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
@@ -538,6 +533,60 @@ public class PaymentEventListener {
                     .build());
         }
         publishBranchEvent(event);
+        publishWaPaymentStatusEvent(event);
+    }
+
+    public void publishWaPaymentStatusEvent(TransactionSnapshotEvent event) {
+        final IPurchaseDetails purchaseDetails = event.getPurchaseDetails();
+        if (purchaseDetails != null && purchaseDetails.getSessionDetails() != null && WhatsappSessionDetails.class.isAssignableFrom(purchaseDetails.getSessionDetails().getClass())) {
+            final WhatsappSessionDetails waSessionDetails = (WhatsappSessionDetails) purchaseDetails.getSessionDetails();
+            final List<Header> headers = new ArrayList() {{
+                add(new RecordHeader(BaseConstants.X_ORG_ID, waSessionDetails.getOrgId().getBytes()));
+                add(new RecordHeader(BaseConstants.X_SESSION_ID, waSessionDetails.getSessionId().getBytes()));
+                add(new RecordHeader(BaseConstants.X_SERVICE_ID, waSessionDetails.getServiceId().getBytes()));
+                add(new RecordHeader(BaseConstants.X_REQUEST_ID, waSessionDetails.getRequestId().getBytes()));
+            }};
+
+            final PlanDTO selectedPlan = cachingService.getPlan(event.getTransaction().getPlanId());
+            final WaPayStateRespEvent.WaPayStateRespEventBuilder builder = WaPayStateRespEvent.builder()
+                    .sessionId(waSessionDetails.getSessionId())
+                    .to(waSessionDetails.getFrom())
+                    .from(waSessionDetails.getTo())
+                    .campaignId(waSessionDetails.getCampaignId())
+                    .planDetails(EligiblePlanDetails.builder()
+                            .title(selectedPlan.getTitle())
+                            .id(String.valueOf(selectedPlan.getId()))
+                            .description(selectedPlan.getDescription())
+                            .priceDetails(PriceDetails.builder().price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
+                            .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
+                            .build());
+
+            if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.INPROGRESS).contains(event.getTransaction().getStatus())) {
+                builder.orderDetails(WaOrderDetails.builder()
+                        .taxDetails(TaxDetails.builder().value(taxUtils.calculateTax(event.getTransaction())).build())
+                        .mandate(event.getTransaction().getMandateAmount() > -1)
+                        .mandateAmount((int) event.getTransaction().getMandateAmount())
+                        .status(event.getTransaction().getStatus().getValue())
+                        .discount((int) event.getTransaction().getDiscount())
+                        .event(event.getTransaction().getType().getValue())
+                        .code(event.getPurchaseDetails().getPaymentDetails().getPaymentId())
+                        .pgCode(event.getTransaction().getPaymentChannel().getCode())
+                        .amount((int) event.getTransaction().getAmount())
+                        .trial(event.getPurchaseDetails().getPaymentDetails().isTrialOpted())
+                        .id(event.getTransaction().getIdStr())
+                        .build());
+            } else {
+                PaymentError paymentError = paymentErrorService.getPaymentError(event.getTransaction().getIdStr());
+                builder.orderDetails(WaFailedOrderDetails.builder()
+                        .id(event.getTransaction().getIdStr())
+                        .status(event.getTransaction().getStatus().getValue())
+                        .event(event.getTransaction().getType().getValue())
+                        .errorCode("PAY001")
+                        .errorMessage(Objects.nonNull(paymentError) ? paymentError.getDescription(): "Transaction is failed")
+                        .build());
+            }
+            paymentStatusKafkaPublisher.publish(waPayStateRespEventTopic, null, System.currentTimeMillis(), null, builder.build(), headers);
+        }
     }
 
     @EventListener

@@ -12,17 +12,9 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonTypeName("SUCCESS")
-public class OrderDetails extends AbstractOrderDetails {
-    private String code;
-    private String pgCode;
+@JsonTypeName("FAILURE")
+public class WaFailedOrderDetails extends AbstractWaOrderDetails {
+    private String errorCode;
+    private String errorMessage;
 
-    private int amount;
-    private int discount;
-    private int mandateAmount;
-
-    private boolean trial;
-    private boolean mandate;
-
-    private TaxDetails taxDetails;
 }

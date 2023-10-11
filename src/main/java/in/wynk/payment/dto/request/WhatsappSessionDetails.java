@@ -1,6 +1,5 @@
-package in.wynk.payment.event.common;
+package in.wynk.payment.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,9 +11,11 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonTypeName("FAILURE")
-public class FailedOrderDetails extends AbstractOrderDetails {
-    private String errorCode;
-    private String errorMessage;
-
+public class WhatsappSessionDetails extends AbstractSessionDetails {
+    private String to;
+    private String from;
+    private String orgId;
+    private String serviceId;
+    private String requestId;
+    private String campaignId;
 }

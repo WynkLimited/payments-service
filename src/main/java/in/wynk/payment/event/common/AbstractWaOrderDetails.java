@@ -1,6 +1,5 @@
 package in.wynk.payment.event.common;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
@@ -18,13 +17,13 @@ import lombok.experimental.SuperBuilder;
         use = JsonTypeInfo.Id.NAME,
         property = "status",
         visible = true,
-        defaultImpl = OrderDetails.class
+        defaultImpl = WaOrderDetails.class
 )
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = OrderDetails.class, name = "SUCCESS"),
-        @JsonSubTypes.Type(value = FailedOrderDetails.class, name = "FAILURE")
+        @JsonSubTypes.Type(value = WaOrderDetails.class, name = "SUCCESS"),
+        @JsonSubTypes.Type(value = WaFailedOrderDetails.class, name = "FAILURE")
 })
-public abstract class AbstractOrderDetails {
+public abstract class AbstractWaOrderDetails {
     private String id;
     private String event;
     private String status;

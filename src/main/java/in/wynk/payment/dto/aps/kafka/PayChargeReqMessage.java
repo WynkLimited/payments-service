@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.kafka;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.AppDetails;
@@ -17,6 +18,7 @@ import java.io.Serializable;
 @Getter
 @ToString
 @AnalysedEntity
+@JsonIgnoreProperties(ignoreUnknown = true)
 @RequiredArgsConstructor
 public class PayChargeReqMessage extends AbstractMessage implements Serializable {
     private String from;

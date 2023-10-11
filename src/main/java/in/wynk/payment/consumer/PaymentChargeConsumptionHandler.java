@@ -18,10 +18,11 @@ import in.wynk.payment.dto.common.FilteredPaymentOptionsResult;
 import in.wynk.payment.dto.gateway.upi.UpiIntentChargingResponse;
 import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.request.WhatsAppChargeRequest;
+import in.wynk.payment.dto.request.WhatsappSessionDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.common.UpiDetails;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
-import in.wynk.payment.event.PayChargeRespEvent;
+import in.wynk.payment.event.WaPayChargeRespEvent;
 import in.wynk.payment.event.common.*;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
@@ -55,7 +56,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     private final PaymentCachingService paymentCachingService;
     private final PaymentMethodCachingService paymentMethodCachingService;
 
-    private final IKafkaEventPublisher<String, PayChargeRespEvent> kafkaPublisher;
+    private final IKafkaEventPublisher<String, WaPayChargeRespEvent> kafkaPublisher;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
 
 
@@ -68,7 +69,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                                     IPaymentOptionServiceV2 payOptionService,
                                     PaymentCachingService paymentCachingService,
                                     PaymentMethodCachingService paymentMethodCachingService,
-                                    IKafkaEventPublisher<String, PayChargeRespEvent> kafkaPublisher,
+                                    IKafkaEventPublisher<String, WaPayChargeRespEvent> kafkaPublisher,
                                     WynkServiceDetailsCachingService wynkServiceDetailsCachingService) {
         this.topic = topic;
         this.taxUtils = taxUtils;
@@ -94,19 +95,19 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         }};
 
         try {
-            final WhatsAppChargeRequest intentRequest = getData(clientAlias, request);
+            final WhatsAppChargeRequest intentRequest = getData(clientAlias, request).sessionDetails(WhatsappSessionDetails.builder().sessionId(requestMessage.getSessionId()).orgId(requestMessage.getOrgId()).serviceId(requestMessage.getServiceId()).campaignId(request.getCampaignId()).requestId(requestMessage.getRequestId()).to(request.getTo()).from(request.getFrom()).build()).build();
             final UpiIntentChargingResponse intentResponse = (UpiIntentChargingResponse) manager.charge(intentRequest);
-            final PayChargeRespEvent payChargeRespEvent = toPaymentChargeEvent(requestMessage, intentRequest, intentResponse);
+            final WaPayChargeRespEvent payChargeRespEvent = toPaymentChargeEvent(requestMessage, intentRequest, intentResponse);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
         } catch (Exception e) {
-            final PayChargeRespEvent<FailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
+            final WaPayChargeRespEvent<WaFailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
             throw new WynkRuntimeException(e);
         }
     }
 
     @ClientAware(clientAlias = "#clientAlias")
-    private WhatsAppChargeRequest getData(String clientAlias, PayChargeReqMessage request) {
+    private WhatsAppChargeRequest.WhatsAppChargeRequestBuilder getData(String clientAlias, PayChargeReqMessage request) {
         final FilteredPaymentOptionsResult payOptions = payOptionService.getPaymentOptions(DefaultPaymentOptionRequest.builder()
                 .paymentOptionRequest(WhatsappPaymentOptionsRequest.builder()
                         .client(clientAlias)
@@ -133,17 +134,16 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 .productDetails(request.getProductDetails())
                 .geoLocation(request.getGeoLocation())
                 .appDetails(request.getAppDetails())
-                .userDetails(request.getUserDetails())
-                .build();
+                .userDetails(request.getUserDetails());
     }
 
-    private PayChargeRespEvent<FailedOrderDetails> toPaymentChargeEvent(Exception ex, PaymentChargeRequestMessage requestMessage) {
-        return PayChargeRespEvent.<FailedOrderDetails>builder()
+    private WaPayChargeRespEvent<WaFailedOrderDetails> toPaymentChargeEvent(Exception ex, PaymentChargeRequestMessage requestMessage) {
+        return WaPayChargeRespEvent.<WaFailedOrderDetails>builder()
                 .sessionId(requestMessage.getSessionId())
                 .to(requestMessage.getMessage().getFrom())
                 .from(requestMessage.getMessage().getTo())
                 .campaignId(requestMessage.getMessage().getCampaignId())
-                .orderDetails(FailedOrderDetails.builder()
+                .orderDetails(WaFailedOrderDetails.builder()
                         .status(TransactionStatus.FAILURE.getValue())
                         .event(PaymentEvent.PURCHASE.getValue())
                         .id(UUIDs.random().toString())
@@ -153,18 +153,18 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 .build();
     }
 
-    private PayChargeRespEvent<OrderDetails> toPaymentChargeEvent(PaymentChargeRequestMessage requestMessage, WhatsAppChargeRequest chargeRequest, UpiIntentChargingResponse chargingResponse) {
+    private WaPayChargeRespEvent<WaOrderDetails> toPaymentChargeEvent(PaymentChargeRequestMessage requestMessage, WhatsAppChargeRequest chargeRequest, UpiIntentChargingResponse chargingResponse) {
         final Transaction transaction = TransactionContext.get();
         final PlanDTO selectedPlan = paymentCachingService.getPlan(transaction.getPlanId());
         final PaymentMethod method = paymentMethodCachingService.get(chargeRequest.getPaymentId());
         final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
-        return PayChargeRespEvent.<OrderDetails>builder()
+        return WaPayChargeRespEvent.<WaOrderDetails>builder()
                 .sessionId(requestMessage.getSessionId())
                 .to(requestMessage.getMessage().getFrom())
                 .from(requestMessage.getMessage().getTo())
                 .campaignId(requestMessage.getMessage().getCampaignId())
                 .deeplink(chargingResponse.toDeeplink(requestMessage.getMessage().getPaymentDetails().isAutoRenew(), prefix))
-                .orderDetails(OrderDetails.builder()
+                .orderDetails(WaOrderDetails.builder()
                         .taxDetails(TaxDetails.builder().value(taxUtils.calculateTax(transaction)).build())
                         .mandate(chargeRequest.getPaymentDetails().isMandate())
                         .mandateAmount((int) transaction.getMandateAmount())
@@ -178,7 +178,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                         .id(transaction.getIdStr())
                         .build())
                 .planDetails(EligiblePlanDetails.builder().id(String.valueOf(selectedPlan.getId())).title(selectedPlan.getTitle()).description(selectedPlan.getDescription())
-                        .priceDetails(PriceDetails.builder().price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
+                        .priceDetails(PriceDetails.builder().currency(selectedPlan.getPrice().getCurrency()).price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
                         .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
                         .build())
                 .retailerId((String) method.getMeta().getOrDefault("retailerId", BaseConstants.UNKNOWN))

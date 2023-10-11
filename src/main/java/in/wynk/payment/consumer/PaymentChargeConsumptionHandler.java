@@ -89,9 +89,9 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         this.wynkServiceDetailsCachingService = wynkServiceDetailsCachingService;
     }
 
-    @Async
+    //@Async
     @Override
-    @Retryable(maxAttempts = 4, backoff = @Backoff(delay = 100, multiplier = 2))
+    //@Retryable(maxAttempts = 4, backoff = @Backoff(delay = 100, multiplier = 2))
     public void charge(PaymentChargeRequestMessage requestMessage) {
         final PayChargeReqMessage request = requestMessage.getMessage();
         final WynkService service = wynkServiceDetailsCachingService.get(requestMessage.getServiceId());
@@ -112,6 +112,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         } catch (Exception e) {
             final WaPayChargeRespEvent<WaFailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
+            log.error("something went wrong ", e);
             throw new WynkRuntimeException(e);
         }
     }
@@ -178,11 +179,11 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 .deeplink(chargingResponse.toDeeplink(requestMessage.getMessage().getPaymentDetails().isAutoRenew(), prefix))
                 .orderDetails(WaOrderDetails.builder()
                         .taxDetails(TaxDetails.builder().value(taxUtils.calculateTax(transaction)).build())
-                        .mandateAmount((int) Math.round(transaction.getMandateAmount()))
+                        .mandateAmount((int) transaction.getMandateAmount())
                         .mandate(chargeRequest.getPaymentDetails().isMandate())
                         .code(chargeRequest.getPaymentDetails().getPaymentId())
-                        .discount((int) Math.round(transaction.getDiscount()))
-                        .amount((int) Math.round(transaction.getAmount()))
+                        .discount((int) transaction.getDiscount())
+                        .amount((int) transaction.getAmount())
                         .status(transaction.getStatus().getValue())
                         .event(transaction.getType().getValue())
                         .pgCode(method.getPaymentCode().getId())

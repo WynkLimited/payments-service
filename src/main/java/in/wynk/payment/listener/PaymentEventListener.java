@@ -574,7 +574,7 @@ public class PaymentEventListener {
                         .amount((int) event.getTransaction().getAmount())
                         .trial(event.getPurchaseDetails().getPaymentDetails().isTrialOpted())
                         .id(event.getTransaction().getIdStr())
-                        .build())
+                        .build());
             } else {
                 PaymentError paymentError = paymentErrorService.getPaymentError(event.getTransaction().getIdStr());
                 builder.orderDetails(WaFailedOrderDetails.builder()
@@ -583,9 +583,9 @@ public class PaymentEventListener {
                         .event(event.getTransaction().getType().getValue())
                         .errorCode("PAY001")
                         .errorMessage(Objects.nonNull(paymentError) ? paymentError.getDescription(): "Transaction is failed")
-                        .build())
+                        .build());
             }
-            paymentStatusKafkaPublisher.publish(waPayStateRespEventTopic, null, System.currentTimeMillis(), null, payload, headers);
+            paymentStatusKafkaPublisher.publish(waPayStateRespEventTopic, null, System.currentTimeMillis(), null, builder.build(), headers);
         }
     }
 

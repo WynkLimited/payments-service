@@ -3,7 +3,7 @@ package in.wynk.payment.consumer;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.dto.aps.kafka.Message;
+import in.wynk.payment.dto.aps.kafka.PayChargeReqMessage;
 import in.wynk.payment.dto.aps.kafka.PaymentChargeRequestMessage;
 import in.wynk.stream.constant.StreamMarker;
 import in.wynk.stream.consumer.impl.AbstractKafkaEventConsumer;
@@ -41,7 +41,7 @@ public class PaymentChargeConsumer extends AbstractKafkaEventConsumer<String, Pa
     @KafkaListener(id = "paymentChargeListener", topics = "${wynk.kafka.consumers.listenerFactory.payment.charge[0].factoryDetails.topic}",
             containerFactory = "${wynk.kafka.consumers.listenerFactory.payment.charge[0].name}")
     @AnalyseTransaction(name = "paymentChargeConsumer")
-    protected void listenPaymentCharge (@Header(BaseConstants.X_ORG_ID) String orgId,@Header(BaseConstants.X_SERVICE_ID) String serviceId,@Header(BaseConstants.X_SESSION_ID) String sessionId,@Header(BaseConstants.X_REQUEST_ID) String requestId, ConsumerRecord<String, Message> consumerRecord) {
+    protected void listenPaymentCharge (@Header(BaseConstants.X_ORG_ID) String orgId,@Header(BaseConstants.X_SERVICE_ID) String serviceId,@Header(BaseConstants.X_SESSION_ID) String sessionId,@Header(BaseConstants.X_REQUEST_ID) String requestId, ConsumerRecord<String, PayChargeReqMessage> consumerRecord) {
         try {
             log.info("KAFKA RECORD -------->" + consumerRecord);
             log.info("KAFKA RECORD VALUE-------->" + consumerRecord.value());

@@ -28,7 +28,15 @@ public class PaymentStatusResponseMessage {
     private final double discountedAmount;
     private final String failureReason;
     public static PaymentStatusResponseMessage from (PaymentStatusEvent event, PlanDTO planDto) {
-        return PaymentStatusResponseMessage.builder().transactionId(event.getId()).status(event.getTransactionStatus()).event(event.getTransactionType()).pgCode(event.getPaymentCode()).planId(event.getPlanId()).amount(planDto.getPrice().getDisplayAmount()).discountedAmount(planDto.getPrice().getAmount()).failureReason(
-                event.getFailureReason()).build();
+        return PaymentStatusResponseMessage.builder()
+                .transactionId(event.getId())
+                .status(event.getTransactionStatus())
+                .event(event.getTransactionType())
+                .pgCode(event.getPaymentCode())
+                .planId(event.getPlanId())
+                .amount(planDto.getPrice().getDisplayAmount())
+                .discountedAmount(planDto.getPrice().getAmount())
+                .failureReason(event.getFailureReason()).build();
     }
+
 }

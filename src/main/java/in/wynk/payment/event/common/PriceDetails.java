@@ -1,19 +1,20 @@
-package in.wynk.payment.dto.aps.kafka.response;
+package in.wynk.payment.event.common;
 
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * @author Nishesh Pandey
- */
 @Getter
 @Builder
+@AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
 public class PriceDetails {
+
     private String currency;
-    private int price;
-    private int discountPrice;
+
+    private long price;
+    private long discountPrice;
 }

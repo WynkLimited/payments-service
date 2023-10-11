@@ -533,7 +533,9 @@ public class PaymentEventListener {
                     .build());
         }
         publishBranchEvent(event);
-        publishWaPaymentStatusEvent(event);
+        if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
+            publishWaPaymentStatusEvent(event);
+        }
     }
 
     public void publishWaPaymentStatusEvent(TransactionSnapshotEvent event) {
@@ -561,7 +563,7 @@ public class PaymentEventListener {
                             .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
                             .build());
 
-            if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.INPROGRESS).contains(event.getTransaction().getStatus())) {
+            if (TransactionStatus.SUCCESS == event.getTransaction().getStatus()) {
                 builder.orderDetails(WaOrderDetails.builder()
                         .taxDetails(TaxDetails.builder().value(taxUtils.calculateTax(event.getTransaction())).build())
                         .mandate(event.getTransaction().getMandateAmount() > -1)

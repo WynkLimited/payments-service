@@ -17,9 +17,9 @@ public class WaOrderDetails extends AbstractWaOrderDetails {
     private String code;
     private String pgCode;
 
-    private int amount;
-    private int discount;
-    private int mandateAmount;
+    private double amount;
+    private double discount;
+    private double mandateAmount;
 
     private boolean trial;
     private boolean mandate;

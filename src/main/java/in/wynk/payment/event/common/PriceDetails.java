@@ -15,6 +15,6 @@ public class PriceDetails {
 
     private String currency;
 
-    private long price;
-    private long discountPrice;
+    private double price;
+    private double discountPrice;
 }

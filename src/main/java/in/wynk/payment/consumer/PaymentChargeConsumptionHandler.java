@@ -188,7 +188,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                         .priceDetails(PriceDetails.builder().currency(selectedPlan.getPrice().getCurrency()).price(selectedPlan.getPrice().getDisplayAmount().intValue()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
                         .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
                         .build())
-                .payConfigId((String) method.getMeta().getOrDefault(vpa, BaseConstants.UNKNOWN))
+                .payConfigId((String) group.getMeta().getOrDefault(vpa, BaseConstants.UNKNOWN))
                 .build();
     }
 }

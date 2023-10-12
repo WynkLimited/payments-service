@@ -14,6 +14,7 @@ import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
@@ -102,7 +103,11 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         @Override
         public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction);
+            if (ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
+                common.syncOrderTransactionFromSource(transaction);
+            } else {
+                common.syncChargingTransactionFromSource(transaction);
+            }
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                 Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                 if (optionalDetails.isPresent()) {
@@ -129,7 +134,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
-                return objectMapper.readValue(json, ApsCallBackRequestPayload.class);
+                return json.contains("PREPAID") ? objectMapper.readValue(json, ApsOrderStatusCallBackPayload.class) :objectMapper.readValue(json, ApsCallBackRequestPayload.class);
             } catch (Exception e) {
                 throw new WynkRuntimeException(PAY006, e);
             }

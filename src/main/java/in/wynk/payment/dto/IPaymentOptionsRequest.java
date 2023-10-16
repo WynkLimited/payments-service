@@ -19,6 +19,7 @@ public interface IPaymentOptionsRequest {
     IGeoLocation getGeoLocation();
     IMiscellaneousDetails getMiscellaneousDetails();
     String getClient();
+    IPaymentDetails getPaymentDetails();
 
     IPaymentDetails getPaymentDetails();
 

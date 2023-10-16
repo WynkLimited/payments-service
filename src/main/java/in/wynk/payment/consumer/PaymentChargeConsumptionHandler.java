@@ -93,10 +93,10 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         final String clientAlias = map.getOrDefault(requestMessage.getServiceId(), service.getLinkedClient());
 
         final List<Header> headers = new ArrayList() {{
-            add(new RecordHeader(BaseConstants.X_ORG_ID, requestMessage.getOrgId().getBytes()));
-            add(new RecordHeader(BaseConstants.X_SESSION_ID, requestMessage.getSessionId().getBytes()));
-            add(new RecordHeader(BaseConstants.X_SERVICE_ID, requestMessage.getServiceId().getBytes()));
-            add(new RecordHeader(BaseConstants.X_REQUEST_ID, requestMessage.getRequestId().getBytes()));
+            add(new RecordHeader(BaseConstants.ORG_ID, requestMessage.getOrgId().getBytes()));
+            add(new RecordHeader(BaseConstants.SESSION_ID, requestMessage.getSessionId().getBytes()));
+            add(new RecordHeader(BaseConstants.SERVICE_ID, requestMessage.getServiceId().getBytes()));
+            add(new RecordHeader(BaseConstants.REQUEST_ID, requestMessage.getRequestId().getBytes()));
         }};
 
         try {

@@ -526,9 +526,9 @@ wynk:
         status:
             topic: wcf_staging.pay_state_resp
         retry:
-          topic: wcf_staging.pay_state_resp_retry
+          topic: wcf_staging.pay_state_retry_resp
         dlt:
-          topic: wcf_staging.pay_state_resp_dlt
+          topic: wcf_staging.pay_state_dlt_resp
     consumers:
       enabled: true
       listenerFactory:

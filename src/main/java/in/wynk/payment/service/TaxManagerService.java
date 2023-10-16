@@ -22,7 +22,7 @@ public class TaxManagerService implements ITaxManager {
         final double totalTaxAmount = getTotalTaxAmount(request.getAmount(), request.getGstPercentage());
         final List<TaxDetailsDTO> taxDetailsList = new ArrayList<>();
         if(request.getConsumerStateCode().equalsIgnoreCase(request.getSupplierStateCode())){
-            final double halfTaxAmount = totalTaxAmount / 2;
+            final double halfTaxAmount = Math.round((totalTaxAmount / 2) * 100.0) / 100.0;
             final double halfTaxRate = request.getGstPercentage() / 2;
             taxDetailsList.add(TaxDetailsDTO.builder()
                     .amount(halfTaxAmount)
@@ -60,6 +60,7 @@ public class TaxManagerService implements ITaxManager {
     }
 
     private double getTotalTaxAmount (double amount, double gstPercentage){
-        return Math.round(amount * gstPercentage) / 100.0;
+        //return Math.round(amount * gstPercentage) / 100.0;
+        return Math.round(((amount * 100.0)/(gstPercentage + 100.0)) * 100.0) / 100.0;
     }
 }

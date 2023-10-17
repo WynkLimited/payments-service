@@ -16,9 +16,13 @@ public interface IPaymentOptionsRequest {
     IUserDetails getUserDetails();
 
     IProductDetails getProductDetails();
+
     IGeoLocation getGeoLocation();
+
     IMiscellaneousDetails getMiscellaneousDetails();
+
     String getClient();
+
     IPaymentDetails getPaymentDetails();
 
 }

@@ -135,4 +135,5 @@ public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implem
     public IPaymentDetails getPaymentDetails () {
         return this.purchaseDetails.getPaymentDetails();
     }
+
 }

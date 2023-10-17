@@ -34,6 +34,7 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     private boolean mandate;
     private AbstractProductDetails productDetails;
     private AbstractPaymentDetails paymentDetails;
+
     @Analysed
     private GeoLocation geoLocation;
 

@@ -16,8 +16,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Objects;
-
 @Getter
 @SuperBuilder
 @AnalysedEntity
@@ -39,7 +37,6 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
 
     @Analysed
     private AbstractProductDetails productDetails;
-
     @Analysed
     private AbstractPaymentDetails paymentDetails;
 

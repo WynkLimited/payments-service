@@ -15,7 +15,6 @@ import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvalu
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
-import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.session.context.SessionContextHolder;
 
@@ -23,9 +22,7 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.common.constant.BaseConstants.PLAN;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY601;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY999;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY602;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 
 public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> extends BaseHandler<T> {
     @Override

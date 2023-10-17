@@ -61,6 +61,6 @@ public class TaxManagerService implements ITaxManager {
 
     private double getTotalTaxAmount (double amount, double gstPercentage){
         //return Math.round(amount * gstPercentage) / 100.0;
-        return Math.round(((amount * 100.0)/(gstPercentage + 100.0)) * 100.0) / 100.0;
+        return Math.round((amount - ((amount * 100.0)/(gstPercentage + 100.0))) * 100.0) / 100.0;
     }
 }

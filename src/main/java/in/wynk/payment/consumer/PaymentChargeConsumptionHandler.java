@@ -1,12 +1,14 @@
 package in.wynk.payment.consumer;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.UpiConstants;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -38,10 +40,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+import static in.wynk.common.constant.BaseConstants.HTTP_STATUS;
 import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
 
@@ -159,11 +163,15 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     }
 
     private WaPayChargeRespEvent<WaOrderDetails> toPaymentChargeEvent(PaymentChargeRequestMessage requestMessage, WhatsAppChargeRequest chargeRequest, UpiIntentChargingResponse chargingResponse) {
-        final String vpa = chargingResponse.getPa();
         final Transaction transaction = TransactionContext.get();
         final PlanDTO selectedPlan = paymentCachingService.getPlan(transaction.getPlanId());
         final PaymentMethod method = paymentMethodCachingService.get(chargeRequest.getPaymentId());
         final PaymentGroup group = paymentGroupCachingService.get(method.getGroup());
+        final String vpa = chargingResponse.getPa();
+        if (group.getMeta().getOrDefault(vpa, BaseConstants.UNKNOWN).equals(BaseConstants.UNKNOWN)) {
+            AnalyticService.update(PaymentConstants.UNKNOWN_VPA, vpa);
+            throw new WynkRuntimeException("Unknown vpa found for whatsApp: " + vpa);
+        }
         final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, UPI.toLowerCase());
         return WaPayChargeRespEvent.<WaOrderDetails>builder()
                 .sessionId(requestMessage.getSessionId())

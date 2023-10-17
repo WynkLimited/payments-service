@@ -9,6 +9,7 @@ import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.ISessionDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import lombok.AllArgsConstructor;
@@ -61,6 +62,10 @@ public class S2SPurchaseDetails implements IChargingDetails {
             return userDetails;
         }
 
+    @Override
+    public ISessionDetails getSessionDetails () {
+        return null;
+    }
 
 
     public IPageUrlDetails getPageUrlDetails() {

@@ -61,15 +61,19 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails, Seriali
     private boolean autoRenew;
 
     @Analysed
+    private boolean mandate;
+
+    @Analysed
     private boolean trialOpted;
 
-    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted) {
+    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted, boolean mandate) {
         this.couponId = couponId;
         this.paymentId = paymentId;
         this.paymentMode = paymentMode;
         this.merchantName = merchantName;
         this.autoRenew = autoRenew;
         this.trialOpted = trialOpted;
+        this.mandate = mandate;
     }
 
     @PersistenceConstructor

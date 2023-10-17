@@ -3,6 +3,8 @@ package in.wynk.payment.service;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.common.dto.IMiscellaneousDetails;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -49,10 +51,11 @@ import javax.annotation.PostConstruct;
 import java.net.SocketTimeoutException;
 import java.util.*;
 
+import static in.wynk.common.constant.BaseConstants.AUTO_RENEW;
+import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY036;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CHARGING_API_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_ERROR;
 

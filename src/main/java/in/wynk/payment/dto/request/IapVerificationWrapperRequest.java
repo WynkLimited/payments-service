@@ -87,6 +87,11 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
     }
 
     @Override
+    public LatestReceiptResponse getLatestReceiptInfo() {
+        return latestReceiptResponse;
+    }
+
+    @Override
     public IPaymentDetails getPaymentDetails () {
         if(Objects.nonNull(iapVerificationRequest)){
             return this.iapVerificationRequest.getPurchaseDetails().getPaymentDetails();
@@ -94,11 +99,5 @@ public class IapVerificationWrapperRequest implements IPlanValidatorRequest, ICl
             return this.iapVerificationRequestV2.getPurchaseDetails().getPaymentDetails();
         }
         return null;
-    }
-
-
-    @Override
-    public LatestReceiptResponse getLatestReceiptInfo() {
-        return latestReceiptResponse;
     }
 }

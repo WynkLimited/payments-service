@@ -5,8 +5,8 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IMiscellaneousDetails;
 import in.wynk.common.utils.BeanLocatorFactory;
-import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import lombok.AllArgsConstructor;
@@ -14,8 +14,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.util.Objects;
 
 @Getter
 @Builder
@@ -32,14 +30,21 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
     private AppDetails appDetails;
     @Analysed
     private UserDetails userDetails;
-    @Analysed
-    private AbstractProductDetails productDetails;
-
-    @Analysed
-    private AbstractPaymentDetails paymentDetails;
 
     @Analysed
     private GeoLocation geoLocation;
+
+    @Analysed
+    private AbstractProductDetails productDetails;
+    @Analysed
+    private AbstractPaymentDetails paymentDetails;
+
+    @Override
+    public IMiscellaneousDetails getMiscellaneousDetails() {
+        return null;
+    }
+
+
 
     @Override
     @JsonIgnore

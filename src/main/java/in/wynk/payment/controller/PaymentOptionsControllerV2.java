@@ -8,7 +8,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
 import in.wynk.payment.dto.WebPaymentOptionsRequest;
 import in.wynk.payment.dto.common.FilteredPaymentOptionsResult;
-import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
+import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.response.paymentoption.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.utils.LoadClientUtils;
@@ -37,7 +37,7 @@ public class PaymentOptionsControllerV2 {
     @PostMapping("/options/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentOptions")
-    public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethods(@PathVariable String sid, @RequestBody DefaultPaymentOptionRequest<WebPaymentOptionsRequest> request) {
+    public WynkResponseEntity<PaymentOptionsDTO> getPaymentMethods(@PathVariable String sid, @RequestBody AbstractPaymentOptionsRequest<WebPaymentOptionsRequest> request) {
         LoadClientUtils.loadClient(false);
         AnalyticService.update(request);
         return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IWynkPresentation<PaymentOptionsDTO, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>>>() {

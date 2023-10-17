@@ -1,5 +1,7 @@
 package in.wynk.payment.validations;
 
+import in.wynk.common.dto.IMiscellaneousDetails;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
@@ -13,15 +15,28 @@ import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
+import in.wynk.payment.exception.PaymentRuntimeException;
+import in.wynk.session.context.SessionContextHolder;
 
 import java.util.Objects;
 
+import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY601;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY999;
 
 public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> extends BaseHandler<T> {
     @Override
     public void handle(T request) {
+        if(Objects.nonNull(SessionContextHolder.get())) {
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            IMiscellaneousDetails miscellaneousDetails = sessionDTO.get(MISCELLANEOUS_DETAILS);
+            boolean originalAutorenew = (Objects.nonNull(miscellaneousDetails)) ? miscellaneousDetails.isAutoRenew() : false;
+            boolean requestedAutorenew = request.getPaymentDetails().isAutoRenew();
+            if (requestedAutorenew != originalAutorenew) {
+                throw new PaymentRuntimeException(PAY999);
+            }
+        }
         PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(request.getPaymentId());
         PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (Objects.equals(request.getProductDetails().getType(), PLAN) ?
                 PaymentOptionsPlanEligibilityRequest.builder().planId(request.getProductDetails().getId()) :

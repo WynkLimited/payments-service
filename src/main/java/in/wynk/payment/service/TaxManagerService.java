@@ -59,7 +59,7 @@ public class TaxManagerService implements ITaxManager {
                 .taxDetails(taxDetailsList).build();
     }
 
-    private static double getTotalTaxAmount (double amount, double gstPercentage){
+    private double getTotalTaxAmount (double amount, double gstPercentage){
         //return Math.round(amount * gstPercentage) / 100.0;
         /** Logic -
          *   consider plan amount as 100, and GST percentage as 18%

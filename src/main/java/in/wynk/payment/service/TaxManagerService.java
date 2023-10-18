@@ -37,7 +37,7 @@ public class TaxManagerService implements ITaxManager {
                     .rate(0)
                     .taxType(InvoiceTaxType.IGST).build());
             return TaxableResponse.builder()
-                    .taxAmount(totalTaxAmount)
+                    .taxAmount(Math.round((totalTaxAmount) * 100.0) / 100.0)
                     .taxableAmount(Math.round((request.getAmount() - totalTaxAmount) * 100.0) / 100.0)
                     .taxDetails(taxDetailsList).build();
         }
@@ -50,17 +50,23 @@ public class TaxManagerService implements ITaxManager {
                 .rate(0)
                 .taxType(InvoiceTaxType.SGST).build());
         taxDetailsList.add(TaxDetailsDTO.builder()
-                .amount(totalTaxAmount)
+                .amount(Math.round((totalTaxAmount) * 100.0) / 100.0)
                 .rate(request.getGstPercentage())
                 .taxType(InvoiceTaxType.IGST).build());
         return TaxableResponse.builder()
-                .taxAmount(totalTaxAmount)
+                .taxAmount(Math.round((totalTaxAmount) * 100.0) / 100.0)
                 .taxableAmount(Math.round((request.getAmount() - totalTaxAmount) * 100.0) / 100.0)
                 .taxDetails(taxDetailsList).build();
     }
 
-    private double getTotalTaxAmount (double amount, double gstPercentage){
+    private static double getTotalTaxAmount (double amount, double gstPercentage){
         //return Math.round(amount * gstPercentage) / 100.0;
-        return Math.round((amount - ((amount * 100.0)/(gstPercentage + 100.0))) * 100.0) / 100.0;
+        /** Logic -
+         *   consider plan amount as 100, and GST percentage as 18%
+         *
+         *   Total Tax = 100 - (100 / (18 + 100) * 100) = 100 - 84.745762711 = 15.254237289
+         *
+         * **/
+        return amount - ((amount * 100.0)/(gstPercentage + 100.0));
     }
 }

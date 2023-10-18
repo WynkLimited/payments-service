@@ -37,6 +37,7 @@ public class ApsCallBackRequestPayload extends ChecksumHeaderCallbackRequest<Aps
     private Currency currency;
     private String pg;
     private String bankCode;
+    private String bankName;
     private String vpa;
     private String errorCode;
     private String errorMsg;

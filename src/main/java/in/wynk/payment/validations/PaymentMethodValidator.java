@@ -31,9 +31,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
         if(Objects.nonNull(SessionContextHolder.get())) {
             SessionDTO sessionDTO = SessionContextHolder.getBody();
             IMiscellaneousDetails miscellaneousDetails = sessionDTO.get(MISCELLANEOUS_DETAILS);
-            boolean originalAutorenew = (Objects.nonNull(miscellaneousDetails)) ? miscellaneousDetails.isAutoRenew() : false;
-            boolean requestedAutorenew = request.getPaymentDetails().isAutoRenew();
-            if (requestedAutorenew != originalAutorenew) {
+            if((Objects.nonNull(miscellaneousDetails) ? miscellaneousDetails.isAutoRenew() : request.getPaymentDetails().isAutoRenew())  != request.getPaymentDetails().isAutoRenew()){
                 throw new PaymentRuntimeException(PAY999);
             }
         }

@@ -1,12 +1,14 @@
 package in.wynk.payment.consumer;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.UpiConstants;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -38,9 +40,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -109,6 +108,9 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
             final UpiIntentChargingResponse intentResponse = (UpiIntentChargingResponse) manager.charge(intentRequest);
             final WaPayChargeRespEvent payChargeRespEvent = toPaymentChargeEvent(requestMessage, intentRequest, intentResponse);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
+        } catch (WynkRuntimeException e) {
+            final WaPayChargeRespEvent<WaFailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
+            kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
         } catch (Exception e) {
             final WaPayChargeRespEvent<WaFailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
@@ -148,6 +150,22 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 .userDetails(request.getUserDetails());
     }
 
+    private WaPayChargeRespEvent<WaFailedOrderDetails> toPaymentChargeEvent(WynkRuntimeException ex, PaymentChargeRequestMessage requestMessage) {
+        return WaPayChargeRespEvent.<WaFailedOrderDetails>builder()
+                .sessionId(requestMessage.getSessionId())
+                .to(requestMessage.getMessage().getFrom())
+                .from(requestMessage.getMessage().getTo())
+                .campaignId(requestMessage.getMessage().getCampaignId())
+                .orderDetails(WaFailedOrderDetails.builder()
+                        .status(TransactionStatus.FAILURE.getValue())
+                        .event(PaymentEvent.PURCHASE.getValue())
+                        .id(UUIDs.random().toString())
+                        .errorMessage(ex.getMessage())
+                        .errorCode(ex.getErrorCode())
+                        .build())
+                .build();
+    }
+
     private WaPayChargeRespEvent<WaFailedOrderDetails> toPaymentChargeEvent(Exception ex, PaymentChargeRequestMessage requestMessage) {
         return WaPayChargeRespEvent.<WaFailedOrderDetails>builder()
                 .sessionId(requestMessage.getSessionId())
@@ -165,11 +183,15 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     }
 
     private WaPayChargeRespEvent<WaOrderDetails> toPaymentChargeEvent(PaymentChargeRequestMessage requestMessage, WhatsAppChargeRequest chargeRequest, UpiIntentChargingResponse chargingResponse) {
-        final String vpa = chargingResponse.getPa();
         final Transaction transaction = TransactionContext.get();
         final PlanDTO selectedPlan = paymentCachingService.getPlan(transaction.getPlanId());
         final PaymentMethod method = paymentMethodCachingService.get(chargeRequest.getPaymentId());
         final PaymentGroup group = paymentGroupCachingService.get(method.getGroup());
+        final String vpa = chargingResponse.getPa();
+        if (group.getMeta().getOrDefault(vpa, BaseConstants.UNKNOWN).equals(BaseConstants.UNKNOWN)) {
+            AnalyticService.update(PaymentConstants.UNKNOWN_VPA, vpa);
+            throw new WynkRuntimeException("Unknown vpa found for whatsApp: " + vpa);
+        }
         final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, UPI.toLowerCase());
         return WaPayChargeRespEvent.<WaOrderDetails>builder()
                 .sessionId(requestMessage.getSessionId())

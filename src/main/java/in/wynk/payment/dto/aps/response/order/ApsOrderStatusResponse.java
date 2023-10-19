@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.payment.dto.aps.common.ChannelInfo;
 import in.wynk.payment.dto.aps.common.PollingConfig;
 import in.wynk.payment.dto.aps.common.UserInfo;
-import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;

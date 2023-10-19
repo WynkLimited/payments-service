@@ -43,7 +43,7 @@ public class FulfilmentInfo {
     public static class Meta {
         private String transactionId;
         private String serviceInstance;
-        private Integer accountNumber;
+        private String accountNumber;
         private Integer circleId;
     }
 }

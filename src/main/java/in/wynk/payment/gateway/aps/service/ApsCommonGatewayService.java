@@ -249,7 +249,7 @@ public class ApsCommonGatewayService {
         builder.request(uri);
         builder.orderId(orderId);
         ApsOrderStatusResponse apsChargeStatusResponse;
-        OrderPaymentDetails paymentDetails =null;
+        OrderPaymentDetails paymentDetails;
         try {
             apsChargeStatusResponse = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, null, null, ApsOrderStatusResponse.class);
             builder.response(apsChargeStatusResponse);

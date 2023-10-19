@@ -8,6 +8,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
@@ -92,6 +93,9 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
+        ApsOrderStatusCallBackPayload request = (ApsOrderStatusCallBackPayload)callbackRequest;
+        String orderId = merchantTransactionService.getMerchantTransaction(request.getOrderId()).getOrderId();
+        request.setOrderId(orderId);
         return callbackService.handle(callbackRequest);
     }
 

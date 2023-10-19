@@ -93,9 +93,6 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
-        ApsOrderStatusCallBackPayload request = (ApsOrderStatusCallBackPayload)callbackRequest;
-        String orderId = merchantTransactionService.getMerchantTransaction(request.getOrderId()).getOrderId();
-        request.setOrderId(orderId);
         return callbackService.handle(callbackRequest);
     }
 
@@ -105,10 +102,10 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
 
-        ApsCallBackRequestPayload response = (ApsCallBackRequestPayload) callbackService.parse(payload);
+        ApsOrderStatusCallBackPayload response = (ApsOrderStatusCallBackPayload) callbackService.parse(payload);
         try {
             String txnId = merchantTransactionService.findTransactionId(response.getOrderId());
-            response.setOrderId(txnId);
+            response.setTxnId(txnId);
         } catch (Exception e) {
             log.error("Exception occurred while finding orderId in merchant table for order created with APS");
             throw new WynkRuntimeException(PaymentErrorType.PAY049, e);

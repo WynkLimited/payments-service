@@ -189,7 +189,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         final String vpa = chargingResponse.getPa();
         if (group.getMeta().getOrDefault(vpa, BaseConstants.UNKNOWN).equals(BaseConstants.UNKNOWN)) {
             AnalyticService.update(PaymentConstants.UNKNOWN_VPA, vpa);
-            throw new WynkRuntimeException("Unknown vpa found for whatsApp: " + vpa);
+            log.error("Unknown vpa {} found for whatsApp", vpa);
         }
         final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, UPI.toLowerCase());
         return WaPayChargeRespEvent.<WaOrderDetails>builder()

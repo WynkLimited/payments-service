@@ -543,10 +543,10 @@ public class PaymentEventListener {
         if (purchaseDetails != null && purchaseDetails.getSessionDetails() != null && WhatsappSessionDetails.class.isAssignableFrom(purchaseDetails.getSessionDetails().getClass())) {
             final WhatsappSessionDetails waSessionDetails = (WhatsappSessionDetails) purchaseDetails.getSessionDetails();
             final List<Header> headers = new ArrayList() {{
-                add(new RecordHeader(BaseConstants.X_ORG_ID, waSessionDetails.getOrgId().getBytes()));
-                add(new RecordHeader(BaseConstants.X_SESSION_ID, waSessionDetails.getSessionId().getBytes()));
-                add(new RecordHeader(BaseConstants.X_SERVICE_ID, waSessionDetails.getServiceId().getBytes()));
-                add(new RecordHeader(BaseConstants.X_REQUEST_ID, waSessionDetails.getRequestId().getBytes()));
+                add(new RecordHeader(BaseConstants.ORG_ID, waSessionDetails.getOrgId().getBytes()));
+                add(new RecordHeader(BaseConstants.SESSION_ID, waSessionDetails.getSessionId().getBytes()));
+                add(new RecordHeader(BaseConstants.SERVICE_ID, waSessionDetails.getServiceId().getBytes()));
+                add(new RecordHeader(BaseConstants.REQUEST_ID, waSessionDetails.getRequestId().getBytes()));
             }};
 
             final PlanDTO selectedPlan = cachingService.getPlan(event.getTransaction().getPlanId());

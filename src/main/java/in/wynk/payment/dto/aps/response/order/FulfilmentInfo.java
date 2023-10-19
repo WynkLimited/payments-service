@@ -29,6 +29,11 @@ public class FulfilmentInfo {
     private long createdAt;
     private long updatedAt;
 
+    //fields for S2S Callback
+    private String fulfilmentSystemId;
+    private String fulfilmentSystemIdentifier;
+
+
 
     @Getter
     @SuperBuilder

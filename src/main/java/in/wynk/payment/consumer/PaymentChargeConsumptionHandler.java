@@ -108,6 +108,9 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
             final UpiIntentChargingResponse intentResponse = (UpiIntentChargingResponse) manager.charge(intentRequest);
             final WaPayChargeRespEvent payChargeRespEvent = toPaymentChargeEvent(requestMessage, intentRequest, intentResponse);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
+        } catch (WynkRuntimeException e) {
+            final WaPayChargeRespEvent<WaFailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
+            kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
         } catch (Exception e) {
             final WaPayChargeRespEvent<WaFailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
@@ -144,6 +147,22 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
                 .geoLocation(request.getGeoLocation())
                 .appDetails(request.getAppDetails())
                 .userDetails(request.getUserDetails());
+    }
+
+    private WaPayChargeRespEvent<WaFailedOrderDetails> toPaymentChargeEvent(WynkRuntimeException ex, PaymentChargeRequestMessage requestMessage) {
+        return WaPayChargeRespEvent.<WaFailedOrderDetails>builder()
+                .sessionId(requestMessage.getSessionId())
+                .to(requestMessage.getMessage().getFrom())
+                .from(requestMessage.getMessage().getTo())
+                .campaignId(requestMessage.getMessage().getCampaignId())
+                .orderDetails(WaFailedOrderDetails.builder()
+                        .status(TransactionStatus.FAILURE.getValue())
+                        .event(PaymentEvent.PURCHASE.getValue())
+                        .id(UUIDs.random().toString())
+                        .errorMessage(ex.getMessage())
+                        .errorCode(ex.getErrorCode())
+                        .build())
+                .build();
     }
 
     private WaPayChargeRespEvent<WaFailedOrderDetails> toPaymentChargeEvent(Exception ex, PaymentChargeRequestMessage requestMessage) {

@@ -221,23 +221,17 @@ payment:
       encryption:
         key: file:///opt/public.key
       airtelxstream:
-        id: payment
-        secret: pay@qckslvr
+        id: wynk
+        secret: gSrpM1rOTzV0c4P4
       music:
-        id: payment
-        secret: pay@qckslvr
+        id: wynk
+        secret: gSrpM1rOTzV0c4P4
       webviewclient:
-        id: payment
-        secret: pay@qckslvr
+        id: wynk
+        secret: gSrpM1rOTzV0c4P4
       subscriptionApi:
-        id: payment
-        secret: pay@qckslvr
-      rajtv:
-        id: payment
-        secret: pay@qckslvr
-      iqvideo:
-        id: payment
-        secret: pay@qckslvr
+        id: wynk
+        secret: gSrpM1rOTzV0c4P4
     payu:
       airtelxstream:
         id: qFDqmx

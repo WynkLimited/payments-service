@@ -9,6 +9,7 @@ public interface ApsConstant {
     String AIRTEL_PAY_STACK = "aps";
     String AIRTEL_PAY_STACK_V2 = "aps_v2";
     String APS = "APS";
+    String APS_V2 = "APS_V2";
     String PAYMENT_TIMER_KEY = "payment_timer";
     String PAYMENT_STATUS_POLL_KEY = "payment_status_poll";
     String FIELD_TYPE = "type";

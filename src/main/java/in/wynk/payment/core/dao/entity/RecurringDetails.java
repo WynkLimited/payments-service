@@ -55,6 +55,11 @@ public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseK
         return () -> callbackUrl;
     }
 
+    @Override
+    public ISessionDetails getSessionDetails () {
+        return null;
+    }
+
     @Getter
     @Builder
     @AllArgsConstructor

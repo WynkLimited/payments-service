@@ -19,4 +19,6 @@ public interface ApsConstant {
     String PRE_DEBIT_SI = "pre_debit_SI";
     String APS_CARD_TYPE = "cardType";
     String UPI_MANDATE_REVOKE = "upi_mandate_revoke";
+    String PAY_DIGI = "paydigi";
+    String INT_PAY = "intpay";
 }

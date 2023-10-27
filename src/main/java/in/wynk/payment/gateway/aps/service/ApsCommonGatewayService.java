@@ -58,6 +58,8 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_MODE;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
+import static in.wynk.payment.dto.aps.common.ApsConstant.PAY_DIGI;
+import static in.wynk.payment.dto.aps.common.ApsConstant.INT_PAY;
 
 /**
  * @author Nishesh Pandey
@@ -111,7 +113,7 @@ public class ApsCommonGatewayService {
             throw new WynkRuntimeException(PAY044);
         }
         try {
-            ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(clientAlias), url, method, body);
+            ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
@@ -132,9 +134,9 @@ public class ApsCommonGatewayService {
         }
     }
 
-    private String generateToken (String clientAlias) {
-        final String username = PropertyResolverUtils.resolve(clientAlias, AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
-        final String password = PropertyResolverUtils.resolve(clientAlias, AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
+    private String generateToken (String url, String clientAlias) {
+        final String username = PropertyResolverUtils.resolve(clientAlias, url.contains(PAY_DIGI) ? PAY_DIGI : INT_PAY, AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_ID);
+        final String password = PropertyResolverUtils.resolve(clientAlias, url.contains(PAY_DIGI) ? PAY_DIGI : INT_PAY, AIRTEL_PAY_STACK, PaymentConstants.MERCHANT_SECRET);
         return AuthSchemes.BASIC + " " + Base64.getEncoder().encodeToString((username + HttpConstant.COLON + password).getBytes(StandardCharsets.UTF_8));
     }
 

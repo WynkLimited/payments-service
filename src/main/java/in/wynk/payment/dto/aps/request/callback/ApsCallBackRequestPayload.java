@@ -8,6 +8,7 @@ import in.wynk.payment.dto.ChecksumHeaderCallbackRequest;
 import in.wynk.payment.dto.aps.common.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.http.HttpHeaders;
 
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
  * @author Nishesh Pandey
  */
 @Getter
+@Setter
 @SuperBuilder
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)

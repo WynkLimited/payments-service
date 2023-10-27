@@ -289,8 +289,12 @@ aps:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/hive-split-payment
       charge:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate
+        paydigi:
+          api: ${payment.merchant.aps.paydigi.api.base}/pg-service/v1/payment/initiate
         upi:
           api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate/upi
+          paydigi:
+            api: ${payment.merchant.aps.paydigi.api.base}/pg-service/v1/payment/initiate/upi
       refund:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund
     verify:
@@ -319,6 +323,10 @@ aps:
     delete:
       card: ${payment.merchant.aps.api.base}/pg-service/v1/saved-options/cards/delete
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa
+    order:
+      api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/order
+      status:
+        api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/status/{orderId}
 
 branch:
   onelink:

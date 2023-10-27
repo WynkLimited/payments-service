@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.service;
 
+import in.wynk.payment.dto.aps.common.LOB;
 import in.wynk.payment.dto.aps.request.verify.BinVerificationRequest;
 import in.wynk.payment.dto.aps.response.verify.BinVerificationResponse;
 import in.wynk.payment.dto.aps.response.verify.VpaVerificationResponse;
@@ -17,7 +18,6 @@ import java.util.Map;
 
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_BIN_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_VPA_VERIFICATION;
-import static in.wynk.payment.dto.aps.common.ApsConstant.APS_LOB_AUTO_PAY_REGISTER_WYNK;
 
 /**
  * @author Nishesh Pandey
@@ -60,7 +60,7 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
         private class BinVerification implements IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> {
             @Override
             public in.wynk.payment.dto.gateway.verify.BinVerificationResponse verify (AbstractVerificationRequest request) {
-                final BinVerificationRequest binRequest = BinVerificationRequest.builder().cardBin(request.getVerifyValue()).lob(APS_LOB_AUTO_PAY_REGISTER_WYNK).build();
+                final BinVerificationRequest binRequest = BinVerificationRequest.builder().cardBin(request.getVerifyValue()).lob(LOB.AUTO_PAY_REGISTER_WYNK.toString()).build();
                 try {
                     BinVerificationResponse
                             apsBinVerificationResponseData = common.exchange(request.getClient(), BIN_VERIFY_ENDPOINT, HttpMethod.POST, request.getMsisdn(), binRequest, BinVerificationResponse.class);
@@ -77,7 +77,7 @@ public class ApsVerificationGatewayImpl implements IPaymentAccountVerification<A
             @Override
             public AbstractVerificationResponse verify (AbstractVerificationRequest request) {
                 String userVpa = request.getVerifyValue();
-                final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, APS_LOB_AUTO_PAY_REGISTER_WYNK);
+                final URI uri = httpTemplate.getUriTemplateHandler().expand(VPA_VERIFY_ENDPOINT, userVpa, LOB.AUTO_PAY_REGISTER_WYNK.toString());
                 try {
                     VpaVerificationResponse apsVpaVerificationData = common.exchange(request.getClient(), uri.toString(), HttpMethod.GET, request.getMsisdn(), request, VpaVerificationResponse.class);
                     return in.wynk.payment.dto.gateway.verify.VpaVerificationResponse.fromAps(apsVpaVerificationData);

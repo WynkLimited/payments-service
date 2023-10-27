@@ -19,9 +19,13 @@ public interface IPaymentMethodValidatorRequest extends IBaseRequest {
 
     String getPaymentId();
 
-    String getCouponCode();
+    default String getCouponCode() {
+        return null;
+    };
 
-    String getCountryCode();
+    default String getCountryCode() {
+        return "IN";
+    }
 
     default String getSi(){
         return null;

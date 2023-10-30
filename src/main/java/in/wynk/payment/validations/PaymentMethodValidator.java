@@ -27,15 +27,6 @@ import static in.wynk.payment.core.constant.PaymentErrorType.*;
 public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> extends BaseHandler<T> {
     @Override
     public void handle(T request) {
-        if(Objects.nonNull(SessionContextHolder.get())) {
-            SessionDTO sessionDTO = SessionContextHolder.getBody();
-            IMiscellaneousDetails miscellaneousDetails = sessionDTO.get(MISCELLANEOUS_DETAILS);
-            boolean originalAutorenew = (Objects.nonNull(miscellaneousDetails)) ? miscellaneousDetails.isAutoRenew() : false;
-            boolean requestedAutorenew = request.getPaymentDetails().isAutoRenew();
-            if (requestedAutorenew != originalAutorenew) {
-                throw new PaymentRuntimeException(PAY999);
-            }
-        }
         PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(request.getPaymentId());
         PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (Objects.equals(request.getProductDetails().getType(), PLAN) ?
                 PaymentOptionsPlanEligibilityRequest.builder().planId(request.getProductDetails().getId()) :

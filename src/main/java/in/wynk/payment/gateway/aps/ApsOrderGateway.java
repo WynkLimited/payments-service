@@ -67,14 +67,13 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
                         new ParameterizedTypeReference<IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>>() {
                         });
         AbstractPaymentChargingResponse chargeResponse = chargingService.charge(request);
-        publishMerchantTransactionEvent((WhatsAppChargeRequest) request, orderResponse);
+        publishMerchantTransactionEvent(orderResponse);
         return chargeResponse;
     }
 
-    private void publishMerchantTransactionEvent (WhatsAppChargeRequest request, RechargeOrderResponse orderResponse) {
+    private void publishMerchantTransactionEvent (RechargeOrderResponse orderResponse) {
         Transaction transaction = TransactionContext.get();
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
-        mBuilder.request(request);
         mBuilder.orderId(orderResponse.getOrderId());
         eventPublisher.publishEvent(mBuilder.build());
     }

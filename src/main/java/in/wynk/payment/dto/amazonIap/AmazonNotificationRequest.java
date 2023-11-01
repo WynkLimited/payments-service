@@ -21,7 +21,7 @@ public class AmazonNotificationRequest implements IAPNotification {
     private String subject;
     @JsonProperty("TopicArn")
     private String topicArn;
-    @JsonProperty("Message")
+    @JsonProperty("PayChargeReqMessage")
     private String message;
     @JsonProperty("Timestamp")
     private String timestamp;

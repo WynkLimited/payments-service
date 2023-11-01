@@ -5,6 +5,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.request.*;
@@ -52,7 +53,11 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
         @Override
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction);
+            if (ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
+                common.syncOrderTransactionFromSource(transaction);
+            } else {
+                common.syncChargingTransactionFromSource(transaction);
+            }
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(APS_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY038);

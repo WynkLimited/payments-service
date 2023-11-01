@@ -5,14 +5,9 @@ import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
-import in.wynk.common.dto.IGeoLocation;
 import in.wynk.data.entity.MongoBaseEntity;
 import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.RecurringDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.dao.repository.receipts.IPurchasingDetailsDao;
@@ -24,10 +19,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
-import javax.validation.Valid;
-import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 
@@ -36,7 +30,7 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 public class PurchaseDetailsManager implements IPurchaseDetailsManger {
 
     @Override
-    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save(Transaction transaction, IPurchaseDetails details) {
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
                 .id(transaction.getIdStr())
@@ -51,7 +45,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save (Transaction transaction, AbstractPaymentChargingRequest details) {
         AbstractPaymentDetails abstractPaymentDetails = details.getPaymentDetails();
         if(CardPaymentDetails.class.isAssignableFrom(abstractPaymentDetails.getClass())) {
@@ -68,14 +62,15 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 .userDetails(details.getUserDetails())
                 .productDetails(details.getProductDetails())
                 .paymentDetails(abstractPaymentDetails)
-                .geoLocation(((IPurchaseDetails) details).getGeoLocation())
-                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
-                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
+                .geoLocation(details.getGeoLocation())
+                .pageUrlDetails(details.getPageUrlDetails())
+                .callbackUrl(details.getCallbackDetails().getCallbackUrl())
+                .sessionDetails(details.getSessionDetails())
                 .build());
     }
 
     @Override
-    @Cacheable(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public IPurchaseDetails get(Transaction transaction) {
         final Optional<? extends IPurchaseDetails> purchaseDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findById(transaction.getIdStr());
         if (purchaseDetails.isPresent()) return purchaseDetails.get();

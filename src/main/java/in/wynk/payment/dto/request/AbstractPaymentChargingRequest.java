@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.core.dao.entity.ClientDetails;
@@ -19,6 +20,7 @@ import in.wynk.payment.validations.IPlanValidatorRequest;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import javax.validation.Valid;
@@ -44,6 +46,10 @@ public abstract class AbstractPaymentChargingRequest implements IChargingDetails
     @Valid
     @Analysed
     private AbstractPaymentDetails paymentDetails;
+
+    @JsonIgnore
+    @Setter
+    private String orderId;
 
     @Override
     public PaymentGateway getPaymentCode () {

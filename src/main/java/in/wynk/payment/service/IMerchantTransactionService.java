@@ -4,4 +4,5 @@ public interface IMerchantTransactionService {
     void upsert(MerchantTransaction merchantTransaction);
     MerchantTransaction getMerchantTransaction(String id);
     String getPartnerReferenceId(String id);
+    String findTransactionId(String orderId);
 }

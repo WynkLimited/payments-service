@@ -9,6 +9,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.ISessionDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.PageUrlDetails;
@@ -86,5 +87,10 @@ public class S2SChargingRequestV2 extends AbstractPaymentChargingRequest {
             return UserBillingDetail.builder().billingSiDetail(billingSiDetail).msisdn(MsisdnUtils.normalizePhoneNumber(userDetails.getMsisdn())).si(userDetails.getSi()).build();
         }
         return userDetails;
+    }
+
+    @Override
+    public ISessionDetails getSessionDetails() {
+        return null;
     }
 }

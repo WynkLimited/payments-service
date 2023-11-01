@@ -228,23 +228,39 @@ payment:
       secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
         base: http://intpay.india.airtel.itm
+      paydigi:
+        api:
+          base: https://paydigi.airtel.in
       encryption:
         key: classpath:/cryptography/aps/public.key
       airtelxstream:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
       music:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
       webviewclient:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
       subscriptionApi:
-        id: payment
-        secret: pay@qckslvr
-      rajtv:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
     payu:
       airtelxstream:
         id: qFDqmx
@@ -520,6 +536,15 @@ wynk:
           topic: wcf_local.generate_invoice
         inform:
           topic: wcf_local.inform_invoice_generate
+      payment:
+        charge:
+          topic: wcf_staging.pay_link_resp
+        status:
+            topic: wcf_staging.pay_state_resp
+        retry:
+          topic: wcf_staging.pay_state_retry_resp
+        dlt:
+          topic: wcf_staging.pay_state_dlt_resp
     consumers:
       enabled: true
       listenerFactory:
@@ -554,6 +579,38 @@ wynk:
               topic: wcf_local.inform_invoice_state
               valueDeserializer: in.wynk.payment.consumer.InvoiceCallbackKafkaSerializer
             name: INVOICE_CALLBACK_BEAN
+        payment:
+          charge:
+            - concurrency: 3
+              enabled: true
+              factoryDetails:
+                autoCommitInterval: 100
+                autoOffsetConfig: earliest
+                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                enableAutoCommit: true
+                groupId: group1
+                keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+                maxPollInterval: 600000
+                maxPollRecords: 50
+                sessionTimeout: 180000
+                topic: wcf_staging.pay_link_req
+                valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
+              name: PAYMENT_CHARGE_BEAN
+            - concurrency: 3
+              enabled: true
+              factoryDetails:
+                autoCommitInterval: 100
+                autoOffsetConfig: earliest
+                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                enableAutoCommit: true
+                groupId: group1
+                keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+                maxPollInterval: 600000
+                maxPollRecords: 50
+                sessionTimeout: 180000
+                topic: wcf_staging.pay_link_req_retry
+                valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
+              name: PAYMENT_CHARGE_RETRY_BEAN
   multi:
     kafka:
       enabled: false

@@ -14,6 +14,7 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.ISessionDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -74,6 +75,11 @@ public class WebPurchaseDetails implements IChargingDetails {
         GeoLocation geoLocation = session.get(GEO_LOCATION);
         return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
                 GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
+    }
+
+    @Override
+    public ISessionDetails getSessionDetails () {
+        return null;
     }
 
     @Override

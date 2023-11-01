@@ -89,7 +89,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private static String buildNotificationStringToSign(AmazonNotificationRequest msg) {
-        String stringToSign = "Message\n";
+        String stringToSign = "PayChargeReqMessage\n";
         stringToSign += msg.getMessage() + "\n";
         stringToSign += "MessageId\n";
         stringToSign += msg.getMessageId() + "\n";
@@ -130,7 +130,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     public static String buildSubscriptionStringToSign(AmazonNotificationRequest msg) {
-        String stringToSign = "Message\n";
+        String stringToSign = "PayChargeReqMessage\n";
         stringToSign += msg.getMessage() + "\n";
         stringToSign += "MessageId\n";
         stringToSign += msg.getMessageId() + "\n";

@@ -71,7 +71,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
 
         @Override
         public List<AbstractPaymentOptionInfo> getPaymentInstruments(String userId) {
-            if (Objects.nonNull(payOptionsCache)) return payOptionsCache;
+            if (Objects.nonNull(payOptionsCache) && payOptionsCache.size() > 0) return payOptionsCache;
             final List<AbstractPaymentOptionInfo> payInfoList = new ArrayList<>();
             if (Objects.nonNull(response) && !CollectionUtils.isEmpty(response.getPayOptions())) {
                 response.getPayOptions().forEach(option -> {
@@ -102,7 +102,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
 
         @Override
         public List<AbstractSavedInstrumentInfo> getSavedDetails(String userId) {
-            if (Objects.nonNull(savedInstrumentCache)) return savedInstrumentCache;
+            if (Objects.nonNull(savedInstrumentCache) && savedInstrumentCache.size() > 0) return savedInstrumentCache;
             final List<AbstractSavedInstrumentInfo> savedDetails = new ArrayList<>();
             if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && !CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
                 response.getSavedUserOptions().getPayOptions().forEach(savedOption -> {

@@ -298,6 +298,8 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         }
         if (trialEligible)
             builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan));
+        else if(Objects.nonNull(request.getMiscellaneousDetails()) && request.getMiscellaneousDetails().isAutoRenew())
+            builder.paymentGroups(getFilteredPaymentGroups((PaymentMethod::isAutoRenewSupported), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan));
         else builder.paymentGroups(getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest, paidPlan));
         return responseEntityBuilder.status(httpStatus).data(builder.msisdn(request.getUserDetails().getMsisdn()).productDetails(buildPlanDetails(request.getUserDetails(), request.getAppDetails(), request.getGeoLocation(), eligibilityRequest.getUid() ,request.getProductDetails().getId(), trialEligible)).build()).build();
     }
@@ -324,7 +326,7 @@ public class PaymentOptionServiceImpl implements IPaymentOptionService, IUserPre
         List<PaymentOptionsDTO.PaymentGroupsDTO> paymentGroupsDTOS = new ArrayList<>();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {
             request.setGroup(group.getId());
-            List<PaymentMethod> methods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
+            List<PaymentMethod> methods = availableMethods.get(group.getId()).stream().filter(filterPredicate).filter(paymentMethod -> !paymentMethod.getPaymentCode().getCode().equals("aps")).collect(Collectors.toList());
             final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
             methods = filterPaymentMethodsBasedOnEligibility(response, methods);
             List<PaymentMethodDTO> methodDTOS = methods.stream().map((pm) -> new PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());

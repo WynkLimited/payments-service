@@ -2,6 +2,7 @@ package in.wynk.payment.validations;
 
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.common.validations.IBaseRequest;
+import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 
 public interface IPaymentMethodValidatorRequest extends IBaseRequest {
@@ -18,9 +19,13 @@ public interface IPaymentMethodValidatorRequest extends IBaseRequest {
 
     String getPaymentId();
 
-    String getCouponCode();
+    default String getCouponCode() {
+        return null;
+    };
 
-    String getCountryCode();
+    default String getCountryCode() {
+        return "IN";
+    }
 
     default String getSi(){
         return null;
@@ -29,5 +34,7 @@ public interface IPaymentMethodValidatorRequest extends IBaseRequest {
     IProductDetails getProductDetails();
 
     ClientDetails getClientDetails();
+
+    IPaymentDetails getPaymentDetails();
 
 }

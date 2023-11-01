@@ -3,6 +3,7 @@ package in.wynk.payment.gateway.aps.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
@@ -10,9 +11,11 @@ import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
@@ -28,6 +31,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 
+import static in.wynk.payment.core.constant.PaymentConstants.PIPE_SEPARATOR;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CALLBACK_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_STATUS_VERIFICATION;
@@ -67,6 +71,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
         }
         final IPaymentCallback callbackService = delegator.get(callbackType);
+        final Transaction transaction = TransactionContext.get();
         if (isValid(request)) {
             return callbackService.handle(request);
         } else {
@@ -88,12 +93,26 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     @SneakyThrows
     public boolean isValid(ApsCallBackRequestPayload payload) {
         try {
-            return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
-                    Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);
+            if (payload instanceof ApsOrderStatusCallBackPayload) {
+                return validate((ApsOrderStatusCallBackPayload) payload);
+            } else {
+                return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
+                        Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);
+            }
         } catch (Exception ex) {
             log.error(APS_CALLBACK_FAILURE, "There is some issue in checksum for callbackStatus: {}, APS transactionId: {}", payload.getStatus(), payload.getOrderId(), ex);
             throw new PaymentRuntimeException(PaymentErrorType.PAY046, "Exception occurred due to checksum from aps with transaction id:" + payload.getOrderId());
         }
+    }
+
+    @SneakyThrows
+    private boolean validate (ApsOrderStatusCallBackPayload payload) {
+        final String generatedString = payload.getOrderId() + PIPE_SEPARATOR + payload.getOrderInfo().getOrderStatus() + PIPE_SEPARATOR + payload.getOrderInfo().getRequester() + PIPE_SEPARATOR +
+                payload.getPaymentDetails()[0].getPgId() + PIPE_SEPARATOR + payload.getPaymentDetails()[0].getPaymentStatus() + PIPE_SEPARATOR + payload.getFulfilmentInfo()[0].getFulfilmentId() +
+                PIPE_SEPARATOR + payload.getFulfilmentInfo()[0].getStatus() + PIPE_SEPARATOR + salt;
+        final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
+        assert generatedHash != null;
+        return generatedHash.equals(payload.getHash());
     }
 
     private class GenericApsCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
@@ -101,7 +120,11 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         @Override
         public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction, Optional.of(ApsChargeStatusResponse.from(request)));
+            if (ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
+                common.syncOrderTransactionFromSource(transaction);
+            } else {
+                common.syncChargingTransactionFromSource(transaction, Optional.of(ApsChargeStatusResponse.from(request)));
+            }
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                 Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                 if (optionalDetails.isPresent()) {
@@ -128,7 +151,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
             try {
                 final String json = objectMapper.writeValueAsString(payload);
-                return objectMapper.readValue(json, ApsCallBackRequestPayload.class);
+                return json.contains("PREPAID") ? objectMapper.readValue(json, ApsOrderStatusCallBackPayload.class) :objectMapper.readValue(json, ApsCallBackRequestPayload.class);
             } catch (Exception e) {
                 throw new WynkRuntimeException(PAY006, e);
             }

@@ -66,6 +66,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_DROPOUT_TRACKER_IN_SECONDS = "PAYMENT_DROPOUT_TRACKER_IN_SECONDS";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
     String PAYMENT_CLIENT_PLACE_HOLDER = "payment.merchant.%p.%c.%f";
+    String PAYMENT_CLIENT_PLACE_HOLDER2 = "payment.merchant.%p.%c.%r.%f";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
@@ -87,5 +88,7 @@ public interface PaymentConstants extends BaseConstants {
 
     String CONTENT_TYPE = "Content-Type";
     String CURRENCY_INR="INR";
+    String WHATSAPP = "WHATSAPP";
+    String UNKNOWN_VPA = "UNKNOWN_VPA";
     String MANDATE = "mandate";
 }

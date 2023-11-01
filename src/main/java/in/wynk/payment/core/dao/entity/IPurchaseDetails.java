@@ -8,4 +8,5 @@ public interface IPurchaseDetails {
     IPaymentDetails getPaymentDetails();
     IProductDetails getProductDetails();
     IGeoLocation getGeoLocation();
+    ISessionDetails getSessionDetails();
 }

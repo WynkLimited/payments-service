@@ -57,6 +57,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY046("APS Payment Callback Failure", "Aps payment callback failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.APS_CALLBACK_FAILURE),
     PAY047("Payment Drop Out Notification Failure", "Unable to schedule the drop out notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE),
     PAY048("Payment Auto Refund Notification Failure", "Unable to schedule the auto refund notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE),
+    PAY049("Aps callback parse failure", "Unable to find order created in database for APS", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_CALLBACK_ORDER_ERROR),
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY105("Renewal Eligibility API Failure", "Renewal Eligibility API Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_ELIGIBILITY_API_ERROR),
@@ -112,7 +113,7 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     PAY997("Point Purchase Failure", "Unable to generate session, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.POINT_PURCHASE_SESSION_INIT_FAILURE),
     PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),
-    PAY999("Charging Failure", "Fraud Charging Request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.CHARGING_API_FAILURE),
+    PAY999("Charging Failure", "Fraud Charging Request for AutoRenew in Direct Payment API", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.CHARGING_API_FAILURE),
 
     ATB01("ATB Charging API Failure", "Could Not process transaction on addToBill", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_API_FAILURE),
     ATB02("ATB Status API Failure", "Transaction is still pending from addToBill side", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),

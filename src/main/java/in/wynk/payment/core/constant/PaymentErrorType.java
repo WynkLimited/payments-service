@@ -55,7 +55,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY043("APS VPA Deletion Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_SAVED_CARD_DELETION),
     PAY044("APS Payment Eligibility Failure", "Client is missing in the request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_API_FAILURE),
 
-    PAY045("Payment Renewal Failure", "Unable to renewal amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GOOGLE_PLAY_RENEWAL_ERROR),
+    PAY045("Payment Renewal Failure", "Unable to renewal amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
     PAY046("APS Payment Callback Failure", "Aps payment callback failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.APS_CALLBACK_FAILURE),
 
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),

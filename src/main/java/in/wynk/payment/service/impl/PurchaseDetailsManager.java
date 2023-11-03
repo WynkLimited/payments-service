@@ -5,25 +5,23 @@ import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
-import in.wynk.common.dto.IGeoLocation;
 import in.wynk.data.entity.MongoBaseEntity;
+import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.RecurringDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.dao.repository.receipts.IPurchasingDetailsDao;
 import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
+import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.service.IPurchaseDetailsManger;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 
@@ -49,15 +47,25 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     @Override
     @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save (Transaction transaction, AbstractPaymentChargingRequest details) {
+        AbstractPaymentDetails abstractPaymentDetails = details.getPaymentDetails();
+        if(CardPaymentDetails.class.isAssignableFrom(abstractPaymentDetails.getClass())) {
+            if (CardConstants.CARD.equals(abstractPaymentDetails.getPaymentMode())) {
+                String mode = ((CardPaymentDetails) abstractPaymentDetails).getCardDetails().getCardInfo().getCategory();
+                if(mode.equals("CC") || mode.equals("DC")) {
+                    abstractPaymentDetails.setPaymentMode(((CardPaymentDetails) abstractPaymentDetails).getCardDetails().getCardInfo().getCategory());
+                }
+            }
+        }
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
                 .id(transaction.getIdStr())
                 .appDetails(details.getAppDetails())
                 .userDetails(details.getUserDetails())
                 .productDetails(details.getProductDetails())
-                .paymentDetails(details.getPaymentDetails())
-                .geoLocation(((IPurchaseDetails) details).getGeoLocation())
-                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
-                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
+                .paymentDetails(abstractPaymentDetails)
+                .geoLocation(details.getGeoLocation())
+                .pageUrlDetails(details.getPageUrlDetails())
+                .callbackUrl(details.getCallbackDetails().getCallbackUrl())
+                .sessionDetails(details.getSessionDetails())
                 .build());
     }
 
@@ -70,7 +78,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     }
 
     @Override
-    //@Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
+    //@Cacheable(cacheName = "PAYMENT_DETAILS_KEYS", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public List<String> getByUserId(String userId) {
         final List<PurchaseDetails> purchaseDetailsList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findByUserId(userId);
         if (CollectionUtils.isEmpty(purchaseDetailsList)) return null;

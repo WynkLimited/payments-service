@@ -76,6 +76,7 @@ service:
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
+        personalisedPlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/personalised
 
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
         thanksSegmentEndpoint: ${service.subscription.api.root}/wynk/s2s/v1/user/segments
@@ -96,6 +97,8 @@ service:
         v2:
           poll: ${service.payment.api.root}/wynk/v2/payment/status/
           pollS2S: ${service.payment.api.root}/wynk/s2s/v2/payment/status/
+        v3:
+          pollS2S: ${service.payment.api.root}/wynk/v2/s2s/payment/status/
 
 ####### payment props #######session-out
 payment:
@@ -224,7 +227,9 @@ payment:
       #  clientEmail: dangal-play-serviceaccount@dangal-play.iam.gserviceaccount.com
       #  key: AIzaSyAmcEfR4deGkGgfmwoehfB_UnWfF7nkjRU
   predebit:
-    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADDTOBILL, AddToBill, APS
+    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADD_TO_BILL, APS
+  renewal:
+    unsupported: ADD_TO_BILL
 cors:
   maxAge: 3600
   allowed:
@@ -284,8 +289,12 @@ aps:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/hive-split-payment
       charge:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate
+        paydigi:
+          api: ${payment.merchant.aps.paydigi.api.base}/pg-service/v1/payment/initiate
         upi:
           api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/initiate/upi
+          paydigi:
+            api: ${payment.merchant.aps.paydigi.api.base}/pg-service/v1/payment/initiate/upi
       refund:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund
     verify:
@@ -306,16 +315,18 @@ aps:
     charge:
       status:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}
-    payment:
-      status:
-        api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchFromDB=true
     renewal:
         api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/si
-    predebit:
-        api: ${payment.merchant.aps.api.base}/pg-service/v1/pre-debit/initiate
+    cancel:
+        mandate:
+         api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/cancel-mandate
     delete:
       card: ${payment.merchant.aps.api.base}/pg-service/v1/saved-options/cards/delete
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa
+    order:
+      api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/order
+      status:
+        api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/status/{orderId}
 
 branch:
   onelink:
@@ -326,3 +337,5 @@ branch:
 event:
   stream:
     dp:  data-science-subscription-funnel-information
+
+api.get.endPoint: https://subscription-staging.wynk.in

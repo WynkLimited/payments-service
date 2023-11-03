@@ -27,6 +27,7 @@ import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
@@ -37,6 +38,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,7 +71,7 @@ public class RevenuePaymentControllerV2 {
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = "/callback/{sid}/{pc}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public WynkResponseEntity<PaymentCallbackResponse> handleCallback (@RequestHeader HttpHeaders headers, @PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) {
+    public WynkResponseEntity<PaymentCallbackResponse> handleCallback (@RequestHeader HttpHeaders headers, @PathVariable String sid, @PathVariable String pc, @RequestParam Map<String, Object> payload) throws URISyntaxException {
         LoadClientUtils.loadClient(false);
         final PaymentGateway paymentGateway;
         if (StringUtils.isEmpty(pc)) {
@@ -90,6 +92,7 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
+    @SneakyThrows
     @ManageSession(sessionId = "#sid")
     @GetMapping(path = "/callback/{sid}/{pc}")
     @AnalyseTransaction(name = "paymentCallback")
@@ -115,6 +118,7 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
+    @SneakyThrows
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")
     @PostMapping(path = {"/callback/{sid}", "/callback/{sid}/{pc}"}, consumes = MediaType.APPLICATION_JSON_VALUE)

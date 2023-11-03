@@ -51,7 +51,9 @@ import static in.wynk.payment.constant.FlowType.COLLECT;
 import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
+import static in.wynk.payment.constant.UpiConstants.ORG_ID;
 import static in.wynk.payment.constant.UpiConstants.*;
+import static in.wynk.payment.constant.UpiConstants.ORG_ID;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
@@ -165,9 +167,9 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                                 .recurValue(map.get(RECUR_VALUE))
                                 .validityEnd(map.get(VALIDITY_END))
                                 .validityStart(map.get(VALIDITY_START))
-                                .cu(map.getOrDefault(CU, CURRENCY_INR))
+                                .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR))
                                 .transactionStatus(transaction.getStatus())
-                                .tr(result.getPaymentId()).am(result.getAmount())
+                                .tr(result.getPaymentId()).am(map.get(AM))
                                 .transactionType(transaction.getType().getValue())
                                 .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                                 .build();
@@ -311,9 +313,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         form.put(PAYU_CARD_TOKEN, cardDetails.getCardToken());
                         form.put(PAYU_CARD_CVV, cardDetails.getCardInfo().getCvv());
                     }
-                    final String pg = (paymentDetails.getCardDetails().getCardInfo().getCategory().equalsIgnoreCase("creditcard") ||
-                            paymentDetails.getCardDetails().getCardInfo().getCategory().equalsIgnoreCase("CREDIT")) ? "CC" : "DC";
-                    form.put(PAYU_PG, pg);
+                    form.put(PAYU_PG, paymentDetails.getCardDetails().getCardInfo().getCategory());
                     return CardKeyValueTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
                 }
             }

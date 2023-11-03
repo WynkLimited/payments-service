@@ -210,10 +210,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 }
             }
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PaymentErrorType.PAY014.getErrorCode()))
-                transaction.setStatus(TransactionStatus.TIMEDOUT.getValue());
-            else if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode()))
+            if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            }
             throw e;
         }
         return WynkResponseEntity.<Void>builder().build();
@@ -232,10 +231,11 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } else if (transactionStatusRequest instanceof RefundTransactionReconciliationStatusRequest) {
             return fetchRefundStatusFromPayUSource(transaction, extTxnId);
         } else {
-            throw new WynkRuntimeException(PAY889, "Unknown transaction status request to process for uid: " + transaction.getUid());
+            throw new WynkRuntimeException("Unknown transaction request class for transaction Id: " + transaction.getIdStr());
         }
     }
 
+    @SneakyThrows
     private ChargingStatusResponse fetchRefundStatusFromPayUSource(Transaction transaction, String extTxnId) {
         syncRefundTransactionFromSource(transaction, extTxnId);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
@@ -247,7 +247,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }
@@ -277,6 +277,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
     }
 
+    @SneakyThrows
     private ChargingStatusResponse fetchChargingStatusFromPayUSource(Transaction transaction) {
         syncChargingTransactionFromSource(transaction, Optional.empty());
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
@@ -288,18 +289,19 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }
 
-    public void syncChargingTransactionFromSource(Transaction transaction, Optional<String> failureReasonOption) {
+    public void syncChargingTransactionFromSource(Transaction transaction, Optional<PayUVerificationResponse<PayUChargingTransactionDetails>> verifyOption) {
         final Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             final MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = this.getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
-            });
+            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse =
+                    verifyOption.orElseGet(() -> getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+                    }));
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))
@@ -313,7 +315,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             syncTransactionWithSourceResponse(payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getTransactionFailureReason())) {
-                    final String failureReason = failureReasonOption.orElse(payUChargingTransactionDetails.getTransactionFailureReason());
+                    final String failureReason = payUChargingTransactionDetails.getTransactionFailureReason();
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(failureReason).build());
                 }
             }
@@ -350,11 +352,19 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     }
                 }
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
-                finalTransactionStatus = TransactionStatus.FAILURE;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
+            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) ||
+                    PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+                if(AUTO_REFUND.equals(((PayUChargingTransactionDetails) transactionDetails).getUnMappedStatus())){
+                    finalTransactionStatus = TransactionStatus.AUTO_REFUND;
+                } else {
+                    finalTransactionStatus= TransactionStatus.FAILURE;
+                }
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) ||
+                            (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
-            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) && StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
+            } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
+                    StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             }
         } else {
@@ -565,6 +575,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private <T> T getInfoFromPayU(MultiValueMap<String, String> request, TypeReference<T> target) {
         try {
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(payUInfoApiUrl)).body(request), String.class).getBody();
+            if (StringUtils.isNotEmpty(response) && response.contains("Record not found")) {
+                throw new WynkRuntimeException("Record not found");
+            }
             return objectMapper.readValue(response, target);
         } catch (HttpStatusCodeException ex) {
             log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
@@ -744,13 +757,14 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (response.getStatus() == 1) {
                 log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
             } else {
-                log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, response.getMessage());
-                throw new WynkRuntimeException(PAY111);
+                throw new WynkRuntimeException(PAY111, response.getMessage());
             }
-            TransactionStatus transactionStatus= response.getStatus()==1 ? TransactionStatus.SUCCESS : TransactionStatus.FAILURE;
-            return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(transactionStatus).build();
+            return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
         } catch (Exception e) {
             log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
+            if (e instanceof WynkRuntimeException) {
+                throw e;
+            }
             throw new WynkRuntimeException(PAY111);
         }
     }
@@ -834,7 +848,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             @Override
             public WynkResponseEntity<AbstractCallbackResponse> handleCallback(PayUCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
-                syncChargingTransactionFromSource(transaction, Optional.ofNullable(callbackRequest.getTransactionFailureReason()));
+                syncChargingTransactionFromSource(transaction, Optional.of(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(),AbstractPayUTransactionDetails.from(callbackRequest))).build()));
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                     Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                     if (optionalDetails.isPresent()) {
@@ -857,6 +871,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
             }
 
+            @Override
             public boolean validate(PayUCallbackRequestPayload callbackRequest) {
                 final Transaction transaction = TransactionContext.get();
                 final String transactionId = transaction.getIdStr();
@@ -876,10 +891,19 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 syncRefundTransactionFromSource(transaction, callbackRequest.getRequestId());
                 // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
                 if (transaction.getStatus() == TransactionStatus.SUCCESS)
-                    transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
+                    transaction.setStatus(TransactionStatus.REFUNDED.getValue());
                 return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
             }
 
+            @Override
+            public boolean validate(PayUAutoRefundCallbackRequestPayload callbackRequest) {
+                final Transaction transaction = TransactionContext.get();
+                final String transactionId = transaction.getIdStr();
+                final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
+                final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
+                String productInfo = Optional.ofNullable(callbackRequest.getProductInfo()).orElse( String.valueOf(transaction.getPlanId()));
+                return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), productInfo, transaction.getAmount(), callbackRequest.getResponseHash());
+            }
         }
     }
 

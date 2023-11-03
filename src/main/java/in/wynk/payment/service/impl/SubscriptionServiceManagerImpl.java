@@ -12,6 +12,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
@@ -22,10 +23,7 @@ import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
-import in.wynk.subscription.common.request.PlanProvisioningRequest;
-import in.wynk.subscription.common.request.PlanUnProvisioningRequest;
-import in.wynk.subscription.common.request.SelectivePlansComputationRequest;
-import in.wynk.subscription.common.request.SinglePlanProvisionRequest;
+import in.wynk.subscription.common.request.*;
 import in.wynk.subscription.common.response.AllItemsResponse;
 import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
@@ -60,6 +58,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.allProducts}")
     private String allProductApiEndPoint;
 
+    @Value("${service.subscription.api.endpoint.personalisedPlan}")
+    private String personalisedPlanApiEndPoint;
 
     @Value("${service.subscription.api.endpoint.allPlans}")
     private String allPlanApiEndPoint;
@@ -141,19 +141,32 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
     }
 
+    @Override
+    public PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan) {
+        if (!defaultPlan.isPersonalize()) return defaultPlan;
+        try {
+            RequestEntity<UserPersonalisedPlanRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(personalisedPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), request, HttpMethod.POST);
+            return Objects.requireNonNull(restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanDTO>>() {
+            }).getBody()).getData();
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.EXTERNAL_SERVICE_FAILURE, "Exception occurred while getting user personalised plan. Exception: {}", e.getMessage(), e);
+            return defaultPlan;
+        }
+    }
+
 
     @Override
-    public boolean renewalPlanEligibility(int planId, String transactionId, String uid) {
+    public boolean renewalPlanEligibility(int planId, String transactionId, String uid, String paymentMethod) {
         try {
             RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).countryCode(CurrencyCountryUtils.findCountryCodeByPlanId(planId)).build();
             RequestEntity<RenewalPlanEligibilityRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
             });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-                long today = System.currentTimeMillis();
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+                long today = System.currentTimeMillis();
                 long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if (furtherDefer > hour * 60 * 60 * 1000) {
+                if (isDeferred(paymentMethod, furtherDefer)) {
                     recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }
@@ -164,9 +177,15 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
+    private boolean isDeferred (String paymentMethod, long furtherDefer) {
+        long oneHourWindow = (long) hour * 60 * 60 * 1000;
+        long twoDayPlusOneHourWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneHourWindow;
+        return Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);
+    }
+
     @Override
     public void subscribePlanAsync(SubscribePlanAsyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
+        if (isExternallyProvisionablePlan(request.getPlanId()) && (request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL) || request.getPaymentGateway().getId().equalsIgnoreCase(ApsConstant.APS_V2))) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanAsync flow", request.getPlanId(), request.getUid());
             return;
         }
@@ -202,7 +221,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void subscribePlanSync(SubscribePlanSyncRequest request) {
-        if (isExternallyProvisionablePlan(request.getPlanId()) && request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL)) {
+        if (isExternallyProvisionablePlan(request.getPlanId()) && (request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL) || request.getPaymentGateway().getId().equalsIgnoreCase(ApsConstant.APS_V2))) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanSync flow", request.getPlanId(), request.getUid());
             return;
         }
@@ -264,4 +283,5 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private boolean isExternallyProvisionablePlan(int planId){
         return BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).isProvisionNotRequired();
     }
+
 }

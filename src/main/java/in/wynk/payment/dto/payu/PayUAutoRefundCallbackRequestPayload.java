@@ -12,14 +12,12 @@ public class PayUAutoRefundCallbackRequestPayload extends PayUCallbackRequestPay
 
     @JsonProperty("bank_arn")
     private String bankArn;
-    @JsonProperty("bank_ref_num")
-    private String bankReference;
     @JsonProperty("request_id")
     private String requestId;
     private String token;
     private String action;
     @JsonProperty("amt")
-    private String amount;
+    private double amount;
     private String key;
     private String remark;
     private String additionalValue1;

@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 /**
- *  @purpose This service is usedto fetch the card details using card bin, this also tells whether SI is eligible on given card
+ *  @purpose This service is used to fetch the card details using card bin, this also tells whether SI is eligible on given card
  */
 @Getter
 @Builder
@@ -15,7 +15,6 @@ import lombok.ToString;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BinVerificationRequest {
     private String cardBin;
-    @Builder.Default
-    private String lob = BaseConstants.WYNK;
+    private String lob;
     private String subLob;
 }

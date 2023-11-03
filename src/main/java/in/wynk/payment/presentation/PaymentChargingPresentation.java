@@ -41,12 +41,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
+import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.APP_PACKAGE;
 import static in.wynk.payment.core.constant.PaymentConstants.DEFAULT_PN;
-import static in.wynk.payment.constant.UpiConstants.UPI_MERCHANT_CODE;
-import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
-import static in.wynk.payment.constant.UpiConstants.UPI_PAYEE_NAME;
 
 /**
  * @author Nishesh Pandey
@@ -72,6 +71,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
         delegate.put(NET_BANKING, new NetBankingChargingPresentation());
     }
 
+    @SneakyThrows
     @Override
     public WynkResponseEntity<AbstractChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -95,6 +95,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractUpiChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -160,6 +161,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractNetBankingChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -196,6 +198,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractCardChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());
@@ -240,6 +243,7 @@ public class PaymentChargingPresentation implements IPaymentPresentation<Abstrac
             delegate.put(NON_SEAMLESS_REDIRECT_FLOW, new Redirect());
         }
 
+        @SneakyThrows
         @Override
         public WynkResponseEntity<AbstractWalletChargingResponse> transform (ChargingGatewayResponseWrapper<?> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getPurchaseDetails().getPaymentDetails().getPaymentId());

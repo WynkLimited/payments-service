@@ -6,17 +6,20 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
-import in.wynk.common.dto.SessionDTO;
+import in.wynk.common.dto.*;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.session.context.SessionContextHolder;
-import in.wynk.subscription.common.dto.GeoLocation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
 
@@ -29,7 +32,7 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
 
     private String couponId;
     private AbstractProductDetails productDetails;
-
+    private AbstractPaymentDetails paymentDetails;
     @Analysed
     private GeoLocation geoLocation;
 
@@ -53,6 +56,27 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     @JsonIgnore
     public String getClient() {
         return ClientContext.getClient().map(Client::getAlias).orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+    }
+
+    @Override
+    public IPaymentDetails getPaymentDetails() {
+        return this.paymentDetails;
+    }
+
+    @Override
+    public IGeoLocation getGeoLocation() {
+        SessionDTO session = SessionContextHolder.getBody();
+        GeoLocation geoLocation = session.get(GEO_LOCATION);
+        return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
+                GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
+    }
+
+    @Override
+    public IMiscellaneousDetails getMiscellaneousDetails() {
+        SessionDTO sessionDTO= SessionContextHolder.getBody();
+        MiscellaneousDetails miscellaneousDetails= sessionDTO.get(MISCELLANEOUS_DETAILS);
+        return Objects.isNull(miscellaneousDetails) ? MiscellaneousDetails.builder().build() :
+                MiscellaneousDetails.builder().ingressIntent(miscellaneousDetails.getIngressIntent()).autoRenew(miscellaneousDetails.isAutoRenew()).build();
     }
 
 }

@@ -1,8 +1,7 @@
 package in.wynk.payment.presentation;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.IPresentation;
-import in.wynk.common.dto.IWynkPresentation;
+import in.wynk.common.dto.*;
 import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
@@ -13,6 +12,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.aps.common.HealthStatus;
 import in.wynk.payment.dto.common.*;
@@ -29,16 +29,20 @@ import in.wynk.payment.dto.response.netbanking.NetBanking;
 import in.wynk.payment.dto.response.paymentoption.*;
 import in.wynk.payment.dto.response.upi.UPI;
 import in.wynk.payment.dto.response.wallet.Wallet;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -57,11 +61,13 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
     private final PaymentCachingService payCache;
     private final PaymentGroupCachingService groupCache;
     private final PaymentMethodCachingService methodCache;
+    private final ISubscriptionServiceManager serviceManager;
 
     private final IPresentation<IProductDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> productPresentation = new ProductPresentation();
     private final IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> detailsPresentation = new SavedDetailsPresentation();
     private final IPresentation<Map<String, List<AbstractPaymentMethodDTO>>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> methodPresentation = new PaymentMethodPresentation();
 
+    @SneakyThrows
     @Override
     public PaymentOptionsDTO transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
         final FilteredPaymentOptionsResult result = payload.getSecond();
@@ -79,6 +85,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             delegate.put(BaseConstants.POINT, new ItemProductPresentation());
         }
 
+        @SneakyThrows
         @Override
         public IProductDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
             return delegate.get(payload.getFirst().getProductDetails().getType()).transform(payload);
@@ -90,7 +97,9 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             public PaymentOptionsDTO.PlanDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
                 final boolean trialEligible = payload.getSecond().isTrialEligible();
                 final String planId = payload.getFirst().getProductDetails().getId();
-                PlanDTO plan = payCache.getPlan(planId);
+                final PlanDTO fallback = payCache.getPlan(planId);
+                final UserPersonalisedPlanRequest request = UserPersonalisedPlanRequest.builder().appDetails(((in.wynk.payment.dto.AppDetails) payload.getFirst().getAppDetails()).toAppDetails()).userDetails(((UserDetails) payload.getFirst().getUserDetails()).toUserDetails(payload.getSecond().getEligibilityRequest().getUid())).geoDetails((GeoLocation) payload.getFirst().getGeoLocation()).planId(fallback.getId()).build();
+                PlanDTO plan = serviceManager.getUserPersonalisedPlanOrDefault(request, fallback);
                 OfferDTO offer = payCache.getOffer(plan.getLinkedOfferId());
                 PartnerDTO partner = payCache.getPartner(!StringUtils.isEmpty(offer.getPackGroup()) ? offer.getPackGroup() : BaseConstants.DEFAULT_PACK_GROUP.concat(offer.getService().toLowerCase()));
                 PaymentOptionsDTO.PlanDetails.PlanDetailsBuilder<?, ?> planDetailsBuilder =
@@ -146,7 +155,11 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             final Map<String, AbstractPaymentOptionInfo> optionInfoMap = payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().map(proxy -> proxy.getPaymentInstruments(payload.getFirst().getUserDetails().getMsisdn())).flatMap(Collection::stream).collect(Collectors.toMap(AbstractPaymentOptionInfo::getId, Function.identity(), (k1, k2) -> k1, LinkedHashMap::new));
             filteredMethods.forEach(method -> {
                 if (!payMap.containsKey(method.getGroup())) payMap.put(method.getGroup(), new ArrayList<>());
-                payMap.get(method.getGroup()).add((AbstractPaymentMethodDTO) delegate.get(method.getGroup()).transform(Pair.of(method, Optional.ofNullable(optionInfoMap.get(method.getPaymentId())))));
+                try {
+                    payMap.get(method.getGroup()).add((AbstractPaymentMethodDTO) delegate.get(method.getGroup()).transform(Pair.of(method, Optional.ofNullable(optionInfoMap.get(method.getPaymentId())))));
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
             });
             payMap.forEach((key, methods) -> methods.sort(Comparator.comparingInt(AbstractPaymentMethodDTO::getOrder)));
             return payMap.entrySet().stream().sorted((e1, e2) -> Integer.compare(groupCache.get(e1.getKey()).getHierarchy(), groupCache.get(e2.getKey()).getHierarchy())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1, LinkedHashMap::new));
@@ -334,7 +347,13 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
             final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
-            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> aliasToIds.containsKey(details.getId()))).map(details -> ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details))).collect(Collectors.toList());
+            return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> aliasToIds.containsKey(details.getId()))).map(details -> {
+                try {
+                    return ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details));
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+            }).collect(Collectors.toList());
         }
 
         private class UPIPresentation implements ISavedDetailsPresentation<UpiSavedDetails, UpiSavedInfo> {

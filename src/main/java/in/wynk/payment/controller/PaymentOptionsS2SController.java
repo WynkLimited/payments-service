@@ -4,9 +4,9 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.payment.dto.S2SPaymentOptionsRequest;
+import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.AbstractPreferredPaymentDetailsControllerRequest;
 import in.wynk.payment.dto.request.CombinedS2SPaymentDetailsRequest;
-import in.wynk.payment.dto.request.DefaultPaymentOptionRequest;
 import in.wynk.payment.dto.response.CombinedPaymentDetailsResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.service.IPaymentOptionService;
@@ -28,7 +28,7 @@ public class PaymentOptionsS2SController {
 
     @PostMapping("/options")
     @AnalyseTransaction(name = "paymentOptions")
-    public WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentMethods(@RequestBody DefaultPaymentOptionRequest<S2SPaymentOptionsRequest> request) {
+    public WynkResponseEntity<PaymentOptionsDTO> getFilteredPaymentMethods(@RequestBody AbstractPaymentOptionsRequest<S2SPaymentOptionsRequest> request) {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(request);
         return paymentMethodService.getFilteredPaymentOptions(request);

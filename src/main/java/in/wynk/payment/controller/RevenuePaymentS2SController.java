@@ -20,6 +20,7 @@ import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,7 @@ public class RevenuePaymentS2SController {
         return paymentManager.status(tid);
     }
 
+    @SneakyThrows
     @GetMapping("/v2/payment/status/{tid}")
     @AnalyseTransaction(name = "paymentStatusV2")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
@@ -74,6 +76,7 @@ public class RevenuePaymentS2SController {
         return response;
     }
 
+    @SneakyThrows
     @GetMapping("/v3/payment/status/{tid}")
     @AnalyseTransaction(name = "paymentStatusV3")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PAYMENT_STATUS_READ\")")
@@ -95,18 +98,6 @@ public class RevenuePaymentS2SController {
         AnalyticService.update(baseResponse.getBody());
         return baseResponse;
     }
-
-    @PostMapping("/v2/payment/refund")
-    @AnalyseTransaction(name = "initRefund")
-    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"INIT_REFUND_WRITE\")")
-    public WynkResponseEntity<AbstractPaymentRefundResponse> doRefundV2(@Valid @RequestBody PaymentRefundInitRequest request) {
-        LoadClientUtils.loadClient(true);
-        AnalyticService.update(request);
-        AbstractPaymentRefundResponse response = manager.doRefund(request);
-        AnalyticService.update(response);
-        return WynkResponseEntity.<AbstractPaymentRefundResponse>builder().data(response).build();
-    }
-
 
     @GetMapping("/v1/customer/winback/{tid}")
     @AnalyseTransaction(name = "customerWinBack")

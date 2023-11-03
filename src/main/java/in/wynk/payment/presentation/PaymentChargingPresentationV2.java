@@ -43,9 +43,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.payment.constant.FlowType.*;
-import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.dto.aps.common.ApsConstant.PAYMENT_STATUS_POLL_KEY;
+import static in.wynk.payment.dto.aps.common.ApsConstant.PAYMENT_TIMER_KEY;
 
 @Slf4j
 @Service
@@ -69,6 +70,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         delegate.put(WALLET, new WalletChargingPresentation());
     }
 
+    @SneakyThrows
     @Override
     public PaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
         final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
@@ -89,6 +91,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             upiDelegate.put(NON_SEAMLESS, new UpiNonSeamless());
         }
 
+        @SneakyThrows
         @Override
         public UpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             String flowType = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId()).getFlowType();
@@ -104,6 +107,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 upiSeamlessDelegate.put(INAPP, new UpiSeamlessCollectInApp());
             }
 
+            @SneakyThrows
             @Override
             public SeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -192,6 +196,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 upiNonSeamlessDelegate.put(COLLECT, new UpiNonSeamlessCollect());
             }
 
+            @SneakyThrows
             @Override
             public NonSeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -220,6 +225,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             cardDelegate.put(NON_SEAMLESS, new CardNonSeamless());
         }
 
+        @SneakyThrows
         @Override
         public CardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
@@ -239,6 +245,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 cardSeamlessDelegate.put(INAPP, new CardSeamlessInApp());
             }
 
+            @SneakyThrows
             @Override
             public SeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -269,6 +276,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                 cardNonSeamlessDelegate.put(HTML, new CardNonSeamlessHtmlType());
             }
 
+            @SneakyThrows
             @Override
             public NonSeamlessCardPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -305,6 +313,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
             nbDelegate.put(NON_SEAMLESS, new NetBankingNonSeamless());
         }
 
+        @SneakyThrows
         @Override
         public NetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
             final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
@@ -331,6 +340,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
                netBankingNonSeamlessDelegate.put(HTML, new NetBankingNonSeamlessHtmlType());
             }
 
+            @SneakyThrows
             @Override
             public NonSeamlessNetBankingPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                 final Payment payment = payload.getSecond().getClass().getAnnotation(Payment.class);
@@ -373,7 +383,7 @@ public class PaymentChargingPresentationV2 implements IPaymentPresentationV2<Pay
         if (!isS2S)
             pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v2.poll}")).append(SessionContextHolder.getId());
         else
-            pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v2.pollS2S}")).append(TransactionContext.get().getIdStr());
+            pollingEndpoint.append(EmbeddedPropertyResolver.resolveEmbeddedValue("${service.payment.api.endpoint.v3.pollS2S}")).append(TransactionContext.get().getIdStr());
         return PollingConfig.builder().interval(interval).frequency(timer / interval).timeout(timer).endpoint(pollingEndpoint.toString()).build();
     }
 }

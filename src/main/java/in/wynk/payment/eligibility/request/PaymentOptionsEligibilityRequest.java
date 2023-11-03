@@ -2,6 +2,7 @@ package in.wynk.payment.eligibility.request;
 
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.eligibility.dto.IEligibilityRequest;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.AbstractPaymentOptionInfo;
 import in.wynk.payment.dto.common.AbstractSavedInstrumentInfo;
@@ -34,11 +35,27 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
 
     private final int buildNo;
 
+    private final Map<String, Integer> msisdnRangeProbability = new HashMap<>();
+
     private final PaymentOptionsEligibilityRequestProxy paymentOptionsEligibilityRequestProxy;
     private final Map<String, AbstractPaymentInstrumentsProxy<AbstractPaymentOptionInfo, AbstractSavedInstrumentInfo>> payInstrumentProxyMap = new HashMap<>();
 
     @Setter
     private String group;
+
+    public Integer getMsisdnRangeProbability () {
+        if (msisdnRangeProbability.containsKey(msisdn)) {
+            return msisdnRangeProbability.get(msisdn);
+        }
+        long sum = findSumOfDigits(Long.valueOf(msisdn.replace("+91", "")));
+        int probability = ((int) sum) % 10;
+        msisdnRangeProbability.put(msisdn, probability);
+        return probability;
+    }
+
+    private long findSumOfDigits (Long msisdn) {
+        return msisdn == 0 ? 0 : msisdn % 10 + findSumOfDigits(msisdn / 10);
+    }
 
     public AbstractPaymentInstrumentsProxy getPaymentInstrumentsProxy(String payCode) {
         if (Objects.nonNull(payInstrumentProxyMap) && payInstrumentProxyMap.containsKey(payCode))
@@ -53,7 +70,7 @@ public abstract class PaymentOptionsEligibilityRequest implements IEligibilityRe
         final ItemDTO itemDTO = computationDTO.getItemDTO();
         if (Objects.nonNull(planDTO)) {
             PaymentOptionsPlanEligibilityRequest.PaymentOptionsPlanEligibilityRequestBuilder builder = PaymentOptionsPlanEligibilityRequest.builder().client(computationDTO.getClient());
-            builder.planId(String.valueOf(planDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(planDTO.getService()).os(computationDTO.getOs());
+            builder.planId(String.valueOf(planDTO.getId())).appId(computationDTO.getAppId()).buildNo(computationDTO.getBuildNo()).countryCode(computationDTO.getCountryCode()).couponCode(computationDTO.getCouponCode()).service(planDTO.getService()).os(computationDTO.getOs()).uid(IdentityUtils.getUidFromUserName(computationDTO.getMsisdn(), computationDTO.getPlanDTO().getService()));
             if (StringUtils.isNotEmpty(computationDTO.getMsisdn())) builder.msisdn(computationDTO.getMsisdn());
             if (computationDTO.getCountryCode() == null) {
                 builder.countryCode(WynkServiceUtils.fromServiceId(planDTO.getService()).getDefaultCountryCode());

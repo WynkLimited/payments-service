@@ -16,11 +16,13 @@ import in.wynk.payment.dto.request.charge.netbanking.NetBankingPaymentDetails;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.charge.wallet.WalletPaymentDetails;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 
 import static in.wynk.payment.constant.CardConstants.CARD;
 import static in.wynk.payment.constant.NetBankingConstants.NET_BANKING;
@@ -28,6 +30,7 @@ import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.constant.WalletConstants.WALLET;
 
 @Getter
+@Setter
 @SuperBuilder
 @AnalysedEntity
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMode", visible = true, defaultImpl = PaymentDetails.class)
@@ -37,7 +40,7 @@ import static in.wynk.payment.constant.WalletConstants.WALLET;
         @JsonSubTypes.Type(value = WalletPaymentDetails.class, name = WALLET),
         @JsonSubTypes.Type(value = NetBankingPaymentDetails.class, name =  NET_BANKING)
 })
-public abstract class AbstractPaymentDetails implements IPaymentDetails {
+public abstract class AbstractPaymentDetails implements IPaymentDetails, Serializable {
 
     @Analysed
     @MongoBaseEntityConstraint(beanName = CacheBeanNameConstants.COUPON)
@@ -58,15 +61,19 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails {
     private boolean autoRenew;
 
     @Analysed
+    private boolean mandate;
+
+    @Analysed
     private boolean trialOpted;
 
-    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted) {
+    public AbstractPaymentDetails(String couponId, @NotNull String paymentId, String paymentMode, String merchantName, boolean autoRenew, boolean trialOpted, boolean mandate) {
         this.couponId = couponId;
         this.paymentId = paymentId;
         this.paymentMode = paymentMode;
         this.merchantName = merchantName;
         this.autoRenew = autoRenew;
         this.trialOpted = trialOpted;
+        this.mandate = mandate;
     }
 
     @PersistenceConstructor

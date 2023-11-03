@@ -12,9 +12,8 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
-import in.wynk.payment.dto.payu.PayUAutoRefundCallbackRequestPayload;
-import in.wynk.payment.dto.payu.PayUCallbackRequestPayload;
-import in.wynk.payment.dto.payu.PayUConstants;
+import in.wynk.payment.dto.payu.*;
+import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.PropertyResolverUtils;
@@ -24,10 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -101,7 +97,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             @Override
             public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncChargingTransactionFromSource(transaction);
+                common.syncTransactionWithSourceResponse(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                     Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                     if (optionalDetails.isPresent()) {
@@ -130,8 +126,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             @Override
             public AbstractPaymentCallbackResponse handle(PayUAutoRefundCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncRefundTransactionFromSource(transaction, request.getRequestId());
-                // if an auto refund transaction is successful after recon from payu then transaction status should be marked as auto refunded
+                common.syncTransactionWithSourceResponse(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
                 if (transaction.getStatus() == TransactionStatus.SUCCESS)
                     transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
                 return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();

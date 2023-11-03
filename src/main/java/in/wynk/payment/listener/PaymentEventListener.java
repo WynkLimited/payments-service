@@ -8,6 +8,9 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.Message;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -17,41 +20,53 @@ import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
-import in.wynk.exception.WynkErrorType;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.MerchantTransaction;
-import in.wynk.payment.core.dao.entity.PaymentError;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
+import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.InvoiceRetryTask;
 import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.dto.request.ClientCallbackRequest;
 import in.wynk.payment.dto.request.PaymentSettlementRequest;
+import in.wynk.payment.dto.request.WhatsappSessionDetails;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
+import in.wynk.payment.event.WaPayStateRespEvent;
+import in.wynk.payment.event.common.*;
 import in.wynk.payment.handler.CustomerWinBackHandler;
+import in.wynk.payment.handler.InvoiceRetryTaskHandler;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.TaxUtils;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
-import in.wynk.stream.producer.IEventPublisher;
+import in.wynk.sms.common.message.SmsNotificationMessage;
+import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.stream.producer.IKinesisEventPublisher;
-import in.wynk.stream.producer.impl.KinesisEventPublisher;
+import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.tinylytics.utils.AppUtils;
+import in.wynk.wynkservice.api.utils.WynkServiceUtils;
+import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
-
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -69,18 +84,31 @@ import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPS
 @Service
 @RequiredArgsConstructor
 public class PaymentEventListener {
+    private final TaxUtils taxUtils;
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
-    private final ITaskScheduler taskScheduler;
-    private final ISqsManagerService sqsManagerService;
+    private final ITaskScheduler<TaskDefinition<?>> taskScheduler;
+    private final ISqsManagerService<Object> sqsManagerService;
     private final IPaymentErrorService paymentErrorService;
     private final ApplicationEventPublisher eventPublisher;
     private final IClientCallbackService clientCallbackService;
     private final ITransactionManagerService transactionManagerService;
     private final IMerchantTransactionService merchantTransactionService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final PaymentCachingService cachingService;
+    private final IQuickPayLinkGenerator quickPayLinkGenerator;
+    private final InvoiceService invoiceService;
+    private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
+    private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
+    private final InvoiceDetailsCachingService invoiceDetailsCachingService;
+    private final ClientDetailsCachingService clientDetailsCachingService;
+
     @Value("${event.stream.dp}")
     private String dpStream;
+
+    @Value("${wynk.kafka.producers.payment.status.topic}")
+    private String waPayStateRespEventTopic;
 
 
     @EventListener
@@ -142,6 +170,7 @@ public class PaymentEventListener {
                 .id(event.getId())
                 .externalTransactionId(event.getExternalTransactionId())
                 .request(event.getRequest())
+                .orderId(event.getOrderId())
                 .response(event.getResponse())
                 .build()
         ));
@@ -157,6 +186,110 @@ public class PaymentEventListener {
                 .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
                 .description(Objects.nonNull(event.getDescription()) && event.getDescription().length() > 255 ? event.getDescription().substring(0, Math.min(event.getDescription().length(), 255)) : "No description found")
                 .build()));
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "invoiceEvent")
+    public void onInvoiceEvent(InvoiceEvent event) {
+        AnalyticService.update(event);
+        AnalyticService.update(INVOICE_ID, event.getInvoice().getId());
+        AnalyticService.update(TRANSACTION_ID, event.getInvoice().getTransactionId());
+        AnalyticService.update("invoiceExternalId", event.getInvoice().getInvoiceExternalId());
+        AnalyticService.update("amount", event.getInvoice().getAmount());
+        AnalyticService.update("taxAmount", event.getInvoice().getTaxAmount());
+        AnalyticService.update("taxableValue", event.getInvoice().getTaxableValue());
+        AnalyticService.update("cgst", event.getInvoice().getCgst());
+        AnalyticService.update("sgst", event.getInvoice().getSgst());
+        AnalyticService.update("igst", event.getInvoice().getIgst());
+        AnalyticService.update("customerAccountNo", event.getInvoice().getCustomerAccountNumber());
+        AnalyticService.update("status", event.getInvoice().getStatus());
+        AnalyticService.update("description", event.getInvoice().getDescription());
+        AnalyticService.update("createdOn", event.getInvoice().getCreatedOn().getTimeInMillis());
+        if (Objects.nonNull(event.getInvoice().getUpdatedOn())) {
+            AnalyticService.update("updatedOn", event.getInvoice().getUpdatedOn().getTime().getTime());
+        }
+        AnalyticService.update("retryCount", event.getInvoice().getRetryCount());
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "scheduleInvoiceRetryEvent")
+    public void onInvoiceRetryEvent(InvoiceRetryEvent event) {
+        try {
+            AnalyticService.update(event);
+            int retryCount = event.getRetryCount();
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
+            if(Objects.nonNull(invoice)){
+                retryCount = invoice.getRetryCount();
+            }
+            if(retryCount < event.getRetries().size()){
+                final long attemptDelayedBy = event.getRetries().get(retryCount);
+                final Date taskScheduleTime = new Date(System.currentTimeMillis() + (attemptDelayedBy * 1000));
+                taskScheduler.schedule(TaskDefinition.<InvoiceRetryTask>builder()
+                        .entity(InvoiceRetryTask.from(event))
+                        .handler(InvoiceRetryTaskHandler.class)
+                        .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
+                                .durable(false)
+                                .startAt(taskScheduleTime)
+                                .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0))
+                                .build())
+                        .build());
+            }
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.INVOICE_SCHEDULE_RETRY_FAILURE, "Unable to schedule the invoice retry due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY448, e);
+        }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "triggerInvoiceRetryEvent")
+    public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
+        try{
+            AnalyticService.update(event);
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId());
+            if (Objects.nonNull(invoice)){
+                if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+                    final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
+                            .msisdn(event.getMsisdn())
+                            .txnId(event.getTransactionId())
+                            .clientAlias(event.getClientAlias())
+                            .build();
+                    eventPublisher.publishEvent(generateInvoiceEvent);
+                    invoice.setRetryCount(invoice.getRetryCount() + 1);
+                    invoice.persisted();
+                    invoiceService.upsert(invoice);
+
+                    final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
+                    if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                        eventPublisher.publishEvent(InvoiceRetryEvent.builder()
+                                .msisdn(event.getMsisdn())
+                                .clientAlias(event.getClientAlias())
+                                .txnId(event.getTransactionId())
+                                .retries(invoiceDetails.getRetries())
+                                .retryCount(event.getRetryCount() + 1).build());
+                    };
+                }
+            } else {
+                final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
+                        .msisdn(event.getMsisdn())
+                        .txnId(event.getTransactionId())
+                        .clientAlias(event.getClientAlias())
+                        .build();
+                eventPublisher.publishEvent(generateInvoiceEvent);
+
+                final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
+                if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                    eventPublisher.publishEvent(InvoiceRetryEvent.builder()
+                            .msisdn(event.getMsisdn())
+                            .clientAlias(event.getClientAlias())
+                            .txnId(event.getTransactionId())
+                            .retries(invoiceDetails.getRetries())
+                            .retryCount(event.getRetryCount() + 1).build());
+                }
+            }
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.INVOICE_TRIGGER_RETRY_FAILURE, "Unable to trigger the invoice retry due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY449, e);
+        }
     }
 
     @EventListener
@@ -193,8 +326,108 @@ public class PaymentEventListener {
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onPurchaseInit(PurchaseInitEvent purchaseInitEvent) {
-        dropOutTracker(PurchaseRecord.from(purchaseInitEvent));
+    @AnalyseTransaction(name = "purchaseInitEvent")
+    public void onPurchaseInitEvent(PurchaseInitEvent event) {
+        try {
+            AnalyticService.update(event);
+            PurchaseRecord purchaseRecord = PurchaseRecord.from(event);
+            final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+            if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
+                taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
+            }
+            final long delayedBy = (clientDetails.<Double>getMeta(PaymentConstants.PAYMENT_DROPOUT_TRACKER_IN_SECONDS).orElse(3600D)).longValue();
+            final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy));
+            taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder()
+                    .entity(purchaseRecord)
+                    .handler(CustomerWinBackHandler.class)
+                    .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
+                            .durable(false)
+                            .startAt(taskScheduleTime)
+                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0))
+                            .build())
+                    .build());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to schedule the drop out notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
+        }
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "purchaseRecordEvent")
+    public void onPurchaseRecordEvent(PurchaseRecordEvent event) {
+        try{
+            AnalyticService.update(event);
+            final Transaction lastTransaction = transactionManagerService.get(event.getTransactionId());
+            final boolean sendDropOutNotification = lastTransaction.getStatus() != TransactionStatus.SUCCESS;
+            if (!sendDropOutNotification){
+                log.info("Skipping to send drop out notification as user has completed transaction for {}", event);
+                return;
+            }
+            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransactionId(), event.getClientAlias(), event.getSid(), event.getAppDetails(), event.getProductDetails());
+            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
+            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), lastTransaction.getStatus());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to trigger the drop out notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
+        }
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "paymentAutoRefundEvent")
+    public void onPaymentAutoRefundEvent(PaymentAutoRefundEvent event) {
+        try{
+            AnalyticService.update(event);
+            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
+            AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
+            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY048, e);
+        }
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "generateInvoiceEvent")
+    public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
+        try{
+            AnalyticService.update(event);
+            final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
+            if(Objects.isNull(invoice)){
+                final Transaction transaction = transactionManagerService.get(event.getTxnId());
+                final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+                final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event, clientAlias));
+            }
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the generate invoice event in kafka due to {}", e.getMessage(), e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY452, e);
+        }
+    }
+
+    private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
+        final PlanDTO plan = cachingService.getPlan(productDetails.getId());
+        final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
+        final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
+        final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
+        if(message.isEnabled()){
+            Map<String, Object> contextMap = new HashMap<String, Object>() {{
+                put(PLAN, plan);
+                put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
+                put(WINBACK_NOTIFICATION_URL, tinyUrl);
+            }};
+            SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
+                    .messageId(message.getMessageId())
+                    .msisdn(msisdn)
+                    .service(service)
+                    .contextMap(contextMap)
+                    .build();
+            sqsManagerService.publishSQSMessage(notificationMessage);
+        } else {
+            log.info("Skipping to send drop out notification for msisdn {} as it has been disabled", msisdn);
+        }
     }
 
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
@@ -211,22 +444,6 @@ public class PaymentEventListener {
         }
     }
 
-    @ClientAware(clientAlias = "#purchaseRecord.clientAlias")
-    private void dropOutTracker(PurchaseRecord purchaseRecord) {
-        try {
-            final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
-            if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
-                taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
-            }
-            final long delayedBy = clientDetails.<Long>getMeta(PaymentConstants.PAYMENT_DROPOUT_DELAY_KEY).orElse(3600L);
-            taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder().entity(purchaseRecord).handler(CustomerWinBackHandler.class).triggerConfiguration(
-                    TaskDefinition.TriggerConfiguration.builder().startAt(new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy)))
-                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0)).build()).build());
-        } catch (Exception e) {
-            log.error(WynkErrorType.UT999.getMarker(), "something went wrong while scheduling task due to {}", e.getMessage(), e);
-        }
-    }
-
     @EventListener
     @AnalyseTransaction(name = "paymentSettlement")
     public void onPaymentSettlementEvent(PaymentSettlementEvent event) {
@@ -239,7 +456,6 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
         try {
-            //AnalyticService.update(event); //todo: can be removed as PaymentUserDeactivationMessage is already updated earlier
             transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid(), event.getService());
         } catch (Exception e) {
             throw new WynkRuntimeException(UT999, e);
@@ -299,10 +515,80 @@ public class PaymentEventListener {
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
             final BaseTDRResponse tdr = paymentManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
+            if(event.getTransaction().getPaymentChannel().isInvoiceSupported()){
+                eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                        .msisdn(event.getTransaction().getMsisdn())
+                        .txnId(event.getTransaction().getIdStr())
+                        .clientAlias(event.getTransaction().getClientAlias())
+                        .build());
+            }
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
+        if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
+            eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
+                    .transaction(event.getTransaction())
+                    .clientAlias(event.getTransaction().getClientAlias())
+                    .purchaseDetails(event.getPurchaseDetails())
+                    .build());
+        }
         publishBranchEvent(event);
+        if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
+            publishWaPaymentStatusEvent(event);
+        }
+    }
+
+    public void publishWaPaymentStatusEvent(TransactionSnapshotEvent event) {
+        final IPurchaseDetails purchaseDetails = event.getPurchaseDetails();
+        if (purchaseDetails != null && purchaseDetails.getSessionDetails() != null && WhatsappSessionDetails.class.isAssignableFrom(purchaseDetails.getSessionDetails().getClass())) {
+            final WhatsappSessionDetails waSessionDetails = (WhatsappSessionDetails) purchaseDetails.getSessionDetails();
+            final List<Header> headers = new ArrayList() {{
+                add(new RecordHeader(BaseConstants.ORG_ID, waSessionDetails.getOrgId().getBytes()));
+                add(new RecordHeader(BaseConstants.SESSION_ID, waSessionDetails.getSessionId().getBytes()));
+                add(new RecordHeader(BaseConstants.SERVICE_ID, waSessionDetails.getServiceId().getBytes()));
+                add(new RecordHeader(BaseConstants.REQUEST_ID, waSessionDetails.getRequestId().getBytes()));
+            }};
+
+            final PlanDTO selectedPlan = cachingService.getPlan(event.getTransaction().getPlanId());
+            final WaPayStateRespEvent.WaPayStateRespEventBuilder builder = WaPayStateRespEvent.builder()
+                    .sessionId(waSessionDetails.getSessionId())
+                    .to(waSessionDetails.getFrom())
+                    .from(waSessionDetails.getTo())
+                    .campaignId(waSessionDetails.getCampaignId())
+                    .planDetails(EligiblePlanDetails.builder()
+                            .title(selectedPlan.getTitle())
+                            .id(String.valueOf(selectedPlan.getId()))
+                            .description(selectedPlan.getDescription())
+                            .priceDetails(PriceDetails.builder().currency(selectedPlan.getPrice().getCurrency()).price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
+                            .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
+                            .build());
+
+            if (TransactionStatus.SUCCESS == event.getTransaction().getStatus()) {
+                builder.orderDetails(WaOrderDetails.builder()
+                        .taxDetails(TaxDetails.builder().value(taxUtils.calculateTax(event.getTransaction())).build())
+                        .mandate(event.getTransaction().getMandateAmount() > -1)
+                        .mandateAmount(event.getTransaction().getMandateAmount())
+                        .status(event.getTransaction().getStatus().getValue())
+                        .discount(event.getTransaction().getDiscount())
+                        .event(event.getTransaction().getType().getValue())
+                        .code(event.getPurchaseDetails().getPaymentDetails().getPaymentId())
+                        .pgCode(event.getTransaction().getPaymentChannel().getCode())
+                        .amount(event.getTransaction().getAmount())
+                        .trial(event.getPurchaseDetails().getPaymentDetails().isTrialOpted())
+                        .id(event.getTransaction().getIdStr())
+                        .build());
+            } else {
+                PaymentError paymentError = paymentErrorService.getPaymentError(event.getTransaction().getIdStr());
+                builder.orderDetails(WaFailedOrderDetails.builder()
+                        .id(event.getTransaction().getIdStr())
+                        .status(event.getTransaction().getStatus().getValue())
+                        .event(event.getTransaction().getType().getValue())
+                        .errorCode("PAY001")
+                        .errorMessage(Objects.nonNull(paymentError) ? paymentError.getDescription(): "Transaction is failed")
+                        .build());
+            }
+            paymentStatusKafkaPublisher.publish(waPayStateRespEventTopic, null, System.currentTimeMillis(), null, builder.build(), headers);
+        }
     }
 
     @EventListener
@@ -312,6 +598,14 @@ public class PaymentEventListener {
             map.putAll(branchMeta((EventsWrapper) event.getData()));
             publishBranchEvent(map, event.getEventName());
         }
+    }
+
+
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @EventListener(UnScheduleRecurringPaymentEvent.class)
+    private void unScheduleTransactionRecurring(UnScheduleRecurringPaymentEvent event) {
+        AnalyticService.update(event);
+        recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);
     }
 
     private void publishBranchEvent(Map<String, Object> meta, String event) {

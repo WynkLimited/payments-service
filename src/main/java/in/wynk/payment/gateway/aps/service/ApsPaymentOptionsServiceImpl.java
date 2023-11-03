@@ -71,7 +71,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
 
         @Override
         public List<AbstractPaymentOptionInfo> getPaymentInstruments(String userId) {
-            if (Objects.nonNull(payOptionsCache)) return payOptionsCache;
+            if (Objects.nonNull(payOptionsCache) && payOptionsCache.size() > 0) return payOptionsCache;
             final List<AbstractPaymentOptionInfo> payInfoList = new ArrayList<>();
             if (Objects.nonNull(response) && !CollectionUtils.isEmpty(response.getPayOptions())) {
                 response.getPayOptions().forEach(option -> {
@@ -102,7 +102,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
 
         @Override
         public List<AbstractSavedInstrumentInfo> getSavedDetails(String userId) {
-            if (Objects.nonNull(savedInstrumentCache)) return savedInstrumentCache;
+            if (Objects.nonNull(savedInstrumentCache) && savedInstrumentCache.size() > 0) return savedInstrumentCache;
             final List<AbstractSavedInstrumentInfo> savedDetails = new ArrayList<>();
             if (Objects.nonNull(response) && Objects.nonNull(response.getSavedUserOptions()) && !CollectionUtils.isEmpty(response.getSavedUserOptions().getPayOptions())) {
                 response.getSavedUserOptions().getPayOptions().forEach(savedOption -> {
@@ -230,7 +230,7 @@ public class ApsPaymentOptionsServiceImpl implements IPaymentInstrumentsProxy<Pa
     private PaymentOptionsResponse payOption(String msisdn, String clientAlias) {
         final PaymentOptionRequest request = PaymentOptionRequest.builder().build();
         try {
-            return common.exchange(clientAlias, PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, common.getLoginId(msisdn), request, PaymentOptionsResponse.class);
+            return common.exchange(clientAlias, PAYMENT_OPTION_ENDPOINT, HttpMethod.POST, msisdn, request, PaymentOptionsResponse.class);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.APS_API_FAILURE, "Unable to fetch eligibility from APS", e);
             return new PaymentOptionsResponse();

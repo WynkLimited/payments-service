@@ -11,8 +11,8 @@ public enum PaymentsEligibilityReason implements IEligibilityStatusReason {
     INVALID_COUPON,
     NOT_IN_PLAN_LIST,
     NOT_EXTERNAL_ELIGIBLE,
-    NOT_IN_ITEM_LIST
-    ;
+    NOT_IN_ITEM_LIST,
+    MSISDN_NOT_IN_RANGE;
 
     @Override
     public String getCode() {

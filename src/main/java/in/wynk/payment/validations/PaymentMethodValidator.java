@@ -1,5 +1,6 @@
 package in.wynk.payment.validations;
 
+
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
@@ -18,6 +19,7 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY601;
+
 
 public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> extends BaseHandler<T> {
     @Override
@@ -43,7 +45,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
                 .entity(paymentMethod)
                 .build();
         EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
-        if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
+       if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
         super.handle(request);
     }
 }

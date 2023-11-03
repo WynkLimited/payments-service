@@ -2,6 +2,7 @@ package in.wynk.payment.service;
 
 import in.wynk.payment.dto.request.*;
 import in.wynk.subscription.common.dto.*;
+import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 
 import java.util.Collection;
@@ -17,7 +18,7 @@ public interface ISubscriptionServiceManager {
         }
     }
 
-    boolean renewalPlanEligibility(int planId, String transactionId, String uid);
+    boolean renewalPlanEligibility(int planId, String transactionId, String uid, String paymentMethod);
 
     default void unSubscribePlan(AbstractUnSubscribePlanRequest request) {
         if (UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
@@ -46,5 +47,7 @@ public interface ISubscriptionServiceManager {
     List<PartnerDTO> getPartners();
 
     List<ProductDTO> getProducts();
+
+    PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan);
 
 }

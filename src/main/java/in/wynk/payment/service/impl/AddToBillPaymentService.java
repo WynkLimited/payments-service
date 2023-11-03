@@ -49,6 +49,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -104,7 +105,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         final String modeId = userBillingDetail.getBillingSiDetail().getLob().equalsIgnoreCase(POSTPAID) ? MOBILITY : TELEMEDIA;
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
-        final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(transaction.getPlanId().toString(), userBillingDetail.getSi());
+        final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(transaction.getPlanId().toString(), userBillingDetail.getSi(), request.getAppId());
         try {
             Map<String, Object> serviceOrderMeta = new HashMap<>();
             serviceOrderMeta.put(TXN_ID, transaction.getIdStr());
@@ -143,7 +144,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     }
 
     @Cacheable(cacheName = "AddToBillEligibilityCheck", cacheKey = "'addToBill-eligibility:' + #planId + ':' + #si", l2CacheTtl = 60 * 30, cacheManager = L2CACHE_MANAGER)
-    private CatalogueEligibilityAndPricingResponse getEligibility(String planId, String si) {
+    private CatalogueEligibilityAndPricingResponse getEligibility(String planId, String si, String appId) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
             final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
@@ -152,7 +153,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 return null;
             } else {
                 final CatalogueEligibilityAndPricingRequest request = CatalogueEligibilityAndPricingRequest.builder().serviceIds(Collections.singletonList(plan.getSku().get(ATB))).skuGroupId(offer.getServiceGroupId()).si(si).channel(DTH).pageIdentifier(DETAILS).isBundle(offer.isThanksBundle()).build();
-                final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request, Boolean.TRUE);
+                final CatalogueEligibilityAndPricingResponse response = catalogueVasClientService.getEligibility(request, Boolean.TRUE, appId);
                 return response;
             }
         } catch (Exception e) {
@@ -170,7 +171,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     public WynkResponseEntity<UserAddToBillDetails> getUserPreferredPayments(PreferredPaymentDetailsRequest<?> request) {
         WynkResponseEntity.WynkResponseEntityBuilder<UserAddToBillDetails> builder = WynkResponseEntity.builder();
         if (StringUtils.isNotBlank(request.getSi())) {
-            final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(request.getProductDetails().getId(), request.getSi());
+            final UserAddToBillDetails userAddToBillDetails = getLinkedSisAndPricingDetails(request.getProductDetails().getId(), request.getSi(), "");
             if (Objects.nonNull(userAddToBillDetails)) {
                 return builder.data(userAddToBillDetails).build();
             }
@@ -179,10 +180,10 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         return WynkResponseEntity.<UserAddToBillDetails>builder().error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).data(null).success(false).build();
     }
 
-    private UserAddToBillDetails getLinkedSisAndPricingDetails(String planId, String si) {
+    private UserAddToBillDetails getLinkedSisAndPricingDetails(String planId, String si, String appId) {
         try {
             final PlanDTO plan = cachingService.getPlan(planId);
-            final CatalogueEligibilityAndPricingResponse response = this.getEligibility(planId, si);
+            final CatalogueEligibilityAndPricingResponse response = this.getEligibility(planId, si, appId);
             if (Objects.nonNull(response)) {
                 for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
                     if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
@@ -208,13 +209,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             } else if (Objects.nonNull(response) && response.isSuccess() && !response.getBody().getOrdersList().isEmpty()) {
                 for (CatalogueOrder order : response.getBody().getOrdersList()) {
                     if (plan.getSku().get(ATB).equalsIgnoreCase(order.getServiceId()) && order.getOrderMeta().containsKey(TXN_ID) && order.getOrderMeta().get(TXN_ID).toString().equals(transaction.getIdStr())) {
-                        if ((order.getOrderStatus().equalsIgnoreCase(COMPLETED.name()) && order.getEndDate().after(new Date()) && order.getServiceStatus().equalsIgnoreCase(ACTIVE))
-                                || (order.getOrderStatus().equalsIgnoreCase(DEFERRED_COMPLETED.name()) && order.getEndDate().after(new Date()))) {
+                        if (Objects.nonNull(order.getEndDate()) && ((COMPLETED.name().equalsIgnoreCase(order.getOrderStatus()) && order.getEndDate().after(new Date()) && ACTIVE.equalsIgnoreCase(order.getServiceStatus()))
+                                || (DEFERRED_COMPLETED.name().equalsIgnoreCase(order.getOrderStatus()) && order.getEndDate().after(new Date())))) {
                             finalTransactionStatus = TransactionStatus.SUCCESS;
                             transaction.setStatus(finalTransactionStatus.getValue());
                             log.info("ATB order status success: {}, for provisionSi: {}, loggedInSi: {} ,service: {} and endDate is: {}", true, order.getSi(), order.getLoggedInSi(), order.getServiceId(), order.getEndDate());
                             return;
-                        } else if (order.getOrderStatus().equalsIgnoreCase(ATBOrderStatus.FAILED.name())) {
+                        } else if (ATBOrderStatus.FAILED.name().equalsIgnoreCase(order.getOrderStatus())) {
                             finalTransactionStatus = TransactionStatus.FAILURE;
                             transaction.setStatus(finalTransactionStatus.getValue());
                             log.info("ATB order status success: {}, for provisionSi: {}, loggedInSi: {} and service: {}", false, order.getSi(), order.getLoggedInSi(), order.getServiceId());
@@ -337,7 +338,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     public AbstractPaymentInstrumentsProxy<?, ?> load(PaymentOptionsPlanEligibilityRequest request) {
-        return new BillPaymentInstrumentsProxy(request.getPlanId(), request.getSi());
+        return new BillPaymentInstrumentsProxy(request.getPlanId(), request.getSi(), request.getAppId());
     }
 
     @Getter
@@ -348,10 +349,10 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         private final List<BillingSavedInfo> billingSavedInfoCache;
         private final CatalogueEligibilityAndPricingResponse response;
 
-        public BillPaymentInstrumentsProxy(String planId, String si) {
+        public BillPaymentInstrumentsProxy(String planId, String si, String appId) {
             super();
             this.planId = planId;
-            this.response = getEligibility(planId, si);
+            this.response = getEligibility(planId, si, appId);
             this.billingSavedInfoCache = getSavedDetails(si);
             this.billingOptionCache = getPaymentInstruments(si);
         }

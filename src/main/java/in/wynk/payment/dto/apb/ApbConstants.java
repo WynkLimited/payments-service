@@ -20,5 +20,4 @@ public interface ApbConstants {
     String MERCHANT_NAME = "MNAME";
     String ECOMM_INQ = "ECOMM_INQ";
     String LANG_ID = "001";
-    String APS_VERIFY_TRANSACTION_SUCCESS="TXN_SUCCESS";
 }

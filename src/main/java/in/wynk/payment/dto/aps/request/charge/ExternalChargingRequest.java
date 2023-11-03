@@ -1,10 +1,8 @@
 package in.wynk.payment.dto.aps.request.charge;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.aps.common.AbstractPaymentInfo;
-import in.wynk.payment.dto.aps.common.ChannelInfo;
-import in.wynk.payment.dto.aps.common.UserInfo;
+import in.wynk.payment.dto.aps.common.AbstractUserInfo;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -27,17 +25,10 @@ public class ExternalChargingRequest<T extends AbstractPaymentInfo> {
     /**
      * User Info
      */
-    private UserInfo userInfo;
+    private AbstractUserInfo userInfo;
 
     /**
      * Redirection info
      */
     private ChannelInfo channelInfo;
-
-    /**
-     * Send this flag as false in case of bill payment otherwise false for other/dummy transactions.
-     */
-    @Builder.Default
-    @JsonProperty("isBillPayment")
-    private boolean billPayment = false;
 }

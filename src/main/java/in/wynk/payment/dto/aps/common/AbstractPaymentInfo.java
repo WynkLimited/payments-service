@@ -1,6 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
-import in.wynk.common.constant.BaseConstants;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -19,7 +19,7 @@ public abstract class AbstractPaymentInfo {
      * LOB_AUTO_PAY_REGISTER for mandate creation and SI_WYNK for renewal
      */
     @Builder.Default
-    private String lob = BaseConstants.WYNK;
+    private String lob = LOB.WYNK.toString();
     /**
      * Static Value - INR
      */
@@ -49,4 +49,11 @@ public abstract class AbstractPaymentInfo {
      * Mandate end date in epoch time format
      */
     private long paymentEndDate;
+
+    /**
+     * Send this flag as true in case of bill payment(AUTO Pay case) otherwise false for penny drop and paymentAmount will be refunded in case of penny drop.
+     */
+    @Builder.Default
+    @JsonProperty("isBillPayment")
+    private boolean billPayment = true;
 }

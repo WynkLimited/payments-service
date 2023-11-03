@@ -224,26 +224,45 @@ payment:
       secret: Og9SHBgPVp6f5mmglzxUuI_kLfBUzF2gyyQLIG3jNTE=
       api:
         base: http://intpay.india.airtel.itm
+      paydigi:
+        api:
+          base: https://paydigi.airtel.in
       encryption:
         key: file:///opt/public.key
       airtelxstream:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
         encryption:
           key: file:///opt/public.key
       music:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
         encryption:
           key: file:///opt/public.key
       webviewclient:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
         encryption:
           key: file:///opt/public.key
       subscriptionApi:
-        id: payment
-        secret: pay@qckslvr
+        intpay:
+          id: wynk
+          secret: gSrpM1rOTzV0c4P4
+        paydigi:
+          id: payment
+          secret: pay@qckslvr
         encryption:
           key: file:///opt/public.key
     payu:
@@ -453,7 +472,7 @@ http:
         connection:
           max: 500
           maxPerHost: 200
-          timeout: 1500
+          timeout: 2500
           defaultKeepAliveTime: 30000
           closeIdleWaitTime: 1000
           validateAfterInActivity: 100
@@ -462,22 +481,22 @@ http:
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 2000
     externalServiceTemplate:
       pool:
         connection:
           max: 20
           maxPerHost: 20
-          timeout: 1000
+          timeout: 2000
           defaultKeepAliveTime: 30000
           closeIdleWaitTime: 1000
           validateAfterInActivity: 100
           socket:
-            timeout: 300
+            timeout: 1000
             factory:
               type: both
           request:
-            timeout: 500
+            timeout: 1000
 
 service:
   subscription:
@@ -497,7 +516,89 @@ webview:
 ########### MONGO CONFIG ###########
 wynk:
   kafka:
-    enabled: false
+    enabled: true
+    nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+    producers:
+      invoice:
+        generate:
+          topic: wcf_prod.generate_invoice
+        inform:
+          topic: wcf_prod.inform_invoice_generate
+      payment:
+        charge:
+          topic: wcf_prod.pay_link_resp
+        status:
+          topic: wcf_prod.pay_state_resp
+        retry:
+          topic: wcf_prod.pay_state_retry_resp
+        dlt:
+          topic: wcf_prod.pay_state_dlt_resp
+    consumers:
+      enabled: true
+      listenerFactory:
+        invoice:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_prod.generate_invoice
+              valueDeserializer: in.wynk.payment.consumer.InvoiceGeneratorKafkaSerializer
+            name: GENERATE_INVOICE_BEAN
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_prod.inform_invoice_state
+              valueDeserializer: in.wynk.payment.consumer.InvoiceCallbackKafkaSerializer
+            name: INVOICE_CALLBACK_BEAN
+        payment:
+          charge:
+            - concurrency: 3
+              enabled: true
+              factoryDetails:
+                autoCommitInterval: 100
+                autoOffsetConfig: earliest
+                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                enableAutoCommit: true
+                groupId: group1
+                keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+                maxPollInterval: 600000
+                maxPollRecords: 50
+                sessionTimeout: 180000
+                topic: wcf_prod.pay_link_req
+                valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
+              name: PAYMENT_CHARGE_BEAN
+            - concurrency: 3
+              enabled: true
+              factoryDetails:
+                autoCommitInterval: 100
+                autoOffsetConfig: earliest
+                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                enableAutoCommit: true
+                groupId: group1
+                keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+                maxPollInterval: 600000
+                maxPollRecords: 50
+                sessionTimeout: 180000
+                topic: wcf_prod.pay_link_req_retry
+                valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
+              name: PAYMENT_CHARGE_RETRY_BEAN
   multi:
     kafka:
       enabled: false
@@ -1042,3 +1143,5 @@ security:
 event:
   stream:
     dp: wcf-data-science-prod-subscription-funnel
+
+api.get.endPoint: https://subscription.wynk.in

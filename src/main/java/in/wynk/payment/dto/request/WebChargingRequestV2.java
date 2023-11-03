@@ -7,7 +7,6 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.GeoLocation;
-import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
@@ -15,6 +14,7 @@ import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.ISessionDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.AppDetails;
@@ -46,11 +46,16 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
     @Override
     @Analysed
     @JsonIgnore
-    public IGeoLocation getGeoLocation () {
+    public GeoLocation getGeoLocation () {
         SessionDTO session = SessionContextHolder.getBody();
         GeoLocation geoLocation = session.get(GEO_LOCATION);
         return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
                 GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
+    }
+
+    @Override
+    public ISessionDetails getSessionDetails() {
+        return WebSessionDetails.builder().sessionId(SessionContextHolder.getId()).build();
     }
 
 

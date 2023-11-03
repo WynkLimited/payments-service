@@ -11,7 +11,10 @@ import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.error.codes.core.dao.entity.ErrorCode;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.payment.aspect.advice.TransactionAware;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.IAppDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -28,6 +31,7 @@ import in.wynk.subscription.common.dto.PartnerDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
@@ -36,11 +40,10 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
+
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.common.constant.BaseConstants.EQUAL;
 import static in.wynk.error.codes.core.constant.ErrorCodeConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.BUTTON_ARROW;
 
 @Slf4j
 @Service
@@ -61,6 +64,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
 
     private class AddToBillPaymentStatusHandler implements IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse> {
 
+        @SneakyThrows
         @Override
         public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {
             final Transaction transaction = TransactionContext.get();
@@ -75,7 +79,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
                         .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId()))
+                        .validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()))
                         .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
@@ -111,6 +115,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
 
     private class GenericPaymentStatusHandler implements IWynkPresentation<PaymentStatusResponse, AbstractPaymentStatusResponse> {
 
+        @SneakyThrows
         @Override
         public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {
             final Transaction transaction = TransactionContext.get();
@@ -125,7 +130,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
                         .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId()))
+                        .validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()))
                         .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
@@ -146,6 +151,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
         }
     }
 
+    @SneakyThrows
     @Override
     @TransactionAware(txnId = "#payload.tid")
     public PaymentStatusResponse transform (AbstractPaymentStatusResponse payload) {

@@ -35,7 +35,9 @@ public class PaymentRenewalsScheduler {
     private ITransactionManagerService transactionManager;
 
     @Value("${payment.predebit.unsupported}")
-    private List<String> PRE_DEBIT_UNSUPPORTED_PG;
+    private List<String> preDebitUnSupportedPG;
+    @Value("${payment.renewal.unsupported}")
+    private List<String> renewalUnSupportedPG;
 
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "paymentRenewals")
@@ -61,7 +63,7 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("renewNotificationsInit", true);
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(clientAlias)
-                .filter(paymentRenewal -> checkEligibility(paymentRenewal.getTransactionId()) &&
+                .filter(paymentRenewal -> checkPreDebitEligibility(paymentRenewal.getTransactionId()) &&
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
@@ -83,19 +85,25 @@ public class PaymentRenewalsScheduler {
     @AnalyseTransaction(name = "scheduleRenewalMessage")
     private void publishRenewalMessage(PaymentRenewalMessage message) {
         AnalyticService.update(message);
-        sqsManagerService.publishSQSMessage(message);
+        if(checkRenewalEligibility(message.getTransactionId())) {
+            sqsManagerService.publishSQSMessage(message);
+        }
+    }
+
+    private boolean checkRenewalEligibility (String transactionId) {
+        return !renewalUnSupportedPG.contains(transactionManager.get(transactionId).getPaymentChannel().getId());
     }
 
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
     private void publishPreDebitNotificationMessage(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
-        if(checkEligibility(message.getTransactionId())) {
+        if(checkPreDebitEligibility(message.getTransactionId())) {
             sqsManagerService.publishSQSMessage(message);
         }
     }
 
-    private boolean checkEligibility (String transactionId) {
-        return !PRE_DEBIT_UNSUPPORTED_PG.contains(transactionManager.get(transactionId).getPaymentChannel().getId());
+    private boolean checkPreDebitEligibility (String transactionId) {
+        return !preDebitUnSupportedPG.contains(transactionManager.get(transactionId).getPaymentChannel().getId());
     }
 
     @ClientAware(clientId = "#clientId")

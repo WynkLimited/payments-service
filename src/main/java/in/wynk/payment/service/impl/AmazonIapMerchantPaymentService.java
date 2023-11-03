@@ -33,6 +33,7 @@ import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
@@ -92,7 +93,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private static String buildNotificationStringToSign(AmazonNotificationRequest msg) {
-        String stringToSign = "Message\n";
+        String stringToSign = "PayChargeReqMessage\n";
         stringToSign += msg.getMessage() + "\n";
         stringToSign += "MessageId\n";
         stringToSign += msg.getMessageId() + "\n";
@@ -133,7 +134,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     public static String buildSubscriptionStringToSign(AmazonNotificationRequest msg) {
-        String stringToSign = "Message\n";
+        String stringToSign = "PayChargeReqMessage\n";
         stringToSign += msg.getMessage() + "\n";
         stringToSign += "MessageId\n";
         stringToSign += msg.getMessageId() + "\n";
@@ -223,13 +224,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         return null;
     }
 
+    @SneakyThrows
     private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction, String extTxnId) {
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
             fetchAndUpdateTransaction(transaction, AmazonLatestReceiptResponse.builder().extTxnId(extTxnId).build());
         }
         ChargingStatusResponse.ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId()));
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }
@@ -332,7 +334,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
         if (optionalReceiptDetails.isPresent()) {
             final ReceiptDetails details = optionalReceiptDetails.get();
-            builder.uid(details.getUid()).msisdn(details.getMsisdn());
+            builder.uid(details.getUid()).msisdn(details.getMsisdn()).linkedTransactionId(details.getPaymentTransactionId());
             return builder.build();
         }
         WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class)

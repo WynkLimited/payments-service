@@ -48,16 +48,16 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY037("Payment Renewal Failure", "An Error occurred while making SI payment on APS", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_STATUS_ERROR),
     PAY038("Aps Recon Transaction Status Failure", "Transaction is still pending from APS side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY039("APS Payment instrument validation Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_VALIDATION_FAILURE),
-    PAY040("Subscription Cancelled", "Customer has cancelled the subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_STATUS_ERROR),
-
+    PAY040("APS Mandate Revoke Failure", "Cancelling Recurring failed at APS side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_MANDATE_REVOKE_ERROR),
     PAY041("APS API Failure", "Exception Occurred while calling Aps Server", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_API_FAILURE),
     PAY042("APS Card Deletion Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_SAVED_CARD_DELETION),
     PAY043("APS VPA Deletion Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_SAVED_CARD_DELETION),
     PAY044("APS Payment Eligibility Failure", "Client is missing in the request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_API_FAILURE),
-
     PAY045("Payment Renewal Failure", "Unable to renewal amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
     PAY046("APS Payment Callback Failure", "Aps payment callback failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.APS_CALLBACK_FAILURE),
-
+    PAY047("Payment Drop Out Notification Failure", "Unable to schedule the drop out notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE),
+    PAY048("Payment Auto Refund Notification Failure", "Unable to schedule the auto refund notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE),
+    PAY049("Aps callback parse failure", "Unable to find order created in database for APS", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_CALLBACK_ORDER_ERROR),
     PAY103("Paytm Recon Transaction Status Failure", "No matching status found for paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY104("Paytm Recon Transaction Status Failure", "Transaction is still pending from paytm side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY105("Renewal Eligibility API Failure", "Renewal Eligibility API Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_ELIGIBILITY_API_ERROR),
@@ -79,6 +79,22 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY400("Invalid Request", "Invalid request", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY401("Lock Can not be acquired over given id", "Lock Can not be acquired over given id", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
+    PAY440("Invalid Generate Invoice Event Received", "Invoice Generate Event payload is not correct", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVALID_INVOICE_EVENT_RECEIVED),
+    PAY441("GST State Code Failure", "Unable to find GST State Code from Optimus", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GST_STATE_CODE_FAILURE),
+    PAY442("Invoice Not Found", "Some error occurred in generating invoice. Please contact the customer support", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_DETAILS_NOT_FOUND),
+    PAY443("Operator Details Not Found", "Operator details not found for the user", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.OPERATOR_DETAILS_NOT_FOUND),
+    PAY444("Invalid Invoice Callback Event Received", "Invoice Callback Event payload is not correct", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVALID_INVOICE_EVENT_RECEIVED),
+    PAY445("Invoice details not found", "Invoice details not found in DB", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_DETAILS_NOT_FOUND),
+    PAY446("Invoice generation failed", "Invoice generation failed, will retry", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_GENERATION_FAILED),
+    PAY447("Invoice callback process failed", "Invoice callback process failed", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED),
+    PAY448("Invoice schedule retry failed", "Unable to schedule the invoice retry", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_SCHEDULE_RETRY_FAILURE),
+    PAY449("Invoice trigger retry failed", "Unable to trigger the invoice retry", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_TRIGGER_RETRY_FAILURE),
+    PAY450("Kafka Events Consumption Failure", "Event not consumed due to error, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.KAFKA_CONSUMPTION_HANDLING_ERROR),
+    PAY451("Download Invoice Failure", "Invoice not downloaded due to error, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.DOWNLOAD_INVOICE_ERROR),
+    PAY452("Kafka Publisher Failure", "Event not published due to error, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE),
+    PAY453("Invoice Sequence Details not found", "Unable to find invoice sequence details in mongo for the client", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_SEQUENCE_NOT_CONFIGURED_FOR_CLIENT),
+    PAY454("Invoice Number Generation Failed", "Unable to generate invoice number", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.INVOICE_NUMBER_GENERATION_FAILED),
+    PAY455("Lock Can not be acquired over given id", "Lock Can not be acquired over given id. Try after some time.", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.LOCK_ACQUIRE_FAILURE),
     PAY501("Invalid Request", "Mandatory data in request is missing.", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
 
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
@@ -93,6 +109,7 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     PAY997("Point Purchase Failure", "Unable to generate session, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.POINT_PURCHASE_SESSION_INIT_FAILURE),
     PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),
+    PAY999("Charging Failure", "Fraud Charging Request for AutoRenew in Direct Payment API", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.CHARGING_API_FAILURE),
 
     ATB01("ATB Charging API Failure", "Could Not process transaction on addToBill", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_API_FAILURE),
     ATB02("ATB Status API Failure", "Transaction is still pending from addToBill side", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),

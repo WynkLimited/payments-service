@@ -44,6 +44,8 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_MODE = "paymentMode";
     String BUTTON_ARROW = "buttonArrow";
     String USER_WINBACK = "user_winback";
+    String WINBACK_NOTIFICATION_URL = "WINBACK_URL";
+    String PLAN_ID_PLACEHOLDER = "<PLAN_ID>";
     String MERCHANT_CLIENT_ID = "clientId";
     String PAYMENT_METHOD = "paymentMethod";
     String TDR = "tdr";
@@ -61,16 +63,31 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_PAGE_PLACE_HOLDER = "${payment.%c.%p.page}";
     String PAYMENT_PAGE_PLACE_HOLDER_V2 = "${payment.%c.%p.v2.page}";
     String ORIGINAL_TRANSACTION_ID = "ORIGINAL_TRANSACTION_ID";
-    String PAYMENT_DROPOUT_DELAY_KEY = "transactionTrackerDelaySec";
+    String PAYMENT_DROPOUT_TRACKER_IN_SECONDS = "PAYMENT_DROPOUT_TRACKER_IN_SECONDS";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
     String PAYMENT_CLIENT_PLACE_HOLDER = "payment.merchant.%p.%c.%f";
+    String PAYMENT_CLIENT_PLACE_HOLDER2 = "payment.merchant.%p.%c.%r.%f";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
     String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
+    String INVOICE_RETRY = "invoiceRetry";
+    String INVOICE_SEQUENCE_LOCK_KEY = "invoiceSequenceLockKey";
+    String INVOICE_SEQUENCE_PREFIX = "ADL";
+    String INFORM_INVOICE_MESSAGE = "informInvoiceMessage";
+    String TAXABLE_REQUEST = "taxableRequest";
+    String TAXABLE_RESPONSE = "taxableResponse";
+    String OPTIMUS_GST_STATE_CODE = "optimusGSTStateCode";
+    String GEOLOCATION_GST_STATE_CODE = "geoLocationGSTStateCode";
+    String DEFAULT_GST_STATE_CODE = "defaultGSTStateCode";
+    String ACCESS_STATE_CODE = "accessStateCode";
+    String INVOICE_CATEGORY = "ONLINE CONTENT SERVICES";
+    String BLANK = "";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
 
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
     String CONTENT_TYPE = "Content-Type";
     String CURRENCY_INR="INR";
+    String WHATSAPP = "WHATSAPP";
+    String UNKNOWN_VPA = "UNKNOWN_VPA";
 }

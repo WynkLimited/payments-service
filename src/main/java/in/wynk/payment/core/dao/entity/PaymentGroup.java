@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Map;
+
 @Getter
 @SuperBuilder
 @Document("payment_groups")
@@ -15,6 +17,7 @@ public class PaymentGroup extends MongoBaseEntity<String> {
     private String displayName;
     private int hierarchy;
     private String description;
+    private Map<String, Object> meta;
 
     @Override
     public int hashCode() {

@@ -572,16 +572,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public void verifyRequest(IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+    public void verifyRequest (IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
 
     @Override
-    public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
-
+    public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
 
     @Override
-    public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
-
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
 }

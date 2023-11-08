@@ -53,7 +53,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY042("APS Card Deletion Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_SAVED_CARD_DELETION),
     PAY043("APS VPA Deletion Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_SAVED_CARD_DELETION),
     PAY044("APS Payment Eligibility Failure", "Client is missing in the request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_API_FAILURE),
-    PAY045("Payment Renewal Failure", "Unable to renewal amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
+    PAY045("Payment Renewal Failure", "Unable to renew amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
     PAY046("APS Payment Callback Failure", "Aps payment callback failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.APS_CALLBACK_FAILURE),
     PAY047("Payment Drop Out Notification Failure", "Unable to schedule the drop out notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE),
     PAY048("Payment Auto Refund Notification Failure", "Unable to schedule the auto refund notification", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE),

@@ -33,6 +33,7 @@ import in.wynk.payment.dto.request.UserMappingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
+import in.wynk.payment.utils.SnsSignatureVerifier;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
@@ -80,9 +81,11 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Value("${payment.merchant.AmazonIap.status.baseUrl}")
     private String amazonIapStatusUrl;
     private final RestTemplate restTemplate;
+    private final SnsSignatureVerifier signatureVerifier;
 
-    public AmazonIapMerchantPaymentService(ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+    public AmazonIapMerchantPaymentService(ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl, SnsSignatureVerifier signatureVerifier) {
         super(cachingService, errorCodesCacheServiceImpl);
+        this.signatureVerifier = signatureVerifier;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
         this.restTemplate = restTemplate;
@@ -341,7 +344,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Override
     public DecodedNotificationWrapper<AmazonNotificationRequest> isNotificationEligible(String requestPayload) {
         AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
-        if (isMessageSignatureValid(request)) {
+        if (signatureVerifier.verifySignature(requestPayload)) {
             if (AMAZON_SNS_CONFIRMATION.contains(request.getNotificationType())) {
                 subscribeToSns(request);
             } else {

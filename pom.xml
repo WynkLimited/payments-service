@@ -230,11 +230,6 @@
             <artifactId>tinylytics</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>in.wynk</groupId>
-            <artifactId>lib-audit</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

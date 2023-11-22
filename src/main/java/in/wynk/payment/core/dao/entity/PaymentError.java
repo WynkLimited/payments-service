@@ -2,6 +2,7 @@ package in.wynk.payment.core.dao.entity;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.audit.entity.AuditableEntity;
 import in.wynk.common.constant.BaseConstants;
 import lombok.*;
 
@@ -18,7 +19,7 @@ import javax.persistence.Table;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "payment_error")
-public class PaymentError {
+public class PaymentError extends AuditableEntity  {
 
     @Id
     @Analysed(name = BaseConstants.TRANSACTION_ID)

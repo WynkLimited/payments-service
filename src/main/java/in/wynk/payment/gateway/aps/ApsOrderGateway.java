@@ -8,6 +8,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
@@ -101,10 +102,10 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
 
-        ApsCallBackRequestPayload response = (ApsCallBackRequestPayload) callbackService.parse(payload);
+        ApsOrderStatusCallBackPayload response = (ApsOrderStatusCallBackPayload) callbackService.parse(payload);
         try {
             String txnId = merchantTransactionService.findTransactionId(response.getOrderId());
-            response.setOrderId(txnId);
+            response.setTxnId(txnId);
         } catch (Exception e) {
             log.error("Exception occurred while finding orderId in merchant table for order created with APS");
             throw new WynkRuntimeException(PaymentErrorType.PAY049, e);

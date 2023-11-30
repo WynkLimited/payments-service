@@ -9,6 +9,7 @@ public interface ApsConstant {
     String AIRTEL_PAY_STACK = "aps";
     String AIRTEL_PAY_STACK_V2 = "aps_v2";
     String APS = "APS";
+    String APS_V2 = "APS_V2";
     String PAYMENT_TIMER_KEY = "payment_timer";
     String PAYMENT_STATUS_POLL_KEY = "payment_status_poll";
     String FIELD_TYPE = "type";
@@ -19,4 +20,6 @@ public interface ApsConstant {
     String PRE_DEBIT_SI = "pre_debit_SI";
     String APS_CARD_TYPE = "cardType";
     String UPI_MANDATE_REVOKE = "upi_mandate_revoke";
+    String PAY_DIGI = "paydigi";
+    String INT_PAY = "intpay";
 }

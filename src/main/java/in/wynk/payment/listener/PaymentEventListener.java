@@ -253,7 +253,10 @@ public class PaymentEventListener {
                             .txnId(event.getTransactionId())
                             .clientAlias(event.getClientAlias())
                             .build();
-                    eventPublisher.publishEvent(generateInvoiceEvent);
+                    final Transaction transaction = transactionManagerService.get(event.getTransactionId());
+                    final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+                    final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                    invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent, clientAlias));
                     invoice.setRetryCount(invoice.getRetryCount() + 1);
                     invoice.persisted();
                     invoiceService.upsert(invoice);
@@ -274,7 +277,10 @@ public class PaymentEventListener {
                         .txnId(event.getTransactionId())
                         .clientAlias(event.getClientAlias())
                         .build();
-                eventPublisher.publishEvent(generateInvoiceEvent);
+                final Transaction transaction = transactionManagerService.get(event.getTransactionId());
+                final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+                final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent, clientAlias));
 
                 final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
                 if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){

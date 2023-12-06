@@ -94,6 +94,9 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
             @JsonProperty("PaymentTransactionID")
             private String paymentTransactionId;
             @Analysed
+            @JsonProperty("paymentTransactionID")
+            private String paymentTransactionID;
+            @Analysed
             private double invoiceAmount;
             @Analysed
             private String invoiceDate;
@@ -194,6 +197,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         return LobInvoice.CustomerInvoiceDetails.builder()
                 .invoiceDate(LocalDateTime.now().format(formatter))
                 .paymentTransactionId(transaction.getIdStr())
+                .paymentTransactionID(transaction.getIdStr())
                 .invoiceNumber(invoiceNumber)
                 .invoiceAmount(plan.getPrice().getAmount())
                 .paymentDate(transaction.getInitTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(formatter))

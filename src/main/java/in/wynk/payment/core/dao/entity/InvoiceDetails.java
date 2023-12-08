@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @SuperBuilder
@@ -48,4 +49,7 @@ public class InvoiceDetails extends MongoBaseEntity<String> {
     private String GSTRegistrationNo;
     private String pan;
     private String note;
+
+    @Field("payment_modes")
+    private Map<String, String> paymentModes;
 }

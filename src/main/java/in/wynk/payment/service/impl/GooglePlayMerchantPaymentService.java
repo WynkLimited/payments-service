@@ -2,6 +2,8 @@ package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.audit.IAuditableListener;
+import in.wynk.audit.constant.AuditConstants;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
@@ -100,12 +102,13 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final WynkRedisLockService wynkRedisLockService;
     private GooglePlayCacheService googlePlayCacheService;
     private ISqsManagerService sqsMessagePublisher;
+    private IAuditableListener auditingListener;
 
 
     public GooglePlayMerchantPaymentService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
-                                             ISqsManagerService sqsMessagePublisher) {
+                                             ISqsManagerService sqsMessagePublisher, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.restTemplate = restTemplate;
@@ -114,6 +117,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.wynkRedisLockService = wynkRedisLockService;
         this.googlePlayCacheService = googlePlayCacheService;
         this.sqsMessagePublisher = sqsMessagePublisher;
+        this.auditingListener = auditingListener;
     }
 
     @Deprecated
@@ -318,6 +322,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                             code = GooglePlayStatusCodes.GOOGLE_31022;
                             transaction.setStatus(TransactionStatus.SUCCESS.name());
                         }
+                        auditingListener.onBeforeSave(receiptDetails);
                         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                                 .save(receiptDetails);
                     }
@@ -345,6 +350,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                         .expiry(Long.parseLong(latestReceiptResponse.getGooglePlayResponse().getExpiryTimeMillis())).planId(planId).notificationType(latestReceiptResponse.getNotificationType())
                         .subscriptionId(latestReceiptResponse.getSubscriptionId()).packageName(latestReceiptResponse.getPackageName()).service(latestReceiptResponse.getService())
                         .skuId(latestReceiptResponse.getSkuId()).renew(latestReceiptResponse.getGooglePlayResponse().isAutoRenewing()).build();
+        auditingListener.onBeforeSave(googlePlayReceiptDetails);
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(googlePlayReceiptDetails);
     }
 

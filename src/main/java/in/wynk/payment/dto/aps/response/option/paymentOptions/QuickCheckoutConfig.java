@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import java.io.Serializable;
@@ -13,6 +14,7 @@ import java.util.Map;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class QuickCheckoutConfig implements Serializable {
     private boolean offer;
     private boolean offerByLine;

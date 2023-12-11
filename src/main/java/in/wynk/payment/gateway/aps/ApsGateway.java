@@ -7,6 +7,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
+import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
@@ -45,7 +46,7 @@ public class ApsGateway implements
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
-        ICancellingRecurringService {
+        ICancellingRecurringService, IMerchantTDRService {
 
     private final IExternalPaymentEligibilityService eligibilityGateway;
     private final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
@@ -58,6 +59,7 @@ public class ApsGateway implements
     private final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
     private final IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> settlementGateway;
     private final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteGateway;
+    private final IMerchantTDRService iMerchantTDRService;
 
     public ApsGateway(@Value("${payment.merchant.aps.salt}") String salt,
                       @Value("${payment.merchant.aps.secret}") String secret,
@@ -74,6 +76,7 @@ public class ApsGateway implements
                       @Value("${aps.payment.init.charge.upi.paydigi.api}") String upiPayDigiChargeEndpoint,
                       @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
                       @Value("${aps.payment.cancel.mandate.api}") String cancelMandateEndpoint,
+                      @Value("${aps.payment.tdr.api}") String tdrEndPoint,
                       Gson gson,
                       ObjectMapper mapper,
                       ApsCommonGatewayService commonGateway,
@@ -94,6 +97,7 @@ public class ApsGateway implements
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher);
         this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson);
+        this.iMerchantTDRService = new ApsTdrGatewayServiceImpl(tdrEndPoint, httpTemplate, commonGateway, merchantTransactionService);
     }
 
     @Override
@@ -155,5 +159,10 @@ public class ApsGateway implements
     @Override
     public void cancelRecurring (String transactionId) {
         mandateCancellationGateway.cancelRecurring(transactionId);
+    }
+
+    @Override
+    public BaseTDRResponse getTDR (String transactionId) {
+        return null;
     }
 }

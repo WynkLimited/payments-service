@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import java.io.Serializable;
@@ -13,6 +14,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TokenizationConfig implements Serializable {
     private String consentText;
     private String consentSubText;
@@ -26,6 +28,7 @@ public class TokenizationConfig implements Serializable {
     @ToString
     @NoArgsConstructor
     @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ConsentPopupTnC implements Serializable {
         private String iconURL;
         private boolean gradient;

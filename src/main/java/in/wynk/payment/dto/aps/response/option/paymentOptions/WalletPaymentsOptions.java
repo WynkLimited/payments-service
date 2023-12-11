@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.constant.WalletConstants;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WalletPaymentsOptions extends AbstractPaymentOptions implements Serializable {
     private List<WalletSubOption> walletSubOption;
 
@@ -36,6 +38,7 @@ public class WalletPaymentsOptions extends AbstractPaymentOptions implements Ser
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class WalletSubOption implements ISubOption, Serializable {
         private String type;
         private String subType;

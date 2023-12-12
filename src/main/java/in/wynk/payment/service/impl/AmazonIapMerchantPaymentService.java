@@ -1,5 +1,7 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.audit.IAuditableListener;
+import in.wynk.audit.constant.AuditConstants;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
@@ -86,13 +88,15 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private String amazonIapStatusUrl;
     private final RestTemplate restTemplate;
     private final SnsSignatureVerifier signatureVerifier;
+    private final IAuditableListener auditingListener;
 
-    public AmazonIapMerchantPaymentService(ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl, SnsSignatureVerifier signatureVerifier) {
+    public AmazonIapMerchantPaymentService(ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl, SnsSignatureVerifier signatureVerifier, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.signatureVerifier = signatureVerifier;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
         this.restTemplate = restTemplate;
+        this.auditingListener = auditingListener;
     }
 
     private static String buildNotificationStringToSign(AmazonNotificationRequest msg) {
@@ -280,6 +284,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId) {
         final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).build();
+        auditingListener.onBeforeSave(amazonReceiptDetails);
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
     }
 

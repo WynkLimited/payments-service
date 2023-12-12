@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.constant.CardConstants;
 import lombok.Getter;
@@ -21,6 +22,7 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 @SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CardPaymentOptions extends AbstractPaymentOptions implements Serializable {
 
     @Override
@@ -28,6 +30,7 @@ public class CardPaymentOptions extends AbstractPaymentOptions implements Serial
         return Collections.singletonList(new CardSubOption());
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CardSubOption implements ISubOption, Serializable {
         @Override
         public String getId() {

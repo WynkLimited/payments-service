@@ -114,6 +114,6 @@ public class PayUGateway extends PayUMerchantPaymentService implements
 
     @Override
     public BaseTDRResponse getTDR (String transactionId) {
-        return null;
+        return iMerchantTDRService.getTDR(transactionId);
     }
 }

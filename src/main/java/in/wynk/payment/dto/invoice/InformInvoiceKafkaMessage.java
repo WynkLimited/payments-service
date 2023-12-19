@@ -203,7 +203,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .invoiceNumber(invoiceNumber)
                 .invoiceAmount(plan.getPrice().getAmount())
                 .paymentDate(transaction.getInitTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(formatter))
-                .paymentMode(invoiceDetails.getPaymentModes().getOrDefault(paymentMode, BaseConstants.DEFAULT))
+                .paymentMode(invoiceDetails.getPaymentModes().getOrDefault(paymentMode, invoiceDetails.getPaymentModes().get(BaseConstants.DEFAULT)))
                 .typeOfService(offer.getTitle())
                 .discount(plan.getPrice().getAmount() - transaction.getAmount())
                 .discountedPrice(transaction.getAmount())

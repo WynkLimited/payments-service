@@ -103,12 +103,16 @@ public class PaymentEventListener {
     private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
+    private final IKafkaEventPublisher kafkaEventPublisher;
 
     @Value("${event.stream.dp}")
     private String dpStream;
 
     @Value("${wynk.kafka.producers.payment.status.topic}")
     private String waPayStateRespEventTopic;
+
+    @Value("${wynk.kafka.producers.payment.atb.subscription.status.topic}")
+    private String kafkaAtbSubscriptionStatusTopic;
 
 
     @EventListener
@@ -450,6 +454,13 @@ public class PaymentEventListener {
         final AbstractPaymentSettlementResponse response = paymentManager.settle(PaymentSettlementRequest.builder().tid(event.getTid()).build());
         AnalyticService.update(event);
         AnalyticService.update(response);
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "userSubscriptionStatus")
+    public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
+        AnalyticService.update(event);
+        kafkaEventPublisher.publish(kafkaAtbSubscriptionStatusTopic, null, null, null, event);
     }
 
     @EventListener

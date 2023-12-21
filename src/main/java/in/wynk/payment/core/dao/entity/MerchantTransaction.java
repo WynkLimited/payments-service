@@ -3,6 +3,7 @@ package in.wynk.payment.core.dao.entity;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
+import in.wynk.audit.entity.AuditableEntity;
 import in.wynk.common.constant.BaseConstants;
 import lombok.*;
 import org.hibernate.annotations.Type;
@@ -23,7 +24,7 @@ import javax.persistence.*;
         @NamedQuery(name = "MerchantTransaction.findPartnerReferenceById", query = "SELECT m.externalTransactionId FROM MerchantTransaction m WHERE m.id=:txnId", hints = @QueryHint(name = "javax.persistence.query.timeout", value = "300")),
         @NamedQuery(name = "MerchantTransaction.findTransactionIdByOrderId", query = "SELECT m.id FROM MerchantTransaction m WHERE m.orderId=:orderId", hints = @QueryHint(name = "javax.persistence.query.timeout", value = "300"))
 })
-public class MerchantTransaction {
+public class MerchantTransaction extends AuditableEntity {
 
     @Id
     @Analysed(name = BaseConstants.TRANSACTION_ID)

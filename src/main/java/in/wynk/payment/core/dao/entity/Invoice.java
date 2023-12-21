@@ -1,6 +1,7 @@
 package in.wynk.payment.core.dao.entity;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
+import in.wynk.audit.entity.AuditableEntity;
 import in.wynk.common.constant.BaseConstants;
 import lombok.*;
 import org.springframework.data.domain.Persistable;
@@ -18,7 +19,7 @@ import java.util.Calendar;
 @Table(name = "invoice", indexes = {
         @Index(name = "transaction_id_index", columnList = "transaction_id")
 })
-public class Invoice implements Serializable, Persistable<String> {
+public class Invoice extends AuditableEntity implements Serializable, Persistable<String> {
 
     private static final long serialVersionUID = 3241256359460367348L;
 

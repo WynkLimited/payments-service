@@ -28,7 +28,7 @@ public class UrlShortenRequest {
     @Builder
     public static class UrlShortenData {
 
-        @JsonProperty("$desktop_url")
+        @JsonProperty("desktop_url")
         private String desktopPath;
         @JsonProperty("$android_deeplink_path")
         private String androidDeeplink;

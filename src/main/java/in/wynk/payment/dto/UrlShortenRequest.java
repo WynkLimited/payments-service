@@ -39,23 +39,23 @@ public class UrlShortenRequest {
         @JsonProperty("$deeplink_path")
         private String path;
 
-        public UrlShortenData(String androidDeeplink,String iosDeeplink,String desktopPath,String fallbackUrl){
-            this.androidDeeplink= androidDeeplink;
-            this.iosDeeplink= iosDeeplink;
-            this.desktopPath=desktopPath;
-            this.fallbackUrl= fallbackUrl;
+        public UrlShortenData(String androidDeeplink, String iosDeeplink, String desktopPath, String fallbackUrl) {
+            this.androidDeeplink = androidDeeplink;
+            this.iosDeeplink = iosDeeplink;
+            this.desktopPath = desktopPath;
+            this.fallbackUrl = fallbackUrl;
         }
 
-        public UrlShortenData(String androidDeeplink,String iosDeeplink,String desktopPath,String fallbackUrl,String path){
-            this.androidDeeplink= androidDeeplink;
-            this.iosDeeplink= iosDeeplink;
-            this.desktopPath=desktopPath;
-            this.fallbackUrl= fallbackUrl;
-            this.path=path;
+        public UrlShortenData(String androidDeeplink, String iosDeeplink, String desktopPath, String fallbackUrl, String path) {
+            this.androidDeeplink = androidDeeplink;
+            this.iosDeeplink = iosDeeplink;
+            this.desktopPath = desktopPath;
+            this.fallbackUrl = fallbackUrl;
+            this.path = path;
         }
 
-        public UrlShortenData (String path){
-            this.path= path;
+        public UrlShortenData(String path) {
+            this.path = path;
         }
 
     }
@@ -80,13 +80,13 @@ public class UrlShortenRequest {
             return this;
         }
 
-        public UrlShortenRequestBuilder data(UrlShortenData data ) {
+        public UrlShortenRequestBuilder data(UrlShortenData data) {
             this.data = data;
             return this;
         }
 
-        public UrlShortenRequestBuilder data(String path){
-            this.data= UrlShortenData.builder().path(path).build();
+        public UrlShortenRequestBuilder data(String path) {
+            this.data = UrlShortenData.builder().path(path).build();
             return this;
         }
 

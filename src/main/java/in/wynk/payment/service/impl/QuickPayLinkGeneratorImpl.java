@@ -74,15 +74,15 @@ public class QuickPayLinkGeneratorImpl implements IQuickPayLinkGenerator {
             final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
             final long ttl = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(3);
             final String payUrl = buildUrlFromWithOption(winBackUrl + tid + QUESTION_MARK + CLIENT_IDENTITY + EQUAL + Base64.getEncoder().encodeToString(clientDetails.getAlias().getBytes(StandardCharsets.UTF_8)) + AND + TTL + EQUAL + ttl + AND + TOKEN_ID + EQUAL + URLEncoder.encode(Objects.requireNonNull(EncryptionUtils.generateAppToken(tid + COLON + ttl, clientDetails.getClientSecret())), StandardCharsets.UTF_8.toString()), appDetails, oldSidOption);
-            String androidDeepLink= wynkService.<String>get(PaymentConstants.ANDROID_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
-            String desktopDeepLink= wynkService.<String>get(PaymentConstants.DESKTOP_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
-            String iosDeepLInk= wynkService.<String>get(PaymentConstants.IOS_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
-            String fallbackUrl= wynkService.<String>get(PaymentConstants.FALLBACK_URL).get();
+            String androidDeepLink = wynkService.<String>get(PaymentConstants.ANDROID_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
+            String desktopDeepLink = wynkService.<String>get(PaymentConstants.DESKTOP_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
+            String iosDeepLInk = wynkService.<String>get(PaymentConstants.IOS_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
+            String fallbackUrl = wynkService.<String>get(PaymentConstants.FALLBACK_URL).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
             AnalyticService.update(PaymentConstants.ANDROID_DEEP_LINK, androidDeepLink);
             AnalyticService.update(PaymentConstants.DESKTOP_DEEP_LINK, desktopDeepLink);
             AnalyticService.update(PaymentConstants.IOS_DEEP_LINK, iosDeepLInk);
             AnalyticService.update(PaymentConstants.FALLBACK_URL, fallbackUrl);
-            UrlShortenRequest.UrlShortenData data= new UrlShortenRequest.UrlShortenData(androidDeepLink,desktopDeepLink,iosDeepLInk,fallbackUrl);
+            UrlShortenRequest.UrlShortenData data = new UrlShortenRequest.UrlShortenData(androidDeepLink, desktopDeepLink, iosDeepLInk, fallbackUrl);
             final UrlShortenResponse shortenResponse = urlShortenService.generate(UrlShortenRequest.builder().key(wynkService.getBranchKey()).campaign(PaymentConstants.WINBACK_CAMPAIGN).channel(wynkService.getId()).data(data).build());
             return shortenResponse.getTinyUrl();
         } catch (Exception ex) {

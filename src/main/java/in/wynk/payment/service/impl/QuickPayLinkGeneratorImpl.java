@@ -77,7 +77,7 @@ public class QuickPayLinkGeneratorImpl implements IQuickPayLinkGenerator {
             String androidDeepLink = wynkService.<String>get(PaymentConstants.ANDROID_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
             String desktopDeepLink = wynkService.<String>get(PaymentConstants.DESKTOP_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
             String iosDeepLInk = wynkService.<String>get(PaymentConstants.IOS_DEEP_LINK).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
-            String fallbackUrl = wynkService.<String>get(PaymentConstants.FALLBACK_URL).get();
+            String fallbackUrl = wynkService.<String>get(PaymentConstants.FALLBACK_URL).get().replace(PaymentConstants.PLAN_ID_PLACEHOLDER, productDetails.getId());
             AnalyticService.update(PaymentConstants.ANDROID_DEEP_LINK, androidDeepLink);
             AnalyticService.update(PaymentConstants.DESKTOP_DEEP_LINK, desktopDeepLink);
             AnalyticService.update(PaymentConstants.IOS_DEEP_LINK, iosDeepLInk);

@@ -27,8 +27,7 @@ public class ATBUserSubscriptionDetailsGateway {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
-    @Autowired
-    private ITaskScheduler<TaskDefinition<?>> taskScheduler;
+
 
     public void getUserSubscriptionDetails (String si) {
         try {
@@ -37,22 +36,5 @@ public class ATBUserSubscriptionDetailsGateway {
         } catch (Exception e) {
             throw new RuntimeException("Exception occurred while finding user subscription status from thanks for the si: " + si, e);
         }
-    }
-
-    public void scheduleAtbTask(Transaction transaction) {
-        taskScheduler.schedule(TaskDefinition.builder()
-                .handler(ATBUserSubscriptionStatusHandler.class)
-                .entity(AddToBillUserSubscriptionStatusTask.builder()
-                        .transactionId(transaction.getIdStr())
-                        .paymentCode(String.valueOf(transaction.getPaymentChannel().getCode()))
-                        .si(transaction.getMsisdn().replace("+91", ""))
-                        .build())
-                .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
-                        .durable(false)
-                        .startAt(calendar.getTime())
-                        .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(0).withRepeatCount(0))
-                        .build())
-                .build());
-
     }
 }

@@ -460,7 +460,9 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "userSubscriptionStatus")
     public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
         AnalyticService.update(event);
-        kafkaEventPublisher.publish(kafkaAtbSubscriptionStatusTopic, null, null, null, event);
+        if(event.getStatus().equals("UNSUBSCRIBED")) {
+            kafkaEventPublisher.publish(kafkaAtbSubscriptionStatusTopic, null, null, null, event);
+        }
     }
 
     @EventListener

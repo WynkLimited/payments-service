@@ -90,6 +90,7 @@ public interface PaymentConstants extends BaseConstants {
     String CURRENCY_INR = "INR";
     String WHATSAPP = "WHATSAPP";
     String UNKNOWN_VPA = "UNKNOWN_VPA";
+    String MANDATE = "mandate";
     String ANDROID_DEEP_LINK = "android_deep_link";
     String DESKTOP_DEEP_LINK = "desktop_deep_link";
     String IOS_DEEP_LINK = "ios_deep_link";

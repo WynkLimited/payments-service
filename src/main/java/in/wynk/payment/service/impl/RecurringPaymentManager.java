@@ -157,7 +157,11 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
 
     private void scheduleRecurringPayment(String transactionId, String code, Calendar nextRecurringDateTime, int attemptSequence) {
         if (CODE_TO_RENEW_OFFSET.containsKey(code)) {
-            nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(code));
+            final Calendar day = Calendar.getInstance();
+            day.add(Calendar.DAY_OF_MONTH, 3);
+            if (nextRecurringDateTime.compareTo(day) >= 0) {
+                nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(code));
+            }
         }
         try {
             RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()

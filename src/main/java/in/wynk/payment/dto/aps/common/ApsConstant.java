@@ -22,4 +22,5 @@ public interface ApsConstant {
     String UPI_MANDATE_REVOKE = "upi_mandate_revoke";
     String PAY_DIGI = "paydigi";
     String INT_PAY = "intpay";
+    Double APS_MANDATE_AMOUNT = 1.0;
 }

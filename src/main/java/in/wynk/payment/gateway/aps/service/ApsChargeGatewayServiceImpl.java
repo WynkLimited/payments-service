@@ -156,7 +156,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
+                            CollectUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(isMandateFlow ? ApsConstant.APS_MANDATE_AMOUNT : transaction.getAmount());
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew() || isMandateFlow ) {
                         Calendar cal = Calendar.getInstance();
@@ -193,7 +193,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
                     IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder =
                             IntentUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).upiApp(payAppName)
-                                    .paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
+                                    .paymentAmount(isMandateFlow ? ApsConstant.APS_MANDATE_AMOUNT : transaction.getAmount());
 
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew() || isMandateFlow) {
@@ -332,7 +332,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         final String encCardInfo = common.encryptCardData(credentials);
                         boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
                         abstractCardPaymentInfoBuilder = FreshCardPaymentInfo.builder().lob(lob).cardDetails(encCardInfo).saveCard(cardDetails.isSaveCard()).favouriteCard(cardDetails.isSaveCard()).tokenizeConsent(cardDetails.isSaveCard()).paymentMode(paymentMode)
-                                .paymentAmount(isMandateFlow ? transaction.getMandateAmount() : transaction.getAmount());
+                                .paymentAmount(isMandateFlow ? ApsConstant.APS_MANDATE_AMOUNT : transaction.getAmount());
                         //auto-renew is supported only in case of Fresh card as all card details required for mandate creation
                         if (paymentDetails.isAutoRenew() || isMandateFlow) {
                             Calendar cal = Calendar.getInstance();

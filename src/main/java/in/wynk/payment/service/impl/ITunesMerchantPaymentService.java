@@ -3,6 +3,8 @@ package in.wynk.payment.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.audit.IAuditableListener;
+import in.wynk.audit.constant.AuditConstants;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
@@ -92,8 +94,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final WynkRedisLockService wynkRedisLockService;
+    private final IAuditableListener auditingListener;
 
-    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl) {
+    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.mapper = mapper;
@@ -101,6 +104,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.wynkRedisLockService = wynkRedisLockService;
+        this.auditingListener = auditingListener;
     }
 
     @Override
@@ -253,6 +257,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 .expiry(receiptType.getExpireDate(receiptInfo))
                 .receipt(receiptDetails.getReceipt())
                 .build();
+        auditingListener.onBeforeSave(itunesIdUidMapping);
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(itunesIdUidMapping);
     }
 
@@ -328,6 +333,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                                         .expiry(receiptType.getExpireDate(latestReceiptInfo))
                                         .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
                                         .build();
+                                auditingListener.onBeforeSave(itunesIdUidMapping);
                                 RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(itunesIdUidMapping);
                                 transaction.setStatus(TransactionStatus.SUCCESS.name());
                             } else {
@@ -355,8 +361,11 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             Optional<LatestReceiptInfo> oldReceiptOption = allReceipt.stream().filter(receipt -> (((oldReceipt.isTransactionIdPresent() && oldReceiptType.getTransactionId(receipt).equalsIgnoreCase(oldReceipt.getReceiptTransactionId())) || oldReceiptType.getExpireDate(receipt) == oldReceipt.getExpiry()))).findAny();
             if (oldReceiptOption.isPresent()) {
                 LatestReceiptInfo oldReceiptInfo = oldReceiptOption.get();
-                if (!oldReceipt.isTransactionIdPresent())
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).receiptTransactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build());
+                if (!oldReceipt.isTransactionIdPresent()){
+                    ItunesReceiptDetails receiptDetails = ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).receiptTransactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build();
+                    auditingListener.onBeforeSave(receiptDetails);
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(receiptDetails);
+                }
                 return allReceipt.stream().anyMatch(receipt -> !newReceiptType.getTransactionId(receipt).equalsIgnoreCase(oldReceiptType.getTransactionId(oldReceiptInfo)) && newReceiptType.getExpireDate(receipt) > oldReceiptType.getExpireDate(oldReceiptInfo));
             }
         }
@@ -572,16 +581,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public void verifyRequest(IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+    public void verifyRequest (IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
 
     @Override
-    public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
-
+    public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
 
     @Override
-    public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
-
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+        throw new WynkRuntimeException("Method is not implemented");
     }
 }

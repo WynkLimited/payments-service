@@ -328,6 +328,8 @@ aps:
       api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/order
       status:
         api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/status/{orderId}
+    tdr:
+      api:  ${payment.merchant.aps.api.base}/pg-service/v1/txn-discount-rates/{pgId}
 
 branch:
   onelink:

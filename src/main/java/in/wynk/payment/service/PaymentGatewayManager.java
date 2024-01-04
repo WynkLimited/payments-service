@@ -72,7 +72,7 @@ public class PaymentGatewayManager
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
-        ICancellingRecurringService {
+        ICancellingRecurringService, IMerchantTDRService {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -310,6 +310,13 @@ public class PaymentGatewayManager
         BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)
                 .cancelRecurring(transactionId);
 
+    }
+
+    @Override
+    @TransactionAware(txnId = "#transactionId", lock = false)
+    public BaseTDRResponse getTDR(String transactionId) {
+        final Transaction transaction = TransactionContext.get();
+        return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
     }
 
     private static class ChargingTransactionStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {

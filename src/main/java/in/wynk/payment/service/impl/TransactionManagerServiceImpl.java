@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.audit.listener.MongoAuditingListener;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
@@ -61,6 +62,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final ICouponCodeLinkService couponCodeLinkService;
     private final CouponCachingService couponCachingService;
+    private final MongoAuditingListener auditingListener;
 
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
@@ -121,6 +123,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         receiptDetails.setUid(uid);
                     }
                 });
+                auditingListener.onBeforeSaveAll(allReceiptDetails);
                 RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
                 log.info(PaymentLoggingMarker.USER_DEACTIVATION_RECEIPT_MIGRATION_INFO, "Receipt data updated to new uid : {} ", uid);
             }

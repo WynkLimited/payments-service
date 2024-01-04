@@ -88,6 +88,7 @@ public class PaymentEventListener {
     private final ObjectMapper mapper;
     private final RetryRegistry retryRegistry;
     private final PaymentManager paymentManager;
+    private final PaymentGatewayManager paymentGatewayManager;
     private final ITaskScheduler<TaskDefinition<?>> taskScheduler;
     private final ISqsManagerService<Object> sqsManagerService;
     private final IPaymentErrorService paymentErrorService;
@@ -253,7 +254,10 @@ public class PaymentEventListener {
                             .txnId(event.getTransactionId())
                             .clientAlias(event.getClientAlias())
                             .build();
-                    eventPublisher.publishEvent(generateInvoiceEvent);
+                    final Transaction transaction = transactionManagerService.get(event.getTransactionId());
+                    final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+                    final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                    invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent, clientAlias));
                     invoice.setRetryCount(invoice.getRetryCount() + 1);
                     invoice.persisted();
                     invoiceService.upsert(invoice);
@@ -274,7 +278,10 @@ public class PaymentEventListener {
                         .txnId(event.getTransactionId())
                         .clientAlias(event.getClientAlias())
                         .build();
-                eventPublisher.publishEvent(generateInvoiceEvent);
+                final Transaction transaction = transactionManagerService.get(event.getTransactionId());
+                final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+                final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent, clientAlias));
 
                 final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
                 if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
@@ -512,7 +519,7 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            final BaseTDRResponse tdr = paymentManager.getTDR(event.getTransaction().getIdStr());
+            final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
             if((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) && event.getTransaction().getPaymentChannel().isInvoiceSupported()){

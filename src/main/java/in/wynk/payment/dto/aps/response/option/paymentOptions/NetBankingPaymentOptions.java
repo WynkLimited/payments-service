@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.constant.NetBankingConstants;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class NetBankingPaymentOptions extends AbstractPaymentOptions implements Serializable {
     private List<NetBankingSubOptions> subOption;
 
@@ -36,6 +38,7 @@ public class NetBankingPaymentOptions extends AbstractPaymentOptions implements 
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class NetBankingSubOptions implements ISubOption, Serializable {
         private String type;
         private String subType;

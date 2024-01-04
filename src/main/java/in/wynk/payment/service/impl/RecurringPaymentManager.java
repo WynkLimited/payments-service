@@ -97,13 +97,13 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     .filter(status -> status.getPlanId() == request.getTransaction().getPlanId()).findAny();
             if (subscriptionStatusOptional.isPresent()) {
                 nextRecurringDateTime.setTimeInMillis(subscriptionStatusOptional.get().getValidity());
-                scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
+                scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence());
                 return;
             }
             throw new WynkRuntimeException("No end date found from subscription. So, setting default time for renewal for plan id " + planDTO.getId());
         } catch (Exception e) {
             nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + ((long) dueRecurringRetryTime * 60 * 60 * 1000));
-            scheduleRecurringPayment(request, nextRecurringDateTime, request.getAttemptSequence());
+            scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence());
         }
     }
 

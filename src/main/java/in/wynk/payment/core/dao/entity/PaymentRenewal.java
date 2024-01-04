@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.audit.entity.AuditableEntity;
 import in.wynk.common.enums.PaymentEvent;
 import lombok.*;
 
@@ -15,7 +16,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "payment_renewal", indexes = {@Index(name = "payment_renewal_day_time_index", columnList = "renewal_day, renewal_hour")})
-public class PaymentRenewal implements Serializable {
+public class PaymentRenewal extends AuditableEntity implements Serializable {
 
     @Id
     @Column(name = "transaction_id")

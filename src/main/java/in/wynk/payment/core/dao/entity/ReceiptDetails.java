@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.audit.Auditable;
 import in.wynk.data.entity.MongoBaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -14,7 +15,7 @@ import java.io.Serializable;
 @SuperBuilder
 @Document(collection = "receipt_details")
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
-public abstract class ReceiptDetails extends MongoBaseEntity<String> implements Serializable {
+public abstract class ReceiptDetails extends MongoBaseEntity<String> implements Auditable, Serializable {
 
     private String msisdn;
     @Setter

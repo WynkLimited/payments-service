@@ -24,6 +24,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APS_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_REFUND_STATUS_VERIFICATION");
     Marker APS_MANDATE_REVOKE_ERROR = MarkerFactory.getMarker("APS_MANDATE_REVOKE_ERROR");
     Marker APS_CALLBACK_ORDER_ERROR = MarkerFactory.getMarker("APS_CALLBACK_ORDER_ERROR");
+    Marker APS_TDR_ERROR= MarkerFactory.getMarker("APS_TDR_ERROR");
 
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
@@ -85,6 +86,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker ITUNES_ERROR = MarkerFactory.getMarker("ITUNES_ERROR");
     Marker ITUNES_RENEWAL_ERROR = MarkerFactory.getMarker("ITUNES_RENEWAL_ERROR");
     Marker GOOGLE_PLAY_RENEWAL_ERROR = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_ERROR");
+    Marker AMAZON_IAP_RENEWAL_ERROR= MarkerFactory.getMarker("AMAZON_IAP_RENEWAL_ERROR");
 
     Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
 

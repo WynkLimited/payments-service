@@ -323,7 +323,15 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final CatalogueEligibilityAndPricingResponse response = proxy.getResponse();
                 if (Objects.nonNull(response) && response.isSuccess() && Objects.nonNull(response.getBody().getServiceList())) {
                     for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
-                        if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) || !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
+                        if (!eligibleServices.getEligibilityDetails().isIsEligible() || !eligibleServices.getPaymentOptions().contains(ADDTOBILL) ||
+                                !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
+                            return false;
+                        }
+                        //WCF-5039 check if logged in si and linked si is same.
+                        boolean anyMatchWithOriginalSi = eligibleServices.getLinkedSis().stream().anyMatch(linkedSis -> linkedSis.getSi().equals(response.getBody().getSi()));
+                        if (!anyMatchWithOriginalSi) {
+                            log.warn("User is not eligible for atb as user is not eligible on logged in si {} instead eligible on linked si{} ", response.getBody().getSi(),
+                                    eligibleServices.getLinkedSis());
                             return false;
                         }
                     }

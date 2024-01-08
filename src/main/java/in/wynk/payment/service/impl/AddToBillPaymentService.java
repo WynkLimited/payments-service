@@ -330,7 +330,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                         //WCF-5039 check if logged in si and linked si is same.
                         boolean anyMatchWithOriginalSi = eligibleServices.getLinkedSis().stream().anyMatch(linkedSis -> linkedSis.getSi().equals(response.getBody().getSi()));
                         if (!anyMatchWithOriginalSi) {
-                            log.warn("User is not eligible for atb as user is not eligible on logged in si {} instead eligible on linked si{} ", response.getBody().getSi(),
+                            log.warn("User is not eligible for atb as user is not eligible on logged in si {} instead eligible on linked si {} ", response.getBody().getSi(),
                                     eligibleServices.getLinkedSis());
                             return false;
                         }

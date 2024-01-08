@@ -8,18 +8,22 @@ import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.eligibility.service.AbstractEligibilityService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.eligibility.evaluation.PaymentMethodsItemEligibilityEvaluation;
 import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvaluation;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
+import in.wynk.payment.exception.PaymentRuntimeException;
+import in.wynk.session.context.SessionContextHolder;
 
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY601;
 
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 
 public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> extends BaseHandler<T> {
     @Override
@@ -45,7 +49,8 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
                 .entity(paymentMethod)
                 .build();
         EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
-       if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
+        if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
+        if((request.getPaymentDetails().isMandate() || request.getPaymentDetails().isTrialOpted()) && !paymentMethod.isAutoRenewSupported()) throw new WynkRuntimeException(PAY602);
         super.handle(request);
     }
 }

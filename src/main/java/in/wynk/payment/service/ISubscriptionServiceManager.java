@@ -1,5 +1,7 @@
 package in.wynk.payment.service;
 
+import in.wynk.payment.dto.SubscriptionStatus;
+import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.request.*;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
@@ -49,5 +51,7 @@ public interface ISubscriptionServiceManager {
     List<ProductDTO> getProducts();
 
     PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan);
+
+    List<SubscriptionStatus> getSubscriptionStatus(String uid, String service);
 
 }

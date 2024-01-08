@@ -84,4 +84,9 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails, Seriali
         return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
         }).get(paymentId).isTrialSupported() && trialOpted;
     }
+
+    @Override
+    public boolean isMandate () {
+        return this.mandate;
+    }
 }

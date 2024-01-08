@@ -17,6 +17,6 @@ public interface IPlanValidatorRequest extends IBaseRequest {
     IUserDetails getUserDetails();
 
     IProductDetails getProductDetails();
-    IPaymentDetails getPaymentDetails();
 
+    IPaymentDetails getPaymentDetails();
 }

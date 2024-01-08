@@ -123,7 +123,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             if (ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
                 common.syncOrderTransactionFromSource(transaction);
             } else {
-                common.syncChargingTransactionFromSource(transaction, Optional.of(ApsChargeStatusResponse.from(request)));
+                common.syncChargingTransactionFromSource(transaction, request.getRedirectionDestination() == null ? Optional.of(ApsChargeStatusResponse.from(request)): Optional.empty());
             }
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                 Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();

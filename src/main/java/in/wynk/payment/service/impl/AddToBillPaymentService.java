@@ -49,13 +49,13 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.net.ConnectException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.core.constant.PaymentErrorType.ATB01;
@@ -327,13 +327,14 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                                 !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
                             return false;
                         }
-                        /*//WCF-5039 check if logged in si and linked si is same.
-                        boolean anyMatchWithOriginalSi = eligibleServices.getLinkedSis().stream().anyMatch(linkedSis -> linkedSis.getSi().equals(response.getBody().getSi()));
+                        //WCF-5039: Check if logged in si and linked si is same if postpaid and if any other return that SI.
+                        boolean anyMatchWithOriginalSi = eligibleServices.getLinkedSis().stream().anyMatch(linkedSis ->
+                                !POSTPAID.equals(linkedSis.getLob()) || linkedSis.getSi().equals(response.getBody().getSi()));
                         if (!anyMatchWithOriginalSi) {
-                            log.warn("User is not eligible for atb because user is eligible on linked si {} and not on logged in si {}",
+                            log.warn("User is not eligible for atb because user is eligible on linked si {} but not on logged in si {}",
                                     eligibleServices.getLinkedSis(), response.getBody().getSi());
                             return false;
-                        }*/
+                        }
                     }
                     return true;
                 }
@@ -388,7 +389,10 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
             if (Objects.nonNull(response)) {
                 for (EligibleServices eligibleServices : response.getBody().getServiceList()) {
                     if (eligibleServices.getPaymentOptions().contains(ADDTOBILL) && plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
-                        builder.linkedSis(eligibleServices.getLinkedSis()).enable(response.isSuccess());
+                        List<LinkedSis> linkedSi =
+                                eligibleServices.getLinkedSis().stream().filter(linkedSis -> !POSTPAID.equals(linkedSis.getLob()) || linkedSis.getSi().equals(response.getBody().getSi()))
+                                        .collect(Collectors.toList());
+                        builder.linkedSis(linkedSi).enable(response.isSuccess());
                         break;
                     }
                 }

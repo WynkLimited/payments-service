@@ -327,13 +327,13 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                                 !plan.getSku().get(ATB).equalsIgnoreCase(eligibleServices.getServiceId())) {
                             return false;
                         }
-                        //WCF-5039 check if logged in si and linked si is same.
+                        /*//WCF-5039 check if logged in si and linked si is same.
                         boolean anyMatchWithOriginalSi = eligibleServices.getLinkedSis().stream().anyMatch(linkedSis -> linkedSis.getSi().equals(response.getBody().getSi()));
                         if (!anyMatchWithOriginalSi) {
                             log.warn("User is not eligible for atb because user is eligible on linked si {} and not on logged in si {}",
                                     eligibleServices.getLinkedSis(), response.getBody().getSi());
                             return false;
-                        }
+                        }*/
                     }
                     return true;
                 }

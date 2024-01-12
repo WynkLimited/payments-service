@@ -47,14 +47,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.payment.constant.CardConstants.FRESH_CARD_TYPE;
-import static in.wynk.payment.constant.FlowType.CARD;
 import static in.wynk.payment.constant.FlowType.COLLECT;
 import static in.wynk.payment.constant.FlowType.INTENT;
 import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.ORG_ID;
 import static in.wynk.payment.constant.UpiConstants.*;
-import static in.wynk.payment.constant.UpiConstants.ORG_ID;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
@@ -140,9 +138,11 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                     final Transaction transaction = TransactionContext.get();
                     final Map<String, String> form = PayUChargingGatewayImpl.this.buildPayUForm(request);
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
+                    final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
+                    final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     final String vpa = paymentDetails.getUpiDetails().getVpa();
                     if (!StringUtils.isEmpty(vpa)) form.put(PAYU_VPA, paymentDetails.getUpiDetails().getVpa());
-                    final PayUUpiIntentInitResponse res = init(UpiConstants.INTENT, form, new TypeReference<PayUUpiIntentInitResponse>() {
+                    final PayUUpiIntentInitResponse res = init(payAppName, form, new TypeReference<PayUUpiIntentInitResponse>() {
                     });
                     final PayUUpiIntentInitResponse.IntentResult result = res.getResult();
                     if (Objects.nonNull(result) && Objects.nonNull(result.getIntentURIData())) {

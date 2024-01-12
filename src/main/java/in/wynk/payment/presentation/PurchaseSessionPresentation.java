@@ -53,7 +53,9 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
             if(Objects.nonNull(request.getMiscellaneousDetails())) {
                 queryBuilder.addParameter(INGRESS_INTENT, String.valueOf(request.getMiscellaneousDetails().getIngressIntent()));
-                if(request.getMiscellaneousDetails().isAutoRenew()){
+                if (request.getMiscellaneousDetails().isMandate()) {
+                    queryBuilder.addParameter(PAYMENT_FLOW, "MANDATE");
+                } else if (request.getMiscellaneousDetails().isAutoRenew()) {
                     queryBuilder.addParameter(PAYMENT_FLOW, "AUTORENEW");
                 }
             }

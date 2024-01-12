@@ -78,7 +78,7 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
         SessionDTO sessionDTO= SessionContextHolder.getBody();
         MiscellaneousDetails miscellaneousDetails= sessionDTO.get(MISCELLANEOUS_DETAILS);
         return Objects.isNull(miscellaneousDetails) ? MiscellaneousDetails.builder().build() :
-                MiscellaneousDetails.builder().ingressIntent(miscellaneousDetails.getIngressIntent()).autoRenew(miscellaneousDetails.isAutoRenew()).build();
+                MiscellaneousDetails.builder().ingressIntent(miscellaneousDetails.getIngressIntent()).autoRenew(miscellaneousDetails.isAutoRenew()).mandate(miscellaneousDetails.isMandate()).build();
     }
 
 }

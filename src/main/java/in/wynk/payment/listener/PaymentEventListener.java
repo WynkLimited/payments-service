@@ -166,6 +166,7 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "merchantTransactionEvent")
     public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
+        log.info("Event name is: {}", event);
         AnalyticService.update(event);
         retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(MerchantTransaction.builder()
                 .id(event.getId())

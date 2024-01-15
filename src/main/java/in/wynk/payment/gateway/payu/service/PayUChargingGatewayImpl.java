@@ -362,7 +362,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
     private Map<String, String> buildPayUForm(AbstractPaymentChargingRequest chargingRequest) {
         final Transaction transaction = TransactionContext.get();
         final int planId = transaction.getPlanId();
-        double finalPlanAmount = (PaymentEvent.MANDATE == transaction.getType() || PaymentEvent.TRIAL_SUBSCRIPTION == transaction.getType()) ? 1.0 : transaction.getAmount();
+        double finalPlanAmount = transaction.getAmount();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;

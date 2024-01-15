@@ -91,4 +91,5 @@ public interface PaymentConstants extends BaseConstants {
     String WHATSAPP = "WHATSAPP";
     String UNKNOWN_VPA = "UNKNOWN_VPA";
     String MANDATE = "mandate";
+    Double MANDATE_FLOW_AMOUNT = 1.0;
 }

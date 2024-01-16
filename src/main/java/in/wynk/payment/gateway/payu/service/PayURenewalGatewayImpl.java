@@ -163,7 +163,6 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             merchantTransactionEventBuilder.request(requestMap);
             PayURenewalResponse paymentResponse = common.exchange(common.PAYMENT_API, requestMap, new TypeReference<PayURenewalResponse>() {
             });
-            merchantTransactionEventBuilder.response(paymentResponse);
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();
             } else {

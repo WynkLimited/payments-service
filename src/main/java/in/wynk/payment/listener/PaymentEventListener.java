@@ -178,8 +178,6 @@ public class PaymentEventListener {
             ));
         } catch (Exception e) {
             log.error("Exception occurred while saving data in merchant table {} {}", event, e.getMessage());
-            log.info("Response data is {} ", event.getResponse());
-            log.info("Request data is {} ", event.getRequest());
         }
     }
 

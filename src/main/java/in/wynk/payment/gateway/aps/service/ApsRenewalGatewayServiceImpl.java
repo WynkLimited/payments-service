@@ -81,9 +81,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
             if(Objects.nonNull(merchantData.getMandateId())) {
                 SiPaymentRecurringResponse  apsRenewalResponse = doChargingForRenewal(merchantData);
-                if (Objects.nonNull(apsRenewalResponse)) {
-                    updateTransactionStatus(planPeriodDTO, apsRenewalResponse, transaction);
-                }
+                updateTransactionStatus(planPeriodDTO, apsRenewalResponse, transaction);
             }else {
                 log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
             }

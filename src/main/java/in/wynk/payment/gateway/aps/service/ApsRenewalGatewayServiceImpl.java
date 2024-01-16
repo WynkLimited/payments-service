@@ -100,10 +100,9 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         SiPaymentRecurringRequest apsSiPaymentRecurringRequest = SiPaymentRecurringRequest.builder().orderId(transaction.getIdStr()).siPaymentInfo(
                         SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentRoutedThrough()).lob(
                                 LOB.SI_WYNK.toString()).build()).build();
-        merchantTransactionEventBuilder.request(apsSiPaymentRecurringRequest);
-
         try {
             SiPaymentRecurringResponse siResponse = common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, transaction.getMsisdn(), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
+            merchantTransactionEventBuilder.response(siResponse);
             if (siResponse == null) {
                 siResponse = new SiPaymentRecurringResponse();
             } else {

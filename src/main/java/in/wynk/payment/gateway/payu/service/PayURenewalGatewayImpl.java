@@ -10,7 +10,6 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
@@ -34,7 +33,6 @@ import java.util.LinkedHashMap;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.PENDING;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR;
@@ -144,7 +142,6 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
 
     private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid) {
         Transaction transaction = TransactionContext.get();
-        MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
@@ -160,14 +157,10 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         MultiValueMap<String, String> requestMap = common.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.SI_TRANSACTION.getCode(), variable);
         rateLimiter.acquire();
         try {
-            merchantTransactionEventBuilder.request(requestMap);
             PayURenewalResponse paymentResponse = common.exchange(common.PAYMENT_API, requestMap, new TypeReference<PayURenewalResponse>() {
             });
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();
-            } else {
-                String newMihPayId = paymentResponse.getTransactionDetails().get(transaction.getIdStr()).getPayUExternalTxnId();
-                merchantTransactionEventBuilder.externalTransactionId(StringUtils.isNotEmpty(newMihPayId) ? newMihPayId : mihpayid);
             }
             return paymentResponse;
         } catch (RestClientException e) {
@@ -191,9 +184,6 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                 eventPublisher.publishEvent(errorEventBuilder.build());
                 throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
             }
-        } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }
-
 }

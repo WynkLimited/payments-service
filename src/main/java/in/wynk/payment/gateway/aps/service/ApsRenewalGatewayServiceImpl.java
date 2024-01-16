@@ -8,7 +8,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.LOB;
@@ -30,7 +29,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
-import static in.wynk.payment.core.constant.PaymentErrorType.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY009;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY035;
 import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 
 /**
@@ -95,30 +95,22 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
 
     private SiPaymentRecurringResponse doChargingForRenewal(ApsChargeStatusResponse response) {
         Transaction transaction = TransactionContext.get();
-        MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         SiPaymentRecurringRequest apsSiPaymentRecurringRequest = SiPaymentRecurringRequest.builder().orderId(transaction.getIdStr()).siPaymentInfo(
-                        SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentRoutedThrough()).lob(
-                                LOB.SI_WYNK.toString()).build()).build();
-        merchantTransactionEventBuilder.request(apsSiPaymentRecurringRequest);
-
+                SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentRoutedThrough())
+                        .lob(LOB.SI_WYNK.toString()).build()).build();
         try {
-            SiPaymentRecurringResponse siResponse = common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, transaction.getMsisdn(), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
+            SiPaymentRecurringResponse siResponse =
+                    common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, transaction.getMsisdn(), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
             if (siResponse == null) {
                 siResponse = new SiPaymentRecurringResponse();
-            } else {
-                String newPgId = siResponse.getPgId();
-                merchantTransactionEventBuilder.externalTransactionId(StringUtils.isNotEmpty(newPgId) ? newPgId : response.getPgId());
             }
             return siResponse;
-        }catch (HttpStatusCodeException e) {
-            merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
+        } catch (HttpStatusCodeException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-        }  catch (Exception e) {
+        } catch (Exception e) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw e;
-        }finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }
 

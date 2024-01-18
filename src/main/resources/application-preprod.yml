@@ -147,7 +147,7 @@ payment:
             delay: 3
             delayTimeUnit: SECONDS
       renewal:
-        enabled: false
+        enabled: true
         name: wcf-preprod-payment-renewal
         sqs:
           messages:
@@ -160,7 +160,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: true
+        enabled: false
         name: wcf-preprod-payment-charging.fifo
         sqs:
           messages:

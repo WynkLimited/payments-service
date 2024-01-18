@@ -18,6 +18,7 @@ import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.gateway.IPaymentRenewal;
 import in.wynk.payment.service.IMerchantTransactionService;
+import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
     private final ApsCommonGatewayService common;
     private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
+    private final ITransactionManagerService transactionManager;
 
 
     public ApsRenewalGatewayServiceImpl(String siPaymentApi,
@@ -54,30 +56,27 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
                                         ApsCommonGatewayService common,
                                         PaymentCachingService cachingService,
                                         IMerchantTransactionService merchantTransactionService,
-                                        ApplicationEventPublisher eventPublisher) {
+                                        ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.SI_PAYMENT_API = siPaymentApi;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.merchantTransactionService = merchantTransactionService;
+        this.transactionManager = transactionManager;
     }
 
     @Override
     public void renew(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
-        MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(paymentRenewalChargingRequest.getId());
-        if (merchantTransaction == null) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException("No merchant transaction found for Subscription");
-        }
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
         if (planPeriodDTO.getMaxRetryCount() < paymentRenewalChargingRequest.getAttemptSequence()) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
         }
+        MerchantTransaction merchantTransaction = getMerchantData(paymentRenewalChargingRequest.getId());
         try {
-            ApsChargeStatusResponse[] apsChargeStatusResponses = (merchantTransaction.getResponse()== null) ?  common.syncChargingTransactionFromSource(transaction, Optional.empty()) : objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
+            ApsChargeStatusResponse[] apsChargeStatusResponses = (merchantTransaction== null) ?  common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty()) : objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
             ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
             AnalyticService.update(PaymentConstants.PAYMENT_MODE, "CREDIT_CARD".equals(merchantData.getPaymentMode()) ? "CC" : "DC");
             if(Objects.nonNull(merchantData.getMandateId())) {
@@ -91,6 +90,15 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
             throw e;
+        }
+    }
+
+    private MerchantTransaction getMerchantData (String id) {
+        try {
+            return merchantTransactionService.getMerchantTransaction(id);
+        } catch (Exception e) {
+            log.error("Exception occurred while getting data for tid {} from merchant table: {}", id, e.getMessage());
+            return null;
         }
     }
 

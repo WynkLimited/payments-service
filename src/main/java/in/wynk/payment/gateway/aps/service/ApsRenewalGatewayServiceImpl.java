@@ -78,11 +78,15 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         try {
             ApsChargeStatusResponse[] apsChargeStatusResponses = (merchantTransaction== null) ?  common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty()) : objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
             ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
+            if(Objects.isNull(merchantData.getMandateId())) {
+                apsChargeStatusResponses = common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty());
+                merchantData = apsChargeStatusResponses[0];
+            }
             AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
-            if(Objects.nonNull(merchantData.getMandateId())) {
-                SiPaymentRecurringResponse  apsRenewalResponse = doChargingForRenewal(merchantData);
+            if (Objects.nonNull(merchantData.getMandateId())) {
+                SiPaymentRecurringResponse apsRenewalResponse = doChargingForRenewal(merchantData);
                 updateTransactionStatus(planPeriodDTO, apsRenewalResponse, transaction);
-            }else {
+            } else {
                 log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
             }
         } catch (WynkRuntimeException e) {

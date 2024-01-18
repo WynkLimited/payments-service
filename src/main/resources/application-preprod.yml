@@ -147,7 +147,7 @@ payment:
             delay: 3
             delayTimeUnit: SECONDS
       renewal:
-        enabled: true
+        enabled: false
         name: wcf-preprod-payment-renewal
         sqs:
           messages:

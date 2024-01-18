@@ -173,14 +173,15 @@ public class ApsCommonGatewayService {
         }
     }
 
-    public void syncChargingTransactionFromSource (Transaction transaction, Optional<ApsChargeStatusResponse[]> verifyOption) {
+    public ApsChargeStatusResponse[] syncChargingTransactionFromSource (Transaction transaction, Optional<ApsChargeStatusResponse[]> verifyOption) {
         final String txnId = transaction.getIdStr();
         final boolean fetchHistoryTransaction = false;
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        ApsChargeStatusResponse[] apsChargeStatusResponses;
         try {
             final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
             builder.request(uri);
-            ApsChargeStatusResponse[] apsChargeStatusResponses =
+            apsChargeStatusResponses =
                     verifyOption.orElseGet(() -> exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class));
             builder.response(apsChargeStatusResponses);
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getPaymentMode())) {
@@ -215,6 +216,7 @@ public class ApsCommonGatewayService {
                 eventPublisher.publishEvent(builder.build());
             }
         }
+        return apsChargeStatusResponses;
     }
 
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {

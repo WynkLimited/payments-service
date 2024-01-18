@@ -27,6 +27,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.client.HttpStatusCodeException;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY009;
@@ -76,7 +77,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
         }
         try {
-            ApsChargeStatusResponse[] apsChargeStatusResponses = objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
+            ApsChargeStatusResponse[] apsChargeStatusResponses = (merchantTransaction.getResponse()== null) ?  common.syncChargingTransactionFromSource(transaction, Optional.empty()) : objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
             ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
             AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
             if(Objects.nonNull(merchantData.getMandateId())) {

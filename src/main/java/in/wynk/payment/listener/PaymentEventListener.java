@@ -168,14 +168,18 @@ public class PaymentEventListener {
     public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
         log.info("Event name is: {}", event);
         AnalyticService.update(event);
-        retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(MerchantTransaction.builder()
-                .id(event.getId())
-                .externalTransactionId(event.getExternalTransactionId())
-                .request(event.getRequest())
-                .orderId(event.getOrderId())
-                .response(event.getResponse())
-                .build()
-        ));
+        try {
+            retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(MerchantTransaction.builder()
+                    .id(event.getId())
+                    .externalTransactionId(event.getExternalTransactionId())
+                    .request(event.getRequest())
+                    .orderId(event.getOrderId())
+                    .response(event.getResponse())
+                    .build()
+            ));
+        } catch (Exception e) {
+            log.error("Exception occurred while saving data in merchant table {} {}", event, e.getMessage());
+        }
     }
 
     @EventListener

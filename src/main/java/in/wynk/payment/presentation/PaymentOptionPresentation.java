@@ -347,9 +347,10 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         @Override
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
             final Map<String, String> aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
+            boolean isAutoRenew = payload.getFirst().getPaymentDetails().isAutoRenew();
             return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> aliasToIds.containsKey(details.getId()))).map(details -> {
                 try {
-                    return ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details));
+                    return (isAutoRenew && Objects.equals(details.getGroup(), CardConstants.CARD)) ? null : ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details));
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }

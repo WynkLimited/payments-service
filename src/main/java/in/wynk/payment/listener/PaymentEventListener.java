@@ -110,6 +110,7 @@ public class PaymentEventListener {
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
 
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
+
     @Value("${event.stream.dp}")
     private String dpStream;
 

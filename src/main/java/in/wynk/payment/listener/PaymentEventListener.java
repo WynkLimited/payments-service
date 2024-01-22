@@ -75,6 +75,8 @@ import java.util.concurrent.TimeUnit;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
+import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
+import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_XSTREAM;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
@@ -107,6 +109,7 @@ public class PaymentEventListener {
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
 
+    public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
     @Value("${event.stream.dp}")
     private String dpStream;
 
@@ -492,6 +495,9 @@ public class PaymentEventListener {
         AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
+        final WynkService service = wynkServiceDetailsCachingService.get(AIRTEL_TV);
+        final String clientAlias = map.getOrDefault(CLIENT, service.getLinkedClient());
+        AnalyticService.update(SERVICE, clientAlias);
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
         if( Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
@@ -500,12 +506,6 @@ public class PaymentEventListener {
         }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
-        }
-        if(Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()) ) {
-            Map<String, String> map = Collections.singletonMap(AIRTEL_TV, AIRTEL_XSTREAM);
-            final WynkService service = wynkServiceDetailsCachingService.get(AIRTEL_TV);
-            final String clientAlias = map.getOrDefault(CLIENT, service.getLinkedClient());
-            AnalyticService.update(SERVICE, clientAlias);
         }
         if (Objects.nonNull(event.getTransaction().getCoupon())) {
             String couponCode = event.getTransaction().getCoupon();

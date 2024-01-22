@@ -54,6 +54,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.tinylytics.utils.AppUtils;
+import in.wynk.wynkservice.api.service.WynkServiceDetailsCachingService;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
@@ -104,6 +105,7 @@ public class PaymentEventListener {
     private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
+    private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
 
     @Value("${event.stream.dp}")
     private String dpStream;
@@ -498,6 +500,12 @@ public class PaymentEventListener {
         }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
+        }
+        if(Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()) ) {
+            Map<String, String> map = Collections.singletonMap(AIRTEL_TV, AIRTEL_XSTREAM);
+            final WynkService service = wynkServiceDetailsCachingService.get(AIRTEL_TV);
+            final String clientAlias = map.getOrDefault(CLIENT, service.getLinkedClient());
+            AnalyticService.update(SERVICE, clientAlias);
         }
         if (Objects.nonNull(event.getTransaction().getCoupon())) {
             String couponCode = event.getTransaction().getCoupon();

@@ -97,7 +97,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             @Override
             public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncTransactionWithSourceResponse(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
+                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                     Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                     if (optionalDetails.isPresent()) {
@@ -126,7 +126,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             @Override
             public AbstractPaymentCallbackResponse handle(PayUAutoRefundCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncTransactionWithSourceResponse(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
+                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
                 if (transaction.getStatus() == TransactionStatus.SUCCESS)
                     transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
                 return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();

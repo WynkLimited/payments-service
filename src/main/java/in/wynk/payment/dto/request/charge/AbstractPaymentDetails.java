@@ -18,6 +18,7 @@ import in.wynk.payment.dto.request.charge.wallet.WalletPaymentDetails;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.annotation.PersistenceConstructor;
 
@@ -80,9 +81,12 @@ public abstract class AbstractPaymentDetails implements IPaymentDetails, Seriali
     public AbstractPaymentDetails() {
     }
 
-    public boolean isTrialOpted() {
-        return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
-        }).get(paymentId).isTrialSupported() && trialOpted;
+    public boolean isTrialOpted () {
+        if (StringUtils.isNotEmpty(paymentId)) {
+            return BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<PaymentMethod, String>>() {
+            }).get(paymentId).isTrialSupported() && trialOpted;
+        }
+        return this.trialOpted;
     }
 
     @Override

@@ -7,7 +7,10 @@ import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
 import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.eligibility.service.AbstractEligibilityService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.CardConstants;
+import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.eligibility.evaluation.PaymentMethodsItemEligibilityEvaluation;
 import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvaluation;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
@@ -19,12 +22,18 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY601;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY609;
 
 
 public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> extends BaseHandler<T> {
     @Override
     public void handle(T request) {
         PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(request.getPaymentId());
+        if(CardConstants.CARD.equals(paymentMethod.getGroup())) {
+            IPaymentDetails paymentDetails = request.getPaymentDetails();
+            final CardPaymentDetails cardPaymentDetails = (CardPaymentDetails) paymentDetails;
+            if(CardConstants.SAVED_CARD_TYPE.equals(cardPaymentDetails.getCardDetails().getType()) && (paymentDetails.isAutoRenew() || paymentDetails.isTrialOpted() || paymentDetails.isMandate())) throw new WynkRuntimeException(PAY609);
+        }
         PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (Objects.equals(request.getProductDetails().getType(), PLAN) ?
                 PaymentOptionsPlanEligibilityRequest.builder().planId(request.getProductDetails().getId()) :
                 PaymentOptionsItemEligibilityRequest.builder().itemId(request.getProductDetails().getId()))

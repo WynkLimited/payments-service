@@ -27,7 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.common.enums.PaymentEvent.MANDATE;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER_V2;
 
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {

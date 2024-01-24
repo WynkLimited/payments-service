@@ -96,4 +96,6 @@ public interface PaymentConstants extends BaseConstants {
     String IOS_DEEP_LINK = "ios_deep_link";
     String FALLBACK_URL = "fallback_url";
     Double MANDATE_FLOW_AMOUNT = 1.0;
+    String AIRTEL_XSTREAM="airtelxstream";
+    String AIRTEL_TV = "airteltv";
 }

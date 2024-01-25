@@ -1,18 +1,15 @@
 package in.wynk.payment.dto.aps.response.renewal;
 
-import in.wynk.payment.dto.aps.common.ApsApiResponseWrapper;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
 
 /**
  * @author Nishesh Pandey
  */
 @Getter
-@SuperBuilder
+@Builder
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
 public class SiPaymentRecurringResponse {
     private String orderId;
     private String pgId;

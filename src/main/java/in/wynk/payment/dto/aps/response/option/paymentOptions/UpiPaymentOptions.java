@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option.paymentOptions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.constant.UpiConstants;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UpiPaymentOptions extends AbstractPaymentOptions implements Serializable {
     private String health;
     private List<UpiSubOption> upiSupportedApps;
@@ -36,6 +38,7 @@ public class UpiPaymentOptions extends AbstractPaymentOptions implements Seriali
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class UpiSubOption implements ISubOption, Serializable {
         private String upiPspAppName;
         private String androidCustomisationString;

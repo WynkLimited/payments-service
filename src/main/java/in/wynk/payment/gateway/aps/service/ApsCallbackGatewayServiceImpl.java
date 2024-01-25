@@ -18,6 +18,7 @@ import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
+import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -28,9 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.StringUtils;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
 import java.util.*;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PIPE_SEPARATOR;
@@ -125,7 +123,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             if (ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
                 common.syncOrderTransactionFromSource(transaction);
             } else {
-                common.syncChargingTransactionFromSource(transaction);
+                common.syncChargingTransactionFromSource(transaction, request.getRedirectionDestination() == null ? Optional.of(ApsChargeStatusResponse.from(request)): Optional.empty());
             }
             if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                 Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();

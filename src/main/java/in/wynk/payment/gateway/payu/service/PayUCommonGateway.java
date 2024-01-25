@@ -14,7 +14,6 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
@@ -45,8 +44,8 @@ import java.util.Objects;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -122,12 +121,13 @@ public class PayUCommonGateway {
         return EncryptionUtils.generateSHA512Hash(builder);
     }
 
-    public void syncChargingTransactionFromSource(Transaction transaction) {
+    public PayUVerificationResponse<PayUChargingTransactionDetails> syncChargingTransactionFromSource(Transaction transaction) {
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse;
         try {
             final MultiValueMap<String, String> payUChargingVerificationRequest = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+            payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
             if (Objects.isNull(payUChargingVerificationResponse.getTransactionDetails())) {
                 throw new WynkRuntimeException("Failed to sync transaction from payu with error: " + payUChargingVerificationResponse.getMessage());
@@ -142,7 +142,7 @@ public class PayUCommonGateway {
                 AnalyticService.update(PAYU_CARD_TYPE, payUChargingTransactionDetails.getCardType());
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
-            syncTransactionWithSourceResponse(payUChargingVerificationResponse);
+            syncTransactionWithSourceResponse(transaction, payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN").description(payUChargingTransactionDetails.getErrorMessage()).build());
@@ -158,6 +158,7 @@ public class PayUCommonGateway {
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)
                 eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
+        return payUChargingVerificationResponse;
     }
 
     public void syncRefundTransactionFromSource(Transaction transaction, String refundRequestId) {
@@ -174,7 +175,7 @@ public class PayUCommonGateway {
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.get(refundRequestId).getRequestId());
             payURefundTransactionDetails.put(transaction.getIdStr(), payURefundTransactionDetails.get(refundRequestId));
             payURefundTransactionDetails.remove(refundRequestId);
-            syncTransactionWithSourceResponse(PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
+            syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
@@ -186,9 +187,8 @@ public class PayUCommonGateway {
         }
     }
 
-    public void syncTransactionWithSourceResponse(PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
+    public void syncTransactionWithSourceResponse(Transaction transaction, PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
-        final Transaction transaction = TransactionContext.get();
         int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());

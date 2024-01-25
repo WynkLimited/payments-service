@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
+import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
@@ -17,6 +18,7 @@ import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.payu.service.*;
+import in.wynk.payment.service.IMerchantTDRService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -42,7 +44,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
         IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload>,
         IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>,
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
-        IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> {
+        IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>, IMerchantTDRService {
 
     private final PayURefundGatewayImpl refundGateway;
     private final PayUStatusGatewayImpl statusGateway;
@@ -50,9 +52,11 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     private final PayURenewalGatewayImpl renewalGateway;
     private final PayUCallbackGatewayImpl callbackGateway;
     private final PayUVerificationGatewayImpl verificationGateway;
+    private final IMerchantTDRService iMerchantTDRService;
 
 
     public PayUGateway(@Value("${payment.merchant.payu.api.payment}") String paymentApi,
+                       @Value("${payment.merchant.payu.api.info}") String payuInfoApi,
                        Gson gson,
                        ObjectMapper mapper,
                        PaymentCachingService payCache,
@@ -69,7 +73,8 @@ public class PayUGateway extends PayUMerchantPaymentService implements
         this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher);
         this.verificationGateway = new PayUVerificationGatewayImpl(commonGateway, mapper);
         this.chargeGateway = new PayUChargingGatewayImpl(commonGateway, cache, paymentApi);
-        this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService);
+        this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService, transactionManagerService);
+        this.iMerchantTDRService = new PayUTdrGatewayServiceImpl(payuInfoApi, commonGateway, merchantTransactionService);
     }
 
     @Override
@@ -105,5 +110,10 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     @Override
     public PayUPaymentRefundResponse doRefund(PayUPaymentRefundRequest request) {
         return refundGateway.doRefund(request);
+    }
+
+    @Override
+    public BaseTDRResponse getTDR (String transactionId) {
+        return iMerchantTDRService.getTDR(transactionId);
     }
 }

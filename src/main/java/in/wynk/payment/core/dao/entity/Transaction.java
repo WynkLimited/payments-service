@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.audit.entity.AuditableEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
@@ -18,7 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "transaction")
-public class Transaction {
+public class Transaction extends AuditableEntity {
 
     @Id
     @GenericGenerator(name = "transaction_seq_id", strategy = "in.wynk.payment.core.utils.TransactionIdentityGenerator")

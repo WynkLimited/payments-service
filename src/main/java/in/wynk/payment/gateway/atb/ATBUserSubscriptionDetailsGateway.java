@@ -27,8 +27,6 @@ public class ATBUserSubscriptionDetailsGateway {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
-
-
     public void getUserSubscriptionDetails (String si) {
         try {
             ResponseEntity<UserSubscriptionStatusResponse> data = catalogueVasClientService.getUserSubscriptionStatusResponse(si);

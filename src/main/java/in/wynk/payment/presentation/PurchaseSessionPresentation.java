@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Component
 public class PurchaseSessionPresentation implements IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>> {
@@ -54,9 +54,11 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             if(Objects.nonNull(request.getMiscellaneousDetails())) {
                 queryBuilder.addParameter(INGRESS_INTENT, String.valueOf(request.getMiscellaneousDetails().getIngressIntent()));
                 if (request.getMiscellaneousDetails().isMandate()) {
-                    queryBuilder.addParameter(PAYMENT_FLOW, "MANDATE");
-                } else if (request.getMiscellaneousDetails().isAutoRenew()) {
-                    queryBuilder.addParameter(PAYMENT_FLOW, "AUTORENEW");
+                    queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_MANDATE);
+                }else if(request.getMiscellaneousDetails().isTrialOpted()) {
+                    queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_TRIAL_OPTED);
+                } else if (request.getMiscellaneousDetails().isAutoRenew() && !request.getMiscellaneousDetails().isTrialOpted()) {
+                    queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_AUTO_RENEW);
                 }
             }
             String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();

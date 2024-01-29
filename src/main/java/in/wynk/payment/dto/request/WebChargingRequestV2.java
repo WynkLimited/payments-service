@@ -6,7 +6,6 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -26,8 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 
-import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER_V2;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
 
@@ -124,7 +122,7 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
     private String getPaymentFlow (AbstractPaymentDetails paymentDetails) {
         String paymentFlow = null;
         if (paymentDetails.isMandate()) {
-            paymentFlow = BaseConstants.MANDATE;
+            paymentFlow = MANDATE;
         } else if (paymentDetails.isTrialOpted()) {
             paymentFlow = TRIAL_OPTED;
         } else if (paymentDetails.isAutoRenew()) {

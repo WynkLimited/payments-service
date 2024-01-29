@@ -8,11 +8,13 @@ import in.wynk.common.constant.BaseConstants;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 @Getter
 @AnalysedEntity
+@ToString
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class MerchantTransactionEvent {
 

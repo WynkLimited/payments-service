@@ -92,6 +92,5 @@ public interface PaymentConstants extends BaseConstants {
     String UNKNOWN_VPA = "UNKNOWN_VPA";
     String AIRTEL_XSTREAM="airtelxstream";
     String AIRTEL_TV = "airteltv";
-    String MANDATE = "mandate";
     Double MANDATE_FLOW_AMOUNT = 1.0;
 }

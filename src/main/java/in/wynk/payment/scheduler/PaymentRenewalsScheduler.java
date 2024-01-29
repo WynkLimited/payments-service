@@ -4,7 +4,10 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.data.aspect.advice.Transactional;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
@@ -85,13 +88,22 @@ public class PaymentRenewalsScheduler {
     @AnalyseTransaction(name = "scheduleRenewalMessage")
     private void publishRenewalMessage(PaymentRenewalMessage message) {
         AnalyticService.update(message);
-        if(checkRenewalEligibility(message.getTransactionId())) {
+        if(checkRenewalEligibility(message.getTransactionId(), message.getClientAlias())) {
             sqsManagerService.publishSQSMessage(message);
         }
     }
 
-    private boolean checkRenewalEligibility (String transactionId) {
-        return !renewalUnSupportedPG.contains(transactionManager.get(transactionId).getPaymentChannel().getId());
+    private boolean checkRenewalEligibility (String transactionId, String clientAlias) {
+        Transaction transaction = transactionManager.get(transactionId);
+        if (transaction.getStatus() == TransactionStatus.FAILURE) {
+            try {
+                recurringPaymentManager.unScheduleRecurringPayment(clientAlias, transactionId, PaymentEvent.CANCELLED);
+            } catch (Exception e) {
+                return false;
+            }
+            return false;
+        }
+        return !renewalUnSupportedPG.contains(transaction.getPaymentChannel().getId());
     }
 
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")

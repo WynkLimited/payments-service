@@ -90,5 +90,7 @@ public interface PaymentConstants extends BaseConstants {
     String CURRENCY_INR="INR";
     String WHATSAPP = "WHATSAPP";
     String UNKNOWN_VPA = "UNKNOWN_VPA";
+    String AIRTEL_XSTREAM="airtelxstream";
+    String AIRTEL_TV = "airteltv";
     String MANDATE = "mandate";
 }

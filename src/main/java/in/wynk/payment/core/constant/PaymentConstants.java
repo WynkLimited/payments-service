@@ -93,4 +93,7 @@ public interface PaymentConstants extends BaseConstants {
     String AIRTEL_XSTREAM="airtelxstream";
     String AIRTEL_TV = "airteltv";
     Double MANDATE_FLOW_AMOUNT = 1.0;
+    String PAYMENT_FLOW_MANDATE = "MANDATE";
+    String PAYMENT_FLOW_TRIAL_OPTED = "TRIAL_OPTED";
+    String PAYMENT_FLOW_AUTO_RENEW = "AUTORENEW";
 }

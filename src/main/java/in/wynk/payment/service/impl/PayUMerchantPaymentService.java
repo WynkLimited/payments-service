@@ -169,26 +169,22 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
-        MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(paymentRenewalChargingRequest.getId());
-        if (merchantTransaction == null) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException("No merchant transaction found for Subscription");
-        }
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
         if (planPeriodDTO.getMaxRetryCount() < paymentRenewalChargingRequest.getAttemptSequence()) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
         }
+        MerchantTransaction merchantTransaction = getMerchantData(paymentRenewalChargingRequest.getId());
+        PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus = (merchantTransaction ==null) ? syncChargingTransactionFromSource(transactionManagerService.get(paymentRenewalChargingRequest.getId()), Optional.empty()): null;
         try {
-            PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
+            PayURenewalResponse payURenewalResponse = (merchantTransaction == null) ? objectMapper.convertValue(currentStatus, PayURenewalResponse.class) : objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
             String mode = payUChargingTransactionDetails.getMode();
             AnalyticService.update(PAYMENT_MODE, mode);
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
-            // TODO:: Remove it once migration is completed
-            String transactionId = StringUtils.isNotEmpty(payUChargingTransactionDetails.getMigratedTransactionId()) ? payUChargingTransactionDetails.getMigratedTransactionId() : paymentRenewalChargingRequest.getId();
-            if (!isUpi || validateStatusForRenewal(merchantTransaction.getExternalTransactionId(), transaction)) {
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, merchantTransaction.getExternalTransactionId());
+            String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(paymentRenewalChargingRequest.getId()).getPayUExternalTxnId();
+            if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId);
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
@@ -216,6 +212,15 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             throw e;
         }
         return WynkResponseEntity.<Void>builder().build();
+    }
+
+    private MerchantTransaction getMerchantData (String id) {
+        try {
+            return merchantTransactionService.getMerchantTransaction(id);
+        } catch (Exception e) {
+            log.error("Exception occurred while getting data for tid {} from merchant table: {}", id, e.getMessage());
+            return null;
+        }
     }
 
     @Override
@@ -265,7 +270,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.get(refundRequestId).getRequestId());
             payURefundTransactionDetails.put(transaction.getIdStr(), payURefundTransactionDetails.get(refundRequestId));
             payURefundTransactionDetails.remove(refundRequestId);
-            syncTransactionWithSourceResponse(PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
+            syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
@@ -294,25 +299,29 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return responseBuilder.build();
     }
 
-    public void syncChargingTransactionFromSource(Transaction transaction, Optional<PayUVerificationResponse<PayUChargingTransactionDetails>> verifyOption) {
+    public PayUVerificationResponse<PayUChargingTransactionDetails> syncChargingTransactionFromSource(Transaction transaction, Optional<PayUVerificationResponse<PayUChargingTransactionDetails>> verifyOption) {
         final Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse;
         try {
             final MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            final PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse =
+            payUChargingVerificationResponse =
                     verifyOption.orElseGet(() -> getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
                     }));
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode())) {
                 AnalyticService.update(PAYMENT_MODE, payUChargingTransactionDetails.getMode());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode()))
+            }
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode())) {
                 AnalyticService.update(BANK_CODE, payUChargingTransactionDetails.getBankCode());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType()))
+            }
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType())) {
                 AnalyticService.update(PAYU_CARD_TYPE, payUChargingTransactionDetails.getCardType());
+            }
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
-            syncTransactionWithSourceResponse(payUChargingVerificationResponse);
+            syncTransactionWithSourceResponse(transaction, payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getTransactionFailureReason())) {
                     final String failureReason = payUChargingTransactionDetails.getTransactionFailureReason();
@@ -329,11 +338,11 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)
                 eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
+        return payUChargingVerificationResponse;
     }
 
-    private void syncTransactionWithSourceResponse(PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
+    private void syncTransactionWithSourceResponse(Transaction transaction, PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
-        final Transaction transaction = TransactionContext.get();
         int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
@@ -497,7 +506,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid) {
         Transaction transaction = TransactionContext.get();
-        Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
@@ -513,15 +521,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.SI_TRANSACTION.getCode(), variable);
         rateLimiter.acquire();
         try {
-            merchantTransactionEventBuilder.request(requestMap);
             PayURenewalResponse paymentResponse = getInfoFromPayU(requestMap, new TypeReference<PayURenewalResponse>() {
             });
-            merchantTransactionEventBuilder.response(paymentResponse);
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();
-            } else {
-                String newMihPayId = paymentResponse.getTransactionDetails().get(transaction.getIdStr()).getPayUExternalTxnId();
-                merchantTransactionEventBuilder.externalTransactionId(StringUtils.isNotEmpty(newMihPayId) ? newMihPayId : mihpayid);
             }
             return paymentResponse;
         } catch (RestClientException e) {
@@ -545,8 +548,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 eventPublisher.publishEvent(errorEventBuilder.build());
                 throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
             }
-        } finally {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }
 

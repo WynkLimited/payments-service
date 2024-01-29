@@ -6,6 +6,7 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -19,6 +20,7 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.PageUrlDetails;
 import in.wynk.payment.dto.UserDetails;
+import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.session.context.SessionContextHolder;
 import org.apache.commons.lang3.StringUtils;
 
@@ -91,7 +93,8 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
     }
 
     private String getWebUrl (SessionDTO session, String webUrl) {
-        return getPaymentDetails().isMandate() ? session.get(webUrl) + AND + PAYMENT_FLOW + EQUAL + MANDATE : session.get(webUrl);
+        String paymentFlow = getPaymentFlow(getPaymentDetails());
+        return StringUtils.isNotEmpty(paymentFlow) ? session.get(webUrl) + AND + PAYMENT_FLOW + EQUAL + paymentFlow : session.get(webUrl);
     }
 
     @Override
@@ -104,16 +107,29 @@ public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {
 
     private String buildUrlFrom (String resolver, IAppDetails appDetails) {
         final SessionDTO session = SessionContextHolder.getBody();
-        String url = resolver + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND +
-                        BUILD_NO + EQUAL + appDetails.getBuildNo() + ((
-                        StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "") +
+        String url =
+                resolver + SessionContextHolder.getId() + SLASH + appDetails.getOs() + QUESTION_MARK + SERVICE + EQUAL + appDetails.getService() + AND + APP_ID + EQUAL + appDetails.getAppId() + AND +
+                        BUILD_NO + EQUAL + appDetails.getBuildNo() + ((StringUtils.isNotBlank(session.get(THEME)) ? AND + THEME + EQUAL + session.get(THEME) : "") +
                         (StringUtils.isNotBlank(session.get(VERSION)) ? AND + VERSION + EQUAL + session.get(VERSION) : "")) + AND + PLAN_ID + EQUAL + getProductDetails().getId();
-        return getPaymentDetails().isMandate() ? url + AND + PAYMENT_FLOW + EQUAL + MANDATE : url;
+        String paymentFlow = getPaymentFlow(getPaymentDetails());
+        return StringUtils.isNotEmpty(paymentFlow) ? url + AND + PAYMENT_FLOW + EQUAL + paymentFlow : url;
     }
 
     @Override
     public ClientDetails getClientDetails() {
         final ClientDetailsCachingService clientCachingService = BeanLocatorFactory.getBean(ClientDetailsCachingService.class);
         return (ClientDetails) clientCachingService.getClientByAlias(SessionContextHolder.<SessionDTO>getBody().get(CLIENT));
+    }
+
+    private String getPaymentFlow (AbstractPaymentDetails paymentDetails) {
+        String paymentFlow = null;
+        if (paymentDetails.isMandate()) {
+            paymentFlow = BaseConstants.MANDATE;
+        } else if (paymentDetails.isTrialOpted()) {
+            paymentFlow = TRIAL_OPTED;
+        } else if (paymentDetails.isAutoRenew()) {
+            paymentFlow = AUTO_RENEW;
+        }
+        return paymentFlow;
     }
 }

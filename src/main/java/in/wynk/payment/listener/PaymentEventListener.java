@@ -54,6 +54,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
 import in.wynk.tinylytics.utils.AppUtils;
+import in.wynk.wynkservice.api.service.WynkServiceDetailsCachingService;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
@@ -74,6 +75,8 @@ import java.util.concurrent.TimeUnit;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
+import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
+import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_XSTREAM;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
@@ -104,6 +107,9 @@ public class PaymentEventListener {
     private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
+    private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
+
+    public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
 
     @Value("${event.stream.dp}")
     private String dpStream;
@@ -167,14 +173,18 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "merchantTransactionEvent")
     public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
         AnalyticService.update(event);
-        retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(MerchantTransaction.builder()
-                .id(event.getId())
-                .externalTransactionId(event.getExternalTransactionId())
-                .request(event.getRequest())
-                .orderId(event.getOrderId())
-                .response(event.getResponse())
-                .build()
-        ));
+        try {
+            retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(MerchantTransaction.builder()
+                    .id(event.getId())
+                    .externalTransactionId(event.getExternalTransactionId())
+                    .request(event.getRequest())
+                    .orderId(event.getOrderId())
+                    .response(event.getResponse())
+                    .build()
+            ));
+        } catch (Exception e) {
+            log.error("Exception occurred while saving data in merchant table {} {}", event, e.getMessage());
+        }
     }
 
     @EventListener
@@ -485,6 +495,9 @@ public class PaymentEventListener {
         AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
+        final WynkService service = wynkServiceDetailsCachingService.get(AIRTEL_TV);
+        final String clientAlias = map.getOrDefault(CLIENT, service.getLinkedClient());
+        AnalyticService.update(SERVICE, clientAlias);
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
         if( Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());

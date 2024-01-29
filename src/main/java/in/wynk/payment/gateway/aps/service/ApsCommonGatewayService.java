@@ -13,6 +13,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
 import static in.wynk.payment.constant.OrderStatus.*;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
@@ -45,6 +46,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
@@ -171,14 +173,15 @@ public class ApsCommonGatewayService {
         }
     }
 
-    public void syncChargingTransactionFromSource (Transaction transaction, Optional<ApsChargeStatusResponse[]> verifyOption) {
+    public ApsChargeStatusResponse[] syncChargingTransactionFromSource (Transaction transaction, Optional<ApsChargeStatusResponse[]> verifyOption) {
         final String txnId = transaction.getIdStr();
         final boolean fetchHistoryTransaction = false;
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        ApsChargeStatusResponse[] apsChargeStatusResponses;
         try {
             final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
             builder.request(uri);
-            ApsChargeStatusResponse[] apsChargeStatusResponses =
+            apsChargeStatusResponses =
                     verifyOption.orElseGet(() -> exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class));
             builder.response(apsChargeStatusResponses);
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getPaymentMode())) {
@@ -202,15 +205,18 @@ public class ApsCommonGatewayService {
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponses[0].getErrorCode()).description(apsChargeStatusResponses[0].getErrorDescription()).build());
                 }
             }
+        } catch (HttpStatusCodeException e) {
+            builder.response(e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } catch (Exception e) {
             log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to "+ e.getMessage());
-            builder.response(e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
         } finally {
-            if ((!verifyOption.isPresent()) && (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)) {
+            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
                 eventPublisher.publishEvent(builder.build());
             }
         }
+        return apsChargeStatusResponses;
     }
 
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
@@ -281,9 +287,11 @@ public class ApsCommonGatewayService {
                                     .description(paymentDetails.getErrorDescription()).build());
                 }
             }
-        } catch (Exception e) {
+        }catch (HttpStatusCodeException e) {
+            builder.response(e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+        }  catch (Exception e) {
             log.error(APS_ORDER_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to " + e.getMessage());
-            builder.response(e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
         } finally {
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {

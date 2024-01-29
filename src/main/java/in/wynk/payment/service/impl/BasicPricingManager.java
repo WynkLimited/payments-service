@@ -13,6 +13,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.UserDetails;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
 import in.wynk.payment.dto.request.PointTransactionInitRequest;
@@ -56,13 +57,16 @@ public class BasicPricingManager implements IPricingManager {
                 if (nativeRequest.isMandate()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setEvent(PaymentEvent.MANDATE);
+                    nativeRequest.setAmount(PaymentConstants.MANDATE_FLOW_AMOUNT);
                     return;
                 } else if (nativeRequest.isAutoRenewOpted()) {
                     nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
                 }
                 if (nativeRequest.isTrialOpted()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
-                    nativeRequest.setAmount(cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice());
+                    nativeRequest.setAmount(
+                            cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice() > 0 ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice() :
+                                    PaymentConstants.MANDATE_FLOW_AMOUNT);
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
                 }

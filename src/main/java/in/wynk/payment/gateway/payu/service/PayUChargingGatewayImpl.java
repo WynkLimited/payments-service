@@ -138,11 +138,9 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                     final Transaction transaction = TransactionContext.get();
                     final Map<String, String> form = PayUChargingGatewayImpl.this.buildPayUForm(request);
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
-                    final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
-                    final String payAppName = (String) method.getMeta().get(PaymentConstants.APP_NAME);
                     final String vpa = paymentDetails.getUpiDetails().getVpa();
                     if (!StringUtils.isEmpty(vpa)) form.put(PAYU_VPA, paymentDetails.getUpiDetails().getVpa());
-                    final PayUUpiIntentInitResponse res = init(payAppName, form, new TypeReference<PayUUpiIntentInitResponse>() {
+                    final PayUUpiIntentInitResponse res = init(UpiConstants.INTENT, form, new TypeReference<PayUUpiIntentInitResponse>() {
                     });
                     final PayUUpiIntentInitResponse.IntentResult result = res.getResult();
                     if (Objects.nonNull(result) && Objects.nonNull(result.getIntentURIData())) {
@@ -364,7 +362,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
     private Map<String, String> buildPayUForm(AbstractPaymentChargingRequest chargingRequest) {
         final Transaction transaction = TransactionContext.get();
         final int planId = transaction.getPlanId();
-        double finalPlanAmount = (PaymentEvent.MANDATE == transaction.getType() || PaymentEvent.TRIAL_SUBSCRIPTION == transaction.getType()) ? 1.0 : transaction.getAmount();
+        double finalPlanAmount = transaction.getAmount();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
         final String email = uid + BASE_USER_EMAIL;

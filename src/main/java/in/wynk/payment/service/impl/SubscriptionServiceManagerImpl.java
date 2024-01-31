@@ -169,28 +169,19 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
 
     @Override
-    public boolean renewalPlanEligibility(int planId, String transactionId, String uid, String paymentMethod) {
+    public ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse (int planId, String uid) {
         try {
             RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).countryCode(CurrencyCountryUtils.findCountryCodeByPlanId(planId)).build();
             RequestEntity<RenewalPlanEligibilityRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
             });
-            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                long today = System.currentTimeMillis();
-                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if (isDeferred(paymentMethod, furtherDefer)) {
-                    recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
-                    return false;
-                }
-            }
-            return true;
+            return response;
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY105);
         }
     }
 
-    private boolean isDeferred (String paymentMethod, long furtherDefer) {
+    public boolean isDeferred (String paymentMethod, long furtherDefer) {
         long oneHourWindow = (long) hour * 60 * 60 * 1000;
         long twoDayPlusOneHourWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneHourWindow;
         return Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);

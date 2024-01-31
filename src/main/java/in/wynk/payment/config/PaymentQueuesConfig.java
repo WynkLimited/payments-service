@@ -53,7 +53,8 @@ public class PaymentQueuesConfig {
                                                                                  PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
                                                                                  ISqsManagerService sqsManagerService,
                                                                                  ITransactionManagerService transactionManager,
-                                                                                 ISubscriptionServiceManager subscriptionServiceManager) {
+                                                                                 ISubscriptionServiceManager subscriptionServiceManager,
+                                                                                 IRecurringPaymentManagerService recurringPaymentManagerService) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -62,7 +63,7 @@ public class PaymentQueuesConfig {
                 scheduledThreadPoolExecutor(),
                 sqsManagerService,
                 transactionManager,
-                subscriptionServiceManager);
+                subscriptionServiceManager, recurringPaymentManagerService);
     }
 
     @Bean

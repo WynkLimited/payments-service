@@ -1,10 +1,12 @@
 package in.wynk.payment.service;
 
+import in.wynk.common.dto.WynkResponse;
 import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.request.*;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,7 +21,9 @@ public interface ISubscriptionServiceManager {
         }
     }
 
-    boolean renewalPlanEligibility(int planId, String transactionId, String uid, String paymentMethod);
+    ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse (int planId, String uid);
+
+    boolean isDeferred(String paymentMethod, long furtherDefer);
 
     default void unSubscribePlan(AbstractUnSubscribePlanRequest request) {
         if (UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {

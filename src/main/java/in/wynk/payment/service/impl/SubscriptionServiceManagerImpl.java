@@ -16,7 +16,6 @@ import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.CurrencyCountryUtils;
@@ -102,9 +101,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Autowired
     private WynkApplicationContext myApplicationContext;
-
-    @Autowired
-    private IRecurringPaymentManagerService recurringPaymentManagerService;
 
     @Lazy
     @Autowired
@@ -280,7 +276,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
-    private int getUpdatedPlanId(int planId, PaymentEvent paymentEvent) {
+    public Integer getUpdatedPlanId(Integer planId, PaymentEvent paymentEvent) {
         return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).getLinkedFreePlanId() : planId;
     }
 

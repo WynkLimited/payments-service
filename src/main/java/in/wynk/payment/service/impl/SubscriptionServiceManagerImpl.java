@@ -276,7 +276,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
-    private int getUpdatedPlanId(int planId, PaymentEvent paymentEvent) {
+    public Integer getUpdatedPlanId(Integer planId, PaymentEvent paymentEvent) {
         return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).getLinkedFreePlanId() : planId;
     }
 

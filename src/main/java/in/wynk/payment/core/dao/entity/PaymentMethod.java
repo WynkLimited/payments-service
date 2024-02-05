@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.scheduler.queue.dto.MongoBaseEntityMessage;
 import lombok.AccessLevel;
@@ -23,6 +24,7 @@ public class PaymentMethod extends MongoBaseEntityMessage<String> {
     private boolean trialSupported;
     private boolean saveDetailsSupported;
     private boolean autoRenewSupported;
+    private boolean mandateSupported;
     private boolean inAppOtpSupport;
     private boolean otpLessSupport;
 
@@ -51,4 +53,7 @@ public class PaymentMethod extends MongoBaseEntityMessage<String> {
         return StringUtils.isEmpty(tag) ? getId(): tag;
     }
 
+    public boolean isMandateSupported () {
+        return mandateSupported && autoRenewSupported;
+    }
 }

@@ -5,7 +5,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.dao.entity.IUserDetails;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang.StringUtils;
 
@@ -17,7 +20,6 @@ import static in.wynk.common.constant.BaseConstants.DEFAULT_COUNTRY_CODE;
 import static in.wynk.common.constant.CacheBeanNameConstants.*;
 
 @Getter
-@Setter
 @ToString
 @SuperBuilder
 @AnalysedEntity

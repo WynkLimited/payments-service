@@ -25,7 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 
-import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 public class WebChargingRequestV2 extends AbstractPaymentChargingRequest {

@@ -31,8 +31,10 @@ import static in.wynk.common.constant.BaseConstants.*;
 public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
 
     private String couponId;
+    private boolean mandate;
     private AbstractProductDetails productDetails;
     private AbstractPaymentDetails paymentDetails;
+
     @Analysed
     private GeoLocation geoLocation;
 
@@ -76,7 +78,7 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
         SessionDTO sessionDTO= SessionContextHolder.getBody();
         MiscellaneousDetails miscellaneousDetails= sessionDTO.get(MISCELLANEOUS_DETAILS);
         return Objects.isNull(miscellaneousDetails) ? MiscellaneousDetails.builder().build() :
-                MiscellaneousDetails.builder().ingressIntent(miscellaneousDetails.getIngressIntent()).autoRenew(miscellaneousDetails.isAutoRenew()).build();
+                MiscellaneousDetails.builder().ingressIntent(miscellaneousDetails.getIngressIntent()).autoRenew(miscellaneousDetails.isAutoRenew()).mandate(miscellaneousDetails.isMandate()).trialOpted(miscellaneousDetails.isTrialOpted()).build();
     }
 
 }

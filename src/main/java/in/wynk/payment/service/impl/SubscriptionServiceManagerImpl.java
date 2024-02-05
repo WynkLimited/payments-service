@@ -7,14 +7,15 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.*;
-import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.CurrencyCountryUtils;
@@ -28,7 +29,6 @@ import in.wynk.subscription.common.response.AllItemsResponse;
 import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
-import in.wynk.identity.client.utils.IdentityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -42,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -88,6 +89,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.renewalPlanEligibility}")
     private String renewalPlanEligibilityEndpoint;
 
+    @Value("${service.subscription.api.endpoint.status}")
+    private String subscriptionStatusEndpoint;
+
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
     private RestTemplate restTemplate;
@@ -97,9 +101,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Autowired
     private WynkApplicationContext myApplicationContext;
-
-    @Autowired
-    private IRecurringPaymentManagerService recurringPaymentManagerService;
 
     @Lazy
     @Autowired
@@ -141,6 +142,14 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
     }
 
+    public List<SubscriptionStatus> getSubscriptionStatus (String uid, String service) {
+        final URI uri = restTemplate.getUriTemplateHandler().expand(subscriptionStatusEndpoint, uid, service);
+        RequestEntity<Void> subscriptionStatusRequest = ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        return restTemplate.exchange(subscriptionStatusRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>>() {
+        }).getBody().getData();
+    }
+
+
     @Override
     public PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan) {
         if (!defaultPlan.isPersonalize()) return defaultPlan;
@@ -156,28 +165,19 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
 
     @Override
-    public boolean renewalPlanEligibility(int planId, String transactionId, String uid, String paymentMethod) {
+    public ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse (int planId, String uid) {
         try {
             RenewalPlanEligibilityRequest renewalPlanEligibilityRequest = RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).countryCode(CurrencyCountryUtils.findCountryCodeByPlanId(planId)).build();
             RequestEntity<RenewalPlanEligibilityRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest, HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
             });
-            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                long today = System.currentTimeMillis();
-                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if (isDeferred(paymentMethod, furtherDefer)) {
-                    recurringPaymentManagerService.unScheduleRecurringPayment(transactionId, PaymentEvent.DEFERRED, today, furtherDefer);
-                    return false;
-                }
-            }
-            return true;
+            return response;
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY105);
         }
     }
 
-    private boolean isDeferred (String paymentMethod, long furtherDefer) {
+    public boolean isDeferred (String paymentMethod, long furtherDefer) {
         long oneHourWindow = (long) hour * 60 * 60 * 1000;
         long twoDayPlusOneHourWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneHourWindow;
         return Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);
@@ -276,7 +276,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
-    private int getUpdatedPlanId(int planId, PaymentEvent paymentEvent) {
+    public Integer getUpdatedPlanId(Integer planId, PaymentEvent paymentEvent) {
         return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).getLinkedFreePlanId() : planId;
     }
 

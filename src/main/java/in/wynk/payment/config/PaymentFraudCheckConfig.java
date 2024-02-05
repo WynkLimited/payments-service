@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
+import static in.wynk.payment.core.constant.BeanConstant.OPTION_FRAUD_DETECTION_CHAIN;
 
 @Configuration
 public class PaymentFraudCheckConfig {
@@ -37,4 +38,9 @@ public class PaymentFraudCheckConfig {
         return clientValidator;
     }
 
+    @Bean(OPTION_FRAUD_DETECTION_CHAIN)
+    public IHandler optionFraudDetectionChain() {
+        final PlanValidator planValidator = new PlanValidator();
+        return planValidator;
+    }
 }

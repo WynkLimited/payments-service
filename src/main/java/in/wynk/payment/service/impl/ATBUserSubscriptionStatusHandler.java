@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.addtobill.AddToBillUserSubscriptionStatusTask;
-import in.wynk.payment.gateway.atb.ATBUserSubscriptionDetailsGateway;
+import in.wynk.payment.gateway.atb.impl.ATBUserSubscriptionDetailsGateway;
 import in.wynk.scheduler.task.dto.TaskHandler;
 import lombok.extern.slf4j.Slf4j;
 

@@ -14,6 +14,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
@@ -38,6 +39,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 
@@ -194,6 +196,7 @@ public class PayUCommonGateway {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
+                initiateRefund(transaction);
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
@@ -209,4 +212,12 @@ public class PayUCommonGateway {
         transaction.setStatus(finalTransactionStatus.getValue());
     }
 
+    private void initiateRefund (Transaction transaction) {
+        if (EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus()) && transaction.getPaymentChannel().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType()))) {
+            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                    .reason("trial plan amount refund")
+                    .originalTransactionId(transaction.getIdStr())
+                    .build());
+        }
+    }
 }

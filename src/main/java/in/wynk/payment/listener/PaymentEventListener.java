@@ -537,11 +537,13 @@ public class PaymentEventListener {
             AnalyticService.update(TDR, tdr.getTdr());
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
             if((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) && event.getTransaction().getPaymentChannel().isInvoiceSupported()){
-                eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
-                        .msisdn(event.getTransaction().getMsisdn())
-                        .txnId(event.getTransaction().getIdStr())
-                        .clientAlias(event.getTransaction().getClientAlias())
-                        .build());
+                if(PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT) {
+                    eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                            .msisdn(event.getTransaction().getMsisdn())
+                            .txnId(event.getTransaction().getIdStr())
+                            .clientAlias(event.getTransaction().getClientAlias())
+                            .build());
+                }
             }
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))

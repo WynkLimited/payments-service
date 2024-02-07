@@ -362,7 +362,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     }
                 }
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-                initiateRefund(transaction);
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) ||
                     PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 if(AUTO_REFUND.equals(((PayUChargingTransactionDetails) transactionDetails).getUnMappedStatus())){
@@ -874,6 +873,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                             redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
                         } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
+                            initiateRefund(transaction);
                         } else {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                         }

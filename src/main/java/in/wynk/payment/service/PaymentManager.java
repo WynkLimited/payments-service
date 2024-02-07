@@ -71,7 +71,7 @@ public class PaymentManager
     public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
         final Transaction originalTransaction = TransactionContext.get();
         try {
-            final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
+            final String externalReferenceId = getExternalReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
                     transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
             final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
@@ -93,6 +93,15 @@ public class PaymentManager
             throw e;
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
+        }
+    }
+
+    private String getExternalReferenceId (String originalTransactionId) {
+        try {
+            return merchantTransactionService.getPartnerReferenceId(originalTransactionId);
+        } catch (Exception e) {
+            log.error("Exception Occurred while getting merchant transaction reference id while refunding the amount");
+            return null;
         }
     }
 

@@ -724,8 +724,14 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         Builder merchantTransactionBuilder = MerchantTransactionEvent.builder(refundTransaction.getIdStr());
         WynkResponseEntity.WynkResponseEntityBuilder<PayUPaymentRefundResponse> responseBuilder = WynkResponseEntity.builder();
         PayUPaymentRefundResponse.PayUPaymentRefundResponseBuilder<?, ?> refundResponseBuilder = PayUPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId()).itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn()).paymentEvent(refundTransaction.getType());
+        String authPayUId = refundRequest.getAuthPayUId();
+        if (authPayUId == null) {
+            Transaction oldTransaction = transactionManagerService.get(refundRequest.getOriginalTransactionId());
+            PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus = syncChargingTransactionFromSource(oldTransaction, Optional.empty());
+            authPayUId = currentStatus.getTransactionDetails(oldTransaction.getIdStr()).getPayUExternalTxnId();
+        }
         try {
-            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(refundTransaction.getClientAlias(), PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), refundRequest.getAuthPayUId(), refundTransaction.getIdStr(), String.valueOf(refundTransaction.getAmount()));
+            MultiValueMap<String, String> refundDetails = buildPayUInfoRequest(refundTransaction.getClientAlias(), PayUCommand.CANCEL_REFUND_TRANSACTION.getCode(), authPayUId, refundTransaction.getIdStr(), String.valueOf(refundTransaction.getAmount()));
             merchantTransactionBuilder.request(refundDetails);
             PayURefundInitResponse refundResponse = getInfoFromPayU(refundDetails, new TypeReference<PayURefundInitResponse>() {
             });

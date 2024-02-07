@@ -213,7 +213,7 @@ public class PayUCommonGateway {
     }
 
     private void initiateRefund (Transaction transaction) {
-        if (EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus()) && transaction.getPaymentChannel().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType()))) {
+        if (transaction.getPaymentChannel().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType()))) {
             eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
                     .reason("trial plan amount refund")
                     .originalTransactionId(transaction.getIdStr())

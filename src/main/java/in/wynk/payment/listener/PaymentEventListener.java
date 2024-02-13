@@ -108,6 +108,7 @@ public class PaymentEventListener {
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
+    private final IKafkaEventPublisher kafkaEventPublisher;
 
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
 
@@ -116,6 +117,9 @@ public class PaymentEventListener {
 
     @Value("${wynk.kafka.producers.payment.status.topic}")
     private String waPayStateRespEventTopic;
+
+    @Value("${wynk.kafka.producers.payment.atb.subscription.status.topic}")
+    private String kafkaAtbSubscriptionStatusTopic;
 
 
     @EventListener
@@ -467,6 +471,15 @@ public class PaymentEventListener {
         final AbstractPaymentSettlementResponse response = paymentManager.settle(PaymentSettlementRequest.builder().tid(event.getTid()).build());
         AnalyticService.update(event);
         AnalyticService.update(response);
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "userSubscriptionStatus")
+    public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
+        AnalyticService.update(event);
+        if(event.getStatus().equals("UNSUBSCRIBED")) {
+            kafkaEventPublisher.publish(kafkaAtbSubscriptionStatusTopic, null, null, null, event);
+        }
     }
 
     @EventListener

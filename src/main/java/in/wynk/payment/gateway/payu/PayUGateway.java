@@ -69,7 +69,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
         super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService);
         this.statusGateway = new PayUStatusGatewayImpl(commonGateway);
-        this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper);
+        this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper, eventPublisher);
         this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher);
         this.verificationGateway = new PayUVerificationGatewayImpl(commonGateway, mapper);
         this.chargeGateway = new PayUChargingGatewayImpl(commonGateway, cache, paymentApi);

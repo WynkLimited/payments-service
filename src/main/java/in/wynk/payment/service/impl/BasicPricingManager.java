@@ -64,9 +64,7 @@ public class BasicPricingManager implements IPricingManager {
                 }
                 if (nativeRequest.isTrialOpted()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
-                    nativeRequest.setAmount(
-                            cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice() > 0 ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice() :
-                                    PaymentConstants.MANDATE_FLOW_AMOUNT);
+                    nativeRequest.setAmount(PaymentConstants.MANDATE_FLOW_AMOUNT);
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
                 }

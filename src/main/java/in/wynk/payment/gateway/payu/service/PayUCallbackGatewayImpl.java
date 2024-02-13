@@ -9,6 +9,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
@@ -19,6 +20,7 @@ import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -36,11 +38,13 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
     private final PayUCommonGateway common;
     private final ObjectMapper objectMapper;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public PayUCallbackGatewayImpl(PayUCommonGateway common, ObjectMapper objectMapper) {
+    public PayUCallbackGatewayImpl (PayUCommonGateway common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.callbackHandler = new DelegatePayUCallbackHandler();
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -111,6 +115,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                             redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
                         } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
+                            initiateRefund(transaction);
                         } else {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                         }
@@ -151,5 +156,14 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
         assert generatedHash != null;
         return generatedHash.equals(payUResponseHash);
+    }
+
+    private void initiateRefund (Transaction transaction) {
+        if (transaction.getPaymentChannel().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType()))) {
+            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                    .reason("trial plan amount refund")
+                    .originalTransactionId(transaction.getIdStr())
+                    .build());
+        }
     }
 }

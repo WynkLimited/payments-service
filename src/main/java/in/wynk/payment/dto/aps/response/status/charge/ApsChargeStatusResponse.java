@@ -12,7 +12,9 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import static in.wynk.payment.dto.aps.common.ApsConstant.DEFAULT_CIRCLE_ID;
 
@@ -65,16 +67,16 @@ public class ApsChargeStatusResponse implements Serializable {
                 .pgSystemId(request.getPgSystemId())
                 .orderId(request.getOrderId())
                 .lob(request.getLob())
-                .pgStatus("PG_".concat(request.getStatus().toString()))
-                .paymentStatus("PAYMENT_".concat(request.getStatus().toString()))
-                .paymentAmount(request.getAmount().doubleValue())
-                .currency(request.getCurrency().name())
+                .pgStatus(Objects.nonNull(request.getStatus()) ? "PG_".concat(request.getStatus().toString()) : "UNKNOWN")
+                .paymentStatus(Objects.nonNull(request.getStatus()) ? "PAYMENT_".concat(request.getStatus().toString()) : "UNKNOWN")
+                .paymentAmount(Objects.nonNull(request.getAmount()) ? request.getAmount().doubleValue() : 0.0)
+                .currency(Objects.nonNull(request.getCurrency()) ? request.getCurrency().name() : "INR")
                 .vpa(request.getVpa())
                 .cardNetwork(request.getCardNetwork())
                 .bankCode(UpiConstants.UPI.equals(request.getPaymentMode().toString()) ? request.getUpiFlow() : request.getBankCode())
                 .bankRefNo(request.getBankRefId())
                 .paymentMode(request.getPaymentMode().name())
-                .paymentDate(Long.toString(request.getPaymentDate()))
+                .paymentDate(Objects.nonNull(request.getPaymentDate()) ? Long.toString(request.getPaymentDate()) : new Date().toString())
                 .errorCode(request.getErrorCode())
                 .errorDescription(request.getErrorMsg())
                 .paymentGateway(request.getPg())

@@ -100,4 +100,5 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_FLOW_MANDATE = "MANDATE";
     String PAYMENT_FLOW_TRIAL_OPTED = "TRIALOPTED";
     String PAYMENT_FLOW_AUTO_RENEW = "AUTORENEW";
+    String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK= "AddToBillUserSubscriptionStatusTask";
 }

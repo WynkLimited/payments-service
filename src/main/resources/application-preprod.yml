@@ -537,10 +537,6 @@ wynk:
          topic: wcf_preprod.pay_state_retry_resp
        dlt:
          topic: wcf_preprod.pay_state_dlt_resp
-       atb:
-         subscription:
-           status:
-             topic: wcf_preprod.atb_sub_status
     consumers:
       enabled: true
       listenerFactory:

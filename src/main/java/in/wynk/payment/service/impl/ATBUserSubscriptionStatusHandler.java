@@ -36,6 +36,6 @@ public class ATBUserSubscriptionStatusHandler extends TaskHandler<AddToBillUserS
 
     @Override
     public void execute (AddToBillUserSubscriptionStatusTask entity) {
-        userSubscriptionDetailsGateway.getUserSubscriptionDetails(entity.getSi());
+        userSubscriptionDetailsGateway.getUserSubscriptionDetails(entity.getSi(), entity.getTransactionId());
     }
 }

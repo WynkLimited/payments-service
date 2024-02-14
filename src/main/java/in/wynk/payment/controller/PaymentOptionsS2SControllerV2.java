@@ -41,6 +41,6 @@ public class PaymentOptionsS2SControllerV2 {
     public UserSubscriptionStatusResponse getAtbUserSubscriptionStatus(@PathVariable String si) {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(si);
-        return atbUserSubscriptionService.getUserSubscriptionDetails(si);
+        return atbUserSubscriptionService.getUserSubscriptionDetails(si, null);
     }
 }

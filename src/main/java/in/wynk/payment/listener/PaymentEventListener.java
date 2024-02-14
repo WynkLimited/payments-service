@@ -31,10 +31,7 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
-import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
-import in.wynk.payment.dto.request.ClientCallbackRequest;
-import in.wynk.payment.dto.request.PaymentSettlementRequest;
-import in.wynk.payment.dto.request.WhatsappSessionDetails;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
 import in.wynk.payment.event.WaPayStateRespEvent;
 import in.wynk.payment.event.common.*;
@@ -76,7 +73,6 @@ import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
-import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_XSTREAM;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
@@ -108,7 +104,7 @@ public class PaymentEventListener {
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
-    private final IKafkaEventPublisher kafkaEventPublisher;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
 
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
 
@@ -117,10 +113,6 @@ public class PaymentEventListener {
 
     @Value("${wynk.kafka.producers.payment.status.topic}")
     private String waPayStateRespEventTopic;
-
-    @Value("${wynk.kafka.producers.payment.atb.subscription.status.topic}")
-    private String kafkaAtbSubscriptionStatusTopic;
-
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
@@ -477,8 +469,11 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "userSubscriptionStatus")
     public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
         AnalyticService.update(event);
-        if(event.getStatus().equals("UNSUBSCRIBED")) {
-            kafkaEventPublisher.publish(kafkaAtbSubscriptionStatusTopic, null, null, null, event);
+        if(event.getStatus().equals(CANCELLED_STATE) && Objects.nonNull(event.getTxnId())) {
+            Transaction transaction = transactionManagerService.get(event.getTxnId());
+            AsyncTransactionRevisionRequest request =
+                    AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
+            subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
         }
     }
 

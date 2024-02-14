@@ -640,7 +640,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     @SneakyThrows
     private boolean validateCallbackChecksum(String payUMerchantKey, String payUSalt, String transactionId, String transactionStatus, String udf, String email, String firstName, String planTitle, double amount, String payUResponseHash) {
         DecimalFormat df = new DecimalFormat("#0.00");
-        String generatedString = payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||" + udf + PIPE_SEPARATOR + URLDecoder.decode(email, String.valueOf(StandardCharsets.UTF_8)) + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId + PIPE_SEPARATOR + payUMerchantKey;
+        String generatedString = payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||" + udf + PIPE_SEPARATOR + URLDecoder.decode(String.valueOf(email), String.valueOf(StandardCharsets.UTF_8)) + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId + PIPE_SEPARATOR + payUMerchantKey;
         final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
         assert generatedHash != null;
         return generatedHash.equals(payUResponseHash);

@@ -426,7 +426,7 @@ public class PaymentEventListener {
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
-        if(message.isEnabled()){
+        if((Objects.nonNull(message)) && message.isEnabled()){
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);
                 put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));

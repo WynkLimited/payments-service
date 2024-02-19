@@ -468,8 +468,8 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "userSubscriptionStatus")
     public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
         AnalyticService.update(event);
-        if(event.getStatus().equals(CANCELLED_STATE) && Objects.nonNull(event.getTxnId())) {
-            Transaction transaction = transactionManagerService.get(event.getTxnId());
+        if (event.getStatus().equals(CANCELLED_STATE) && Objects.nonNull(event.getTransactionId())) {
+            Transaction transaction = transactionManagerService.get(event.getTransactionId());
             AsyncTransactionRevisionRequest request =
                     AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
             subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));

@@ -10,14 +10,15 @@ import in.wynk.payment.dto.S2SPaymentOptionsRequest;
 import in.wynk.payment.dto.common.FilteredPaymentOptionsResult;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.response.paymentoption.PaymentOptionsDTO;
-import in.wynk.payment.gateway.atb.ATBUserSubscriptionService;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.utils.LoadClientUtils;
-import in.wynk.vas.client.dto.atb.UserSubscriptionStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.util.Pair;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,7 +26,6 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentOptionsS2SControllerV2 {
 
     private final IPaymentOptionServiceV2 service;
-    private final ATBUserSubscriptionService atbUserSubscriptionService;
 
     @PostMapping("/options")
     @AnalyseTransaction(name = "paymentOptions")
@@ -36,11 +36,4 @@ public class PaymentOptionsS2SControllerV2 {
         }).transform(() -> Pair.of(request.getPaymentOptionRequest(), service.getPaymentOptions(request)));
     }
 
-    @GetMapping("/atb/subscription/status/{si}/{txnId}")
-    @AnalyseTransaction(name = "AtbSubscriptionStatus")
-    public UserSubscriptionStatusResponse getAtbUserSubscriptionStatus(@PathVariable String si, @PathVariable String txnId) {
-        LoadClientUtils.loadClient(true);
-        AnalyticService.update(si);
-        return atbUserSubscriptionService.getUserSubscriptionDetails(si, txnId);
-    }
 }

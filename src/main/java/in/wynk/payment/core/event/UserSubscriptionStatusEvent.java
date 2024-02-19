@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AnalysedEntity
 public class UserSubscriptionStatusEvent {
     @Analysed
-    private String txnId;
+    private String transactionId;
     @Analysed
     private String si;
     @Analysed

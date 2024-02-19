@@ -36,11 +36,11 @@ public class PaymentOptionsS2SControllerV2 {
         }).transform(() -> Pair.of(request.getPaymentOptionRequest(), service.getPaymentOptions(request)));
     }
 
-    @GetMapping("/atb/subscription/status/{si}")
+    @GetMapping("/atb/subscription/status/{si}/{txnId}")
     @AnalyseTransaction(name = "AtbSubscriptionStatus")
-    public UserSubscriptionStatusResponse getAtbUserSubscriptionStatus(@PathVariable String si) {
+    public UserSubscriptionStatusResponse getAtbUserSubscriptionStatus(@PathVariable String si, @PathVariable String txnId) {
         LoadClientUtils.loadClient(true);
         AnalyticService.update(si);
-        return atbUserSubscriptionService.getUserSubscriptionDetails(si, null);
+        return atbUserSubscriptionService.getUserSubscriptionDetails(si, txnId);
     }
 }

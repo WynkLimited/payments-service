@@ -180,7 +180,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     .transactionEvent(PaymentEvent.SUBSCRIBE.name())
                     .attemptSequence(attemptSequence)
                     .build());
-            if(PaymentConstants.ADD_TO_BILL.equalsIgnoreCase(code) || BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
+            if(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
                 scheduleAtbTask(transaction, nextRecurringDateTime);
             }
         } catch (Exception e) {

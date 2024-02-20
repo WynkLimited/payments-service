@@ -20,9 +20,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentSettlementEvent;
@@ -169,10 +167,25 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction init(AbstractTransactionInitRequest transactionInitRequest) {
+        final String oldTransactionId = transactionInitRequest.getTxnId();
+        final Transaction oldTransaction = get(oldTransactionId);
+        final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
         final Transaction transaction = PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) : initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
         final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
         Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(transactionDetailsBuilder::purchaseDetails);
         TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
+        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
+                .id(transaction.getIdStr())
+                .appDetails(details.getAppDetails())
+                .userDetails(details.getUserDetails())
+                .sessionDetails(details.getSessionDetails())
+                .productDetails(details.getProductDetails())
+                .geoLocation(details.getGeoLocation())
+                .paymentDetails(details.getPaymentDetails())
+                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
+                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
+                .build();
+        purchaseDetailsManger.save(transaction, purchaseDetails);
         return transaction;
     }
 

@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,6 +10,8 @@ import lombok.Getter;
 public class PlanRenewalRequest {
 
     private int planId;
+    @Analysed(name = "old_transaction_id")
+    private String id;
     private String uid;
     private String msisdn;
     private String clientAlias;

@@ -360,25 +360,10 @@ public class PaymentManager
 
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
-        final String oldTransactionId = request.getId();
-        final Transaction oldTransaction = transactionManager.get(oldTransactionId);
-        final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
+                PlanRenewalRequest.builder().id(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
                         .build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
-        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
-                .id(transaction.getIdStr())
-                .appDetails(details.getAppDetails())
-                .userDetails(details.getUserDetails())
-                .sessionDetails(details.getSessionDetails())
-                .productDetails(details.getProductDetails())
-                .geoLocation(details.getGeoLocation())
-                .paymentDetails(details.getPaymentDetails())
-                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
-                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
-                .build();
-        purchaseDetailsManger.save(transaction, purchaseDetails);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> merchantPaymentRenewalService =
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>>() {

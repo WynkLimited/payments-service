@@ -2,7 +2,10 @@ package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.IMiscellaneousDetails;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -15,10 +18,11 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.receipts.IPurchasingDetailsDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
@@ -79,6 +83,7 @@ public class PaymentGatewayManager
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
+    private final IPurchaseDetailsManger purchaseDetailsManger;
     private final IMerchantTransactionService merchantTransactionService;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
@@ -248,10 +253,25 @@ public class PaymentGatewayManager
     @Override
     public void renew(PaymentRenewalChargingRequest request) {
         PaymentGateway paymentGateway = request.getPaymentGateway();
+        final String oldTransactionId = request.getId();
+        final Transaction oldTransaction = transactionManager.get(oldTransactionId);
+        final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
+        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
+                .id(transaction.getIdStr())
+                .appDetails(details.getAppDetails())
+                .userDetails(details.getUserDetails())
+                .sessionDetails(details.getSessionDetails())
+                .productDetails(details.getProductDetails())
+                .geoLocation(details.getGeoLocation())
+                .paymentDetails(details.getPaymentDetails())
+                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
+                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
+                .build();
+        purchaseDetailsManger.save(transaction, purchaseDetails);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IPaymentRenewal<PaymentRenewalChargingRequest> renewalService =
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
@@ -306,7 +326,7 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
+    public void cancelRecurring(String transactionId) {
         BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)
                 .cancelRecurring(transactionId);
 

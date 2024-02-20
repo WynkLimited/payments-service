@@ -87,9 +87,13 @@ public interface PaymentConstants extends BaseConstants {
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
     String CONTENT_TYPE = "Content-Type";
-    String CURRENCY_INR="INR";
+    String CURRENCY_INR = "INR";
     String WHATSAPP = "WHATSAPP";
     String UNKNOWN_VPA = "UNKNOWN_VPA";
+    String ANDROID_DEEP_LINK = "android_deep_link";
+    String DESKTOP_DEEP_LINK = "desktop_deep_link";
+    String IOS_DEEP_LINK = "ios_deep_link";
+    String FALLBACK_URL = "fallback_url";
     String AIRTEL_XSTREAM="airtelxstream";
     String AIRTEL_TV = "airteltv";
     Double MANDATE_FLOW_AMOUNT = 1.0;

@@ -253,24 +253,25 @@ public class PaymentGatewayManager
     @Override
     public void renew(PaymentRenewalChargingRequest request) {
         PaymentGateway paymentGateway = request.getPaymentGateway();
-        final String oldTransactionId= request.getId();
-        final Transaction oldTransaction= transactionManager.get(oldTransactionId);
-        final IPurchaseDetails details= purchaseDetailsManger.get(oldTransaction);
+        final String oldTransactionId = request.getId();
+        final Transaction oldTransaction = transactionManager.get(oldTransactionId);
+        final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
-        PurchaseDetails purchaseDetailsNew = PurchaseDetails.builder()
+        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
                 .id(transaction.getIdStr())
                 .appDetails(details.getAppDetails())
                 .userDetails(details.getUserDetails())
+                .sessionDetails(details.getSessionDetails())
                 .productDetails(details.getProductDetails())
                 .geoLocation(details.getGeoLocation())
                 .paymentDetails(details.getPaymentDetails())
                 .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
                 .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
                 .build();
-        purchaseDetailsManger.save(transaction,purchaseDetailsNew);
+        purchaseDetailsManger.save(transaction, purchaseDetails);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IPaymentRenewal<PaymentRenewalChargingRequest> renewalService =
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
@@ -325,7 +326,7 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
+    public void cancelRecurring(String transactionId) {
         BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)
                 .cancelRecurring(transactionId);
 

@@ -3,7 +3,6 @@ package in.wynk.payment.service;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.AbstractErrorDetails;
-import in.wynk.common.dto.IMiscellaneousDetails;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
@@ -38,12 +37,10 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
-import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY999;
 
 @Slf4j
 @Service(BeanConstant.PAYMENT_MANAGER)
@@ -60,7 +57,6 @@ public class PaymentManager
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
-    private final IPurchaseDetailsManger purchaseDetailsManger;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final PaymentGatewayCommon common;
@@ -360,25 +356,10 @@ public class PaymentManager
 
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
-        final String oldTransactionId = request.getId();
-        final Transaction oldTransaction = transactionManager.get(oldTransactionId);
-        final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
+                PlanRenewalRequest.builder().txnId(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
                         .build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
-        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
-                .id(transaction.getIdStr())
-                .appDetails(details.getAppDetails())
-                .userDetails(details.getUserDetails())
-                .sessionDetails(details.getSessionDetails())
-                .productDetails(details.getProductDetails())
-                .geoLocation(details.getGeoLocation())
-                .paymentDetails(details.getPaymentDetails())
-                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
-                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
-                .build();
-        purchaseDetailsManger.save(transaction, purchaseDetails);
         final TransactionStatus initialStatus = transaction.getStatus();
         final IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> merchantPaymentRenewalService =
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>>() {

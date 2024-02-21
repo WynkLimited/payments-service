@@ -62,38 +62,37 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     @AnalyseTransaction(name = "paymentReconciliation")
     public void consume(PaymentReconciliationMessage message) {
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-            return;
-        }
-        AnalyticService.update(message);
-        log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
-        final AbstractTransactionReconciliationStatusRequest transactionStatusRequest;
-        if (message.getPaymentEvent() == PaymentEvent.REFUND) {
-            transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder()
-                    .extTxnId(message.getExtTxnId())
-                    .transactionId(message.getTransactionId())
-                    .build();
-        } else if (message.getPaymentEvent() == PaymentEvent.RENEW) {
-            transactionStatusRequest = RenewalChargingTransactionReconciliationStatusRequest.builder()
-                    .extTxnId(message.getExtTxnId())
-                    .transactionId(message.getTransactionId())
-                    .originalTransactionId(message.getOriginalTransactionId())
-                    .originalAttemptSequence(message.getOriginalAttemptSequence())
-                    .build();
-        } else {
-            transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder()
-                    .extTxnId(message.getExtTxnId())
-                    .transactionId(message.getTransactionId())
-                    .build();
-        }
+        if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
+            AnalyticService.update(message);
+            log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentReconciliationMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
+            final AbstractTransactionReconciliationStatusRequest transactionStatusRequest;
+            if (message.getPaymentEvent() == PaymentEvent.REFUND) {
+                transactionStatusRequest = RefundTransactionReconciliationStatusRequest.builder()
+                        .extTxnId(message.getExtTxnId())
+                        .transactionId(message.getTransactionId())
+                        .build();
+            } else if (message.getPaymentEvent() == PaymentEvent.RENEW) {
+                transactionStatusRequest = RenewalChargingTransactionReconciliationStatusRequest.builder()
+                        .extTxnId(message.getExtTxnId())
+                        .transactionId(message.getTransactionId())
+                        .originalTransactionId(message.getOriginalTransactionId())
+                        .originalAttemptSequence(message.getOriginalAttemptSequence())
+                        .build();
+            } else {
+                transactionStatusRequest = ChargingTransactionReconciliationStatusRequest.builder()
+                        .extTxnId(message.getExtTxnId())
+                        .transactionId(message.getTransactionId())
+                        .build();
+            }
 
-        final InnerPaymentStatusDelegator delegate = (AbstractTransactionStatusRequest) -> {
-            final boolean canSupportRecon = BeanLocatorFactory.containsBeanOfType(codeCache.get(message.getPaymentCode()).getCode(), new ParameterizedTypeReference<IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
-            });
-            if (canSupportRecon) BeanLocatorFactory.getBean(PaymentGatewayManager.class).reconcile(transactionStatusRequest);
-            else BeanLocatorFactory.getBean(PaymentManager.class).status(transactionStatusRequest);
-        };
-        delegate.reconcile(transactionStatusRequest);
+            final InnerPaymentStatusDelegator delegate = (AbstractTransactionStatusRequest) -> {
+                final boolean canSupportRecon = BeanLocatorFactory.containsBeanOfType(codeCache.get(message.getPaymentCode()).getCode(), new ParameterizedTypeReference<IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
+                });
+                if (canSupportRecon) BeanLocatorFactory.getBean(PaymentGatewayManager.class).reconcile(transactionStatusRequest);
+                else BeanLocatorFactory.getBean(PaymentManager.class).status(transactionStatusRequest);
+            };
+            delegate.reconcile(transactionStatusRequest);
+        }
     }
 
     /**

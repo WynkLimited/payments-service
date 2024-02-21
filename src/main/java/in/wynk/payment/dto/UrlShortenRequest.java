@@ -32,23 +32,19 @@ public class UrlShortenRequest {
         private String desktopPath;
         @JsonProperty("$android_deeplink_path")
         private String androidDeeplink;
-        @JsonProperty("$ios_deeplink_path")
-        private String iosDeeplink;
         @JsonProperty("$fallback_url")
         private String fallbackUrl;
         @JsonProperty("$deeplink_path")
         private String path;
 
-        public UrlShortenData(String androidDeeplink, String iosDeeplink, String desktopPath, String fallbackUrl) {
+        public UrlShortenData(String androidDeeplink, String desktopPath, String fallbackUrl) {
             this.androidDeeplink = androidDeeplink;
-            this.iosDeeplink = iosDeeplink;
             this.desktopPath = desktopPath;
             this.fallbackUrl = fallbackUrl;
         }
 
-        public UrlShortenData(String androidDeeplink, String iosDeeplink, String desktopPath, String fallbackUrl, String path) {
+        public UrlShortenData(String androidDeeplink, String desktopPath, String fallbackUrl, String path) {
             this.androidDeeplink = androidDeeplink;
-            this.iosDeeplink = iosDeeplink;
             this.desktopPath = desktopPath;
             this.fallbackUrl = fallbackUrl;
             this.path = path;

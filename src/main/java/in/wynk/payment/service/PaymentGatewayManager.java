@@ -3,8 +3,6 @@ package in.wynk.payment.service;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.common.dto.IMiscellaneousDetails;
-import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -17,8 +15,7 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
@@ -51,8 +48,6 @@ import javax.annotation.PostConstruct;
 import java.net.SocketTimeoutException;
 import java.util.*;
 
-import static in.wynk.common.constant.BaseConstants.AUTO_RENEW;
-import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
@@ -249,7 +244,7 @@ public class PaymentGatewayManager
     public void renew(PaymentRenewalChargingRequest request) {
         PaymentGateway paymentGateway = request.getPaymentGateway();
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
+                PlanRenewalRequest.builder().planId(request.getPlanId()).txnId(request.getId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -306,7 +301,7 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
+    public void cancelRecurring(String transactionId) {
         BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)
                 .cancelRecurring(transactionId);
 

@@ -183,7 +183,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
                 .build();
         final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
-        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        Optional.ofNullable(purchaseDetails).ifPresent(transactionDetailsBuilder::purchaseDetails);
         TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
         purchaseDetailsManger.save(transaction, purchaseDetails);
         return transaction;

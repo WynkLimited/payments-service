@@ -3,7 +3,6 @@ package in.wynk.payment.service;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.AbstractErrorDetails;
-import in.wynk.common.dto.IMiscellaneousDetails;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
@@ -38,12 +37,10 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
-import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY999;
 
 @Slf4j
 @Service(BeanConstant.PAYMENT_MANAGER)

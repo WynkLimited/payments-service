@@ -11,7 +11,7 @@ public class PlanRenewalRequest {
 
     private int planId;
     @Analysed(name = "old_transaction_id")
-    private String id;
+    private String txnId;
     private String uid;
     private String msisdn;
     private String clientAlias;

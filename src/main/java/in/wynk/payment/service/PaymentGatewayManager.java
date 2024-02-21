@@ -83,7 +83,6 @@ public class PaymentGatewayManager
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
-    private final IPurchaseDetailsManger purchaseDetailsManger;
     private final IMerchantTransactionService merchantTransactionService;
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
@@ -254,7 +253,7 @@ public class PaymentGatewayManager
     public void renew(PaymentRenewalChargingRequest request) {
         PaymentGateway paymentGateway = request.getPaymentGateway();
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).id(request.getId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
+                PlanRenewalRequest.builder().planId(request.getPlanId()).txnId(request.getId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();

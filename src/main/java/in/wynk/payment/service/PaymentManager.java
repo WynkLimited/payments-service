@@ -60,7 +60,6 @@ public class PaymentManager
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
-    private final IPurchaseDetailsManger purchaseDetailsManger;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final PaymentGatewayCommon common;
@@ -361,7 +360,7 @@ public class PaymentManager
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().id(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
+                PlanRenewalRequest.builder().txnId(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
                         .build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();

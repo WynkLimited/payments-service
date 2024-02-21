@@ -171,9 +171,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         final Transaction oldTransaction = get(oldTransactionId);
         final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
         final Transaction transaction = PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) : initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
-        final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
-        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(transactionDetailsBuilder::purchaseDetails);
-        TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
         PurchaseDetails purchaseDetails = PurchaseDetails.builder()
                 .id(transaction.getIdStr())
                 .appDetails(details.getAppDetails())
@@ -185,6 +182,9 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
                 .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
                 .build();
+        final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
         purchaseDetailsManger.save(transaction, purchaseDetails);
         return transaction;
     }

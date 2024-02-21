@@ -70,7 +70,7 @@ public class PaymentManager
         try {
             final String externalReferenceId = getExternalReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
-                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
+                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
             final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
                     new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
                     });
@@ -179,7 +179,7 @@ public class PaymentManager
             if (mapping != null) {
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).txnId(mapping.getLinkedTransactionId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
                                 .clientAlias(request.getClientAlias()).build());
                 transactionInitRequest.setEvent(event);
                 final Transaction transaction = transactionManager.init(transactionInitRequest);

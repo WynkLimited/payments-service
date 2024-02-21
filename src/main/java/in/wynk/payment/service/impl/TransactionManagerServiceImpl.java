@@ -173,21 +173,23 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             final String oldTransactionId = transactionInitRequest.getTxnId();
             final Transaction oldTransaction = get(oldTransactionId);
             final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
-            purchaseDetails = PurchaseDetails.builder()
-                    .id(transaction.getIdStr())
-                    .appDetails(details.getAppDetails())
-                    .userDetails(details.getUserDetails())
-                    .sessionDetails(details.getSessionDetails())
-                    .productDetails(details.getProductDetails())
-                    .geoLocation(details.getGeoLocation())
-                    .paymentDetails(details.getPaymentDetails())
-                    .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
-                    .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
-                    .build();
-            purchaseDetailsManger.save(transaction, purchaseDetails);
+            if (Objects.nonNull(details)) {
+                purchaseDetails = PurchaseDetails.builder()
+                        .id(transaction.getIdStr())
+                        .appDetails(details.getAppDetails())
+                        .userDetails(details.getUserDetails())
+                        .sessionDetails(details.getSessionDetails())
+                        .productDetails(details.getProductDetails())
+                        .geoLocation(details.getGeoLocation())
+                        .paymentDetails(details.getPaymentDetails())
+                        .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
+                        .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
+                        .build();
+                purchaseDetailsManger.save(transaction, purchaseDetails);
+            }
         }
         final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
-        Optional.ofNullable(Objects.isNull(purchaseDetails) ?purchaseDetailsManger.get(transaction): purchaseDetails ).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        Optional.ofNullable(Objects.isNull(purchaseDetails) ? purchaseDetailsManger.get(transaction): purchaseDetails ).ifPresent(transactionDetailsBuilder::purchaseDetails);
         TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
         return transaction;
     }

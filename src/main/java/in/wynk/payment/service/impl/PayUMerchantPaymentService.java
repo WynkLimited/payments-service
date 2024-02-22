@@ -24,7 +24,6 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
@@ -381,15 +380,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
         transaction.setStatus(finalTransactionStatus.getValue());
-    }
-
-    private void initiateRefund (Transaction transaction) {
-        if (transaction.getPaymentChannel().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType()))) {
-            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
-                    .reason("trial plan amount refund")
-                    .originalTransactionId(transaction.getIdStr())
-                    .build());
-        }
     }
 
     private Map<String, String> getPayload(PayUChargingRequest<?> chargingRequest) {
@@ -879,7 +869,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                             redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
                         } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
-                            initiateRefund(transaction);
                         } else {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                         }
